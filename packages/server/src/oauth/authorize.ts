@@ -131,7 +131,9 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     } else {
       // Redirect to scope selection page to allow consent to updated scopes
       params.login = updatedLogin.id;
-      params.scope = updatedLogin.scope;
+      if (!params.scope) {
+        params.scope = updatedLogin.scope;
+      }
       sendSuccessRedirect(req, res, params);
     }
     return false;

@@ -293,6 +293,54 @@ describe('OAuth Authorize', () => {
     expect(location.searchParams.get('error')).toBeNull();
   });
 
+  test('Show scope screen on subsequent authorize', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+      scope: 'openid',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.code).toBeDefined();
+    expect(res1.headers['set-cookie']).toBeDefined();
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res1.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.id_token).toBeDefined();
+
+    const cookies = setCookieParser.parse(res1.headers['set-cookie']);
+    expect(cookies.length).toBe(1);
+
+    const cookie = cookies[0];
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: client.redirectUri as string,
+      scope: 'openid user/Patient.rs',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+    });
+
+    const res3 = await request(app)
+      .get('/oauth2/authorize?' + params.toString())
+      .set('Cookie', cookie.name + '=' + cookie.value);
+    expect(res3.status).toBe(302);
+    expect(res3.headers.location).toBeDefined();
+
+    const location = new URL(res3.headers.location);
+    expect(location.pathname).toBe('/oauth');
+    expect(location.searchParams.get('login')).not.toBeNull();
+    expect(location.searchParams.get('scope')).toContain('user/Patient.rs');
+    expect(location.searchParams.get('error')).toBeNull();
+  });
+
   test('Revoked cookie', async () => {
     const res1 = await request(app).post('/auth/login').type('json').send({
       clientId: client.id,
