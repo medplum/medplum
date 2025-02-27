@@ -12,7 +12,7 @@ import { MedplumServerConfig } from '../config/types';
 import { AuthenticatedRequestContext } from '../context';
 import * as database from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { requestContextStore } from '../request-context-store';
@@ -315,7 +315,11 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Reindex with respond-async', async () => {
+  test.each([
+    ['outdated', undefined, Repository.VERSION - 1],
+    ['specific', '0', 0],
+    ['all', undefined, undefined],
+  ])('Reindex with %s %s', async (reindexType, maxResourceVersion, expectedMaxResourceVersion) => {
     const queue = getReindexQueue() as any;
     queue.add.mockClear();
 
@@ -326,6 +330,8 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({
         resourceType: 'PaymentNotice',
+        reindexType,
+        maxResourceVersion,
       });
 
     expect(res.status).toStrictEqual(202);
@@ -336,8 +342,37 @@ describe('Super Admin routes', () => {
         resourceTypes: ['PaymentNotice'],
       })
     );
+    expect(queue.add.mock.calls[0][1].maxResourceVersion).toStrictEqual(expectedMaxResourceVersion);
     await withTestContext(() => new ReindexJob().execute({ data: queue.add.mock.calls[0][1] } as Job));
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+  });
+
+  test.each([
+    ['foobar', undefined, 'reindexType must be "outdated", "all", or "specific"'],
+    ['outdated', '0', 'maxResourceVersion should only be specified when reindexType is "specific"'],
+    ['all', '0', 'maxResourceVersion should only be specified when reindexType is "specific"'],
+    ['specific', undefined, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+    ['specific', -1, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+    ['specific', Repository.VERSION, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+    ['specific', '1.1', `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+    ['specific', '9999999', `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+  ])('Reindex with invalid args %s %s', async (reindexType, maxResourceVersion, expectedError) => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'PaymentNotice',
+        reindexType,
+        maxResourceVersion,
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe(expectedError);
   });
 
   test('Reindex with multiple resource types', async () => {
@@ -351,6 +386,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({
         resourceType: 'PaymentNotice,MedicinalProductManufactured,BiologicallyDerivedProduct',
+        reindexType: 'outdated',
       });
 
     expect(res.status).toStrictEqual(202);
