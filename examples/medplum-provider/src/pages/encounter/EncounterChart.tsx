@@ -1,4 +1,4 @@
-import { Text, Stack, Box} from '@mantine/core';
+import { Text, Stack, Box } from '@mantine/core';
 import { Encounter, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { Outlet, useLocation, useParams } from 'react-router-dom';
@@ -107,8 +107,6 @@ export const EncounterChart = (): JSX.Element => {
             {encounterId && patientId && (
               <AddPlanDefinition encounterId={encounterId} patientId={patientId} onApply={fetchTasks} />
             )}
-
-          
           </Stack>
         </div>
         <Outlet />

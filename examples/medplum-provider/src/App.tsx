@@ -178,5 +178,5 @@ function EncounterRedirect(): JSX.Element {
     navigate('checkin', { replace: true });
   }, [navigate]);
 
-  return <></>
+  return <></>;
 }

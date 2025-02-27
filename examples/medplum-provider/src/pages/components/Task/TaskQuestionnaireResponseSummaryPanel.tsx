@@ -13,13 +13,12 @@ export const TaskQuestionnaireResponseSummaryPanel = ({ task }: TaskQuestionnair
 
   useEffect(() => {
     const fetchResources = async (): Promise<void> => {
-       const questionnaireResponseReference = task.output?.[0]?.valueReference as Reference<QuestionnaireResponse>;
+      const questionnaireResponseReference = task.output?.[0]?.valueReference as Reference<QuestionnaireResponse>;
 
       if (questionnaireResponseReference) {
         const response = await medplum.readReference(questionnaireResponseReference);
         setQuestionnaireResponse(response as QuestionnaireResponse);
       }
-
     };
 
     fetchResources().catch(console.error);
@@ -28,11 +27,11 @@ export const TaskQuestionnaireResponseSummaryPanel = ({ task }: TaskQuestionnair
   return (
     <Card withBorder shadow="sm" p={0}>
       <Stack gap="xs" p="md">
-          {questionnaireResponse ? (
-            <QuestionnaireResponseComponent items={questionnaireResponse.item || []} />
-          ) : (
-            <Loading />
-          )}
+        {questionnaireResponse ? (
+          <QuestionnaireResponseComponent items={questionnaireResponse.item || []} />
+        ) : (
+          <Loading />
+        )}
       </Stack>
     </Card>
   );
@@ -49,11 +48,7 @@ const QuestionnaireResponseComponent = ({ items }: QuestionnaireResponseProps): 
         <Box key={index}>
           <Text c="dimmed">{item.text}</Text>
           {item.answer?.map((answer) => (
-        
-              <Text>
-                {answer.valueString || answer.valueBoolean?.toString() || answer.valueInteger}
-              </Text>
-       
+            <Text>{answer.valueString || answer.valueBoolean?.toString() || answer.valueInteger}</Text>
           ))}
           <QuestionnaireResponseComponent items={item.item || []} />
         </Box>

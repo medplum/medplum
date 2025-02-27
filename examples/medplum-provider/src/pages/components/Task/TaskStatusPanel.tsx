@@ -49,13 +49,9 @@ export const TaskStatusPanel = ({
 
   return (
     <>
-      <Grid
-        h={80}
-        p="md"
-        align="center"
-      >
-        <Flex justify="flex-end" align="center" gap={8} w="100%" >
-          <Stack gap={4} align='flex-end'>
+      <Grid h={80} p="md" align="center">
+        <Flex justify="flex-end" align="center" gap={8} w="100%">
+          <Stack gap={4} align="flex-end">
             <Group gap="xs">
               <Text>Current status:</Text>
               <Text fw="bold">{task.status.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</Text>
