@@ -1,4 +1,4 @@
-import { Text, Stack, Box, Button} from '@mantine/core';
+import { Text, Stack, Box, Button } from '@mantine/core';
 import { Encounter, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { Outlet, useLocation, useParams } from 'react-router-dom';
@@ -51,10 +51,7 @@ export const EncounterComplete = (): JSX.Element => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
           <Stack gap="md">
             <Stack gap="md">
-              {tasks?.map((task: Task) => (
-                <TaskQuestionnaireResponseSummaryPanel task={task} key={task.id} />
-                
-              ))}
+              {tasks?.map((task: Task) => <TaskQuestionnaireResponseSummaryPanel task={task} key={task.id} />)}
             </Stack>
           </Stack>
 

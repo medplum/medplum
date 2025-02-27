@@ -59,7 +59,7 @@ export const EncounterCheckIn = (): JSX.Element => {
     if (!encounter || !practitioner) {
       return;
     }
-    
+
     const updatedEncounter = {
       ...encounter,
       participant: [
