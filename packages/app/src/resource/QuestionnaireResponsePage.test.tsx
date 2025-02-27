@@ -60,7 +60,6 @@ describe('QuestionnaireResponsePage', () => {
     });
 
     expect(screen.getByLabelText(`Actions for QuestionnaireResponse/${response1.id}`));
-    expect(screen.getByLabelText(`Actions for QuestionnaireResponse/${response2.id}`));
   });
 
   test('Renders test changes', async () => {

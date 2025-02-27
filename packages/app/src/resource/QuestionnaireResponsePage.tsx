@@ -16,7 +16,7 @@ export function QuestionnaireResponsePage(): JSX.Element {
       {
         code: 'questionnaire',
         operator: Operator.EQUALS,
-        value: questionnaire?.url ? `${questionnaire.url},Questionnaire/${id}` : `Questionnaire/${id}`,
+        value: questionnaire.url ? `${questionnaire.url},Questionnaire/${id}` : `Questionnaire/${id}`,
       },
     ],
     fields: ['id', '_lastUpdated'],
