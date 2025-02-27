@@ -21,7 +21,7 @@ import {
   US_CORE_ETHNICITY_URL,
   US_CORE_RACE_URL,
 } from './systems';
-import { CcdaCode, CcdaQuantity } from './types';
+import { CcdaCode, CcdaQuantity, CcdaText } from './types';
 
 describe('170.315(g)(9)', () => {
   describe('Patient Demographics', () => {
@@ -476,7 +476,7 @@ describe('170.315(g)(9)', () => {
       expect(value?.['@_unit']).toEqual('mg');
     });
 
-    test('should observation components', () => {
+    test('should handle observation components', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
         {
@@ -567,16 +567,97 @@ describe('170.315(g)(9)', () => {
       expect(participant?.participantRole?.playingEntity?.name?.[0]).toEqual('Test Location');
     });
   });
+
+  describe('Labs', () => {
+    test('should handle orders', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'ServiceRequest',
+          status: 'active',
+          intent: 'order',
+          code: {
+            coding: [
+              {
+                system: 'http://loinc.org',
+                code: '24357-6',
+                display: 'Urinanalysis macro (dipstick) panel',
+              },
+            ],
+          },
+          occurrenceDateTime: '2015-06-29T07:00:00.000Z',
+          authoredOn: '2025-02-27T01:32:00.000Z',
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual('18776-5');
+      const observation = section?.entry?.[0]?.observation?.[0];
+      expect(observation).toBeDefined();
+      expect(observation?.code?.['@_code']).toEqual('24357-6');
+      expect(observation?.effectiveTime?.[0]?.['@_value']).toMatch('20150629');
+    });
+
+    test('should handle reports', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Observation',
+          id: '123',
+          status: 'final',
+          code: {
+            coding: [
+              {
+                system: 'http://loinc.org',
+                code: '5778-6',
+                display: 'Color of Urine',
+              },
+            ],
+          },
+          effectiveDateTime: '2015-06-22T07:00:00.000Z',
+          valueString: 'YELLOW',
+        },
+        {
+          resourceType: 'DiagnosticReport',
+          status: 'final',
+          code: {
+            coding: [
+              {
+                system: 'http://loinc.org',
+                code: '24357-6',
+                display: 'Urinanalysis macro (dipstick) panel',
+              },
+            ],
+          },
+          effectiveDateTime: '2015-06-22T07:00:00.000Z',
+          issued: '2015-06-22T07:00:00.000Z',
+          result: [{ reference: 'Observation/123' }],
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[1]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual('30954-2');
+      const organizer = section?.entry?.[0]?.organizer?.[0];
+      expect(organizer).toBeDefined();
+      const components = organizer?.component;
+      expect(components).toBeDefined();
+      expect((components?.[0]?.observation?.[0]?.value as CcdaText)['#text']).toEqual('YELLOW');
+    });
+  });
 });
 
 function createCompositionBundle(patient: Patient, ...resources: Partial<Resource>[]): Bundle {
   const resourceTypeToCode = {
     AllergyIntolerance: '48765-2',
-    MedicationRequest: '10160-0',
     Condition: '11450-4',
+    DiagnosticReport: '30954-2',
     Immunization: '11369-6',
+    MedicationRequest: '10160-0',
     Observation: '8716-3',
     Procedure: '47519-4',
+    ServiceRequest: '18776-5',
   };
 
   const sections: CompositionSection[] = [];
