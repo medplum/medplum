@@ -173,7 +173,7 @@ describe('Patient Set Accounts Operation', () => {
     const everything = res.body as Bundle;
     const allResources = everything.entry?.length ?? 0;
     const resourcesNotInCompartment = everything.entry?.filter((entry) => entry?.search?.mode !== 'match').length ?? 0;
-    
+
     //Number of resources updated only includes the ones in the compartment, not other resources returned in $patient-everything
     expect(numberResourcesUpdated).toBe(allResources - resourcesNotInCompartment);
   });
