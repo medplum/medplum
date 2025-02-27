@@ -58,8 +58,6 @@ export function PatientPage(): JSX.Element {
     if (newTab && newTab.id !== currentTab) {
       setCurrentTab(newTab.id);
     }
-
-
     setShouldDisplayStepper(location.pathname.includes('Encounter') && !location.pathname.endsWith('Encounter'));
   }, [currentTab, location]);
 

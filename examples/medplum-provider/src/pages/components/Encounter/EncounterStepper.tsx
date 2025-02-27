@@ -19,7 +19,6 @@ export const EncounterStepper = (): JSX.Element => {
 
   useEffect(() => {
     setCurrentStep(location.pathname.split('/').pop());
-    console.log(location.pathname.split('/').pop());
   }, [location]);
 
   const getClassName = (step: string): string => {
@@ -57,11 +56,6 @@ export const EncounterStepper = (): JSX.Element => {
           {currentStep === 'chart' && (
             <Button component={Link} to={`/Patient/${patientId}/Encounter/${encounterId}/complete`}>
               Proceed to checkout
-            </Button>
-          )}
-          {currentStep === 'checkout' && (
-            <Button component={Link} to={`/Patient/${patientId}/Encounter/${encounterId}/complete`}>
-              Complete encounter
             </Button>
           )}
           {currentStep === 'complete' && (
