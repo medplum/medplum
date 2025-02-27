@@ -12,7 +12,13 @@ export function QuestionnaireResponsePage(): JSX.Element {
   const questionnaire = medplum.readReference<Questionnaire>({ reference: `Questionnaire/${id}` }).read();
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'QuestionnaireResponse',
-    filters: [{ code: 'questionnaire', operator: Operator.EQUALS, value: questionnaire?.url ?? 'INVALID' }],
+    filters: [
+      {
+        code: 'questionnaire',
+        operator: Operator.EQUALS,
+        value: questionnaire?.url ? `${questionnaire.url},Questionnaire/${id}` : `Questionnaire/${id}`,
+      },
+    ],
     fields: ['id', '_lastUpdated'],
   });
 

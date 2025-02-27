@@ -89,6 +89,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
           source = createReference(profile);
         }
       }
+      if (!questionnaire) {
+        return;
+      }
       onSubmit({
         ...response,
         questionnaire: questionnaire.url ?? getReferenceString(questionnaire),
