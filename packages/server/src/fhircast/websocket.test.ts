@@ -84,7 +84,7 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res2.status).toBe(201);
+            expect(res2.status).toBe(202);
             expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj) => {
