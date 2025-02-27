@@ -11,6 +11,7 @@ import {
   CompositionSection,
   Condition,
   ContactPoint,
+  DiagnosticReport,
   DosageDoseAndRate,
   Encounter,
   Extension,
@@ -34,6 +35,7 @@ import {
   Reference,
   Resource,
   ResourceType,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDate, mapFhirToCcdaDateTime } from './datetime';
 import {
@@ -59,8 +61,11 @@ import {
   OID_PROBLEM_ACT,
   OID_PROBLEM_OBSERVATION,
   OID_PROCEDURE_ACTIVITY_ACT,
+  OID_PROCEDURE_ACTIVITY_OBSERVATION,
   OID_PROCEDURE_ACTIVITY_PROCEDURE,
   OID_REACTION_OBSERVATION,
+  OID_RESULT_OBSERVATION,
+  OID_RESULT_ORGANIZER,
   OID_SEVERITY_OBSERVATION,
   OID_SMOKING_STATUS_OBSERVATION,
   OID_SNOMED_CT_CODE_SYSTEM,
@@ -82,7 +87,6 @@ import {
   mapCodeableConceptToCcdaValue,
   mapFhirSystemToCcda,
   MEDICATION_STATUS_MAPPER,
-  OBSERVATION_CATEGORY_MAPPER,
   PROBLEM_STATUS_MAPPER,
   TELECOM_USE_MAPPER,
   US_CORE_ETHNICITY_URL,
@@ -475,6 +479,8 @@ class FhirToCcdaConverter {
         return this.createCareTeamEntry(resource);
       case 'Condition':
         return this.createProblemEntry(resource);
+      case 'DiagnosticReport':
+        return this.createDiagnosticReportEntry(resource);
       case 'Encounter':
         return this.createEncounterEntry(resource);
       case 'Goal':
@@ -487,6 +493,8 @@ class FhirToCcdaConverter {
         return this.createHistoryOfProceduresEntry(resource) as CcdaEntry;
       case 'Observation':
         return this.createObservationEntry(resource as Observation);
+      case 'ServiceRequest':
+        return this.createPlanOfTreatmentServiceRequestEntry(resource as ServiceRequest);
       default:
         throw new Error(`Unknown resource type: ${resource.resourceType}`);
     }
@@ -1337,7 +1345,10 @@ class FhirToCcdaConverter {
   }
 
   private mapObservationTemplateId(observation: Observation): CcdaTemplateId[] {
-    if (observation.code?.coding?.[0]?.code === '72166-2') {
+    const code = observation.code?.coding?.[0]?.code;
+    const category = observation.category?.[0]?.coding?.[0]?.code;
+
+    if (code === '72166-2') {
       // Smoking status
       return [
         { '@_root': OID_SMOKING_STATUS_OBSERVATION },
@@ -1345,7 +1356,7 @@ class FhirToCcdaConverter {
       ];
     }
 
-    if (observation.code?.coding?.[0]?.code === '11367-0') {
+    if (code === '11367-0') {
       // Tobacco use
       return [
         { '@_root': OID_TOBACCO_USE_OBSERVATION },
@@ -1353,13 +1364,17 @@ class FhirToCcdaConverter {
       ];
     }
 
-    // If the Observation.category includes at least one entry with a mapping in OBSERVATION_CATEGORY_MAPPER,
-    // then use the template ID from the mapping.
-    if (observation.category?.[0]?.coding?.[0]?.code) {
-      const category = OBSERVATION_CATEGORY_MAPPER.getEntryByFhir(observation.category?.[0]?.coding?.[0]?.code);
-      if (category) {
-        return [{ '@_root': category.ccdaValue }, { '@_root': category.ccdaValue, '@_extension': '2014-06-09' }];
-      }
+    if (category === 'exam') {
+      // Physical examination
+      return [
+        { '@_root': OID_PROCEDURE_ACTIVITY_OBSERVATION },
+        { '@_root': OID_PROCEDURE_ACTIVITY_OBSERVATION, '@_extension': '2014-06-09' },
+      ];
+    }
+
+    if (category === 'laboratory') {
+      // Laboratory observation
+      return [{ '@_root': OID_RESULT_OBSERVATION }, { '@_root': OID_RESULT_OBSERVATION, '@_extension': '2015-08-01' }];
     }
 
     // Otherwise, fall back to the default template ID.
@@ -1380,6 +1395,10 @@ class FhirToCcdaConverter {
 
     if (observation.valueCodeableConcept) {
       return mapCodeableConceptToCcdaValue(observation.valueCodeableConcept);
+    }
+
+    if (observation.valueString) {
+      return { '@_xsi:type': 'ST', '#text': observation.valueString };
     }
 
     return undefined;
@@ -1652,6 +1671,74 @@ class FhirToCcdaConverter {
             '@_typeCode': 'PRF',
             role: participant.role,
           })) as CcdaOrganizerComponent[],
+        },
+      ],
+    };
+  }
+
+  private createPlanOfTreatmentServiceRequestEntry(resource: ServiceRequest): CcdaEntry {
+    const result: CcdaEntry = {
+      observation: [
+        {
+          '@_classCode': 'OBS',
+          '@_moodCode': 'RQO',
+          templateId: [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }],
+          id: this.mapIdentifiers(resource.id, resource.identifier),
+          code: mapCodeableConceptToCcdaCode(resource.code),
+          statusCode: { '@_code': this.mapServiceRequestStatus(resource.status) },
+          effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.occurrenceDateTime) }],
+          text: this.createTextFromExtensions(resource.extension),
+        },
+      ],
+    };
+
+    return result;
+  }
+
+  private mapServiceRequestStatus(status: string | undefined): string {
+    switch (status) {
+      case 'achieved':
+        return 'completed';
+      case 'cancelled':
+        return 'cancelled';
+      default:
+        return 'active';
+    }
+  }
+
+  private createDiagnosticReportEntry(resource: DiagnosticReport): CcdaEntry {
+    const components: CcdaOrganizerComponent[] = [];
+
+    if (resource.result) {
+      for (const member of resource.result) {
+        const child = this.findResourceByReference(member);
+        if (!child || child.resourceType !== 'Observation') {
+          continue;
+        }
+
+        components.push({
+          observation: [this.createVitalSignObservation(child as Observation)],
+        });
+      }
+    }
+
+    // Note: The effectiveTime is an interval that spans the effectiveTimes of the contained result observations.
+    // Because all contained result observations have a required time stamp,
+    // it is not required that this effectiveTime be populated.
+
+    return {
+      organizer: [
+        {
+          '@_classCode': 'CLUSTER',
+          '@_moodCode': 'EVN',
+          templateId: [
+            { '@_root': OID_RESULT_ORGANIZER },
+            { '@_root': OID_RESULT_ORGANIZER, '@_extension': '2015-08-01' },
+          ],
+          id: this.mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
+          code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+          statusCode: { '@_code': 'completed' },
+          component: components,
         },
       ],
     };
