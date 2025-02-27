@@ -1,7 +1,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { OperationOutcomeError } from '@medplum/core';
-import { Bot, Practitioner } from '@medplum/fhirtypes';
+import { Bot, Practitioner, Questionnaire } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
@@ -271,7 +271,27 @@ describe('ResourcePage', () => {
     });
   });
 
-  test('Questionnaire bots -- Questionnaire missing canonical url', async () => {});
+  test('Questionnaire bots -- Questionnaire missing canonical url', async () => {
+    const medplum = new MockClient();
+    const bot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+    });
+    expect(bot.id).toBeDefined();
+
+    const noUrlQuestionnaire = await medplum.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      status: 'active',
+    });
+
+    await setup(`/Questionnaire/${noUrlQuestionnaire.id}/bots`, medplum);
+
+    expect(
+      await screen.findByText(
+        'Cannot create new bot subscriptions until a canonical URL is added to the questionnaire.'
+      )
+    ).toBeInTheDocument();
+  });
 
   test('Bot editor', async () => {
     await setup('/Bot/123/editor');

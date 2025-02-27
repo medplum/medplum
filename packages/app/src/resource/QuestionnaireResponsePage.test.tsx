@@ -1,3 +1,4 @@
+import { getReferenceString } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -31,6 +32,13 @@ describe('QuestionnaireResponsePage', () => {
       questionnaire: questionnaire.url,
     });
 
+    // Legacy: referencing questionnaire by reference string of Questionnaire rather than canonical URL
+    const response2 = await medplum.createResource<QuestionnaireResponse>({
+      resourceType: 'QuestionnaireResponse',
+      status: 'completed',
+      questionnaire: getReferenceString(questionnaire),
+    });
+
     // load questionnaire page
     await act(async () => {
       setup(`/Questionnaire/${questionnaire.id}`);
@@ -44,6 +52,7 @@ describe('QuestionnaireResponsePage', () => {
     });
 
     expect(screen.getByText(`${response1.id}`)).toBeInTheDocument();
+    expect(screen.getByText(`${response2.id}`)).toBeInTheDocument();
 
     // click on a question response
     await act(async () => {
@@ -51,6 +60,7 @@ describe('QuestionnaireResponsePage', () => {
     });
 
     expect(screen.getByLabelText(`Actions for QuestionnaireResponse/${response1.id}`));
+    expect(screen.getByLabelText(`Actions for QuestionnaireResponse/${response2.id}`));
   });
 
   test('Renders test changes', async () => {
