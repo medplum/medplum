@@ -71,6 +71,9 @@ export function mapCcdaToFhirDateTime(dateTime: string | undefined): string | un
 
   if (dateTime.length > 14) {
     tz = dateTime.substring(14);
+    if (tz === '+0000') {
+      tz = 'Z';
+    }
   }
 
   return `${year}-${month}-${day}T${hour}:${minute}:${second}${tz}`;

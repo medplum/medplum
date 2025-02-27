@@ -15,7 +15,8 @@
     <code code="34133-9" displayName="Summarization of Episode Note"
         codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
     <title>Medical Summary</title>
-    <effectiveTime xsi:type="TS" value="20250101000000-0500" />
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
     <recordTarget>
     <patientRole>
       <id root="5adfedd2-3aaf-4a4f-aa35-5f6600b60c99" />
@@ -70,6 +71,7 @@
           <entry>
             <substanceAdministration classCode="SBADM" moodCode="EVN">
               <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09" />
+              <templateId root="2.16.840.1.113883.10.20.22.4.16" />
               <id root="1310a2d3-f888-4722-b4c4-a3c5911ac7f9" />
               <text>
                 <!-- This reference refers to medication information in unstructured portion of
@@ -91,6 +93,12 @@
                 <event code="HS" />
               </effectiveTime>
               -->
+              <effectiveTime
+                  xsi:type = "PIVL_TS"
+                  institutionSpecified = "true"
+                  operator = "A">
+                  <period value = "12" unit = "h"/>
+              </effectiveTime>
               <!-- This route uses the NCI (National Cancer Institute) Thesauraus code system, which
               is constrained to the value set of 2.16.840.1.113883.3.88.12.3221.8.7 (FDA Medication
               Route) -->
@@ -105,6 +113,7 @@
                 <manufacturedProduct classCode="MANU">
                   <!-- ** Medication information ** -->
                   <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09" />
+                  <templateId root="2.16.840.1.113883.10.20.22.4.23" />
                   <manufacturedMaterial>
                     <!-- Medications should be specified at a level corresponding to prescription
                     when possible (branded medication below)-->

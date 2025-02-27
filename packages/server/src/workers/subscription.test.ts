@@ -911,7 +911,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -977,7 +977,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1012,7 +1012,7 @@ describe('Subscription Worker', () => {
       // At this point the job should be in the queue
       // But let's change the subscription status to something else
       await repo.updateResource<Subscription>({
-        ...(subscription as Subscription),
+        ...subscription,
         status: 'off',
       });
 
@@ -1029,7 +1029,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1077,7 +1077,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1125,7 +1125,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1180,7 +1180,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1247,7 +1247,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1633,7 +1633,7 @@ describe('Subscription Worker', () => {
 
     test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
       withTestContext(async () => {
-        globalLogger.level = LogLevel.WARN;
+        globalLogger.level = LogLevel.DEBUG;
         const originalConsoleLog = console.log;
         console.log = jest.fn();
 

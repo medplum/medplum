@@ -1,4 +1,3 @@
-import { Reference } from '@medplum/fhirtypes';
 import WS from 'jest-websocket-mock';
 import {
   assertContextVersionOptional,
@@ -536,7 +535,11 @@ describe('createFhircastMessagePayload', () => {
       },
       {
         key: 'select',
-        reference: [{ reference: 'Observation/123' }],
+        reference: { reference: 'Observation/123' },
+      },
+      {
+        key: 'select',
+        reference: { reference: 'Observation/456' },
       },
     ]);
 
@@ -548,31 +551,6 @@ describe('createFhircastMessagePayload', () => {
     });
     expect(new Date(messagePayload.timestamp).toISOString()).toStrictEqual(messagePayload.timestamp);
     expect(messagePayload.event.context[0]).toBeDefined();
-  });
-
-  test('Using single reference context for multi-reference context', () => {
-    expect(() =>
-      createFhircastMessagePayload('abc-123', 'DiagnosticReport-select', [
-        {
-          key: 'report',
-          reference: { reference: 'DiagnosticReport/123' },
-        },
-        // @ts-expect-error Should have an array of references at 'references'
-        { key: 'select', reference: { reference: 'Observation/123' } as Reference },
-      ])
-    ).toThrow(OperationOutcomeError);
-  });
-
-  test('Invalid references array context', () => {
-    expect(() =>
-      createFhircastMessagePayload('abc-123', 'DiagnosticReport-select', [
-        {
-          key: 'report',
-          reference: { reference: 'DiagnosticReport/123' },
-        },
-        { key: 'select', reference: [{ resourceType: 'Patient' } as Reference] },
-      ])
-    ).toThrow(OperationOutcomeError);
   });
 
   test('Valid `DiagnosticReport-update` event', () => {

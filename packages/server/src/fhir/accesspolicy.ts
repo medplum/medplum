@@ -229,7 +229,7 @@ function applyProjectAdminAccessPolicy(
 
     accessPolicy.resource.push({
       resourceType: 'ProjectMembership',
-      criteria: `ProjectMembership?project=${membership.project?.reference}`,
+      criteria: `ProjectMembership?project=${membership.project.reference}`,
       readonlyFields: ['project', 'user'],
     });
 
@@ -245,7 +245,7 @@ function applyProjectAdminAccessPolicy(
 
     accessPolicy.resource.push({
       resourceType: 'User',
-      criteria: `User?project=${membership.project?.reference}`,
+      criteria: `User?project=${membership.project.reference}`,
       hiddenFields: ['passwordHash', 'mfaSecret'],
       readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
     });

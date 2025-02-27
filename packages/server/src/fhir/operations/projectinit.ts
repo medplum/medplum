@@ -1,4 +1,4 @@
-import { ProfileResource, badRequest, createReference, created } from '@medplum/core';
+import { ProfileResource, WithId, badRequest, createReference, created } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   ClientApplication,
@@ -122,10 +122,10 @@ export async function createProject(
   projectName: string,
   admin?: User
 ): Promise<{
-  project: Project;
-  client: ClientApplication;
-  profile?: ProfileResource;
-  membership?: ProjectMembership;
+  project: WithId<Project>;
+  client: WithId<ClientApplication>;
+  profile?: WithId<ProfileResource>;
+  membership?: WithId<ProjectMembership>;
 }> {
   const log = getLogger();
   const systemRepo = getSystemRepo();

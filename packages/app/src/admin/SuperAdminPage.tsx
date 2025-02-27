@@ -1,4 +1,14 @@
-import { Button, Divider, Modal, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import {
+  Button,
+  Divider,
+  Modal,
+  NativeSelect,
+  NumberInput,
+  PasswordInput,
+  Stack,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
 import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
@@ -43,6 +53,10 @@ export function SuperAdminPage(): JSX.Element {
 
   function reloadCron(): void {
     startAsyncJob(medplum, 'Reload Cron Resources', 'admin/super/reloadcron');
+  }
+
+  function runPendingDataMigration(): void {
+    startAsyncJob(medplum, 'Run Pending Data Migration', 'admin/super/migrate');
   }
 
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
@@ -129,6 +143,17 @@ export function SuperAdminPage(): JSX.Element {
         <Button onClick={rebuildValueSets}>Rebuild ValueSets</Button>
       </Form>
       <Divider my="lg" />
+      <Title order={2}>Run Pending Data Migration</Title>
+      <p>
+        When a Medplum version releases with data migrations to apply, you can run them here. Press this button to kick
+        off the background data migration process.
+      </p>
+      <Form onSubmit={runPendingDataMigration}>
+        <Stack>
+          <Button type="submit">Start Migration</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
       <Title order={2}>Reindex Resources</Title>
       <p>
         When Medplum changes how resources are indexed, the system may require a reindex for old resources to be indexed
@@ -141,6 +166,9 @@ export function SuperAdminPage(): JSX.Element {
           </FormSection>
           <FormSection title="Search Filter" htmlFor="filter">
             <TextInput id="filter" name="filter" placeholder="e.g. name=Sam&birthdate=lt2000-01-01" />
+          </FormSection>
+          <FormSection title="Max Resource Version" htmlFor="maxResourceVersion">
+            <MaxResourceVersionInput />
           </FormSection>
           <Button type="submit">Reindex</Button>
         </Stack>
@@ -216,6 +244,28 @@ export function SuperAdminPage(): JSX.Element {
         {modalContent}
       </Modal>
     </Document>
+  );
+}
+
+function MaxResourceVersionInput(): JSX.Element {
+  const [value, setValue] = useState<'outdated' | 'all' | 'specific'>('outdated');
+  return (
+    <>
+      <NativeSelect
+        id="reindexType"
+        name="reindexType"
+        value={value}
+        onChange={(e) => setValue(e.target.value as 'outdated' | 'all' | 'specific')}
+        data={[
+          { label: 'Outdated resources', value: 'outdated' },
+          { label: 'All resources', value: 'all' },
+          { label: 'Less than or equal to a specific version', value: 'specific' },
+        ]}
+      />
+      {value === 'specific' && (
+        <NumberInput required name="maxResourceVersion" placeholder="Max Resource Version" min={0} />
+      )}
+    </>
   );
 }
 

@@ -6,6 +6,7 @@ import {
   OperationOutcomeError,
   Operator,
   parseSearchRequest,
+  WithId,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -36,7 +37,7 @@ import { buildAccessPolicy, getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
-  let testProject: Project;
+  let testProject: WithId<Project>;
   let systemRepo: Repository;
 
   beforeAll(async () => {
@@ -803,6 +804,7 @@ describe('AccessPolicy', () => {
         },
         membership: {
           resourceType: 'ProjectMembership',
+          id: randomUUID(),
           project: {
             reference: 'Project/' + testProject.id,
           },
@@ -912,6 +914,7 @@ describe('AccessPolicy', () => {
         },
         membership: {
           resourceType: 'ProjectMembership',
+          id: randomUUID(),
           project: {
             reference: 'Project/' + testProject.id,
           },

@@ -76,7 +76,7 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
           message: 'Done',
           icon: <IconCheck size="1rem" />,
           loading: false,
-          autoClose: false,
+          autoClose: true,
           withCloseButton: true,
         });
       } catch (err) {

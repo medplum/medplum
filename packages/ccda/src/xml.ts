@@ -32,6 +32,8 @@ const ARRAY_PATHS = [
   'component.observation',
   'component.act',
 
+  'code.translation',
+
   'section.entry',
 
   'entry.act',

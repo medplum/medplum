@@ -17,14 +17,18 @@ export function CoverageDetails(props: CoverageDetailsProps): JSX.Element {
   // A search request to show all CoverageEligibilityRequest resources that are related the current coverage's beneficiary
   const eligibilityRequestSearch: SearchRequest = {
     resourceType: 'CoverageEligibilityRequest',
-    filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(props.coverage.beneficiary) }],
+    filters: [
+      { code: 'patient', operator: Operator.EQUALS, value: getReferenceString(props.coverage.beneficiary) ?? '' },
+    ],
     fields: ['patient', 'purpose', 'item', 'insurance'],
   };
 
   // A search request to show all CoverageEligibilityResponse resources that are related the current coverage's beneficiary
   const eligibilityResponseSearch: SearchRequest = {
     resourceType: 'CoverageEligibilityResponse',
-    filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(props.coverage.beneficiary) }],
+    filters: [
+      { code: 'patient', operator: Operator.EQUALS, value: getReferenceString(props.coverage.beneficiary) ?? '' },
+    ],
     fields: ['patient', 'outcome', 'disposition', 'insurance'],
   };
 

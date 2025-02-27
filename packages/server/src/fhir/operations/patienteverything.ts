@@ -6,6 +6,7 @@ import {
   isResource,
   Operator,
   sortStringArray,
+  WithId,
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
@@ -69,9 +70,9 @@ export async function patientEverythingHandler(req: FhirRequest): Promise<FhirRe
  */
 export async function getPatientEverything(
   repo: Repository,
-  patient: Patient,
+  patient: WithId<Patient>,
   params?: PatientEverythingParameters
-): Promise<Bundle> {
+): Promise<Bundle<WithId<Resource>>> {
   // First get all compartment resources
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
   const types = params?._type ?? resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
@@ -133,7 +134,7 @@ async function addResolvedReferences(repo: Repository, entries: BundleEntry[] | 
 function processReferencesFromResources(toProcess: BundleEntry[], processedRefs: Set<string>): Reference[] {
   const references = new Set<string>();
   for (const entry of toProcess) {
-    const resource = entry.resource as Resource;
+    const resource = entry.resource as WithId<Resource>;
     const refString = getReferenceString(resource);
     if (processedRefs.has(refString)) {
       continue;

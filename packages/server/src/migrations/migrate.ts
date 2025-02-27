@@ -304,7 +304,6 @@ function buildTargetDefinition(): SchemaDefinition {
   buildContactPointTable(result);
   buildIdentifierTable(result);
   buildHumanNameTable(result);
-  buildValueSetElementTable(result);
   buildCodingTable(result);
   buildCodingPropertyTable(result);
 
@@ -326,6 +325,7 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: string
       { name: 'deleted', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
       { name: 'compartments', type: 'UUID[]', notNull: true },
       { name: 'projectId', type: 'UUID' },
+      { name: '__version', type: 'INTEGER' },
       { name: '_source', type: 'TEXT' },
       { name: '_profile', type: 'TEXT[]' },
     ],
@@ -683,29 +683,6 @@ function buildLookupTable(
   }
 
   result.tables.push(tableDefinition);
-}
-
-function buildValueSetElementTable(result: SchemaDefinition): void {
-  result.tables.push({
-    name: 'ValueSetElement',
-    columns: [
-      { name: 'resourceId', type: 'UUID' }, // For data from previous implementations, resourceId is nullable
-      { name: 'system', type: 'TEXT' },
-      { name: 'code', type: 'TEXT' },
-      { name: 'display', type: 'TEXT' },
-    ],
-    indexes: [
-      { columns: ['resourceId'], indexType: 'btree' },
-      { columns: ['system'], indexType: 'btree' },
-      { columns: ['code'], indexType: 'btree' },
-      { columns: ['display'], indexType: 'btree' },
-      {
-        columns: [{ expression: "to_tsvector('english'::regconfig, display)", name: 'display' }],
-        indexType: 'gin',
-        indexNameSuffix: 'idx_tsv',
-      },
-    ],
-  });
 }
 
 function buildCodingTable(result: SchemaDefinition): void {

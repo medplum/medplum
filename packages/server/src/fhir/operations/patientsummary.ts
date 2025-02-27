@@ -6,6 +6,7 @@ import {
   LOINC,
   ProfileResource,
   resolveId,
+  WithId,
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
@@ -121,7 +122,7 @@ export async function patientSummaryHandler(req: FhirRequest): Promise<FhirRespo
 export async function getPatientSummary(
   repo: Repository,
   author: ProfileResource,
-  patient: Patient,
+  patient: WithId<Patient>,
   params: PatientSummaryParameters = {}
 ): Promise<Bundle> {
   params._type = resourceTypes;
@@ -193,7 +194,7 @@ export class PatientSummaryBuilder {
   private chooseSectionForResources(): void {
     for (const resource of this.everything) {
       if (this.nestedIds.has(resource.id as string)) {
-        break;
+        continue;
       }
       this.chooseSectionForResource(resource);
     }

@@ -1,5 +1,5 @@
 import { Operator } from '@medplum/core';
-import { ClientApplication, Login, Project } from '@medplum/fhirtypes';
+import { ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import setCookieParser from 'set-cookie-parser';
@@ -144,6 +144,22 @@ describe('OAuth Authorize', () => {
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
       aud: 'https://example.com/invalid',
+    });
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
+    expect(res.status).toBe(302);
+    const location = new URL(res.headers.location);
+    expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
+  });
+
+  test('Invalid launch', async () => {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: client.redirectUri as string,
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+      launch: randomUUID(),
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
@@ -373,8 +389,10 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
 
+    const launch = await systemRepo.createResource<SmartAppLaunch>({ resourceType: 'SmartAppLaunch' });
+
     const res3 = await request(app)
-      .get('/oauth2/authorize?' + params.toString())
+      .get(`/oauth2/authorize?launch=${launch.id}&${params.toString()}`)
       .set('Cookie', cookie.name + '=' + cookie.value);
     expect(res3.status).toBe(302);
     expect(res3.headers.location).toBeDefined();
@@ -386,6 +404,7 @@ describe('OAuth Authorize', () => {
 
     const updatedLogin = await systemRepo.readResource<Login>('Login', res1.body.login);
     expect(updatedLogin.codeChallenge).toEqual('abc');
+    expect(updatedLogin.launch?.reference).toEqual(`SmartAppLaunch/${launch.id}`);
   });
 
   test('Using id_token_hint', async () => {

@@ -96,3 +96,6 @@ terraform.rc
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Cursor
+.cursor/

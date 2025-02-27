@@ -15,7 +15,8 @@
     <code code="34133-9" displayName="Summarization of Episode Note"
         codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
     <title>Medical Summary</title>
-    <effectiveTime xsi:type="TS" value="20250101000000-0500" />
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
     <recordTarget>
         <patientRole>
             <id root="d7830f15-e2c8-4cee-aa2d-a24b36080d53" />
@@ -73,7 +74,7 @@
                             <statusCode code="completed" />
                             <!-- Effective times can be either a value or interval. For procedures
                             with start and stop times, an interval would be more appropriate -->
-                            <effectiveTime xsi:type="IVL_TS">
+                            <effectiveTime>
                                 <low value="20140203092205-0700" />
                                 <high value="20140203111514-0700" />
                             </effectiveTime>

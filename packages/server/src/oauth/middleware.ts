@@ -1,19 +1,19 @@
-import { OperationOutcomeError, ProfileResource, unauthorized } from '@medplum/core';
+import { OperationOutcomeError, ProfileResource, unauthorized, WithId } from '@medplum/core';
 import { Login, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { IncomingMessage } from 'http';
+import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import { getLoginForAccessToken, getLoginForBasicAuth } from './utils';
-import { getConfig } from '../config/loader';
 
 export interface AuthState {
   login: Login;
-  project: Project;
-  membership: ProjectMembership;
+  project: WithId<Project>;
+  membership: WithId<ProjectMembership>;
   accessToken?: string;
 
-  onBehalfOf?: ProfileResource;
-  onBehalfOfMembership?: ProjectMembership;
+  onBehalfOf?: WithId<ProfileResource>;
+  onBehalfOfMembership?: WithId<ProjectMembership>;
 }
 
 export const PROMPT_BASIC_AUTH_PARAM = '_medplum-prompt-basic-auth';

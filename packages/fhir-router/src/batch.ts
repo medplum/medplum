@@ -8,6 +8,7 @@ import {
   Event,
   normalizeOperationOutcome,
   notFound,
+  WithId,
 } from '@medplum/core';
 import {
   Bundle,
@@ -280,7 +281,7 @@ class BatchProcessor {
     }
     if (entry.resource) {
       entry.resource.id = this.repo.generateId();
-      return { placeholder, reference: getReferenceString(entry.resource) };
+      return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
     }
     return undefined;
   }
@@ -317,7 +318,7 @@ class BatchProcessor {
               }
 
               entry.resource.id = this.repo.generateId();
-              return { placeholder, reference: getReferenceString(entry.resource) };
+              return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
             }
             return undefined;
           default:
