@@ -51,94 +51,2136 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
             width: 612,
             height: 792
         },
-        ...getInsuranceProgramContent(insuranceType),
         {
-            text: insuredIdNumber,
-            absolutePosition: { x: 373, y: 108 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 23,
+            "y": 108
+          },
+          "fontSize": 9
         },
         {
-            text: patientName,
-            absolutePosition: { x: 22, y: 132 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 71,
+            "y": 108
+          },
+          "fontSize": 9
         },
         {
-            // Patient birth month
-            text: '03', // birthDate // needs formatting
-            absolutePosition: { x: 240, y: 132 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 122,
+            "y": 108
+          },
+          "fontSize": 9
         },
         {
-            // Patient birth day
-            text: '15', // birthDate // needs formatting
-            absolutePosition: { x: 262, y: 132 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 187,
+            "y": 108
+          },
+          "fontSize": 9
         },
         {
-            // Patient birth year
-            text: '70', // birthDate // needs formatting
-            absolutePosition: { x: 290, y: 132 },
-            fontSize: 9
-        },
-        ...getPatientSexContent(patientSex),
-        {
-            // Patient address (street and number)
-            text: '123 Happy Lane', // address.line
-            absolutePosition: { x: 22, y: 156 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 237,
+            "y": 108
+          },
+          "fontSize": 9
         },
         {
-            // Patient city
-            text: 'City', // address.city
-            absolutePosition: { x: 22, y: 179 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 295,
+            "y": 108
+          },
+          "fontSize": 9
         },
         {
-            // Patient state
-            text: 'ST', // address.state
-            absolutePosition: { x: 202, y: 179 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 338,
+            "y": 108
+          },
+          "fontSize": 9
         },
         {
-            // Patient zip code
-            text: '12354-12', // address.postalCode
-            absolutePosition: { x: 22, y: 205 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 374,
+            "y": 108
+          },
+          "fontSize": 9
         },
         {
-            // Patient relationship to insured=Self X
-            text: 'X', // relationship
-            absolutePosition: { x: 252, y: 156 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 22,
+            "y": 131
+          },
+          "fontSize": 9
         },
         {
-            // Patient relationship to insured=Spouse X
-            text: 'X', // relationship
-            absolutePosition: { x: 289, y: 156 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 236,
+            "y": 131
+          },
+          "fontSize": 9
         },
         {
-            // Patient relationship to insured=Child X
-            text: 'X', // relationship
-            absolutePosition: { x: 317, y: 156 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 257,
+            "y": 131
+          },
+          "fontSize": 9
         },
         {
-            // Patient relationship to insured=Other X
-            text: 'X', // relationship
-            absolutePosition: { x: 353, y: 156 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 278,
+            "y": 131
+          },
+          "fontSize": 9
         },
         {
-            // Insured name
-            text: 'Simpson, Marge', // jnsuredName // needs formatting
-            absolutePosition: { x: 373, y: 132 },
-            fontSize: 9
+          "text": "X",
+          "absolutePosition": {
+            "x": 317,
+            "y": 131
+          },
+          "fontSize": 9
         },
-    ]
-
-  }
-
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 352,
+            "y": 131
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 374,
+            "y": 131
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 22,
+            "y": 156
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 252,
+            "y": 156
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 289,
+            "y": 156
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 317,
+            "y": 156
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 353,
+            "y": 156
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 374,
+            "y": 156
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 22,
+            "y": 179
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 203,
+            "y": 179
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 229,
+            "y": 179
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 375,
+            "y": 179
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 545,
+            "y": 179
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 22,
+            "y": 204
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 123,
+            "y": 204
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 150,
+            "y": 204
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 375,
+            "y": 204
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 482,
+            "y": 204
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 511,
+            "y": 204
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 22,
+            "y": 228
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 375,
+            "y": 228
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 22,
+            "y": 251
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 267,
+            "y": 253
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 310,
+            "y": 253
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 253
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 555,
+            "y": 253
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 395,
+            "y": 253
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 418,
+            "y": 253
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 439,
+            "y": 253
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 22,
+            "y": 275
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 267,
+            "y": 277
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 267,
+            "y": 300
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 310,
+            "y": 277
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 310,
+            "y": 300
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 343,
+            "y": 277
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 375,
+            "y": 277
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 393,
+            "y": 277
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 22,
+            "y": 298
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 375,
+            "y": 298
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 22,
+            "y": 324
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 229,
+            "y": 324
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 59,
+            "y": 370
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 274,
+            "y": 370
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 415,
+            "y": 370
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 26,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 47,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 68,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 130,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 234,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 279,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 300,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 322,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 398,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 420,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 444,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 501,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 523,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 543,
+            "y": 396
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 225,
+            "y": 409
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 246,
+            "y": 408
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 21,
+            "y": 417
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 42,
+            "y": 417
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 247,
+            "y": 420
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 398,
+            "y": 420
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 420,
+            "y": 420
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 444,
+            "y": 420
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 501,
+            "y": 420
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 523,
+            "y": 420
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 543,
+            "y": 420
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 21,
+            "y": 440
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 386,
+            "y": 324
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 387,
+            "y": 444
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 422,
+            "y": 324
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 423,
+            "y": 444
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 472,
+            "y": 440
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 315,
+            "y": 457
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 33,
+            "y": 467
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 126,
+            "y": 468
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 221,
+            "y": 467
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 315,
+            "y": 469
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 401,
+            "y": 469
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 457,
+            "y": 469
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 33,
+            "y": 479
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 127,
+            "y": 480
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 221,
+            "y": 479
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 315,
+            "y": 480
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 33,
+            "y": 491
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 127,
+            "y": 491
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 221,
+            "y": 491
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 315,
+            "y": 491
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 374,
+            "y": 490
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 528
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 478,
+            "y": 529
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 528
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 39,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 61,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 83,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 104,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 127,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 148,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 172,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 194,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 246,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 271,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 291,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 313,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 335,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 373,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 415,
+            "y": 548
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 437,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 466,
+            "y": 529
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 540
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 552
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 478,
+            "y": 552
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 552
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 39,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 61,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 83,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 104,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 127,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 148,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 172,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 194,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 246,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 271,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 291,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 313,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 335,
+            "y": 566
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 373,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 415,
+            "y": 572
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 437,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 466,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 565
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 577
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 478,
+            "y": 577
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 577
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 39,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 61,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 83,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 104,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 127,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 148,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 172,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 194,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 246,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 271,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 291,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 313,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 335,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 373,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 415,
+            "y": 596
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 437,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 466,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 588
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 601
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 478,
+            "y": 601
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 601
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 39,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 61,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 83,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 104,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 127,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 148,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 172,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 194,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 246,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 271,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 291,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 313,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 335,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 373,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 415,
+            "y": 620
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 437,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 466,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 613
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 624
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 478,
+            "y": 625
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 625
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 39,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 61,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 83,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 104,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 127,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 148,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 172,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 194,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 246,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 271,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 291,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 313,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 335,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 373,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 415,
+            "y": 644
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 437,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 466,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 637
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 648
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 478,
+            "y": 648
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 648
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 39,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 61,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 83,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 104,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 127,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 148,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 172,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 194,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 246,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 271,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 291,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 313,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 335,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 373,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 416,
+            "y": 668
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 437,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 466,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 504,
+            "y": 661
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 441,
+            "y": 671
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 20,
+            "y": 680
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 178,
+            "y": 680
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 136,
+            "y": 683
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 150,
+            "y": 684
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 287,
+            "y": 684
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 322,
+            "y": 684
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 380,
+            "y": 681
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 463,
+            "y": 681
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 488,
+            "y": 697
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 516,
+            "y": 696
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 177,
+            "y": 705
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 372,
+            "y": 706
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 177,
+            "y": 716
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 372,
+            "y": 716
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 19,
+            "y": 726
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 178,
+            "y": 728
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 372,
+            "y": 728
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 113,
+            "y": 738
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 187,
+            "y": 743
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 272,
+            "y": 743
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 380,
+            "y": 743
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 464,
+            "y": 743
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 516,
+            "y": 765
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 466,
+            "y": 541
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 466,
+            "y": 553
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 466,
+            "y": 576
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 465,
+            "y": 601
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 466,
+            "y": 648
+          },
+          "fontSize": 9
+        },
+        {
+          "text": "X",
+          "absolutePosition": {
+            "x": 466,
+            "y": 624
+          },
+          "fontSize": 9
+        }
+      ]
+    }
   return docDefinition
 }
 
