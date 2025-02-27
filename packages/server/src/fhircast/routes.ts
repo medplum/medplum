@@ -484,7 +484,9 @@ async function finalizeContextChangeRequest(
   payload: FhircastMessagePayload
 ): Promise<void> {
   await getRedis().publish(`${projectId}:${payload.event['hub.topic']}`, JSON.stringify(payload));
-  res.status(201).json({ success: true, event: payload });
+  // See: https://build.fhir.org/ig/HL7/fhircast-docs/2-6-RequestContextChange.html#response
+  // Only HTTP status code is defined for response for RequestContextChange
+  res.status(202).json({ success: true, event: payload });
 }
 
 async function closeCurrentContext(projectId: string, topic: string): Promise<void> {
