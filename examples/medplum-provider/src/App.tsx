@@ -17,8 +17,8 @@ import {
   IconTimeDuration15,
   IconUser,
 } from '@tabler/icons-react';
-import { Suspense, useEffect } from 'react';
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
+import { Suspense } from 'react';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
 import { HomePage } from './pages/HomePage';
@@ -125,7 +125,10 @@ export function App(): JSX.Element | null {
               <Route path="/" element={<HomePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
-                <Route path="Encounter/:encounterId" element={<EncounterRedirect />} />
+                <Route
+        path="Encounter/:encounterId" 
+        element={<Navigate to="checkin" replace />}
+    />
                 <Route path="Encounter/:encounterId/checkin" element={<EncounterCheckIn />}></Route>
                 <Route path="Encounter/:encounterId/chart" element={<EncounterChart />}>
                   <Route path="Task/:taskId" element={<TaskDetails />} />
@@ -169,14 +172,4 @@ export function App(): JSX.Element | null {
       </Suspense>
     </AppShell>
   );
-}
-
-function EncounterRedirect(): JSX.Element {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    navigate('checkin', { replace: true });
-  }, [navigate]);
-
-  return <></>
 }
