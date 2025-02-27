@@ -47,9 +47,11 @@ export interface CreateClientRequest {
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<WithId<ClientApplication>> {
-  const client = await repo.createResource<ClientApplication>({
+  const systemRepo = getSystemRepo();
+  const client = await systemRepo.createResource<ClientApplication>({
     meta: {
       project: request.project.id,
+      author: repo.getConfig().author,
     },
     resourceType: 'ClientApplication',
     name: request.name,
@@ -61,7 +63,6 @@ export async function createClient(repo: Repository, request: CreateClientReques
     refreshTokenLifetime: request.refreshTokenLifetime,
   });
 
-  const systemRepo = getSystemRepo();
   await systemRepo.createResource<ProjectMembership>({
     meta: {
       project: request.project.id,
