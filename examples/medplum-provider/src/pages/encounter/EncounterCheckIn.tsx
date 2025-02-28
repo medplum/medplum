@@ -1,18 +1,31 @@
-import { Text, Stack, Box, Card, Button, Grid, GridCol, Select, Flex } from '@mantine/core';
-import { CodeableConcept, Encounter, Practitioner } from '@medplum/fhirtypes';
+import { Text, Stack, Box, Card, Button, Grid, GridCol, Select, Flex, Anchor, Group, useMantineTheme } from '@mantine/core';
+import { CodeableConcept, Coverage, Encounter, Organization, Patient, Practitioner } from '@medplum/fhirtypes';
 import { CodeableConceptInput, Loading, ResourceInput, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
-import { IconCircleOff } from '@tabler/icons-react';
+import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { IconCircleOff, IconCheck } from '@tabler/icons-react';
+import { EncounterHeader } from '../components/Encounter/EncounterHeader';
+
+enum PaymentType {
+  Insurance = 'Insurance',
+  SelfPay = 'Self-pay',
+}
 
 export const EncounterCheckIn = (): JSX.Element => {
-  const { encounterId } = useParams();
+  const theme = useMantineTheme();
+  const { patientId, encounterId } = useParams();
   const medplum = useMedplum();
+  const [patient, setPatient] = useState<Patient | undefined>();
   const [encounter, setEncounter] = useState<Encounter | undefined>();
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
   const [serviceType, setServiceType] = useState<CodeableConcept | undefined>();
+  const [coverage, setCoverage] = useState<Coverage | undefined>();
+  const [organization, setOrganization] = useState<Organization | undefined>();
+  const [paymentType, setPaymentType] = useState<PaymentType>(PaymentType.SelfPay);
+  const [coverageFetched, setCoverageFetched] = useState<boolean>(false);
+  const [eligibilityChecked, setEligibilityChecked] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchEncounter = async (): Promise<void> => {
@@ -38,6 +51,24 @@ export const EncounterCheckIn = (): JSX.Element => {
   }, [encounterId, medplum]);
 
   useEffect(() => {
+    const fetchPatient = async (): Promise<void> => {
+      if (patientId) {
+        const patientResult = await medplum.readResource('Patient', patientId);
+        setPatient(patientResult);
+      }
+    };
+
+    fetchPatient().catch((err) => {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    });
+  }, [patientId, medplum]);
+
+  useEffect(() => {
     const fetchPractitioner = async (): Promise<void> => {
       if (encounter?.participant?.[0]?.individual) {
         const practitionerResult = await medplum.readReference(encounter.participant[0].individual);
@@ -55,6 +86,51 @@ export const EncounterCheckIn = (): JSX.Element => {
     });
   }, [encounter, medplum]);
 
+  useEffect(() => {
+    const fetchCoverage = async (): Promise<void> => {
+      if (patientId) {
+        const coverageResult = await medplum.searchResources('Coverage', `patient=Patient/${patientId}`);
+        if (coverageResult.length > 0) {
+          setCoverage(coverageResult[0] as Coverage);
+          setPaymentType(PaymentType.Insurance);
+        }
+        setCoverageFetched(true);
+      }
+    };
+
+    fetchCoverage().catch((err) => {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    });
+  }, [patientId, medplum]);
+
+  useEffect(() => {
+    if (paymentType === PaymentType.SelfPay) {
+      setOrganization(undefined);
+      return;
+    }
+
+    const fetchOrganization = async (): Promise<void> => {
+      if (coverage?.payor?.[0]?.reference) {
+        const organizationResult = await medplum.readReference({ reference: coverage.payor[0].reference });
+        setOrganization(organizationResult as Organization);
+      }
+    };
+
+    fetchOrganization().catch((err) => {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    });
+  }, [coverage, medplum, paymentType]);
+
   const handlePractitionerChange = async (practitioner: Practitioner | undefined): Promise<void> => {
     if (!encounter || !practitioner) {
       return;
@@ -65,13 +141,14 @@ export const EncounterCheckIn = (): JSX.Element => {
       participant: [
         {
           individual: {
-            reference: `Practitioner/${practitioner.id}`,
+            reference: getReferenceString(practitioner),
           },
         },
       ],
     };
 
     try {
+      setPractitioner(practitioner);
       await medplum.updateResource(updatedEncounter);
       showNotification({
         color: 'green',
@@ -116,12 +193,26 @@ export const EncounterCheckIn = (): JSX.Element => {
     }
   };
 
-  if (!encounter) {
+  const togglePaymentType = (type: string | null): void => {
+    if (!type) {
+      return;
+    }
+    setPaymentType(type as PaymentType);
+  };
+
+  const handleCheckEligibility = (): void => {
+    setEligibilityChecked(true);
+  };
+
+  if (!patient || !encounter || !coverageFetched) {
     return <Loading />;
   }
 
   return (
     <>
+    <Stack justify="space-between" gap={0}>
+      <EncounterHeader patient={patient} encounter={encounter} practitioner={practitioner}/>
+    
       <Box p="md">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
           <Card withBorder shadow="sm">
@@ -154,16 +245,45 @@ export const EncounterCheckIn = (): JSX.Element => {
                 <GridCol span={6}>
                   <Select
                     label="Payment Type"
-                    data={['Insurance', 'Self-pay']}
-                    defaultValue="Insurance"
+                    data={Object.values(PaymentType)}
+                    defaultValue={paymentType}
+                    onChange={togglePaymentType}
                     allowDeselect={false}
+                    pr="lg"
                   />
+                </GridCol>
+                <GridCol span={6}>
+                  {paymentType === PaymentType.Insurance && organization && (
+                    <Stack gap={0}>
+                      <Text fw={500}>Patient’s insurance</Text>
+                      <Anchor href={`/Coverage/${coverage?.id}`} target="_blank">
+                        {organization.name}
+                      </Anchor>
+                    </Stack>
+                  )}
                 </GridCol>
               </Grid>
 
-              <Flex justify="flex-end">
-                <Button>Check eligibility</Button>
-              </Flex>
+              {organization && (
+                <Flex justify="space-between" align="center">
+                  {eligibilityChecked && (
+                  <Stack gap={0}>
+                    <Text fw={500}>Insurance eligibility</Text>
+                    <Anchor href={`/Coverage/${coverage?.id}`} target="_blank">
+                    {organization.name}
+                    </Anchor>
+                    <Group gap={5}>
+                    <IconCheck size={20} color={theme.colors.green[8]} /> <Text color={theme.colors.green[8]}>Clear.</Text>
+                    <Text c="dimmed">Last checked.</Text>
+                    <Text c="dimmed">{new Date().toLocaleDateString()}</Text>
+                    </Group>
+                  </Stack>
+                  )}
+                  <Button variant="outline" onClick={handleCheckEligibility} style={{ marginLeft: 'auto' }}>
+                  Check eligibility
+                  </Button>
+                </Flex>
+              )}
             </Stack>
           </Card>
 
@@ -173,6 +293,8 @@ export const EncounterCheckIn = (): JSX.Element => {
         </div>
         <Outlet />
       </Box>
+
+      </Stack>
     </>
   );
 };
