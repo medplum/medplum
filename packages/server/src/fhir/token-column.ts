@@ -1,6 +1,5 @@
 import { Operator as FhirOperator, Filter, SortRule, splitN, splitSearchOnComma } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { escapeLiteral } from 'pg';
 import { shouldTokenRowExist } from './lookups/token';
 import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
 import {
@@ -12,7 +11,6 @@ import {
   Expression,
   Negation,
   SelectQuery,
-  SqlFunctions,
   TypedCondition,
 } from './sql';
 import { buildTokensForSearchParameter, isCaseSensitiveSearchParameter, Token } from './tokens';
@@ -40,6 +38,7 @@ export function buildTokenColumns(
   buildTokensForSearchParameter(allTokens, resource, searchParam);
 
   const tokens = new Set<string>(columns[impl.columnName]);
+  let sortColumnValue: string | null = null;
   for (const t of allTokens) {
     const code = t.code;
 
@@ -68,9 +67,10 @@ export function buildTokenColumns(
     }
 
     if (value) {
+      sortColumnValue = sortColumnValue && sortColumnValue.localeCompare(value) <= 0 ? sortColumnValue : value;
+
       // [parameter]=[code]
       tokenSet.add(code + DELIM + DELIM + value);
-
       if (!system) {
         // [parameter]=|[code]
         tokenSet.add(code + DELIM + NULL_SYSTEM + DELIM + value);
@@ -78,6 +78,7 @@ export function buildTokenColumns(
     }
   }
   columns[impl.columnName] = Array.from(tokens);
+  columns[impl.sortColumnName] = sortColumnValue;
 }
 
 /**
@@ -120,16 +121,7 @@ export function addTokenColumnsOrderBy(
     throw new Error('Invalid search strategy: ' + impl.searchStrategy);
   }
 
-  selectQuery.orderBy(
-    new Column(
-      undefined,
-      `substring(${SqlFunctions.token_array_to_text.name}("${impl.columnName}"),` +
-        escapeLiteral(ARRAY_DELIM + param.code + DELIM + DELIM + '([^' + ARRAY_DELIM + ']+)') +
-        ')',
-      true
-    ),
-    sortRule.descending
-  );
+  selectQuery.orderBy(new Column(undefined, impl.sortColumnName), sortRule.descending);
 }
 
 export function buildTokenColumnsSearchFilter(

@@ -825,7 +825,7 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
         expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['None', 'ZZZ', 'AAA']);
       }));
 
-    test.failing('FAILING Sort by identifier with multiple values', () =>
+    test('Sort by identifier with multiple values', () =>
       withTestContext(async () => {
         const system = randomUUID();
         await repo.createResource<Patient>({
@@ -855,12 +855,12 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
           sortRules: [{ code: 'identifier', descending: true }],
         });
 
-        // Counterintuitive results, but yes: the same sort order is expected for both ascending/descending
-        // since ascending should use "AAA" and descending should use "ZZZ"
+        // Ideally ASC and DESC would have the same sort order since
+        // ascending should use "AAA" and descending should use "ZZZ",
+        // but a simpler sort implementation is used
         expect(ascending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['First', 'Second']);
-        expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['First', 'Second']);
-      })
-    );
+        expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['Second', 'First']);
+      }));
 
     test.each<[string, Conditions[]]>([
       [sys1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo']],

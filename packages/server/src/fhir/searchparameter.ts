@@ -28,6 +28,7 @@ export interface LookupTableSearchParameterImplementation extends SearchParamete
 export interface TokenColumnSearchParameterImplementation extends SearchParameterDetails {
   readonly searchStrategy: typeof SearchStrategies.TOKEN_COLUMN;
   readonly columnName: string;
+  readonly sortColumnName: string;
   readonly lookupTable: LookupTable;
 }
 
@@ -100,6 +101,7 @@ function buildSearchParameterImplementation(
       writeable.lookupTable = lookupTable;
 
       writeable.columnName = 'tokens';
+      writeable.sortColumnName = convertCodeToColumnName(code) + 'Sort';
       // if (TelecomTokenSearchParameterIds.includes(searchParam.id as string)) {
       //   writeable.columnName = 'telecom';
       // } else {
