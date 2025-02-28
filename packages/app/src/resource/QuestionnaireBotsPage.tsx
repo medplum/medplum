@@ -33,16 +33,12 @@ export function QuestionnaireBotsPage(): JSX.Element {
 
   function connectToBot(): void {
     if (connectBot) {
-      if (!questionnaire?.url) {
-        console.error('Questionnaire specified does not have a canonical URL');
-        return;
-      }
       medplum
         .createResource({
           resourceType: 'Subscription',
           status: 'active',
           reason: `Connect bot ${connectBot.name} to questionnaire responses`,
-          criteria: `QuestionnaireResponse?questionnaire=${questionnaire.url},${getReferenceString(questionnaire)}`,
+          criteria: `QuestionnaireResponse?questionnaire=${(questionnaire as Questionnaire).url},${getReferenceString(questionnaire as WithId<Questionnaire>)}`,
           channel: {
             type: 'rest-hook',
             endpoint: getReferenceString(connectBot),
