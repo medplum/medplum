@@ -17,6 +17,7 @@ import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 import {
   LOINC_ALLERGIES_SECTION,
+  LOINC_DEVICES_SECTION,
   LOINC_IMMUNIZATIONS_SECTION,
   LOINC_MEDICATIONS_SECTION,
   LOINC_PLAN_OF_TREATMENT_SECTION,
@@ -139,6 +140,13 @@ describe('Patient Summary Operation', () => {
         { resourceType: 'AllergyIntolerance', id: 'allergy1', patient: patientRef },
         { resourceType: 'Condition', id: 'condition1', subject: patientRef },
         {
+          resourceType: 'DeviceUseStatement',
+          id: 'device1',
+          status: 'active',
+          subject: patientRef,
+          device: { display: 'test' },
+        },
+        {
           resourceType: 'DiagnosticReport',
           id: 'report1',
           subject: patientRef,
@@ -161,6 +169,7 @@ describe('Patient Summary Operation', () => {
         },
         { resourceType: 'MedicationRequest', id: 'med1', subject: patientRef, status: 'active', intent: 'plan' },
         { resourceType: 'Procedure', id: 'proc1', subject: patientRef, status: 'completed' },
+        { resourceType: 'ServiceRequest', id: 'sr1', subject: patientRef, status: 'active', intent: 'plan' },
         { resourceType: 'Task', id: 'task1', for: patientRef, status: 'completed', intent: 'order' },
       ];
 
@@ -173,11 +182,13 @@ describe('Patient Summary Operation', () => {
       const composition = result.entry?.[0]?.resource as WithId<Composition>;
       expectSectionToContain(composition, LOINC_ALLERGIES_SECTION, 'AllergyIntolerance/allergy1');
       expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Condition/condition1');
+      expectSectionToContain(composition, LOINC_DEVICES_SECTION, 'DeviceUseStatement/device1');
       expectSectionToContain(composition, LOINC_RESULTS_SECTION, 'DiagnosticReport/report1');
       expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'Goal/goal1');
       expectSectionToContain(composition, LOINC_IMMUNIZATIONS_SECTION, 'Immunization/imm1');
       expectSectionToContain(composition, LOINC_MEDICATIONS_SECTION, 'MedicationRequest/med1');
       expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Procedure/proc1');
+      expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'ServiceRequest/sr1');
       expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Task/task1');
     });
 

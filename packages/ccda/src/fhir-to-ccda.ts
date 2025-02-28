@@ -467,12 +467,12 @@ class FhirToCcdaConverter {
       code: mapCodeableConceptToCcdaCode(section.code),
       title: section.title,
       text: this.mapFhirTextDivToCcdaSectionText(section.text),
-      entry: resources.map((resource) => this.createEntry(section, resource)),
+      entry: resources.map((resource) => this.createEntry(section, resource)).filter(Boolean) as CcdaEntry[],
       '@_nullFlavor': resources.length === 0 ? 'NI' : undefined,
     };
   }
 
-  private createEntry(section: CompositionSection, resource: Resource): CcdaEntry {
+  private createEntry(section: CompositionSection, resource: Resource): CcdaEntry | undefined {
     switch (resource.resourceType) {
       case 'AllergyIntolerance':
         return this.createAllergyEntry(resource as AllergyIntolerance);
@@ -1738,10 +1738,10 @@ class FhirToCcdaConverter {
     };
   }
 
-  private createDeviceUseStatementEntry(resource: DeviceUseStatement): CcdaEntry {
+  private createDeviceUseStatementEntry(resource: DeviceUseStatement): CcdaEntry | undefined {
     const device = this.findResourceByReference(resource.device);
     if (!device) {
-      throw new Error(`Device not found for DeviceUseStatement: ${resource.id}`);
+      return undefined;
     }
 
     const ids: CcdaId[] = [];

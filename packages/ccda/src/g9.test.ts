@@ -648,6 +648,22 @@ describe('170.315(g)(9)', () => {
   });
 
   describe('Devices', () => {
+    test('should handle device not found', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'DeviceUseStatement',
+          status: 'active',
+          device: { reference: 'Device/123' },
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual('46264-8');
+      expect(section?.entry).toHaveLength(0);
+    });
+
     test('should handle device use statements', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
