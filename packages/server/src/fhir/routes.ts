@@ -342,7 +342,7 @@ protectedRoutes.use(
 
     const request: FhirRequest = {
       method: req.method as HttpMethod,
-      url: req.originalUrl.replace('/fhir/R4', ''),
+      url: stripPrefix(req.originalUrl, '/fhir/R4'),
       pathname: '',
       params: req.params,
       query: Object.create(null), // Defer query param parsing to router for consistency
@@ -370,3 +370,7 @@ protectedRoutes.use(
     await sendFhirResponse(req, res, result[0], result[1], result[2]);
   })
 );
+
+function stripPrefix(str: string, prefix: string): string {
+  return str.substring(str.indexOf(prefix) + prefix.length);
+}
