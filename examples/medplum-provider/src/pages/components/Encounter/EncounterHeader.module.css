@@ -1,9 +1,4 @@
-.container {
-  padding: var(--mantine-spacing-md);
-}
-
 .header {
-  color: var(--mantine-color-gray-6);
   font-weight: 400;
   font-size: var(--mantine-font-size-sm);
   margin-bottom: var(--mantine-spacing-xs);
@@ -19,17 +14,12 @@
 
 .label {
   font-weight: 500;
-  color: var(--mantine-color-gray-7);
   font-size: var(--mantine-font-size-sm);
 }
 
 .value {
   font-weight: 600;
   font-size: var(--mantine-font-size-md);
-}
-
-.dash {
-  color: var(--mantine-color-gray-5);
 }
 
 .badge {
