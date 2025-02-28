@@ -1,5 +1,5 @@
 import { CPT, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, NDC, RXNORM, SNOMED } from '@medplum/core';
-import { CodeableConcept, MedicationRequest } from '@medplum/fhirtypes';
+import { CodeableConcept, Coding, Immunization, MedicationRequest } from '@medplum/fhirtypes';
 import {
   OID_ASSESSMENT_SCALE_OBSERVATION,
   OID_ASSESSMENT_SCALE_SUPPORTING_OBSERVATION,
@@ -144,7 +144,7 @@ export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
     return this.fhirToCcdaMap[fhir]?.ccdaValue;
   }
 
-  mapFhirToCcdaCode(fhir: TFhirValue | undefined): CcdaCode | undefined {
+  mapFhirToCcdaCode(fhir: TFhirValue | undefined): CcdaCode<TCcdaValue> | undefined {
     if (!fhir) {
       return undefined;
     }
@@ -337,20 +337,38 @@ export function mapFhirSystemToCcda(system: string | undefined): string | undefi
  * @returns The C-CDA code.
  */
 export function mapCodeableConceptToCcdaCode(codeableConcept: CodeableConcept | undefined): CcdaCode | undefined {
-  if (!codeableConcept) {
+  if (!codeableConcept?.coding) {
     return undefined;
   }
 
-  const systemEntry = codeableConcept.coding?.[0]?.system
-    ? SYSTEM_MAPPER.getEntryByFhir(codeableConcept.coding[0].system)
-    : undefined;
+  const result: CcdaCode = mapCodingToCcdaCode(codeableConcept.coding[0]);
+
+  if (codeableConcept.coding.length > 1) {
+    result.translation = [];
+    for (let i = 1; i < codeableConcept.coding.length; i++) {
+      result.translation.push(mapCodingToCcdaCode(codeableConcept.coding[i]));
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Map the FHIR coding to the C-CDA code.
+ * @param coding - The FHIR coding to map.
+ * @returns The C-CDA code.
+ */
+export function mapCodingToCcdaCode(coding: Coding): CcdaCode {
+  const systemEntry = coding?.system ? SYSTEM_MAPPER.getEntryByFhir(coding.system) : undefined;
   const system = systemEntry?.ccdaValue;
   const systemName = systemEntry?.displayName;
 
+  const systemOid = coding.system?.startsWith('urn:oid:') ? coding.system.replace('urn:oid:', '') : undefined;
+
   return {
-    '@_code': codeableConcept?.coding?.[0]?.code,
-    '@_displayName': codeableConcept?.coding?.[0]?.display,
-    '@_codeSystem': system,
+    '@_code': coding.code,
+    '@_displayName': coding.display,
+    '@_codeSystem': system ?? systemOid,
     '@_codeSystemName': systemName,
   };
 }
@@ -477,6 +495,19 @@ export const PROBLEM_STATUS_MAPPER = new EnumMapper<string, string>(
   ]
 );
 
+// FHIR Immunization Status: https://hl7.org/fhir/R4/valueset-immunization-status.html
+// C-CDA Act Status: https://terminology.hl7.org/5.5.0/ValueSet-v3-ActStatus.html
+export const IMMUNIZATION_STATUS_MAPPER = new EnumMapper<
+  Immunization['status'],
+  'active' | 'completed' | 'aborted' | 'cancelled' | 'nullified' | 'obsolete'
+>('ImmunizationStatus', '', '', [
+  { ccdaValue: 'completed', fhirValue: 'completed', displayName: 'Completed' },
+  { ccdaValue: 'nullified', fhirValue: 'entered-in-error', displayName: 'Nullified' },
+  { ccdaValue: 'aborted', fhirValue: 'not-done', displayName: 'Aborted' },
+  { ccdaValue: 'cancelled', fhirValue: 'not-done', displayName: 'Cancelled' },
+  { ccdaValue: 'obsolete', fhirValue: 'not-done', displayName: 'Obsolete' },
+]);
+
 export const ENCOUNTER_STATUS_MAPPER = new EnumMapper('EncounterStatus', '', '', [
   { ccdaValue: 'active', fhirValue: 'in-progress', displayName: 'In Progress' },
   { ccdaValue: 'completed', fhirValue: 'finished', displayName: 'Finished' },
@@ -493,9 +524,11 @@ export const PROCEDURE_STATUS_MAPPER = new EnumMapper('ProcedureStatus', '', '',
   { ccdaValue: 'unknown', fhirValue: 'unknown', displayName: 'Unknown' },
 ]);
 
+// C-CDA Medication Activity status: https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.11/expansion
+// FHIR MedidcationRequest status: https://hl7.org/fhir/R4/valueset-medicationrequest-status.html
 export const MEDICATION_STATUS_MAPPER = new EnumMapper<
   Required<MedicationRequest['status']>,
-  'active' | 'completed' | 'aborted' | 'cancelled'
+  'active' | 'completed' | 'aborted' | 'cancelled' | 'nullified' | 'obsolete'
 >('MedicationStatus', '', MEDICATION_REQUEST_STATUS_VALUE_SET, [
   { ccdaValue: 'active', fhirValue: 'active', displayName: 'Active' },
   { ccdaValue: 'completed', fhirValue: 'completed', displayName: 'Completed' },
@@ -504,6 +537,8 @@ export const MEDICATION_STATUS_MAPPER = new EnumMapper<
   { ccdaValue: 'aborted', fhirValue: 'entered-in-error', displayName: 'Entered in Error' },
   { ccdaValue: 'active', fhirValue: 'draft', displayName: 'Draft' },
   { ccdaValue: 'cancelled', fhirValue: 'unknown', displayName: 'Unknown' },
+  { ccdaValue: 'nullified', fhirValue: 'cancelled', displayName: 'Nullified' },
+  { ccdaValue: 'obsolete', fhirValue: 'cancelled', displayName: 'Obsolete' },
 ]);
 
 export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
@@ -535,17 +570,17 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
     // ## vital-signs
     // FHIR Definition: Clinical observations measure the body's basic functions such as blood pressure, heart rate, respiratory rate, height, weight, body mass index, head circumference, pulse oximetry, temperature, and body surface area.
     // Mapped C-CDA Templates:
-    { ccdaValue: OID_VITAL_SIGNS_ORGANIZER, fhirValue: 'vital-signs', displayName: 'Vital Signs Organizer' },
-    {
-      ccdaValue: OID_VITAL_SIGNS_ORGANIZER_V2,
-      fhirValue: 'vital-signs',
-      displayName: 'Vital Signs Organizer V2',
-    },
     { ccdaValue: OID_VITAL_SIGNS_OBSERVATION, fhirValue: 'vital-signs', displayName: 'Vital Signs Observation' },
     {
       ccdaValue: OID_VITAL_SIGNS_OBSERVATION_V2,
       fhirValue: 'vital-signs',
       displayName: 'Vital Signs Observation V2',
+    },
+    { ccdaValue: OID_VITAL_SIGNS_ORGANIZER, fhirValue: 'vital-signs', displayName: 'Vital Signs Organizer' },
+    {
+      ccdaValue: OID_VITAL_SIGNS_ORGANIZER_V2,
+      fhirValue: 'vital-signs',
+      displayName: 'Vital Signs Organizer V2',
     },
     {
       ccdaValue: OID_AVERAGE_BLOOD_PRESSURE_ORGANIZER,
@@ -556,8 +591,6 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
     // ## laboratory
     // FHIR Definition: The results of observations generated by laboratories. Laboratory results are typically generated by laboratories providing analytic services in areas such as chemistry, hematology, serology, histology, cytology, anatomic pathology (including digital pathology), microbiology, and/or virology.
     // Mapped C-CDA Templates:
-    { ccdaValue: OID_RESULT_ORGANIZER, fhirValue: 'laboratory', displayName: 'Result Organizer' },
-    { ccdaValue: OID_RESULT_ORGANIZER_V2, fhirValue: 'laboratory', displayName: 'Result Organizer V2' },
     { ccdaValue: OID_RESULT_OBSERVATION, fhirValue: 'laboratory', displayName: 'Result Observation' },
     { ccdaValue: OID_RESULT_OBSERVATION_V2, fhirValue: 'laboratory', displayName: 'Result Observation V2' },
     { ccdaValue: OID_LABORATORY_BATTERY_ID, fhirValue: 'laboratory', displayName: 'Laboratory Battery (ID)' },
@@ -571,6 +604,8 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
       fhirValue: 'laboratory',
       displayName: 'Laboratory Result Organizer (ID)',
     },
+    { ccdaValue: OID_RESULT_ORGANIZER, fhirValue: 'laboratory', displayName: 'Result Organizer' },
+    { ccdaValue: OID_RESULT_ORGANIZER_V2, fhirValue: 'laboratory', displayName: 'Result Organizer V2' },
 
     // ## survey
     // FHIR Definition: Assessment tool/survey instrument observations (e.g., Apgar Scores, Montreal Cognitive Assessment (MoCA)).
@@ -605,13 +640,13 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
     // ## exam
     // FHIR Definition: Observations generated by physical exam findings including direct observations made by a clinician and use of simple instruments and the result of simple maneuvers performed directly on the patient's body.
     // Mapped C-CDA Templates:
+    { ccdaValue: OID_PROCEDURE_ACTIVITY_OBSERVATION, fhirValue: 'exam', displayName: 'Procedure Activity Observation' },
     { ccdaValue: OID_PROBLEM_OBSERVATION, fhirValue: 'exam', displayName: 'Problem Observation' },
     { ccdaValue: OID_PROBLEM_OBSSERVATION_V2, fhirValue: 'exam', displayName: 'Problem Observation V2' },
     { ccdaValue: OID_PRESSURE_ULCER_OBSERVATION, fhirValue: 'exam', displayName: 'Pressure Ulcer Observation' },
     { ccdaValue: OID_WOUND_OBSERVATION, fhirValue: 'exam', displayName: 'Wound Observation' },
     { ccdaValue: OID_WOUND_MEASURMENTS_OBSERVATION, fhirValue: 'exam', displayName: 'Wound Measurements Observation' },
     { ccdaValue: OID_PROCEDURES_SECTION_ENTRIES_REQUIRED, fhirValue: 'exam', displayName: 'Procedure Section' },
-    { ccdaValue: OID_PROCEDURE_ACTIVITY_OBSERVATION, fhirValue: 'exam', displayName: 'Procedure Activity Observation' },
 
     // ## therapy
     // FHIR Definition: Observations generated by non-interventional treatment protocols (e.g. occupational, physical, radiation, nutritional and medication therapy)

@@ -15,6 +15,7 @@ import { LongJob } from './long-job';
 export type ReindexJobData = {
   readonly asyncJob: AsyncJob;
   readonly resourceTypes: ResourceType[];
+  readonly maxResourceVersion?: number;
   readonly cursor?: string;
   readonly endTimestamp: string;
   readonly startTime: number;
@@ -177,7 +178,7 @@ function shouldLogProgress(result: ReindexResult): boolean {
  * @returns The result of reindexing the next page of results.
  */
 async function processPage(job: Job<ReindexJobData>): Promise<ReindexResult> {
-  const { resourceTypes, count } = job.data;
+  const { resourceTypes, count, maxResourceVersion } = job.data;
   const resourceType = resourceTypes[0];
 
   const searchRequest = searchRequestForNextPage(job);
@@ -187,7 +188,7 @@ async function processPage(job: Job<ReindexJobData>): Promise<ReindexResult> {
   try {
     const systemRepo = getSystemRepo();
     await systemRepo.withTransaction(async (conn) => {
-      const bundle = await systemRepo.search(searchRequest);
+      const bundle = await systemRepo.search(searchRequest, { maxResourceVersion });
       if (bundle.entry?.length) {
         const resources = bundle.entry.map((e) => e.resource as WithId<Resource>);
         await systemRepo.reindexResources(conn, resources);
@@ -310,7 +311,8 @@ async function addReindexJobData(job: ReindexJobData): Promise<Job<ReindexJobDat
 export async function addReindexJob(
   resourceTypes: ResourceType[],
   job: AsyncJob,
-  searchFilter?: SearchRequest
+  searchFilter?: SearchRequest,
+  maxResourceVersion?: number
 ): Promise<Job<ReindexJobData>> {
   const { requestId, traceId } = getRequestContext();
   const endTimestamp = new Date(Date.now() + 1000 * 60 * 5).toISOString(); // Five minutes in the future
@@ -321,6 +323,7 @@ export async function addReindexJob(
     asyncJob: job,
     startTime: Date.now(),
     searchFilter,
+    maxResourceVersion,
     results: Object.create(null),
     requestId,
     traceId,

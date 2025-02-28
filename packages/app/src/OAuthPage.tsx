@@ -15,6 +15,7 @@ export function OAuthPage(): JSX.Element | null {
   const [clientInfo, setClientInfo] = useState<ClientApplicationSignInForm>();
   const [loading, setLoading] = useState(true);
   const clientId = params.get('client_id');
+  const login = params.get('login');
 
   useEffect(() => {
     if (!clientId || clientId === 'medplum-cli') {
@@ -69,6 +70,7 @@ export function OAuthPage(): JSX.Element | null {
       codeChallenge={params.get('code_challenge') || undefined}
       codeChallengeMethod={(params.get('code_challenge_method') as CodeChallengeMethod) || undefined}
       chooseScopes={scope !== 'openid'}
+      login={login || undefined}
     >
       {!loading && (
         <>

@@ -40,6 +40,7 @@ import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { resourceGraphHandler } from './operations/resourcegraph';
+import { rotateSecretHandler } from './operations/rotatesecret';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
@@ -270,6 +271,8 @@ function initInternalFhirRouter(): FhirRouter {
 
   // ClientApplication $launch
   router.add('GET', '/ClientApplication/:id/$smart-launch', appLaunchHandler);
+  // Rotate client secret
+  router.add('POST', '/ClientApplication/:id/$rotate-secret', rotateSecretHandler);
 
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
@@ -339,7 +342,7 @@ protectedRoutes.use(
 
     const request: FhirRequest = {
       method: req.method as HttpMethod,
-      url: req.originalUrl.replace('/fhir/R4', ''),
+      url: stripPrefix(req.originalUrl, '/fhir/R4'),
       pathname: '',
       params: req.params,
       query: Object.create(null), // Defer query param parsing to router for consistency
@@ -367,3 +370,7 @@ protectedRoutes.use(
     await sendFhirResponse(req, res, result[0], result[1], result[2]);
   })
 );
+
+function stripPrefix(str: string, prefix: string): string {
+  return str.substring(str.indexOf(prefix) + prefix.length);
+}

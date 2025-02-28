@@ -1,4 +1,14 @@
-import { Button, Divider, Modal, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import {
+  Button,
+  Divider,
+  Modal,
+  NativeSelect,
+  NumberInput,
+  PasswordInput,
+  Stack,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
 import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
@@ -157,6 +167,9 @@ export function SuperAdminPage(): JSX.Element {
           <FormSection title="Search Filter" htmlFor="filter">
             <TextInput id="filter" name="filter" placeholder="e.g. name=Sam&birthdate=lt2000-01-01" />
           </FormSection>
+          <FormSection title="Max Resource Version" htmlFor="maxResourceVersion">
+            <MaxResourceVersionInput />
+          </FormSection>
           <Button type="submit">Reindex</Button>
         </Stack>
       </Form>
@@ -231,6 +244,28 @@ export function SuperAdminPage(): JSX.Element {
         {modalContent}
       </Modal>
     </Document>
+  );
+}
+
+function MaxResourceVersionInput(): JSX.Element {
+  const [value, setValue] = useState<'outdated' | 'all' | 'specific'>('outdated');
+  return (
+    <>
+      <NativeSelect
+        id="reindexType"
+        name="reindexType"
+        value={value}
+        onChange={(e) => setValue(e.target.value as 'outdated' | 'all' | 'specific')}
+        data={[
+          { label: 'Outdated resources', value: 'outdated' },
+          { label: 'All resources', value: 'all' },
+          { label: 'Less than or equal to a specific version', value: 'specific' },
+        ]}
+      />
+      {value === 'specific' && (
+        <NumberInput required name="maxResourceVersion" placeholder="Max Resource Version" min={0} />
+      )}
+    </>
   );
 }
 

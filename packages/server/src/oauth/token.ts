@@ -551,14 +551,26 @@ async function validateClientIdAndSecret(
     return false;
   }
 
+  let failed = false;
+
   // Use a timing-safe-equal here so that we don't expose timing information which could be
   // used to infer the secret value
   if (!timingSafeEqualStr(client.secret, clientSecret)) {
-    sendTokenError(res, 'invalid_request', 'Invalid secret');
-    return false;
+    failed = true;
+  }
+  // Always perform a second comparison, in order to not leak timing information about the presence or absence of
+  // a retiring secret
+  const secondarySecret = client.retiringSecret ?? client.secret;
+  if (timingSafeEqualStr(secondarySecret, clientSecret)) {
+    failed = false;
   }
 
-  return true;
+  if (failed) {
+    sendTokenError(res, 'invalid_request', 'Invalid secret');
+    return false;
+  } else {
+    return true;
+  }
 }
 
 /**

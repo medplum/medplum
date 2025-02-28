@@ -1,4 +1,4 @@
-import { capitalize } from '@medplum/core';
+import { capitalize, generateId } from '@medplum/core';
 import {
   Address,
   AllergyIntolerance,
@@ -6,12 +6,12 @@ import {
   CarePlan,
   CareTeam,
   CodeableConcept,
-  Coding,
   Composition,
   CompositionEvent,
   CompositionSection,
   Condition,
   ContactPoint,
+  DiagnosticReport,
   DosageDoseAndRate,
   Encounter,
   Extension,
@@ -21,9 +21,11 @@ import {
   Identifier,
   Immunization,
   ImmunizationPerformer,
+  Location,
   MedicationRequest,
   Narrative,
   Observation,
+  ObservationComponent,
   ObservationReferenceRange,
   Organization,
   Patient,
@@ -33,6 +35,7 @@ import {
   Reference,
   Resource,
   ResourceType,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDate, mapFhirToCcdaDateTime } from './datetime';
 import {
@@ -58,10 +61,15 @@ import {
   OID_PROBLEM_ACT,
   OID_PROBLEM_OBSERVATION,
   OID_PROCEDURE_ACTIVITY_ACT,
+  OID_PROCEDURE_ACTIVITY_OBSERVATION,
   OID_PROCEDURE_ACTIVITY_PROCEDURE,
   OID_REACTION_OBSERVATION,
+  OID_RESULT_OBSERVATION,
+  OID_RESULT_ORGANIZER,
   OID_SEVERITY_OBSERVATION,
+  OID_SMOKING_STATUS_OBSERVATION,
   OID_SNOMED_CT_CODE_SYSTEM,
+  OID_TOBACCO_USE_OBSERVATION,
   OID_VITAL_SIGNS_OBSERVATION,
   OID_VITAL_SIGNS_ORGANIZER,
 } from './oids';
@@ -71,15 +79,14 @@ import {
   ALLERGY_SEVERITY_MAPPER,
   ALLERGY_STATUS_MAPPER,
   CCDA_NARRATIVE_REFERENCE_URL,
-  CCDA_TEMPLATE_CODE_SYSTEM,
   CONFIDENTIALITY_MAPPER,
   GENDER_MAPPER,
   HUMAN_NAME_USE_MAPPER,
+  IMMUNIZATION_STATUS_MAPPER,
   mapCodeableConceptToCcdaCode,
   mapCodeableConceptToCcdaValue,
   mapFhirSystemToCcda,
   MEDICATION_STATUS_MAPPER,
-  OBSERVATION_CATEGORY_MAPPER,
   PROBLEM_STATUS_MAPPER,
   TELECOM_USE_MAPPER,
   US_CORE_ETHNICITY_URL,
@@ -102,6 +109,7 @@ import {
   CcdaObservation,
   CcdaOrganizer,
   CcdaOrganizerComponent,
+  CcdaParticipant,
   CcdaPatient,
   CcdaPerformer,
   CcdaQuantity,
@@ -471,6 +479,8 @@ class FhirToCcdaConverter {
         return this.createCareTeamEntry(resource);
       case 'Condition':
         return this.createProblemEntry(resource);
+      case 'DiagnosticReport':
+        return this.createDiagnosticReportEntry(resource);
       case 'Encounter':
         return this.createEncounterEntry(resource);
       case 'Goal':
@@ -483,6 +493,8 @@ class FhirToCcdaConverter {
         return this.createHistoryOfProceduresEntry(resource) as CcdaEntry;
       case 'Observation':
         return this.createObservationEntry(resource as Observation);
+      case 'ServiceRequest':
+        return this.createPlanOfTreatmentServiceRequestEntry(resource as ServiceRequest);
       default:
         throw new Error(`Unknown resource type: ${resource.resourceType}`);
     }
@@ -1008,7 +1020,7 @@ class FhirToCcdaConverter {
               'active'
             ),
           },
-          effectiveTime: this.mapEffectiveTime(problem.recordedDate, undefined),
+          effectiveTime: this.mapEffectivePeriod(problem.recordedDate, undefined),
           entryRelationship: [
             {
               '@_typeCode': 'SUBJ',
@@ -1020,13 +1032,27 @@ class FhirToCcdaConverter {
                     { '@_root': OID_PROBLEM_OBSERVATION },
                     { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
                   ],
-                  id: this.mapIdentifiers(undefined, problem.identifier),
+                  id: problem.identifier
+                    ? this.mapIdentifiers(undefined, problem.identifier)
+                    : [
+                        {
+                          '@_root': generateId(),
+                        },
+                      ],
                   text: this.createTextFromExtensions(problem.extension),
                   code: {
                     '@_code': '55607006',
                     '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
                     '@_codeSystemName': 'SNOMED CT',
                     '@_displayName': 'Problem',
+                    translation: [
+                      {
+                        '@_code': '75323-6',
+                        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+                        '@_codeSystemName': 'LOINC',
+                        '@_displayName': 'Condition',
+                      },
+                    ],
                   },
                   statusCode: { '@_code': 'completed' },
                   effectiveTime: [
@@ -1062,7 +1088,9 @@ class FhirToCcdaConverter {
           ],
           id: this.mapIdentifiers(immunization.id, immunization.identifier),
           text: this.createTextFromExtensions(immunization.extension),
-          statusCode: { '@_code': 'completed' },
+          statusCode: {
+            '@_code': IMMUNIZATION_STATUS_MAPPER.mapFhirToCcdaWithDefault(immunization.status, 'completed'),
+          },
           effectiveTime: [{ '@_value': mapFhirToCcdaDate(immunization.occurrenceDateTime) }],
           consumable: {
             manufacturedProduct: [
@@ -1198,7 +1226,7 @@ class FhirToCcdaConverter {
           templateId: [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }],
           id: this.mapIdentifiers(resource.id, resource.identifier),
           code: mapCodeableConceptToCcdaCode(resource.description),
-          statusCode: { '@_code': this.mapGoalStatus(resource.lifecycleStatus) },
+          statusCode: { '@_code': this.mapPlanOfTreatmentStatus(resource.lifecycleStatus) },
           effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.startDate) }],
           text: this.createTextFromExtensions(resource.extension),
           entryRelationship: resource.target?.map((target) => ({
@@ -1225,7 +1253,7 @@ class FhirToCcdaConverter {
     return result;
   }
 
-  private mapGoalStatus(status: string | undefined): string {
+  private mapPlanOfTreatmentStatus(status: string | undefined): string {
     switch (status) {
       case 'achieved':
         return 'completed';
@@ -1242,7 +1270,17 @@ class FhirToCcdaConverter {
     if (observation.hasMember) {
       for (const member of observation.hasMember) {
         const child = this.findResourceByReference(member);
-        if (child) {
+        if (!child || child.resourceType !== 'Observation') {
+          continue;
+        }
+
+        if (child.component) {
+          for (const component of child.component) {
+            components.push({
+              observation: [this.createVitalSignComponentObservation(child as Observation, component)],
+            });
+          }
+        } else {
           components.push({
             observation: [this.createVitalSignObservation(child as Observation)],
           });
@@ -1285,27 +1323,58 @@ class FhirToCcdaConverter {
     return result;
   }
 
-  private mapObservationTemplateId(observation: Observation): CcdaTemplateId[] {
-    // If the Observation.category includes at least one entry with system "http://hl7.org/cda/template",
-    // then use those template IDs directly.
-    const templateIds = observation.category
-      ?.filter((c) => c.coding?.some((coding) => coding.system === CCDA_TEMPLATE_CODE_SYSTEM))
-      .map((c) => c.coding?.find((coding) => coding.system === CCDA_TEMPLATE_CODE_SYSTEM))
-      .filter((c) => c?.code) as (Coding & { code: string })[];
+  private createVitalSignComponentObservation(
+    observation: Observation,
+    component: ObservationComponent
+  ): CcdaObservation {
+    const result: CcdaObservation = {
+      '@_classCode': 'OBS',
+      '@_moodCode': 'EVN',
+      templateId: this.mapObservationTemplateId(observation),
+      id: this.mapIdentifiers(observation.id, observation.identifier) as CcdaId[],
+      code: mapCodeableConceptToCcdaCode(component.code),
+      statusCode: { '@_code': 'completed' },
+      effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(observation.effectiveDateTime) }],
+      value: this.mapObservationValue(component),
+      referenceRange: this.mapReferenceRangeArray(component.referenceRange),
+      text: this.createTextFromExtensions(component.extension),
+      author: this.mapAuthor(observation.performer?.[0], observation.effectiveDateTime),
+    };
 
-    if (templateIds && templateIds.length > 0) {
-      return templateIds.map((id) =>
-        id.version ? { '@_root': id.code, '@_extension': id.version } : { '@_root': id.code }
-      );
+    return result;
+  }
+
+  private mapObservationTemplateId(observation: Observation): CcdaTemplateId[] {
+    const code = observation.code?.coding?.[0]?.code;
+    const category = observation.category?.[0]?.coding?.[0]?.code;
+
+    if (code === '72166-2') {
+      // Smoking status
+      return [
+        { '@_root': OID_SMOKING_STATUS_OBSERVATION },
+        { '@_root': OID_SMOKING_STATUS_OBSERVATION, '@_extension': '2014-06-09' },
+      ];
     }
 
-    // If the Observation.category includes at least one entry with a mapping in OBSERVATION_CATEGORY_MAPPER,
-    // then use the template ID from the mapping.
-    if (observation.category?.[0]?.coding?.[0]?.code) {
-      const category = OBSERVATION_CATEGORY_MAPPER.getEntryByFhir(observation.category?.[0]?.coding?.[0]?.code);
-      if (category) {
-        return [{ '@_root': category.ccdaValue }, { '@_root': category.ccdaValue, '@_extension': '2014-06-09' }];
-      }
+    if (code === '11367-0') {
+      // Tobacco use
+      return [
+        { '@_root': OID_TOBACCO_USE_OBSERVATION },
+        { '@_root': OID_TOBACCO_USE_OBSERVATION, '@_extension': '2014-06-09' },
+      ];
+    }
+
+    if (category === 'exam') {
+      // Physical examination
+      return [
+        { '@_root': OID_PROCEDURE_ACTIVITY_OBSERVATION },
+        { '@_root': OID_PROCEDURE_ACTIVITY_OBSERVATION, '@_extension': '2014-06-09' },
+      ];
+    }
+
+    if (category === 'laboratory') {
+      // Laboratory observation
+      return [{ '@_root': OID_RESULT_OBSERVATION }, { '@_root': OID_RESULT_OBSERVATION, '@_extension': '2015-08-01' }];
     }
 
     // Otherwise, fall back to the default template ID.
@@ -1315,7 +1384,7 @@ class FhirToCcdaConverter {
     ];
   }
 
-  private mapObservationValue(observation: Observation): CcdaValue | undefined {
+  private mapObservationValue(observation: Observation | ObservationComponent): CcdaValue | undefined {
     if (observation.valueQuantity) {
       return {
         '@_xsi:type': 'PQ',
@@ -1326,6 +1395,10 @@ class FhirToCcdaConverter {
 
     if (observation.valueCodeableConcept) {
       return mapCodeableConceptToCcdaValue(observation.valueCodeableConcept);
+    }
+
+    if (observation.valueString) {
+      return { '@_xsi:type': 'ST', '#text': observation.valueString };
     }
 
     return undefined;
@@ -1423,6 +1496,7 @@ class FhirToCcdaConverter {
             effectiveTime: this.mapEffectiveTime(resource.performedDateTime, resource.performedPeriod),
             text: this.createTextFromExtensions(resource.extension),
             targetSiteCode: mapCodeableConceptToCcdaCode(resource.bodySite?.[0]) as CcdaCode,
+            participant: [this.mapLocationToParticipant(resource.location)].filter(Boolean) as CcdaParticipant[],
           },
         ],
       };
@@ -1446,6 +1520,33 @@ class FhirToCcdaConverter {
       };
     }
     throw new Error(`Unknown history of procedures resource type: ${(resource as any).resourceType}`);
+  }
+
+  private mapLocationToParticipant(ref: Reference<Location> | undefined): CcdaParticipant | undefined {
+    if (!ref) {
+      return undefined;
+    }
+
+    const location = this.findResourceByReference(ref);
+    if (!location) {
+      return undefined;
+    }
+
+    return {
+      '@_typeCode': 'LOC',
+      participantRole: {
+        '@_classCode': 'SDLOC',
+        templateId: [{ '@_root': OID_ENCOUNTER_LOCATION }],
+        id: this.mapIdentifiers(location.id, location.identifier),
+        code: mapCodeableConceptToCcdaCode(location.type?.[0]),
+        addr: location.address ? this.mapFhirAddressArrayToCcdaAddressArray([location.address]) : undefined,
+        telecom: this.mapTelecom(location.telecom),
+        playingEntity: {
+          '@_classCode': 'PLC',
+          name: location.name ? [location.name] : undefined,
+        },
+      },
+    };
   }
 
   private mapEffectiveTime(dateTime: string | undefined, period: Period | undefined): CcdaEffectiveTime[] | undefined {
@@ -1570,6 +1671,63 @@ class FhirToCcdaConverter {
             '@_typeCode': 'PRF',
             role: participant.role,
           })) as CcdaOrganizerComponent[],
+        },
+      ],
+    };
+  }
+
+  private createPlanOfTreatmentServiceRequestEntry(resource: ServiceRequest): CcdaEntry {
+    const result: CcdaEntry = {
+      observation: [
+        {
+          '@_classCode': 'OBS',
+          '@_moodCode': 'RQO',
+          templateId: [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }],
+          id: this.mapIdentifiers(resource.id, resource.identifier),
+          code: mapCodeableConceptToCcdaCode(resource.code),
+          statusCode: { '@_code': this.mapPlanOfTreatmentStatus(resource.status) },
+          effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.occurrenceDateTime) }],
+          text: this.createTextFromExtensions(resource.extension),
+        },
+      ],
+    };
+
+    return result;
+  }
+
+  private createDiagnosticReportEntry(resource: DiagnosticReport): CcdaEntry {
+    const components: CcdaOrganizerComponent[] = [];
+
+    if (resource.result) {
+      for (const member of resource.result) {
+        const child = this.findResourceByReference(member);
+        if (!child || child.resourceType !== 'Observation') {
+          continue;
+        }
+
+        components.push({
+          observation: [this.createVitalSignObservation(child as Observation)],
+        });
+      }
+    }
+
+    // Note: The effectiveTime is an interval that spans the effectiveTimes of the contained result observations.
+    // Because all contained result observations have a required time stamp,
+    // it is not required that this effectiveTime be populated.
+
+    return {
+      organizer: [
+        {
+          '@_classCode': 'CLUSTER',
+          '@_moodCode': 'EVN',
+          templateId: [
+            { '@_root': OID_RESULT_ORGANIZER },
+            { '@_root': OID_RESULT_ORGANIZER, '@_extension': '2015-08-01' },
+          ],
+          id: this.mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
+          code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+          statusCode: { '@_code': 'completed' },
+          component: components,
         },
       ],
     };

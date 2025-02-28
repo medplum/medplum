@@ -1,6 +1,6 @@
-import { SNOMED } from '@medplum/core';
+import { LOINC, SNOMED } from '@medplum/core';
 import { OID_SNOMED_CT_CODE_SYSTEM } from './oids';
-import { EnumMapper } from './systems';
+import { EnumMapper, mapCodeableConceptToCcdaCode } from './systems';
 
 describe('EnumMapper', () => {
   const mapper = new EnumMapper<string, string>('SNOMED CT', OID_SNOMED_CT_CODE_SYSTEM, SNOMED, [
@@ -58,5 +58,37 @@ describe('EnumMapper', () => {
 
     const r3 = mapper.mapFhirToCcdaCode('');
     expect(r3).toBeUndefined();
+  });
+
+  test('mapCodeableConceptToCcdaCode', () => {
+    const r1 = mapCodeableConceptToCcdaCode({ text: 'test' });
+    expect(r1).toBeUndefined();
+
+    const r2 = mapCodeableConceptToCcdaCode({ coding: [{ code: 'foo' }] });
+    expect(r2).toMatchObject({ '@_code': 'foo' });
+
+    const r3 = mapCodeableConceptToCcdaCode({
+      coding: [
+        { system: SNOMED, code: 'foo', display: 'Foo' },
+        { system: LOINC, code: 'bar', display: 'Bar' },
+      ],
+    });
+    expect(r3).toMatchObject({
+      '@_code': 'foo',
+      '@_codeSystem': '2.16.840.1.113883.6.96',
+      '@_codeSystemName': 'SNOMED CT',
+      '@_displayName': 'Foo',
+      translation: [
+        {
+          '@_code': 'bar',
+          '@_codeSystem': '2.16.840.1.113883.6.1',
+          '@_codeSystemName': 'LOINC',
+          '@_displayName': 'Bar',
+        },
+      ],
+    });
+
+    const r4 = mapCodeableConceptToCcdaCode({ coding: [{ code: 'foo', system: 'urn:oid:9.9.9.9' }] });
+    expect(r4).toMatchObject({ '@_code': 'foo', '@_codeSystem': '9.9.9.9' });
   });
 });

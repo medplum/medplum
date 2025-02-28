@@ -395,7 +395,7 @@ export function buildInitialResponse(
 ): QuestionnaireResponse {
   const response: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
-    questionnaire: getReferenceString(questionnaire),
+    questionnaire: questionnaire.url ?? getReferenceString(questionnaire),
     item: buildInitialResponseItems(questionnaire.item, questionnaireResponse?.item),
     status: 'in-progress',
   };

@@ -98,7 +98,7 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
+import { buildSearchExpression, searchByReferenceImpl, searchImpl, SearchOptions } from './search';
 import { getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
@@ -1173,11 +1173,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
   }
 
-  async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<WithId<T>>> {
+  async search<T extends Resource>(
+    searchRequest: SearchRequest<T>,
+    options?: SearchOptions
+  ): Promise<Bundle<WithId<T>>> {
     const startTime = Date.now();
     try {
       // Resource type validation is performed in the searchImpl function
-      const result = await searchImpl(this, searchRequest);
+      const result = await searchImpl(this, searchRequest, options);
       const durationMs = Date.now() - startTime;
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
       return result;
@@ -1325,6 +1328,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
+  /**
+   * The version to be set on resources when they are inserted/updated into the database.
+   * The value should be incremented each time there is a change in the schema (really just columns)
+   * of the resource tables or when there are code changes to `buildResourceRow`.
+   */
+  static readonly VERSION: number = 1;
+
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
@@ -1338,6 +1348,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       projectId: meta.project,
       compartments,
       content,
+      __version: Repository.VERSION,
     };
 
     const searchParams = getSearchParameters(resourceType);

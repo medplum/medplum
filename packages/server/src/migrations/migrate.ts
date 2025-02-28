@@ -325,6 +325,7 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: string
       { name: 'deleted', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
       { name: 'compartments', type: 'UUID[]', notNull: true },
       { name: 'projectId', type: 'UUID' },
+      { name: '__version', type: 'INTEGER' },
       { name: '_source', type: 'TEXT' },
       { name: '_profile', type: 'TEXT[]' },
     ],

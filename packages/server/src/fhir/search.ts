@@ -105,9 +105,12 @@ interface ChainedSearchParameter {
   filter: Filter;
 }
 
+export interface SearchOptions extends Pick<GetBaseSelectQueryOptions, 'maxResourceVersion'> {}
+
 export async function searchImpl<T extends Resource>(
   repo: Repository,
-  searchRequest: SearchRequest<T>
+  searchRequest: SearchRequest<T>,
+  options?: SearchOptions
 ): Promise<Bundle<WithId<T>>> {
   validateSearchResourceTypes(repo, searchRequest);
   applyCountAndOffsetLimits(searchRequest);
@@ -116,7 +119,7 @@ export async function searchImpl<T extends Resource>(
   let rowCount = undefined;
   let nextResource: T | undefined;
   if (searchRequest.count > 0) {
-    const builder = getSelectQueryForSearch(repo, searchRequest);
+    const builder = getSelectQueryForSearch(repo, searchRequest, options);
     ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder));
   }
 
@@ -330,6 +333,8 @@ interface GetBaseSelectQueryOptions {
   addColumns?: boolean;
   /** Callback invoked for each resource type and  its `SelectQuery` after all filters are applied. */
   resourceTypeQueryCallback?: (resourceType: SearchRequest['resourceType'], builder: SelectQuery) => void;
+  /** The maximum resource version to include in the search. */
+  maxResourceVersion?: number;
 }
 function getBaseSelectQuery(
   repo: Repository,
@@ -364,6 +369,12 @@ function getBaseSelectQueryForResourceType(
   const idColumn = new Column(resourceType, 'id');
   if (addColumns) {
     builder.column(idColumn).column(new Column(resourceType, 'content'));
+  }
+  if (opts?.maxResourceVersion !== undefined) {
+    const col = new Column(resourceType, '__version');
+    builder.whereExpr(
+      new Disjunction([new Condition(col, '<=', opts.maxResourceVersion), new Condition(col, '=', null)])
+    );
   }
   repo.addDeletedFilter(builder);
   repo.addSecurityFilters(builder, resourceType);

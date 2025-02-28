@@ -20,7 +20,7 @@ import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context
 import { DatabaseMode, getDatabasePool, maybeStartDataMigration } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
@@ -90,9 +90,29 @@ superAdminRouter.post(
 // Run this after major changes to how search columns are constructed.
 superAdminRouter.post(
   '/reindex',
+
+  [
+    body('reindexType')
+      .isIn(['outdated', 'all', 'specific'])
+      .withMessage('reindexType must be "outdated", "all", or "specific"'),
+    body('maxResourceVersion')
+      .if(body('reindexType').equals('specific'))
+      .isInt({ min: 0, max: Repository.VERSION - 1 })
+      .withMessage(`maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`),
+    body('maxResourceVersion')
+      .if(body('reindexType').not().equals('specific'))
+      .isEmpty()
+      .withMessage('maxResourceVersion should only be specified when reindexType is "specific"'),
+  ],
   asyncWrap(async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
 
     let resourceTypes: string[];
     if (req.body.resourceType === '*') {
@@ -111,10 +131,29 @@ superAdminRouter.post(
     }
 
     const systemRepo = getSystemRepo();
+
+    const reindexType = req.body.reindexType as 'outdated' | 'all' | 'specific';
+    let maxResourceVersion: number | undefined;
+    switch (reindexType) {
+      case 'all':
+        maxResourceVersion = undefined;
+        break;
+      case 'specific':
+        maxResourceVersion = Number(req.body.maxResourceVersion);
+        break;
+      case 'outdated':
+        maxResourceVersion = Repository.VERSION - 1;
+        break;
+      default:
+        reindexType satisfies never;
+        sendOutcome(res, badRequest(`Invalid reindex type: ${reindexType}`));
+        return;
+    }
+
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter);
+      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter, maxResourceVersion);
     });
 
     const { baseUrl } = getConfig();

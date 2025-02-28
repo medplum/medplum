@@ -372,7 +372,7 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
         subscriptions.push(resource);
       }
     } else {
-      globalLogger.warn(
+      globalLogger.debug(
         `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
       );
     }

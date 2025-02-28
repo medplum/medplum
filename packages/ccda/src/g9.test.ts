@@ -21,7 +21,7 @@ import {
   US_CORE_ETHNICITY_URL,
   US_CORE_RACE_URL,
 } from './systems';
-import { CcdaCode, CcdaQuantity } from './types';
+import { CcdaCode, CcdaQuantity, CcdaText } from './types';
 
 describe('170.315(g)(9)', () => {
   describe('Patient Demographics', () => {
@@ -396,7 +396,7 @@ describe('170.315(g)(9)', () => {
 
       // Check act timing (when recorded)
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.[
+        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.low?.[
           '@_value'
         ]
       ).toEqual('20240101');
@@ -475,34 +475,211 @@ describe('170.315(g)(9)', () => {
       expect(value?.['@_value']).toEqual('100');
       expect(value?.['@_unit']).toEqual('mg');
     });
+
+    test('should handle observation components', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Observation',
+          id: '123',
+          component: [
+            { code: { coding: [{ code: 'a' }] }, valueQuantity: { value: 100, unit: 'mg' } },
+            { code: { coding: [{ code: 'b' }] }, valueQuantity: { value: 200, unit: 'mg' } },
+          ],
+        },
+        {
+          resourceType: 'Observation',
+          id: '456',
+          hasMember: [{ reference: 'Observation/123' }],
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const organizer = output.component?.structuredBody?.component?.[1]?.section?.[0]?.entry?.[0]?.organizer?.[0];
+      expect(organizer).toBeDefined();
+      const components = organizer?.component;
+      expect(components).toBeDefined();
+      expect((components?.[0]?.observation?.[0]?.value as CcdaQuantity)['@_value']).toEqual('100');
+      expect((components?.[1]?.observation?.[0]?.value as CcdaQuantity)['@_value']).toEqual('200');
+    });
+  });
+
+  describe('Procedures', () => {
+    test('should handle missing location', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Procedure',
+          id: '456',
+          location: { reference: 'Location/123' },
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      expect(procedure).toBeDefined();
+    });
+
+    test('should handle empty location', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Location',
+          id: '123',
+        },
+        {
+          resourceType: 'Procedure',
+          id: '456',
+          location: { reference: 'Location/123' },
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      expect(procedure).toBeDefined();
+      const participant = procedure?.participant?.[0];
+      expect(participant).toBeDefined();
+    });
+
+    test('should create location participant', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Location',
+          id: '123',
+          name: 'Test Location',
+          address: { line: ['123 Main St'], city: 'Anytown', state: 'CA', postalCode: '12345' },
+          telecom: [{ system: 'phone', value: '123-456-7890' }],
+        },
+        {
+          resourceType: 'Procedure',
+          id: '456',
+          location: { reference: 'Location/123' },
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      expect(procedure).toBeDefined();
+      const participant = procedure?.participant?.[0];
+      expect(participant).toBeDefined();
+      expect(participant?.participantRole?.addr?.[0]?.streetAddressLine?.[0]).toEqual('123 Main St');
+      expect(participant?.participantRole?.addr?.[0]?.city).toEqual('Anytown');
+      expect(participant?.participantRole?.addr?.[0]?.state).toEqual('CA');
+      expect(participant?.participantRole?.addr?.[0]?.postalCode).toEqual('12345');
+      expect(participant?.participantRole?.telecom?.[0]?.['@_value']).toEqual('tel:123-456-7890');
+      expect(participant?.participantRole?.playingEntity?.name?.[0]).toEqual('Test Location');
+    });
+  });
+
+  describe('Labs', () => {
+    test('should handle orders', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'ServiceRequest',
+          status: 'active',
+          intent: 'order',
+          code: {
+            coding: [
+              {
+                system: 'http://loinc.org',
+                code: '24357-6',
+                display: 'Urinanalysis macro (dipstick) panel',
+              },
+            ],
+          },
+          occurrenceDateTime: '2015-06-29T07:00:00.000Z',
+          authoredOn: '2025-02-27T01:32:00.000Z',
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual('18776-5');
+      const observation = section?.entry?.[0]?.observation?.[0];
+      expect(observation).toBeDefined();
+      expect(observation?.code?.['@_code']).toEqual('24357-6');
+      expect(observation?.effectiveTime?.[0]?.['@_value']).toMatch('20150629');
+    });
+
+    test('should handle reports', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Observation',
+          id: '123',
+          status: 'final',
+          code: {
+            coding: [
+              {
+                system: 'http://loinc.org',
+                code: '5778-6',
+                display: 'Color of Urine',
+              },
+            ],
+          },
+          effectiveDateTime: '2015-06-22T07:00:00.000Z',
+          valueString: 'YELLOW',
+        },
+        {
+          resourceType: 'DiagnosticReport',
+          status: 'final',
+          code: {
+            coding: [
+              {
+                system: 'http://loinc.org',
+                code: '24357-6',
+                display: 'Urinanalysis macro (dipstick) panel',
+              },
+            ],
+          },
+          effectiveDateTime: '2015-06-22T07:00:00.000Z',
+          issued: '2015-06-22T07:00:00.000Z',
+          result: [{ reference: 'Observation/123' }],
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[1]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual('30954-2');
+      const organizer = section?.entry?.[0]?.organizer?.[0];
+      expect(organizer).toBeDefined();
+      const components = organizer?.component;
+      expect(components).toBeDefined();
+      expect((components?.[0]?.observation?.[0]?.value as CcdaText)['#text']).toEqual('YELLOW');
+    });
   });
 });
 
 function createCompositionBundle(patient: Patient, ...resources: Partial<Resource>[]): Bundle {
   const resourceTypeToCode = {
     AllergyIntolerance: '48765-2',
-    MedicationRequest: '10160-0',
     Condition: '11450-4',
+    DiagnosticReport: '30954-2',
     Immunization: '11369-6',
+    MedicationRequest: '10160-0',
     Observation: '8716-3',
+    Procedure: '47519-4',
+    ServiceRequest: '18776-5',
   };
 
   const sections: CompositionSection[] = [];
 
   for (const resource of resources) {
     resource.id = resource.id || generateId();
-    sections.push({
-      title: resource.resourceType,
-      code: {
-        coding: [
-          {
-            code: resourceTypeToCode[resource.resourceType as keyof typeof resourceTypeToCode],
-            display: resource.resourceType,
-          },
-        ],
-      },
-      entry: [createReference(resource as Resource)],
-    });
+
+    const code = resourceTypeToCode[resource.resourceType as keyof typeof resourceTypeToCode];
+    if (code) {
+      sections.push({
+        title: resource.resourceType,
+        code: {
+          coding: [
+            {
+              code,
+              display: resource.resourceType,
+            },
+          ],
+        },
+        entry: [createReference(resource as Resource)],
+      });
+    }
   }
 
   const composition: Composition = {

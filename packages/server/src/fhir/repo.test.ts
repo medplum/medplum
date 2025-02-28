@@ -41,6 +41,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
+import { SelectQuery } from './sql';
 
 jest.mock('hibp');
 
@@ -1329,6 +1330,46 @@ describe('FHIR Repo', () => {
 
       await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
     }));
+
+  test('__version column', async () => {
+    const { repo } = await createTestProject({ withRepo: true, superAdmin: true });
+
+    await withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const versionQuery = new SelectQuery('Patient').column('__version').where('id', '=', patient.id);
+
+      const client = repo.getDatabaseClient(DatabaseMode.WRITER);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+
+      // Simulate the resource being at an older version
+      const OLDER_VERSION = Repository.VERSION - 1;
+      await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient.id]);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+
+      // noop update should not change the version
+      await repo.updateResource<Patient>(patient);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+
+      // meaningful update should change the version
+      await repo.updateResource<Patient>({
+        ...patient,
+        name: [{ given: ['Bob'], family: 'Smith' }],
+      });
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+
+      // Simulate the resource being at an older version
+      await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient.id]);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+
+      // reindex SHOULD change the version
+      await repo.reindexResource('Patient', patient.id);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+    });
+  });
 });
 
 function shuffleString(s: string): string {
