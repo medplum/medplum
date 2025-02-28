@@ -13,8 +13,6 @@ interface EncounterHeaderProps {
 export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
   const { patient, encounter, practitioner } = props;
 
-  console.log(props);
-
   return (
     <Paper shadow="sm" px="lg" py="xs" withBorder>
       <Text className={classes.header}>Encounters</Text>
