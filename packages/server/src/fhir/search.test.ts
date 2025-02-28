@@ -592,19 +592,20 @@ describe('FHIR Search', () => {
       withTestContext(async () => {
         const questionnaire = await repo.createResource<Questionnaire>({
           resourceType: 'Questionnaire',
+          url: 'https://example.com/yet-another-example-questionnaire',
           status: 'active',
         });
 
         const response1 = await repo.createResource<QuestionnaireResponse>({
           resourceType: 'QuestionnaireResponse',
           status: 'completed',
-          questionnaire: getReferenceString(questionnaire),
+          questionnaire: questionnaire.url,
         });
 
         await repo.createResource<QuestionnaireResponse>({
           resourceType: 'QuestionnaireResponse',
           status: 'completed',
-          questionnaire: `Questionnaire/${randomUUID()}`,
+          questionnaire: 'https://example.com/a-different-example-questionnaire',
         });
 
         const bundle = await repo.search({
@@ -613,7 +614,7 @@ describe('FHIR Search', () => {
             {
               code: 'questionnaire',
               operator: Operator.EQUALS,
-              value: getReferenceString(questionnaire),
+              value: questionnaire.url as string,
             },
           ],
         });

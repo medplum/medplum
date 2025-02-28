@@ -1,5 +1,5 @@
 import { addProfileToResource, BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { Organization, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import { Organization, Patient, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   addAllergy,
   addCondition,
@@ -32,7 +32,14 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     throw new Error('Missing questionnaire');
   }
 
-  const questionnaire: Questionnaire = await medplum.readReference({ reference: response.questionnaire });
+  const questionnaire = await medplum.searchOne('Questionnaire', {
+    url: response.questionnaire,
+  });
+
+  if (!questionnaire) {
+    throw new Error('Unable to resolve questionnaire canonical reference');
+  }
+
   const answers = getQuestionnaireAnswers(response);
 
   let patient: Patient = {

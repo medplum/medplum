@@ -70,6 +70,7 @@ const searchParams = [
   'Communication-part-of',
   'Media-encounter',
   'Questionnaire-name',
+  'Questionnaire-url',
   'ActivityDefinition-name',
   'Schedule-identifier',
   'Task-identifier',
