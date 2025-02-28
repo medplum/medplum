@@ -1,4 +1,17 @@
-import { Text, Stack, Box, Card, Button, Grid, GridCol, Select, Flex, Anchor, Group, useMantineTheme } from '@mantine/core';
+import {
+  Text,
+  Stack,
+  Box,
+  Card,
+  Button,
+  Grid,
+  GridCol,
+  Select,
+  Flex,
+  Anchor,
+  Group,
+  useMantineTheme,
+} from '@mantine/core';
 import { CodeableConcept, Coverage, Encounter, Organization, Patient, Practitioner } from '@medplum/fhirtypes';
 import { CodeableConceptInput, Loading, ResourceInput, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router-dom';
@@ -210,90 +223,90 @@ export const EncounterCheckIn = (): JSX.Element => {
 
   return (
     <>
-    <Stack justify="space-between" gap={0}>
-      <EncounterHeader patient={patient} encounter={encounter} practitioner={practitioner}/>
-    
-      <Box p="md">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
-          <Card withBorder shadow="sm">
+      <Stack justify="space-between" gap={0}>
+        <EncounterHeader patient={patient} encounter={encounter} practitioner={practitioner} />
+
+        <Box p="md">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
+            <Card withBorder shadow="sm">
+              <Stack gap="lg">
+                <Text size="lg" c="dimmed" mb="lg">
+                  CHECK IN
+                </Text>
+
+                <ResourceInput
+                  resourceType="Practitioner"
+                  name="Patient-id"
+                  label="Assigned Practitioner"
+                  defaultValue={practitioner}
+                  required={true}
+                  onChange={handlePractitionerChange}
+                />
+
+                <CodeableConceptInput
+                  name="servicetype"
+                  label="Service Type"
+                  binding="http://hl7.org/fhir/ValueSet/service-type"
+                  required={true}
+                  defaultValue={serviceType}
+                  onChange={handleServiceTypeChange}
+                  maxValues={1}
+                  path="Encounter.serviceType"
+                />
+
+                <Grid>
+                  <GridCol span={6}>
+                    <Select
+                      label="Payment Type"
+                      data={Object.values(PaymentType)}
+                      defaultValue={paymentType}
+                      onChange={togglePaymentType}
+                      allowDeselect={false}
+                      pr="lg"
+                    />
+                  </GridCol>
+                  <GridCol span={6}>
+                    {paymentType === PaymentType.Insurance && organization && (
+                      <Stack gap={0}>
+                        <Text fw={500}>Patient’s insurance</Text>
+                        <Anchor href={`/Coverage/${coverage?.id}`} target="_blank">
+                          {organization.name}
+                        </Anchor>
+                      </Stack>
+                    )}
+                  </GridCol>
+                </Grid>
+
+                {organization && (
+                  <Flex justify="space-between" align="center">
+                    {eligibilityChecked && (
+                      <Stack gap={0}>
+                        <Text fw={500}>Insurance eligibility</Text>
+                        <Anchor href={`/Coverage/${coverage?.id}`} target="_blank">
+                          {organization.name}
+                        </Anchor>
+                        <Group gap={5}>
+                          <IconCheck size={20} color={theme.colors.green[8]} />{' '}
+                          <Text color={theme.colors.green[8]}>Clear.</Text>
+                          <Text c="dimmed">Last checked.</Text>
+                          <Text c="dimmed">{new Date().toLocaleDateString()}</Text>
+                        </Group>
+                      </Stack>
+                    )}
+                    <Button variant="outline" onClick={handleCheckEligibility} style={{ marginLeft: 'auto' }}>
+                      Check eligibility
+                    </Button>
+                  </Flex>
+                )}
+              </Stack>
+            </Card>
+
             <Stack gap="lg">
-              <Text size="lg" c="dimmed" mb="lg">
-                CHECK IN
-              </Text>
-
-              <ResourceInput
-                resourceType="Practitioner"
-                name="Patient-id"
-                label="Assigned Practitioner"
-                defaultValue={practitioner}
-                required={true}
-                onChange={handlePractitionerChange}
-              />
-
-              <CodeableConceptInput
-                name="servicetype"
-                label="Service Type"
-                binding="http://hl7.org/fhir/ValueSet/service-type"
-                required={true}
-                defaultValue={serviceType}
-                onChange={handleServiceTypeChange}
-                maxValues={1}
-                path="Encounter.serviceType"
-              />
-
-              <Grid>
-                <GridCol span={6}>
-                  <Select
-                    label="Payment Type"
-                    data={Object.values(PaymentType)}
-                    defaultValue={paymentType}
-                    onChange={togglePaymentType}
-                    allowDeselect={false}
-                    pr="lg"
-                  />
-                </GridCol>
-                <GridCol span={6}>
-                  {paymentType === PaymentType.Insurance && organization && (
-                    <Stack gap={0}>
-                      <Text fw={500}>Patient’s insurance</Text>
-                      <Anchor href={`/Coverage/${coverage?.id}`} target="_blank">
-                        {organization.name}
-                      </Anchor>
-                    </Stack>
-                  )}
-                </GridCol>
-              </Grid>
-
-              {organization && (
-                <Flex justify="space-between" align="center">
-                  {eligibilityChecked && (
-                  <Stack gap={0}>
-                    <Text fw={500}>Insurance eligibility</Text>
-                    <Anchor href={`/Coverage/${coverage?.id}`} target="_blank">
-                    {organization.name}
-                    </Anchor>
-                    <Group gap={5}>
-                    <IconCheck size={20} color={theme.colors.green[8]} /> <Text color={theme.colors.green[8]}>Clear.</Text>
-                    <Text c="dimmed">Last checked.</Text>
-                    <Text c="dimmed">{new Date().toLocaleDateString()}</Text>
-                    </Group>
-                  </Stack>
-                  )}
-                  <Button variant="outline" onClick={handleCheckEligibility} style={{ marginLeft: 'auto' }}>
-                  Check eligibility
-                  </Button>
-                </Flex>
-              )}
+              <Button>Edit Demographics </Button>
             </Stack>
-          </Card>
-
-          <Stack gap="lg">
-            <Button>Edit Demographics </Button>
-          </Stack>
-        </div>
-        <Outlet />
-      </Box>
-
+          </div>
+          <Outlet />
+        </Box>
       </Stack>
     </>
   );
