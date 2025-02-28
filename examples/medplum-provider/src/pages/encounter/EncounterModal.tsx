@@ -55,7 +55,7 @@ export const EncounterModal = (): JSX.Element => {
 
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
 
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`);
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/checkin`);
     } catch (err) {
       showNotification({ color: 'red', icon: <IconCircleOff />, title: 'Error', message: normalizeErrorString(err) });
     }
