@@ -42,7 +42,8 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
 
           <Box>
             <Text className={classes.label} c="dimmed">Checked in</Text>
-            <Text className={classes.dash}>—</Text>
+            <Text className={classes.dash}>
+              —</Text>
           </Box>
 
           <Box>
