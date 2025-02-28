@@ -250,7 +250,9 @@ async function handleContextChangeRequest(req: Request, res: Response): Promise<
 
 async function handleOpenContextChangeRequest(req: Request, res: Response): Promise<void> {
   const ctx = getAuthenticatedContext();
-  const { event } = req.body as FhircastMessagePayload;
+  const { event } = req.body as FhircastMessagePayload<
+    'DiagnosticReport-open' | 'Patient-open' | 'Encounter-open' | 'ImagingStudy-open'
+  >;
   const projectId = ctx.project.id as string;
 
   const currentContext = await getCurrentContext(projectId, event['hub.topic']);
@@ -304,7 +306,7 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
       'context.type': anchorResourceType,
       context: event.context,
       'context.versionId': event['context.versionId'],
-    } as CurrentContext<typeof anchorResourceType>);
+    } as unknown as CurrentContext<typeof anchorResourceType>);
   }
   await finalizeContextChangeRequest(res, projectId, req.body);
 }
@@ -369,7 +371,7 @@ async function handleUpdateContextChangeRequest(req: Request, res: Response): Pr
   await finalizeContextChangeRequest(res, projectId, req.body);
 }
 
-function processUpdateBundle(updatesBundle: Bundle, currentContext: CurrentContext): void {
+function processUpdateBundle(updatesBundle: Bundle, currentContext: CurrentContext<'DiagnosticReport'>): void {
   for (const entry of updatesBundle?.entry ?? []) {
     const contentBundle = currentContext.context.find((ctx) => ctx.key === 'content')?.resource as Bundle;
     // Only PUT and DELETE are supported
@@ -420,7 +422,7 @@ function processUpdateBundlePutEntry(entry: BundleEntry, contentBundle: Bundle):
 function processUpdateBundleDeleteEntry(
   entry: BundleEntry,
   contentBundle: Bundle,
-  currentContext: CurrentContext
+  currentContext: CurrentContext<'DiagnosticReport'>
 ): void {
   // See profile for update bundle: https://build.fhir.org/ig/HL7/fhircast-docs/StructureDefinition-fhircast-content-update-bundle.html
   if (!entry.fullUrl) {
@@ -447,7 +449,7 @@ function processUpdateBundleDeleteEntry(
   const entryIndex = contentBundle.entry?.findIndex((entry) => entry.resource?.id === resourceId);
   if (entryIndex !== undefined && entryIndex !== -1) {
     // We found a matching entry, we need to remove it
-    contentBundle.entry = (contentBundle.entry as BundleEntry[]).filter((entry) => entry.resource?.id === resourceId);
+    contentBundle.entry = (contentBundle.entry as BundleEntry[]).filter((entry) => entry.resource?.id !== resourceId);
   } else if (currentContext.context.findIndex((ctx) => ctx.resource.id === resourceId) !== -1) {
     throw new OperationOutcomeError(badRequest('Cannot delete a resource that is part of the original open context'));
   } else {
