@@ -108,7 +108,7 @@ describe('FHIRcast WebSocket', () => {
           .expectClosed();
       }));
 
-    test.only('Advanced suspend-resume scenario', () =>
+    test('Advanced suspend-resume scenario', () =>
       withTestContext(async () => {
         const topic = randomUUID();
 
