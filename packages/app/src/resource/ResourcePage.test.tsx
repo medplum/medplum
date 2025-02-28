@@ -271,28 +271,6 @@ describe('ResourcePage', () => {
     });
   });
 
-  test('Questionnaire bots -- Questionnaire missing canonical url', async () => {
-    const medplum = new MockClient();
-    const bot = await medplum.createResource<Bot>({
-      resourceType: 'Bot',
-      name: 'Test Bot',
-    });
-    expect(bot.id).toBeDefined();
-
-    const noUrlQuestionnaire = await medplum.createResource<Questionnaire>({
-      resourceType: 'Questionnaire',
-      status: 'active',
-    });
-
-    await setup(`/Questionnaire/${noUrlQuestionnaire.id}/bots`, medplum);
-
-    expect(
-      await screen.findByText(
-        'Cannot create new bot subscriptions until a canonical URL is added to the questionnaire.'
-      )
-    ).toBeInTheDocument();
-  });
-
   test('Questionnaire bots -- Subscription only has canonical URL and no reference', async () => {
     const medplum = new MockClient();
     const bot = await medplum.createResource<Bot>({

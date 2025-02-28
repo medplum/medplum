@@ -32,13 +32,13 @@ export function QuestionnaireBotsPage(): JSX.Element {
     .filter((s) => isQuestionnaireBotSubscription(s, questionnaire));
 
   function connectToBot(): void {
-    if (connectBot) {
+    if (connectBot && questionnaire) {
       medplum
         .createResource({
           resourceType: 'Subscription',
           status: 'active',
           reason: `Connect bot ${connectBot.name} to questionnaire responses`,
-          criteria: `QuestionnaireResponse?questionnaire=${(questionnaire as Questionnaire).url},${getReferenceString(questionnaire as WithId<Questionnaire>)}`,
+          criteria: `QuestionnaireResponse?questionnaire=${questionnaire.url ? `${questionnaire.url},${getReferenceString(questionnaire)}` : getReferenceString(questionnaire)}`,
           channel: {
             type: 'rest-hook',
             endpoint: getReferenceString(connectBot),
@@ -83,29 +83,21 @@ export function QuestionnaireBotsPage(): JSX.Element {
         <InputLabel size="lg" htmlFor="bot">
           Connect to bot
         </InputLabel>
-        {!questionnaire?.url ? (
-          <p>Cannot create new bot subscriptions until a canonical URL is added to the questionnaire.</p>
-        ) : (
-          <>
-            <Group>
-              <ResourceInput name="bot" resourceType="Bot" onChange={(r) => setConnectBot(r as Bot)} />
-              <Button onClick={connectToBot}>Connect</Button>
-            </Group>
-            <Group>
-              <NativeSelect
-                name="subscription-trigger-event"
-                defaultValue="Create Only"
-                label="Subscription Trigger Event"
-                data={SUBSCRIPTION_INTERACTION_KEYS}
-                onChange={(event) =>
-                  setSupportedInteraction(
-                    SUBSCRIPTION_INTERACTION_MAP[event.target.value as SubscriptionInteractionKey]
-                  )
-                }
-              />
-            </Group>
-          </>
-        )}
+        <Group>
+          <ResourceInput name="bot" resourceType="Bot" onChange={(r) => setConnectBot(r as Bot)} />
+          <Button onClick={connectToBot}>Connect</Button>
+        </Group>
+        <Group>
+          <NativeSelect
+            name="subscription-trigger-event"
+            defaultValue="Create Only"
+            label="Subscription Trigger Event"
+            data={SUBSCRIPTION_INTERACTION_KEYS}
+            onChange={(event) =>
+              setSupportedInteraction(SUBSCRIPTION_INTERACTION_MAP[event.target.value as SubscriptionInteractionKey])
+            }
+          />
+        </Group>
       </Stack>
       <div style={{ display: 'none' }}>{updated}</div>
     </Document>
