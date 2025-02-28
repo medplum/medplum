@@ -224,11 +224,28 @@ export interface CcdaParticipantRole {
   addr?: CcdaAddr[];
   telecom?: CcdaTelecom[];
   playingEntity?: CcdaPlayingEntity;
+  playingDevice?: CcdaPlayingDevice;
+  scopingEntity?: CcdaScopingEntity;
 }
 
 export interface CcdaPlayingEntity {
   '@_classCode'?: string;
   '@_typeCode'?: string;
+  code?: CcdaCode;
+  name?: string[];
+}
+
+export interface CcdaPlayingDevice {
+  '@_classCode'?: string;
+  '@_typeCode'?: string;
+  code?: CcdaCode;
+  name?: string[];
+}
+
+export interface CcdaScopingEntity {
+  '@_classCode'?: string;
+  '@_typeCode'?: string;
+  id?: CcdaId[];
   code?: CcdaCode;
   name?: string[];
 }
@@ -307,6 +324,7 @@ export interface CcdaManufacturedMaterial {
 export interface CcdaId {
   '@_root'?: string;
   '@_extension'?: string;
+  '@_assigningAuthorityName'?: string;
 }
 
 export interface CcdaTimeStamp {

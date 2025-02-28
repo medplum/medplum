@@ -11,6 +11,7 @@ import {
   CompositionSection,
   Condition,
   ContactPoint,
+  DeviceUseStatement,
   DiagnosticReport,
   DosageDoseAndRate,
   Encounter,
@@ -49,6 +50,7 @@ import {
   OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
   OID_ENCOUNTER_ACTIVITIES,
   OID_ENCOUNTER_LOCATION,
+  OID_FDA_CODE_SYSTEM,
   OID_HL7_REGISTERED_MODELS,
   OID_IMMUNIZATION_ACTIVITY,
   OID_IMMUNIZATION_MEDICATION_INFORMATION,
@@ -63,6 +65,7 @@ import {
   OID_PROCEDURE_ACTIVITY_ACT,
   OID_PROCEDURE_ACTIVITY_OBSERVATION,
   OID_PROCEDURE_ACTIVITY_PROCEDURE,
+  OID_PRODUCT_INSTANCE,
   OID_REACTION_OBSERVATION,
   OID_RESULT_OBSERVATION,
   OID_RESULT_ORGANIZER,
@@ -464,12 +467,12 @@ class FhirToCcdaConverter {
       code: mapCodeableConceptToCcdaCode(section.code),
       title: section.title,
       text: this.mapFhirTextDivToCcdaSectionText(section.text),
-      entry: resources.map((resource) => this.createEntry(section, resource)),
+      entry: resources.map((resource) => this.createEntry(section, resource)).filter(Boolean) as CcdaEntry[],
       '@_nullFlavor': resources.length === 0 ? 'NI' : undefined,
     };
   }
 
-  private createEntry(section: CompositionSection, resource: Resource): CcdaEntry {
+  private createEntry(section: CompositionSection, resource: Resource): CcdaEntry | undefined {
     switch (resource.resourceType) {
       case 'AllergyIntolerance':
         return this.createAllergyEntry(resource as AllergyIntolerance);
@@ -479,6 +482,8 @@ class FhirToCcdaConverter {
         return this.createCareTeamEntry(resource);
       case 'Condition':
         return this.createProblemEntry(resource);
+      case 'DeviceUseStatement':
+        return this.createDeviceUseStatementEntry(resource);
       case 'DiagnosticReport':
         return this.createDiagnosticReportEntry(resource);
       case 'Encounter':
@@ -1728,6 +1733,68 @@ class FhirToCcdaConverter {
           code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
           statusCode: { '@_code': 'completed' },
           component: components,
+        },
+      ],
+    };
+  }
+
+  private createDeviceUseStatementEntry(resource: DeviceUseStatement): CcdaEntry | undefined {
+    const device = this.findResourceByReference(resource.device);
+    if (!device) {
+      return undefined;
+    }
+
+    const ids: CcdaId[] = [];
+
+    const deviceIds = this.mapIdentifiers(device.id, device.identifier);
+    if (deviceIds) {
+      ids.push(...deviceIds);
+    }
+
+    if (device.udiCarrier?.[0]?.deviceIdentifier) {
+      ids.push({
+        '@_root': OID_FDA_CODE_SYSTEM,
+        '@_extension': device.udiCarrier[0].carrierHRF,
+        '@_assigningAuthorityName': 'FDA',
+      });
+    }
+
+    return {
+      procedure: [
+        {
+          '@_classCode': 'PROC',
+          '@_moodCode': 'EVN',
+          templateId: [
+            { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
+            { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE },
+          ],
+          id: this.mapIdentifiers(resource.id, resource.identifier),
+          code: {
+            '@_code': '360030002',
+            '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+            '@_codeSystemName': 'SNOMED CT',
+            '@_displayName': 'Application of medical device',
+          },
+          statusCode: {
+            '@_code': 'completed',
+          },
+          participant: [
+            {
+              '@_typeCode': 'DEV',
+              participantRole: {
+                '@_classCode': 'MANU',
+                templateId: [{ '@_root': OID_PRODUCT_INSTANCE }],
+                id: ids,
+                playingDevice: {
+                  '@_classCode': 'DEV',
+                  code: mapCodeableConceptToCcdaCode(device.type) as CcdaCode,
+                },
+                scopingEntity: {
+                  id: [{ '@_root': OID_FDA_CODE_SYSTEM }],
+                },
+              },
+            },
+          ],
         },
       ],
     };

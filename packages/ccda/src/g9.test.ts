@@ -646,12 +646,75 @@ describe('170.315(g)(9)', () => {
       expect((components?.[0]?.observation?.[0]?.value as CcdaText)['#text']).toEqual('YELLOW');
     });
   });
+
+  describe('Devices', () => {
+    test('should handle device not found', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'DeviceUseStatement',
+          status: 'active',
+          device: { reference: 'Device/123' },
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual('46264-8');
+      expect(section?.entry).toHaveLength(0);
+    });
+
+    test('should handle device use statements', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Device',
+          id: '123',
+          udiCarrier: [
+            {
+              deviceIdentifier: '00643169007222',
+              issuer: 'FDA',
+              carrierHRF: '(01)00643169007222(17)160128(21)BLC200461H',
+            },
+          ],
+          status: 'active',
+          type: {
+            coding: [
+              {
+                system: 'http://snomed.info/sct',
+                code: '704708004',
+                display: 'Cardiac resynchronization therapy implantable pacemaker',
+              },
+            ],
+          },
+        },
+        {
+          resourceType: 'DeviceUseStatement',
+          status: 'active',
+          device: { reference: 'Device/123' },
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual('46264-8');
+      const procedure = section?.entry?.[0]?.procedure?.[0];
+      expect(procedure).toBeDefined();
+      expect(procedure?.code?.['@_code']).toEqual('360030002');
+      expect(procedure?.participant?.length).toEqual(1);
+      expect(procedure?.participant?.[0]?.['@_typeCode']).toEqual('DEV');
+      const device = procedure?.participant?.[0]?.participantRole;
+      expect(device).toBeDefined();
+      expect(device?.playingDevice?.code?.['@_code']).toEqual('704708004');
+    });
+  });
 });
 
 function createCompositionBundle(patient: Patient, ...resources: Partial<Resource>[]): Bundle {
   const resourceTypeToCode = {
     AllergyIntolerance: '48765-2',
     Condition: '11450-4',
+    DeviceUseStatement: '46264-8',
     DiagnosticReport: '30954-2',
     Immunization: '11369-6',
     MedicationRequest: '10160-0',
