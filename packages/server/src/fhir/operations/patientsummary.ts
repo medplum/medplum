@@ -40,6 +40,7 @@ export const LOINC_SOCIAL_HISTORY_SECTION = '29762-2';
 export const LOINC_VITAL_SIGNS_SECTION = '8716-3';
 export const LOINC_PROCEDURES_SECTION = '47519-4';
 export const LOINC_PLAN_OF_TREATMENT_SECTION = '18776-5';
+export const LOINC_DEVICES_SECTION = '46264-8';
 
 // International Patient Summary Implementation Guide
 // https://build.fhir.org/ig/HL7/fhir-ips/index.html
@@ -73,6 +74,8 @@ export const operation: OperationDefinition = {
 const resourceTypes: ResourceType[] = [
   'AllergyIntolerance',
   'Condition',
+  'Device',
+  'DeviceUseStatement',
   'DiagnosticReport',
   'Encounter',
   'Goal',
@@ -148,6 +151,7 @@ export class PatientSummaryBuilder {
   private readonly procedures: Resource[] = [];
   private readonly planOfTreatment: Resource[] = [];
   private readonly immunizations: Resource[] = [];
+  private readonly devices: Resource[] = [];
   private readonly nestedIds = new Set<string>();
 
   constructor(
@@ -215,6 +219,9 @@ export class PatientSummaryBuilder {
         break;
       case 'Condition':
         this.problemList.push(resource);
+        break;
+      case 'DeviceUseStatement':
+        this.devices.push(resource);
         break;
       case 'DiagnosticReport':
         this.results.push(resource);
@@ -322,6 +329,7 @@ export class PatientSummaryBuilder {
         createSection(LOINC_SOCIAL_HISTORY_SECTION, 'Social History', this.socialHistory),
         createSection(LOINC_VITAL_SIGNS_SECTION, 'Vital Signs', this.vitalSigns),
         createSection(LOINC_PROCEDURES_SECTION, 'Procedures', this.procedures),
+        createSection(LOINC_DEVICES_SECTION, 'Devices', this.devices),
         createSection(LOINC_PLAN_OF_TREATMENT_SECTION, 'Plan of Treatment', this.planOfTreatment),
       ],
     };
