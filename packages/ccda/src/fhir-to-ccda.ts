@@ -1226,7 +1226,7 @@ class FhirToCcdaConverter {
           templateId: [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }],
           id: this.mapIdentifiers(resource.id, resource.identifier),
           code: mapCodeableConceptToCcdaCode(resource.description),
-          statusCode: { '@_code': this.mapGoalStatus(resource.lifecycleStatus) },
+          statusCode: { '@_code': this.mapPlanOfTreatmentStatus(resource.lifecycleStatus) },
           effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.startDate) }],
           text: this.createTextFromExtensions(resource.extension),
           entryRelationship: resource.target?.map((target) => ({
@@ -1253,7 +1253,7 @@ class FhirToCcdaConverter {
     return result;
   }
 
-  private mapGoalStatus(status: string | undefined): string {
+  private mapPlanOfTreatmentStatus(status: string | undefined): string {
     switch (status) {
       case 'achieved':
         return 'completed';
@@ -1685,7 +1685,7 @@ class FhirToCcdaConverter {
           templateId: [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }],
           id: this.mapIdentifiers(resource.id, resource.identifier),
           code: mapCodeableConceptToCcdaCode(resource.code),
-          statusCode: { '@_code': this.mapServiceRequestStatus(resource.status) },
+          statusCode: { '@_code': this.mapPlanOfTreatmentStatus(resource.status) },
           effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.occurrenceDateTime) }],
           text: this.createTextFromExtensions(resource.extension),
         },
@@ -1693,17 +1693,6 @@ class FhirToCcdaConverter {
     };
 
     return result;
-  }
-
-  private mapServiceRequestStatus(status: string | undefined): string {
-    switch (status) {
-      case 'achieved':
-        return 'completed';
-      case 'cancelled':
-        return 'cancelled';
-      default:
-        return 'active';
-    }
   }
 
   private createDiagnosticReportEntry(resource: DiagnosticReport): CcdaEntry {
