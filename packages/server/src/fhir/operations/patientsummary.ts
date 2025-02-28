@@ -80,6 +80,7 @@ const resourceTypes: ResourceType[] = [
   'MedicationRequest',
   'Observation',
   'Procedure',
+  'ServiceRequest',
   'Task',
 ];
 
@@ -229,6 +230,9 @@ export class PatientSummaryBuilder {
         break;
       case 'Procedure':
         this.procedures.push(resource);
+        break;
+      case 'ServiceRequest':
+        this.planOfTreatment.push(resource);
         break;
 
       // Complex resource types - choose section based on resource type
