@@ -522,7 +522,10 @@ function getSearchParameterColumns(
       if (impl.type !== SearchParameterType.TEXT) {
         throw new Error('Expected SearchParameterDetails.type to be TEXT but got ' + impl.type);
       }
-      return [{ name: impl.columnName, type: 'TEXT[]' }];
+      return [
+        { name: impl.columnName, type: 'TEXT[]' },
+        { name: impl.sortColumnName, type: 'TEXT' },
+      ];
 
     case 'column':
       return [getColumnDefinition(impl.columnName, impl)];
