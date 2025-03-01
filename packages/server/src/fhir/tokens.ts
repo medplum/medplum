@@ -1,13 +1,5 @@
 import { evalFhirPathTyped, getSearchParameterDetails, PropertyType, toTypedValue, TypedValue } from '@medplum/core';
-import {
-  CodeableConcept,
-  Coding,
-  ContactPoint,
-  Identifier,
-  Resource,
-  ResourceType,
-  SearchParameter,
-} from '@medplum/fhirtypes';
+import { CodeableConcept, Coding, ContactPoint, Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
 
 export interface Token {
   readonly code: string;
@@ -80,16 +72,6 @@ export function getTokenIndexType(searchParam: SearchParameter, resourceType: st
 }
 
 /**
- * If the search parameter should be considered case-sensitive when searching for tokens.
- * @param param - The search parameter.
- * @param resourceType - The resource type being searched.
- * @returns True if the search parameter should be considered case-sensitive when searching for tokens.
- */
-export function isCaseSensitiveSearchParameter(param: SearchParameter, resourceType: ResourceType): boolean {
-  return getTokenIndexType(param, resourceType) === TokenIndexTypes.CASE_SENSITIVE;
-}
-
-/**
  * Builds a list of zero or more tokens for a search parameter and resource.
  * @param result - The result array where tokens will be added.
  * @param resource - The resource.
@@ -102,6 +84,11 @@ export function buildTokensForSearchParameter(result: Token[], resource: Resourc
   }
 }
 
+interface TokensContext {
+  searchParam: SearchParameter;
+  caseInsensitive: boolean;
+}
+
 /**
  * Builds a list of zero or more tokens for a search parameter and value.
  * @param result - The result array where tokens will be added.
@@ -112,61 +99,56 @@ export function buildTokensForSearchParameter(result: Token[], resource: Resourc
 function buildTokens(result: Token[], searchParam: SearchParameter, resource: Resource, typedValue: TypedValue): void {
   const { type, value } = typedValue;
 
-  const caseSensitive = isCaseSensitiveSearchParameter(searchParam, resource.resourceType);
+  const context: TokensContext = {
+    searchParam,
+    caseInsensitive: getTokenIndexType(searchParam, resource.resourceType) === TokenIndexTypes.CASE_INSENSITIVE,
+  };
 
   switch (type) {
     case PropertyType.Identifier:
-      buildIdentifierToken(result, searchParam, caseSensitive, value as Identifier);
+      buildIdentifierToken(result, context, value as Identifier);
       break;
     case PropertyType.CodeableConcept:
-      buildCodeableConceptToken(result, searchParam, caseSensitive, value as CodeableConcept);
+      buildCodeableConceptToken(result, context, value as CodeableConcept);
       break;
     case PropertyType.Coding:
-      buildCodingToken(result, searchParam, caseSensitive, value as Coding);
+      buildCodingToken(result, context, value as Coding);
       break;
     case PropertyType.ContactPoint:
-      buildContactPointToken(result, searchParam, caseSensitive, value as ContactPoint);
+      buildContactPointToken(result, context, value as ContactPoint);
       break;
     default:
-      buildSimpleToken(result, searchParam, caseSensitive, undefined, value?.toString() as string | undefined);
+      buildSimpleToken(result, context, undefined, value?.toString() as string | undefined);
   }
 }
 
 /**
  * Builds an identifier token.
  * @param result - The result array where tokens will be added.
- * @param searchParam - The search parameter.
- * @param caseSensitive - If the token value should be case sensitive.
+ * @param context - Context for building tokens.
  * @param identifier - The Identifier object to be indexed.
  */
-function buildIdentifierToken(
-  result: Token[],
-  searchParam: SearchParameter,
-  caseSensitive: boolean,
-  identifier: Identifier | undefined
-): void {
-  buildSimpleToken(result, searchParam, caseSensitive, identifier?.system, identifier?.value);
+function buildIdentifierToken(result: Token[], context: TokensContext, identifier: Identifier | undefined): void {
+  buildSimpleToken(result, context, identifier?.system, identifier?.value);
 }
 
 /**
  * Builds zero or more CodeableConcept tokens.
  * @param result - The result array where tokens will be added.
- * @param searchParam - The search parameter.
- * @param caseSensitive - If the token value should be case sensitive.
+ * @param context - Context for building tokens.
  * @param codeableConcept - The CodeableConcept object to be indexed.
  */
 function buildCodeableConceptToken(
   result: Token[],
-  searchParam: SearchParameter,
-  caseSensitive: boolean,
+  context: TokensContext,
   codeableConcept: CodeableConcept | undefined
 ): void {
   if (codeableConcept?.text) {
-    buildSimpleToken(result, searchParam, caseSensitive, 'text', codeableConcept.text);
+    buildSimpleToken(result, context, 'text', codeableConcept.text);
   }
   if (codeableConcept?.coding) {
     for (const coding of codeableConcept.coding) {
-      buildCodingToken(result, searchParam, caseSensitive, coding);
+      buildCodingToken(result, context, coding);
     }
   }
 }
@@ -174,41 +156,28 @@ function buildCodeableConceptToken(
 /**
  * Builds a Coding token.
  * @param result - The result array where tokens will be added.
- * @param searchParam - The search parameter.
- * @param caseSensitive - If the token value should be case sensitive.
+ * @param context - Context for building tokens.
  * @param coding - The Coding object to be indexed.
  */
-function buildCodingToken(
-  result: Token[],
-  searchParam: SearchParameter,
-  caseSensitive: boolean,
-  coding: Coding | undefined
-): void {
+function buildCodingToken(result: Token[], context: TokensContext, coding: Coding | undefined): void {
   if (coding) {
     if (coding.display) {
-      buildSimpleToken(result, searchParam, caseSensitive, 'text', coding.display);
+      buildSimpleToken(result, context, 'text', coding.display);
     }
-    buildSimpleToken(result, searchParam, caseSensitive, coding.system, coding.code);
+    buildSimpleToken(result, context, coding.system, coding.code);
   }
 }
 
 /**
  * Builds a ContactPoint token.
  * @param result - The result array where tokens will be added.
- * @param searchParam - The search parameter.
- * @param caseSensitive - If the token value should be case sensitive.
+ * @param context - Context for building tokens.
  * @param contactPoint - The ContactPoint object to be indexed.
  */
-function buildContactPointToken(
-  result: Token[],
-  searchParam: SearchParameter,
-  caseSensitive: boolean,
-  contactPoint: ContactPoint | undefined
-): void {
+function buildContactPointToken(result: Token[], context: TokensContext, contactPoint: ContactPoint | undefined): void {
   buildSimpleToken(
     result,
-    searchParam,
-    caseSensitive,
+    context,
     contactPoint?.system,
     contactPoint?.value ? contactPoint.value.toLocaleLowerCase() : contactPoint?.value
   );
@@ -217,27 +186,25 @@ function buildContactPointToken(
 /**
  * Builds a simple token.
  * @param result - The result array where tokens will be added.
- * @param searchParam - The search parameter.
- * @param caseSensitive - If the token value should be case sensitive.
+ * @param context - Context for building tokens.
  * @param system - The token system.
  * @param value - The token value.
  */
 function buildSimpleToken(
   result: Token[],
-  searchParam: SearchParameter,
-  caseSensitive: boolean,
+  context: TokensContext,
   system: string | undefined,
   value: string | undefined
 ): void {
   // Only add the token if there is a system or a value, and if it is not already in the list.
   if (
     (system || value) &&
-    !result.some((token) => token.code === searchParam.code && token.system === system && token.value === value)
+    !result.some((token) => token.code === context.searchParam.code && token.system === system && token.value === value)
   ) {
     result.push({
-      code: searchParam.code as string,
+      code: context.searchParam.code as string,
       system,
-      value: value && !caseSensitive ? value.toLocaleLowerCase() : value,
+      value: value && context.caseInsensitive ? value.toLocaleLowerCase() : value,
     });
   }
 }

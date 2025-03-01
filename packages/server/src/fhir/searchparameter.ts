@@ -1,8 +1,8 @@
 import { capitalize, getSearchParameterDetails, SearchParameterDetails } from '@medplum/core';
 import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { HumanNameTable } from './lookups/humanname';
 import { AddressTable } from './lookups/address';
 import { CodingTable } from './lookups/coding';
+import { HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
 import { ReferenceTable } from './lookups/reference';
 import { TokenTable } from './lookups/token';
@@ -30,6 +30,7 @@ export interface TokenColumnSearchParameterImplementation extends SearchParamete
   readonly columnName: string;
   readonly sortColumnName: string;
   readonly lookupTable: LookupTable;
+  readonly caseInsensitive: boolean;
 }
 
 export type SearchParameterImplementation =
@@ -89,27 +90,26 @@ function buildSearchParameterImplementation(
   const code = searchParam.code;
   const impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
 
-  let lookupTable: LookupTable | undefined;
   if (!searchParam.base?.includes(resourceType as ResourceType)) {
     throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
   }
 
-  if ((lookupTable = getLookupTable(resourceType, searchParam))) {
-    if (lookupTable === tokenTable) {
-      const writeable = impl as Writeable<TokenColumnSearchParameterImplementation>;
-      writeable.searchStrategy = 'token-column';
-      writeable.lookupTable = lookupTable;
+  const lookupTable = getLookupTable(resourceType, searchParam);
+  if (lookupTable === tokenTable) {
+    const writeable = impl as Writeable<TokenColumnSearchParameterImplementation>;
+    writeable.searchStrategy = 'token-column';
+    writeable.lookupTable = lookupTable;
 
-      writeable.columnName = 'tokens';
-      writeable.sortColumnName = convertCodeToColumnName(code) + 'Sort';
-      // if (TelecomTokenSearchParameterIds.includes(searchParam.id as string)) {
-      //   writeable.columnName = 'telecom';
-      // } else {
-      //   writeable.columnName = convertCodeToColumnName(code);
-      // }
-      return impl;
-    }
-
+    writeable.columnName = 'tokens';
+    writeable.sortColumnName = convertCodeToColumnName(code) + 'Sort';
+    writeable.caseInsensitive = tokenTable.isCaseInsensitive(searchParam, resourceType);
+    // if (TelecomTokenSearchParameterIds.includes(searchParam.id as string)) {
+    //   writeable.columnName = 'telecom';
+    // } else {
+    //   writeable.columnName = convertCodeToColumnName(code);
+    // }
+    return impl;
+  } else if (lookupTable) {
     const writeable = impl as Writeable<LookupTableSearchParameterImplementation>;
     writeable.searchStrategy = 'lookup-table';
     writeable.lookupTable = lookupTable;
