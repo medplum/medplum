@@ -95,6 +95,7 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
+import { TokenColumnsFeature } from './lookups/token';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
@@ -1482,23 +1483,27 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param searchParam - The search parameter definition.
    */
   private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
-    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
-
     if (
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment' ||
       searchParam.code === '_compartment:identifier' ||
-      searchParam.type === 'composite' ||
-      impl.searchStrategy === 'lookup-table'
+      searchParam.type === 'composite'
     ) {
+      return;
+    }
+
+    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
+    if (impl.searchStrategy === 'lookup-table') {
       return;
     }
 
     const values = evalFhirPath(searchParam.expression as string, resource);
 
     if (impl.searchStrategy === 'token-column') {
-      buildTokenColumns(searchParam, impl, columns, resource);
+      if (TokenColumnsFeature.write) {
+        buildTokenColumns(searchParam, impl, columns, resource);
+      }
     } else {
       impl satisfies ColumnSearchParameterImplementation;
       let columnValue = null;

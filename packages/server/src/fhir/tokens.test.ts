@@ -5,13 +5,13 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
-import { ReadFromTokenColumns } from './lookups/token';
+import { TokenColumnsFeature } from './lookups/token';
 
 describe.each(['token columns', 'lookup table'])('Token searching using %s', (tokenColumnsOrLookupTable) => {
   const systemRepo = getSystemRepo();
 
   beforeAll(async () => {
-    ReadFromTokenColumns.value = tokenColumnsOrLookupTable === 'token columns';
+    TokenColumnsFeature.read = tokenColumnsOrLookupTable === 'token columns';
     const config = await loadTestConfig();
     await initAppServices(config);
   });
@@ -1003,7 +1003,7 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
           },
         ],
       });
-      if (ReadFromTokenColumns.value) {
+      if (TokenColumnsFeature.read) {
         expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
       } else {
         // Token lookup tables don't support infix queries
