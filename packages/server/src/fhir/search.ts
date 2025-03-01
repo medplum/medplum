@@ -46,7 +46,7 @@ import validator from 'validator';
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
-import { ReadFromTokenColumns } from './lookups/token';
+import { TokenColumnsFeature } from './lookups/token';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { Repository } from './repo';
 import { getFullUrl } from './response';
@@ -970,7 +970,7 @@ function buildSearchFilterExpression(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (ReadFromTokenColumns.value && impl.searchStrategy === 'token-column') {
+  if (TokenColumnsFeature.read && impl.searchStrategy === 'token-column') {
     return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
   } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
     return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
@@ -1386,7 +1386,7 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (ReadFromTokenColumns.value && impl.searchStrategy === 'token-column') {
+  if (TokenColumnsFeature.read && impl.searchStrategy === 'token-column') {
     addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
   } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
     impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
