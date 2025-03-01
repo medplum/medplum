@@ -25,11 +25,6 @@ import { buildTokensForSearchParameter, getTokenIndexType, Token, TokenIndexType
 import { LookupTable } from './lookuptable';
 import { getStandardAndDerivedSearchParameters } from './util';
 
-export const TokenColumnsFeature = {
-  write: true,
-  read: false,
-};
-
 /** Context for building a WHERE condition on the token table. */
 interface FilterContext {
   searchParam: SearchParameter;
