@@ -25,6 +25,11 @@ export const TokenSpecialCharacters = {
   ARRAY_DELIM,
 };
 
+export const TokenColumnsFeature = {
+  write: true,
+  read: false,
+};
+
 export function buildTokenColumns(
   searchParam: SearchParameter,
   impl: TokenColumnSearchParameterImplementation,
