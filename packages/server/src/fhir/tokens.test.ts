@@ -5,7 +5,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
-import { TokenColumnsFeature } from './lookups/token';
+import { TokenColumnsFeature } from './token-column';
 
 describe.each(['token columns', 'lookup table'])('Token searching using %s', (tokenColumnsOrLookupTable) => {
   const systemRepo = getSystemRepo();

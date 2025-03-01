@@ -46,7 +46,6 @@ import validator from 'validator';
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
-import { TokenColumnsFeature } from './lookups/token';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { Repository } from './repo';
 import { getFullUrl } from './response';
@@ -70,7 +69,7 @@ import {
   Union,
   ValuesQuery,
 } from './sql';
-import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-column';
+import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter, TokenColumnsFeature } from './token-column';
 
 /**
  * Defines the maximum number of resources returned in a single search result.

@@ -94,7 +94,6 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
-import { TokenColumnsFeature } from './lookups/token';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
@@ -113,7 +112,7 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
-import { buildTokenColumns } from './token-column';
+import { TokenColumnsFeature, buildTokenColumns } from './token-column';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
