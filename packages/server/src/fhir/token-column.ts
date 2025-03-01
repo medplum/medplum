@@ -13,7 +13,7 @@ import {
   SelectQuery,
   TypedCondition,
 } from './sql';
-import { buildTokensForSearchParameter, isCaseSensitiveSearchParameter, Token } from './tokens';
+import { buildTokensForSearchParameter, Token } from './tokens';
 
 const DELIM = '\x01';
 const NULL_SYSTEM = '\x02';
@@ -31,21 +31,24 @@ export function buildTokenColumns(
   columns: Record<string, any>,
   resource: Resource
 ): void {
-  // TODO [Search by logical references](https://github.com/medplum/medplum/issues/1630) needs
-  // to be addressed again. Hmm...
-
   const allTokens: Token[] = [];
   buildTokensForSearchParameter(allTokens, resource, searchParam);
 
+  // search parameters may share columns, so add any existing tokens to the set
   const tokens = new Set<string>(columns[impl.columnName]);
+
   let sortColumnValue: string | null = null;
   for (const t of allTokens) {
     const code = t.code;
 
     const system = t.system?.trim?.();
-    const value = t.value?.trim?.();
+    let value = t.value?.trim?.();
     if (!code || (!system && !value)) {
       continue;
+    }
+
+    if (value && impl.caseInsensitive) {
+      value = value.toLocaleLowerCase();
     }
 
     // sanity check
@@ -130,7 +133,6 @@ export function buildTokenColumnsSearchFilter(
   param: SearchParameter,
   filter: Filter
 ): Expression {
-  const caseSensitive = isCaseSensitiveSearchParameter(param, resourceType);
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy !== 'token-column') {
     throw new Error('Invalid search strategy: ' + impl.searchStrategy);
@@ -140,7 +142,7 @@ export function buildTokenColumnsSearchFilter(
 
   // https://www.hl7.org/fhir/r4/search.html#combining
   for (const option of splitSearchOnComma(filter.value)) {
-    const expression = buildTokenColumnsWhereCondition(impl, tableName, filter, caseSensitive, option);
+    const expression = buildTokenColumnsWhereCondition(impl, tableName, filter, option);
     if (expression) {
       valueExpressions.push(expression);
     }
@@ -166,7 +168,6 @@ function buildTokenColumnsWhereCondition(
   impl: TokenColumnSearchParameterImplementation,
   tableName: string,
   filter: Filter,
-  caseSensitive: boolean,
   query: string
 ): Expression | undefined {
   const code = filter.code;
@@ -190,7 +191,7 @@ function buildTokenColumnsWhereCondition(
       // TODO{mattlong} base on the operators that return false in shouldCompareTokenValue
       return undefined;
     case FhirOperator.TEXT: {
-      // token_array_to_text(token) ~ '\x3text\x1[^\x3]*Quick Brown'
+      // token_array_to_text(token) ~ '\x3code\x1text\x1[^\x3]*Quick Brown'
       const regexStr =
         ARRAY_DELIM + code + DELIM + 'text' + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       return new Conjunction([
@@ -221,14 +222,13 @@ function buildTokenColumnsWhereCondition(
         value = query;
       }
 
+      if (value && impl.caseInsensitive) {
+        value = value.toLocaleLowerCase();
+      }
+
       const valuePart = value ? DELIM + value : '';
 
-      if (caseSensitive) {
-        return new TypedCondition(tokenCol, 'ARRAY_CONTAINS', code + DELIM + system + valuePart, 'TEXT[]');
-      } else {
-        const regexStr = code + DELIM + system + DELIM + escapeRegexString(value) + ARRAY_DELIM;
-        return new TypedCondition(tokenCol, 'ARRAY_IREGEX', regexStr, 'TEXT[]');
-      }
+      return new TypedCondition(tokenCol, 'ARRAY_CONTAINS', code + DELIM + system + valuePart, 'TEXT[]');
     }
   }
 }

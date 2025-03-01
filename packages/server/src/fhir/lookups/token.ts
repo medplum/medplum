@@ -21,19 +21,20 @@ import {
   SelectQuery,
   SqlFunction,
 } from '../sql';
-import { buildTokensForSearchParameter, getTokenIndexType, isCaseSensitiveSearchParameter, Token } from '../tokens';
+import { buildTokensForSearchParameter, getTokenIndexType, Token, TokenIndexTypes } from '../tokens';
 import { LookupTable } from './lookuptable';
 import { getStandardAndDerivedSearchParameters } from './util';
 
-export const ReadFromTokenColumns = {
-  value: false,
+export const TokenColumnsFeature = {
+  write: true,
+  read: false,
 };
 
 /** Context for building a WHERE condition on the token table. */
 interface FilterContext {
   searchParam: SearchParameter;
   lookupTableName: string;
-  caseSensitive: boolean;
+  caseInsensitive: boolean;
   filter: Filter;
 }
 
@@ -68,7 +69,16 @@ export class TokenTable extends LookupTable {
    * @returns True if the search parameter is an "token" parameter.
    */
   isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
-    return Boolean(getTokenIndexType(searchParam, resourceType));
+    return TokenTable.isIndexed(searchParam, resourceType);
+  }
+
+  static isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
+    return getTokenIndexType(searchParam, resourceType) !== undefined;
+  }
+
+  isCaseInsensitive(searchParam: SearchParameter, resourceType: string): boolean {
+    const tokenType = getTokenIndexType(searchParam, resourceType);
+    return tokenType === TokenIndexTypes.CASE_INSENSITIVE;
   }
 
   /**
@@ -121,9 +131,9 @@ export class TokenTable extends LookupTable {
       new Condition(new Column(lookupTableName, 'code'), '=', filter.code),
     ]);
 
-    const caseSensitive = isCaseSensitiveSearchParameter(param, resourceType);
+    const caseInsensitive = this.isCaseInsensitive(param, resourceType);
 
-    const whereExpression = buildWhereExpression({ searchParam: param, lookupTableName, caseSensitive, filter });
+    const whereExpression = buildWhereExpression({ searchParam: param, lookupTableName, caseInsensitive, filter });
     if (whereExpression) {
       conjunction.expressions.push(whereExpression);
     }
@@ -301,7 +311,7 @@ function buildWhereCondition(context: FilterContext, query: string): Expression 
 }
 
 function buildValueCondition(context: FilterContext, value: string): Expression {
-  const { lookupTableName: tableName, caseSensitive } = context;
+  const { lookupTableName: tableName, caseInsensitive } = context;
   const operator = context.filter.operator;
   const column = new Column(tableName, 'value');
   value = value.trim();
@@ -315,12 +325,11 @@ function buildValueCondition(context: FilterContext, value: string): Expression 
   } else if (operator === FhirOperator.CONTAINS) {
     logExpensiveQuery(context, value);
     return new Condition(column, 'LIKE', escapeLikeString(value) + '%');
-  } else if (caseSensitive) {
-    return new Condition(column, '=', value);
   } else {
-    // In Medplum v4, or when there is a guarantee all resources have been reindexed, the IN (...) can be
-    // switched to an '=' of just the lower-cased value for a simplified query and potentially better performance.
-    return new Condition(column, 'IN', [value, value.toLocaleLowerCase()]);
+    if (value && caseInsensitive) {
+      value = value.toLocaleLowerCase();
+    }
+    return new Condition(column, '=', value);
   }
 }
 
