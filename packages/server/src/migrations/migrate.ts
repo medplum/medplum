@@ -510,6 +510,7 @@ function getSearchParameterColumns(
       }
       return [
         { name: impl.columnName, type: 'TEXT[]' },
+        { name: impl.textSearchColumnName, type: 'TEXT[]' },
         { name: impl.sortColumnName, type: 'TEXT' },
       ];
 
@@ -530,12 +531,12 @@ function getSearchParameterIndexes(
         {
           columns: [
             {
-              expression: `token_array_to_text(${quotedColumnName(impl.columnName)}) gin_trgm_ops`,
+              expression: `${SqlFunctions.token_array_to_text.name}(${quotedColumnName(impl.textSearchColumnName)}) gin_trgm_ops`,
               name: impl.columnName + 'Trgm',
             },
           ],
           indexType: 'gin',
-          where: `${quotedColumnName(impl.columnName)} IS NOT NULL`,
+          where: `${quotedColumnName(impl.textSearchColumnName)} IS NOT NULL`,
         },
       ];
     }
