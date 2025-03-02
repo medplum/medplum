@@ -120,11 +120,15 @@ export const Operator = {
     sql.appendParameters(parameter, false);
   },
   ARRAY_IREGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('(');
+    sql.appendColumn(column);
+    sql.append(' IS NOT NULL AND ');
     sql.append(`${TokenArrayToTextFn.name}(`);
     sql.appendColumn(column);
     sql.append(')');
     sql.append(' ~* ');
     sql.appendParameters(parameter, false);
+    sql.append(')');
   },
   TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     const query = formatTsquery(parameter);
