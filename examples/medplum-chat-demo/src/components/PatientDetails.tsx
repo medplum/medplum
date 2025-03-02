@@ -4,6 +4,7 @@ import { getReferenceString, normalizeErrorString, Operator, SearchRequest, With
 import { Patient, Practitioner, Resource } from '@medplum/fhirtypes';
 import {
   Document,
+  PatientHeader,
   ResourceForm,
   ResourceHistoryTable,
   ResourceTable,
@@ -14,7 +15,6 @@ import {
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { PatientHeader } from '../pages/PatientHeader';
 import { cleanResource } from '../utils';
 
 interface PatientDetailsProps {
