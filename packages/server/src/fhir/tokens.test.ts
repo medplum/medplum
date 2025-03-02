@@ -215,36 +215,155 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
       expect(bundleContains(searchResult1, patient2)).toBeUndefined();
     }));
 
-  test('Contains', () =>
-    withTestContext(async () => {
-      const identifier = randomUUID();
+  describe(':contains', () => {
+    const baseIdentifierValue = randomUUID();
+    const identifier = randomUUID();
+    let patient1: Patient;
+    let patient2: Patient;
+    const baseFilters = [
+      {
+        code: 'identifier',
+        operator: Operator.EQUALS,
+        value: baseIdentifierValue,
+      },
+    ];
 
-      const patient1 = await systemRepo.createResource<Patient>({
+    beforeAll(async () => {
+      const baseIdentifier = { system: 'https://hi.com', value: baseIdentifierValue };
+
+      patient1 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
-        identifier: [{ system: 'https://www.example.com', value: identifier }],
+        telecom: [
+          { system: 'email', value: 'prefix-email-postfix' },
+          { system: 'phone', value: 'prefix-phone-postfix' },
+          { system: 'pager', value: 'prefix-pager-postfix' },
+        ],
+        identifier: [baseIdentifier, { system: 'https://www.example.com', value: identifier }],
       });
 
-      const patient2 = await systemRepo.createResource<Patient>({
+      patient2 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Jones' }],
-        identifier: [{ system: 'https://www.example.com', value: identifier + 'xyz' }],
+        identifier: [baseIdentifier, { system: 'https://www.example.com', value: identifier + 'xyz' }],
       });
+    });
 
-      const searchResult1 = await systemRepo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'identifier',
-            operator: Operator.CONTAINS,
-            value: identifier,
-          },
-        ],
-      });
-      expect(searchResult1.entry?.length).toStrictEqual(2);
-      expect(bundleContains(searchResult1, patient1)).toBeDefined();
-      expect(bundleContains(searchResult1, patient2)).toBeDefined();
-    }));
+    test('prefix on Patient-identifier', () =>
+      withTestContext(async () => {
+        const identifierResult = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            ...baseFilters,
+            {
+              code: 'identifier',
+              operator: Operator.CONTAINS,
+              value: identifier.slice(0, 5),
+            },
+          ],
+        });
+
+        if (TokenColumnsFeature.read) {
+          expect(identifierResult.entry?.length).toStrictEqual(0);
+        } else {
+          expect(identifierResult.entry?.length).toStrictEqual(2);
+          expect(bundleContains(identifierResult, patient1)).toBeDefined();
+          expect(bundleContains(identifierResult, patient2)).toBeDefined();
+        }
+      }));
+
+    test('infix on Patient-identifier', () =>
+      withTestContext(async () => {
+        const identifierResult = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            ...baseFilters,
+            {
+              code: 'identifier',
+              operator: Operator.CONTAINS,
+              value: identifier.slice(5, 10),
+            },
+          ],
+        });
+
+        if (TokenColumnsFeature.read) {
+          // The token column implementation does not support :contains on identifier
+          expect(identifierResult.entry?.length).toStrictEqual(0);
+        } else {
+          // The lookup table implementation does support infix search on token values
+          expect(identifierResult.entry?.length).toStrictEqual(0);
+        }
+      }));
+
+    test('infix on Patient-telecom', () =>
+      withTestContext(async () => {
+        const result = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            ...baseFilters,
+            {
+              code: 'telecom',
+              operator: Operator.CONTAINS,
+              value: 'pager',
+            },
+          ],
+        });
+
+        if (TokenColumnsFeature.read) {
+          expect(result.entry?.length).toStrictEqual(1);
+          expect(bundleContains(result, patient1)).toBeDefined();
+        } else {
+          // The lookup table implementation does support infix search on token values
+          expect(result.entry?.length).toStrictEqual(0);
+        }
+      }));
+
+    test('infix on Patient-email', () =>
+      withTestContext(async () => {
+        const result = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            ...baseFilters,
+            {
+              code: 'email',
+              operator: Operator.CONTAINS,
+              value: 'email',
+            },
+          ],
+        });
+
+        if (TokenColumnsFeature.read) {
+          expect(result.entry?.length).toStrictEqual(1);
+          expect(bundleContains(result, patient1)).toBeDefined();
+        } else {
+          // The lookup table implementation does support infix search on token values
+          expect(result.entry?.length).toStrictEqual(0);
+        }
+      }));
+
+    test('infix on Patient-phone', () =>
+      withTestContext(async () => {
+        const result = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            ...baseFilters,
+            {
+              code: 'phone',
+              operator: Operator.CONTAINS,
+              value: 'phone',
+            },
+          ],
+        });
+
+        if (TokenColumnsFeature.read) {
+          expect(result.entry?.length).toStrictEqual(1);
+          expect(bundleContains(result, patient1)).toBeDefined();
+        } else {
+          // The lookup table implementation does support infix search on token values
+          expect(result.entry?.length).toStrictEqual(0);
+        }
+      }));
+  });
 
   test('Not equals', () =>
     withTestContext(async () => {
