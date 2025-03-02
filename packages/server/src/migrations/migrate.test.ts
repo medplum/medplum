@@ -143,6 +143,10 @@ describe('Generator', () => {
           type: 'TEXT[]',
         },
         {
+          name: 'tokensText',
+          type: 'TEXT[]',
+        },
+        {
           name: '_securitySort',
           type: 'TEXT',
         },
@@ -191,7 +195,7 @@ describe('Generator', () => {
       const sortFn = (a: { name: string }, b: { name: string }): number => a.name.localeCompare(b.name);
       const actual: ColumnDefinition[] = toSorted(table.columns, sortFn);
       const expected = toSorted(expectedColumns, sortFn);
-      expect(actual.length).toEqual(expected.length);
+      expect(actual.map((c) => c.name)).toStrictEqual(expected.map((c) => c.name));
       for (let i = 0; i < actual.length; i++) {
         expect(columnDefinitionsEqual(actual[i], expected[i])).toBe(true);
       }

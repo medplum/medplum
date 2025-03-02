@@ -1026,7 +1026,12 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
           },
         ],
       });
-      expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
+      if (TokenColumnsFeature.read) {
+        // Token columns don't support :contains on `code`
+        expect(toSortedIdentifierValues(resContains)).toStrictEqual([]);
+      } else {
+        expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
+      }
     });
 
     test.each<[string, string, Conditions[]]>([
@@ -1105,30 +1110,32 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
           },
         ],
       });
-      expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
+      if (TokenColumnsFeature.read) {
+        // Token columns don't support :contains on `code`
+        expect(toSortedIdentifierValues(resContains)).toStrictEqual([]);
+      } else {
+        expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
+      }
     });
 
-    test.each<[string, Conditions[]]>([
-      [val1.slice(1, 3), ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
-      [val2.slice(1, 3), ['codeTwoWithoutSystemCatTwo']],
-    ])(`code :contains middle of value %s`, async (value, expected) => {
-      const resContains = await repo.search<Condition>({
-        resourceType: 'Condition',
-        filters: [
-          {
-            code: 'code',
-            operator: Operator.CONTAINS,
-            value,
-          },
-        ],
-      });
-      if (TokenColumnsFeature.read) {
-        expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
-      } else {
+    test.each<[string]>([[val1.slice(1, 3)], [val2.slice(1, 3)]])(
+      `code :contains middle of value %s`,
+      async (value) => {
+        const resContains = await repo.search<Condition>({
+          resourceType: 'Condition',
+          filters: [
+            {
+              code: 'code',
+              operator: Operator.CONTAINS,
+              value,
+            },
+          ],
+        });
+        // Token columns don't support :contains on `code`
         // Token lookup tables don't support infix queries
         expect(toSortedIdentifierValues(resContains).length).toBe(0);
       }
-    });
+    );
 
     test.each<[string, Conditions[]]>([
       [disp1, ['codeOneNoCat']],
