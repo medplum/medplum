@@ -29,8 +29,10 @@ export interface TokenColumnSearchParameterImplementation extends SearchParamete
   readonly searchStrategy: typeof SearchStrategies.TOKEN_COLUMN;
   readonly columnName: string;
   readonly sortColumnName: string;
+  readonly textSearchColumnName: string;
   readonly lookupTable: LookupTable;
   readonly caseInsensitive: boolean;
+  readonly textSearch: boolean;
 }
 
 export type SearchParameterImplementation =
@@ -74,14 +76,15 @@ function setSearchParameterImplementation(
   typeSchema.searchParamsImplementations[code] = implementation;
 }
 
-// const TelecomTokenSearchParameterIds = [
-//   'individual-telecom',
-//   'individual-email',
-//   'individual-phone',
-//   'OrganizationAffiliation-telecom',
-//   'OrganizationAffiliation-email',
-//   'OrganizationAffiliation-phone',
-// ];
+const ContainsSupportSearchParameterIds = [
+  'individual-email',
+  'individual-phone',
+  'individual-telecom',
+  'NamingSystem-telecom',
+  'OrganizationAffiliation-email',
+  'OrganizationAffiliation-phone',
+  'OrganizationAffiliation-telecom',
+];
 
 function buildSearchParameterImplementation(
   resourceType: string,
@@ -102,12 +105,9 @@ function buildSearchParameterImplementation(
 
     writeable.columnName = 'tokens';
     writeable.sortColumnName = convertCodeToColumnName(code) + 'Sort';
+    writeable.textSearchColumnName = 'tokensText';
     writeable.caseInsensitive = tokenTable.isCaseInsensitive(searchParam, resourceType);
-    // if (TelecomTokenSearchParameterIds.includes(searchParam.id as string)) {
-    //   writeable.columnName = 'telecom';
-    // } else {
-    //   writeable.columnName = convertCodeToColumnName(code);
-    // }
+    writeable.textSearch = ContainsSupportSearchParameterIds.includes(searchParam.id as string);
     return impl;
   } else if (lookupTable) {
     const writeable = impl as Writeable<LookupTableSearchParameterImplementation>;

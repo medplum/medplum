@@ -2,17 +2,7 @@ import { Operator as FhirOperator, Filter, SortRule, splitN, splitSearchOnComma 
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { shouldTokenRowExist } from './lookups/token';
 import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
-import {
-  Column,
-  Condition,
-  Conjunction,
-  Disjunction,
-  escapeLikeString,
-  Expression,
-  Negation,
-  SelectQuery,
-  TypedCondition,
-} from './sql';
+import { Column, Condition, Conjunction, Disjunction, Expression, Negation, SelectQuery, TypedCondition } from './sql';
 import { buildTokensForSearchParameter, Token } from './tokens';
 
 const DELIM = '\x01';
@@ -41,6 +31,7 @@ export function buildTokenColumns(
 
   // search parameters may share columns, so add any existing tokens to the set
   const tokens = new Set<string>(columns[impl.columnName]);
+  const textSearchTokens = new Set<string>(columns[impl.textSearchColumnName]);
 
   let sortColumnValue: string | null = null;
   for (const t of allTokens) {
@@ -79,13 +70,20 @@ export function buildTokenColumns(
 
       // [parameter]=[code]
       tokenSet.add(code + DELIM + DELIM + value);
+
       if (!system) {
         // [parameter]=|[code]
         tokenSet.add(code + DELIM + NULL_SYSTEM + DELIM + value);
       }
+
+      // text search
+      if (system === 'text' || impl.textSearch) {
+        textSearchTokens.add(code + DELIM + DELIM + value);
+      }
     }
   }
   columns[impl.columnName] = Array.from(tokens);
+  columns[impl.textSearchColumnName] = Array.from(textSearchTokens);
   columns[impl.sortColumnName] = sortColumnValue;
 }
 
@@ -178,6 +176,7 @@ function buildTokenColumnsWhereCondition(
   const code = filter.code;
   query = query.trim();
   const tokenCol = new Column(tableName, impl.columnName);
+  const textSearchCol = new Column(tableName, impl.textSearchColumnName);
 
   switch (filter.operator) {
     case FhirOperator.NOT_IN:
@@ -196,24 +195,16 @@ function buildTokenColumnsWhereCondition(
       // TODO{mattlong} base on the operators that return false in shouldCompareTokenValue
       return undefined;
     case FhirOperator.TEXT: {
-      // token_array_to_text(token) ~ '\x3code\x1text\x1[^\x3]*Quick Brown'
-      const regexStr =
-        ARRAY_DELIM + code + DELIM + 'text' + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
+      // token_array_to_text(token) ~ '\x3code\x1\x1[^\x3]*Quick Brown'
+      const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       return new Conjunction([
-        new TypedCondition(tokenCol, 'ARRAY_CONTAINS', code + DELIM + 'text', 'TEXT[]'),
-        new TypedCondition(tokenCol, 'ARRAY_IREGEX', regexStr, 'TEXT[]'),
+        new TypedCondition(tokenCol, 'ARRAY_CONTAINS', code + DELIM + 'text', 'TEXT[]'), // TODO: does this actually improve query performance?
+        new TypedCondition(textSearchCol, 'ARRAY_IREGEX', regexStr, 'TEXT[]'),
       ]);
     }
     case FhirOperator.CONTAINS: {
-      const likeStr = '%' + ARRAY_DELIM + code + DELIM + DELIM + '%' + escapeLikeString(query) + '%';
       const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
-
-      return new Conjunction([
-        // This ILIKE doesn't guarantee a matching row, but including it can result faster query
-        // since a trigram index is faster at LIKE/ILIKE than regex. In other words, the LIKE is a low-pass filter
-        new TypedCondition(tokenCol, 'ARRAY_ILIKE', likeStr, 'TEXT[]'),
-        new TypedCondition(tokenCol, 'ARRAY_IREGEX', regexStr, 'TEXT[]'),
-      ]);
+      return new TypedCondition(textSearchCol, 'ARRAY_IREGEX', regexStr, 'TEXT[]');
     }
     default: {
       let system: string;
@@ -233,6 +224,14 @@ function buildTokenColumnsWhereCondition(
 
       const valuePart = value ? DELIM + value : '';
 
+      // it shouldn't be possible for both system and value to be empty strings
+      if (!system && !value) {
+        throw new Error('Invalid query: both system and value are empty strings');
+      }
+
+      // Always start with code + DELIM + system (system may be empty string which is okay/expected)
+      // if a value is specified, add DELIM + value resulting in code + DELIM + system + DELIM + value
+      // if a value is not specified, result is code + DELIM + system
       return new TypedCondition(tokenCol, 'ARRAY_CONTAINS', code + DELIM + system + valuePart, 'TEXT[]');
     }
   }
