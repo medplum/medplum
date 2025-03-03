@@ -4,10 +4,10 @@
 
 import { MantineProvider } from '@mantine/core';
 import { RenderResult, act, fireEvent, screen, render as testingLibraryRender, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import userEvent, { UserEvent } from '@testing-library/user-event';
 import { ReactNode } from 'react';
 
-export { RenderResult, act, fireEvent, screen, userEvent, waitFor };
+export { RenderResult, act, fireEvent, screen, userEvent, UserEvent, waitFor };
 
 const theme = {};
 
