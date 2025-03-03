@@ -1,4 +1,13 @@
-import { evalFhirPathTyped, getSearchParameterDetails, PropertyType, toTypedValue, TypedValue } from '@medplum/core';
+import {
+  badRequest,
+  evalFhirPathTyped,
+  getSearchParameterDetails,
+  OperationOutcomeError,
+  Operator,
+  PropertyType,
+  toTypedValue,
+  TypedValue,
+} from '@medplum/core';
 import { CodeableConcept, Coding, ContactPoint, Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
 
 export interface Token {
@@ -207,4 +216,38 @@ function buildSimpleToken(
       value: value && context.caseInsensitive ? value.toLocaleLowerCase() : value,
     });
   }
+}
+
+/**
+ * Returns true if the filter requires a token to exist based on the provided :missing or :present filter
+ * @param operator - Either Operator.MISSING or Operator.PRESENT
+ * @param value - Filter value
+ * @returns true if the filter requires a token to exist based on the provided :missing or :present filter
+ */
+export function shouldTokenExistForMissingOrPresent(
+  operator: Operator.MISSING | Operator.PRESENT,
+  value: string
+): boolean {
+  if (operator === Operator.MISSING) {
+    // Missing = true means that there should not be a row
+    switch (value.toLowerCase()) {
+      case 'true':
+        return false;
+      case 'false':
+        return true;
+      default:
+        throw new OperationOutcomeError(badRequest("Search filter ':missing' must have a value of 'true' or 'false'"));
+    }
+  } else if (operator === Operator.PRESENT) {
+    // Present = true means that there should be a row
+    switch (value.toLowerCase()) {
+      case 'true':
+        return true;
+      case 'false':
+        return false;
+      default:
+        throw new OperationOutcomeError(badRequest("Search filter ':present' must have a value of 'true' or 'false'"));
+    }
+  }
+  return true;
 }
