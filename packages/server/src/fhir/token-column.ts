@@ -43,7 +43,6 @@ export function buildTokenColumns(
   let sortColumnValue: string | null = null;
   for (const t of allTokens) {
     const code = t.code;
-
     const system = t.system?.trim?.();
     let value = t.value?.trim?.();
     if (!code || (!system && !value)) {
@@ -59,16 +58,16 @@ export function buildTokenColumns(
       throw new Error(`Invalid token code ${code} for search parameter with code ${searchParam.code}`);
     }
 
-    // MISSING/PRESENT - any entries in the column at all
+    // :missing/:present
+    tokens.add(code);
 
-    const tokenSet = tokens;
     if (system) {
       // [parameter]=[system]|
-      tokenSet.add(code + DELIM + system);
+      tokens.add(code + DELIM + system);
 
       if (value) {
         // [parameter]=[system]|[code]
-        tokenSet.add(code + DELIM + system + DELIM + value);
+        tokens.add(code + DELIM + system + DELIM + value);
       }
     }
 
@@ -76,11 +75,11 @@ export function buildTokenColumns(
       sortColumnValue = sortColumnValue && sortColumnValue.localeCompare(value) <= 0 ? sortColumnValue : value;
 
       // [parameter]=[code]
-      tokenSet.add(code + DELIM + DELIM + value);
+      tokens.add(code + DELIM + DELIM + value);
 
       if (!system) {
         // [parameter]=|[code]
-        tokenSet.add(code + DELIM + NULL_SYSTEM + DELIM + value);
+        tokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
       }
 
       // text search
@@ -182,11 +181,11 @@ export function buildTokenColumnsSearchFilter(
     }
     case FhirOperator.MISSING:
     case FhirOperator.PRESENT: {
-      if (shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
-        return new TypedCondition(new Column(tableName, impl.columnName), 'ARRAY_NOT_EMPTY', undefined);
-      } else {
-        return new TypedCondition(new Column(tableName, impl.columnName), 'ARRAY_EMPTY', undefined);
+      const cond = new TypedCondition(new Column(tableName, impl.columnName), 'ARRAY_CONTAINS', filter.code, 'TEXT[]');
+      if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+        return new Negation(cond);
       }
+      return cond;
     }
     case FhirOperator.STARTS_WITH:
     case FhirOperator.GREATER_THAN:
