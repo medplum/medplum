@@ -409,42 +409,6 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
       expect(bundleContains(searchResult1, patient3)).toBeDefined();
     }));
 
-  test('Missing', () =>
-    withTestContext(async () => {
-      const identifier = randomUUID();
-      const name = randomUUID();
-
-      const patient1 = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: name }],
-      });
-
-      const patient2 = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Bob'], family: name }],
-        telecom: [{ system: 'email', value: identifier + 'xyz' }],
-      });
-
-      const searchResult1 = await systemRepo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'email',
-            operator: Operator.MISSING,
-            value: 'true',
-          },
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: name,
-          },
-        ],
-      });
-      expect(searchResult1.entry?.length).toStrictEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBeDefined();
-      expect(bundleContains(searchResult1, patient2)).toBeUndefined();
-    }));
-
   test('Search comma separated identifier exact', () =>
     withTestContext(async () => {
       const identifier1 = randomUUID();
@@ -630,61 +594,52 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
       expect(r1.entry?.[0]?.resource?.id).toStrictEqual(p1.id);
     }));
 
-  test('Missing/present', () =>
-    withTestContext(async () => {
-      const family = randomUUID();
+  describe('Missing/present', () => {
+    const family = randomUUID();
+    const email = randomUUID();
+    const identifier = randomUUID();
+    let p1: Patient;
+    let p2: Patient;
 
-      const p1 = await systemRepo.createResource<Patient>({
+    beforeAll(async () => {
+      p1 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ family }],
+        telecom: [{ system: 'email', value: email + 'abc' }],
       });
 
-      const p2 = await systemRepo.createResource<Patient>({
+      p2 = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ family }],
-        identifier: [{ system: 'https://www.example.com', value: randomUUID() }],
+        telecom: [{ system: 'email', value: email + 'xyz' }],
+        identifier: [{ system: 'https://www.example.com', value: identifier }],
       });
+    });
 
-      const r1 = await systemRepo.search({
-        resourceType: 'Patient',
-        filters: [
-          { code: 'name', operator: Operator.EQUALS, value: family },
-          { code: 'identifier', operator: Operator.MISSING, value: 'true' },
-        ],
-      });
-      expect(r1.entry?.length).toStrictEqual(1);
-      expect(r1.entry?.[0]?.resource?.id).toStrictEqual(p1.id);
+    test.each([
+      ['identifier', Operator.MISSING, 'true', true, false],
+      ['identifier', Operator.MISSING, 'false', false, true],
+      ['identifier', Operator.PRESENT, 'true', false, true],
+      ['identifier', Operator.PRESENT, 'false', true, false],
+      ['telecom', Operator.MISSING, 'true', false, false],
+      ['telecom', Operator.MISSING, 'false', true, true],
+      ['telecom', Operator.PRESENT, 'true', true, true],
+      ['telecom', Operator.PRESENT, 'false', false, false],
+    ])('%s :%s %s', (code, operator, value, expected1, expected2) =>
+      withTestContext(async () => {
+        const res = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            { code: 'name', operator: Operator.EQUALS, value: family },
+            { code, operator, value },
+          ],
+        });
+        expect(Boolean(bundleContains(res, p1))).toBe(expected1);
+        expect(Boolean(bundleContains(res, p2))).toBe(expected2);
+      })
+    );
+  });
 
-      const r2 = await systemRepo.search({
-        resourceType: 'Patient',
-        filters: [
-          { code: 'name', operator: Operator.EQUALS, value: family },
-          { code: 'identifier', operator: Operator.MISSING, value: 'false' },
-        ],
-      });
-      expect(r2.entry?.length).toStrictEqual(1);
-      expect(r2.entry?.[0]?.resource?.id).toStrictEqual(p2.id);
-
-      const r3 = await systemRepo.search({
-        resourceType: 'Patient',
-        filters: [
-          { code: 'name', operator: Operator.EQUALS, value: family },
-          { code: 'identifier', operator: Operator.PRESENT, value: 'true' },
-        ],
-      });
-      expect(r3.entry?.length).toStrictEqual(1);
-      expect(r3.entry?.[0]?.resource?.id).toStrictEqual(p2.id);
-
-      const r4 = await systemRepo.search({
-        resourceType: 'Patient',
-        filters: [
-          { code: 'name', operator: Operator.EQUALS, value: family },
-          { code: 'identifier', operator: Operator.PRESENT, value: 'false' },
-        ],
-      });
-      expect(r4.entry?.length).toStrictEqual(1);
-      expect(r4.entry?.[0]?.resource?.id).toStrictEqual(p1.id);
-    }));
   test.each([
     [Operator.IN, true, false],
     [Operator.NOT_IN, false, true],
