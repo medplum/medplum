@@ -18,6 +18,7 @@ import {
   DiagnosticReport,
   Observation,
   OperationOutcome,
+  Organization,
   Patient,
   Practitioner,
   SearchParameter,
@@ -1384,5 +1385,59 @@ describe('Batch', () => {
     const result = await processBatch(req, repo, router, bundle);
     const report = result.entry?.[1]?.resource as DiagnosticReport;
     expect(report.basedOn?.[0].reference).toStrictEqual('ServiceRequest/12345');
+  });
+
+  test('Local reference resolution with duplicate entries', async () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:f1228716-b33c-420d-89ab-46fac9ebcc8b',
+          request: {
+            method: 'POST',
+            url: 'Organization',
+            ifNoneExist: 'identifier=12345',
+          },
+          resource: {
+            resourceType: 'Organization',
+            name: 'Test Organization',
+            identifier: [{ value: '12345' }],
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:d47b5df2-8a19-4c92-9b42-f9ea8d537c4d',
+          request: {
+            method: 'POST',
+            url: 'Organization',
+            ifNoneExist: 'identifier=12345',
+          },
+          resource: {
+            resourceType: 'Organization',
+            name: 'Test Organization',
+            identifier: [{ value: '12345' }],
+          },
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {
+            resourceType: 'Patient',
+            name: [{ given: ['Test'], family: 'Patient' }],
+            generalPractitioner: [{ reference: 'urn:uuid:f1228716-b33c-420d-89ab-46fac9ebcc8b' }],
+            managingOrganization: { reference: 'urn:uuid:d47b5df2-8a19-4c92-9b42-f9ea8d537c4d' },
+          },
+        },
+      ],
+    };
+    const result = await processBatch(req, repo, router, bundle);
+    const org1 = result.entry?.[0]?.resource as Organization;
+    const org2 = result.entry?.[1]?.resource as Organization;
+    const patient = result.entry?.[2]?.resource as Patient;
+    expect(org1.id).toStrictEqual(org2.id);
+    expect(patient.generalPractitioner?.[0].reference).toStrictEqual(`Organization/${org1.id}`);
+    expect(patient.managingOrganization?.reference).toStrictEqual(`Organization/${org1.id}`);
   });
 });
