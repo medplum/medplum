@@ -3,6 +3,7 @@ import { LoginAuthenticationResponse } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
+import { Fragment } from 'react/jsx-runtime';
 
 export interface ChooseScopeFormProps {
   readonly login: string;
@@ -62,10 +63,10 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
               ];
             }
             return (
-              <>
+              <Fragment key={scopeName + '_group'}>
                 <Checkbox key={scopeName} id={scopeName} name={scopeName} label={scopeName} defaultChecked />
                 {additionalScopes?.map((scope) => <Checkbox key={scope} id={scope} name={scope} label={scope} />)}
-              </>
+              </Fragment>
             );
           })}
         </Stack>
