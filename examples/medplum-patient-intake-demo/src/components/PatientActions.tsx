@@ -4,7 +4,7 @@ import { Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconEye } from '@tabler/icons-react';
 import { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 
 interface PatientActionsProps {
@@ -27,7 +27,7 @@ export function PatientActions(props: PatientActionsProps): JSX.Element {
     : null;
 
   function handleViewIntakeForm(): void {
-    navigate(`/Patient/${props.patient.id}/intake/${questionnaireResponse?.id}`);
+    navigate(`/Patient/${props.patient.id}/intake/${questionnaireResponse?.id}`)?.catch(console.error);
   }
 
   return (

@@ -3,7 +3,7 @@ import { getReferenceString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { PatientHeader, useResource } from '@medplum/react';
 import { Fragment } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useNavigate, useParams } from 'react-router';
 
 export function PatientPage(): JSX.Element {
   const navigate = useNavigate();
@@ -17,7 +17,7 @@ export function PatientPage(): JSX.Element {
     <Fragment key={getReferenceString(patient)}>
       <Paper>
         <PatientHeader patient={patient} />
-        <Tabs onChange={(t) => navigate(`./${t}`)}>
+        <Tabs onChange={(t) => navigate(`./${t}`)?.catch(console.error)}>
           <Tabs.List>
             <Tabs.Tab value="overview">Overview</Tabs.Tab>
             <Tabs.Tab value="timeline">Timeline</Tabs.Tab>

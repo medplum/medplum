@@ -2,7 +2,7 @@ import { Grid, Paper } from '@mantine/core';
 import { Encounter, Patient, Reference } from '@medplum/fhirtypes';
 import { Document, Loading, PatientSummary, useMedplum, useResource } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { EncounterActions } from '../components/EncounterActions';
 import { EncounterDetails } from '../components/EncounterDetails';
 import { EncounterHeader } from '../components/EncounterHeader';

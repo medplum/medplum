@@ -1,5 +1,6 @@
 import { Paper, Tabs, Title } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
+import { DiagnosticReport } from '@medplum/fhirtypes';
 import {
   DefaultResourceTimeline,
   DiagnosticReportDisplay,
@@ -8,9 +9,8 @@ import {
   useMedplumNavigate,
   useResource,
 } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { ResourceHistoryTab } from '../components/ResourceHistoryTab';
-import { DiagnosticReport } from '@medplum/fhirtypes';
 
 /**
  * This is an example of a generic "Resource Display" page.

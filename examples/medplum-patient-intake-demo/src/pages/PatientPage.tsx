@@ -2,7 +2,7 @@ import { Grid, Loader } from '@mantine/core';
 import { Patient } from '@medplum/fhirtypes';
 import { Document, PatientSummary, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { PatientDetails } from '../components/PatientDetails';
 import { PatientActions } from '../components/PatientActions';
 

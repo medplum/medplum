@@ -19,7 +19,6 @@ Note the following peer dependencies:
 - [@medplum/core](https://www.npmjs.com/package/@medplum/core)
 - [react](https://www.npmjs.com/package/react)
 - [react-dom](https://www.npmjs.com/package/react-dom)
-- [react-router-dom](https://www.npmjs.com/package/react-router-dom)
 
 Note the following optional peer dependencies:
 

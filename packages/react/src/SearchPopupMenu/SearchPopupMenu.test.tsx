@@ -3,7 +3,7 @@ import { Filter, Operator, SearchRequest, globalSchema } from '@medplum/core';
 import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { getFieldDefinitions } from '../SearchControl/SearchControlField';
 import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
 import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { Alert } from '@mantine/core';
 import { Communication, HumanName, Patient, Practitioner } from '@medplum/fhirtypes';
 import { createReference, formatGivenName, getReferenceString, normalizeErrorString } from '@medplum/core';

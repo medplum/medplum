@@ -1,6 +1,6 @@
 import { Title } from '@mantine/core';
 import { Document, ResourceTable, useMedplum } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 export function ObservationPage(): JSX.Element {
   const medplum = useMedplum();

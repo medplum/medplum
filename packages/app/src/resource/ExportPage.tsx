@@ -2,7 +2,7 @@ import { Alert } from '@mantine/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, PatientExportForm, useResource } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 export function ExportPage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };

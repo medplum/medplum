@@ -1,11 +1,11 @@
-import { useNavigate } from 'react-router-dom';
-import { Button, Modal, Text, Card, Grid, Box, Stack } from '@mantine/core';
-import { useState } from 'react';
-import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
+import { Box, Button, Card, Grid, Modal, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { IconCircleCheck, IconCircleOff, IconAlertSquareRounded } from '@tabler/icons-react';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Coding, Encounter, PlanDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
+import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './EncounterModal.module.css';
 
@@ -55,7 +55,7 @@ export const EncounterModal = (): JSX.Element => {
 
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
 
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/checkin`);
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/checkin`)?.catch(console.error);
     } catch (err) {
       showNotification({ color: 'red', icon: <IconCircleOff />, title: 'Error', message: normalizeErrorString(err) });
     }
@@ -65,7 +65,7 @@ export const EncounterModal = (): JSX.Element => {
     <Modal
       opened={isOpen}
       onClose={() => {
-        navigate(-1);
+        navigate(-1)?.catch(console.error);
         setIsOpen(false);
       }}
       size="60%"

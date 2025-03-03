@@ -7,7 +7,7 @@ import { MedplumProvider } from '@medplum/react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { createTheme, MantineProvider } from '@mantine/core';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router';
 
 const medplum = new MedplumClient({
   // Uncomment this line to use a local Medplum server

@@ -13,7 +13,7 @@ import {
   useMedplum,
 } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getConfig } from './config';
 
 export function ResetPasswordPage(): JSX.Element {
@@ -61,7 +61,13 @@ export function ResetPasswordPage(): JSX.Element {
                 error={getErrorsForInput(outcome, 'email')}
               />
               <Group justify="space-between" mt="xl" wrap="nowrap">
-                <Anchor component="button" type="button" color="dimmed" onClick={() => navigate('/register')} size="xs">
+                <Anchor
+                  component="button"
+                  type="button"
+                  color="dimmed"
+                  onClick={() => navigate('/register')?.catch(console.error)}
+                  size="xs"
+                >
                   Register
                 </Anchor>
                 <Button type="submit">Reset password</Button>

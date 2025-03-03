@@ -4,7 +4,7 @@ import { SimpleTask } from './SimpleTask';
 import { Card, Stack } from '@mantine/core';
 import { TaskStatusPanel } from './TaskStatusPanel';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleOff } from '@tabler/icons-react';
@@ -48,7 +48,7 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
       await updateTaskStatus({ ...task, status: 'completed' }, medplum, onCompleteTask);
     } else {
       // Fallback navigation to Task details.
-      navigate(`Task/${task.id}`);
+      navigate(`Task/${task.id}`)?.catch(console.error);
     }
   };
 

@@ -4,7 +4,7 @@ import { Document, QuestionnaireBuilder, useMedplum, useMedplumProfile, useResou
 import { useCallback } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { Loading } from '../components/Loading';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 export function QuestionnaireCustomizationPage(): JSX.Element {
@@ -32,7 +32,7 @@ export function QuestionnaireCustomizationPage(): JSX.Element {
             title: 'Success',
             message: 'Answers recorded',
           });
-          navigate(`/`);
+          navigate(`/`)?.catch(console.error);
           window.scrollTo(0, 0);
         })
         .catch((err) => {

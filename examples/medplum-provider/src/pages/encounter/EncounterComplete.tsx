@@ -1,7 +1,7 @@
 import { Text, Stack, Box, Button } from '@mantine/core';
 import { Encounter, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { Outlet, useLocation, useParams } from 'react-router-dom';
+import { Outlet, useLocation, useParams } from 'react-router';
 import { useCallback, useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';

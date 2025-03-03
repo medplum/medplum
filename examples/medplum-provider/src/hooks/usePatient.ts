@@ -1,6 +1,6 @@
 import { OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 type Options = {
   ignoreMissingPatientId?: boolean;

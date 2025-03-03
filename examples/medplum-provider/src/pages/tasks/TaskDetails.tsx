@@ -1,12 +1,12 @@
+import { Box, Button, Card, Grid, Modal, Stack, Text, Textarea } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
+import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { HumanName, Practitioner, Reference, Task } from '@medplum/fhirtypes';
 import { CodeInput, DateTimeInput, Loading, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Box, Button, Card, Grid, Modal, Stack, Text, Textarea } from '@mantine/core';
-import { usePatient } from '../../hooks/usePatient';
-import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { notifications } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router';
+import { usePatient } from '../../hooks/usePatient';
 import classes from './TaskDetails.module.css';
 
 export const TaskDetails = (): JSX.Element => {
@@ -87,7 +87,7 @@ export const TaskDetails = (): JSX.Element => {
         message: 'Task updated',
       });
       setTask(updatedTask);
-      navigate(`/Patient/${patientId}/Encounter/${encounterId}/chart`);
+      navigate(`/Patient/${patientId}/Encounter/${encounterId}/chart`)?.catch(console.error);
     } catch {
       notifications.show({
         color: 'red',
@@ -106,7 +106,7 @@ export const TaskDetails = (): JSX.Element => {
     <Modal
       opened={isOpened}
       onClose={() => {
-        navigate(-1);
+        navigate(-1)?.catch(console.error);
         setIsOpened(false);
       }}
       size="xl"

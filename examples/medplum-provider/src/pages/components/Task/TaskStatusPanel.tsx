@@ -1,6 +1,6 @@
 import { Stack, Text, Button, Menu, Grid, Flex, Modal, Group } from '@mantine/core';
 import { Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { IconCaretDownFilled } from '@tabler/icons-react';
 import classes from './TaskStatusPanel.module.css';
 import { useState } from 'react';
@@ -92,7 +92,9 @@ export const TaskStatusPanel = ({
                   )}
                 </div>
 
-                <Menu.Item onClick={() => navigate(`Task/${task.id}`)}>Edit task details</Menu.Item>
+                <Menu.Item onClick={() => navigate(`Task/${task.id}`)?.catch(console.error)}>
+                  Edit task details
+                </Menu.Item>
                 <Menu.Item onClick={() => setIsAddNoteOpen(true)}>Add note</Menu.Item>
               </Menu.Dropdown>
             </Menu>

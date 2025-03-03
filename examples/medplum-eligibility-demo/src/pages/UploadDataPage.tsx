@@ -5,10 +5,10 @@ import { Bot, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import coreData from '../../data/core/core-data.json';
-import exampleData from '../../data/example/example-data.json';
 import exampleBotData from '../../data/example/example-bots.json';
+import exampleData from '../../data/example/example-data.json';
 
 type UploadFunction =
   | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
