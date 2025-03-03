@@ -6,6 +6,24 @@ set -e
 # Echo commands
 set -x
 
+# Initialize additional exclusions variable
+ADDITIONAL_EXCLUDES=""
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --exclude=*)
+            ADDITIONAL_EXCLUDES="${1#*=}"
+            shift
+            ;;
+        *)
+            echo "Error: Unknown argument '$1'"
+            echo "Usage: $0 [--exclude=\"package1 package2 package3\"]"
+            exit 1
+            ;;
+    esac
+done
+
 # Use the Github gh tool to make sure the user is logged in
 gh auth status
 
@@ -61,6 +79,12 @@ echo "Last completed step: $LAST_STEP"
 # react-native - 0.76.x is broken with an error caused by flow parser breaking when using `expo-crypto`: `SyntaxError: {..}/react-native/Libraries/vendor/emitter/EventEmitter.js: Unexpected token, expected "]" (39:5)`
 # storybook-addon-mantine - 4.1.0 seems to accidentally backported requirement for React 19 from v5: https://github.com/josiahayres/storybook-addon-mantine/issues/18
 EXCLUDE="react react-dom @tabler/icons-react react-native storybook-addon-mantine"
+
+# Append any additional excludes from the command line
+if [ -n "$ADDITIONAL_EXCLUDES" ]; then
+    echo "Adding additional excludes: $ADDITIONAL_EXCLUDES"
+    EXCLUDE="$EXCLUDE $ADDITIONAL_EXCLUDES"
+fi
 
 # @types/express - version 5+ incompatible with express 4, waiting for express 5 upgrade
 # @types/node - We specifically don't want to increment major version for Node types since we need to make sure we satisfy backwards compat with the minimum version of Node that we support
