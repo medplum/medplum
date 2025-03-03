@@ -27,7 +27,11 @@ export function MessageTable(): JSX.Element {
           </Table.Thead>
           <Table.Tbody className={classes.tableBody}>
             {practitioners.map((resource) => (
-              <Table.Tr key={resource.id} className={classes.tr} onClick={() => void navigate(`/messages/${resource.id}`)}>
+              <Table.Tr
+                key={resource.id}
+                className={classes.tr}
+                onClick={() => void navigate(`/messages/${resource.id}`)}
+              >
                 <Table.Td>
                   {formatGivenName(resource.name?.[0] as HumanName)} {formatFamilyName(resource.name?.[0] as HumanName)}
                 </Table.Td>

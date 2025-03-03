@@ -61,7 +61,13 @@ export function ResetPasswordPage(): JSX.Element {
                 error={getErrorsForInput(outcome, 'email')}
               />
               <Group justify="space-between" mt="xl" wrap="nowrap">
-                <Anchor component="button" type="button" color="dimmed" onClick={() => void navigate('/register')} size="xs">
+                <Anchor
+                  component="button"
+                  type="button"
+                  color="dimmed"
+                  onClick={() => void navigate('/register')}
+                  size="xs"
+                >
                   Register
                 </Anchor>
                 <Button type="submit">Reset password</Button>

@@ -90,7 +90,9 @@ export function PatientPage(): JSX.Element {
               patient={patient}
               appointmentsUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('appointments'))}
               encountersUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('encounter'))}
-              onClickResource={(resource) => void navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)}
+              onClickResource={(resource) =>
+                void navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)
+              }
             />
           </div>
           <div className={classes.content}>
