@@ -1,9 +1,16 @@
-import { Operator as FhirOperator, Filter, SortRule, splitN, splitSearchOnComma } from '@medplum/core';
+import {
+  badRequest,
+  Operator as FhirOperator,
+  Filter,
+  OperationOutcomeError,
+  SortRule,
+  splitN,
+  splitSearchOnComma,
+} from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { shouldTokenRowExist } from './lookups/token';
 import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
 import { Column, Condition, Conjunction, Disjunction, Expression, Negation, SelectQuery, TypedCondition } from './sql';
-import { buildTokensForSearchParameter, Token } from './tokens';
+import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent, Token } from './tokens';
 
 const DELIM = '\x01';
 const NULL_SYSTEM = '\x02';
@@ -141,60 +148,100 @@ export function buildTokenColumnsSearchFilter(
     throw new Error('Invalid search strategy: ' + impl.searchStrategy);
   }
 
-  const valueExpressions = [];
+  switch (filter.operator) {
+    case FhirOperator.IN:
+    case FhirOperator.NOT_IN:
+    case FhirOperator.TEXT:
+    case FhirOperator.CONTAINS:
+    case FhirOperator.EQUALS:
+    case FhirOperator.EXACT:
+    case FhirOperator.NOT:
+    case FhirOperator.NOT_EQUALS: {
+      filter.operator satisfies TokenQueryOperators;
 
-  // https://www.hl7.org/fhir/r4/search.html#combining
-  for (const option of splitSearchOnComma(filter.value)) {
-    const expression = buildTokenColumnsWhereCondition(impl, tableName, filter, option);
-    if (expression) {
-      valueExpressions.push(expression);
+      // https://www.hl7.org/fhir/r4/search.html#combining
+      const expressions: Expression[] = [];
+      for (const searchValue of splitSearchOnComma(filter.value)) {
+        expressions.push(buildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue));
+      }
+
+      //TODO{mattlong} throwing here may be a backwards incompatible change
+      if (expressions.length === 0) {
+        throw new OperationOutcomeError(badRequest(`Search filter '${filter.operator}' must specify a value`));
+      }
+
+      const expression = new Disjunction(expressions);
+      if (
+        filter.operator === FhirOperator.NOT ||
+        filter.operator === FhirOperator.NOT_EQUALS ||
+        filter.operator === FhirOperator.NOT_IN
+      ) {
+        return new Negation(expression);
+      }
+      return expression;
     }
-  }
-
-  if (valueExpressions.length > 0) {
-    const expression = new Disjunction(valueExpressions);
-    if (!shouldTokenRowExist(filter)) {
-      return new Negation(expression);
+    case FhirOperator.MISSING:
+    case FhirOperator.PRESENT: {
+      if (shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+        return new TypedCondition(new Column(tableName, impl.columnName), 'ARRAY_NOT_EMPTY', undefined);
+      } else {
+        return new TypedCondition(new Column(tableName, impl.columnName), 'ARRAY_EMPTY', undefined);
+      }
     }
-    return expression;
-  }
-
-  // missing/present
-  if (shouldTokenRowExist(filter)) {
-    return new TypedCondition(new Column(tableName, impl.columnName), 'ARRAY_NOT_EMPTY', undefined);
-  } else {
-    return new TypedCondition(new Column(tableName, impl.columnName), 'ARRAY_EMPTY', undefined);
+    case FhirOperator.STARTS_WITH:
+    case FhirOperator.GREATER_THAN:
+    case FhirOperator.LESS_THAN:
+    case FhirOperator.GREATER_THAN_OR_EQUALS:
+    case FhirOperator.LESS_THAN_OR_EQUALS:
+    case FhirOperator.STARTS_AFTER:
+    case FhirOperator.ENDS_BEFORE:
+    case FhirOperator.APPROXIMATELY:
+    case FhirOperator.IDENTIFIER:
+    case FhirOperator.ITERATE:
+    case FhirOperator.ABOVE:
+    case FhirOperator.BELOW:
+    case FhirOperator.OF_TYPE:
+      throw new OperationOutcomeError(
+        badRequest(`Search filter '${filter.operator}' not supported for ${param.id ?? param.code}`)
+      );
+    default: {
+      filter.operator satisfies never;
+      throw new OperationOutcomeError(
+        badRequest(`Search filter '${filter.operator}' not supported for ${param.id ?? param.code}`)
+      );
+    }
   }
 }
+
+type TokenQueryOperators = (typeof FhirOperator)[
+  | 'IN'
+  | 'NOT_IN'
+  | 'TEXT'
+  | 'CONTAINS'
+  | 'EQUALS'
+  | 'EXACT'
+  | 'NOT'
+  | 'NOT_EQUALS'];
 
 function buildTokenColumnsWhereCondition(
   impl: TokenColumnSearchParameterImplementation,
   tableName: string,
-  filter: Filter,
+  code: string,
+  operator: TokenQueryOperators,
   query: string
-): Expression | undefined {
-  const code = filter.code;
+): Expression {
   query = query.trim();
   const tokenCol = new Column(tableName, impl.columnName);
   const textSearchCol = new Column(tableName, impl.textSearchColumnName);
 
-  switch (filter.operator) {
-    case FhirOperator.NOT_IN:
-    case FhirOperator.IN: {
+  switch (operator) {
+    case FhirOperator.IN:
+    case FhirOperator.NOT_IN: {
       // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
-      const cond = buildInValueSetCondition(code, impl, tableName, query);
-      if (filter.operator === FhirOperator.NOT_IN) {
-        return new Negation(cond);
-      }
-      return cond;
+      return buildInValueSetCondition(code, impl, tableName, query);
     }
-    case FhirOperator.MISSING:
-    case FhirOperator.PRESENT:
-    case FhirOperator.IDENTIFIER:
-      // We are just looking for the presence / absence of a token (e.g. when using the FhirOperator.MISSING)
-      // TODO{mattlong} base on the operators that return false in shouldCompareTokenValue
-      return undefined;
     case FhirOperator.TEXT: {
+      //TODO{mattlong} - consider case insensitive
       // token_array_to_text(token) ~ '\x3code\x1\x1[^\x3]*Quick Brown'
       const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       return new Conjunction([
@@ -203,9 +250,14 @@ function buildTokenColumnsWhereCondition(
       ]);
     }
     case FhirOperator.CONTAINS: {
+      //TODO{mattlong} - consider case insensitive
       const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       return new TypedCondition(textSearchCol, 'ARRAY_IREGEX', regexStr, 'TEXT[]');
     }
+    case FhirOperator.EQUALS:
+    case FhirOperator.EXACT:
+    case FhirOperator.NOT:
+    case FhirOperator.NOT_EQUALS:
     default: {
       let system: string;
       let value: string;
@@ -257,6 +309,20 @@ function buildInValueSetCondition(
 }
 
 export function escapeRegexString(str: string): string {
-  // TODO: Implement
+  // TODO{mattlong} - validate this is correct; it is from an LLM
+
+  // Escape special regex characters with a backslash:
+  // . (dot) - matches any character
+  // * - matches 0 or more of previous
+  // + - matches 1 or more of previous
+  // ? - matches 0 or 1 of previous
+  // ^ - start of line anchor
+  // $ - end of line anchor
+  // {} - match count specifier
+  // () - grouping
+  // | - alternation
+  // [] - character class
+  // \ - escape character itself
+  // return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return str;
 }

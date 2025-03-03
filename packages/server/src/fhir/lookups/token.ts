@@ -1,12 +1,4 @@
-import {
-  badRequest,
-  Operator as FhirOperator,
-  Filter,
-  OperationOutcomeError,
-  SortRule,
-  splitN,
-  splitSearchOnComma,
-} from '@medplum/core';
+import { Operator as FhirOperator, Filter, SortRule, splitN, splitSearchOnComma } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
 import { getLogger } from '../../logger';
@@ -21,7 +13,13 @@ import {
   SelectQuery,
   SqlFunction,
 } from '../sql';
-import { buildTokensForSearchParameter, getTokenIndexType, Token, TokenIndexTypes } from '../tokens';
+import {
+  buildTokensForSearchParameter,
+  getTokenIndexType,
+  shouldTokenExistForMissingOrPresent,
+  Token,
+  TokenIndexTypes,
+} from '../tokens';
 import { LookupTable } from './lookuptable';
 import { getStandardAndDerivedSearchParameters } from './util';
 
@@ -197,26 +195,8 @@ export function shouldTokenRowExist(filter: Filter): boolean {
     if (filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS) {
       return false;
     }
-  } else if (filter.operator === FhirOperator.MISSING) {
-    // Missing = true means that there should not be a row
-    switch (filter.value.toLowerCase()) {
-      case 'true':
-        return false;
-      case 'false':
-        return true;
-      default:
-        throw new OperationOutcomeError(badRequest("Search filter ':missing' must have a value of 'true' or 'false'"));
-    }
-  } else if (filter.operator === FhirOperator.PRESENT) {
-    // Present = true means that there should be a row
-    switch (filter.value.toLowerCase()) {
-      case 'true':
-        return true;
-      case 'false':
-        return false;
-      default:
-        throw new OperationOutcomeError(badRequest("Search filter ':missing' must have a value of 'true' or 'false'"));
-    }
+  } else if (filter.operator === FhirOperator.MISSING || filter.operator === FhirOperator.PRESENT) {
+    return shouldTokenExistForMissingOrPresent(filter.operator, filter.value);
   }
   return true;
 }
