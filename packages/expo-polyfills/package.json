@@ -62,7 +62,6 @@
     "jest-expo": "52.0.5",
     "jest-websocket-mock": "2.5.0",
     "react-native": "0.75.4",
-    "rimraf": "5.0.10",
     "ts-jest": "29.2.6"
   },
   "peerDependencies": {
