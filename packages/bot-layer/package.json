@@ -24,7 +24,7 @@
   "dependencies": {
     "@medplum/core": "4.0.2",
     "@medplum/definitions": "4.0.2",
-    "fast-xml-parser": "5.0.7",
+    "fast-xml-parser": "5.0.8",
     "form-data": "4.0.2",
     "jose": "5.10.0",
     "node-fetch": "2.7.0",
