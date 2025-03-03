@@ -24,7 +24,7 @@ export function ResourcePage(): JSX.Element | null {
     return (tab ?? tabs[0]).id;
   });
 
-  useResourceType(resourceType, { onInvalidResourceType: () => void navigate('..') });
+  useResourceType(resourceType, { onInvalidResourceType: () => navigate('..')?.catch(console.error) });
 
   useEffect(() => {
     if (resourceType && id) {
@@ -44,7 +44,7 @@ export function ResourcePage(): JSX.Element | null {
       const tab = tabs.find((t) => t.id === newTabName);
       if (tab) {
         setCurrentTab(tab.id);
-        void navigate(tab.url);
+        navigate(tab.url)?.catch(console.error);
       }
     },
     [navigate]

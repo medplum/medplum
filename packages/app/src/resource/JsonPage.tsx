@@ -20,7 +20,7 @@ export function JsonPage(): JSX.Element | null {
         .updateResource(cleanResource(JSON.parse(formData.resource)))
         .then(() => {
           setOutcome(undefined);
-          void navigate(`/${resourceType}/${id}/details`);
+          navigate(`/${resourceType}/${id}/details`)?.catch(console.error);
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {

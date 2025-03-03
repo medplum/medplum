@@ -32,7 +32,7 @@ export function QuestionnaireCustomizationPage(): JSX.Element {
             title: 'Success',
             message: 'Answers recorded',
           });
-          void navigate(`/`);
+          navigate(`/`)?.catch(console.error);
           window.scrollTo(0, 0);
         })
         .catch((err) => {

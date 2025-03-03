@@ -21,7 +21,7 @@ export function FormularyDisplay(props: FormularyDisplayProps): JSX.Element {
     });
 
   function handleRowClick(_e: React.MouseEvent, resource: MedicationKnowledge): void {
-    void navigate(`/MedicationKnowledge/${resource.id}`);
+    navigate(`/MedicationKnowledge/${resource.id}`)?.catch(console.error);
   }
 
   return (

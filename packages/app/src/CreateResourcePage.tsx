@@ -24,7 +24,7 @@ export function CreateResourcePage(): JSX.Element {
       newTabName = defaultTab;
     }
     setCurrentTab(newTabName);
-    void navigate(`/${resourceType}/new/${newTabName}`);
+    navigate(`/${resourceType}/new/${newTabName}`)?.catch(console.error);
   }
 
   return (

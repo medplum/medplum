@@ -26,7 +26,7 @@ export function QuestionnaireResponsePage(): JSX.Element {
     <Document>
       <SearchControl
         search={search}
-        onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onChange={(e) => setSearch(e.definition)}
         hideFilters
         hideToolbar

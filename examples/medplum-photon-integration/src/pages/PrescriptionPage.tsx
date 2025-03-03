@@ -51,7 +51,7 @@ export function PrescriptionPage(): JSX.Element {
               }}
               hideFilters={true}
               hideToolbar={true}
-              onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+              onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
             />
           </Paper>
         </Tabs.Panel>

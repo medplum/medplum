@@ -54,7 +54,7 @@ export function CoverageDetails(props: CoverageDetailsProps): JSX.Element {
         <Tabs.Panel value="requests">
           <SearchControl
             search={eligibilityRequestSearch}
-            onClick={(e) => void navigate(`/${getReferenceString(e.resource)}`)}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
             hideFilters={true}
             hideToolbar={true}
           />
@@ -62,7 +62,7 @@ export function CoverageDetails(props: CoverageDetailsProps): JSX.Element {
         <Tabs.Panel value="responses">
           <SearchControl
             search={eligibilityResponseSearch}
-            onClick={(e) => void navigate(`/${getReferenceString(e.resource)}`)}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
             hideFilters={true}
             hideToolbar={true}
           />

@@ -22,7 +22,7 @@ export function Responses(): JSX.Element {
       <InfoSection title="Questionnaire Responses">
         <Stack gap={0}>
           {responses.map((resp) => (
-            <InfoButton key={resp.id} onClick={() => void navigate(`./${resp.id}`)}>
+            <InfoButton key={resp.id} onClick={() => navigate(`./${resp.id}`)?.catch(console.error)}>
               <div>
                 <Text c={theme.primaryColor} fw={500} mb={4}>
                   {formatDateTime(resp.authored)}

@@ -17,7 +17,7 @@ export function SubscriptionsPage(): JSX.Element | null {
     <Document>
       <MemoizedSearchControl
         search={search}
-        onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onChange={(e) => setSearch(e.definition)}
         hideFilters
       />

@@ -19,7 +19,7 @@ export function ProjectPage(): JSX.Element {
    * @param newTabName - The new tab name.
    */
   function onTabChange(newTabName: string | null): void {
-    void navigate(`/admin/${newTabName}`);
+    navigate(`/admin/${newTabName}`)?.catch(console.error);
   }
 
   return (

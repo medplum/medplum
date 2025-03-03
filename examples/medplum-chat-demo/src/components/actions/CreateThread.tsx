@@ -106,7 +106,7 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
         title: 'Success',
         message: 'Thread created',
       });
-      void navigate(`/Communication/${result.id}`);
+      navigate(`/Communication/${result.id}`)?.catch(console.error);
     } catch (err) {
       showNotification({
         icon: <IconCircleOff />,

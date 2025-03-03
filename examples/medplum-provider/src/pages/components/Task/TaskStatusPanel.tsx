@@ -92,7 +92,7 @@ export const TaskStatusPanel = ({
                   )}
                 </div>
 
-                <Menu.Item onClick={() => void navigate(`Task/${task.id}`)}>Edit task details</Menu.Item>
+                <Menu.Item onClick={() => navigate(`Task/${task.id}`)?.catch(console.error)}>Edit task details</Menu.Item>
                 <Menu.Item onClick={() => setIsAddNoteOpen(true)}>Add note</Menu.Item>
               </Menu.Dropdown>
             </Menu>

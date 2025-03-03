@@ -65,7 +65,7 @@ export function ResetPasswordPage(): JSX.Element {
                   component="button"
                   type="button"
                   color="dimmed"
-                  onClick={() => void navigate('/register')}
+                  onClick={() => navigate('/register')?.catch(console.error)}
                   size="xs"
                 >
                   Register

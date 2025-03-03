@@ -111,7 +111,7 @@ export function ResourcePage(): JSX.Element | null {
       newTabName = tabs[0].toLowerCase();
     }
     setCurrentTab(newTabName);
-    void navigate(`/${resourceType}/${id}/${newTabName}`);
+    navigate(`/${resourceType}/${id}/${newTabName}`)?.catch(console.error);
   }
 
   function onStatusChange(status: string): void {

@@ -34,7 +34,7 @@ export function EditPage(): JSX.Element | null {
       medplum
         .updateResource(cleanResource(newResource))
         .then(() => {
-          void navigate(`/${resourceType}/${id}/details`);
+          navigate(`/${resourceType}/${id}/details`)?.catch(console.error);
           showNotification({ id: 'succes', color: 'green', message: 'Success' });
         })
         .catch((err) => {
@@ -52,7 +52,7 @@ export function EditPage(): JSX.Element | null {
       medplum
         .patchResource(resourceType, id, patchOperations)
         .then(() => {
-          void navigate(`/${resourceType}/${id}/details`);
+          navigate(`/${resourceType}/${id}/details`)?.catch(console.error);
           showNotification({ id: 'succes', color: 'green', message: 'Success' });
         })
         .catch((err) => {
@@ -63,7 +63,7 @@ export function EditPage(): JSX.Element | null {
     [medplum, resourceType, id, original, navigate]
   );
 
-  const handleDelete = useCallback(() => void navigate(`/${resourceType}/${id}/delete`), [navigate, resourceType, id]);
+  const handleDelete = useCallback(() => navigate(`/${resourceType}/${id}/delete`)?.catch(console.error), [navigate, resourceType, id]);
 
   if (!value) {
     return null;

@@ -46,7 +46,7 @@ export function ResourcePage(): JSX.Element | null {
   };
 
   const handleTabChange = (newTab: string | null): void => {
-    void navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
+    navigate(`/${resourceType}/${id}/${newTab ?? ''}`)?.catch(console.error);
   };
 
   const handleEditSubmit = async (newResource: Resource): Promise<void> => {
@@ -61,7 +61,7 @@ export function ResourcePage(): JSX.Element | null {
         message: `${resourceType} updated`,
       });
       // Navigate back to the top of the details page
-      void navigate(`/${resourceType}/${id}`);
+      navigate(`/${resourceType}/${id}`)?.catch(console.error);
       window.scrollTo(0, 0);
     } catch (err) {
       showNotification({

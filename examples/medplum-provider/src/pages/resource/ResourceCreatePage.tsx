@@ -5,9 +5,9 @@ import { OperationOutcome, Patient, Resource, ResourceType } from '@medplum/fhir
 import { Document, Loading, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
 import { usePatient } from '../../hooks/usePatient';
 import { prependPatientPath } from '../patient/PatientPage.utils';
-import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
 import { RESOURCE_PROFILE_URLS } from './utils';
 
 const PatientReferencesElements: Partial<Record<ResourceType, string[]>> = {
@@ -64,7 +64,7 @@ export function ResourceCreatePage(): JSX.Element {
     }
     medplum
       .createResource(newResource)
-      .then((result) => void navigate(prependPatientPath(patient, '/' + result.resourceType + '/' + result.id)))
+      .then((result) => navigate(prependPatientPath(patient, '/' + result.resourceType + '/' + result.id)))
       .catch((err) => {
         if (setOutcome) {
           setOutcome(normalizeOperationOutcome(err));

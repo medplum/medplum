@@ -20,7 +20,7 @@ export function LabResults(): JSX.Element {
       <InfoSection title="Lab Results">
         <Stack gap={0}>
           {reports.map((report) => (
-            <InfoButton key={report.id} onClick={() => void navigate(`./${report.id}`)}>
+            <InfoButton key={report.id} onClick={() => navigate(`./${report.id}`)?.catch(console.error)}>
               <div>
                 <Text fw={500} mb={4}>
                   {formatDate(report.meta?.lastUpdated as string)}

@@ -17,7 +17,7 @@ export function CommunicationDetails({ communication }: CommunicationDetailsProp
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
 
   function handleTabChange(newTab: string | null): void {
-    void navigate(`/Communication/${id}/${newTab ?? ''}`);
+    navigate(`/Communication/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   return (

@@ -14,7 +14,7 @@ export function PatientSearchPage(): JSX.Element {
   const location = useLocation();
   const [search, setSearch] = useState<SearchRequest>();
 
-  useResourceType(search?.resourceType, { onInvalidResourceType: () => void navigate('..') });
+  useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..')?.catch(console.error) });
 
   useEffect(() => {
     if (!patient) {
@@ -30,7 +30,9 @@ export function PatientSearchPage(): JSX.Element {
     ) {
       setSearch(populatedSearch);
     } else {
-      void navigate(`/Patient/${patient.id}/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/Patient/${patient.id}/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(
+        console.error
+      );
     }
   }, [medplum, patient, navigate, location]);
 
@@ -43,13 +45,17 @@ export function PatientSearchPage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={true}
         search={search}
-        onClick={(e) => void navigate(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`)}
+        onClick={(e) =>
+          navigate(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)
+        }
         onAuxClick={(e) => window.open(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onNew={() => {
-          void navigate(prependPatientPath(patient, `/${search.resourceType}/new`));
+          navigate(prependPatientPath(patient, `/${search.resourceType}/new`))?.catch(console.error);
         }}
         onChange={(e) => {
-          void navigate(`/Patient/${patient.id}/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          navigate(`/Patient/${patient.id}/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(
+            console.error
+          );
         }}
       />
     </Paper>

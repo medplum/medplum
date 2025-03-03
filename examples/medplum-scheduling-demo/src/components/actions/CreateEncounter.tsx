@@ -64,7 +64,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
       encounter = await medplum.createResource(encounter);
 
       // Navigate to the encounter details page
-      void navigate(`/Encounter/${encounter.id}`);
+      navigate(`/Encounter/${encounter.id}`)?.catch(console.error);
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',

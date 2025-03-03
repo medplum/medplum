@@ -29,7 +29,7 @@ export function DeleteTask(props: DeleteTaskProps): JSX.Element {
         title: 'Success',
         message: 'Task deleted',
       });
-      void navigate('/Task');
+      navigate('/Task')?.catch(console.error);
     } catch (error) {
       notifications.show({
         color: 'red',

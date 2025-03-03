@@ -26,10 +26,10 @@ export function SmartSearchPage(): JSX.Element | null {
       checkboxesEnabled={true}
       query={query}
       fields={fields}
-      onClick={(e) => void navigate(`/${resourceType}/${e.resource.id}`)}
+      onClick={(e) => navigate(`/${resourceType}/${e.resource.id}`)?.catch(console.error)}
       onAuxClick={(e) => window.open(`/${resourceType}/${e.resource.id}`, '_blank')}
       onBulk={(ids: string[]) => {
-        void navigate(`/bulk/${resourceType}?ids=${ids.join(',')}`);
+        navigate(`/bulk/${resourceType}?ids=${ids.join(',')}`)?.catch(console.error);
       }}
     />
   );

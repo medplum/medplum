@@ -46,7 +46,7 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
   }, [response, questionnaire, encounterType, medplum, props.encounter]);
 
   function handleTabChange(newTab: string | null): void {
-    void navigate(`/Encounter/${id}/${newTab ?? ''}`);
+    navigate(`/Encounter/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {

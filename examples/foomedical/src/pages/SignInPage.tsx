@@ -11,7 +11,7 @@ export function SignInPage(): JSX.Element {
         <SignInForm
           projectId={MEDPLUM_PROJECT_ID}
           googleClientId={MEDPLUM_GOOGLE_CLIENT_ID}
-          onSuccess={() => void navigate('/')}
+          onSuccess={() => navigate('/')?.catch(console.error)}
         >
           <h2>Sign in to Foo Medical</h2>
         </SignInForm>

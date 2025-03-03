@@ -59,8 +59,8 @@ export function OAuthPage(): JSX.Element | null {
   return (
     <SignInForm
       onCode={onCode}
-      onForgotPassword={() => void navigate('/resetpassword')}
-      onRegister={() => void navigate('/register')}
+      onForgotPassword={() => navigate('/resetpassword')?.catch(console.error)}
+      onRegister={() => navigate('/register')?.catch(console.error)}
       googleClientId={getConfig().googleClientId}
       clientId={clientId || undefined}
       redirectUri={params.get('redirect_uri') || undefined}

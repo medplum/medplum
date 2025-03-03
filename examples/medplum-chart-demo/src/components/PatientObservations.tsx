@@ -75,9 +75,9 @@ export function PatientObservations(props: PatientObservationsProps): JSX.Elemen
             search={search}
             hideFilters={true}
             hideToolbar={true}
-            onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
             onChange={(e) => {
-              void navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+              navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
             }}
           />
         </Tabs.Panel>

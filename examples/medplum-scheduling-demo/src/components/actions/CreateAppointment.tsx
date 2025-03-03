@@ -101,7 +101,7 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element | 
       appointment = await medplum.executeBot({ system: 'http://example.com', value: 'book-appointment' }, appointment);
 
       // Navigate to the appointment detail page
-      void navigate(`/Appointment/${appointment.id}`);
+      navigate(`/Appointment/${appointment.id}`)?.catch(console.error);
       onAppointmentsUpdated();
       showNotification({
         icon: <IconCircleCheck />,

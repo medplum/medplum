@@ -32,7 +32,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
   const currentTab = tab && tabs.map((t) => t[0]).includes(tab) ? tab : tabs[0][0];
 
   function handleTabChange(newTab: string | null): void {
-    void navigate(`/Patient/${id}/${newTab ?? ''}`);
+    navigate(`/Patient/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   function handlePatientEdit(resource: Resource): void {
@@ -46,7 +46,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
           title: 'Success',
           message: 'Patient edited',
         });
-        void navigate(`/Patient/${id}/details`);
+        navigate(`/Patient/${id}/details`)?.catch(console.error);
         window.scrollTo(0, 0);
       })
       .catch((err) => {

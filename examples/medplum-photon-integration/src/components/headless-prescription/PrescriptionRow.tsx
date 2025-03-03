@@ -14,7 +14,7 @@ export function PrescriptionRow(props: PrescriptionRowProps): JSX.Element {
   const date = props.prescription.authoredOn ? formatDate(props.prescription.authoredOn) : 'unknown';
 
   return (
-    <Table.Tr onClick={() => void navigate(`/MedicationRequest/${props.prescription.id}`)}>
+    <Table.Tr onClick={() => navigate(`/MedicationRequest/${props.prescription.id}`)?.catch(console.error)}>
       <Table.Td>{formatCodeableConcept(props.prescription.medicationCodeableConcept)}</Table.Td>
       <Table.Td>{date}</Table.Td>
       <Table.Td>{props.prescription.status}</Table.Td>

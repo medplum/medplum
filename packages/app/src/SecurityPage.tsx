@@ -102,12 +102,12 @@ export function SecurityPage(): JSX.Element | null {
       </Document>
       <Document>
         <Title>Password</Title>
-        <Button onClick={() => void navigate('/changepassword')}>Change password</Button>
+        <Button onClick={() => navigate('/changepassword')?.catch(console.error)}>Change password</Button>
       </Document>
       <Document>
         <Title>Multi Factor Auth</Title>
         <p>Enrolled: {details.security.mfaEnrolled.toString()}</p>
-        {!details.security.mfaEnrolled && <Button onClick={() => void navigate('/mfa')}>Enroll</Button>}
+        {!details.security.mfaEnrolled && <Button onClick={() => navigate('/mfa')?.catch(console.error)}>Enroll</Button>}
       </Document>
     </>
   );

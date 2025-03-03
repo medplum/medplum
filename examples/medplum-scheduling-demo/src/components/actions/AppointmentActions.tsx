@@ -45,7 +45,7 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
       // Call bot to cancel the appointment
       await medplum.executeBot({ system: 'http://example.com', value: 'cancel-appointment' }, appointment);
 
-      void navigate('/Appointment/upcoming');
+      navigate('/Appointment/upcoming')?.catch(console.error);
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',

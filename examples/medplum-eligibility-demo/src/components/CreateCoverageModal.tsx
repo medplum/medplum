@@ -24,7 +24,7 @@ export function CreateCoverageModal({ opened, onClose }: CreateCoverageModalProp
     // Create the Coverage and navigate to its details page
     medplum
       .createResource(newResource)
-      .then((result) => void navigate(`/${getReferenceString(result)}`))
+      .then((result) => navigate(`/${getReferenceString(result)}`)?.catch(console.error))
       .then(() =>
         showNotification({
           icon: <IconCircleCheck />,

@@ -46,7 +46,7 @@ export function UploadDataPage(): JSX.Element {
     }
 
     uploadFunction(medplum, profile as Practitioner)
-      .then(() => void navigate(-1))
+      .then(() => navigate(-1))
       .catch((error) => {
         showNotification({
           color: 'red',

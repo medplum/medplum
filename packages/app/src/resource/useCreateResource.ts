@@ -28,7 +28,7 @@ export function useCreateResource<T extends Resource>(
     }
     medplum
       .createResource(newResource)
-      .then((result) => void navigate('/' + result.resourceType + '/' + result.id))
+      .then((result) => navigate('/' + result.resourceType + '/' + result.id))
       .catch((err) => {
         if (setOutcome) {
           setOutcome(normalizeOperationOutcome(err));

@@ -49,7 +49,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
                 <List>
                   {props.thread.recipient?.map((participant, index) => (
                     <List.Item key={index}>
-                      <Anchor onClick={() => void navigate(`/${participant.reference}`)}>
+                      <Anchor onClick={() => navigate(`/${participant.reference}`)?.catch(console.error)}>
                         {participant.display ?? participant.reference}
                       </Anchor>
                     </List.Item>
@@ -76,7 +76,7 @@ export function ThreadPage(props: ThreadPageProps): JSX.Element {
                 <List>
                   {props.thread.recipient?.map((participant, index) => (
                     <List.Item key={index}>
-                      <Anchor onClick={() => void navigate(`/${participant.reference}`)}>
+                      <Anchor onClick={() => navigate(`/${participant.reference}`)?.catch(console.error)}>
                         {participant.display ?? participant.reference}
                       </Anchor>
                     </List.Item>

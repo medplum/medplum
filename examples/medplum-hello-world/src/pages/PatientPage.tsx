@@ -17,7 +17,7 @@ export function PatientPage(): JSX.Element {
     <Fragment key={getReferenceString(patient)}>
       <Paper>
         <PatientHeader patient={patient} />
-        <Tabs onChange={(t) => void navigate(`./${t}`)}>
+        <Tabs onChange={(t) => navigate(`./${t}`)?.catch(console.error)}>
           <Tabs.List>
             <Tabs.Tab value="overview">Overview</Tabs.Tab>
             <Tabs.Tab value="timeline">Timeline</Tabs.Tab>

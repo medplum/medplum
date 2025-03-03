@@ -31,7 +31,7 @@ export function DeleteCoverage({ coverage }: DeleteCoverageProps): JSX.Element {
         title: 'Success',
         message: 'Coverage deleted',
       });
-      void navigate('/Coverage');
+      navigate('/Coverage')?.catch(console.error);
     } catch (err) {
       showNotification({
         color: 'red',

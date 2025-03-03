@@ -7,8 +7,8 @@ import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import coreData from '../../data/core/core-data.json';
-import exampleData from '../../data/example/example-data.json';
 import exampleBotData from '../../data/example/example-bots.json';
+import exampleData from '../../data/example/example-data.json';
 
 type UploadFunction =
   | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
@@ -40,7 +40,7 @@ export function UploadDataPage(): JSX.Element {
     }
 
     uploadFunction(medplum, profile as Practitioner)
-      .then(() => void navigate('/'))
+      .then(() => navigate('/'))
       .catch((error) => {
         showNotification({
           color: 'red',

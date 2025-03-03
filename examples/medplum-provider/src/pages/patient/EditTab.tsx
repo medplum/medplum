@@ -40,7 +40,7 @@ export function EditTab(): JSX.Element | null {
       medplum
         .updateResource(newResource)
         .then(() => {
-          void navigate(`/Patient/${patientId}/timeline`);
+          navigate(`/Patient/${patientId}/timeline`)?.catch(console.error);
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {

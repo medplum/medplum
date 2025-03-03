@@ -93,9 +93,9 @@ function MessageNotification({ profile, navigate }: NotificationProps): JSX.Elem
       subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
       iconComponent={<IconMail />}
       onClick={() =>
-        void navigate(
+        navigate(
           `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&part-of:missing=false&_fields=sender,recipient,subject,status,_lastUpdated`
-        )
+        )?.catch(console.error)
       }
     />
   );
@@ -110,9 +110,9 @@ function TaskNotification({ profile, navigate }: NotificationProps): JSX.Element
       subscriptionCriteria={`Task?owner=${getReferenceString(profile as ProfileResource)}`}
       iconComponent={<IconClipboardCheck />}
       onClick={() =>
-        void navigate(
+        navigate(
           `/Task?owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=subject,code,description,status,_lastUpdated`
-        )
+        )?.catch(console.error)
       }
     />
   );

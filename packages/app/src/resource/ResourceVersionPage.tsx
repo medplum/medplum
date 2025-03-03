@@ -60,7 +60,7 @@ export function ResourceVersionPage(): JSX.Element {
   return (
     <Tabs
       value={tab || defaultTab}
-      onChange={(name) => void navigate(`/${resourceType}/${id}/_history/${versionId}/${name || defaultTab}`)}
+      onChange={(name) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name || defaultTab}`)?.catch(console.error)}
     >
       <Paper>
         <Container fluid p="md">

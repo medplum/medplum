@@ -27,7 +27,7 @@ export function PatientActions(props: PatientActionsProps): JSX.Element {
     : null;
 
   function handleViewIntakeForm(): void {
-    void navigate(`/Patient/${props.patient.id}/intake/${questionnaireResponse?.id}`);
+    navigate(`/Patient/${props.patient.id}/intake/${questionnaireResponse?.id}`)?.catch(console.error);
   }
 
   return (

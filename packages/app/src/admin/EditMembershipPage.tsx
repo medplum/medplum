@@ -27,7 +27,7 @@ export function EditMembershipPage(): JSX.Element {
       medplum
         .delete(`admin/projects/${projectId}/members/${membershipId}`)
         .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'no-cache' }))
-        .then(() => void navigate('/admin/project'))
+        .then(() => navigate('/admin/project'))
         .catch((err) => setOutcome(normalizeOperationOutcome(err)));
     }
   }

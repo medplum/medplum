@@ -38,7 +38,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
         message: 'Patient updated',
       });
       onChange(updatedPatient);
-      void navigate(`/Patient/${id}`);
+      navigate(`/Patient/${id}`)?.catch(console.error);
       window.scrollTo(0, 0);
     } catch (error) {
       showNotification({
@@ -50,7 +50,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
   };
 
   const handleTabChange = (newTab: string | null): void => {
-    void navigate(`/Patient/${id}/${newTab ?? ''}`);
+    navigate(`/Patient/${id}/${newTab ?? ''}`)?.catch(console.error);
   };
 
   return (
@@ -69,7 +69,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
         <Tabs.Panel value="coverages">
           <SearchControl
             search={coverageSearchRequest}
-            onClick={(e) => void navigate(`/${getReferenceString(e.resource)}`)}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
             hideFilters={true}
             hideToolbar={true}
           />

@@ -27,7 +27,7 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   return (
     <SearchControl
       search={search}
-      onClick={(e) => void navigate(`/admin/members/${e.resource.id}`)}
+      onClick={(e) => navigate(`/admin/members/${e.resource.id}`)?.catch(console.error)}
       onChange={(e) => setSearch(e.definition)}
       hideFilters
       hideToolbar

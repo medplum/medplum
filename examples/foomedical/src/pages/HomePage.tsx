@@ -131,7 +131,7 @@ export function HomePage(): JSX.Element {
         <Group justify="center">
           <IconGift />
           <p>Put calls to action here</p>
-          <Button variant="white" onClick={() => void navigate('/messages')}>
+          <Button variant="white" onClick={() => navigate('/messages')?.catch(console.error)}>
             Send Message
           </Button>
         </Group>
@@ -224,7 +224,7 @@ export function HomePage(): JSX.Element {
                     <Text size="sm" color="dimmed" my="sm">
                       Having a consistent, trusted provider can lead to better health.
                     </Text>
-                    <Button onClick={() => void navigate('/account/provider')}>Choose Provider</Button>
+                    <Button onClick={() => navigate('/account/provider')?.catch(console.error)}>Choose Provider</Button>
                   </div>
                 </Group>
               </Card>

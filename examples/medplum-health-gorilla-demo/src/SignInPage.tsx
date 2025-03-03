@@ -11,7 +11,7 @@ export function SignInPage(): JSX.Element {
     // only redirect to next if it is a pathname to avoid redirecting
     // to a maliciously crafted URL, e.g. /signin?next=https%3A%2F%2Fevil.com
     const nextUrl = searchParams.get('next');
-    void navigate(nextUrl?.startsWith('/') ? nextUrl : '/');
+    navigate(nextUrl?.startsWith('/') ? nextUrl : '/')?.catch(console.error);
   }, [searchParams, navigate]);
 
   return (

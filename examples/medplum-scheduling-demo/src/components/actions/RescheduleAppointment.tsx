@@ -46,7 +46,7 @@ export function RescheduleAppointment(props: RescheduleAppointmentProps): JSX.El
         status: 'booked',
       });
 
-      void navigate(`/Appointment/${appointment.id}/details`);
+      navigate(`/Appointment/${appointment.id}/details`)?.catch(console.error);
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',

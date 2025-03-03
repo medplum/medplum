@@ -63,7 +63,7 @@ Go to the [sites](https://app.medplum.com/admin/sites) section of your admin con
 If using the Medplum React Component library, add your Google Client ID:
 
 ```tsx
-<SignInForm onSuccess={() => void navigate('/')} googleClientId={process.env.GOOGLE_CLIENT_ID}>
+<SignInForm onSuccess={() => navigate('/')?.catch(console.error)} googleClientId={process.env.GOOGLE_CLIENT_ID}>
   <Logo size={32} />
   <h1>Sign in to Foo Medical</h1>
 </SignInForm>
@@ -72,7 +72,7 @@ If using the Medplum React Component library, add your Google Client ID:
 You may want to use environment variables. Check your build tool for instructions. For example, with Webpack:
 
 ```tsx
-<SignInForm onSuccess={() => void navigate('/')} googleClientId={process.env.GOOGLE_CLIENT_ID}>
+<SignInForm onSuccess={() => navigate('/')?.catch(console.error)} googleClientId={process.env.GOOGLE_CLIENT_ID}>
   <Logo size={32} />
   <h1>Sign in to Foo Medical</h1>
 </SignInForm>

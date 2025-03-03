@@ -25,7 +25,7 @@ export function PatientActions(props: PatientActionsProps): JSX.Element {
 
       <Button
         leftSection={<IconClock size={16} />}
-        onClick={() => void navigate(`/Patient/${patient.id}/Schedule/${schedule.id}`)}
+        onClick={() => navigate(`/Patient/${patient.id}/Schedule/${schedule.id}`)?.catch(console.error)}
       >
         Create Appointment
       </Button>

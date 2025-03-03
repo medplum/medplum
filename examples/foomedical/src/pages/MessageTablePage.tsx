@@ -30,7 +30,7 @@ export function MessageTable(): JSX.Element {
               <Table.Tr
                 key={resource.id}
                 className={classes.tr}
-                onClick={() => void navigate(`/messages/${resource.id}`)}
+                onClick={() => navigate(`/messages/${resource.id}`)?.catch(console.error)}
               >
                 <Table.Td>
                   {formatGivenName(resource.name?.[0] as HumanName)} {formatFamilyName(resource.name?.[0] as HumanName)}

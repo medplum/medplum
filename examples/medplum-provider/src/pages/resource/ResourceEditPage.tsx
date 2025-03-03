@@ -33,7 +33,7 @@ export function ResourceEditPage(): JSX.Element | null {
       medplum
         .updateResource(newResource)
         .then(() => {
-          void navigate('..');
+          navigate('..')?.catch(console.error);
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {
@@ -44,7 +44,7 @@ export function ResourceEditPage(): JSX.Element | null {
     [medplum, navigate]
   );
 
-  const handleDelete = useCallback(() => void navigate('..'), [navigate]);
+  const handleDelete = useCallback(() => navigate('..')?.catch(console.error), [navigate]);
 
   if (!value) {
     return null;

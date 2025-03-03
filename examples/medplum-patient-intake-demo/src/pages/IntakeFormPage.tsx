@@ -32,7 +32,7 @@ export function IntakeFormPage(): JSX.Element {
             title: 'Success',
             message: 'Answers recorded',
           });
-          void navigate(`/Patient`);
+          navigate(`/Patient`)?.catch(console.error);
           window.scrollTo(0, 0);
         })
         .catch((err) => {

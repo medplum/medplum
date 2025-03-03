@@ -63,7 +63,7 @@ export function PatientDetails({ onChange }: PatientDetailsProps): JSX.Element {
   }
 
   function handleTabChange(newTab: string | null): void {
-    void navigate(`/Patient/${id}/${newTab ?? ''}`);
+    navigate(`/Patient/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   if (!patient) {
@@ -89,7 +89,7 @@ export function PatientDetails({ onChange }: PatientDetailsProps): JSX.Element {
             search={threadSearch}
             hideFilters={true}
             hideToolbar={true}
-            onClick={(e) => void navigate(`/${getReferenceString(e.resource)}`)}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
           />
         </Tabs.Panel>
         <Tabs.Panel value="edit">

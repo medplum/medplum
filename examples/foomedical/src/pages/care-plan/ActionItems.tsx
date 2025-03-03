@@ -20,7 +20,7 @@ export function ActionItems(): JSX.Element {
       <InfoSection title="Action Items">
         <Stack gap={0}>
           {carePlans.map((resource) => (
-            <InfoButton key={resource.id} onClick={() => void navigate(`./${resource.id}`)}>
+            <InfoButton key={resource.id} onClick={() => navigate(`./${resource.id}`)?.catch(console.error)}>
               <div>
                 <Text c={theme.primaryColor} fw={500}>
                   {resource.title}

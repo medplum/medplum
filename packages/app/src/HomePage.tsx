@@ -31,7 +31,7 @@ export function HomePage(): JSX.Element {
       setSearch(populatedSearch);
     } else {
       // Otherwise, navigate to the desired URL
-      void navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
@@ -44,13 +44,15 @@ export function HomePage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={true}
         search={search}
-        onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
-          void navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
         onNew={() => {
-          void navigate(RESOURCE_TYPE_CREATION_PATHS[search.resourceType] ?? `/${search.resourceType}/new`);
+          navigate(RESOURCE_TYPE_CREATION_PATHS[search.resourceType] ?? `/${search.resourceType}/new`)?.catch(
+            console.error
+          );
         }}
         onExportCsv={() => {
           const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
@@ -85,7 +87,7 @@ export function HomePage(): JSX.Element {
           }
         }}
         onBulk={(ids: string[]) => {
-          void navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
+          navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`)?.catch(console.error);
         }}
       />
     </Paper>

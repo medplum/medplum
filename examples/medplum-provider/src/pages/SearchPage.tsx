@@ -33,11 +33,11 @@ export function SearchPage(): JSX.Element {
       saveLastSearch(populatedSearch);
       setSearch(populatedSearch);
     } else {
-      void navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
-  useResourceType(search?.resourceType, { onInvalidResourceType: () => void navigate('..') });
+  useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..')?.catch(console.error) });
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;
@@ -48,13 +48,13 @@ export function SearchPage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={true}
         search={search}
-        onClick={(e) => void navigate(getResourceUrl(e.resource))}
+        onClick={(e) => navigate(getResourceUrl(e.resource))?.catch(console.error)}
         onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
         onNew={() => {
-          void navigate(`/${search.resourceType}/new`);
+          navigate(`/${search.resourceType}/new`)?.catch(console.error);
         }}
         onChange={(e) => {
-          void navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
       />
     </Paper>

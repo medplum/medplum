@@ -180,7 +180,7 @@ export function LaunchPage(): JSX.Element {
         setupMedplumClient(tokenData, iss, medplumContext);
 
         // Redirect to patient page
-        void navigate('/patient');
+        navigate('/patient')?.catch(console.error);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       }

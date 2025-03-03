@@ -22,7 +22,7 @@ export function CreateTaskModal(props: CreateTaskModalProps): JSX.Element {
   const handleSubmit = (newResource: Resource): void => {
     medplum
       .createResource(newResource)
-      .then((result) => void navigate(`/${getReferenceString(result)}`))
+      .then((result) => navigate(`/${getReferenceString(result)}`)?.catch(console.error))
       .catch((error) => console.error(error));
   };
 

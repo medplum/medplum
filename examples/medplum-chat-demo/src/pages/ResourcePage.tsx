@@ -59,7 +59,7 @@ export function ResourcePage(): JSX.Element | null {
   }
 
   function handleTabChange(newTab: string | null): void {
-    void navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
+    navigate(`/${resourceType}/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   if (!resource) {

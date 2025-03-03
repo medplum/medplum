@@ -145,7 +145,7 @@ export function SchedulePage(): JSX.Element {
       }
 
       function handleAppointment(): void {
-        void navigate(`/Appointment/${id}`);
+        navigate(`/Appointment/${id}`)?.catch(console.error);
       }
 
       if (resourceType === 'Slot') {

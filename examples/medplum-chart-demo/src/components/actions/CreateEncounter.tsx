@@ -81,7 +81,7 @@ export function CreateEncounter({ opened, handlers }: CreateEncounterProps): JSX
           title: 'Success',
           message: 'Encounter created',
         });
-        void navigate(`/Encounter/${encounter.id}`);
+        navigate(`/Encounter/${encounter.id}`)?.catch(console.error);
       })
       .catch((err) => {
         showNotification({

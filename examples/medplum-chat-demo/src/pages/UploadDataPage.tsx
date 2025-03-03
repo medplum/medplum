@@ -20,7 +20,7 @@ export function UploadDataPage(): JSX.Element {
   function handleDataUpload(): void {
     setButtonDisabled(true);
     uploadData(medplum, dataType)
-      .then(() => void navigate('/'))
+      .then(() => navigate('/'))
       .catch((err) => {
         showNotification({
           color: 'red',

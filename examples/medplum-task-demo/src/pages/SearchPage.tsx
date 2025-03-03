@@ -21,7 +21,7 @@ export function SearchPage(): JSX.Element {
     // Parse the search definition from the url and get the correct fields for the resource type
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
     if (!parsedSearch.resourceType) {
-      void navigate('/Task');
+      navigate('/Task')?.catch(console.error);
       return;
     }
 
@@ -35,7 +35,7 @@ export function SearchPage(): JSX.Element {
       setSearch(populatedSearch);
     } else {
       // If it doesn't, navigate to the correct URL
-      void navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
@@ -46,7 +46,7 @@ export function SearchPage(): JSX.Element {
 
     const updatedSearch = updateSearch(newTab ?? 'active', search);
     const updatedSearchQuery = formatSearchQuery(updatedSearch);
-    void navigate(`/Task${updatedSearchQuery}`);
+    navigate(`/Task${updatedSearchQuery}`)?.catch(console.error);
   };
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
@@ -67,24 +67,24 @@ export function SearchPage(): JSX.Element {
           <Tabs.Panel value="active">
             <SearchControl
               search={search}
-              onClick={(e) => void navigate(`/${getReferenceString(e.resource)}`)}
+              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
               hideFilters={true}
               onChange={(e) => {
-                void navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
               }}
             />
           </Tabs.Panel>
           <Tabs.Panel value="completed">
             <SearchControl
               search={search}
-              onClick={(e) => void navigate(`/${getReferenceString(e.resource)}`)}
+              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
               hideFilters={true}
               onChange={(e) => {
-                void navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
               }}
             />
           </Tabs.Panel>
@@ -92,11 +92,11 @@ export function SearchPage(): JSX.Element {
       ) : (
         <SearchControl
           search={search}
-          onClick={(e) => void navigate(`/${getReferenceString(e.resource)}`)}
+          onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
           hideToolbar={false}
           hideFilters={true}
           onChange={(e) => {
-            void navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+            navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
           }}
         />
       )}

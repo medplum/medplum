@@ -23,7 +23,7 @@ export function ResourcePage(): JSX.Element | null {
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0];
 
   function handleTabChange(newTab: string | null): void {
-    void navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
+    navigate(`/${resourceType}/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export function ResourcePage(): JSX.Element | null {
           title: 'Success',
           message: 'Resource edited.',
         });
-        void navigate(`/${resourceType}/${id}/details`);
+        navigate(`/${resourceType}/${id}/details`)?.catch(console.error);
         window.scroll(0, 0);
       })
       .catch((err) => {

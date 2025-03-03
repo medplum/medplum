@@ -20,7 +20,7 @@ export function Medications(): JSX.Element {
       <InfoSection title="Medications">
         <Stack gap={0}>
           {medications.map((med) => (
-            <InfoButton key={med.id} onClick={() => void navigate(`./${med.id}`)}>
+            <InfoButton key={med.id} onClick={() => navigate(`./${med.id}`)?.catch(console.error)}>
               <div>
                 <Text c={theme.primaryColor} fw={500} mb={4}>
                   {med?.medicationCodeableConcept?.text}

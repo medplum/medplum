@@ -27,7 +27,7 @@ export function OnboardingPage(): JSX.Element | null {
       medplum
         .createResource(newResource)
         .then((newPatient) => {
-          void navigate(`/Patient/${newPatient.id}/timeline`);
+          navigate(`/Patient/${newPatient.id}/timeline`)?.catch(console.error);
         })
         .catch((err) => {
           if (setOutcome) {

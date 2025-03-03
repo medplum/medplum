@@ -48,7 +48,7 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
       await updateTaskStatus({ ...task, status: 'completed' }, medplum, onCompleteTask);
     } else {
       // Fallback navigation to Task details.
-      void navigate(`Task/${task.id}`);
+      navigate(`Task/${task.id}`)?.catch(console.error);
     }
   };
 

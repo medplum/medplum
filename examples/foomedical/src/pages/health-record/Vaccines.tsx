@@ -60,7 +60,7 @@ function Vaccine({ vaccine }: { vaccine: Immunization }): JSX.Element {
   const theme = useMantineTheme();
   const navigate = useNavigate();
   return (
-    <InfoButton onClick={() => void navigate(`./${vaccine.id}`)}>
+    <InfoButton onClick={() => navigate(`./${vaccine.id}`)?.catch(console.error)}>
       <div>
         <Text c={theme.primaryColor} fw={500} mb={8}>
           {vaccine.vaccineCode?.text}

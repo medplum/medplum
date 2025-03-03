@@ -8,7 +8,7 @@ export default function SignInPage(): JSX.Element {
     <SignInForm
       // Configure according to your settings
       googleClientId="397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com"
-      onSuccess={() => void navigate('/')}
+      onSuccess={() => navigate('/')?.catch(console.error)}
     >
       <Logo size={32} />
       <Title ta="center">Sign in to Medplum</Title>

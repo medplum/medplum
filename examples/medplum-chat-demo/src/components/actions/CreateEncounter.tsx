@@ -44,7 +44,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
         message: 'Encounter created.',
       });
       handlers.close();
-      void navigate(`/Encounter/${encounter.id}`);
+      navigate(`/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {
       showNotification({
         icon: <IconCircleOff />,

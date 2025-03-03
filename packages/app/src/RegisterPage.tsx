@@ -12,7 +12,7 @@ export function RegisterPage(): JSX.Element | null {
 
   useEffect(() => {
     if (medplum.getProfile()) {
-      void navigate('/signin?project=new');
+      navigate('/signin?project=new')?.catch(console.error);
     }
   }, [medplum, navigate]);
 
@@ -30,7 +30,7 @@ export function RegisterPage(): JSX.Element | null {
     <RegisterForm
       type="project"
       projectId="new"
-      onSuccess={() => void navigate('/')}
+      onSuccess={() => navigate('/')?.catch(console.error)}
       googleClientId={config.googleClientId}
       recaptchaSiteKey={config.recaptchaSiteKey}
     >

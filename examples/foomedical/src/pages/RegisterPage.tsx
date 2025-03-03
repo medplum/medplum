@@ -13,7 +13,7 @@ export function RegisterPage(): JSX.Element {
           projectId={MEDPLUM_PROJECT_ID}
           googleClientId={MEDPLUM_GOOGLE_CLIENT_ID}
           recaptchaSiteKey={MEDPLUM_RECAPTCHA_SITE_KEY}
-          onSuccess={() => void navigate('/')}
+          onSuccess={() => navigate('/')?.catch(console.error)}
         >
           <h2>Register with Foo Medical</h2>
         </RegisterForm>

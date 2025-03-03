@@ -8,9 +8,9 @@ import { useCallback, useContext, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 import exampleBotData from '../../data/core/example-bots.json';
-import exampleData from '../../data/example/example-organization-data.json';
 import patientIntakeQuestionnaireData from '../../data/core/patient-intake-questionnaire.json';
 import valuesetsData from '../../data/core/valuesets.json';
+import exampleData from '../../data/example/example-organization-data.json';
 
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 
@@ -57,7 +57,7 @@ export function UploadDataPage(): JSX.Element {
     }
 
     uploadFunction(medplum, profile as Practitioner, questionnaire as WithId<Questionnaire>)
-      .then(() => void navigate('/'))
+      .then(() => navigate('/'))
       .catch((error) => {
         showNotification({
           color: 'red',

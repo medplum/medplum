@@ -27,7 +27,7 @@ export function PatientPage(): JSX.Element {
   const currentTab = tab && tabs.includes(tab) ? tab : tabs[0];
 
   function handleTabChange(newTab: string | null): void {
-    void navigate(`/Patient/${id}/${newTab ?? ''}`);
+    navigate(`/Patient/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   if (!patient) {
