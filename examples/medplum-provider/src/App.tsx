@@ -18,7 +18,7 @@ import {
   IconUser,
 } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
 import { HomePage } from './pages/HomePage';

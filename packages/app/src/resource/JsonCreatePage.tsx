@@ -3,7 +3,7 @@ import { Button, Group, JsonInput } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, OperationOutcomeAlert } from '@medplum/react';
 import { useCallback, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { useCreateResource } from './useCreateResource';
 
 export function JsonCreatePage(): JSX.Element {

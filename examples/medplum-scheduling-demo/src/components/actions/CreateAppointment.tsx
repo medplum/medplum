@@ -15,7 +15,7 @@ import {
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconEdit, IconTrash } from '@tabler/icons-react';
 import { Event } from 'react-big-calendar';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { CreateUpdateSlot } from './CreateUpdateSlot';
 
 interface CreateAppointmentProps {
@@ -101,7 +101,7 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element | 
       appointment = await medplum.executeBot({ system: 'http://example.com', value: 'book-appointment' }, appointment);
 
       // Navigate to the appointment detail page
-      navigate(`/Appointment/${appointment.id}`);
+      void navigate(`/Appointment/${appointment.id}`);
       onAppointmentsUpdated();
       showNotification({
         icon: <IconCircleCheck />,

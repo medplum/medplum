@@ -4,7 +4,7 @@ import { getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import { Appointment, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 interface RescheduleAppointmentProps {
   appointment: Appointment;
@@ -46,7 +46,7 @@ export function RescheduleAppointment(props: RescheduleAppointmentProps): JSX.El
         status: 'booked',
       });
 
-      navigate(`/Appointment/${appointment.id}/details`);
+      void navigate(`/Appointment/${appointment.id}/details`);
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',

@@ -1,7 +1,7 @@
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { useDoseSpotIFrame } from '@medplum/dosespot-react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 export function DoseSpotTab(): JSX.Element {
   const { patientId } = useParams();

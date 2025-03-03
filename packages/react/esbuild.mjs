@@ -37,7 +37,7 @@ const options = {
     'prop-types',
     'react',
     'react-dom',
-    'react-router-dom',
+    'react-router',
   ],
 };
 

@@ -5,7 +5,7 @@ import { Bot, Bundle, BundleEntry, Practitioner, Resource } from '@medplum/fhirt
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import coreData from '../../data/core/appointment-service-types.json';
 import exampleBotData from '../../data/core/example-bots.json';
 
@@ -43,7 +43,7 @@ export function UploadDataPage(): JSX.Element {
     }
 
     uploadFunction(medplum, profile as Practitioner)
-      .then(() => navigate('/'))
+      .then(() => void navigate('/'))
       .catch((error) => {
         showNotification({
           color: 'red',

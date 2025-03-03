@@ -3,7 +3,7 @@ import { createReference, getDisplayString, getReferenceString } from '@medplum/
 import { Bundle, OperationOutcome, Questionnaire, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
 import { Document, Loading, MedplumLink, PatientHeader, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router';
 import { ResourceHeader } from './components/ResourceHeader';
 import { getPatient } from './utils';
 

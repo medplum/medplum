@@ -1,7 +1,7 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import crypto from 'crypto';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
 import { act, fireEvent, render, screen, waitFor } from './test-utils/render';

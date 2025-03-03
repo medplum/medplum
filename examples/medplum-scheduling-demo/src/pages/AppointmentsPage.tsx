@@ -3,7 +3,7 @@ import { Filter, getReferenceString, Operator, SearchRequest, WithId } from '@me
 import { Practitioner } from '@medplum/fhirtypes';
 import { SearchControl, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 export function AppointmentsPage(): JSX.Element {
   const profile = useMedplumProfile() as WithId<Practitioner>;
@@ -47,7 +47,7 @@ export function AppointmentsPage(): JSX.Element {
   // if it's neither, navigate to the 'upcoming' tab
   useEffect(() => {
     if (!['upcoming', 'past'].includes(tab)) {
-      navigate('/Appointment/upcoming');
+      void navigate('/Appointment/upcoming');
     }
   }, [tab, navigate]);
 
@@ -57,10 +57,10 @@ export function AppointmentsPage(): JSX.Element {
 
     // Add the appropriate date filter depending on the active tab
     if (newTab === 'upcoming') {
-      navigate('/Appointment/upcoming');
+      void navigate('/Appointment/upcoming');
       filters?.push(upcomingFilter);
     } else if (newTab === 'past') {
-      navigate('/Appointment/past');
+      void navigate('/Appointment/past');
       filters?.push(pastFilter);
     }
 
@@ -83,12 +83,12 @@ export function AppointmentsPage(): JSX.Element {
       </Tabs>
       <SearchControl
         search={search}
-        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
           setSearch(e.definition);
         }}
-        onNew={() => navigate('/Schedule')} // Redirect to the Schedule page where the user can create a new appointment
+        onNew={() => void navigate('/Schedule')} // Redirect to the Schedule page where the user can create a new appointment
         checkboxesEnabled={false}
         hideFilters
       />

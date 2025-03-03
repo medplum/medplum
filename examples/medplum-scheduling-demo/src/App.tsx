@@ -8,7 +8,7 @@ import {
   IconUser,
 } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router';
 import { AppointmentDetailPage } from './pages/AppointmentDetailPage';
 import { AppointmentsPage } from './pages/AppointmentsPage';
 import { createReference, getReferenceString } from '@medplum/core';

@@ -12,7 +12,7 @@ import {
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { cleanResource, shouldShowPatientSummary } from '../utils';
 
 /**
@@ -59,7 +59,7 @@ export function ResourcePage(): JSX.Element | null {
   }
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
+    void navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
   }
 
   if (!resource) {

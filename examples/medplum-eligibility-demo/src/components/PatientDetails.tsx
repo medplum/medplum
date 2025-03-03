@@ -4,7 +4,7 @@ import { getReferenceString, normalizeErrorString, parseSearchRequest } from '@m
 import { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, SearchControl, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { cleanResource } from './utils';
 
 interface PatientDetailsProps {
@@ -38,7 +38,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
         message: 'Patient updated',
       });
       onChange(updatedPatient);
-      navigate(`/Patient/${id}`);
+      void navigate(`/Patient/${id}`);
       window.scrollTo(0, 0);
     } catch (error) {
       showNotification({
@@ -50,7 +50,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
   };
 
   const handleTabChange = (newTab: string | null): void => {
-    navigate(`/Patient/${id}/${newTab ?? ''}`);
+    void navigate(`/Patient/${id}/${newTab ?? ''}`);
   };
 
   return (
@@ -69,7 +69,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
         <Tabs.Panel value="coverages">
           <SearchControl
             search={coverageSearchRequest}
-            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+            onClick={(e) => void navigate(`/${getReferenceString(e.resource)}`)}
             hideFilters={true}
             hideToolbar={true}
           />

@@ -9,7 +9,7 @@ import {
   normalizeErrorString,
 } from '@medplum/core';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 
 import { showNotification } from '@mantine/notifications';
 import { Bot, Bundle, BundleEntry, Coding, Practitioner, ValueSet } from '@medplum/fhirtypes';
@@ -67,7 +67,7 @@ export function UploadDataPage(): JSX.Element {
     }
 
     uploadFunction(medplum, profile as WithId<Practitioner>)
-      .then(() => navigate(-1))
+      .then(() => void navigate(-1))
       .catch((error) => {
         showNotification({
           color: 'red',

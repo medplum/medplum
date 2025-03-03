@@ -1,5 +1,5 @@
 import { AppShell, Container, Logo, Panel, useMedplum } from '@medplum/react';
-import { Link, Route, Routes } from 'react-router-dom';
+import { Link, Route, Routes } from 'react-router';
 import { SignInPage } from './SignInPage';
 import { HomePage } from './HomePage';
 import { Title } from '@mantine/core';

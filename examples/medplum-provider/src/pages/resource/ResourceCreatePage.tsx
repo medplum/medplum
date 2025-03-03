@@ -4,7 +4,7 @@ import { createReference, normalizeErrorString, normalizeOperationOutcome } from
 import { OperationOutcome, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, Loading, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import { prependPatientPath } from '../patient/PatientPage.utils';
 import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
@@ -64,7 +64,7 @@ export function ResourceCreatePage(): JSX.Element {
     }
     medplum
       .createResource(newResource)
-      .then((result) => navigate(prependPatientPath(patient, '/' + result.resourceType + '/' + result.id)))
+      .then((result) => void navigate(prependPatientPath(patient, '/' + result.resourceType + '/' + result.id)))
       .catch((err) => {
         if (setOutcome) {
           setOutcome(normalizeOperationOutcome(err));

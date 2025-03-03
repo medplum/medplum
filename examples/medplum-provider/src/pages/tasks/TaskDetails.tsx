@@ -1,7 +1,7 @@
 import { HumanName, Practitioner, Reference, Task } from '@medplum/fhirtypes';
 import { CodeInput, DateTimeInput, Loading, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router';
 import { Box, Button, Card, Grid, Modal, Stack, Text, Textarea } from '@mantine/core';
 import { usePatient } from '../../hooks/usePatient';
 import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
@@ -87,7 +87,7 @@ export const TaskDetails = (): JSX.Element => {
         message: 'Task updated',
       });
       setTask(updatedTask);
-      navigate(`/Patient/${patientId}/Encounter/${encounterId}/chart`);
+      void navigate(`/Patient/${patientId}/Encounter/${encounterId}/chart`);
     } catch {
       notifications.show({
         color: 'red',
@@ -106,7 +106,7 @@ export const TaskDetails = (): JSX.Element => {
     <Modal
       opened={isOpened}
       onClose={() => {
-        navigate(-1);
+        void navigate(-1);
         setIsOpened(false);
       }}
       size="xl"

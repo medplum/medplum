@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { BlockAvailability } from '../components/actions/BlockAvailability';
 import { CreateAppointment } from '../components/actions/CreateAppointment';
 import { CreateUpdateSlot } from '../components/actions/CreateUpdateSlot';
@@ -145,7 +145,7 @@ export function SchedulePage(): JSX.Element {
       }
 
       function handleAppointment(): void {
-        navigate(`/Appointment/${id}`);
+        void navigate(`/Appointment/${id}`);
       }
 
       if (resourceType === 'Slot') {

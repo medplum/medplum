@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 type RedirectProps = {
   readonly path: string;
@@ -6,6 +6,6 @@ type RedirectProps = {
 
 export default function Redirect(props: RedirectProps): null {
   const navigate = useNavigate();
-  navigate(props.path);
+  void navigate(props.path);
   return null;
 }

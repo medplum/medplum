@@ -2,7 +2,7 @@ import { Operator, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, MemoizedSearchControl } from '@medplum/react';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 
 export function SubscriptionsPage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
@@ -17,7 +17,7 @@ export function SubscriptionsPage(): JSX.Element | null {
     <Document>
       <MemoizedSearchControl
         search={search}
-        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onChange={(e) => setSearch(e.definition)}
         hideFilters
       />

@@ -1,7 +1,7 @@
 import { Stack, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import { ResourceTable, useResource } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 /**
  * This is an example of a generic "Resource Display" page.

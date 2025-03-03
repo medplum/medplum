@@ -2,7 +2,7 @@ import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Bundle, Encounter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { HomerEncounter, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ResourceTimeline, ResourceTimelineProps } from './ResourceTimeline';
 

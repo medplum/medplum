@@ -4,7 +4,7 @@ import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core'
 import { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientHeader, useMedplum, useResource } from '@medplum/react';
 import { useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { Outlet, useNavigate, useParams } from 'react-router';
 import { QuickServiceRequests } from '../components/QuickServiceRequests';
 import { QuickStatus } from '../components/QuickStatus';
 import { ResourceHeader } from '../components/ResourceHeader';
@@ -111,7 +111,7 @@ export function ResourcePage(): JSX.Element | null {
       newTabName = tabs[0].toLowerCase();
     }
     setCurrentTab(newTabName);
-    navigate(`/${resourceType}/${id}/${newTabName}`);
+    void navigate(`/${resourceType}/${id}/${newTabName}`);
   }
 
   function onStatusChange(status: string): void {

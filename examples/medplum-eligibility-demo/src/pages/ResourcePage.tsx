@@ -5,7 +5,7 @@ import { CoverageEligibilityRequest, Resource, ResourceType } from '@medplum/fhi
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { UpdateCoverageEligibilityStatus } from '../components/actions/UpdateCoverageEligibilityStatus';
 import { cleanResource } from '../components/utils';
 
@@ -46,7 +46,7 @@ export function ResourcePage(): JSX.Element | null {
   };
 
   const handleTabChange = (newTab: string | null): void => {
-    navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
+    void navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
   };
 
   const handleEditSubmit = async (newResource: Resource): Promise<void> => {
@@ -61,7 +61,7 @@ export function ResourcePage(): JSX.Element | null {
         message: `${resourceType} updated`,
       });
       // Navigate back to the top of the details page
-      navigate(`/${resourceType}/${id}`);
+      void navigate(`/${resourceType}/${id}`);
       window.scrollTo(0, 0);
     } catch (err) {
       showNotification({

@@ -40,7 +40,7 @@ function App() {
   // Or an unmount whenever token refresh fails and a profile is no longer present
   if (!profile) {
     // Redirect users back to signin whenever there is no profile anytime after initial load
-    navigate("/signin");
+    void navigate("/signin");
     return null;
   }
 

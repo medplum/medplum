@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Button, Modal, Text, Card, Grid, Box, Stack } from '@mantine/core';
 import { useState } from 'react';
 import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
@@ -55,7 +55,7 @@ export const EncounterModal = (): JSX.Element => {
 
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
 
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/checkin`);
+      void navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/checkin`);
     } catch (err) {
       showNotification({ color: 'red', icon: <IconCircleOff />, title: 'Error', message: normalizeErrorString(err) });
     }
@@ -65,7 +65,7 @@ export const EncounterModal = (): JSX.Element => {
     <Modal
       opened={isOpen}
       onClose={() => {
-        navigate(-1);
+        void navigate(-1);
         setIsOpen(false);
       }}
       size="60%"

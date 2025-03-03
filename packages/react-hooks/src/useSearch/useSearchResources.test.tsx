@@ -3,7 +3,7 @@ import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { act, render, renderHook, screen } from '@testing-library/react';
 import { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { useSearchResources } from './useSearch';
 

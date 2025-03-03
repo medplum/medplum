@@ -24,7 +24,7 @@ import {
   IconX,
 } from '@tabler/icons-react';
 import { ReactNode, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { isAwsTextractEnabled } from '../config';
 import { ResendSubscriptionsModal } from './ResendSubscriptionsModal';
 

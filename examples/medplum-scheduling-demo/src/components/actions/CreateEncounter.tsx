@@ -4,7 +4,7 @@ import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '
 import { Appointment, Coding, Encounter, Patient, Practitioner, Questionnaire, Reference } from '@medplum/fhirtypes';
 import { useMedplum, QuestionnaireForm } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 interface CreateEncounterProps {
   appointment: Appointment;
@@ -64,7 +64,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
       encounter = await medplum.createResource(encounter);
 
       // Navigate to the encounter details page
-      navigate(`/Encounter/${encounter.id}`);
+      void navigate(`/Encounter/${encounter.id}`);
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',

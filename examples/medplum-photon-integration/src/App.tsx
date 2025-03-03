@@ -1,7 +1,7 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconMedicineSyrup, IconReportMedical, IconRobot, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router';
 import { PHOTON_CLIENT_ID, PHOTON_ORG_ID } from './config';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';

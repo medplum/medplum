@@ -2,7 +2,7 @@ import { formatSearchQuery, getReferenceString, Operator, ProfileResource } from
 import { AppShell, Loading, Logo, NotificationIcon, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconClipboardCheck, IconFileImport, IconMail, IconMessage, IconMessage2Bolt } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { NavigateFunction, Route, Routes, useNavigate } from 'react-router-dom';
+import { NavigateFunction, Route, Routes, useNavigate } from 'react-router';
 import { CommunicationPage } from './pages/CommunicationPage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
@@ -93,7 +93,7 @@ function MessageNotification({ profile, navigate }: NotificationProps): JSX.Elem
       subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
       iconComponent={<IconMail />}
       onClick={() =>
-        navigate(
+        void navigate(
           `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&part-of:missing=false&_fields=sender,recipient,subject,status,_lastUpdated`
         )
       }
@@ -110,7 +110,7 @@ function TaskNotification({ profile, navigate }: NotificationProps): JSX.Element
       subscriptionCriteria={`Task?owner=${getReferenceString(profile as ProfileResource)}`}
       iconComponent={<IconClipboardCheck />}
       onClick={() =>
-        navigate(
+        void navigate(
           `/Task?owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=subject,code,description,status,_lastUpdated`
         )
       }

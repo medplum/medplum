@@ -2,7 +2,7 @@ import { Blockquote, Group, Paper, Stack, Tabs, Title, Text } from '@mantine/cor
 import { formatCodeableConcept, getDisplayString } from '@medplum/core';
 import { Annotation, Task } from '@medplum/fhirtypes';
 import { Container, DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { TaskActions } from '../../components/tasks/actions/TaskActions';
 import { useEffect, useState } from 'react';
 import { formatPatientPageTabUrl, getPatientPageTabOrThrow } from './PatientPage.utils';
@@ -36,7 +36,7 @@ export function TaskTab(): JSX.Element {
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string | null): void => {
     console.log('newTab:', newTab);
-    navigate(`./${newTab}`, { relative: 'path' });
+    void navigate(`./${newTab}`, { relative: 'path' });
   };
 
   const onTaskChange = (updatedTask: Task): void => {
@@ -44,7 +44,7 @@ export function TaskTab(): JSX.Element {
   };
 
   const onTaskDeleted = (): void => {
-    navigate(formatPatientPageTabUrl(patientId, tasksTab));
+    void navigate(formatPatientPageTabUrl(patientId, tasksTab));
   };
 
   if (!task) {

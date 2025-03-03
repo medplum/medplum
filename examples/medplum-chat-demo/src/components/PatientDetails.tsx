@@ -14,7 +14,7 @@ import {
   useResource,
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { cleanResource } from '../utils';
 
 interface PatientDetailsProps {
@@ -63,7 +63,7 @@ export function PatientDetails({ onChange }: PatientDetailsProps): JSX.Element {
   }
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/Patient/${id}/${newTab ?? ''}`);
+    void navigate(`/Patient/${id}/${newTab ?? ''}`);
   }
 
   if (!patient) {
@@ -89,7 +89,7 @@ export function PatientDetails({ onChange }: PatientDetailsProps): JSX.Element {
             search={threadSearch}
             hideFilters={true}
             hideToolbar={true}
-            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+            onClick={(e) => void navigate(`/${getReferenceString(e.resource)}`)}
           />
         </Tabs.Panel>
         <Tabs.Panel value="edit">

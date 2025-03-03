@@ -4,7 +4,7 @@ import { ResourceAvatar, useMedplumProfile } from '@medplum/react';
 import { IconChevronDown, IconLogout, IconSettings, IconUserCircle } from '@tabler/icons-react';
 import cx from 'clsx';
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import classes from './Header.module.css';
 import { Logo } from './Logo';
 
@@ -26,7 +26,7 @@ export function Header(): JSX.Element {
     <AppShell.Header>
       <Container>
         <div className={classes.inner}>
-          <UnstyledButton className={classes.logoButton} onClick={() => navigate('/')}>
+          <UnstyledButton className={classes.logoButton} onClick={() => void navigate('/')}>
             <Logo width={240} />
           </UnstyledButton>
           <Group gap={5} className={classes.links}>
@@ -55,19 +55,19 @@ export function Header(): JSX.Element {
             <Menu.Dropdown>
               <Menu.Item
                 leftSection={<IconUserCircle size={16} color={theme.colors.red[6]} stroke={1.5} />}
-                onClick={() => navigate('/account/profile')}
+                onClick={() => void navigate('/account/profile')}
               >
                 Your profile
               </Menu.Item>
               <Menu.Item
                 leftSection={<IconSettings size={16} color={theme.colors.blue[6]} stroke={1.5} />}
-                onClick={() => navigate('/account/profile')}
+                onClick={() => void navigate('/account/profile')}
               >
                 Settings
               </Menu.Item>
               <Menu.Item
                 leftSection={<IconLogout size={16} color={theme.colors.gray[6]} stroke={1.5} />}
-                onClick={() => navigate('/signout')}
+                onClick={() => void navigate('/signout')}
               >
                 Sign out
               </Menu.Item>

@@ -2,7 +2,7 @@ import { createReference } from '@medplum/core';
 import { Reference, Schedule } from '@medplum/fhirtypes';
 import { DrAliceSmithSchedule, ExampleQuestionnaire, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Scheduler } from './Scheduler';
 

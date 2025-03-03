@@ -3,7 +3,7 @@ import { normalizeOperationOutcome } from '@medplum/core';
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
 import { UserConfigurationInput } from './UserConfigurationInput';
@@ -27,7 +27,7 @@ export function EditMembershipPage(): JSX.Element {
       medplum
         .delete(`admin/projects/${projectId}/members/${membershipId}`)
         .then(() => medplum.get(`admin/projects/${projectId}`, { cache: 'no-cache' }))
-        .then(() => navigate('/admin/project'))
+        .then(() => void navigate('/admin/project'))
         .catch((err) => setOutcome(normalizeOperationOutcome(err)));
     }
   }

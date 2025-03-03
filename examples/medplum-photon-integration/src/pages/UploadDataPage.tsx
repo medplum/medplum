@@ -5,7 +5,7 @@ import { Binary, Bot, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtyp
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import exampleBotData from '../../data/example-bots.json';
 import formularyData from '../../data/example-data.json';
 
@@ -37,7 +37,7 @@ export function UploadDataPage(): JSX.Element {
     }
 
     uploadFunction(medplum, profile as Practitioner)
-      .then(() => navigate('/'))
+      .then(() => void navigate('/'))
       .catch(console.error);
   }, [medplum, profile, dataType, navigate]);
 

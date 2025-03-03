@@ -14,7 +14,7 @@ import {
 } from '@mantine/core';
 import { CodeableConcept, Coverage, Encounter, Organization, Patient, Practitioner } from '@medplum/fhirtypes';
 import { CodeableConceptInput, Loading, ResourceInput, useMedplum } from '@medplum/react';
-import { Outlet, useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router';
 import { useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';

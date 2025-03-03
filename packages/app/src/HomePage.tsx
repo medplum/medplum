@@ -4,7 +4,7 @@ import { formatSearchQuery, normalizeErrorString, parseSearchRequest, SearchRequ
 import { ResourceType } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import classes from './HomePage.module.css';
 import { addSearchValues, getTransactionBundle, RESOURCE_TYPE_CREATION_PATHS, saveLastSearch } from './HomePage.utils';
 import { exportJsonFile } from './utils';
@@ -31,7 +31,7 @@ export function HomePage(): JSX.Element {
       setSearch(populatedSearch);
     } else {
       // Otherwise, navigate to the desired URL
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      void navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
     }
   }, [medplum, navigate, location]);
 
@@ -44,13 +44,13 @@ export function HomePage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={true}
         search={search}
-        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          void navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
         onNew={() => {
-          navigate(RESOURCE_TYPE_CREATION_PATHS[search.resourceType] ?? `/${search.resourceType}/new`);
+          void navigate(RESOURCE_TYPE_CREATION_PATHS[search.resourceType] ?? `/${search.resourceType}/new`);
         }}
         onExportCsv={() => {
           const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
@@ -85,7 +85,7 @@ export function HomePage(): JSX.Element {
           }
         }}
         onBulk={(ids: string[]) => {
-          navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
+          void navigate(`/bulk/${search.resourceType}?ids=${ids.join(',')}`);
         }}
       />
     </Paper>

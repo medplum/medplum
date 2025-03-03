@@ -3,7 +3,7 @@ import { Filter, Operator, SearchRequest } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { Document, ResourceTable, SearchControl } from '@medplum/react';
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 interface PatientDetailsProps {
   patient: Patient;
@@ -61,7 +61,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
   const tab = location.pathname.split('/')[3] ?? 'details';
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/Patient/${patient.id}/${newTab}`);
+    void navigate(`/Patient/${patient.id}/${newTab}`);
   }
 
   return (
@@ -81,7 +81,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
           <SearchControl
             search={appointmentsSearch}
             onChange={(e) => setAppointmentsSearch(e.definition)}
-            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+            onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
             onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
             hideFilters
             hideToolbar

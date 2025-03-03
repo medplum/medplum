@@ -3,7 +3,7 @@ import { Filter, Operator, SearchRequest } from '@medplum/core';
 import { Appointment, Patient } from '@medplum/fhirtypes';
 import { Document, ResourceTable, SearchControl } from '@medplum/react';
 import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 interface AppointmentDetailsProps {
   appointment: Appointment;
@@ -76,7 +76,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
   ];
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/Appointment/${appointment.id}/${newTab}`);
+    void navigate(`/Appointment/${appointment.id}/${newTab}`);
   }
 
   // Get the current tab, default to 'details' if not found
@@ -99,7 +99,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           <SearchControl
             search={encountersSearch}
             onChange={(e) => setEncountersSearch(e.definition)}
-            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+            onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
             onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
             hideFilters
             hideToolbar
@@ -109,7 +109,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           <SearchControl
             search={upcomingAppointmentsSearch}
             onChange={(e) => setUpcomingAppointmentsSearch(e.definition)}
-            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+            onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
             onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
             hideFilters
             hideToolbar
@@ -119,7 +119,7 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           <SearchControl
             search={pastAppointmentsSearch}
             onChange={(e) => setPastAppointmentsSearch(e.definition)}
-            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+            onClick={(e) => void navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
             onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
             hideFilters
             hideToolbar
