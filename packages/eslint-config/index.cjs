@@ -57,7 +57,6 @@ module.exports = {
     'no-useless-concat': 'error',
     'no-useless-return': 'error',
     'no-var': 'error',
-    // 'no-void': 'error',
     'prefer-object-has-own': 'error',
     'prefer-object-spread': 'error',
     'prefer-promise-reject-errors': 'error',
