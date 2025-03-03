@@ -63,7 +63,10 @@ export function EditPage(): JSX.Element | null {
     [medplum, resourceType, id, original, navigate]
   );
 
-  const handleDelete = useCallback(() => navigate(`/${resourceType}/${id}/delete`)?.catch(console.error), [navigate, resourceType, id]);
+  const handleDelete = useCallback(
+    () => navigate(`/${resourceType}/${id}/delete`)?.catch(console.error),
+    [navigate, resourceType, id]
+  );
 
   if (!value) {
     return null;
