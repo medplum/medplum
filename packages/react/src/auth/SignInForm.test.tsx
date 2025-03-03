@@ -394,12 +394,12 @@ describe('SignInForm', () => {
   });
 
   test('Choose scope', async () => {
-    let success = false;
+    const successFn = jest.fn();
 
     await setup({
       chooseScopes: true,
       scope: 'openid profile',
-      onSuccess: () => (success = true),
+      onSuccess: successFn,
     });
 
     await act(async () => {
@@ -430,7 +430,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Set scope'));
     });
 
-    expect(success).toBe(true);
+    expect(successFn).toHaveBeenCalled();
   });
 
   test('Submit success new project', async () => {

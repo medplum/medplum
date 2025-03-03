@@ -62,10 +62,10 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
               ];
             }
             return (
-              <>
+              <div key={scopeName + '_group'}>
                 <Checkbox key={scopeName} id={scopeName} name={scopeName} label={scopeName} defaultChecked />
                 {additionalScopes?.map((scope) => <Checkbox key={scope} id={scope} name={scope} label={scope} />)}
-              </>
+              </div>
             );
           })}
         </Stack>
