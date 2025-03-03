@@ -18,7 +18,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         *)
             echo "Error: Unknown argument '$1'"
-            echo "Usage: $0 [--exclude="package1 package2 package3"]"
+            echo "Usage: $0 [--exclude=\"package1 package2 package3\"]"
             exit 1
             ;;
     esac
