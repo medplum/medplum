@@ -102,8 +102,12 @@ export function App(): JSX.Element | null {
             <Route path="/" element={profile ? <Navigate to={ALL_TASKS_LINK.href} /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
-            <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
-            <Route path="/Task/:id/*" element={<TaskPage />} />
+            <Route path="/:resourceType/:id">
+              <Route path="*" element={<ResourcePage />} />
+            </Route>
+            <Route path="/Task/:id">
+              <Route path="*" element={<TaskPage />} />
+            </Route>
             <Route path="/Task" element={<SearchPage />} />
             <Route path="/upload/:dataType" element={<UploadDataPage />} />
           </Routes>

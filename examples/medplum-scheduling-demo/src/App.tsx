@@ -1,3 +1,5 @@
+import { createReference, getReferenceString } from '@medplum/core';
+import { Practitioner, Schedule } from '@medplum/fhirtypes';
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconCalendar,
@@ -11,17 +13,15 @@ import { Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { AppointmentDetailPage } from './pages/AppointmentDetailPage';
 import { AppointmentsPage } from './pages/AppointmentsPage';
-import { createReference, getReferenceString } from '@medplum/core';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
 import { PatientSchedulePage } from './pages/PatientSchedulePage';
-import { Practitioner, Schedule } from '@medplum/fhirtypes';
 import { ResourcePage } from './pages/ResourcePage';
-import { ScheduleContext } from './Schedule.context';
 import { SchedulePage } from './pages/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
+import { ScheduleContext } from './Schedule.context';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -107,13 +107,19 @@ export function App(): JSX.Element | null {
                 path="/Patient/:patientId/Schedule/:scheduleId"
                 element={schedule ? <PatientSchedulePage /> : <Loading />}
               />
-              <Route path="/Patient/:id/*" element={<PatientPage />} />
+              <Route path="/Patient/:id">
+                <Route path="*" element={<PatientPage />} />
+              </Route>
               <Route path="/Appointment/upcoming" element={<AppointmentsPage />} />
               <Route path="/Appointment/past" element={<AppointmentsPage />} />
-              <Route path="/Appointment/:id/*" element={<AppointmentDetailPage />} />
+              <Route path="/Appointment/:id">
+                <Route path="*" element={<AppointmentDetailPage />} />
+              </Route>
               <Route path="/upload/:dataType" element={<UploadDataPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
-              <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
+              <Route path="/:resourceType/:id">
+                <Route path="*" element={<ResourcePage />} />
+              </Route>
             </Routes>
           </Suspense>
         </ErrorBoundary>

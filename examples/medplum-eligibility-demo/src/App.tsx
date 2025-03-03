@@ -44,9 +44,15 @@ export function App(): JSX.Element | null {
           <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
           <Route path="/:resourceType" element={<SearchPage />} />
           <Route path="/signin" element={<SignInPage />} />
-          <Route path="/Coverage/:id/*" element={<CoveragePage />} />
-          <Route path="/Patient/:id/*" element={<PatientPage />} />
-          <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
+          <Route path="/Coverage/:id">
+            <Route path="*" element={<CoveragePage />} />
+          </Route>
+          <Route path="/Patient/:id">
+            <Route path="*" element={<PatientPage />} />
+          </Route>
+          <Route path="/:resourceType/:id">
+            <Route path="*" element={<ResourcePage />} />
+          </Route>
           <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
           <Route path="/upload/:dataType" element={<UploadDataPage />} />
         </Routes>
