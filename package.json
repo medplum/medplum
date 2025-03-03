@@ -58,7 +58,7 @@
     "ts-node": "10.9.2",
     "tslib": "2.8.1",
     "turbo": "2.4.4",
-    "typescript": "5.8.2"
+    "typescript": "5.7.3"
   },
   "packageManager": "npm@10.9.2",
   "engines": {
