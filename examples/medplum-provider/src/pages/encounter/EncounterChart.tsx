@@ -1,4 +1,4 @@
-import { Text, Stack, Box } from '@mantine/core';
+import { Stack, Box } from '@mantine/core';
 import { Practitioner, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import { Outlet, useLocation, useParams } from 'react-router';
