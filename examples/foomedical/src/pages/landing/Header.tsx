@@ -29,7 +29,7 @@ import {
   IconFingerprint,
   IconNotification,
 } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Logo } from '../../components/Logo';
 import classes from './Header.module.css';
 
@@ -95,7 +95,7 @@ export function Header(): JSX.Element {
       <AppShell.Header px="md">
         <Container h="100%">
           <Group justify="space-between" h="100%">
-            <UnstyledButton className={classes.logoButton} onClick={() => navigate('/')}>
+            <UnstyledButton className={classes.logoButton} onClick={() => navigate('/')?.catch(console.error)}>
               <Logo width={240} />
             </UnstyledButton>
 
@@ -153,10 +153,10 @@ export function Header(): JSX.Element {
             </Group>
 
             <Group className={classes.hiddenMobile}>
-              <Button variant="default" onClick={() => navigate('/signin')}>
+              <Button variant="default" onClick={() => navigate('/signin')?.catch(console.error)}>
                 Log in
               </Button>
-              <Button onClick={() => navigate('/register')}>Sign up</Button>
+              <Button onClick={() => navigate('/register')?.catch(console.error)}>Sign up</Button>
             </Group>
 
             <Burger opened={drawerOpened} onClick={toggleDrawer} className={classes.hiddenDesktop} />
@@ -198,10 +198,10 @@ export function Header(): JSX.Element {
           <Divider my="sm" />
 
           <Group justify="center" grow pb="xl" px="md">
-            <Button variant="default" onClick={() => navigate('/signin')}>
+            <Button variant="default" onClick={() => navigate('/signin')?.catch(console.error)}>
               Log in
             </Button>
-            <Button onClick={() => navigate('/register')}>Sign up</Button>
+            <Button onClick={() => navigate('/register')?.catch(console.error)}>Sign up</Button>
           </Group>
         </ScrollArea>
       </Drawer>

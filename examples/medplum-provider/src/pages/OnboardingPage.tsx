@@ -5,7 +5,7 @@ import { RESOURCE_PROFILE_URLS } from './resource/utils';
 import { showNotification } from '@mantine/notifications';
 import { normalizeOperationOutcome, normalizeErrorString, addProfileToResource } from '@medplum/core';
 import { useState, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 /**
  * This is an example of a generic "Resource Display" page.
@@ -27,7 +27,7 @@ export function OnboardingPage(): JSX.Element | null {
       medplum
         .createResource(newResource)
         .then((newPatient) => {
-          navigate(`/Patient/${newPatient.id}/timeline`);
+          navigate(`/Patient/${newPatient.id}/timeline`)?.catch(console.error);
         })
         .catch((err) => {
           if (setOutcome) {

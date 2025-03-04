@@ -261,6 +261,12 @@ describe('Identifier Lookup Table', () => {
         identifier: [{ system: 'https://www.example.com', value: identifier + 'xyz' }],
       });
 
+      const patient3 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: name }],
+        // no identifiers should match NOT_EQUALS
+      });
+
       const searchResult1 = await systemRepo.search({
         resourceType: 'Patient',
         filters: [
@@ -276,9 +282,10 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult1.entry?.length).toStrictEqual(1);
+      expect(searchResult1.entry?.length).toStrictEqual(2);
       expect(bundleContains(searchResult1, patient1)).toBeUndefined();
       expect(bundleContains(searchResult1, patient2)).toBeDefined();
+      expect(bundleContains(searchResult1, patient3)).toBeDefined();
     }));
 
   test('Missing', () =>

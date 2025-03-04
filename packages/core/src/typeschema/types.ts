@@ -241,7 +241,7 @@ class StructureDefinitionParser {
   private index: number;
   private readonly resourceSchema: InternalTypeSchema;
   private slicingContext: { field: SlicingRules; current?: SliceDefinition; path: string } | undefined;
-  private innerTypes: InternalTypeSchema[];
+  private readonly innerTypes: InternalTypeSchema[];
   private backboneContext: BackboneContext | undefined;
 
   /**

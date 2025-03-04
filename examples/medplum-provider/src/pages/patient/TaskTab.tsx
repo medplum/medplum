@@ -1,10 +1,10 @@
-import { Blockquote, Group, Paper, Stack, Tabs, Title, Text } from '@mantine/core';
+import { Blockquote, Group, Paper, Stack, Tabs, Text, Title } from '@mantine/core';
 import { formatCodeableConcept, getDisplayString } from '@medplum/core';
 import { Annotation, Task } from '@medplum/fhirtypes';
 import { Container, DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { TaskActions } from '../../components/tasks/actions/TaskActions';
 import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
+import { TaskActions } from '../../components/tasks/actions/TaskActions';
 import { formatPatientPageTabUrl, getPatientPageTabOrThrow } from './PatientPage.utils';
 
 const tabs = ['Details', 'Timeline', 'Notes'];
@@ -35,8 +35,7 @@ export function TaskTab(): JSX.Element {
 
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string | null): void => {
-    console.log('newTab:', newTab);
-    navigate(`./${newTab}`, { relative: 'path' });
+    navigate(`./${newTab}`, { relative: 'path' })?.catch(console.error);
   };
 
   const onTaskChange = (updatedTask: Task): void => {
@@ -44,7 +43,7 @@ export function TaskTab(): JSX.Element {
   };
 
   const onTaskDeleted = (): void => {
-    navigate(formatPatientPageTabUrl(patientId, tasksTab));
+    navigate(formatPatientPageTabUrl(patientId, tasksTab))?.catch(console.error);
   };
 
   if (!task) {

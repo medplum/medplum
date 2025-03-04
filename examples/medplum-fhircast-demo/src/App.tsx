@@ -1,12 +1,11 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconMessage2Down, IconMessage2Plus, IconSquareRoundedArrowRight } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router';
 import classes from './App.module.css';
 import DemoInstructionsPage from './components/DemoInstructionsPage';
 import LandingPage from './components/LandingPage';
 import Publisher from './components/Publisher';
-import Redirect from './components/Redirect';
 import SignInPage from './components/SignInPage';
 import Subscriber from './components/Subscriber';
 
@@ -46,7 +45,7 @@ export function App(): JSX.Element | null {
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route path="/" element={!profile ? <LandingPage /> : <DemoInstructionsPage />} />
-              <Route path="/signin" element={!profile ? <SignInPage /> : <Redirect path="/" />} />
+              <Route path="/signin" element={!profile ? <SignInPage /> : <Navigate to="/" />} />
               <Route path="/publisher" element={<Publisher />} />
               <Route path="/subscriber" element={<Subscriber />} />
             </Routes>

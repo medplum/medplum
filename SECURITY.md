@@ -10,7 +10,7 @@ This commitment to security is ingrained in our culture.
 
 ## Application Security
 
-- Encryption - Data is encrypted in transit with TLS 1.2. Data is encrypted at rest with AES.
+- Encryption - Data is encrypted in transit with TLS 1.2 and 1.3. Data is encrypted at rest with AES.
 - Continuous Monitoring - Independent third-party penetration, threat, and vulnerability testing.
 - Data Handling - Medplum is in full compliance with GDPR and has support for data deletion.
 - SSO - User access controls with single sign on.

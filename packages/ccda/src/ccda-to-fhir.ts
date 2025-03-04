@@ -44,6 +44,7 @@ import {
   OID_HEALTH_CONCERNS_SECTION,
   OID_IMMUNIZATIONS_SECTION_ENTRIES_OPTIONAL,
   OID_IMMUNIZATIONS_SECTION_ENTRIES_REQUIRED,
+  OID_MEDICATION_FREE_TEXT_SIG,
   OID_MEDICATIONS_SECTION_ENTRIES_REQUIRED,
   OID_NOTES_SECTION,
   OID_PAYERS_SECTION,
@@ -57,9 +58,9 @@ import {
   ADDRESS_USE_MAPPER,
   ALLERGY_CLINICAL_CODE_SYSTEM,
   ALLERGY_SEVERITY_MAPPER,
+  ALLERGY_STATUS_MAPPER,
   ALLERGY_VERIFICATION_CODE_SYSTEM,
   CCDA_NARRATIVE_REFERENCE_URL,
-  CCDA_TEMPLATE_CODE_SYSTEM,
   CLINICAL_CONDITION_CODE_SYSTEM,
   CONDITION_CATEGORY_CODE_SYSTEM,
   CONDITION_VER_STATUS_CODE_SYSTEM,
@@ -67,10 +68,12 @@ import {
   DIAGNOSIS_ROLE_CODE_SYSTEM,
   ENCOUNTER_STATUS_MAPPER,
   HUMAN_NAME_USE_MAPPER,
+  IMMUNIZATION_STATUS_MAPPER,
   mapCcdaSystemToFhir,
   MEDICATION_STATUS_MAPPER,
   OBSERVATION_CATEGORY_MAPPER,
   PARTICIPATION_CODE_SYSTEM,
+  PROBLEM_STATUS_MAPPER,
   PROCEDURE_STATUS_MAPPER,
   TELECOM_USE_MAPPER,
   US_CORE_CONDITION_URL,
@@ -458,7 +461,7 @@ class CcdaToFhirConverter {
         coding: [
           {
             system: CLINICAL_CONDITION_CODE_SYSTEM,
-            code: this.mapStatus(act.statusCode['@_code']),
+            code: PROBLEM_STATUS_MAPPER.mapCcdaToFhirWithDefault(act.statusCode?.['@_code'], 'active'),
           },
         ],
       },
@@ -551,6 +554,9 @@ class CcdaToFhirConverter {
     const routeCode = substanceAdmin.routeCode;
     const doseQuantity = substanceAdmin.doseQuantity;
     const manufacturerOrg = substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0];
+    const instructions = substanceAdmin.entryRelationship?.find(
+      (rel) => rel.substanceAdministration?.[0]?.templateId?.[0]?.['@_root'] === OID_MEDICATION_FREE_TEXT_SIG
+    )?.substanceAdministration?.[0];
 
     let medication: Medication | undefined = undefined;
     let medicationCodeableConcept: CodeableConcept | undefined = undefined;
@@ -588,6 +594,7 @@ class CcdaToFhirConverter {
       meta: {
         profile: [US_CORE_MEDICATION_REQUEST_URL],
       },
+      extension: this.mapTextReference(substanceAdmin.text),
       status: MEDICATION_STATUS_MAPPER.mapCcdaToFhirWithDefault(substanceAdmin.statusCode?.['@_code'], 'active'),
       intent: 'order',
       medicationReference: medication ? { reference: '#med-' + cdaId } : undefined,
@@ -604,13 +611,16 @@ class CcdaToFhirConverter {
         : undefined,
       dosageInstruction: [
         {
-          text: substanceAdmin.text?.reference?.['@_value'],
-          extension: this.mapTextReference(substanceAdmin.text),
+          text: typeof substanceAdmin.text === 'string' ? substanceAdmin.text : undefined,
+          extension: this.mapTextReference(instructions?.text),
           route: routeCode ? this.mapCode(routeCode) : undefined,
           timing: {
-            repeat: {
-              when: ['HS'],
-            },
+            repeat: substanceAdmin.effectiveTime?.[1]?.period
+              ? {
+                  period: Number(substanceAdmin.effectiveTime?.[1]?.period['@_value']),
+                  periodUnit: substanceAdmin.effectiveTime?.[1]?.period['@_unit'],
+                }
+              : undefined,
           },
           doseAndRate: doseQuantity
             ? [
@@ -641,7 +651,7 @@ class CcdaToFhirConverter {
       resourceType: 'Immunization',
       id: this.mapId(substanceAdmin.id),
       identifier: this.mapIdentifiers(substanceAdmin.id),
-      status: 'completed',
+      status: IMMUNIZATION_STATUS_MAPPER.mapCcdaToFhirWithDefault(substanceAdmin.statusCode?.['@_code'], 'completed'),
       vaccineCode: this.mapCode(
         consumable.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.code?.[0]
       ) as CodeableConcept,
@@ -700,6 +710,9 @@ class CcdaToFhirConverter {
     if (effectiveTime?.['@_value']) {
       return mapCcdaToFhirDateTime(effectiveTime['@_value']);
     }
+    if (effectiveTime?.low?.['@_value']) {
+      return mapCcdaToFhirDateTime(effectiveTime.low['@_value']);
+    }
     return undefined;
   }
 
@@ -745,22 +758,12 @@ class CcdaToFhirConverter {
     return value.replace(/^(tel:|mailto:)/, '');
   }
 
-  private mapStatus(status: string): string {
-    const map: { [key: string]: string } = {
-      active: 'active',
-      suspended: 'inactive',
-      aborted: 'inactive',
-      completed: 'resolved',
-    };
-    return map[status] ?? 'active';
-  }
-
   private mapCode(code: CcdaCode | undefined): CodeableConcept | undefined {
     if (!code) {
       return undefined;
     }
 
-    return {
+    const result = {
       coding: [
         {
           system: mapCcdaSystemToFhir(code['@_codeSystem']),
@@ -768,9 +771,20 @@ class CcdaToFhirConverter {
           display: code['@_displayName'],
         },
       ],
-
       text: code['@_displayName'],
     };
+
+    if (code.translation) {
+      for (const translation of code.translation) {
+        result.coding.push({
+          system: mapCcdaSystemToFhir(translation['@_codeSystem']),
+          code: translation['@_code'],
+          display: translation['@_displayName'],
+        });
+      }
+    }
+
+    return result;
   }
 
   private mapCodeToCoding(code: CcdaCode | undefined): Coding | undefined {
@@ -790,7 +804,7 @@ class CcdaToFhirConverter {
       coding: [
         {
           system: ALLERGY_CLINICAL_CODE_SYSTEM,
-          code: this.mapStatus(act.statusCode['@_code']),
+          code: ALLERGY_STATUS_MAPPER.mapCcdaToFhirWithDefault(act.statusCode?.['@_code'], 'active'),
         },
       ],
     };
@@ -1147,18 +1161,6 @@ class CcdaToFhirConverter {
       }
     }
 
-    for (const templateId of templateIds) {
-      result.push({
-        coding: [
-          {
-            system: CCDA_TEMPLATE_CODE_SYSTEM,
-            code: templateId['@_root'],
-            version: templateId['@_extension'],
-          },
-        ],
-      });
-    }
-
     return Array.from(result.values());
   }
 
@@ -1296,7 +1298,6 @@ class CcdaToFhirConverter {
       status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(procedure.statusCode?.['@_code'], 'completed'),
       code: this.mapCode(procedure.code),
       subject: createReference(this.patient as Patient),
-      performedDateTime: this.mapEffectiveTimeToDateTime(procedure.effectiveTime?.[0]),
       performedPeriod: this.mapEffectiveTimeToPeriod(procedure.effectiveTime?.[0]),
       bodySite: procedure.targetSiteCode ? [this.mapCode(procedure.targetSiteCode) as CodeableConcept] : undefined,
       extension: this.mapTextReference(procedure.text),
@@ -1305,7 +1306,11 @@ class CcdaToFhirConverter {
     return result;
   }
 
-  private mapTextReference(text: CcdaText | undefined): Extension[] | undefined {
+  private mapTextReference(text: string | CcdaText | undefined): Extension[] | undefined {
+    if (!text || typeof text !== 'object') {
+      return undefined;
+    }
+
     if (!text?.reference?.['@_value']) {
       return undefined;
     }

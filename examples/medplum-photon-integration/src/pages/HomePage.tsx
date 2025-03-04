@@ -12,7 +12,7 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 import { NEUTRON_HEALTH_BOTS } from '../bots/constants';
 
 /**

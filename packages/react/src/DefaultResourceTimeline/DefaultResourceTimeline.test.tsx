@@ -3,7 +3,7 @@ import { DiagnosticReport, Patient } from '@medplum/fhirtypes';
 import { ExampleSubscription, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen, waitFor } from '../test-utils/render';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { DefaultResourceTimeline, DefaultResourceTimelineProps } from './DefaultResourceTimeline';
 
 const medplum = new MockClient();

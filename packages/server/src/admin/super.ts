@@ -10,18 +10,18 @@ import {
   validateResourceType,
 } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
+import { assert } from 'console';
 import { Request, Response, Router } from 'express';
 import { body, checkExact, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool, maybeStartDataMigration } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import * as dataMigrations from '../migrations/data';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
@@ -47,7 +47,7 @@ export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
 
 // POST to /admin/super/valuesets
-// to rebuild the "ValueSetElements" table.
+// to rebuild the terminology tables.
 // Run this after changes to how ValueSet elements are defined.
 superAdminRouter.post(
   '/valuesets',
@@ -90,9 +90,29 @@ superAdminRouter.post(
 // Run this after major changes to how search columns are constructed.
 superAdminRouter.post(
   '/reindex',
+
+  [
+    body('reindexType')
+      .isIn(['outdated', 'all', 'specific'])
+      .withMessage('reindexType must be "outdated", "all", or "specific"'),
+    body('maxResourceVersion')
+      .if(body('reindexType').equals('specific'))
+      .isInt({ min: 0, max: Repository.VERSION - 1 })
+      .withMessage(`maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`),
+    body('maxResourceVersion')
+      .if(body('reindexType').not().equals('specific'))
+      .isEmpty()
+      .withMessage('maxResourceVersion should only be specified when reindexType is "specific"'),
+  ],
   asyncWrap(async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
 
     let resourceTypes: string[];
     if (req.body.resourceType === '*') {
@@ -111,10 +131,29 @@ superAdminRouter.post(
     }
 
     const systemRepo = getSystemRepo();
+
+    const reindexType = req.body.reindexType as 'outdated' | 'all' | 'specific';
+    let maxResourceVersion: number | undefined;
+    switch (reindexType) {
+      case 'all':
+        maxResourceVersion = undefined;
+        break;
+      case 'specific':
+        maxResourceVersion = Number(req.body.maxResourceVersion);
+        break;
+      case 'outdated':
+        maxResourceVersion = Repository.VERSION - 1;
+        break;
+      default:
+        reindexType satisfies never;
+        sendOutcome(res, badRequest(`Invalid reindex type: ${reindexType}`));
+        return;
+    }
+
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter);
+      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter, maxResourceVersion);
     });
 
     const { baseUrl } = getConfig();
@@ -217,24 +256,51 @@ superAdminRouter.post(
 // because it will be run automatically by the server upgrade process.
 superAdminRouter.post(
   '/migrate',
+  [body('dataVersion').isInt().withMessage('dataVersion must be an integer').optional()],
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, async () => {
-      const systemRepo = getSystemRepo();
-      const client = getDatabasePool(DatabaseMode.WRITER);
-      const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
-      const version = result.rows[0]?.dataVersion as number;
-      const migrationKeys = Object.keys(dataMigrations);
-      for (let i = version + 1; i <= migrationKeys.length; i++) {
-        const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + i];
-        const start = Date.now();
-        await migration.run(systemRepo);
-        ctx.logger.info('Data migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
-        await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
-      }
-    });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const { baseUrl } = getConfig();
+    const dataMigrationJob = await maybeStartDataMigration(req?.body?.dataVersion as number | undefined);
+    // If there is no migration job to run, return allOk
+    if (!dataMigrationJob) {
+      sendOutcome(res, allOk);
+      return;
+    }
+    const exec = new AsyncJobExecutor(ctx.repo, dataMigrationJob);
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  })
+);
+
+// POST to /admin/super/setdataversion
+// to set the data version of the database.
+// This is intended to allow you to set the data version and skip over a data migration YOUR ARE SURE you do not need to apply.
+// WARNING: This is unsafe and may break everything if you are not careful.
+superAdminRouter.post(
+  '/setdataversion',
+  [body('dataVersion').isInt().withMessage('dataVersion must be an integer')],
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    assert(req.body.dataVersion !== undefined);
+    await getDatabasePool(DatabaseMode.WRITER).query('UPDATE "DatabaseMigration" SET "dataVersion" = $1', [
+      req.body.dataVersion,
+    ]);
+
+    sendOutcome(res, allOk);
   })
 );
 

@@ -4,7 +4,7 @@ import { Document, QuestionnaireForm, useMedplum, useResource } from '@medplum/r
 import { useCallback } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { Loading } from '../components/Loading';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 export function QuestionnairePage(): JSX.Element {
@@ -28,7 +28,7 @@ export function QuestionnairePage(): JSX.Element {
             title: 'Success',
             message: 'Answers recorded',
           });
-          navigate('/health-record/questionnaire-responses/');
+          navigate('/health-record/questionnaire-responses/')?.catch(console.error);
           window.scrollTo(0, 0);
         })
         .catch((err) => {

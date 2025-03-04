@@ -1,6 +1,6 @@
 import { Container, Group } from '@mantine/core';
 import { Suspense } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 import { Loading } from '../../components/Loading';
 import { SideMenu } from '../../components/SideMenu';
 

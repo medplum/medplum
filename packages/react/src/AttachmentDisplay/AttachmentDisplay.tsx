@@ -32,6 +32,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
         contentType === 'application/pdf') && (
         <div data-testid="attachment-iframe" style={{ maxWidth: props.maxWidth, minHeight: 400 }}>
           <iframe
+            title="Attachment"
             width="100%"
             height="400"
             src={url + '#navpanes=0'}

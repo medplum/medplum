@@ -4,7 +4,7 @@ import { allOk } from '@medplum/core';
 import { Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
@@ -57,6 +57,16 @@ describe('SuperAdminPage', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText('Rebuild ValueSets'));
+    });
+
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  test('Start data migration', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Start Migration'));
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();

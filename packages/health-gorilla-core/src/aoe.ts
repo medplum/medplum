@@ -35,7 +35,6 @@ export function getMissingRequiredQuestionnaireItems(
   qr: QuestionnaireResponse | undefined,
   includeRequiredWhenSpecimenCollected: boolean
 ): string[] {
-  const required: string[] = [];
   const missing: string[] = [];
   const answersByLinkId: Record<string, QuestionnaireResponseItemAnswer[] | undefined> | undefined =
     qr && getAllQuestionnaireAnswers(qr);
@@ -51,8 +50,6 @@ export function getMissingRequiredQuestionnaireItems(
           'https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen'
         ) === true)
     ) {
-      required.push(item.linkId);
-
       const answers = answersByLinkId?.[item.linkId];
       if (answers && answers.length > 0) {
         let hasValue = false;

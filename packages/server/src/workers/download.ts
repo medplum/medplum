@@ -1,4 +1,4 @@
-import { arrayify, crawlResource, isGone, normalizeOperationOutcome, TypedValue } from '@medplum/core';
+import { arrayify, crawlTypedValue, isGone, normalizeOperationOutcome, toTypedValue, TypedValue } from '@medplum/core';
 import { Attachment, Binary, Meta, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
@@ -231,7 +231,7 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 
 function getAttachments(resource: Resource): Attachment[] {
   const attachments: Attachment[] = [];
-  crawlResource(resource, {
+  crawlTypedValue(toTypedValue(resource), {
     visitProperty: (_parent, _key, _path, propertyValues) => {
       for (const propertyValue of propertyValues) {
         if (propertyValue) {

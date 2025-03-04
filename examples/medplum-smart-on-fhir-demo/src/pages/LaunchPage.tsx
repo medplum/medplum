@@ -2,7 +2,7 @@ import { Container, Loader, Text } from '@mantine/core';
 import { MedplumClient } from '@medplum/core';
 import { useMedplumContext } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { FHIR_SCOPE, MEDPLUM_CLIENT_ID, SMART_HEALTH_IT_CLIENT_ID } from '../config';
 
 interface SmartConfiguration {
@@ -180,7 +180,7 @@ export function LaunchPage(): JSX.Element {
         setupMedplumClient(tokenData, iss, medplumContext);
 
         // Redirect to patient page
-        navigate('/patient');
+        navigate('/patient')?.catch(console.error);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       }

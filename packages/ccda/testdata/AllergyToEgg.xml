@@ -15,7 +15,8 @@
     <code code="34133-9" displayName="Summarization of Episode Note"
         codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
     <title>Medical Summary</title>
-    <effectiveTime xsi:type="TS" value="20250101000000-0500" />
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
     <recordTarget>
         <patientRole>
             <id root="d7830f15-e2c8-4cee-aa2d-a24b36080d53" />
@@ -72,7 +73,9 @@
                             <statusCode code="active" />
                             <!-- This is the time stamp for when the allergy was first documented as
                             a concern-->
-                            <effectiveTime xsi:type="TS" value="20140104123506-0500" />
+                            <effectiveTime>
+                                <low value="20140104123506-0500"/>
+                            </effectiveTime>
                             <author>
                                 <templateId root="2.16.840.1.113883.10.20.22.4.119" />
                                 <time value="20140104123506-0500" />
@@ -108,7 +111,10 @@
                                     allergy. -->
                                     <!-- Just the year is shown since a specific month and date was
                                     not reported -->
-                                    <effectiveTime xsi:type="TS" value="19980101" />
+                                    <effectiveTime>
+                                        <low value="19980101000000+0000" />
+                                        <high nullFlavor="NI" />
+                                    </effectiveTime>
                                     <!-- This specifies that the allergy is to a food in contrast to
                                     other allergies (drug) -->
                                     <value xsi:type="CD" code="414285001"
@@ -162,7 +168,7 @@
                                                 <reference value="#allergy5reaction" />
                                             </text>
                                             <statusCode code="completed" />
-                                            <effectiveTime xsi:type="TS" value="19980101" />
+                                            <effectiveTime value="19980101" />
                                             <value xsi:type="CD" code="247472004"
                                                 codeSystem="2.16.840.1.113883.6.96"
                                                 codeSystemName="SNOMED CT" displayName="Wheal" />

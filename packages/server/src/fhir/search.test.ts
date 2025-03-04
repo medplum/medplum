@@ -10,6 +10,7 @@ import {
   parseSearchRequest,
   SearchRequest,
   SNOMED,
+  WithId,
 } from '@medplum/core';
 import {
   ActivityDefinition,
@@ -54,6 +55,8 @@ import { MedplumServerConfig } from '../config/types';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { clampEstimateCount } from './search';
+import { DatabaseMode } from '../database';
+import { SelectQuery } from './sql';
 
 jest.mock('hibp');
 
@@ -485,9 +488,9 @@ describe('FHIR Search', () => {
         const comm2 = await repo.createResource<Communication>({
           resourceType: 'Communication',
           status: 'completed',
-          encounter: createReference(encounter2 as Encounter),
-          subject: createReference(patient2 as Patient),
-          sender: createReference(patient2 as Patient),
+          encounter: createReference(encounter2),
+          subject: createReference(patient2),
+          sender: createReference(patient2),
           payload: [{ contentString: 'This is another test' }],
         });
 
@@ -499,7 +502,7 @@ describe('FHIR Search', () => {
             {
               code: 'encounter',
               operator: Operator.EQUALS,
-              value: getReferenceString(encounter1 as Encounter),
+              value: getReferenceString(encounter1),
             },
           ],
         });
@@ -576,7 +579,7 @@ describe('FHIR Search', () => {
             {
               code: 'based-on',
               operator: Operator.EQUALS,
-              value: getReferenceString(serviceRequest1 as ServiceRequest),
+              value: getReferenceString(serviceRequest1),
             },
           ],
         });
@@ -589,19 +592,20 @@ describe('FHIR Search', () => {
       withTestContext(async () => {
         const questionnaire = await repo.createResource<Questionnaire>({
           resourceType: 'Questionnaire',
+          url: 'https://example.com/yet-another-example-questionnaire',
           status: 'active',
         });
 
         const response1 = await repo.createResource<QuestionnaireResponse>({
           resourceType: 'QuestionnaireResponse',
           status: 'completed',
-          questionnaire: getReferenceString(questionnaire),
+          questionnaire: questionnaire.url,
         });
 
         await repo.createResource<QuestionnaireResponse>({
           resourceType: 'QuestionnaireResponse',
           status: 'completed',
-          questionnaire: `Questionnaire/${randomUUID()}`,
+          questionnaire: 'https://example.com/a-different-example-questionnaire',
         });
 
         const bundle = await repo.search({
@@ -610,7 +614,7 @@ describe('FHIR Search', () => {
             {
               code: 'questionnaire',
               operator: Operator.EQUALS,
-              value: getReferenceString(questionnaire),
+              value: questionnaire.url as string,
             },
           ],
         });
@@ -957,8 +961,6 @@ describe('FHIR Search', () => {
 
     test('Reverse filter by chained _id', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         // Create Location
         const location = await repo.createResource<Location>({
           resourceType: 'Location',
@@ -1093,7 +1095,7 @@ describe('FHIR Search', () => {
             filters: [
               {
                 code: 'type',
-                operator: Operator.CONTAINS,
+                operator: Operator.EQUALS,
                 value: auditEvents[i].type?.code as string,
               },
             ],
@@ -1795,8 +1797,6 @@ describe('FHIR Search', () => {
 
     test('Chained search on array columns using reference tables', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         // Create Practitioner
         const pcp = await repo.createResource<Practitioner>({
           resourceType: 'Practitioner',
@@ -1837,8 +1837,6 @@ describe('FHIR Search', () => {
 
     test('Chained search on single columns using reference tables', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         const code = randomUUID();
         // Create linked resources
         const patient = await repo.createResource<Patient>({
@@ -1872,8 +1870,6 @@ describe('FHIR Search', () => {
 
     test('Chained search sort order', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         const identifier = randomUUID();
         // Create linked resources
         const link1 = await repo.createResource<Patient>({
@@ -1917,8 +1913,6 @@ describe('FHIR Search', () => {
 
     test('Chained search with negated filter', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         // Create linked resources
         const link1 = await repo.createResource<Patient>({
           resourceType: 'Patient',
@@ -1963,10 +1957,8 @@ describe('FHIR Search', () => {
         expect(result.entry?.map((e) => e.resource?.id)).toEqual(patientIds);
       }));
 
-    test.each([true, false])('Chained search on canonical reference', (ff) =>
+    test('Chained search on canonical reference', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = ff;
-
         const url = 'http://example.com/' + randomUUID();
         // Create linked resources
         const q = randomUUID();
@@ -1994,87 +1986,7 @@ describe('FHIR Search', () => {
           parseSearchRequest(`EvidenceVariable?derived-from:Questionnaire.identifier=${q}`)
         );
         expect(result2.entry).toHaveLength(1);
-        expect(result2.entry?.[0]?.resource?.id).toStrictEqual(evidenceVariable.id);
-      })
-    );
-
-    // TODO: To be removed when reference table migration is complete
-    test('Chained search on array columns using reference strings', () =>
-      withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = false;
-
-        // Create Practitioner
-        const pcp = await repo.createResource<Practitioner>({
-          resourceType: 'Practitioner',
-        });
-        // Create Patient
-        const patient = await repo.createResource<Patient>({
-          resourceType: 'Patient',
-          generalPractitioner: [createReference(pcp)],
-        });
-
-        // Create CareTeam
-        const code = randomUUID();
-        const categorySystem = 'http://example.com/care-team-category';
-        await repo.createResource<CareTeam>({
-          resourceType: 'CareTeam',
-          category: [
-            {
-              coding: [
-                {
-                  system: categorySystem,
-                  code,
-                  display: 'Public health-focused care team',
-                },
-              ],
-            },
-          ],
-          participant: [{ member: createReference(pcp) }],
-        });
-
-        // Search chain
-        const searchResult = await repo.search(
-          parseSearchRequest(
-            `Patient?general-practitioner:Practitioner._has:CareTeam:participant:category=${categorySystem}|${code}`
-          )
-        );
-        expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
-      }));
-
-    // TODO: To be removed when reference table migration is complete
-    test('Chained search on single columns using reference strings', () =>
-      withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = false;
-
-        const code = randomUUID();
-        // Create linked resources
-        const patient = await repo.createResource<Patient>({
-          resourceType: 'Patient',
-        });
-        const encounter = await repo.createResource<Encounter>({
-          resourceType: 'Encounter',
-          status: 'finished',
-          class: { system: 'http://example.com/appt-type', code },
-        });
-        const observation = await repo.createResource<Observation>({
-          resourceType: 'Observation',
-          status: 'final',
-          code: { text: 'Throat culture' },
-          subject: createReference(patient),
-          encounter: createReference(encounter),
-        });
-        await repo.createResource<DiagnosticReport>({
-          resourceType: 'DiagnosticReport',
-          status: 'final',
-          code: { text: 'Strep test' },
-          encounter: createReference(encounter),
-          result: [createReference(observation)],
-        });
-
-        const result = await repo.search(
-          parseSearchRequest(`Patient?_has:Observation:subject:encounter:Encounter.class=${code}`)
-        );
-        expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+        expect(result2.entry?.[0]?.resource?.id).toEqual(evidenceVariable.id);
       }));
 
     test('Rejects too long chained search', () =>
@@ -3245,6 +3157,79 @@ describe('FHIR Search', () => {
         expect(result.entry).toHaveLength(2);
       }));
 
+    test('_filter eq', () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Evelyn'] }],
+          managingOrganization: { reference: 'Organization/' + randomUUID() },
+        });
+
+        const result1 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'organization',
+              operator: Operator.EQUALS,
+              value: patient.managingOrganization?.reference as string,
+            },
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: 'given eq Eve', // eq with a prefix should NOT match
+            },
+          ],
+        });
+
+        expect(result1.entry).toHaveLength(0);
+
+        const result2 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'organization',
+              operator: Operator.EQUALS,
+              value: patient.managingOrganization?.reference as string,
+            },
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: 'given eq Evelyn', // eq with exact value should match
+            },
+          ],
+        });
+
+        expect(result2.entry).toHaveLength(1);
+      }));
+
+    test('_filter birthdate eq', () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Evelyn'] }],
+          birthDate: '2000-01-01',
+          managingOrganization: { reference: 'Organization/' + randomUUID() },
+        });
+
+        const result1 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'organization',
+              operator: Operator.EQUALS,
+              value: patient.managingOrganization?.reference as string,
+            },
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: 'birthdate eq "2000-01-01"',
+            },
+          ],
+        });
+
+        expect(result1.entry).toHaveLength(1);
+      }));
+
     test('_filter ne', () =>
       withTestContext(async () => {
         const patient = await repo.createResource<Patient>({
@@ -3295,7 +3280,7 @@ describe('FHIR Search', () => {
         expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
       }));
 
-    test('_filter chained pr', () =>
+    test('_filter with chained search', () =>
       withTestContext(async () => {
         const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
@@ -3334,20 +3319,17 @@ describe('FHIR Search', () => {
           name: [{ given: ['Evelyn', 'Dierdre'], family: 'Arachnae' }],
         });
 
-        // NOTE: This incorrect behavior is currently kept for backwards compatibility,
-        // and should be changed to exact matching in Medplum v4
         const result = await repo.search({
           resourceType: 'Patient',
           filters: [
             {
               code: '_filter',
               operator: Operator.EQUALS,
-              value: 'name eq Evel',
+              value: 'name eq Dier',
             },
           ],
         });
-        expect(result.entry).toHaveLength(1);
-        expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+        expect(result.entry).toHaveLength(0);
 
         const result2 = await repo.search({
           resourceType: 'Patient',
@@ -3355,7 +3337,7 @@ describe('FHIR Search', () => {
             {
               code: '_filter',
               operator: Operator.EQUALS,
-              value: 'name sw Evel',
+              value: 'name sw Dier',
             },
           ],
         });
@@ -3363,10 +3345,8 @@ describe('FHIR Search', () => {
         expect(result2.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
       }));
 
-    test.each([true, false])('_filter with chained search', (ff) =>
+    test('_filter with chained search', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = ff;
-
         const mrn = randomUUID();
         const npi = randomUUID();
         const patient = await repo.createResource<Patient>({
@@ -3414,8 +3394,7 @@ describe('FHIR Search', () => {
         expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual(
           expect.arrayContaining([observation1.id, observation2.id])
         );
-      })
-    );
+      }));
 
     test('Lookup table exact match with comma disjunction', () =>
       withTestContext(async () => {
@@ -4224,6 +4203,8 @@ describe('FHIR Search', () => {
 
     test('Reference search with inline resource', async () =>
       withTestContext(async () => {
+        const date = new Date().toISOString();
+
         // Test the Bundle-composition search parameter
         // "expression" : "Bundle.entry[0].resource as Composition"
         // This is a special case of inlined resource
@@ -4234,7 +4215,7 @@ describe('FHIR Search', () => {
           resourceType: 'Composition',
           status: 'final',
           type: { text: 'test' },
-          date: '2025-01-01',
+          date,
           author: [{ reference: 'Practitioner/example' }],
           title: 'Test Composition',
         });
@@ -4255,13 +4236,15 @@ describe('FHIR Search', () => {
         expect(searchResult1.entry?.[0]?.resource?.id).toBe(bundle.id);
 
         // Chained search on the Composition
-        const searchResult2 = await repo.search(parseSearchRequest(`Bundle?composition.date=2025-01-01`));
+        const searchResult2 = await repo.search(
+          parseSearchRequest(`Bundle?composition.date=${encodeURIComponent(date)}`)
+        );
         expect(searchResult2.entry).toHaveLength(1);
         expect(searchResult2.entry?.[0]?.resource?.id).toBe(bundle.id);
       }));
 
     describe('searchByReference', () => {
-      async function createPatients(repo: Repository, count: number): Promise<Patient[]> {
+      async function createPatients(repo: Repository, count: number): Promise<WithId<Patient>[]> {
         const patients = [];
         for (let i = 0; i < count; i++) {
           patients.push(await repo.createResource<Patient>({ resourceType: 'Patient' }));
@@ -4279,7 +4262,7 @@ describe('FHIR Search', () => {
           subject?: Patient;
           hasMember?: Observation[];
         }
-      ): Promise<Observation[]> {
+      ): Promise<WithId<Observation>[]> {
         const resources = [];
         for (let i = 0; i < count; i++) {
           resources.push(
@@ -4300,7 +4283,7 @@ describe('FHIR Search', () => {
         repo: Repository,
         count: number,
         patient: Patient
-      ): Promise<ServiceRequest[]> {
+      ): Promise<WithId<ServiceRequest>[]> {
         const resources = [];
         for (let i = 0; i < count; i++) {
           resources.push(
@@ -4315,34 +4298,39 @@ describe('FHIR Search', () => {
         return resources;
       }
 
-      function expectResultsContents<Parent extends Resource, Child extends Resource>(
+      function expectSearchByReferenceResults<Parent extends WithId<Resource>, Child extends WithId<Resource>>(
         parents: Parent[],
         childrenByParent: Child[][],
         count: number,
         results: Record<string, Child[]>
       ): void {
+        // Each parent should be present in the results
         expect(Object.keys(results)).toHaveLength(parents.length);
-        for (const [parent, children] of zip(parents, childrenByParent)) {
+        // All children are accounted for as well
+        expect(childrenByParent).toHaveLength(parents.length);
+
+        for (let i = 0; i < parents.length; i++) {
+          const parent = parents[i];
+          const children = childrenByParent[i];
           const result = results[getReferenceString(parent)];
+          expect(result).toBeDefined();
+
+          // `count` caps the number of children included in results
           expect(result).toHaveLength(Math.min(children.length, count));
-          for (const child of result) {
-            expect(children.map((c) => c.id)).toContain(child.id);
-          }
+
+          // children returned should be a subset of the original, exhaustive, list of children
+          expect(children.map((c) => c.id)).toEqual(expect.arrayContaining(result.map((r) => r.id)));
         }
       }
 
-      function zip<A, B>(a: A[], b: B[]): [A, B][] {
-        return a.map((k, i) => [k, b[i]]);
-      }
       test('Basic reference', async () =>
         withTestContext(async () => {
           const patients = await createPatients(repo, 3);
-          const patientObservations = [
+          const observations = [
             await createObservations(repo, 2, { subject: patients[0] }),
             await createObservations(repo, 0, { subject: patients[1] }),
             await createObservations(repo, 4, { subject: patients[2] }),
           ];
-          const observation = patientObservations[0][0];
           const count = 3;
           const result = await repo.searchByReference<Observation>(
             { resourceType: 'Observation', count },
@@ -4350,10 +4338,7 @@ describe('FHIR Search', () => {
             patients.map((p) => getReferenceString(p))
           );
 
-          expectResultsContents(patients, patientObservations, count, result);
-          const resultRepoObservation = result[getReferenceString(patients[0])][0];
-          expect(resultRepoObservation).toEqual(observation);
-          expect(resultRepoObservation.meta?.tag).toBeUndefined();
+          expectSearchByReferenceResults(patients, observations, count, result);
         }));
 
       test('Array reference column', async () =>
@@ -4364,7 +4349,6 @@ describe('FHIR Search', () => {
             await createObservations(repo, 0, { hasMember: [parentObservations[1]] }),
             await createObservations(repo, 4, { hasMember: [parentObservations[2]] }),
           ];
-          const observation = childObservations[0][0];
           const count = 3;
           const result = await repo.searchByReference<Observation>(
             { resourceType: 'Observation', count },
@@ -4372,10 +4356,7 @@ describe('FHIR Search', () => {
             parentObservations.map((o) => getReferenceString(o))
           );
 
-          expectResultsContents(parentObservations, childObservations, count, result);
-          const resultRepoObservation = result[getReferenceString(parentObservations[0])][0];
-          expect(resultRepoObservation).toEqual(observation);
-          expect(resultRepoObservation.meta?.tag).toBeUndefined();
+          expectSearchByReferenceResults(parentObservations, childObservations, count, result);
         }));
 
       test('Invalid reference field', async () =>
@@ -4402,7 +4383,7 @@ describe('FHIR Search', () => {
             patients.map((p) => getReferenceString(p))
           );
 
-          expectResultsContents(patients, patientObservations, count, resultDesc);
+          expectSearchByReferenceResults(patients, patientObservations, count, resultDesc);
           expect(resultDesc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['2', '1', '0']);
           expect(resultDesc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['1', '0']);
 
@@ -4412,7 +4393,7 @@ describe('FHIR Search', () => {
             'subject',
             patients.map((p) => getReferenceString(p))
           );
-          expectResultsContents(patients, patientObservations, count, resultAsc);
+          expectSearchByReferenceResults(patients, patientObservations, count, resultAsc);
           expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['0', '1', '2']);
           expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['0', '1']);
         }));
@@ -4429,7 +4410,7 @@ describe('FHIR Search', () => {
             patients.map((p) => getReferenceString(p))
           );
 
-          expectResultsContents(patients, patientObservations, count, result);
+          expectSearchByReferenceResults(patients, patientObservations, count, result);
           const observation = patientObservations[0][0];
           const resultObservation = result[getReferenceString(patients[0])][0];
           expect({ ...observation, meta: undefined }).toEqual({
@@ -4475,11 +4456,11 @@ describe('FHIR Search', () => {
             patients.map((p) => getReferenceString(p))
           );
 
-          const childrenByParent = [];
+          const childrenByParent: WithId<Resource>[][] = [];
           for (let i = 0; i < patients.length; i++) {
             childrenByParent.push([...patientObservations[i], ...patientServiceRequests[i]]);
           }
-          expectResultsContents(patients, childrenByParent, count, result);
+          expectSearchByReferenceResults(patients, childrenByParent, count, result);
 
           // First patient has only ServiceRequests
           expect(result[getReferenceString(patients[0])].map((r) => r.resourceType)).toStrictEqual([
@@ -4900,6 +4881,67 @@ describe('FHIR Search', () => {
           type: 'searchset',
           total: 0,
         });
+      }));
+
+    test('maxResourceVersion', () =>
+      withTestContext(async () => {
+        const project: string = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
+
+        const patient1 = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+          meta: {
+            project,
+          },
+        });
+
+        const patient2 = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Bob'], family: 'Smith' }],
+          meta: {
+            project,
+          },
+        });
+
+        const getVersionQuery = (id: string): SelectQuery =>
+          new SelectQuery('Patient').column('__version').where('id', '=', id);
+
+        const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+        const OLDER_VERSION = Repository.VERSION - 1;
+        await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient1.id]);
+        expect((await getVersionQuery(patient1.id).execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+        expect((await getVersionQuery(patient2.id).execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+
+        const bundle1 = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: '_project',
+              operator: Operator.EQUALS,
+              value: project,
+            },
+          ],
+        });
+        expect(bundle1.entry?.length).toStrictEqual(2);
+        const ids = bundle1.entry?.map((e) => e.resource?.id);
+        expect(ids).toContain(patient1.id);
+        expect(ids).toContain(patient2.id);
+
+        const bundle2 = await systemRepo.search(
+          {
+            resourceType: 'Patient',
+            filters: [
+              {
+                code: '_project',
+                operator: Operator.EQUALS,
+                value: project,
+              },
+            ],
+          },
+          { maxResourceVersion: OLDER_VERSION }
+        );
+        expect(bundle2.entry?.length).toStrictEqual(1);
+        expect(bundle2.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
       }));
   });
 });

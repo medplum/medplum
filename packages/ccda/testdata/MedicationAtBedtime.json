@@ -6,6 +6,7 @@
       "resource": {
         "resourceType": "Composition",
         "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
         "status": "final",
         "type": {
           "coding": [
@@ -101,6 +102,12 @@
         "meta": {
           "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"]
         },
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Medication_6"
+          }
+        ],
         "status": "active",
         "intent": "order",
         "medicationReference": {
@@ -117,11 +124,10 @@
         },
         "dosageInstruction": [
           {
-            "text": "#Medication_6",
             "extension": [
               {
                 "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
-                "valueString": "#Medication_6"
+                "valueString": "#MedicationSig_6"
               }
             ],
             "route": {
@@ -136,16 +142,17 @@
             },
             "timing": {
               "repeat": {
-                "when": ["HS"]
+                "period": 12,
+                "periodUnit": "h"
               }
             },
             "doseAndRate": [
               {
                 "doseQuantity": {
+                  "system": "http://unitsofmeasure.org",
                   "value": 40,
                   "code": "[IU]",
-                  "unit": "[IU]",
-                  "system": "http://unitsofmeasure.org"
+                  "unit": "[IU]"
                 }
               }
             ]

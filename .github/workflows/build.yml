@@ -20,9 +20,9 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [20, 22]
     env:
-      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_OPTIONS: --max-old-space-size=8192 --dns-result-order=ipv4first
       NODE_VERSION: ${{ matrix.node-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
@@ -54,7 +54,7 @@ jobs:
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
       - name: Log npm stats
         run: |
           echo "node version: $(node --version)"
@@ -111,7 +111,7 @@ jobs:
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
       - id: build
         name: Build
         run: npm run build
@@ -155,11 +155,11 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [18, 20]
-        pg-version: [12, 14, 16]
+        node-version: [20, 22]
+        pg-version: [14, 16]
         redis-version: [6, 7]
     env:
-      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_OPTIONS: --max-old-space-size=8192 --dns-result-order=ipv4first
       NODE_VERSION: ${{ matrix.node-version }}
       PG_VERSION: ${{ matrix.pg-version }}
       REDIS_VERSION: ${{ matrix.redis-version }}
@@ -219,7 +219,7 @@ jobs:
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
       - name: Wait for PostgreSQL
         run: |
           until pg_isready -h localhost -p 5432; do
@@ -254,7 +254,7 @@ jobs:
         pg-version: [14, 16]
         redis-version: [6, 7]
     env:
-      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_OPTIONS: --max-old-space-size=8192 --dns-result-order=ipv4first
       NODE_VERSION: ${{ matrix.node-version }}
       PG_VERSION: ${{ matrix.pg-version }}
       REDIS_VERSION: ${{ matrix.redis-version }}
@@ -314,7 +314,7 @@ jobs:
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
       - name: Wait for PostgreSQL
         run: |
           until pg_isready -h localhost -p 5432; do
@@ -378,7 +378,7 @@ jobs:
     permissions:
       pull-requests: write
     env:
-      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_OPTIONS: --max-old-space-size=8192 --dns-result-order=ipv4first
       NODE_VERSION: 20
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
@@ -410,7 +410,7 @@ jobs:
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
       - name: Build Project
         run: ./scripts/build-docs.sh
         env:

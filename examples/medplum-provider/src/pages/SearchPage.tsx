@@ -11,7 +11,7 @@ import {
 import { Patient, Reference, Resource, UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { useResourceType } from './resource/useResourceType';
 import classes from './SearchPage.module.css';
 
@@ -33,11 +33,11 @@ export function SearchPage(): JSX.Element {
       saveLastSearch(populatedSearch);
       setSearch(populatedSearch);
     } else {
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
-  useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..') });
+  useResourceType(search?.resourceType, { onInvalidResourceType: () => navigate('..')?.catch(console.error) });
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
     return <Loading />;
@@ -48,13 +48,13 @@ export function SearchPage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={true}
         search={search}
-        onClick={(e) => navigate(getResourceUrl(e.resource))}
+        onClick={(e) => navigate(getResourceUrl(e.resource))?.catch(console.error)}
         onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
         onNew={() => {
-          navigate(`/${search.resourceType}/new`);
+          navigate(`/${search.resourceType}/new`)?.catch(console.error);
         }}
         onChange={(e) => {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
       />
     </Paper>

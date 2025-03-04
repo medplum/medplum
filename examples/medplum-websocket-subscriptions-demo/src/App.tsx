@@ -10,7 +10,7 @@ import {
 } from '@medplum/react';
 import { IconClipboardCheck, IconHome, IconMail } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { SignInPage } from './pages/SignInPage';

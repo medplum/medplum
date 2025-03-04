@@ -1,6 +1,7 @@
 import {
   ContentType,
   createReference,
+  encodeBase64,
   OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
@@ -77,9 +78,15 @@ describe('OAuth2 Token', () => {
     // Create a test project
     ({ project, client } = await createTestProject({ withClient: true }));
 
+    // Add secondary secret for testing
+    client.retiringSecret = generateSecret(32);
+    client = await systemRepo.updateResource(client);
+
     // Create a 2nd client with PKCE optional
     pkceOptionalClient = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
+      secret: generateSecret(32),
+      retiringSecret: generateSecret(32),
       pkceOptional: true,
     });
 
@@ -215,6 +222,17 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid secret');
+  });
+
+  test('Token for client credentials with secondary client_secret', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.retiringSecret,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
   });
 
   test('Token for client credentials authentication header success', async () => {
@@ -451,6 +469,29 @@ describe('OAuth2 Token', () => {
     expect(idToken.email).toBe(email);
   });
 
+  test('Authorization code token with incorrect code verifier and client secret', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid profile email',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app)
+      .post('/oauth2/token')
+      .set('Authorization', 'Basic ' + encodeBase64(client.id + ':' + client.secret))
+      .type('form')
+      .send({
+        grant_type: 'authorization_code',
+        code: res.body.code,
+        code_verifier: 'incorrect',
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body.access_token).toBeUndefined();
+  });
+
   test('Authorization code token with code challenge and PKCE optional', async () => {
     const res = await request(app)
       .post('/auth/login')
@@ -479,7 +520,7 @@ describe('OAuth2 Token', () => {
 
   test('Authorization code token with wrong client secret', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: client.id,
+      clientId: pkceOptionalClient.id,
       email,
       password,
     });
@@ -488,7 +529,7 @@ describe('OAuth2 Token', () => {
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
-      client_id: client.id,
+      client_id: pkceOptionalClient.id,
       client_secret: 'wrong',
     });
     expect(res2.status).toBe(400);
@@ -496,9 +537,9 @@ describe('OAuth2 Token', () => {
     expect(res2.body.error_description).toBe('Invalid secret');
   });
 
-  test('Authorization code token with client secret success', async () => {
+  test('Authorization code token with secondary client secret', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: client.id,
+      clientId: pkceOptionalClient.id,
       email,
       password,
     });
@@ -507,8 +548,27 @@ describe('OAuth2 Token', () => {
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
-      client_id: client.id,
-      client_secret: client.secret,
+      client_id: pkceOptionalClient.id,
+      client_secret: pkceOptionalClient.retiringSecret,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.error).toBeUndefined();
+    expect(res2.body.access_token).toBeDefined();
+  });
+
+  test('Authorization code token with client secret success', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: pkceOptionalClient.id,
+      email,
+      password,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      client_id: pkceOptionalClient.id,
+      client_secret: pkceOptionalClient.secret,
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
@@ -1543,7 +1603,7 @@ describe('OAuth2 Token', () => {
       client_assertion: jwt,
     });
     expect(res.status).toBe(200);
-    expect(jwtVerify).toHaveBeenCalledTimes(4);
+    expect(jwtVerify).toHaveBeenCalledTimes(3);
   });
 
   test('Client assertion multiple inner error', async () => {
@@ -1643,7 +1703,7 @@ describe('OAuth2 Token', () => {
       systemRepo.createResource<SmartAppLaunch>({
         resourceType: 'SmartAppLaunch',
         patient: { reference: `Patient/${randomUUID()}` },
-        encounter: { reference: `Patient/${randomUUID()}` },
+        encounter: { reference: `Encounter/${randomUUID()}` },
       })
     );
 
@@ -1652,6 +1712,8 @@ describe('OAuth2 Token', () => {
       launch: launch.id,
       email,
       password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 
@@ -1660,6 +1722,7 @@ describe('OAuth2 Token', () => {
       code: res.body.code,
       client_id: client.id,
       client_secret: client.secret,
+      code_verifier: 'xyz',
     });
     expect(res2.status).toBe(200);
     expect(res2.body.patient).toBeDefined();
@@ -1671,6 +1734,8 @@ describe('OAuth2 Token', () => {
       clientId: client.id,
       email,
       password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 
@@ -1679,6 +1744,7 @@ describe('OAuth2 Token', () => {
       code: res.body.code,
       client_id: client.id,
       client_secret: client.secret,
+      code_verifier: 'xyz',
     });
     expect(res2.status).toBe(200);
   });

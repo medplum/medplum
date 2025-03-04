@@ -1,7 +1,7 @@
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconDatabaseImport, IconFileCheck, IconFileImport, IconRobot, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router';
 import { CoveragePage } from './pages/CoveragePage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
@@ -44,9 +44,15 @@ export function App(): JSX.Element | null {
           <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
           <Route path="/:resourceType" element={<SearchPage />} />
           <Route path="/signin" element={<SignInPage />} />
-          <Route path="/Coverage/:id/*" element={<CoveragePage />} />
-          <Route path="/Patient/:id/*" element={<PatientPage />} />
-          <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
+          <Route path="/Coverage/:id">
+            <Route path="*" element={<CoveragePage />} />
+          </Route>
+          <Route path="/Patient/:id">
+            <Route path="*" element={<PatientPage />} />
+          </Route>
+          <Route path="/:resourceType/:id">
+            <Route path="*" element={<ResourcePage />} />
+          </Route>
           <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
           <Route path="/upload/:dataType" element={<UploadDataPage />} />
         </Routes>

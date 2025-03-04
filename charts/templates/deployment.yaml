@@ -41,7 +41,7 @@ spec:
           image: "{{ .Values.deployment.image.repository }}:{{ .Values.deployment.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: IfNotPresent
           args:
-            - {{ .Values.medplum.configSource.type | quote }}
+            - {{ .Values.global.configSource.type | quote }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort | default 8103 }}

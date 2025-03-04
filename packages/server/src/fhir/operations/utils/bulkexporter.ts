@@ -1,4 +1,4 @@
-import { getReferenceString } from '@medplum/core';
+import { getReferenceString, WithId } from '@medplum/core';
 import { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
 import { Repository, getSystemRepo } from '../../repo';
@@ -7,11 +7,11 @@ import { getBinaryStorage } from '../../storage';
 const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 
 class BulkFileWriter {
-  readonly binary: Binary;
+  readonly binary: WithId<Binary>;
   private readonly stream: PassThrough;
   private readonly writerPromise: Promise<void>;
 
-  constructor(binary: Binary) {
+  constructor(binary: WithId<Binary>) {
     this.binary = binary;
 
     const filename = `export.ndjson`;
@@ -31,7 +31,7 @@ class BulkFileWriter {
 
 export class BulkExporter {
   readonly repo: Repository;
-  private resource: AsyncJob | undefined;
+  private resource: WithId<AsyncJob> | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSet = new Set<string>();
 
@@ -39,7 +39,7 @@ export class BulkExporter {
     this.repo = repo;
   }
 
-  async start(url: string): Promise<AsyncJob> {
+  async start(url: string): Promise<WithId<AsyncJob>> {
     this.resource = await this.repo.createResource<AsyncJob>({
       resourceType: 'AsyncJob',
       status: 'active',
@@ -62,7 +62,7 @@ export class BulkExporter {
     return writer;
   }
 
-  async writeBundle(bundle: Bundle): Promise<void> {
+  async writeBundle(bundle: Bundle<WithId<Resource>>): Promise<void> {
     if (bundle.entry) {
       for (const entry of bundle.entry) {
         if (entry.resource) {
@@ -72,7 +72,7 @@ export class BulkExporter {
     }
   }
 
-  async writeResource(resource: Resource): Promise<void> {
+  async writeResource(resource: WithId<Resource>): Promise<void> {
     const ref = getReferenceString(resource);
     if (!this.resourceSet.has(ref)) {
       const writer = await this.getWriter(resource.resourceType);

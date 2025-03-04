@@ -40,6 +40,7 @@ import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { resourceGraphHandler } from './operations/resourcegraph';
+import { rotateSecretHandler } from './operations/rotatesecret';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
@@ -47,6 +48,7 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { patientSetAccountsHandler } from './operations/patientsetaccounts';
 
 export const fhirRouter = Router();
 
@@ -256,6 +258,9 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);
   router.add('POST', '/Patient/:id/$summary', patientSummaryHandler);
 
+  // Patient $set-accounts operation
+  router.add('POST', '/Patient/:id/$set-accounts', patientSetAccountsHandler);
+
   // Patient $ccda-export operation
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
 
@@ -270,6 +275,8 @@ function initInternalFhirRouter(): FhirRouter {
 
   // ClientApplication $launch
   router.add('GET', '/ClientApplication/:id/$smart-launch', appLaunchHandler);
+  // Rotate client secret
+  router.add('POST', '/ClientApplication/:id/$rotate-secret', rotateSecretHandler);
 
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
@@ -339,7 +346,7 @@ protectedRoutes.use(
 
     const request: FhirRequest = {
       method: req.method as HttpMethod,
-      url: req.originalUrl.replace('/fhir/R4', ''),
+      url: stripPrefix(req.originalUrl, '/fhir/R4'),
       pathname: '',
       params: req.params,
       query: Object.create(null), // Defer query param parsing to router for consistency
@@ -367,3 +374,7 @@ protectedRoutes.use(
     await sendFhirResponse(req, res, result[0], result[1], result[2]);
   })
 );
+
+function stripPrefix(str: string, prefix: string): string {
+  return str.substring(str.indexOf(prefix) + prefix.length);
+}

@@ -4,7 +4,7 @@ import { MockClient } from '@medplum/mock';
 import { Loading, MedplumProvider } from '@medplum/react';
 import { randomUUID } from 'crypto';
 import { Suspense } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { AppRoutes } from './AppRoutes';
 import { RESOURCE_TYPE_CREATION_PATHS, getDefaultFields } from './HomePage.utils';
 import { act, fireEvent, render, screen, waitFor } from './test-utils/render';

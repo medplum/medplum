@@ -2,7 +2,7 @@ import { Notifications } from '@mantine/notifications';
 import { allOk } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { PatientExportForm, PatientExportFormProps } from './PatientExportForm';
 

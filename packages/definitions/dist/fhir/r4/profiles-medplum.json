@@ -841,6 +841,21 @@
             }
           },
           {
+            "id" : "ClientApplication.retiringSecret",
+            "path" : "ClientApplication.retiringSecret",
+            "definition" : "Old version of the client secret that is being rotated out.  Instances of the client using this value should update to use the value in ClientApplication.secret",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.retiringSecret",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "ClientApplication.jwksUri",
             "path" : "ClientApplication.jwksUri",
             "definition" : "Optional JWKS URI for public key verification of JWTs issued by the authorization server (client_secret_jwt).",
@@ -5218,7 +5233,15 @@
               "path" : "AsyncJob",
               "min" : 0,
               "max" : "*"
-            }
+            },
+            "constraint": [
+              {
+                "key" : "ajb-1",
+                "severity" : "error",
+                "human" : "Async jobs of type 'data-migration' require a 'dataVersion' and 'minServerVersion'.",
+                "expression" : "type.exists() and type = 'data-migration' implies dataVersion.exists() and minServerVersion.exists()"
+              }
+            ]
           },
           {
             "id" : "AsyncJob.id",
@@ -5458,6 +5481,21 @@
             },
             "type" : [{
               "code" : "integer"
+            }]
+          },
+          {
+            "id" : "AsyncJob.minServerVersion",
+            "path" : "AsyncJob.minServerVersion",
+            "definition" : "The minimum Medplum server version required to run this job.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.minServerVersion",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
             }]
           }
         ]

@@ -86,7 +86,7 @@ export function MfaPage(): JSX.Element | null {
       <Form onSubmit={enableMfa}>
         <Title>Multi Factor Auth Setup</Title>
         <Center>
-          <img src={qrCodeUrl as string} />
+          <img src={qrCodeUrl as string} alt="Multi Factor Auth QR Code" />
         </Center>
         <TextInput name="token" label="Code" />
         <Group justify="flex-end" mt="xl">

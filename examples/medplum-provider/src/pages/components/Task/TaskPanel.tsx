@@ -3,8 +3,8 @@ import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { SimpleTask } from './SimpleTask';
 import { Card, Stack } from '@mantine/core';
 import { TaskStatusPanel } from './TaskStatusPanel';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleOff } from '@tabler/icons-react';
@@ -35,27 +35,25 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
   const medplum = useMedplum();
   const author = useMedplumProfile();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
-  const [isQuestionnaire, setIsQuestionnaire] = useState<boolean>(false);
-
-  useEffect(() => {
-    setIsQuestionnaire(questionnaireResponse !== undefined && !task.output?.[0]?.valueReference);
-  }, [task, questionnaireResponse]);
+  const [isQuestionnaire, setIsQuestionnaire] = useState<boolean>(
+    !!task.input?.[0]?.valueReference && task.status !== 'completed'
+  );
 
   const onActionButtonClicked = async (): Promise<void> => {
     if (questionnaireResponse && isQuestionnaire) {
-      // Task handles an active questionnaire. Action will submit questionnaire
+      // Task handles an active questionnaire. Action will submit questionnaire and complete task
       onSaveQuestionnaire(task, questionnaireResponse);
     } else if (task.status === 'ready' || task.status === 'requested') {
       // Task status is Ready or Requested. Action will mark as complete.
-      const updatedTask: Task = { ...task, status: 'completed' };
-      await updateTaskStatus(updatedTask, medplum, onCompleteTask);
+      await updateTaskStatus({ ...task, status: 'completed' }, medplum, onCompleteTask);
     } else {
       // Fallback navigation to Task details.
-      navigate(`Task/${task.id}`);
+      navigate(`Task/${task.id}`)?.catch(console.error);
     }
   };
 
   const onChangeResponse = (response: QuestionnaireResponse): void => {
+    setIsQuestionnaire(true);
     setQuestionnaireResponse(response);
   };
 

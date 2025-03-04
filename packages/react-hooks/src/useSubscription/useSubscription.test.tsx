@@ -4,7 +4,7 @@ import { MockClient } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
 import 'jest-websocket-mock';
 import { ReactNode, StrictMode, useCallback, useState } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { UseSubscriptionOptions, useSubscription } from './useSubscription';
 

@@ -89,7 +89,7 @@ export async function createAuditEvent(
 }
 
 export function createAuditEventEntities(...resources: unknown[]): AuditEventEntity[] {
-  return resources.filter(isResource).map(createAuditEventEntity);
+  return resources.filter((v) => isResource(v)).map(createAuditEventEntity);
 }
 
 export function createAuditEventEntity(resource: Resource): AuditEventEntity {

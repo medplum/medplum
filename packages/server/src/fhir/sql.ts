@@ -106,18 +106,6 @@ export const Operator = {
     }
     sql.append(')');
   },
-  LINK: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
-    sql.appendColumn(column);
-    sql.append('::TEXT = SPLIT_PART(');
-    sql.appendColumn(parameter as Column);
-    sql.append(`,'/',2)`);
-  },
-  REVERSE_LINK: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
-    sql.appendColumn(column);
-    sql.append(` = '${paramType}/'`);
-    sql.append('||');
-    sql.appendColumn(parameter as Column);
-  },
   RANGE_OVERLAPS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
     sql.appendColumn(column);
     sql.append(' && ');
@@ -715,8 +703,8 @@ export class SelectQuery extends BaseQuery implements Expression {
 }
 
 export class ArraySubquery implements Expression {
-  private filter: Expression;
-  private column: Column;
+  private readonly filter: Expression;
+  private readonly column: Column;
 
   constructor(column: Column, filter: Expression) {
     this.filter = filter;

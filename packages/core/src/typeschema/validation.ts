@@ -80,9 +80,9 @@ export const validationRegexes: Record<string, RegExp> = {
   id: /^[A-Za-z0-9\-.]{1,64}$/,
   instant:
     /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00))$/,
-  markdown: /^[\s\S]+$/,
+  markdown: /^[\r\n\t\u0020-\uFFFF]+$/,
   oid: /^urn:oid:[0-2](\.(0|[1-9]\d*))+$/,
-  string: /^[\s\S]+$/,
+  string: /^[\r\n\t\u0020-\uFFFF]+$/,
   time: /^([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?$/,
   uri: /^\S*$/,
   url: /^\S*$/,
@@ -116,8 +116,8 @@ export function validateTypedValue(typedValue: TypedValue, options?: ValidatorOp
 }
 
 class ResourceValidator implements CrawlerVisitor {
-  private issues: OperationOutcomeIssue[];
-  private root: TypedValue;
+  private readonly issues: OperationOutcomeIssue[];
+  private readonly root: TypedValue;
   private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
 

@@ -15,7 +15,8 @@
     <code code="34133-9" displayName="Summarization of Episode Note"
         codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
     <title>Medical Summary</title>
-    <effectiveTime xsi:type="TS" value="20250101000000-0500" />
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
     <recordTarget>
         <patientRole>
             <id root="ce862cfe-6559-411e-92e9-e8d005b1c226" />
@@ -70,7 +71,9 @@
                             <statusCode code="active" />
                             <!-- This equates to the time the concern was authored in the
                             patient's chart. This may frequently be an EHR timestamp-->
-                            <effectiveTime xsi:type="TS" value="20140302124536-0500" />
+                            <effectiveTime>
+                                <low value="20140302124536-0500" />
+                            </effectiveTime>
                             <entryRelationship typeCode="SUBJ">
                                 <observation classCode="OBS" moodCode="EVN">
                                     <templateId root="2.16.840.1.113883.10.20.22.4.4" />
@@ -80,7 +83,13 @@
                                         root="1.3.6.1.4.1.22812.4.111.0.4.1.2.1" />
                                     <code code="55607006" displayName="Problem"
                                         codeSystem="2.16.840.1.113883.6.96"
-                                        codeSystemName="SNOMED CT" />
+                                        codeSystemName="SNOMED CT">
+                                        <translation
+                                            code = "75323-6"
+                                            codeSystem = "2.16.840.1.113883.6.1"
+                                            codeSystemName = "LOINC"
+                                            displayName = "Condition"/>
+                                    </code>
                                     <text>
                                         <reference value="#Problem1" />
                                     </text>

@@ -120,6 +120,13 @@ export interface ClientApplication {
   secret?: string;
 
   /**
+   * Old version of the client secret that is being rotated out.  Instances
+   * of the client using this value should update to use the value in
+   * ClientApplication.secret
+   */
+  retiringSecret?: string;
+
+  /**
    * Optional JWKS URI for public key verification of JWTs issued by the
    * authorization server (client_secret_jwt).
    */
