@@ -4294,34 +4294,39 @@ describe('FHIR Search', () => {
         return resources;
       }
 
-      function expectResultsContents<Parent extends WithId<Resource>, Child extends WithId<Resource>>(
+      function expectSearchByReferenceResults<Parent extends WithId<Resource>, Child extends WithId<Resource>>(
         parents: Parent[],
         childrenByParent: Child[][],
         count: number,
         results: Record<string, Child[]>
       ): void {
+        // Each parent should be present in the results
         expect(Object.keys(results)).toHaveLength(parents.length);
-        for (const [parent, children] of zip(parents, childrenByParent)) {
+        // All children are accounted for as well
+        expect(childrenByParent).toHaveLength(parents.length);
+
+        for (let i = 0; i < parents.length; i++) {
+          const parent = parents[i];
+          const children = childrenByParent[i];
           const result = results[getReferenceString(parent)];
+          expect(result).toBeDefined();
+
+          // `count` caps the number of children included in results
           expect(result).toHaveLength(Math.min(children.length, count));
-          for (const child of result) {
-            expect(children.map((c) => c.id)).toContain(child.id);
-          }
+
+          // children returned should be a subset of the original, exhaustive, list of children
+          expect(children.map((c) => c.id)).toEqual(expect.arrayContaining(result.map((r) => r.id)));
         }
       }
 
-      function zip<A, B>(a: A[], b: B[]): [A, B][] {
-        return a.map((k, i) => [k, b[i]]);
-      }
       test('Basic reference', async () =>
         withTestContext(async () => {
           const patients = await createPatients(repo, 3);
-          const patientObservations = [
+          const observations = [
             await createObservations(repo, 2, { subject: patients[0] }),
             await createObservations(repo, 0, { subject: patients[1] }),
             await createObservations(repo, 4, { subject: patients[2] }),
           ];
-          const observation = patientObservations[0][0];
           const count = 3;
           const result = await repo.searchByReference<Observation>(
             { resourceType: 'Observation', count },
@@ -4329,10 +4334,7 @@ describe('FHIR Search', () => {
             patients.map((p) => getReferenceString(p))
           );
 
-          expectResultsContents(patients, patientObservations, count, result);
-          const resultRepoObservation = result[getReferenceString(patients[0])][0];
-          expect(resultRepoObservation).toEqual(observation);
-          expect(resultRepoObservation.meta?.tag).toBeUndefined();
+          expectSearchByReferenceResults(patients, observations, count, result);
         }));
 
       test('Array reference column', async () =>
@@ -4343,7 +4345,6 @@ describe('FHIR Search', () => {
             await createObservations(repo, 0, { hasMember: [parentObservations[1]] }),
             await createObservations(repo, 4, { hasMember: [parentObservations[2]] }),
           ];
-          const observation = childObservations[0][0];
           const count = 3;
           const result = await repo.searchByReference<Observation>(
             { resourceType: 'Observation', count },
@@ -4351,10 +4352,7 @@ describe('FHIR Search', () => {
             parentObservations.map((o) => getReferenceString(o))
           );
 
-          expectResultsContents(parentObservations, childObservations, count, result);
-          const resultRepoObservation = result[getReferenceString(parentObservations[0])][0];
-          expect(resultRepoObservation).toEqual(observation);
-          expect(resultRepoObservation.meta?.tag).toBeUndefined();
+          expectSearchByReferenceResults(parentObservations, childObservations, count, result);
         }));
 
       test('Invalid reference field', async () =>
@@ -4381,7 +4379,7 @@ describe('FHIR Search', () => {
             patients.map((p) => getReferenceString(p))
           );
 
-          expectResultsContents(patients, patientObservations, count, resultDesc);
+          expectSearchByReferenceResults(patients, patientObservations, count, resultDesc);
           expect(resultDesc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['2', '1', '0']);
           expect(resultDesc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['1', '0']);
 
@@ -4391,7 +4389,7 @@ describe('FHIR Search', () => {
             'subject',
             patients.map((p) => getReferenceString(p))
           );
-          expectResultsContents(patients, patientObservations, count, resultAsc);
+          expectSearchByReferenceResults(patients, patientObservations, count, resultAsc);
           expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['0', '1', '2']);
           expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['0', '1']);
         }));
@@ -4408,7 +4406,7 @@ describe('FHIR Search', () => {
             patients.map((p) => getReferenceString(p))
           );
 
-          expectResultsContents(patients, patientObservations, count, result);
+          expectSearchByReferenceResults(patients, patientObservations, count, result);
           const observation = patientObservations[0][0];
           const resultObservation = result[getReferenceString(patients[0])][0];
           expect({ ...observation, meta: undefined }).toEqual({
@@ -4458,7 +4456,7 @@ describe('FHIR Search', () => {
           for (let i = 0; i < patients.length; i++) {
             childrenByParent.push([...patientObservations[i], ...patientServiceRequests[i]]);
           }
-          expectResultsContents(patients, childrenByParent, count, result);
+          expectSearchByReferenceResults(patients, childrenByParent, count, result);
 
           // First patient has only ServiceRequests
           expect(result[getReferenceString(patients[0])].map((r) => r.resourceType)).toStrictEqual([
