@@ -372,10 +372,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private canReadCacheEntry(cacheEntry: CacheEntry): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-    if (!this.context.projects?.includes(cacheEntry.projectId)) {
+    if (!this.isSuperAdmin() && !this.context.projects?.includes(cacheEntry.projectId)) {
       return false;
     }
     if (!satisfiedAccessPolicy(cacheEntry.resource, AccessPolicyInteraction.READ, this.context.accessPolicy)) {
@@ -1251,12 +1248,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resourceType - The resource type for compartments.
    */
   addSecurityFilters(builder: SelectQuery, resourceType: string): void {
-    if (this.isSuperAdmin()) {
-      // No compartment restrictions for admins.
-      return;
+    // No compartment restrictions for admins.
+    if (!this.isSuperAdmin()) {
+      this.addProjectFilters(builder);
     }
-
-    this.addProjectFilters(builder);
     this.addAccessPolicyFilters(builder, resourceType);
   }
 
@@ -1945,10 +1940,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can read the specified resource type.
    */
   canReadResourceType(resourceType: string): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-    if (protectedResourceTypes.includes(resourceType)) {
+    if (!this.isSuperAdmin() && protectedResourceTypes.includes(resourceType)) {
       return false;
     }
     if (!this.context.accessPolicy) {
@@ -1965,10 +1957,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can write the specified resource type.
    */
   private canWriteResourceType(resourceType: string): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-    if (protectedResourceTypes.includes(resourceType)) {
+    if (!this.isSuperAdmin() && protectedResourceTypes.includes(resourceType)) {
       return false;
     }
     if (!this.context.accessPolicy) {
@@ -1984,15 +1973,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can write the specified resource type.
    */
   private canWriteToResource(resource: Resource): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
     const resourceType = resource.resourceType;
-    if (protectedResourceTypes.includes(resourceType)) {
-      return false;
-    }
-    if (resource.meta?.project !== this.context.projects?.[0]) {
-      return false;
+    if (!this.isSuperAdmin()) {
+      if (protectedResourceTypes.includes(resourceType)) {
+        return false;
+      }
+      if (resource.meta?.project !== this.context.projects?.[0]) {
+        return false;
+      }
     }
     return !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
   }
@@ -2004,11 +1992,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can write the specified resource type.
    */
   private isResourceWriteable(previous: Resource | undefined, current: Resource): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-
-    if (current.meta?.project !== this.context.projects?.[0]) {
+    if (!this.isSuperAdmin() && current.meta?.project !== this.context.projects?.[0]) {
       return false;
     }
 
