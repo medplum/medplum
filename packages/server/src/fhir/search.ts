@@ -1254,7 +1254,7 @@ function buildReferenceSearchFilter(
   }
   let condition: Condition;
   if (impl.array) {
-    condition = new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
+    condition = new Condition(column, 'ARRAY_CONTAINS_AND_IS_NOT_NULL', values, 'TEXT[]');
   } else if (values instanceof Column) {
     condition = new Condition(column, '=', values);
   } else if (values.length === 1) {
@@ -1432,7 +1432,7 @@ function buildEqualityCondition(
 ): Condition {
   column = column ?? impl.columnName;
   if (impl.array) {
-    return new Condition(column, 'ARRAY_CONTAINS', values, impl.type + '[]');
+    return new Condition(column, 'ARRAY_CONTAINS_AND_IS_NOT_NULL', values, impl.type + '[]');
   } else if (values.length > 1) {
     return new Condition(column, 'IN', values, impl.type);
   } else {

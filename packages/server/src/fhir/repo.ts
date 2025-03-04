@@ -1264,7 +1264,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private addProjectFilters(builder: SelectQuery): void {
     if (this.context.projects?.length) {
-      builder.where('compartments', 'ARRAY_CONTAINS', this.context.projects, 'UUID[]');
+      builder.where('compartments', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', this.context.projects, 'UUID[]');
     }
   }
 
@@ -1287,7 +1287,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         if (policyCompartmentId) {
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
-          expressions.push(new Condition('compartments', 'ARRAY_CONTAINS', policyCompartmentId, 'UUID[]'));
+          expressions.push(
+            new Condition('compartments', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', policyCompartmentId, 'UUID[]')
+          );
         } else if (policy.criteria) {
           if (!policy.criteria.startsWith(policy.resourceType + '?')) {
             getLogger().warn('Invalid access policy criteria', {
