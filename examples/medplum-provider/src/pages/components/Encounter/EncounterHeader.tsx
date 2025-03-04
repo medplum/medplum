@@ -3,7 +3,7 @@ import { Box, Text, Group, Paper } from '@mantine/core';
 import { Patient, Encounter, Practitioner, HumanName } from '@medplum/fhirtypes';
 import classes from './EncounterHeader.module.css';
 import { formatHumanName } from '@medplum/core';
-import { EncounterStatus } from './EncounterStatus';
+import { StatusBadge } from '@medplum/react';
 
 interface EncounterHeaderProps {
   patient: Patient;
@@ -42,7 +42,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             <Text className={classes.label} c="dimmed">
               Status
             </Text>
-            <EncounterStatus encounter={encounter} />
+            <StatusBadge status={encounter.status} />
           </Box>
 
           <Box>
