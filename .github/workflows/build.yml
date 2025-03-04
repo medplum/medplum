@@ -22,7 +22,7 @@ jobs:
       matrix:
         node-version: [20, 22]
     env:
-      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_OPTIONS: --max-old-space-size=8192 --dns-result-order=ipv4first
       NODE_VERSION: ${{ matrix.node-version }}
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
@@ -159,7 +159,7 @@ jobs:
         pg-version: [14, 16]
         redis-version: [6, 7]
     env:
-      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_OPTIONS: --max-old-space-size=8192 --dns-result-order=ipv4first
       NODE_VERSION: ${{ matrix.node-version }}
       PG_VERSION: ${{ matrix.pg-version }}
       REDIS_VERSION: ${{ matrix.redis-version }}
@@ -254,7 +254,7 @@ jobs:
         pg-version: [14, 16]
         redis-version: [6, 7]
     env:
-      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_OPTIONS: --max-old-space-size=8192 --dns-result-order=ipv4first
       NODE_VERSION: ${{ matrix.node-version }}
       PG_VERSION: ${{ matrix.pg-version }}
       REDIS_VERSION: ${{ matrix.redis-version }}
@@ -378,7 +378,7 @@ jobs:
     permissions:
       pull-requests: write
     env:
-      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_OPTIONS: --max-old-space-size=8192 --dns-result-order=ipv4first
       NODE_VERSION: 20
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
