@@ -14,20 +14,22 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { Client, Pool } from 'pg';
+import { Client, Pool, QueryResult } from 'pg';
+import { deriveIdentifierSearchParameter } from '../fhir/lookups/util';
 import {
   ColumnSearchParameterImplementation,
   getSearchParameterImplementation,
   SearchParameterImplementation,
 } from '../fhir/searchparameter';
-import { deriveIdentifierSearchParameter } from '../fhir/lookups/util';
-import { doubleEscapeSingleQuotes, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
+import { SqlFunctionDefinition, SqlFunctions } from '../fhir/sql';
+import { doubleEscapeSingleQuotes, escapeUnicode, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
 let DRY_RUN = false;
 
 export interface SchemaDefinition {
   tables: TableDefinition[];
+  functions: SqlFunctionDefinition[];
 }
 
 export interface TableDefinition {
@@ -62,6 +64,8 @@ export interface IndexDefinition {
   indexNameSuffix?: string;
   indexdef?: string;
 }
+
+const TargetFunctions: SqlFunctionDefinition[] = Object.values(SqlFunctions);
 
 export function indexStructureDefinitionsAndSearchParameters(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -122,6 +126,19 @@ export async function buildMigration(b: FileBuilder, options: BuildMigrationOpti
 async function buildStartDefinition(options: BuildMigrationOptions): Promise<SchemaDefinition> {
   const db = options.dbClient;
 
+  const functions: SqlFunctionDefinition[] = [];
+  const seenFnNames = new Set<string>();
+  for (const fn of TargetFunctions) {
+    if (seenFnNames.has(fn.name)) {
+      throw new Error('Duplicate SQL function name: ' + fn.name);
+    }
+    seenFnNames.add(fn.name);
+    const def = await getFunctionDefinition(db, fn.name);
+    if (def) {
+      functions.push(def);
+    }
+  }
+
   const tableNames = await getTableNames(db);
   const tables: TableDefinition[] = [];
 
@@ -134,7 +151,7 @@ async function buildStartDefinition(options: BuildMigrationOptions): Promise<Sch
     throw new Error('Unused special index parsers:\n' + unusedParsers.map((p) => p.toString()).join('\n'));
   }
 
-  return { tables };
+  return { tables, functions };
 }
 
 async function getTableNames(db: Client | Pool): Promise<string[]> {
@@ -148,6 +165,28 @@ async function getTableDefinition(db: Client | Pool, name: string): Promise<Tabl
     columns: await getColumns(db, name),
     indexes: await getIndexes(db, name),
   };
+}
+
+async function getFunctionDefinition(db: Client | Pool, name: string): Promise<SqlFunctionDefinition | undefined> {
+  let result: QueryResult<{ pg_get_functiondef: string }>;
+  try {
+    result = await db.query(`SELECT pg_catalog.pg_get_functiondef('${name}'::regproc::oid);`);
+  } catch (_err) {
+    return undefined;
+  }
+
+  if (result.rows.length === 1) {
+    return {
+      name,
+      createQuery: result.rows[0].pg_get_functiondef,
+    };
+  }
+
+  if (result.rows.length > 1) {
+    throw new Error('Multiple functiondefs found for ' + name);
+  }
+
+  return undefined;
 }
 
 async function getColumns(db: Client | Pool, tableName: string): Promise<ColumnDefinition[]> {
@@ -294,7 +333,7 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
 }
 
 function buildTargetDefinition(): SchemaDefinition {
-  const result: SchemaDefinition = { tables: [] };
+  const result: SchemaDefinition = { tables: [], functions: TargetFunctions };
 
   for (const [resourceType, typeSchema] of Object.entries(getAllDataTypes())) {
     buildCreateTables(result, resourceType, typeSchema);
@@ -738,6 +777,13 @@ function writeMigrations(
   b.append('export async function run(client: PoolClient): Promise<void> {');
   b.indentCount++;
 
+  for (const targetFn of targetDefinition.functions) {
+    const startFn = startDefinition.functions.find((fn) => fn.name === targetFn.name);
+    if (!startFn) {
+      writeCreateFunction(b, targetFn);
+    }
+  }
+
   for (const targetTable of targetDefinition.tables) {
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
     migrateTable(b, startTable, targetTable, options);
@@ -759,6 +805,11 @@ function migrateTable(
     migrateColumns(b, startTable, targetTable);
     migrateIndexes(b, startTable, targetTable, options);
   }
+}
+
+function writeCreateFunction(b: FileBuilder, functionDefinition: SqlFunctionDefinition): void {
+  b.appendNoWrap(`await client.query(\`${escapeUnicode(functionDefinition.createQuery)}\`);`);
+  b.newLine();
 }
 
 function writeCreateTable(b: FileBuilder, tableDefinition: TableDefinition): void {

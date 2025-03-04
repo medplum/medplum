@@ -941,3 +941,32 @@ export function periodToRangeString(period: Period): string | undefined {
   }
   return undefined;
 }
+
+export interface SqlFunctionDefinition {
+  readonly name: string;
+  readonly createQuery: string;
+}
+
+/**
+ * SQL Functions
+ *
+ * Functions are defined here and created via the schema migration tooling.
+ * Once a function has been defined and created in the database, its definition
+ * should be changed only after carefully considering the impact on the existing
+ * code and functionality depending on the previous definition of the function.
+ *
+ * When meaningful changes are needed, consider creating a new function
+ * with a new name instead of changing the existing function.
+ */
+
+/** Sample SQL function definition */
+const MedplumHelloWorldFn: SqlFunctionDefinition = {
+  name: 'medplum_hello',
+  createQuery: `CREATE FUNCTION medplum_hello(text)
+      RETURNS text LANGUAGE sql IMMUTABLE
+    AS $function$SELECT 'Hello from Medplum, '||$1||'!'$function$`,
+};
+
+export const SqlFunctions = {
+  medplum_hello: MedplumHelloWorldFn,
+} as const;
