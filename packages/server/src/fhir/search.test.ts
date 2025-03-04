@@ -57,12 +57,17 @@ import { getSystemRepo, Repository } from './repo';
 import { clampEstimateCount } from './search';
 import { DatabaseMode } from '../database';
 import { SelectQuery } from './sql';
+import { TokenColumnsFeature } from './token-column';
 
 jest.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
-describe('FHIR Search', () => {
+describe.each(['token columns', 'lookup table'])('FHIR Search using %s', (tokenColumnsOrLookupTable) => {
+  beforeAll(() => {
+    TokenColumnsFeature.read = tokenColumnsOrLookupTable === 'token columns';
+  });
+
   describe('project-scoped Repository', () => {
     let config: MedplumServerConfig;
     let repo: Repository;
