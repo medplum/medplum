@@ -1,6 +1,6 @@
 import { Text, Stack, Box } from '@mantine/core';
-import { Encounter, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { Practitioner, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { Loading, useMedplum } from '@medplum/react';
 import { Outlet, useLocation, useParams } from 'react-router';
 import { useCallback, useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
@@ -8,19 +8,26 @@ import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { IconCircleOff } from '@tabler/icons-react';
 import { AddPlanDefinition } from '../components/AddPlanDefinitions/AddPlanDefinition';
 import { TaskPanel } from '../components/Task/TaskPanel';
+import { EncounterHeader } from '../components/Encounter/EncounterHeader';
+import { usePatient } from '../../hooks/usePatient';
+import { useEncounter } from '../../hooks/useEncounter';
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
   const medplum = useMedplum();
-  const [encounter, setEncounter] = useState<Encounter | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const patient = usePatient();
+  const encounter = useEncounter();
   const location = useLocation();
+  const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   const fetchTasks = useCallback(async (): Promise<void> => {
-    const encounterResult = await medplum.readResource('Encounter', encounterId as string);
-    setEncounter(encounterResult);
 
-    const taskResult = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`, {
+    if (!encounter) {
+      return;
+    }
+
+    const taskResult = await medplum.searchResources('Task', `encounter=${getReferenceString(encounter)}`, {
       cache: 'no-cache',
     });
 
@@ -31,7 +38,7 @@ export const EncounterChart = (): JSX.Element => {
     });
 
     setTasks(taskResult);
-  }, [medplum, encounterId]);
+  }, [medplum, encounter]);
 
   useEffect(() => {
     fetchTasks().catch((err) => {
@@ -43,6 +50,24 @@ export const EncounterChart = (): JSX.Element => {
       });
     });
   }, [medplum, encounterId, fetchTasks, location.pathname]);
+
+    useEffect(() => {
+      const fetchPractitioner = async (): Promise<void> => {
+        if (encounter?.participant?.[0]?.individual) {
+          const practitionerResult = await medplum.readReference(encounter.participant[0].individual);
+          setPractitioner(practitionerResult as Practitioner);
+        }
+      };
+  
+      fetchPractitioner().catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
+    }, [encounter, medplum]);
 
   const updateTaskList = useCallback(
     (updatedTask: Task): void => {
@@ -82,8 +107,15 @@ export const EncounterChart = (): JSX.Element => {
     [medplum, updateTaskList]
   );
 
+  if (!patient || !encounter) {
+      return <Loading />;
+    }
+
   return (
     <>
+    <Stack justify="space-between" gap={0}>
+            <EncounterHeader patient={patient} encounter={encounter} practitioner={practitioner} />
+    
       <Box p="md">
         <Text size="lg" color="dimmed" mb="lg">
           Encounter {encounter?.period?.start ?? ''}
@@ -111,6 +143,8 @@ export const EncounterChart = (): JSX.Element => {
         </div>
         <Outlet />
       </Box>
+      </Stack>
     </>
   );
 };
+

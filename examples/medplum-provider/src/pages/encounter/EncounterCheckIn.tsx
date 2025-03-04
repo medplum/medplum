@@ -12,14 +12,16 @@ import {
   Group,
   useMantineTheme,
 } from '@mantine/core';
-import { CodeableConcept, Coverage, Encounter, Organization, Patient, Practitioner } from '@medplum/fhirtypes';
+import { CodeableConcept, Coverage, Organization, Practitioner } from '@medplum/fhirtypes';
 import { CodeableConceptInput, Loading, ResourceInput, useMedplum } from '@medplum/react';
-import { Outlet, useParams } from 'react-router';
+import { Outlet } from 'react-router';
 import { useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { IconCircleOff, IconCheck } from '@tabler/icons-react';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
+import { usePatient } from '../../hooks/usePatient';
+import { useEncounter } from '../../hooks/useEncounter';
 
 enum PaymentType {
   Insurance = 'Insurance',
@@ -28,10 +30,9 @@ enum PaymentType {
 
 export const EncounterCheckIn = (): JSX.Element => {
   const theme = useMantineTheme();
-  const { patientId, encounterId } = useParams();
   const medplum = useMedplum();
-  const [patient, setPatient] = useState<Patient | undefined>();
-  const [encounter, setEncounter] = useState<Encounter | undefined>();
+  const patient = usePatient();
+  const encounter = useEncounter();
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
   const [serviceType, setServiceType] = useState<CodeableConcept | undefined>();
   const [coverage, setCoverage] = useState<Coverage | undefined>();
@@ -41,45 +42,10 @@ export const EncounterCheckIn = (): JSX.Element => {
   const [eligibilityChecked, setEligibilityChecked] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchEncounter = async (): Promise<void> => {
-      const encounterResult = await medplum.readResource('Encounter', encounterId as string);
-      setEncounter(encounterResult);
-
-      if (encounterResult.serviceType) {
-        console.log(encounterResult.serviceType);
-        setServiceType(encounterResult.serviceType);
-      }
-    };
-
-    if (encounterId) {
-      fetchEncounter().catch((err) => {
-        showNotification({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: normalizeErrorString(err),
-        });
-      });
+    if (encounter?.serviceType) {
+      setServiceType(encounter.serviceType);
     }
-  }, [encounterId, medplum]);
-
-  useEffect(() => {
-    const fetchPatient = async (): Promise<void> => {
-      if (patientId) {
-        const patientResult = await medplum.readResource('Patient', patientId);
-        setPatient(patientResult);
-      }
-    };
-
-    fetchPatient().catch((err) => {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-    });
-  }, [patientId, medplum]);
+  }, [encounter]);
 
   useEffect(() => {
     const fetchPractitioner = async (): Promise<void> => {
@@ -101,8 +67,8 @@ export const EncounterCheckIn = (): JSX.Element => {
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
-      if (patientId) {
-        const coverageResult = await medplum.searchResources('Coverage', `patient=Patient/${patientId}`);
+      if (patient) {
+        const coverageResult = await medplum.searchResources('Coverage', `patient=${getReferenceString(patient)}`);
         if (coverageResult.length > 0) {
           setCoverage(coverageResult[0] as Coverage);
           setPaymentType(PaymentType.Insurance);
@@ -119,7 +85,7 @@ export const EncounterCheckIn = (): JSX.Element => {
         message: normalizeErrorString(err),
       });
     });
-  }, [patientId, medplum]);
+  }, [patient, medplum]);
 
   useEffect(() => {
     if (paymentType === PaymentType.SelfPay) {

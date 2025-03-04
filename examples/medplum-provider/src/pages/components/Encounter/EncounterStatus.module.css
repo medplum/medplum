@@ -1,0 +1,20 @@
+.label {
+  font-weight: 500;
+  font-size: var(--mantine-font-size-sm);
+}
+
+.badge {
+  color: white;
+}
+
+.green {
+  background-color: var(--mantine-color-green-8);
+}
+
+.blue {
+  background-color: var(--mantine-color-blue-5);
+}
+
+.gray {
+  background-color: var(--mantine-color-gray-5);
+}
