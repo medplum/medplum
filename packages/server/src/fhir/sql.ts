@@ -959,14 +959,15 @@ export interface SqlFunctionDefinition {
  * with a new name instead of changing the existing function.
  */
 
-/** Sample SQL function definition */
-const MedplumHelloWorldFn: SqlFunctionDefinition = {
-  name: 'medplum_hello',
-  createQuery: `CREATE FUNCTION medplum_hello(text)
-      RETURNS text LANGUAGE sql IMMUTABLE
-    AS $function$SELECT 'Hello from Medplum, '||$1||'!'$function$`,
-};
+/**
+ * Sample SQL function definition
+ *
+ * const MedplumHelloWorldFn: SqlFunctionDefinition = {
+ *   name: 'medplum_hello',
+ *   createQuery: `CREATE FUNCTION medplum_hello(text)
+ *       RETURNS text LANGUAGE sql IMMUTABLE
+ *     AS $function$SELECT 'Hello from Medplum, '||$1||'!'$function$`,
+ * };
+ */
 
-export const SqlFunctions = {
-  medplum_hello: MedplumHelloWorldFn,
-} as const;
+export const SqlFunctions = {} as const;
