@@ -22,7 +22,6 @@ export const EncounterChart = (): JSX.Element => {
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const fetchTasks = useCallback(async (): Promise<void> => {
-
     if (!encounter) {
       return;
     }
@@ -51,23 +50,23 @@ export const EncounterChart = (): JSX.Element => {
     });
   }, [medplum, encounterId, fetchTasks, location.pathname]);
 
-    useEffect(() => {
-      const fetchPractitioner = async (): Promise<void> => {
-        if (encounter?.participant?.[0]?.individual) {
-          const practitionerResult = await medplum.readReference(encounter.participant[0].individual);
-          setPractitioner(practitionerResult as Practitioner);
-        }
-      };
-  
-      fetchPractitioner().catch((err) => {
-        showNotification({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: normalizeErrorString(err),
-        });
+  useEffect(() => {
+    const fetchPractitioner = async (): Promise<void> => {
+      if (encounter?.participant?.[0]?.individual) {
+        const practitionerResult = await medplum.readReference(encounter.participant[0].individual);
+        setPractitioner(practitionerResult as Practitioner);
+      }
+    };
+
+    fetchPractitioner().catch((err) => {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
       });
-    }, [encounter, medplum]);
+    });
+  }, [encounter, medplum]);
 
   const updateTaskList = useCallback(
     (updatedTask: Task): void => {
@@ -108,39 +107,38 @@ export const EncounterChart = (): JSX.Element => {
   );
 
   if (!patient || !encounter) {
-      return <Loading />;
-    }
+    return <Loading />;
+  }
 
   return (
     <>
-    <Stack justify="space-between" gap={0}>
-            <EncounterHeader patient={patient} encounter={encounter} practitioner={practitioner} />
-    
-      <Box p="md">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 250px', gap: '24px' }}>
-          <Stack gap="md">
-            <Stack gap="md">
-              {tasks?.map((task: Task) => (
-                <TaskPanel
-                  key={task.id}
-                  task={task}
-                  onSaveQuestionnaire={handleSaveChanges}
-                  onCompleteTask={updateTaskList}
-                />
-              ))}
-            </Stack>
-          </Stack>
+      <Stack justify="space-between" gap={0}>
+        <EncounterHeader patient={patient} encounter={encounter} practitioner={practitioner} />
 
-          <Stack gap="lg">
-            {encounterId && patientId && (
-              <AddPlanDefinition encounterId={encounterId} patientId={patientId} onApply={fetchTasks} />
-            )}
-          </Stack>
-        </div>
-        <Outlet />
-      </Box>
+        <Box p="md">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 250px', gap: '24px' }}>
+            <Stack gap="md">
+              <Stack gap="md">
+                {tasks?.map((task: Task) => (
+                  <TaskPanel
+                    key={task.id}
+                    task={task}
+                    onSaveQuestionnaire={handleSaveChanges}
+                    onCompleteTask={updateTaskList}
+                  />
+                ))}
+              </Stack>
+            </Stack>
+
+            <Stack gap="lg">
+              {encounterId && patientId && (
+                <AddPlanDefinition encounterId={encounterId} patientId={patientId} onApply={fetchTasks} />
+              )}
+            </Stack>
+          </div>
+          <Outlet />
+        </Box>
       </Stack>
     </>
   );
 };
-
