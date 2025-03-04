@@ -55,7 +55,21 @@ export const Operator = {
   '>': simpleBinaryOperator('>'),
   '>=': simpleBinaryOperator('>='),
   IN: simpleBinaryOperator('IN'),
+  /*
+    Why do both of these exist? Mainly for consideration when negating the condition:
+    Negating ARRAY_CONTAINS_AND_IS_NOT_NULL includes records where the column is NULL.
+    Negating ARRAY_CONTAINS does NOT include records where the column is NULL.
+  */
   ARRAY_CONTAINS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' && ARRAY[');
+    sql.appendParameters(parameter, false);
+    sql.append(']');
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  ARRAY_CONTAINS_AND_IS_NOT_NULL: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
     sql.append('(');
     sql.appendColumn(column);
     sql.append(' IS NOT NULL AND ');
@@ -262,8 +276,8 @@ export class Condition implements Expression {
     readonly parameter: any,
     readonly parameterType?: string
   ) {
-    if (operator === 'ARRAY_CONTAINS' && !parameterType) {
-      throw new Error('ARRAY_CONTAINS requires paramType');
+    if ((operator === 'ARRAY_CONTAINS_AND_IS_NOT_NULL' || operator === 'ARRAY_CONTAINS') && !parameterType) {
+      throw new Error(`${operator} requires paramType`);
     }
 
     this.column = getColumn(column);
