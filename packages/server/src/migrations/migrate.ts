@@ -2,7 +2,6 @@ import {
   deepEquals,
   FileBuilder,
   getAllDataTypes,
-  getSearchParameters,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   InternalTypeSchema,
@@ -15,7 +14,7 @@ import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { Client, Pool, QueryResult } from 'pg';
-import { deriveIdentifierSearchParameter } from '../fhir/lookups/util';
+import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import {
   ColumnSearchParameterImplementation,
   getSearchParameterImplementation,
@@ -456,52 +455,44 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: string
 const IgnoredSearchParameters = new Set(['_id', '_lastUpdated', '_profile', '_compartment', '_source']);
 
 function buildSearchColumns(tableDefinition: TableDefinition, resourceType: string): void {
-  const resourceTypeSearchParams = getSearchParameters(resourceType) ?? {};
-  const derivedSearchParams: SearchParameter[] = [];
-  for (const paramList of [Object.values(resourceTypeSearchParams), derivedSearchParams]) {
-    for (const searchParam of paramList) {
-      if (searchParam.type === 'composite') {
-        continue;
-      }
+  for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
+    if (searchParam.type === 'composite') {
+      continue;
+    }
 
-      if (IgnoredSearchParameters.has(searchParam.code)) {
-        continue;
-      }
+    if (IgnoredSearchParameters.has(searchParam.code)) {
+      continue;
+    }
 
-      if (!searchParam.base?.includes(resourceType as ResourceType)) {
-        throw new Error(
-          `${searchParam.id}: SearchParameter.base ${searchParam.base.join(',')} does not include resourceType ${resourceType}`
-        );
-      }
+    if (!searchParam.base?.includes(resourceType as ResourceType)) {
+      throw new Error(
+        `${searchParam.id}: SearchParameter.base ${searchParam.base.join(',')} does not include resourceType ${resourceType}`
+      );
+    }
 
-      const impl = getSearchParameterImplementation(resourceType, searchParam);
-      if (impl.searchStrategy === 'lookup-table') {
-        continue;
-      }
+    const impl = getSearchParameterImplementation(resourceType, searchParam);
+    if (impl.searchStrategy === 'lookup-table') {
+      continue;
+    }
 
-      if (searchParam.type === 'reference') {
-        derivedSearchParams.push(deriveIdentifierSearchParameter(searchParam));
-      }
-
-      for (const column of getSearchParameterColumns(impl)) {
-        const existing = tableDefinition.columns.find((c) => c.name === column.name);
-        if (existing) {
-          if (!columnDefinitionsEqual(existing, column)) {
-            throw new Error(
-              `Search Parameter ${searchParam.id ?? searchParam.code} attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
-            );
-          }
-          continue;
+    for (const column of getSearchParameterColumns(impl)) {
+      const existing = tableDefinition.columns.find((c) => c.name === column.name);
+      if (existing) {
+        if (!columnDefinitionsEqual(existing, column)) {
+          throw new Error(
+            `Search Parameter ${searchParam.id ?? searchParam.code} attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
+          );
         }
-        tableDefinition.columns.push(column);
+        continue;
       }
-      for (const index of getSearchParameterIndexes(impl)) {
-        const existing = tableDefinition.indexes.find((i) => indexDefinitionsEqual(i, index));
-        if (existing) {
-          continue;
-        }
-        tableDefinition.indexes.push(index);
+      tableDefinition.columns.push(column);
+    }
+    for (const index of getSearchParameterIndexes(impl)) {
+      const existing = tableDefinition.indexes.find((i) => indexDefinitionsEqual(i, index));
+      if (existing) {
+        continue;
       }
+      tableDefinition.indexes.push(index);
     }
   }
 

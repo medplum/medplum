@@ -23,7 +23,6 @@ import {
   forbidden,
   formatSearchQuery,
   getReferenceString,
-  getSearchParameters,
   getStatus,
   gone,
   isGone,
@@ -95,7 +94,7 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
-import { deriveIdentifierSearchParameter } from './lookups/util';
+import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
@@ -1055,11 +1054,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           content,
         };
 
-        const searchParams = getSearchParameters(resourceType);
-        if (searchParams) {
-          for (const searchParam of Object.values(searchParams)) {
-            this.buildColumn({ resourceType } as Resource, columns, searchParam);
-          }
+        for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
+          this.buildColumn({ resourceType } as Resource, columns, searchParam);
         }
 
         await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
@@ -1372,15 +1368,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       __version: Repository.VERSION,
     };
 
-    const searchParams = getSearchParameters(resourceType);
-    if (searchParams) {
-      for (const searchParam of Object.values(searchParams)) {
-        this.buildColumn(resource, row, searchParam);
-        if (searchParam.type === 'reference') {
-          const derived = deriveIdentifierSearchParameter(searchParam);
-          this.buildColumn(resource, row, derived);
-        }
-      }
+    const searchParams = getStandardAndDerivedSearchParameters(resourceType);
+    for (const searchParam of searchParams) {
+      this.buildColumn(resource, row, searchParam);
     }
     return row;
   }

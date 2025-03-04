@@ -23,10 +23,10 @@ export const TokenIndexTypes = {
 export type TokenIndexType = (typeof TokenIndexTypes)[keyof typeof TokenIndexTypes];
 
 /**
- * Returns true if the search parameter is an "token" parameter.
+ * Returns A `TokenIndexTypes` value if the search parameter is of a type including both a system and value, undefined otherwise.
  * @param searchParam - The search parameter.
  * @param resourceType - The resource type.
- * @returns True if the search parameter is an "token" parameter.
+ * @returns A `TokenIndexTypes` value if the search parameter is of a type including both a system and value, undefined otherwise.
  */
 export function getTokenIndexType(searchParam: SearchParameter, resourceType: string): TokenIndexType | undefined {
   if (searchParam.type !== 'token') {
