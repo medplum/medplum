@@ -1094,7 +1094,7 @@ describe('FHIR Search', () => {
             filters: [
               {
                 code: 'type',
-                operator: Operator.CONTAINS,
+                operator: Operator.EQUALS,
                 value: auditEvents[i].type?.code as string,
               },
             ],
