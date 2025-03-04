@@ -142,4 +142,3 @@ export const EncounterChart = (): JSX.Element => {
     </>
   );
 };
-

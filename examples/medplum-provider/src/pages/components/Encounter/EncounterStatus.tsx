@@ -11,7 +11,6 @@ interface EncounterStatusProps {
 const getStatusClass = (status: string): string => {
   console.log('status:', status);
   switch (status) {
-    
     case 'arrived':
     case 'in-progress':
       console.log('classes.green:', classes.green);
@@ -26,7 +25,7 @@ const getStatusClass = (status: string): string => {
 export const EncounterStatus = ({ encounter }: EncounterStatusProps): JSX.Element => {
   return (
     <Badge className={cx(classes.badge, getStatusClass(encounter.status))} radius="xl">
-        {encounter.status.replace(/-/g, ' ')}
+      {encounter.status.replace(/-/g, ' ')}
     </Badge>
   );
 };
