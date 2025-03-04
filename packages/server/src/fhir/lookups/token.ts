@@ -2,7 +2,6 @@ import {
   badRequest,
   Operator as FhirOperator,
   Filter,
-  getSearchParameters,
   OperationOutcomeError,
   SortRule,
   splitN,
@@ -24,7 +23,7 @@ import {
 } from '../sql';
 import { buildTokensForSearchParameter, getTokenIndexType, isCaseSensitiveSearchParameter, Token } from '../tokens';
 import { LookupTable } from './lookuptable';
-import { deriveIdentifierSearchParameter } from './util';
+import { getStandardAndDerivedSearchParameters } from './util';
 
 export const ReadFromTokenColumns = {
   value: false,
@@ -233,16 +232,10 @@ function getTableName(resourceType: ResourceType): string {
  * @returns An array of all tokens from the resource to be inserted into the database.
  */
 function getTokens(resource: Resource): Token[] {
-  const searchParams = getSearchParameters(resource.resourceType);
   const result: Token[] = [];
-  if (searchParams) {
-    for (const searchParam of Object.values(searchParams)) {
-      if (getTokenIndexType(searchParam, resource.resourceType)) {
-        buildTokensForSearchParameter(result, resource, searchParam);
-      }
-      if (searchParam.type === 'reference') {
-        buildTokensForSearchParameter(result, resource, deriveIdentifierSearchParameter(searchParam));
-      }
+  for (const searchParam of getStandardAndDerivedSearchParameters(resource.resourceType)) {
+    if (getTokenIndexType(searchParam, resource.resourceType)) {
+      buildTokensForSearchParameter(result, resource, searchParam);
     }
   }
   return result;
