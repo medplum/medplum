@@ -205,7 +205,6 @@ export const EncounterCheckIn = (): JSX.Element => {
                   name="Patient-id"
                   label="Assigned Practitioner"
                   defaultValue={practitioner}
-                  required={true}
                   onChange={handlePractitionerChange}
                 />
 
@@ -213,7 +212,6 @@ export const EncounterCheckIn = (): JSX.Element => {
                   name="servicetype"
                   label="Service Type"
                   binding="http://hl7.org/fhir/ValueSet/service-type"
-                  required={true}
                   defaultValue={serviceType}
                   onChange={handleServiceTypeChange}
                   maxValues={1}

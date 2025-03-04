@@ -117,10 +117,6 @@ export const EncounterChart = (): JSX.Element => {
             <EncounterHeader patient={patient} encounter={encounter} practitioner={practitioner} />
     
       <Box p="md">
-        <Text size="lg" color="dimmed" mb="lg">
-          Encounter {encounter?.period?.start ?? ''}
-        </Text>
-
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 250px', gap: '24px' }}>
           <Stack gap="md">
             <Stack gap="md">
