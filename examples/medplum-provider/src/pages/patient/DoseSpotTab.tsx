@@ -17,8 +17,8 @@ export function DoseSpotTab(): JSX.Element {
   return (
     <Box pos="relative">
       {patientId && <DoseSpotAdvancedOptions patientId={patientId} />}
-      
-      <div >
+
+      <div>
         {iframeUrl && (
           <iframe
             id="dosespot-iframe"

@@ -1,11 +1,14 @@
 import { Button, Text, Stack, Group, Box, TextInput, Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { DOSESPOT_PRESCRIPTIONS_SYNC_BOT, DOSESPOT_MEDICATION_HISTORY_BOT, DOSESPOT_PATIENT_SYNC_BOT } from '@medplum/dosespot-react';
+import {
+  DOSESPOT_PRESCRIPTIONS_SYNC_BOT,
+  DOSESPOT_MEDICATION_HISTORY_BOT,
+  DOSESPOT_PATIENT_SYNC_BOT,
+} from '@medplum/dosespot-react';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
 import { IconSettings } from '@tabler/icons-react';
-
 
 export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): JSX.Element {
   const medplum = useMedplum();
@@ -35,7 +38,7 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
 
   const syncHistory = useCallback(async () => {
     try {
-      await medplum.executeBot(DOSESPOT_MEDICATION_HISTORY_BOT, { 
+      await medplum.executeBot(DOSESPOT_MEDICATION_HISTORY_BOT, {
         patientId,
         start: historyStartDate,
         end: historyEndDate,
@@ -49,7 +52,7 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
   const syncPatient = useCallback(async () => {
     try {
       await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, {
-        patientId
+        patientId,
       });
       showNotification({ color: 'green', title: 'Success', message: 'Patient sync success' });
     } catch (err) {
@@ -60,11 +63,7 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
   return (
     <>
       <Group style={{ position: 'absolute', top: 8, right: 8, zIndex: 100 }}>
-        <Button 
-          variant="subtle" 
-          size="sm"
-          onClick={() => setShowAdvanced(true)}
-        >
+        <Button variant="subtle" size="sm" onClick={() => setShowAdvanced(true)}>
           <IconSettings size={16} style={{ marginRight: 8 }} />
           Advanced Options
         </Button>
@@ -78,8 +77,8 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
         styles={{
           title: {
             fontSize: '1.5rem',
-            fontWeight: 600
-          }
+            fontWeight: 600,
+          },
         }}
       >
         <Box>
@@ -87,7 +86,8 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
             <Box>
               <Text mb="sm">Prescriptions Sync</Text>
               <Text c="dimmed" mb="md">
-                Fetches recently completed and active prescriptions from DoseSpot for the specified date range and patient. This will create or update MedicationRequest resources.
+                Fetches recently completed and active prescriptions from DoseSpot for the specified date range and
+                patient. This will create or update MedicationRequest resources.
               </Text>
               <Group align="flex-end">
                 <TextInput
@@ -102,16 +102,15 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
                   value={prescriptionEndDate}
                   onChange={(e) => setPrescriptionEndDate(e.target.value)}
                 />
-                <Button onClick={syncPrescriptions}>
-                  Sync Prescriptions
-                </Button>
+                <Button onClick={syncPrescriptions}>Sync Prescriptions</Button>
               </Group>
             </Box>
 
             <Box mt="md">
               <Text mb="sm">Medication History Sync</Text>
               <Text c="dimmed" mb="md">
-                Retrieves medication history from DoseSpot for this patient and adds MedicationRequest resources to Medplum.
+                Retrieves medication history from DoseSpot for this patient and adds MedicationRequest resources to
+                Medplum.
               </Text>
               <Group align="flex-end">
                 <TextInput
@@ -126,20 +125,18 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
                   value={historyEndDate}
                   onChange={(e) => setHistoryEndDate(e.target.value)}
                 />
-                <Button onClick={syncHistory}>
-                  Sync History
-                </Button>
+                <Button onClick={syncHistory}>Sync History</Button>
               </Group>
             </Box>
 
             <Box mt="md">
               <Text mb="sm">Patient Information Sync</Text>
               <Text c="dimmed" mb="md">
-                Syncs patient between Medplum and DoseSpot. It creates an identifier for the patient in Medplum to link it to the patient's record in DoseSpot. It also adds MedicationRequest and AllergyIntolerance resources from Medplum to that patient's record in DoseSpot.
+                Syncs patient between Medplum and DoseSpot. It creates an identifier for the patient in Medplum to link
+                it to the patient's record in DoseSpot. It also adds MedicationRequest and AllergyIntolerance resources
+                from Medplum to that patient's record in DoseSpot.
               </Text>
-              <Button onClick={syncPatient}>
-                Sync Patient
-              </Button>
+              <Button onClick={syncPatient}>Sync Patient</Button>
             </Box>
           </Stack>
         </Box>
