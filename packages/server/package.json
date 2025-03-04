@@ -123,7 +123,7 @@
     "mailparser": "3.7.2",
     "openapi3-ts": "4.4.0",
     "set-cookie-parser": "2.7.1",
-    "supertest": "6.3.4",
+    "supertest": "7.0.0",
     "superwstest": "2.0.4",
     "ts-node-dev": "2.0.0"
   },

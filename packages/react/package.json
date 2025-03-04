@@ -103,7 +103,6 @@
     "react-dom": "18.2.0",
     "react-router": "7.2.0",
     "rfc6902": "5.1.2",
-    "rimraf": "5.0.10",
     "sinon": "19.0.2",
     "storybook": "8.6.3",
     "storybook-addon-mantine": "4.0.2",
