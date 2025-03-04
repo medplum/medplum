@@ -227,11 +227,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
-  if (clientSecret) {
-    if (!(await validateClientIdAndSecret(res, client, clientSecret))) {
-      return;
-    }
-  } else if (!client?.pkceOptional) {
+  if (!client?.pkceOptional) {
     if (login.codeChallenge) {
       const codeVerifier = req.body.code_verifier;
       if (!codeVerifier) {
@@ -245,6 +241,10 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
       }
     } else {
       sendTokenError(res, 'invalid_request', 'Missing verification context');
+      return;
+    }
+  } else if (clientSecret) {
+    if (!(await validateClientIdAndSecret(res, client, clientSecret))) {
       return;
     }
   }
