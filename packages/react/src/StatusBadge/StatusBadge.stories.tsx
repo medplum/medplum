@@ -23,10 +23,10 @@ export const ExampleStatuses = (): JSX.Element => (
         Status: <StatusBadge status="cancelled" />
       </div>
       <div>
-        Status: <StatusBadge status="unknown" />
+        Status: <StatusBadge status="entered-in-error" />
       </div>
       <div>
-        Status: <StatusBadge status="entered-in-error" />
+        Status: <StatusBadge status="unknown" />
       </div>
     </div>
   </Document>
