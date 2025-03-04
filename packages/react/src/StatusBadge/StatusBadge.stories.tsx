@@ -25,6 +25,9 @@ export const ExampleStatuses = (): JSX.Element => (
       <div>
         Status: <StatusBadge status="unknown" />
       </div>
+      <div>
+        Status: <StatusBadge status="entered-in-error" />
+      </div>
     </div>
   </Document>
 );
