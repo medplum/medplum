@@ -18,7 +18,7 @@ import JSZip from 'jszip';
 import { getConfig } from '../../config/loader';
 import { getLogger } from '../../logger';
 
-export const LAMBDA_RUNTIME = 'nodejs18.x';
+export const LAMBDA_RUNTIME = 'nodejs20.x';
 export const LAMBDA_HANDLER = 'index.handler';
 export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;
