@@ -9,11 +9,9 @@ interface EncounterStatusProps {
 }
 
 const getStatusClass = (status: string): string => {
-  console.log('status:', status);
   switch (status) {
     case 'arrived':
     case 'in-progress':
-      console.log('classes.green:', classes.green);
       return classes.green;
     case 'finished':
       return classes.blue;
