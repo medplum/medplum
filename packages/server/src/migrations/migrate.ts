@@ -809,7 +809,6 @@ function migrateTable(
 
 function writeCreateFunction(b: FileBuilder, functionDefinition: SqlFunctionDefinition): void {
   b.appendNoWrap(`await client.query(\`${escapeUnicode(functionDefinition.createQuery)}\`);`);
-  b.newLine();
 }
 
 function writeCreateTable(b: FileBuilder, tableDefinition: TableDefinition): void {
