@@ -13,7 +13,7 @@ docker pull medplum/medplum-server
 Once you have pulled the container, you can run it.
 
 ```bash
-docker run medplum/medplum-server:4.0 <CONFIG-PATH>
+docker run medplum/medplum-server:latest <CONFIG-PATH>
 ```
 
 The container takes only one argument, the path to the config settings. The prefix of this path determines the source of the config:
