@@ -3,49 +3,31 @@ import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { SimpleTask } from './SimpleTask';
 import { Card, Stack } from '@mantine/core';
 import { TaskStatusPanel } from './TaskStatusPanel';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleOff } from '@tabler/icons-react';
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 
 interface TaskPanelProps {
   task: Task;
-  onCompleteTask: (task: Task) => void;
-  onSaveQuestionnaire: (task: Task, response: QuestionnaireResponse) => void;
+  onUpdateTask: (task: Task) => void;
 }
 
-const updateTaskStatus = async (task: Task, medplum: any, onCompleteTask: (task: Task) => void): Promise<void> => {
-  try {
-    const response = await medplum.updateResource(task);
-    onCompleteTask(response);
-  } catch (err) {
-    showNotification({
-      color: 'red',
-      icon: <IconCircleOff />,
-      title: 'Error',
-      message: normalizeErrorString(err),
-    });
-  }
-};
-
-export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPanelProps): JSX.Element => {
+export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
+  const { task, onUpdateTask } = props;
   const navigate = useNavigate();
   const medplum = useMedplum();
   const author = useMedplumProfile();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
-  const [isQuestionnaire, setIsQuestionnaire] = useState<boolean>(
-    !!task.input?.[0]?.valueReference && task.status !== 'completed'
-  );
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const SAVE_TIMEOUT_MS = 1000;
 
   const onActionButtonClicked = async (): Promise<void> => {
-    if (questionnaireResponse && isQuestionnaire) {
-      // Task handles an active questionnaire. Action will submit questionnaire and complete task
-      onSaveQuestionnaire(task, questionnaireResponse);
-    } else if (task.status === 'ready' || task.status === 'requested') {
+    if (task.status === 'ready' || task.status === 'requested') {
       // Task status is Ready or Requested. Action will mark as complete.
-      await updateTaskStatus({ ...task, status: 'completed' }, medplum, onCompleteTask);
+      await updateTaskStatus({ ...task, status: 'completed' }, medplum, onUpdateTask);
     } else {
       // Fallback navigation to Task details.
       navigate(`Task/${task.id}`)?.catch(console.error);
@@ -53,8 +35,45 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
   };
 
   const onChangeResponse = (response: QuestionnaireResponse): void => {
-    setIsQuestionnaire(true);
-    setQuestionnaireResponse(response);
+    saveQuestionnaireResponse(task, response);
+  };
+
+  const saveQuestionnaireResponse = (task: Task, response: QuestionnaireResponse): void => {
+    try {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      
+      saveTimeoutRef.current = setTimeout(async () => {
+        let updatedResponse;
+        if (task.output?.[0]?.valueReference && questionnaireResponse) {
+          updatedResponse = await medplum.updateResource<QuestionnaireResponse>({
+        ...questionnaireResponse,
+        item: response.item,
+          });
+        } else {
+          updatedResponse = await medplum.createResource<QuestionnaireResponse>(response);
+          const updatedTask = await medplum.updateResource<Task>({
+        ...task,
+        output: [
+          {
+            type: { text: 'QuestionnaireResponse' },
+            valueReference: { reference: getReferenceString(updatedResponse) },
+          },
+        ],
+          });
+          onUpdateTask(updatedTask);
+        }
+        setQuestionnaireResponse(updatedResponse);
+      }, SAVE_TIMEOUT_MS);
+    } catch (err) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
   };
 
   const onAddNote = async (note: string): Promise<void> => {
@@ -67,12 +86,12 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
     const taskNotes = task?.note || [];
     taskNotes.push(newNote);
     const updatedTask: Task = { ...task, note: taskNotes };
-    await updateTaskStatus(updatedTask, medplum, onCompleteTask);
+    await updateTaskStatus(updatedTask, medplum, onUpdateTask);
   };
 
   const onChangeStatus = async (status: Task[`status`]): Promise<void> => {
     const updatedTask: Task = { ...task, status: status };
-    await updateTaskStatus(updatedTask, medplum, onCompleteTask);
+    await updateTaskStatus(updatedTask, medplum, onUpdateTask);
   };
 
   return (
@@ -85,7 +104,6 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
         )}
         <TaskStatusPanel
           task={task}
-          isQuestionnaire={isQuestionnaire}
           onActionButtonClicked={onActionButtonClicked}
           onAddNote={onAddNote}
           onChangeStatus={onChangeStatus}
@@ -94,3 +112,18 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
     </Card>
   );
 };
+
+const updateTaskStatus = async (task: Task, medplum: any, onUpdateTask: (task: Task) => void): Promise<void> => {
+  try {
+    const response = await medplum.updateResource(task);
+    onUpdateTask(response);
+  } catch (err) {
+    showNotification({
+      color: 'red',
+      icon: <IconCircleOff />,
+      title: 'Error',
+      message: normalizeErrorString(err),
+    });
+  }
+};
+

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
+import { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItem, Reference, Task } from '@medplum/fhirtypes';
 import { useMedplum, QuestionnaireForm, Loading } from '@medplum/react';
-import { Box, Stack, Text } from '@mantine/core';
+import { Box, Stack } from '@mantine/core';
 
 interface TaskQuestionnaireFormProps {
   task: Task;
@@ -12,6 +12,19 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
   const medplum = useMedplum();
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>(undefined);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
+
+  const onChange = (response: QuestionnaireResponse): void => {
+    if (!questionnaireResponse) {
+      setQuestionnaireResponse(response);
+      onChangeResponse?.(response);
+    } else {
+      const hasDifferentResponses = checkForDifferentResponses(response.item ?? [], questionnaireResponse?.item ?? []);
+      if (hasDifferentResponses) {
+        setQuestionnaireResponse(response);
+        onChangeResponse?.(response);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchResources = async (): Promise<void> => {
@@ -32,12 +45,10 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
     fetchResources().catch(console.error);
   }, [medplum, task]);
 
-  if (!questionnaire) {
+  if (!questionnaire || (task.output?.[0]?.valueReference && !questionnaireResponse)) {
     return (
       <Box p="md">
-        <Text>
-          <Loading />
-        </Text>
+        <Loading />
       </Box>
     );
   }
@@ -49,9 +60,52 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
           questionnaire={questionnaire}
           questionnaireResponse={questionnaireResponse}
           excludeButtons={true}
-          onChange={onChangeResponse}
+          onChange={onChange}
         />
       </Box>
     </Stack>
   );
+};
+
+const checkForDifferentResponses = (
+  newItems: QuestionnaireResponseItem[],
+  existingItems: QuestionnaireResponseItem[]
+): boolean => {
+  if (newItems.length !== existingItems.length) {
+    return true;
+  }
+
+  const existingItemsMap = new Map(existingItems.map((item) => [item.linkId, item]));
+  for (const newItem of newItems) {
+    const existingItem = existingItemsMap.get(newItem.linkId);
+
+    if (!existingItem) {
+      return true;
+    }
+
+    if (newItem.answer?.length !== existingItem.answer?.length) {
+      return true;
+    }
+
+    for (let j = 0; j < (newItem.answer?.length || 0); j++) {
+      const newAnswer = newItem.answer?.[j];
+      const existingAnswer = existingItem.answer?.[j];
+
+      if (newAnswer?.valueString !== existingAnswer?.valueString) {
+        return true;
+      }
+    }
+
+    if ((newItem.item && !existingItem.item) || (!newItem.item && existingItem.item)) {
+      return true;
+    }
+    if (newItem.item && existingItem.item) {
+      const hasDifferentResponses = checkForDifferentResponses(newItem.item, existingItem.item);
+      if (hasDifferentResponses) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 };

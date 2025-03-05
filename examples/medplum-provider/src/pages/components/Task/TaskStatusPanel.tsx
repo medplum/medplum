@@ -9,7 +9,6 @@ import { getQuestionnaireAnswers } from '@medplum/core';
 
 interface TaskStatusPanelProps {
   task: Task;
-  isQuestionnaire?: boolean;
   onActionButtonClicked: () => void;
   onAddNote: (note: string) => void;
   onChangeStatus: (status: Task[`status`]) => void;
@@ -17,7 +16,6 @@ interface TaskStatusPanelProps {
 
 export const TaskStatusPanel = ({
   task,
-  isQuestionnaire,
   onActionButtonClicked,
   onAddNote,
   onChangeStatus,
@@ -28,10 +26,6 @@ export const TaskStatusPanel = ({
   const [isAddNoteOpen, setIsAddNoteOpen] = useState(false);
 
   function getButtonText(): string {
-    if (isQuestionnaire) {
-      return 'Save Responses';
-    }
-
     if (isTaskReadyOrRequested) {
       return 'Complete Task';
     }
@@ -61,7 +55,7 @@ export const TaskStatusPanel = ({
               <div style={{ display: 'inline-block' }}>
                 <Button
                   onClick={onActionButtonClicked}
-                  variant={isQuestionnaire || isTaskReadyOrRequested ? 'filled' : 'outline'}
+                  variant={isTaskReadyOrRequested ? 'filled' : 'outline'}
                   rightSection={
                     <Menu.Target>
                       <div className={classes.menu} onClick={(e) => e.stopPropagation()}>
