@@ -5,7 +5,10 @@ import { useParams } from 'react-router';
 export function useEncounter(): Encounter | undefined {
   const { encounterId } = useParams();
 
-  return useResource<Encounter>({ reference: `Encounter/${encounterId}` },  {
-    cache: 'no-cache',
-  });
+  return useResource<Encounter>(
+    { reference: `Encounter/${encounterId}` },
+    {
+      cache: 'no-cache',
+    }
+  );
 }
