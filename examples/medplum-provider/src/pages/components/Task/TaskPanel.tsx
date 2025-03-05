@@ -15,6 +15,8 @@ interface TaskPanelProps {
   onUpdateTask: (task: Task) => void;
 }
 
+const SAVE_TIMEOUT_MS = 1000;
+
 export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const { task, onUpdateTask } = props;
   const navigate = useNavigate();
@@ -22,7 +24,6 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const author = useMedplumProfile();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const SAVE_TIMEOUT_MS = 1000;
 
   const onActionButtonClicked = async (): Promise<void> => {
     if (task.status === 'ready' || task.status === 'requested') {
