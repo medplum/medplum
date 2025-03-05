@@ -9,7 +9,7 @@ set -e
 set -x
 
 # Set node options
-export NODE_OPTIONS='--max-old-space-size=8192 --dns-result-order=ipv4first'
+export NODE_OPTIONS='--max-old-space-size=8192'
 
 # Diagnostics
 node --version
