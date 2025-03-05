@@ -38,7 +38,7 @@ Here is a full example for the Medplum staging environment. See the detailed inf
   "maxAzs": 2,
   "rdsInstances": 1,
   "desiredServerCount": 1,
-  "serverImage": "medplum/medplum-server:latest",
+  "serverImage": "medplum/medplum-server:v4",
   "serverMemory": 512,
   "serverCpu": 256,
   "loadBalancerLoggingEnabled": true,
@@ -176,7 +176,7 @@ The number of running ECS/Fargate instances in steady state. Use `1` when gettin
 
 ### serverImage
 
-The DockerHub server image to deploy. Use `medplum/medplum-server:latest` for the most recent version published by the Medplum team. Or use your own repository if you need to deploy a custom instance.
+The DockerHub server image to deploy. Use `medplum/medplum-server:v4` for the most recent version published by the Medplum team. Or use your own repository if you need to deploy a custom instance.
 
 ### serverMemory
 
@@ -223,10 +223,12 @@ Optional flag to skip all DNS entries. Use this option if you do not use Route 5
 Optional Route 53 Hosted Zone name for DNS entries. By default, the CDK will use root domain name of the `domainName` setting (for example, if `domainName` is `staging.example.com`, the default hosted zone name is `example.com`).
 
 ### fargateAutoScaling
-__Fargate__ is an AWS serverless compute engine for containers, meaning you don't have to manage any underlying infrastructure
 
-Example: 
-```ts   
+**Fargate** is an AWS serverless compute engine for containers, meaning you don't have to manage any underlying infrastructure
+
+Example:
+
+```ts
 fargateAutoScaling: {
   minCapacity: 1,
   maxCapacity: 10,
@@ -235,7 +237,8 @@ fargateAutoScaling: {
   scaleOutCooldown: 60,
 }
 ```
-__Fargate Auto Scaling__
+
+**Fargate Auto Scaling**
 | Option | Description |
 | --- | --- |
 | minCapacity | The minimum number of tasks that will be run at all times. This ensures that there are always some tasks running, even if the target utilization is not being met. |
@@ -243,7 +246,6 @@ __Fargate Auto Scaling__
 | targetUtilizationPercent | The target value for the average CPU utilization of the tasks, in percentage. When setting up autoscaling, you define a target utilization percentage, and AWS adjusts the number of tasks to maintain this target. For example, if you set a target CPU utilization of 70%, AWS will scale up tasks when the CPU usage is above 70% and scale down when it's below that threshold. |
 | scaleInCooldown | The amount of time, in seconds, after a scale in event that scaling activities are ignored. This is so you don't see a low CPU spike and then immediately scale in again. This cooldown period helps to ensure that your application remains stable and doesn't experience frequent fluctuations in task counts. It gives the system time to stabilize before any further scaling actions are taken. |
 | scaleOutCooldown | The amount of time, in seconds, after a scale out event that scaling activities are ignored. This is so you don't see a high CPU spike and then immediately scale out again. This cooldown period helps to ensure that your application remains stable and doesn't experience frequent fluctuations in task counts. It gives the system time to stabilize before any further scaling actions are taken. |
-
 
 ## Task Size
 
@@ -568,7 +570,7 @@ Optional threshold for accurate count queries. The server will always perform an
 
 ### maxSearchOffset
 
-Optional max offset for search queries. 
+Optional max offset for search queries.
 
 **Default:** `10000`
 
