@@ -38,7 +38,7 @@ Here is a full example for the Medplum staging environment. See the detailed inf
   "maxAzs": 2,
   "rdsInstances": 1,
   "desiredServerCount": 1,
-  "serverImage": "medplum/medplum-server:v4",
+  "serverImage": "medplum/medplum-server:4.0",
   "serverMemory": 512,
   "serverCpu": 256,
   "loadBalancerLoggingEnabled": true,
@@ -176,7 +176,7 @@ The number of running ECS/Fargate instances in steady state. Use `1` when gettin
 
 ### serverImage
 
-The DockerHub server image to deploy. Use `medplum/medplum-server:v4` for the most recent version published by the Medplum team. Or use your own repository if you need to deploy a custom instance.
+The DockerHub server image to deploy. Use `medplum/medplum-server:4.0` for the most recent version published by the Medplum team. Or use your own repository if you need to deploy a custom instance.
 
 ### serverMemory
 
