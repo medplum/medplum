@@ -44,24 +44,24 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      
+
       saveTimeoutRef.current = setTimeout(async () => {
         let updatedResponse;
         if (task.output?.[0]?.valueReference && questionnaireResponse) {
           updatedResponse = await medplum.updateResource<QuestionnaireResponse>({
-        ...questionnaireResponse,
-        item: response.item,
+            ...questionnaireResponse,
+            item: response.item,
           });
         } else {
           updatedResponse = await medplum.createResource<QuestionnaireResponse>(response);
           const updatedTask = await medplum.updateResource<Task>({
-        ...task,
-        output: [
-          {
-            type: { text: 'QuestionnaireResponse' },
-            valueReference: { reference: getReferenceString(updatedResponse) },
-          },
-        ],
+            ...task,
+            output: [
+              {
+                type: { text: 'QuestionnaireResponse' },
+                valueReference: { reference: getReferenceString(updatedResponse) },
+              },
+            ],
           });
           onUpdateTask(updatedTask);
         }
@@ -127,4 +127,3 @@ const updateTaskStatus = async (task: Task, medplum: any, onUpdateTask: (task: T
     });
   }
 };
-
