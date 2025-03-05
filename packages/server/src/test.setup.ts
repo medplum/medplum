@@ -11,6 +11,7 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { setDefaultResultOrder } from 'dns';
 import { Express } from 'express';
 import internal from 'stream';
 import request from 'supertest';
@@ -20,6 +21,9 @@ import { Repository, RepositoryContext, getSystemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 import { requestContextStore } from './request-context-store';
+
+// supertest v7 can cause websocket tests to hang without this
+setDefaultResultOrder('ipv4first');
 
 export interface TestProjectOptions {
   project?: Partial<Project>;
