@@ -23,7 +23,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const medplum = useMedplum();
   const author = useMedplumProfile();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const onActionButtonClicked = async (): Promise<void> => {
     if (task.status === 'ready' || task.status === 'requested') {
