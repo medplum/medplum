@@ -1,8 +1,12 @@
-import { Button, TextInput, Title, Stack, PasswordInput, MultiSelect } from '@mantine/core';
+import { Button, TextInput, Title, Stack, PasswordInput, MultiSelect, Alert, Text } from '@mantine/core';
 import { useMedplum, Document } from '@medplum/react';
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Organization, AccessPolicy } from '@medplum/fhirtypes';
+import { showNotification } from '@mantine/notifications';
+import '@mantine/notifications/styles.css';
+import { useAdminStatus } from '../utils/admin';
+import { IconAlertCircle } from '@tabler/icons-react';
 
 interface NewClinicianForm {
   firstName: string;
@@ -24,6 +28,7 @@ export function NewClinicianPage(): JSX.Element {
   });
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(false);
+  const { isAdmin, loading: adminLoading } = useAdminStatus();
 
 
   useEffect(() => {
@@ -80,18 +85,55 @@ export function NewClinicianPage(): JSX.Element {
         }
       });
 
+      showNotification({
+        title: 'Success',
+        message: 'Clinician created successfully',
+        color: 'green'
+      });
+
       navigate(`/${result.profile?.reference}`);
     } catch (error) {
       console.error('Error creating clinician:', error);
+      showNotification({
+        title: 'Error',
+        message: 'Error creating clinician',
+        color: 'red'
+      });
     } finally {
       setLoading(false);
     }
   };
 
+  // If still checking admin status, show loading
+  if (adminLoading) {
+    return (
+      <Document>
+        <Title >Create New Clinician</Title>
+        <Text>Loading...</Text>
+      </Document>
+    );
+  }
+
+  // If user is not an admin, show access denied message
+  if (!isAdmin) {
+    return (
+      <Document>
+        <Title >Create New Clinician</Title>
+        <Alert 
+          icon={<IconAlertCircle size={16} />} 
+          title="Access Denied" 
+          color="red"
+        >
+          You need to be an Admin to view this page. Please contact your system administrator for access.
+        </Alert>
+      </Document>
+    );
+  }
+
   return (
     <Document>
-      <Title order={2} mb="xl">Create New Clinician</Title>
-      <Stack gap="lg">
+      <Title >Create New Clinician</Title>
+      <Stack gap="lg" mt="lg">
         <TextInput
           label="First Name"
           placeholder="Enter first name"

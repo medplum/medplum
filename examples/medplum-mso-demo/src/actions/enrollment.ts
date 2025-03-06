@@ -88,17 +88,39 @@ export async function enrollPatient(
     return;
   }
 
-  // Add organization to patient's accounts
-  patient.meta = patient.meta || {};
-  patient.meta.accounts = [
-    ...accounts,
-    { reference: orgReference }
-  ];
-  
-  await medplum.updateResource(patient);
-  
-  // TODO: Trigger bot to update compartments for all patient resources
-} 
+  const patientResource = await medplum.get(`fhir/R4/Patient/${patient.id}`);
+  console.log("patientResource", JSON.stringify(patientResource, null, 2));
+
+  // Create parameters with all existing accounts plus the new one
+  const parameters = {
+    resourceType: 'Parameters',
+    parameter: [
+      // Include all existing accounts
+      ...accounts.map(account => ({
+        name: "accounts",
+        valueReference: {
+          reference: account.reference
+        }
+      })),
+      // Add the new organization
+      {
+        name: "accounts",
+        valueReference: {
+          reference: orgReference
+        }
+      }
+    ]
+  };
+
+  try {
+    // Use the medplum client's post method which handles auth and CORS headers
+    const result = await medplum.post(`fhir/R4/Patient/${patient.id}/$set-accounts`, parameters);
+    console.log("result", result);
+  } catch (error) {
+    console.error("Error enrolling patient:", error);
+    throw new Error(`Failed to enroll patient: ${error}`);
+  }
+}
 
 /**
  * Unenrolls a patient from an organization.
@@ -111,7 +133,8 @@ export async function unEnrollPatient(
   patient: Patient,
   organization: Organization
 ): Promise<void> {
-  // TODO: Implement unenroll logic
+  const patientResource = await medplum.get(`fhir/R4/Patient/${patient.id}`);
+  console.log("patientResource", JSON.stringify(patientResource, null, 2));
   // Check if enrolled
   const accounts = patient.meta?.accounts || [];
   const orgReference = `Organization/${organization.id}`;
@@ -119,14 +142,28 @@ export async function unEnrollPatient(
     return;
   }
 
-  // Remove organization from patient's accounts
-  patient.meta = patient.meta || {};
-  patient.meta.accounts = accounts.filter((a: Reference) => a.reference !== orgReference);
+  // Create parameters with all accounts except the one to remove
+  const parameters = {
+    resourceType: 'Parameters',
+    parameter: accounts
+      .filter((a: Reference) => a.reference !== orgReference)
+      .map(account => ({
+        name: 'accounts',
+        valueReference: {
+          reference: account.reference
+        }
+      }))
+  };
 
-  await medplum.updateResource(patient);
-
-  // TODO: Trigger bot to update compartments for all patient resources
-
+  try {
+    // Use the medplum client's post method which handles auth and CORS headers
+    //const result = await medplum.post(`Patient/${patient.id}/$set-accounts`, parameters);
+    const result = await medplum.post(`fhir/R4/Patient/${patient.id}/$set-accounts`, parameters);
+    console.log("result", result);
+  } catch (error) {
+    console.error("Error unenrolling patient:", error);
+    throw new Error(`Failed to unenroll patient: ${error}`);
+  }
 }
 
 /**

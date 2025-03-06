@@ -1,18 +1,40 @@
-import { Table, Button, Text, Group } from '@mantine/core';
+import { Table, Button, Text, Group, Divider } from '@mantine/core';
 import { useMedplum, useMedplumNavigate } from '@medplum/react';
 import { Organization, Patient, Practitioner } from '@medplum/fhirtypes';
 import { useEffect, useState } from 'react';
 import { unEnrollPatient, unEnrollPractitioner } from '../actions/enrollment';
+import { showNotification } from '@mantine/notifications';
+import '@mantine/notifications/styles.css';
 
+/**
+ * Props for the MemberList component.
+ * @interface MemberListProps
+ * @property {('Patient' | 'Practitioner')} resourceType - The type of resource to display in the list
+ * @property {Organization} organization - The organization context for the member list
+ * @property {(count: number) => void} [onCountChange] - Callback function when the member count changes
+ * @property {string} [searchFilter] - Text to filter the member list by name
+ */
 interface MemberListProps {
   resourceType: 'Patient' | 'Practitioner';
   organization: Organization;
+  onCountChange?: (count: number) => void;
+  searchFilter?: string;
 }
 
-export function MemberList({ resourceType, organization }: MemberListProps): JSX.Element {
+/**
+ * A component that displays a list of members (either Patients or Practitioners) for an organization.
+ * Supports searching, filtering, and unenrollment actions.
+ * 
+ * @component
+ * @param {MemberListProps} props - The component props
+ * @returns {JSX.Element} A table displaying the members with their names and actions
+ */
+export function MemberList({ resourceType, organization, onCountChange, searchFilter }: MemberListProps): JSX.Element {
   const medplum = useMedplum();
   const [members, setMembers] = useState<(Patient | Practitioner)[]>([]);
+  const [filteredMembers, setFilteredMembers] = useState<(Patient | Practitioner)[]>([]);
   const navigate = useMedplumNavigate();
+
   useEffect(() => {
     const loadMembers = async (): Promise<void> => {
       try {
@@ -22,7 +44,10 @@ export function MemberList({ resourceType, organization }: MemberListProps): JSX
             _compartment: `Organization/${organization.id}`,
             _fields: 'name'
           });
-          setMembers(searchResult.entry?.map(e => e.resource as Patient) ?? []);
+          const patients = searchResult.entry?.map(e => e.resource as Patient) ?? [];
+          setMembers(patients);
+          setFilteredMembers(patients);
+          onCountChange?.(patients.length);
 
         // For Practitioners, search ProjectMemberships first
         } else if (resourceType === 'Practitioner') {
@@ -46,20 +71,43 @@ export function MemberList({ resourceType, organization }: MemberListProps): JSX
               _id: practitioners.map(p => p?.reference?.split('/')[1] as string).join(','),
               _fields: 'name'
             });
-            setMembers(practitionerSearch.entry?.map(e => e.resource as Practitioner) ?? []);
+            const practitionerList = practitionerSearch.entry?.map(e => e.resource as Practitioner) ?? [];
+            setMembers(practitionerList);
+            setFilteredMembers(practitionerList);
+            onCountChange?.(practitionerList.length);
           } else {
             setMembers([]);
+            setFilteredMembers([]);
+            onCountChange?.(0);
           }
         }
       } catch (error) {
         console.error(`Error loading ${resourceType}s:`, error);
+        onCountChange?.(0);
       }
     };
     loadMembers().catch((error) => {
       console.error('Error loading members:', error);
+      onCountChange?.(0);
     });
 
-  }, [medplum, resourceType, organization]);
+  }, [medplum, resourceType, organization, onCountChange]);
+
+  // Filter members when search filter changes
+  useEffect(() => {
+    if (!searchFilter) {
+      setFilteredMembers(members);
+      onCountChange?.(members.length);
+      return;
+    }
+
+    const filtered = members.filter(member => {
+      const name = getName(member).toLowerCase();
+      return name.includes(searchFilter.toLowerCase());
+    });
+    setFilteredMembers(filtered);
+    onCountChange?.(filtered.length);
+  }, [searchFilter, members, onCountChange]);
 
   const getName = (resource: Patient | Practitioner): string => {
     if (!resource.name?.[0]) {
@@ -69,14 +117,30 @@ export function MemberList({ resourceType, organization }: MemberListProps): JSX
     return `${name.given?.[0] ?? ''} ${name.family ?? ''}`.trim();
   };
 
-  const handleUnenroll = (resource: Patient | Practitioner): void => {
-    if (resourceType === 'Patient') {
-      unEnrollPatient(medplum, resource as Patient, organization).catch((error) => {
-        console.error('Error unenrolling patient:', error);
+  const handleUnenroll = async (resource: Patient | Practitioner): Promise<void> => {
+    try {
+      if (resourceType === 'Patient') {
+        await unEnrollPatient(medplum, resource as Patient, organization);
+      } else if (resourceType === 'Practitioner') {
+        await unEnrollPractitioner(medplum, resource as Practitioner, organization);
+      }
+      // Refresh the list after unenrollment
+      const updatedMembers = members.filter(m => m.id !== resource.id);
+      setMembers(updatedMembers);
+      setFilteredMembers(updatedMembers);
+      onCountChange?.(updatedMembers.length);
+
+      showNotification({
+        title: 'Success',
+        message: `Successfully unenrolled ${getName(resource)} from ${organization.name}`,
+        color: 'green',
       });
-    } else if (resourceType === 'Practitioner') {
-      unEnrollPractitioner(medplum, resource as Practitioner, organization).catch((error) => {
-        console.error('Error unenrolling practitioner:', error);
+    } catch (error) {
+      console.error(`Error unenrolling ${resourceType.toLowerCase()}:`, error);
+      showNotification({
+        title: 'Error',
+        message: `Error unenrolling ${getName(resource)} from ${organization.name}`,
+        color: 'red',
       });
     }
   };
@@ -85,12 +149,11 @@ export function MemberList({ resourceType, organization }: MemberListProps): JSX
     <Table>
       <Table.Thead>
         <Table.Tr>
-          <Table.Th>Name</Table.Th>
-          <Table.Th>Actions</Table.Th>
+          <Table.Th style={{ width: '80%' }}>Name</Table.Th>
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {members.map((member) => (
+        {filteredMembers.map((member) => (
           <Table.Tr key={member.id}>
             <Table.Td>
               <Text style={{ cursor: 'pointer' }} onClick={() => navigate(`/${resourceType}/${member.id}`)}>
@@ -98,7 +161,7 @@ export function MemberList({ resourceType, organization }: MemberListProps): JSX
               </Text>
             </Table.Td>
             <Table.Td>
-              <Group>
+              <Group justify="flex-end">
                 <Button size="xs" color="red" onClick={() => handleUnenroll(member)}>
                   Unenroll
                 </Button>

@@ -1,27 +1,64 @@
-import { Title } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
+import { Title, Text, Alert } from '@mantine/core';
 import { Document, SearchControl, useMedplumNavigate } from '@medplum/react';
-import { Outlet } from 'react-router-dom';
+import { IconAlertCircle } from '@tabler/icons-react';
+import { Outlet } from 'react-router';
+import { useAdminStatus } from '../utils/admin';
 
 /**
- * Organization page that greets the user and displays a list of organizations.
- * @returns A React component that displays the Organization page.
+ * A page component that displays a searchable list of all clinics in the system.
+ * Shows clinics accessible to the current user in the current project context.
+ * Provides search functionality and navigation to individual clinic details.
+ * 
+ * @component
+ * @returns {JSX.Element} The clinics listing page
  */
 export function OrganizationPage(): JSX.Element {
-
+  const { isAdmin, loading: adminLoading } = useAdminStatus();
   const navigate = useMedplumNavigate();
+
+    // If still checking admin status, show loading
+    if (adminLoading) {
+      return (
+        <Document>
+          <Title order={2} mb="xl">Create New Clinician</Title>
+          <Text>Loading...</Text>
+        </Document>
+      );
+    }
+  
+    // If user is not an admin, show access denied message
+    if (!isAdmin) {
+      return (
+        <Document>
+          <Title order={2} mb="xl">Create New Clinician</Title>
+          <Alert 
+            icon={<IconAlertCircle size={16} />} 
+            title="Access Denied" 
+            color="red"
+          >
+            You need to be an Admin to view this page. Please contact your system administrator for access.
+          </Alert>
+        </Document>
+      );
+    }
+  
 
   return (
     <Document>
-      <Title order={2} mb="sm">Manage Organizations</Title>
-
-      <Title mb="sm">
-        Select an organization and view its members
-      </Title>
+      <Title>Manage Clinics</Title>
       <SearchControl
-        search={{ resourceType: 'Organization', fields: ['name'] }}
-        onClick={(e) => navigate(`/${getReferenceString(e.resource)}/manage`)}
-        hideToolbar
+        search={{
+          resourceType: 'Organization',
+          fields: ['name', '_lastUpdated'],
+          sortRules: [
+            {
+              code: 'name',
+              descending: false,
+            },
+          ],
+        }}
+        onClick={(e) => navigate(`/Organization/${e.resource.id}/manage`)}
+        hideToolbar={true}
       />
       <Outlet />
     </Document>

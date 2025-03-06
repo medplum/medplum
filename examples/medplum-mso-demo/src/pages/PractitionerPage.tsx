@@ -2,11 +2,15 @@ import { Title, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Practitioner } from '@medplum/fhirtypes';
 import { Document, ResourceName, SearchControl, useMedplum, useMedplumNavigate, useMedplumProfile } from '@medplum/react';
-import { Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router';
 
 /**
- * Organization page that greets the user and displays a list of organizations.
- * @returns A React component that displays the Organization page.
+ * A page component that displays a searchable list of all clinicians in the system.
+ * Shows clinicians accessible to the current user in the current project context.
+ * Provides search functionality and navigation to individual clinician details.
+ * 
+ * @component
+ * @returns {JSX.Element} The clinicians listing page
  */
 export function PractitionerPage(): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;
@@ -17,10 +21,10 @@ export function PractitionerPage(): JSX.Element {
   return (
     <Document>
       <Title>
-        Practitioners
+        Clinicians
       </Title>
       <Text mb="sm">
-        Here are the Practitioners accessible to <ResourceName value={profile} link /> in <ResourceName value={project} link />
+        Here are the Clinicians accessible to <ResourceName value={profile} link /> in <ResourceName value={project} link />
       </Text>
       <SearchControl
         search={{

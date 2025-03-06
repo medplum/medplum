@@ -5,10 +5,15 @@ import { Document, ResourceName, SearchControl, useMedplum, useMedplumNavigate, 
 import { Outlet } from 'react-router';
 
 /**
- * Organization page that greets the user and displays a list of organizations.
- * @returns A React component that displays the Organization page.
+ * A page component that displays a searchable list of clinical communications.
+ * Shows communications accessible to the current user in the current project context.
+ * Provides search functionality by subject, sender, recipient, and payload content,
+ * with navigation to communication details.
+ * 
+ * @component
+ * @returns {JSX.Element} The communications listing page
  */
-export function PatientPage(): JSX.Element {
+export function CommunicationPage(): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;
   const medplum = useMedplum();
   const project = medplum.getProject();
@@ -17,17 +22,20 @@ export function PatientPage(): JSX.Element {
   return (
     <Document>
       <Title>
-        Patients
+        Communications
       </Title>
       <Text mb="sm">
-        Here are the Patients accessible to <ResourceName value={profile} link /> in <ResourceName value={project} link />
+        Here are the Communications accessible to <ResourceName value={profile} link /> in <ResourceName value={project} link />
       </Text>
       <SearchControl
-        search={{ resourceType: 'Patient', fields: ['name'] }}
+        search={{
+          resourceType: 'Communication',
+          fields: ['subject', 'sender', 'recipient', 'payload'],
+        }}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         hideToolbar
       />
       <Outlet />
     </Document>
   );
-}
+} 

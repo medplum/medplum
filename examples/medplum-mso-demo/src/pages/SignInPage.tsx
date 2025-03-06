@@ -1,6 +1,6 @@
 import { Title } from '@mantine/core';
 import { Logo, SignInForm } from '@medplum/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 export function SignInPage(): JSX.Element {
   const navigate = useNavigate();

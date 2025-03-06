@@ -1,13 +1,25 @@
-import { Button, TextInput, Title, Stack } from '@mantine/core';
+import { Button, TextInput, Title, Stack, Alert, Text } from '@mantine/core';
 import { useMedplum, Document } from '@medplum/react';
+import { showNotification } from '@mantine/notifications';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Organization } from '@medplum/fhirtypes';
+import '@mantine/notifications/styles.css';
+import { useAdminStatus } from '../utils/admin';
+import { IconAlertCircle } from '@tabler/icons-react';
 
+/**
+ * A page component for creating a new clinic in the system.
+ * Provides a form for entering clinic details and handles the creation process.
+ * 
+ * @component
+ * @returns {JSX.Element} The new clinic creation page
+ */
 export function NewOrganizationPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const [name, setName] = useState<string>('');
+  const { isAdmin, loading: adminLoading } = useAdminStatus();
 
   const handleCreateClinic = async (): Promise<void> => {
     if (!name) {
@@ -20,26 +32,59 @@ export function NewOrganizationPage(): JSX.Element {
       active: true
     });
 
+    showNotification({
+      title: 'Success',
+      message: 'Clinic created successfully',
+      color: 'green'
+    });
+
     // Navigate to the new organization's page
-    navigate(`/Organization/${newOrg.id}`);
+    navigate('/Organization');
   };
+
+  // If still checking admin status, show loading
+  if (adminLoading) {
+    return (
+      <Document>
+        <Stack gap="md">
+          <Title>Create New Clinic</Title>
+          <Text>Loading...</Text>
+        </Stack>
+      </Document>
+    );
+  }
+
+  // If user is not an admin, show access denied message
+  if (!isAdmin) {
+    return (
+      <Document>
+        <Stack gap="md">
+          <Title>Create New Clinic</Title>
+          <Alert 
+            icon={<IconAlertCircle size={16} />} 
+            title="Access Denied" 
+            color="red"
+          >
+            You need to be an Admin to view this page. Please contact your system administrator for access.
+          </Alert>
+        </Stack>
+      </Document>
+    );
+  }
 
   return (
     <Document>
-      <Title order={2} mb="xl">Create New Clinic</Title>
-      <Stack gap="lg">
+      <Stack gap="md">
+        <Title>Create New Clinic</Title>
         <TextInput
-          label="Organization Name"
-          placeholder="Enter organization name"
+          label="Clinic Name"
+          placeholder="Enter clinic name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          required
         />
-        
-        <Button 
-          onClick={handleCreateClinic}
-          disabled={!name}
-        >
-          Create Organization
+        <Button onClick={handleCreateClinic} disabled={!name}>
+          Create Clinic
         </Button>
       </Stack>
     </Document>
