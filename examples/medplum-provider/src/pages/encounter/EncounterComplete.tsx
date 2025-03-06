@@ -15,7 +15,7 @@ export const EncounterComplete = (): JSX.Element => {
   const medplum = useMedplum();
   const patient = usePatient();
   const encounter = useEncounter();
-  const [task, setTask] = useState<Task | undefined>(); 
+  const [task, setTask] = useState<Task | undefined>();
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
 
   const fetchTasks = useCallback(async (): Promise<void> => {
@@ -79,11 +79,7 @@ export const EncounterComplete = (): JSX.Element => {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
             <Stack gap="md">
-              <Stack gap="md">
-                {task && (
-                  <TaskQuestionnaireResponseSummaryPanel task={task} key={task.id} />
-                 )}
-              </Stack>
+              <Stack gap="md">{task && <TaskQuestionnaireResponseSummaryPanel task={task} key={task.id} />}</Stack>
             </Stack>
 
             <Stack gap="lg">
