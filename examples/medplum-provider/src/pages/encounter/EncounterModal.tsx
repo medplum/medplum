@@ -196,8 +196,8 @@ const questionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   identifier: [
     {
-      value: 'SOAPNOTE'
-    }
+      value: 'SOAPNOTE',
+    },
   ],
   name: 'Fill chart note',
   title: 'Fill chart note',

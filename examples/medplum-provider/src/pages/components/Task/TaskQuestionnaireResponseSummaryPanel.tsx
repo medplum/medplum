@@ -49,7 +49,9 @@ const QuestionnaireResponseComponent = ({ items }: QuestionnaireResponseProps): 
           <Stack gap="xs">
             <Text c="dimmed">{item.text}</Text>
             {item.answer?.map((answer, answerIndex) => (
-              <Text key={answerIndex}>{answer.valueString || answer.valueBoolean?.toString() || answer.valueInteger}</Text>
+              <Text key={answerIndex}>
+                {answer.valueString || answer.valueBoolean?.toString() || answer.valueInteger}
+              </Text>
             ))}
             <QuestionnaireResponseComponent items={item.item || []} />
           </Stack>
