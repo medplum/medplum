@@ -75,8 +75,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     request.email = request.email.toLowerCase();
   }
 
-  const project = request.project as WithId<Project>;
-  const email = request.email;
+  const { project, email } = request;
   let user = undefined;
   let existingUser = true;
   let passwordResetUrl = undefined;
