@@ -1,5 +1,6 @@
+import { WithId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, Resource, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import { BundleEntry, Resource, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -119,9 +120,9 @@ function writeStructureDefinitions(): void {
 }
 
 function addStructureDefinitions(fileName: string, output: StructureDefinition[]): void {
-  const bundle = readJson(fileName) as Bundle<StructureDefinition>;
-  for (const entry of bundle.entry as BundleEntry<StructureDefinition>[]) {
-    const resource = entry.resource as Resource;
+  const entries = readJson(fileName).entry as BundleEntry<WithId<StructureDefinition>>[];
+  for (const entry of entries) {
+    const resource = entry.resource as WithId<Resource>;
     if (resource.resourceType === 'StructureDefinition' && resourceTypes.includes(resource.id)) {
       removeBaseFromElements(resource);
       output.push(resource);
@@ -145,13 +146,13 @@ function removeBaseFromElements(sd: StructureDefinition): void {
 function writeSearchParameters(): void {
   const output: SearchParameter[] = [];
   for (const entry of readJson('fhir/r4/search-parameters.json').entry as BundleEntry<SearchParameter>[]) {
-    const resource = entry.resource as SearchParameter;
+    const resource = entry.resource as WithId<SearchParameter>;
     if (searchParams.includes(resource.id)) {
       output.push(resource);
     }
   }
   for (const entry of readJson('fhir/r4/search-parameters-medplum.json').entry as BundleEntry<SearchParameter>[]) {
-    const resource = entry.resource as SearchParameter;
+    const resource = entry.resource as WithId<SearchParameter>;
     if (searchParams.includes(resource.id)) {
       output.push(resource);
     }
