@@ -624,12 +624,12 @@ describe('Identifier Lookup Table', () => {
       const { project } = await createTestProject();
       nonStrictRepo = new Repository({
         strictMode: false,
-        projects: [project.id as string],
+        projects: [project.id],
         author: { reference: 'User/' + randomUUID() },
       });
       repo = new Repository({
         strictMode: true,
-        projects: [project.id as string],
+        projects: [project.id],
         author: { reference: 'User/' + randomUUID() },
       });
       patient = await nonStrictRepo.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Henry'] }] });
@@ -725,7 +725,7 @@ describe('Identifier Lookup Table', () => {
       const { project } = await createTestProject();
       repo = new Repository({
         strictMode: true,
-        projects: [project.id as string],
+        projects: [project.id],
         author: { reference: 'User/' + randomUUID() },
       });
 

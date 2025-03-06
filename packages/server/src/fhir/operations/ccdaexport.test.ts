@@ -1,4 +1,4 @@
-import { ContentType, LOINC, createReference } from '@medplum/core';
+import { ContentType, LOINC, WithId, createReference } from '@medplum/core';
 import { Condition, Observation, Organization, Patient, Practitioner } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -73,7 +73,7 @@ describe('C-CDA Export', () => {
         effectiveDateTime: new Date().toISOString(),
       } satisfies Observation);
     expect(res2.status).toBe(201);
-    const observation = res2.body as Observation;
+    const observation = res2.body as WithId<Observation>;
 
     // Create condition
     // This condition references the patient twice, once as subject and once as asserter
@@ -91,7 +91,7 @@ describe('C-CDA Export', () => {
         recordedDate: new Date().toISOString(),
       } satisfies Condition);
     expect(res3.status).toBe(201);
-    const condition = res3.body as Condition;
+    const condition = res3.body as WithId<Condition>;
 
     // Execute the operation
     const res4 = await request(app)
@@ -102,7 +102,7 @@ describe('C-CDA Export', () => {
 
     const result = res4.text;
     expect(result.includes('<given>Alice</given>')).toBe(true);
-    expect(result.includes(observation.id as string)).toBe(true);
-    expect(result.includes(condition.id as string)).toBe(true);
+    expect(result.includes(observation.id)).toBe(true);
+    expect(result.includes(condition.id)).toBe(true);
   });
 });

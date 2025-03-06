@@ -92,7 +92,7 @@ export class BulkExporter {
 
     // Update the AsyncJob
     const systemRepo = getSystemRepo();
-    const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', this.resource.id as string);
+    const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', this.resource.id);
     if (asyncJob.status !== 'cancelled') {
       return systemRepo.updateResource<AsyncJob>({
         ...this.resource,

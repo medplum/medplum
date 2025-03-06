@@ -58,7 +58,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 }
 
 export interface ServerInviteRequest extends InviteRequest {
-  project: Project;
+  project: WithId<Project>;
 }
 
 export interface ServerInviteResponse {
@@ -188,7 +188,7 @@ async function searchForExistingProfile(request: ServerInviteRequest): Promise<W
         {
           code: '_project',
           operator: Operator.EQUALS,
-          value: project.id as string,
+          value: project.id,
         },
         {
           code: 'email',

@@ -4009,7 +4009,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
     // Make sure sessionDetails.profile.id matches the ID in the profile reference we are checking against
     // Otherwise return false if no profile reference in login
-    return login.profile?.reference?.endsWith(this.sessionDetails.profile.id as string) ?? false;
+    return login.profile?.reference?.endsWith(this.sessionDetails.profile.id) ?? false;
   }
 
   /**

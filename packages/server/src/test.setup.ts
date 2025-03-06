@@ -72,12 +72,12 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
       ...options?.project,
     });
 
-    let client: ClientApplication | undefined = undefined;
-    let accessPolicy: AccessPolicy | undefined = undefined;
-    let membership: ProjectMembership | undefined = undefined;
-    let login: Login | undefined = undefined;
-    let accessToken: string | undefined = undefined;
-    let repo: Repository | undefined = undefined;
+    let client: WithId<ClientApplication> | undefined;
+    let accessPolicy: AccessPolicy | undefined;
+    let membership: ProjectMembership | undefined;
+    let login: WithId<Login> | undefined;
+    let accessToken: string | undefined;
+    let repo: Repository | undefined;
 
     if (options?.withClient || options?.withAccessToken || options?.withRepo) {
       client = await systemRepo.createResource<ClientApplication>({
@@ -85,7 +85,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
         secret: randomUUID(),
         redirectUri: 'https://example.com/',
         meta: {
-          project: project.id as string,
+          project: project.id,
         },
         name: 'Test Client Application',
         signInForm: {
@@ -127,10 +127,10 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
         });
 
         accessToken = await generateAccessToken({
-          login_id: login.id as string,
-          sub: client.id as string,
-          username: client.id as string,
-          client_id: client.id as string,
+          login_id: login.id,
+          sub: client.id,
+          username: client.id,
+          client_id: client.id,
           profile: client.resourceType + '/' + client.id,
           scope,
         });
@@ -138,7 +138,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
 
       if (options?.withRepo) {
         const repoContext = {
-          projects: [project.id as string],
+          projects: [project.id],
           currentProject: project,
           author: createReference(client),
           superAdmin: options?.superAdmin,
@@ -168,7 +168,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
   });
 }
 
-export async function createTestClient(options?: TestProjectOptions): Promise<ClientApplication> {
+export async function createTestClient(options?: TestProjectOptions): Promise<WithId<ClientApplication>> {
   return (await createTestProject({ ...options, withClient: true })).client;
 }
 
@@ -177,7 +177,7 @@ export async function initTestAuth(options?: TestProjectOptions): Promise<string
 }
 
 export async function addTestUser(
-  project: Project,
+  project: WithId<Project>,
   accessPolicy?: AccessPolicy
 ): Promise<ServerInviteResponse & { accessToken: string }> {
   requestContextStore.enterWith(AuthenticatedRequestContext.system());
@@ -215,9 +215,9 @@ export async function addTestUser(
   });
 
   const accessToken = await generateAccessToken({
-    login_id: login.id as string,
+    login_id: login.id,
     sub: user.id,
-    username: user.id as string,
+    username: user.id,
     scope: login.scope as string,
     profile: getReferenceString(profile),
   });

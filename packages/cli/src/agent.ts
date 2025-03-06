@@ -80,7 +80,7 @@ agentStatusCommand
         });
 
         return {
-          id: response.agent.id as string,
+          id: response.agent.id,
           name: response.agent.name,
           enabledStatus: response.agent.status,
           version: statusEntry.version,
@@ -179,7 +179,7 @@ agentReloadConfigCommand
       options,
       parseSuccessfulResponse: (response: AgentBulkOpResponse<OperationOutcome>) => {
         return {
-          id: response.agent.id as string,
+          id: response.agent.id,
           name: response.agent.name,
         };
       },
@@ -212,7 +212,7 @@ agentUpgradeCommand
       options,
       parseSuccessfulResponse: (response: AgentBulkOpResponse<OperationOutcome>) => {
         return {
-          id: response.agent.id as string,
+          id: response.agent.id,
           name: response.agent.name,
           version: options.version ?? 'latest',
         };
@@ -288,7 +288,7 @@ export async function callAgentBulkOperation<
     const outcome = response.result;
     const issue = outcome.issue?.[0];
     const row = {
-      id: response.agent.id as string,
+      id: response.agent.id,
       name: response.agent.name,
       severity: issue.severity,
       code: issue.code,
@@ -336,7 +336,7 @@ export async function resolveAgentReference(
         'Found more than one agent matching this criteria. This operation requires the criteria to resolve to exactly one agent'
       );
     }
-    usedId = result.entry[0].resource?.id as string;
+    usedId = result.entry[0].resource?.id;
   }
 
   return { reference: `Agent/${usedId}` };

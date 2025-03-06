@@ -77,7 +77,7 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
   }
 
   console.log('Deploying bot...');
-  const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), {
+  const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id, '$deploy'), {
     code,
     filename: basename(codePath),
   })) as OperationOutcome;
