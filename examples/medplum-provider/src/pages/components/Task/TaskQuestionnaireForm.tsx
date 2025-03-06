@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { useMedplum, QuestionnaireForm, Loading } from '@medplum/react';
-import { Box, Stack, Text } from '@mantine/core';
+import { Box, Stack } from '@mantine/core';
 
 interface TaskQuestionnaireFormProps {
   task: Task;
