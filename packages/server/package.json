@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "Medplum Server",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -41,10 +41,10 @@
     "@azure/keyvault-secrets": "4.9.0",
     "@azure/storage-blob": "12.26.0",
     "@google-cloud/secret-manager": "5.6.0",
-    "@medplum/ccda": "4.0.2",
-    "@medplum/core": "4.0.2",
-    "@medplum/definitions": "4.0.2",
-    "@medplum/fhir-router": "4.0.2",
+    "@medplum/ccda": "4.0.3",
+    "@medplum/core": "4.0.3",
+    "@medplum/definitions": "4.0.3",
+    "@medplum/fhir-router": "4.0.3",
     "@opentelemetry/exporter-metrics-otlp-proto": "0.57.2",
     "@opentelemetry/exporter-trace-otlp-proto": "0.57.2",
     "@opentelemetry/instrumentation-aws-lambda": "0.50.3",
@@ -98,7 +98,7 @@
   },
   "devDependencies": {
     "@jest/test-sequencer": "29.7.0",
-    "@medplum/fhirtypes": "4.0.2",
+    "@medplum/fhirtypes": "4.0.3",
     "@types/bcryptjs": "2.4.6",
     "@types/body-parser": "1.19.5",
     "@types/bytes": "3.1.5",
