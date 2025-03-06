@@ -572,6 +572,7 @@ class FhirToCcdaConverter {
                     '@_code': 'ASSERTION',
                     '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
                   },
+                  text: this.createTextFromExtensions(allergy.extension),
                   statusCode: {
                     '@_code': 'completed',
                   },
@@ -581,7 +582,6 @@ class FhirToCcdaConverter {
                     allergy.onsetPeriod?.end
                   ),
                   value: this.mapAllergyCategory(allergy.category),
-                  text: this.createTextFromExtensions(allergy.extension),
                   participant: [
                     {
                       '@_typeCode': 'CSM',
@@ -624,12 +624,12 @@ class FhirToCcdaConverter {
                                 '@_code': 'ASSERTION',
                                 '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
                               },
+                              text: this.createTextFromExtensions(reaction.manifestation?.[0]?.extension),
                               statusCode: {
                                 '@_code': 'completed',
                               },
                               effectiveTime: this.mapEffectiveDate(allergy.onsetDateTime, allergy.onsetPeriod),
                               value: mapCodeableConceptToCcdaValue(reaction.manifestation?.[0]),
-                              text: this.createTextFromExtensions(reaction.manifestation?.[0]?.extension),
                               entryRelationship: [
                                 {
                                   '@_typeCode': 'SUBJ',
@@ -652,6 +652,7 @@ class FhirToCcdaConverter {
                                         '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
                                         '@_codeSystemName': 'ActCode',
                                       },
+                                      text: this.createTextFromExtensions(reaction.extension),
                                       statusCode: {
                                         '@_code': 'completed',
                                       },
@@ -665,7 +666,6 @@ class FhirToCcdaConverter {
                                         '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
                                         '@_codeSystemName': 'SNOMED CT',
                                       },
-                                      text: this.createTextFromExtensions(reaction.extension),
                                     },
                                   ],
                                 },
@@ -1040,7 +1040,6 @@ class FhirToCcdaConverter {
                           '@_root': generateId(),
                         },
                       ],
-                  text: this.createTextFromExtensions(problem.extension),
                   code: {
                     '@_code': '55607006',
                     '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
@@ -1055,6 +1054,7 @@ class FhirToCcdaConverter {
                       },
                     ],
                   },
+                  text: this.createTextFromExtensions(problem.extension),
                   statusCode: { '@_code': 'completed' },
                   effectiveTime: [
                     {
@@ -1502,9 +1502,9 @@ class FhirToCcdaConverter {
               ],
               id: this.mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
               code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+              text: this.createTextFromExtensions(resource.extension),
               statusCode: { '@_code': 'completed' },
               effectiveTime: this.mapEffectiveTime(resource.performedDateTime, resource.performedPeriod),
-              text: this.createTextFromExtensions(resource.extension),
             },
           ],
         };
@@ -1520,9 +1520,9 @@ class FhirToCcdaConverter {
             ],
             id: this.mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
             code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+            text: this.createTextFromExtensions(resource.extension),
             statusCode: { '@_code': 'completed' },
             effectiveTime: this.mapEffectiveTime(resource.performedDateTime, resource.performedPeriod),
-            text: this.createTextFromExtensions(resource.extension),
             targetSiteCode: mapCodeableConceptToCcdaCode(resource.bodySite?.[0]) as CcdaCode,
             participant: [this.mapLocationToParticipant(resource.location)].filter(Boolean) as CcdaParticipant[],
           },
@@ -1539,10 +1539,10 @@ class FhirToCcdaConverter {
             templateId: this.mapObservationTemplateId(resource),
             id: this.mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
             code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+            text: this.createTextFromExtensions(resource.extension),
             value: this.mapObservationValue(resource),
             statusCode: { '@_code': 'completed' },
             effectiveTime: this.mapEffectiveTime(resource.effectiveDateTime, resource.effectivePeriod),
-            text: this.createTextFromExtensions(resource.extension),
           },
         ],
       };
@@ -1714,25 +1714,39 @@ class FhirToCcdaConverter {
     return result;
   }
 
-  private createDiagnosticReportEntry(resource: DiagnosticReport): CcdaEntry {
+  private createDiagnosticReportEntry(resource: DiagnosticReport): CcdaEntry | undefined {
     const components: CcdaOrganizerComponent[] = [];
 
-    if (resource.result) {
+    // Only use the result property which exists on DiagnosticReport
+    if (resource.result && resource.result.length > 0) {
       for (const member of resource.result) {
         const child = this.findResourceByReference(member);
         if (!child || child.resourceType !== 'Observation') {
           continue;
         }
 
+        // For each observation, create a component
         components.push({
           observation: [this.createVitalSignObservation(child as Observation)],
         });
       }
     }
 
-    // Note: The effectiveTime is an interval that spans the effectiveTimes of the contained result observations.
-    // Because all contained result observations have a required time stamp,
-    // it is not required that this effectiveTime be populated.
+    // If no components were found, return undefined so this entry isn't included
+    if (components.length === 0) {
+      return undefined;
+    }
+
+    // Format effective time as an interval with low and high
+    let effectiveTime: CcdaEffectiveTime[] | undefined = undefined;
+    if (resource.effectiveDateTime) {
+      effectiveTime = [
+        {
+          low: { '@_value': mapFhirToCcdaDateTime(resource.effectiveDateTime) },
+          high: { '@_value': mapFhirToCcdaDateTime(resource.effectiveDateTime) },
+        },
+      ];
+    }
 
     return {
       organizer: [
@@ -1746,6 +1760,7 @@ class FhirToCcdaConverter {
           id: this.mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
           code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
           statusCode: { '@_code': 'completed' },
+          effectiveTime: effectiveTime,
           component: components,
         },
       ],
