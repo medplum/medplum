@@ -37,6 +37,7 @@ describe('FHIRcast', () => {
           method: 'POST',
           body: serializedSubRequest,
           headers: expect.objectContaining({ 'Content-Type': ContentType.FORM_URL_ENCODED }),
+          cache: 'no-cache',
         })
       );
       expect(subRequest).toStrictEqual(expect.objectContaining<PendingSubscriptionRequest>(expectedSubRequest));
@@ -329,12 +330,22 @@ describe('FHIRcast', () => {
 
     test('Get context for topic with context', async () => {
       await expect(client.fhircastGetContext(topic)).resolves.toStrictEqual(topicContext);
-      expect(medplumGetSpy).toHaveBeenCalledWith(`https://api.medplum.com/fhircast/STU3/${topic}`);
+      expect(medplumGetSpy).toHaveBeenCalledWith(
+        `https://api.medplum.com/fhircast/STU3/${topic}`,
+        expect.objectContaining({
+          cache: 'no-cache',
+        })
+      );
     });
 
     test('Get context for topic without context', async () => {
       await expect(client.fhircastGetContext('abc-123')).resolves.toStrictEqual({ 'context.type': '', context: [] });
-      expect(medplumGetSpy).toHaveBeenCalledWith('https://api.medplum.com/fhircast/STU3/abc-123');
+      expect(medplumGetSpy).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhircast/STU3/abc-123',
+        expect.objectContaining({
+          cache: 'no-cache',
+        })
+      );
     });
   });
 });
