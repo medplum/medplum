@@ -194,6 +194,11 @@ export const EncounterModal = (): JSX.Element => {
 
 const questionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
+  identifier: [
+    {
+      value: 'SOAPNOTE'
+    }
+  ],
   name: 'Fill chart note',
   title: 'Fill chart note',
   status: 'active',

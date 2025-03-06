@@ -1,25 +1,29 @@
 import { Text, Stack, Box, Button } from '@mantine/core';
-import { Encounter, Task } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
-import { Outlet, useLocation, useParams } from 'react-router';
+import { Practitioner, Task } from '@medplum/fhirtypes';
+import { Loading, useMedplum } from '@medplum/react';
+import { Outlet } from 'react-router';
 import { useCallback, useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
+import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { IconCircleOff } from '@tabler/icons-react';
 import { TaskQuestionnaireResponseSummaryPanel } from '../components/Task/TaskQuestionnaireResponseSummaryPanel';
+import { EncounterHeader } from '../components/Encounter/EncounterHeader';
+import { useEncounter } from '../../hooks/useEncounter';
+import { usePatient } from '../../hooks/usePatient';
 
 export const EncounterComplete = (): JSX.Element => {
-  const { encounterId } = useParams();
   const medplum = useMedplum();
-  const [encounter, setEncounter] = useState<Encounter | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const location = useLocation();
+  const patient = usePatient();
+  const encounter = useEncounter();
+  const [task, setTask] = useState<Task | undefined>(); 
+  const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
 
   const fetchTasks = useCallback(async (): Promise<void> => {
-    const encounterResult = await medplum.readResource('Encounter', encounterId as string);
-    setEncounter(encounterResult);
+    if (!encounter) {
+      return;
+    }
 
-    const taskResult = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`);
+    const taskResult = await medplum.searchResources('Task', `encounter=${getReferenceString(encounter)}`);
 
     taskResult.sort((a: Task, b: Task) => {
       const dateA = new Date(a.authoredOn || '').getTime();
@@ -27,8 +31,26 @@ export const EncounterComplete = (): JSX.Element => {
       return dateA - dateB;
     });
 
-    setTasks(taskResult.filter((task: Task) => task.output?.[0]?.valueReference));
-  }, [medplum, encounterId]);
+    setTask(taskResult[0]);
+  }, [medplum, encounter]);
+
+  useEffect(() => {
+    const fetchPractitioner = async (): Promise<void> => {
+      if (encounter?.participant?.[0]?.individual) {
+        const practitionerResult = await medplum.readReference(encounter.participant[0].individual);
+        setPractitioner(practitionerResult as Practitioner);
+      }
+    };
+
+    fetchPractitioner().catch((err) => {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    });
+  }, [encounter, medplum]);
 
   useEffect(() => {
     fetchTasks().catch((err) => {
@@ -39,28 +61,38 @@ export const EncounterComplete = (): JSX.Element => {
         message: normalizeErrorString(err),
       });
     });
-  }, [medplum, encounterId, fetchTasks, location.pathname]);
+  }, [medplum, encounter, fetchTasks]);
+
+  if (!patient || !encounter) {
+    return <Loading />;
+  }
 
   return (
     <>
-      <Box p="md">
-        <Text size="lg" color="dimmed" mb="lg">
-          Encounter {encounter?.period?.start ?? ''}
-        </Text>
+      <Stack justify="space-between" gap={0}>
+        <EncounterHeader patient={patient} encounter={encounter} practitioner={practitioner} />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
-          <Stack gap="md">
+        <Box p="md">
+          <Text size="lg" color="dimmed" mb="lg">
+            Encounter {encounter?.period?.start ?? ''}
+          </Text>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
             <Stack gap="md">
-              {tasks?.map((task: Task) => <TaskQuestionnaireResponseSummaryPanel task={task} key={task.id} />)}
+              <Stack gap="md">
+                {task && (
+                  <TaskQuestionnaireResponseSummaryPanel task={task} key={task.id} />
+                 )}
+              </Stack>
             </Stack>
-          </Stack>
 
-          <Stack gap="lg">
-            <Button variant="outline">View Claim</Button>
-          </Stack>
-        </div>
-        <Outlet />
-      </Box>
+            <Stack gap="lg">
+              <Button variant="outline">View Claim</Button>
+            </Stack>
+          </div>
+          <Outlet />
+        </Box>
+      </Stack>
     </>
   );
 };

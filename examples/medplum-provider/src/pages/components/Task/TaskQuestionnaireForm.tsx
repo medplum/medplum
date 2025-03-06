@@ -35,9 +35,7 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
   if (!questionnaire) {
     return (
       <Box p="md">
-        <Text>
-          <Loading />
-        </Text>
+        <Loading />
       </Box>
     );
   }
