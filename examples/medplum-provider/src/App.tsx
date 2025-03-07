@@ -135,7 +135,10 @@ export function App(): JSX.Element | null {
                 <Route path="communication" element={<CommunicationTab />} />
                 <Route path="communication/:id" element={<CommunicationTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
-                <Route path="Task/:id" element={<TaskTab />} />
+                <Route path="Task/:id">
+                  <Route index element={<TaskTab />} />
+                  <Route path="*" element={<TaskTab />} />
+                </Route>
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
@@ -147,7 +150,10 @@ export function App(): JSX.Element | null {
                 </Route>
                 <Route path="" element={<TimelineTab />} />
               </Route>
-              <Route path="Task/:id" element={<TaskTab />} />
+              <Route path="Task/:id">
+                  <Route index element={<TaskTab />} />
+                  <Route path="*" element={<TaskTab />} />
+                </Route>
               <Route path="/onboarding" element={<OnboardingPage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/dosespot" element={<DoseSpotTab />} />
