@@ -64,7 +64,7 @@ describe('CLI rest', () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'get', `Patient/${patient.id}`]);
 
-    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(patient.id as string));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(patient.id));
   });
 
   test('Get not found', async () => {

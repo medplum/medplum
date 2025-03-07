@@ -152,7 +152,7 @@ describe('Reference checks', () => {
       await systemRepo.updateResource(project1);
 
       const repo = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project: project1 });
-      let project = await repo.readResource<Project>('Project', project1.id as string);
+      let project = await repo.readResource<Project>('Project', project1.id);
 
       // Checking the name change is ancillary; mostly confirming that the update
       // doesn't throw due to reference validation failure

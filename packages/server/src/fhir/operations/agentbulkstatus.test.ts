@@ -220,7 +220,7 @@ describe('Agent/$bulk-status', () => {
 
   test('Get agent statuses -- invalid AgentInfo from Redis', async () => {
     await getRedis().set(
-      `medplum:agent:${agents[1].id as string}:info`,
+      `medplum:agent:${agents[1].id}:info`,
       JSON.stringify({
         version: '3.1.4',
         lastUpdated: new Date().toISOString(),
@@ -244,7 +244,7 @@ describe('Agent/$bulk-status', () => {
     });
 
     await getRedis().set(
-      `medplum:agent:${agents[1].id as string}:info`,
+      `medplum:agent:${agents[1].id}:info`,
       JSON.stringify({
         status: AgentConnectionState.UNKNOWN,
         version: 'unknown',

@@ -165,7 +165,7 @@ describe('FHIR Repo', () => {
       expect(version2.id).toStrictEqual(version1.id);
       expect(version2.meta?.versionId).not.toStrictEqual(version1.meta?.versionId);
 
-      const history = await systemRepo.readHistory('Patient', version1.id as string);
+      const history = await systemRepo.readHistory('Patient', version1.id);
       expect(history).toBeDefined();
       expect(history.entry?.length).toBe(2);
       expect(history.entry?.[0]?.resource?.id).toBe(version2.id);
@@ -319,7 +319,7 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
 
       // empty identifier array should removed when read from cache
-      const readPatient = await repo.readResource<Patient>('Patient', patient.id as string, { checkCacheOnly: true });
+      const readPatient = await repo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true });
       expect(readPatient.identifier).toBeUndefined();
     }));
 
@@ -489,7 +489,7 @@ describe('FHIR Repo', () => {
 
       const patched = await systemRepo.patchResource<Patient>(
         patient.resourceType,
-        patient.id as string,
+        patient.id,
         [{ op: 'replace', path: '/name/0/family', value: 'TestUpdated' }],
         {
           ifMatch: patient.meta?.versionId,
@@ -508,7 +508,7 @@ describe('FHIR Repo', () => {
       await expect(
         systemRepo.patchResource<Patient>(
           patient.resourceType,
-          patient.id as string,
+          patient.id,
           [{ op: 'add', path: '/birthDate', value: '1993-09-14' }],
           { ifMatch: 'bad-id' }
         )
@@ -536,7 +536,7 @@ describe('FHIR Repo', () => {
       expect(patient1).toBeDefined();
       expect(patient1.id).toBeDefined();
 
-      const patient2 = await repo1.readResource('Patient', patient1.id as string);
+      const patient2 = await repo1.readResource('Patient', patient1.id);
       expect(patient2).toBeDefined();
       expect(patient2.id).toStrictEqual(patient1.id);
 
@@ -553,7 +553,7 @@ describe('FHIR Repo', () => {
 
       const repo2 = await getRepoForLogin(result2);
       try {
-        await repo2.readResource('Patient', patient1.id as string);
+        await repo2.readResource('Patient', patient1.id);
         fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
@@ -568,19 +568,19 @@ describe('FHIR Repo', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      const history1 = await systemRepo.readHistory('Patient', patient.id as string);
+      const history1 = await systemRepo.readHistory('Patient', patient.id);
       expect(history1.entry?.length).toBe(1);
 
       // Delete the patient
-      await systemRepo.deleteResource('Patient', patient.id as string);
+      await systemRepo.deleteResource('Patient', patient.id);
 
-      const history2 = await systemRepo.readHistory('Patient', patient.id as string);
+      const history2 = await systemRepo.readHistory('Patient', patient.id);
       expect(history2.entry?.length).toBe(2);
 
       // Restore the patient
       await systemRepo.updateResource({ ...patient, meta: undefined });
 
-      const history3 = await systemRepo.readHistory('Patient', patient.id as string);
+      const history3 = await systemRepo.readHistory('Patient', patient.id);
       expect(history3.entry?.length).toBe(3);
 
       const entries = history3.entry as BundleEntry[];
@@ -1019,8 +1019,8 @@ describe('FHIR Repo', () => {
   test('Double DELETE', async () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
-      await systemRepo.deleteResource(patient.resourceType, patient.id as string);
-      await expect(systemRepo.deleteResource(patient.resourceType, patient.id as string)).resolves.toBeUndefined();
+      await systemRepo.deleteResource(patient.resourceType, patient.id);
+      await expect(systemRepo.deleteResource(patient.resourceType, patient.id)).resolves.toBeUndefined();
     }));
 
   test('Conditional reference resolution', async () =>
@@ -1303,13 +1303,13 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.project).toBeUndefined();
       expect(patient.gender).toBeUndefined();
 
-      const updatedPatient = await repo.patchResource<Patient>('Patient', patient.id as string, [
+      const updatedPatient = await repo.patchResource<Patient>('Patient', patient.id, [
         { op: 'add', path: '/gender', value: 'unknown' },
       ]);
       expect(updatedPatient.meta?.project).toBeUndefined();
       expect(updatedPatient.gender).toStrictEqual('unknown');
 
-      const cachedPatient = await extendedRepo.readResource<Patient>('Patient', patient.id as string);
+      const cachedPatient = await extendedRepo.readResource<Patient>('Patient', patient.id);
       expect(cachedPatient.meta?.project).toStrictEqual(project.id);
       expect(cachedPatient.gender).toStrictEqual('unknown');
     }));

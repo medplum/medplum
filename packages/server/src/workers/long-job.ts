@@ -1,4 +1,4 @@
-import { getStatus, OperationOutcomeError } from '@medplum/core';
+import { getStatus, OperationOutcomeError, WithId } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import * as semver from 'semver';
@@ -7,7 +7,7 @@ import { getSystemRepo, Repository } from '../fhir/repo';
 import { getServerVersion } from '../util/version';
 
 export interface LongJobData {
-  asyncJob: AsyncJob;
+  asyncJob: WithId<AsyncJob>;
 }
 
 const inProgressJobStatus: AsyncJob['status'][] = ['accepted', 'active'];
@@ -43,7 +43,7 @@ export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
   }
 
   async checkJobStatus(job: Job<TData>): Promise<boolean> {
-    const asyncJob = await this.systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJob.id as string);
+    const asyncJob = await this.systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJob.id);
 
     if (!inProgressJobStatus.includes(asyncJob.status)) {
       return false;

@@ -1,4 +1,4 @@
-import { OperationOutcomeError, accepted } from '@medplum/core';
+import { OperationOutcomeError, WithId, accepted } from '@medplum/core';
 import { UpdateResourceOptions } from '@medplum/fhir-router';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
@@ -12,8 +12,8 @@ import { Repository, getSystemRepo } from '../../repo';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
-  private resource: AsyncJob | undefined;
-  constructor(repo: Repository, resource?: AsyncJob) {
+  private resource: WithId<AsyncJob> | undefined;
+  constructor(repo: Repository, resource?: WithId<AsyncJob>) {
     this.repo = repo.clone();
     this.resource = resource;
   }
@@ -71,7 +71,7 @@ export class AsyncJobExecutor {
    * @returns (optional) Output encoded as a Parameters resource.
    */
   async run(
-    callback: ((job: AsyncJob) => Promise<Parameters>) | ((job: AsyncJob) => Promise<void>)
+    callback: ((job: WithId<AsyncJob>) => Promise<Parameters>) | ((job: WithId<AsyncJob>) => Promise<void>)
   ): Promise<Parameters | undefined> {
     callback = AsyncLocalStorage.bind(callback);
     if (!this.resource) {
@@ -105,7 +105,7 @@ export class AsyncJobExecutor {
     repo: Repository,
     output: Parameters,
     options?: UpdateResourceOptions
-  ): Promise<AsyncJob | undefined> {
+  ): Promise<WithId<AsyncJob> | undefined> {
     if (!this.resource) {
       return undefined;
     }
