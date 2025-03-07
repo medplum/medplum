@@ -78,13 +78,8 @@ export const EncounterComplete = (): JSX.Element => {
           </Text>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
-            <Stack gap="md">
-              <Stack gap="md">{task && <TaskQuestionnaireResponseSummaryPanel task={task} key={task.id} />}</Stack>
-            </Stack>
-
-            <Stack gap="lg">
-              <Button variant="outline">View Claim</Button>
-            </Stack>
+          <Stack gap="md">{task && <TaskQuestionnaireResponseSummaryPanel task={task} key={task.id} />}</Stack>
+            <Button variant="outline">View Claim</Button>
           </div>
           <Outlet />
         </Box>
