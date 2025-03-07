@@ -188,13 +188,41 @@ describe('Reference checks', () => {
 
   test('Check references with non-literal reference', () =>
     withTestContext(async () => {
-      const { repo } = await createTestProject({ project: { checkReferencesOnWrite: true }, withRepo: true });
+      const { repo } = await createTestProject({
+        project: { checkReferencesOnWrite: true },
+        withRepo: true,
+      });
       const patient: Patient = {
         resourceType: 'Patient',
         link: [
           {
             type: 'refer',
             other: { display: 'J. Smith' },
+          },
+        ],
+      };
+
+      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
+    }));
+
+  test('Check references with reference placeholder', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        project: { checkReferencesOnWrite: true },
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          compartment: { reference: '%patient' },
+          resource: [{ resourceType: '*' }],
+        },
+      });
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        link: [
+          {
+            type: 'refer',
+            other: { reference: '%patient' },
           },
         ],
       };
