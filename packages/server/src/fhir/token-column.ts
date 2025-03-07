@@ -14,13 +14,7 @@ import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent, Tok
 
 const DELIM = '\x01';
 const NULL_SYSTEM = '\x02';
-const ARRAY_DELIM = '\x03';
-
-export const TokenSpecialCharacters = {
-  DELIM,
-  NULL_SYSTEM,
-  ARRAY_DELIM,
-};
+const ARRAY_DELIM = '\x03'; // If `ARRAY_DELIM` changes, the `token_array_to_text` function will be outdated.
 
 export const TokenColumnsFeature = {
   write: true,
