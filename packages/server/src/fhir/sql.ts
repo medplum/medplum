@@ -1076,19 +1076,15 @@ export interface SqlFunctionDefinition {
   readonly createQuery: string;
 }
 
-// Custom SQL Functions
-// When a function is defined and live in the database, i.e. it's created via a migration,
-// its definitions should NEVER be changed. If a change is needed, a new function should be created.
-
-const TokenArrayToTextFn: SqlFunctionDefinition = {
+/**
+ * WARNING: Custom SQL functions should be avoided unless absolutely necessary.
+ *
+ * This function is necessary since the postgres `array_to_string` function is not IMMUTABLE,
+ * but only IMMUTABLE functions can be used in index expressions.
+ */
+export const TokenArrayToTextFn: SqlFunctionDefinition = {
   name: 'token_array_to_text',
   createQuery: `CREATE FUNCTION token_array_to_text(text[])
-      RETURNS text
-      LANGUAGE sql
-      IMMUTABLE
+    RETURNS text LANGUAGE sql IMMUTABLE
     AS $function$SELECT e'\x03'||array_to_string($1, e'\x03')||e'\x03'$function$`,
 };
-
-export const SqlFunctions = {
-  token_array_to_text: TokenArrayToTextFn,
-} as const;

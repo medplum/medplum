@@ -21,7 +21,7 @@ import {
   SearchParameterImplementation,
   TokenColumnSearchParameterImplementation,
 } from '../fhir/searchparameter';
-import { SqlFunctionDefinition, SqlFunctions } from '../fhir/sql';
+import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import {
   doubleEscapeSingleQuotes,
   escapeUnicode,
@@ -73,17 +73,9 @@ export interface IndexDefinition {
   indexdef?: string;
 }
 
-const TargetFunctions: SqlFunctionDefinition[] = [
-  {
-    name: 'medplum_migrate_hello',
-    createQuery: `CREATE FUNCTION medplum_migrate_hello(text)
-        RETURNS text
-        LANGUAGE sql
-        IMMUTABLE
-      AS $function$SELECT 'Hello, '||$1||'!'$function$`,
-  },
-  ...Object.values(SqlFunctions),
-];
+// Custom SQL functions should be avoided unless absolutely necessary.
+// Do not add any functions to this list unless you have a really good reason for doing so.
+const TargetFunctions: SqlFunctionDefinition[] = [TokenArrayToTextFn];
 
 export function indexStructureDefinitionsAndSearchParameters(): void {
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -532,16 +524,15 @@ function getSearchParameterIndexes(
   switch (impl.searchStrategy) {
     case 'token-column': {
       return [
-        { columns: [impl.columnName], indexType: 'gin' /*where: `${quotedColumnName(impl.columnName)} IS NOT NULL`*/ },
+        { columns: [impl.columnName], indexType: 'gin' },
         {
           columns: [
             {
-              expression: `${SqlFunctions.token_array_to_text.name}(${quotedColumnName(impl.textSearchColumnName)}) gin_trgm_ops`,
+              expression: `${TokenArrayToTextFn.name}(${quotedColumnName(impl.textSearchColumnName)}) gin_trgm_ops`,
               name: impl.columnName + 'Trgm',
             },
           ],
           indexType: 'gin',
-          // where: `${quotedColumnName(impl.textSearchColumnName)} IS NOT NULL`,
         },
       ];
     }
