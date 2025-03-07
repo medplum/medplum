@@ -2,7 +2,7 @@ import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
-import { act, userEvent, UserEvent, render, screen } from './test-utils/render';
+import { act, userEvent, UserEvent, render, screen, fireEvent } from './test-utils/render';
 
 const medplum = new MockClient();
 
@@ -61,7 +61,11 @@ describe('CreateResourcePage', () => {
       const user = await setup('/Practitioner/new/json');
       expect(await screen.findByTestId(JSON_INPUT_TEST_ID)).toBeInTheDocument();
 
-      user.type(screen.getByTestId(JSON_INPUT_TEST_ID), '{{"resourceType":"Practitioner","id":"123"}}');
+      await act(async () => {
+        fireEvent.change(screen.getByTestId(JSON_INPUT_TEST_ID), {
+          target: { value: '{"resourceType":"Practitioner","id":"123"}' },
+        });
+      });
 
       await user.click(screen.getByText('OK'));
     });
