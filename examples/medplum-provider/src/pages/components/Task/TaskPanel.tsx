@@ -3,7 +3,7 @@ import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { SimpleTask } from './SimpleTask';
 import { Card, Stack } from '@mantine/core';
 import { TaskStatusPanel } from './TaskStatusPanel';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
@@ -15,14 +15,13 @@ interface TaskPanelProps {
   onUpdateTask: (task: Task) => void;
 }
 
-const SAVE_TIMEOUT_MS = 1000;
+const SAVE_TIMEOUT_MS = 1500;
 
 export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const { task, onUpdateTask } = props;
   const navigate = useNavigate();
   const medplum = useMedplum();
   const author = useMedplumProfile();
-  const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const onActionButtonClicked = async (): Promise<void> => {
@@ -46,14 +45,10 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
       }
 
       saveTimeoutRef.current = setTimeout(async () => {
-        let updatedResponse;
-        if (task.output?.[0]?.valueReference && questionnaireResponse) {
-          updatedResponse = await medplum.updateResource<QuestionnaireResponse>({
-            ...questionnaireResponse,
-            item: response.item,
-          });
+        if (response.id) {
+          await medplum.updateResource<QuestionnaireResponse>(response);
         } else {
-          updatedResponse = await medplum.createResource<QuestionnaireResponse>(response);
+          const updatedResponse = await medplum.createResource<QuestionnaireResponse>(response);
           const updatedTask = await medplum.updateResource<Task>({
             ...task,
             output: [
@@ -65,7 +60,6 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
           });
           onUpdateTask(updatedTask);
         }
-        setQuestionnaireResponse(updatedResponse);
       }, SAVE_TIMEOUT_MS);
     } catch (err) {
       showNotification({

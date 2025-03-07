@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Questionnaire, QuestionnaireResponse, QuestionnaireResponseItem, Reference, Task } from '@medplum/fhirtypes';
+import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { useMedplum, QuestionnaireForm, Loading } from '@medplum/react';
 import { Box, Stack } from '@mantine/core';
+import { deepEquals } from '@medplum/core';
 
 interface TaskQuestionnaireFormProps {
   task: Task;
@@ -15,13 +16,15 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
 
   const onChange = (response: QuestionnaireResponse): void => {
     if (!questionnaireResponse) {
-      setQuestionnaireResponse(response);
-      onChangeResponse?.(response);
+      const updatedResponse: QuestionnaireResponse = { ...response, status: 'in-progress' };
+      setQuestionnaireResponse(updatedResponse);
+      onChangeResponse?.(updatedResponse);
     } else {
-      const hasDifferentResponses = checkForDifferentResponses(response.item ?? [], questionnaireResponse?.item ?? []);
-      if (hasDifferentResponses) {
-        setQuestionnaireResponse(response);
-        onChangeResponse?.(response);
+      const equals = deepEquals(response.item, questionnaireResponse?.item);
+      if (!equals) {
+        const updatedResponse: QuestionnaireResponse = { ...questionnaireResponse, item: response.item, status: 'in-progress' };
+        setQuestionnaireResponse(updatedResponse);
+        onChangeResponse?.(updatedResponse);
       }
     }
   };
@@ -65,47 +68,4 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
       </Box>
     </Stack>
   );
-};
-
-const checkForDifferentResponses = (
-  newItems: QuestionnaireResponseItem[],
-  existingItems: QuestionnaireResponseItem[]
-): boolean => {
-  if (newItems.length !== existingItems.length) {
-    return true;
-  }
-
-  const existingItemsMap = new Map(existingItems.map((item) => [item.linkId, item]));
-  for (const newItem of newItems) {
-    const existingItem = existingItemsMap.get(newItem.linkId);
-
-    if (!existingItem) {
-      return true;
-    }
-
-    if (newItem.answer?.length !== existingItem.answer?.length) {
-      return true;
-    }
-
-    for (let j = 0; j < (newItem.answer?.length || 0); j++) {
-      const newAnswer = newItem.answer?.[j];
-      const existingAnswer = existingItem.answer?.[j];
-
-      if (newAnswer?.valueString !== existingAnswer?.valueString) {
-        return true;
-      }
-    }
-
-    if ((newItem.item && !existingItem.item) || (!newItem.item && existingItem.item)) {
-      return true;
-    }
-    if (newItem.item && existingItem.item) {
-      const hasDifferentResponses = checkForDifferentResponses(newItem.item, existingItem.item);
-      if (hasDifferentResponses) {
-        return true;
-      }
-    }
-  }
-
-  return false;
 };
