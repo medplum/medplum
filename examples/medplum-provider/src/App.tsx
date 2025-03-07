@@ -151,9 +151,9 @@ export function App(): JSX.Element | null {
                 <Route path="" element={<TimelineTab />} />
               </Route>
               <Route path="Task/:id">
-                  <Route index element={<TaskTab />} />
-                  <Route path="*" element={<TaskTab />} />
-                </Route>
+                <Route index element={<TaskTab />} />
+                <Route path="*" element={<TaskTab />} />
+              </Route>
               <Route path="/onboarding" element={<OnboardingPage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/dosespot" element={<DoseSpotTab />} />
