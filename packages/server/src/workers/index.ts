@@ -7,6 +7,7 @@ import { addCronJobs, closeCronWorker, initCronWorker } from './cron';
 import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
 import { closeReindexWorker, initReindexWorker } from './reindex';
 import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
+import { closePostDeployMigrationWorker, initPostDeployMigrationWorker } from './post-deploy-migration';
 
 /**
  * Initializes all background workers.
@@ -19,6 +20,7 @@ export function initWorkers(config: MedplumServerConfig): void {
   initCronWorker(config);
   initReindexWorker(config);
   initBatchWorker(config);
+  initPostDeployMigrationWorker(config);
   globalLogger.debug('Workers initialized');
 }
 
@@ -31,6 +33,7 @@ export async function closeWorkers(): Promise<void> {
   await closeCronWorker();
   await closeReindexWorker();
   await closeBatchWorker();
+  await closePostDeployMigrationWorker();
 }
 
 /**
