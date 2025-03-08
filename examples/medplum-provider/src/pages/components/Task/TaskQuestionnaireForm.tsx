@@ -22,7 +22,11 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
     } else {
       const equals = deepEquals(response.item, questionnaireResponse?.item);
       if (!equals) {
-        const updatedResponse: QuestionnaireResponse = { ...questionnaireResponse, item: response.item, status: 'in-progress' };
+        const updatedResponse: QuestionnaireResponse = {
+          ...questionnaireResponse,
+          item: response.item,
+          status: 'in-progress',
+        };
         setQuestionnaireResponse(updatedResponse);
         onChangeResponse?.(updatedResponse);
       }
