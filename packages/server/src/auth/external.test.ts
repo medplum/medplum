@@ -1,4 +1,4 @@
-import { OAuthTokenAuthMethod } from '@medplum/core';
+import { OAuthTokenAuthMethod, WithId } from '@medplum/core';
 import { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -28,7 +28,7 @@ const identityProvider = {
   clientSecret: '456',
 };
 
-let project: Project;
+let project: WithId<Project>;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
 

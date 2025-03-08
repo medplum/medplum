@@ -131,7 +131,7 @@ export async function getPatientSummary(
 ): Promise<Bundle> {
   params._type = resourceTypes;
   const everythingBundle = await getPatientEverything(repo, patient, params);
-  const everything = (everythingBundle.entry?.map((e) => e.resource) ?? []) as Resource[];
+  const everything = (everythingBundle.entry?.map((e) => e.resource) ?? []) as WithId<Resource>[];
   const builder = new PatientSummaryBuilder(author, patient, everything);
   return builder.build();
 }
@@ -157,7 +157,7 @@ export class PatientSummaryBuilder {
   constructor(
     private readonly author: ProfileResource,
     private readonly patient: Patient,
-    private readonly everything: Resource[]
+    private readonly everything: WithId<Resource>[]
   ) {}
 
   build(): Bundle {
@@ -198,7 +198,7 @@ export class PatientSummaryBuilder {
    */
   private chooseSectionForResources(): void {
     for (const resource of this.everything) {
-      if (this.nestedIds.has(resource.id as string)) {
+      if (this.nestedIds.has(resource.id)) {
         continue;
       }
       this.chooseSectionForResource(resource);

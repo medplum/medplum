@@ -438,7 +438,7 @@ describe('Agent WebSockets', () => {
     let info: AgentInfo = { status: AgentConnectionState.UNKNOWN, version: 'unknown' };
     for (let i = 0; i < 5; i++) {
       await sleep(50);
-      const infoStr = (await getRedis().get(`medplum:agent:${agent.id as string}:info`)) as string;
+      const infoStr = (await getRedis().get(`medplum:agent:${agent.id}:info`)) as string;
       info = JSON.parse(infoStr) as AgentInfo;
       if (info.status === AgentConnectionState.DISCONNECTED) {
         break;

@@ -1,4 +1,4 @@
-import { ContentType } from '@medplum/core';
+import { ContentType, WithId } from '@medplum/core';
 import { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -19,7 +19,7 @@ const domain = randomUUID() + '.example.com';
 const email = `text@${domain}`;
 const redirectUri = `https://${domain}/auth/callback`;
 const externalId = `google-oauth2|${randomUUID()}`;
-let project: Project;
+let project: WithId<Project>;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
 let subjectAuthClient: ClientApplication;

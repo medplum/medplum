@@ -84,7 +84,7 @@ describe('HL7', () => {
       ],
     });
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
     const client = new Hl7Client({
@@ -160,7 +160,7 @@ describe('HL7', () => {
       ],
     });
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
     const client = new Hl7Client({
@@ -239,7 +239,7 @@ describe('HL7', () => {
       ],
     });
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
     const client = new Hl7Client({
@@ -314,7 +314,7 @@ describe('HL7', () => {
     }
 
     // Start the app
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
     // Wait for the WebSocket to connect
@@ -411,7 +411,7 @@ describe('HL7', () => {
     }
 
     // Start the app
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
     // Wait for the WebSocket to connect
@@ -684,7 +684,7 @@ describe('HL7', () => {
     }
 
     // Start the app
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
     // Wait for the WebSocket to connect
@@ -812,7 +812,7 @@ describe('HL7', () => {
     }
 
     // Start the app
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
     // Wait for the WebSocket to connect

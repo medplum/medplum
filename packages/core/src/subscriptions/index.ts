@@ -295,7 +295,7 @@ export class SubscriptionManager {
         channel: { type: 'websocket' },
         criteria: criteriaEntry.criteria,
       });
-      subscriptionId = subscription.id as string;
+      subscriptionId = subscription.id;
     }
 
     // Get binding token

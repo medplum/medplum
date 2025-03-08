@@ -114,7 +114,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
       return;
     }
     const redirectUrl = new URL(body.redirectUri);
-    redirectUrl.searchParams.set('login', login.id as string);
+    redirectUrl.searchParams.set('login', login.id);
     redirectUrl.searchParams.set('code', login.code as string);
     res.redirect(redirectUrl.toString());
     return;
@@ -122,7 +122,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
 
   const signInPage = login.launch ? 'oauth' : 'signin';
   const redirectUrl = new URL(signInPage, getConfig().appBaseUrl);
-  redirectUrl.searchParams.set('login', login.id as string);
+  redirectUrl.searchParams.set('login', login.id);
   redirectUrl.searchParams.set('scope', login.scope as string);
   redirectUrl.searchParams.set('nonce', login.nonce as string);
   if (login.codeChallenge) {

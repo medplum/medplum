@@ -1,4 +1,12 @@
-import { arrayify, crawlTypedValue, isGone, normalizeOperationOutcome, toTypedValue, TypedValue } from '@medplum/core';
+import {
+  arrayify,
+  crawlTypedValue,
+  isGone,
+  normalizeOperationOutcome,
+  toTypedValue,
+  TypedValue,
+  WithId,
+} from '@medplum/core';
 import { Attachment, Binary, Meta, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
@@ -109,13 +117,13 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * not to re-evaluate the download.
  * @param resource - The resource that was created or updated.
  */
-export async function addDownloadJobs(resource: Resource): Promise<void> {
+export async function addDownloadJobs(resource: WithId<Resource>): Promise<void> {
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
     if (isExternalUrl(attachment.url)) {
       await addDownloadJobData({
         resourceType: resource.resourceType,
-        id: resource.id as string,
+        id: resource.id,
         url: attachment.url,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,

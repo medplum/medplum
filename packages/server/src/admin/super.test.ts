@@ -1,4 +1,4 @@
-import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
+import { allOk, badRequest, createReference, getReferenceString, WithId } from '@medplum/core';
 import { AsyncJob, Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { Job, Queue } from 'bullmq';
 import express from 'express';
@@ -108,17 +108,17 @@ describe('Super Admin routes', () => {
     });
 
     adminAccessToken = await generateAccessToken({
-      login_id: login1.id as string,
-      sub: user1.id as string,
-      username: user1.id as string,
+      login_id: login1.id,
+      sub: user1.id,
+      username: user1.id,
       profile: getReferenceString(practitioner1),
       scope: 'openid',
     });
 
     nonAdminAccessToken = await generateAccessToken({
-      login_id: login2.id as string,
-      sub: user2.id as string,
-      username: user2.id as string,
+      login_id: login2.id,
+      sub: user2.id,
+      username: user2.id,
       profile: getReferenceString(practitioner2),
       scope: 'openid',
     });
@@ -601,7 +601,7 @@ describe('Super Admin routes', () => {
       expect(res1.status).toStrictEqual(201);
       expect(res1.body).toBeDefined();
 
-      const asyncJob: AsyncJob = res1.body;
+      const asyncJob = res1.body as WithId<AsyncJob>;
 
       const maybeStartDataMigrationSpy = jest
         .spyOn(database, 'maybeStartDataMigration')
