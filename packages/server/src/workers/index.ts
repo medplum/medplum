@@ -13,14 +13,14 @@ import { closePostDeployMigrationWorker, initPostDeployMigrationWorker } from '.
  * Initializes all background workers.
  * @param config - The config to initialize the workers with. Should contain `redis` and optionally `bullmq` fields.
  */
-export function initWorkers(config: MedplumServerConfig): void {
+export async function initWorkers(config: MedplumServerConfig): Promise<void> {
   globalLogger.debug('Initializing workers...');
   initSubscriptionWorker(config);
   initDownloadWorker(config);
   initCronWorker(config);
   initReindexWorker(config);
   initBatchWorker(config);
-  initPostDeployMigrationWorker(config);
+  await initPostDeployMigrationWorker(config);
   globalLogger.debug('Workers initialized');
 }
 

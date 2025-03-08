@@ -7,8 +7,8 @@ export interface Migration {
 }
 
 export type PostDeployMigrationAction = { name: string; durationMs: number };
-export type PostDeployMigrationResult = { actions: PostDeployMigrationAction[] };
+export type PostDeployMigrationResult = PostDeployMigrationAction[];
 
-export interface PostDeployMigration {
+export interface PostDeployMigration extends Migration {
   processPostDeploy(): Promise<PostDeployMigrationResult>;
 }

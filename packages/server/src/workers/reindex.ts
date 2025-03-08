@@ -13,6 +13,7 @@ import { LongJob } from './long-job';
  */
 
 export type ReindexJobData = {
+  readonly type: 'reindex';
   readonly asyncJob: WithId<AsyncJob>;
   readonly resourceTypes: ResourceType[];
   readonly maxResourceVersion?: number;
@@ -318,6 +319,7 @@ export async function addReindexJob(
   const endTimestamp = new Date(Date.now() + 1000 * 60 * 5).toISOString(); // Five minutes in the future
 
   return addReindexJobData({
+    type: 'reindex',
     resourceTypes,
     endTimestamp,
     asyncJob: job,

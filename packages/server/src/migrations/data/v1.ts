@@ -7,14 +7,15 @@ import { getResourceTypes, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { AsyncJobExecutor } from '../../fhir/operations/utils/asyncjobexecutor';
 import { Repository } from '../../fhir/repo';
-import { addReindexJob } from '../../workers/reindex';
+import { addPostDeployMigrationJob } from '../../workers/post-deploy-migration';
 
 export async function run(repo: Repository, asyncJob: WithId<AsyncJob>): Promise<void> {
   const exec = new AsyncJobExecutor(repo, asyncJob);
   await exec.run(async (asyncJob) => {
-    await addReindexJob(
-      getResourceTypes().filter((rt) => rt !== 'Binary'),
-      asyncJob
-    );
+    await addPostDeployMigrationJob({
+      type: 'reindex',
+      asyncJob,
+      resourceTypes: getResourceTypes().filter((rt) => rt !== 'Binary'),
+    });
   });
 }
