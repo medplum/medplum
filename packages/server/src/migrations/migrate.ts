@@ -807,6 +807,7 @@ function writeMigrations(
   b.newLine();
   b.append('export async function run(client: PoolClient): Promise<void> {');
   b.indentCount++;
+  b.append('/* prettier-ignore */');
 
   for (const targetFunction of targetDefinition.functions) {
     const startFunction = startDefinition.functions.find((f) => f.name === targetFunction.name);
@@ -820,6 +821,7 @@ function writeMigrations(
     migrateTable(b, startTable, targetTable, options);
   }
 
+  b.append('/* prettier-ignore-end */');
   b.indentCount--;
   b.append('}');
 }
