@@ -264,6 +264,7 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
         });
 
         if (TokenColumnsFeature.read) {
+          // The token column implementation does not support :contains on identifier
           expect(identifierResult.entry?.length).toStrictEqual(0);
         } else {
           expect(identifierResult.entry?.length).toStrictEqual(2);
@@ -295,7 +296,7 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
         }
       }));
 
-    test('infix on Patient-telecom', () =>
+    test.each(['pager', 'PAGER', 'PaGeR'])('infix on Patient-telecom', (value) =>
       withTestContext(async () => {
         const result = await systemRepo.search({
           resourceType: 'Patient',
@@ -304,7 +305,7 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
             {
               code: 'telecom',
               operator: Operator.CONTAINS,
-              value: 'pager',
+              value,
             },
           ],
         });
@@ -316,7 +317,8 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
           // The lookup table implementation does support infix search on token values
           expect(result.entry?.length).toStrictEqual(0);
         }
-      }));
+      })
+    );
 
     test('infix on Patient-email', () =>
       withTestContext(async () => {
