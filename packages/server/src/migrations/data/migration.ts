@@ -5,3 +5,10 @@ import { WithId } from '@medplum/core';
 export interface Migration {
   run(repo: Repository, asyncJob: WithId<AsyncJob>): Promise<void>;
 }
+
+export type PostDeployMigrationAction = { name: string; durationMs: number };
+export type PostDeployMigrationResult = { actions: PostDeployMigrationAction[] };
+
+export interface PostDeployMigration {
+  processPostDeploy(): Promise<PostDeployMigrationResult>;
+}
