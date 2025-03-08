@@ -12,16 +12,15 @@ import {
   Group,
   useMantineTheme,
 } from '@mantine/core';
-import { CodeableConcept, Coverage, Organization, Practitioner } from '@medplum/fhirtypes';
+import { CodeableConcept, Coverage, Encounter, Organization, Practitioner } from '@medplum/fhirtypes';
 import { CodeableConceptInput, Loading, ResourceInput, useMedplum } from '@medplum/react';
-import { Outlet } from 'react-router';
+import { Outlet, useParams } from 'react-router';
 import { useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { IconCircleOff, IconCheck } from '@tabler/icons-react';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { usePatient } from '../../hooks/usePatient';
-import { useEncounter } from '../../hooks/useEncounter';
 
 enum PaymentType {
   Insurance = 'Insurance',
@@ -29,12 +28,12 @@ enum PaymentType {
 }
 
 export const EncounterCheckIn = (): JSX.Element => {
+  const { encounterId } = useParams();
   const theme = useMantineTheme();
   const medplum = useMedplum();
   const patient = usePatient();
-  const encounter = useEncounter();
+  const [encounter, setEncounter] = useState<Encounter | undefined>();
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
-  const [serviceType, setServiceType] = useState<CodeableConcept | undefined>();
   const [coverage, setCoverage] = useState<Coverage | undefined>();
   const [organization, setOrganization] = useState<Organization | undefined>();
   const [paymentType, setPaymentType] = useState<PaymentType>(PaymentType.SelfPay);
@@ -42,10 +41,22 @@ export const EncounterCheckIn = (): JSX.Element => {
   const [eligibilityChecked, setEligibilityChecked] = useState<boolean>(false);
 
   useEffect(() => {
-    if (encounter?.serviceType) {
-      setServiceType(encounter.serviceType);
+    const fetchEncounter = async (): Promise<void> => {
+      const encounterResult = await medplum.readResource('Encounter', encounterId as string);
+      setEncounter(encounterResult);
+    };
+
+    if (encounterId) {
+      fetchEncounter().catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
     }
-  }, [encounter]);
+  }, [encounterId, medplum]);
 
   useEffect(() => {
     const fetchPractitioner = async (): Promise<void> => {
@@ -115,20 +126,19 @@ export const EncounterCheckIn = (): JSX.Element => {
       return;
     }
 
-    const updatedEncounter = {
-      ...encounter,
-      participant: [
-        {
-          individual: {
-            reference: getReferenceString(practitioner),
-          },
-        },
-      ],
-    };
-
     try {
+      const updatedEncounter = await medplum.updateResource({
+        ...encounter,
+        participant: [
+          {
+            individual: {
+              reference: getReferenceString(practitioner),
+            },
+          },
+        ],
+      });
       setPractitioner(practitioner);
-      await medplum.updateResource(updatedEncounter);
+      setEncounter(updatedEncounter);
       showNotification({
         color: 'green',
         title: 'Success',
@@ -149,14 +159,12 @@ export const EncounterCheckIn = (): JSX.Element => {
       return;
     }
 
-    const updatedEncounter = {
-      ...encounter,
-      serviceType: serviceType,
-    };
-
     try {
-      await medplum.updateResource(updatedEncounter);
-      setServiceType(serviceType);
+      const updatedEncounter = await medplum.updateResource({
+        ...encounter,
+        serviceType: serviceType,
+      });
+      setEncounter(updatedEncounter);
       showNotification({
         color: 'green',
         title: 'Success',
@@ -212,7 +220,7 @@ export const EncounterCheckIn = (): JSX.Element => {
                   name="servicetype"
                   label="Service Type"
                   binding="http://hl7.org/fhir/ValueSet/service-type"
-                  defaultValue={serviceType}
+                  defaultValue={encounter.serviceType}
                   onChange={handleServiceTypeChange}
                   maxValues={1}
                   path="Encounter.serviceType"
