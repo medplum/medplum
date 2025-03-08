@@ -1,5 +1,5 @@
 import { Stack, Box } from '@mantine/core';
-import { Practitioner, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { Practitioner, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import { Outlet, useLocation, useParams } from 'react-router';
 import { useCallback, useEffect, useState } from 'react';
@@ -25,7 +25,6 @@ export const EncounterChart = (): JSX.Element => {
     if (!encounter) {
       return;
     }
-
     const taskResult = await medplum.searchResources('Task', `encounter=${getReferenceString(encounter)}`, {
       cache: 'no-cache',
     });
@@ -75,37 +74,6 @@ export const EncounterChart = (): JSX.Element => {
     [tasks]
   );
 
-  const handleSaveChanges = useCallback(
-    async (task: Task, questionnaireResponse: QuestionnaireResponse): Promise<void> => {
-      try {
-        const response = await medplum.createResource<QuestionnaireResponse>(questionnaireResponse);
-        const updatedTask = await medplum.updateResource<Task>({
-          ...task,
-          status: 'completed',
-          output: [
-            {
-              type: {
-                text: 'QuestionnaireResponse',
-              },
-              valueReference: {
-                reference: getReferenceString(response),
-              },
-            },
-          ],
-        });
-        updateTaskList(updatedTask);
-      } catch (err) {
-        showNotification({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: normalizeErrorString(err),
-        });
-      }
-    },
-    [medplum, updateTaskList]
-  );
-
   if (!patient || !encounter) {
     return <Loading />;
   }
@@ -118,16 +86,9 @@ export const EncounterChart = (): JSX.Element => {
         <Box p="md">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 250px', gap: '24px' }}>
             <Stack gap="md">
-              <Stack gap="md">
-                {tasks?.map((task: Task) => (
-                  <TaskPanel
-                    key={task.id}
-                    task={task}
-                    onSaveQuestionnaire={handleSaveChanges}
-                    onCompleteTask={updateTaskList}
-                  />
-                ))}
-              </Stack>
+              {tasks.map((task: Task) => (
+                <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
+              ))}
             </Stack>
 
             <Stack gap="lg">
