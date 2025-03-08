@@ -188,25 +188,16 @@ function applyProjectAdminAccessPolicy(
   accessPolicy: AccessPolicy
 ): AccessPolicy {
   if (project.superAdmin) {
-    // If the user is a super admin, then do not apply any additional access policy rules.
-    return accessPolicy;
-  }
-
-  if (accessPolicy) {
-    // If there is an existing access policy
-    // Remove any references to project admin resource types
-    accessPolicy.resource = accessPolicy.resource?.filter(
-      (r) => !projectAdminResourceTypes.includes(r.resourceType as string)
-    );
-  }
-
-  if (membership.admin) {
+    // If the user is a super admin, grant full access to all resource types
+    if (!accessPolicy.resource) {
+      accessPolicy.resource = [{ resourceType: '*' }];
+    }
+    for (const adminResourceType of projectAdminResourceTypes) {
+      accessPolicy.resource.push({ resourceType: adminResourceType });
+    }
+  } else if (membership.admin) {
     // If the user is a project admin,
     // then grant limited access to the project admin resource types
-    if (!accessPolicy) {
-      accessPolicy = { resourceType: 'AccessPolicy' };
-    }
-
     if (!accessPolicy.resource) {
       accessPolicy.resource = [{ resourceType: '*' }];
     }
@@ -249,6 +240,11 @@ function applyProjectAdminAccessPolicy(
       hiddenFields: ['passwordHash', 'mfaSecret'],
       readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
     });
+  } else {
+    // Remove any references to project admin resource types
+    accessPolicy.resource = accessPolicy.resource?.filter(
+      (r) => !projectAdminResourceTypes.includes(r.resourceType as string)
+    );
   }
 
   return accessPolicy;
