@@ -2,5 +2,8 @@
   "v1": {
     "serverVersion": "3.3.0",
     "requiredBefore": "4.0.0"
+  },
+  "v2": {
+    "serverVersion": "4.1.0"
   }
 }
