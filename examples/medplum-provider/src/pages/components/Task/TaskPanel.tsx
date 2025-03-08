@@ -62,12 +62,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
         }
       }, SAVE_TIMEOUT_MS);
     } catch (err) {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
+      console.error(err);
     }
   };
 
