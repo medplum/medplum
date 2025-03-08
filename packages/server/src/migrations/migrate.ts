@@ -114,11 +114,15 @@ export async function main(): Promise<void> {
 export type BuildMigrationOptions = {
   dbClient: Client | Pool;
   dropUnmatchedIndexes?: boolean;
+  allowPostDeployActions?: boolean;
 };
 
 export async function buildMigration(b: FileBuilder, options: BuildMigrationOptions): Promise<void> {
   const startDefinition = await buildStartDefinition(options);
   const targetDefinition = buildTargetDefinition();
+  if (typeof options.allowPostDeployActions === 'boolean') {
+    ALLOW_POST_DEPLOY_ACTIONS = options.allowPostDeployActions;
+  }
   writeMigrations(b, startDefinition, targetDefinition, options);
 }
 
