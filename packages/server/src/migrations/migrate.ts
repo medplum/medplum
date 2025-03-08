@@ -161,7 +161,7 @@ async function buildStartDefinition(options: BuildMigrationOptions): Promise<Sch
     throw new Error('Unused special index parsers:\n' + unusedParsers.map((p) => p.toString()).join('\n'));
   }
 
-  return { tables, functions: [] };
+  return { tables, functions };
 }
 
 async function getTableNames(db: Client | Pool): Promise<string[]> {
