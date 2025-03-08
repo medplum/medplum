@@ -35,7 +35,11 @@ export function TaskTab(): JSX.Element {
 
   // Update the current tab and navigate to its URL
   const handleTabChange = (newTab: string | null): void => {
-    navigate(`./${newTab}`, { relative: 'path' })?.catch(console.error);
+    const currentPathSegments = window.location.pathname.split('/');
+    const taskIdIndex = currentPathSegments.findIndex((segment) => segment.toLowerCase() === 'task') + 1;
+    const baseTaskPath = currentPathSegments.slice(0, taskIdIndex + 1).join('/');
+    const targetPath = newTab ? `${baseTaskPath}/${newTab.toLowerCase()}` : baseTaskPath;
+    navigate(targetPath, { replace: true })?.catch(console.error);
   };
 
   const onTaskChange = (updatedTask: Task): void => {
