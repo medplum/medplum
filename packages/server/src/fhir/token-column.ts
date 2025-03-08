@@ -234,8 +234,6 @@ function buildTokenColumnsWhereCondition(
       return buildInValueSetCondition(code, impl, tableName, query);
     }
     case FhirOperator.TEXT: {
-      //TODO{mattlong} - consider case insensitive
-      // token_array_to_text(token) ~ '\x3code\x1\x1[^\x3]*Quick Brown'
       const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       return new Conjunction([
         new TypedCondition(tokenCol, 'ARRAY_CONTAINS', code + DELIM + 'text', 'TEXT[]'), // TODO: does this actually improve query performance?
@@ -243,7 +241,6 @@ function buildTokenColumnsWhereCondition(
       ]);
     }
     case FhirOperator.CONTAINS: {
-      //TODO{mattlong} - consider case insensitive
       const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       return new TypedCondition(textSearchCol, 'ARRAY_IREGEX', regexStr, 'TEXT[]');
     }
