@@ -14,6 +14,7 @@ import {
   Operator,
   resolveId,
   serverError,
+  WithId,
 } from '@medplum/core';
 import {
   Agent,
@@ -127,7 +128,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
 
   // Then read the bot as system user to load extended metadata
   const systemRepo = getSystemRepo();
-  const bot = await systemRepo.readResource<Bot>('Bot', userBot.id as string);
+  const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
 
   // Find the project membership
   // If the bot is configured to run as the user, then use the current user's membership
@@ -166,7 +167,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
  * @param req - The HTTP request.
  * @returns The bot, or undefined if not found.
  */
-async function getBotForRequest(req: Request): Promise<Bot | undefined> {
+async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> {
   const ctx = getAuthenticatedContext();
   // Prefer to search by ID from path parameter
   const { id } = req.params;
@@ -489,7 +490,7 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
 
   // Create the access token
   const accessToken = await generateAccessToken({
-    login_id: login.id as string,
+    login_id: login.id,
     sub: resolveId(runAs.user?.reference as Reference) as string,
     username: resolveId(runAs.user?.reference as Reference) as string,
     profile: runAs.profile?.reference as string,

@@ -1,4 +1,4 @@
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, createReference, WithId } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -13,7 +13,7 @@ import { PROMPT_BASIC_AUTH_PARAM } from './middleware';
 describe('Auth middleware', () => {
   const app = express();
   const systemRepo = getSystemRepo();
-  let client: ClientApplication;
+  let client: WithId<ClientApplication>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -28,9 +28,9 @@ describe('Auth middleware', () => {
   test('Login not found', async () => {
     const accessToken = await generateAccessToken({
       login_id: randomUUID(),
-      sub: client.id as string,
-      username: client.id as string,
-      client_id: client.id as string,
+      sub: client.id,
+      username: client.id,
+      client_id: client.id,
       profile: client.resourceType + '/' + client.id,
       scope: 'openid',
     });
@@ -57,10 +57,10 @@ describe('Auth middleware', () => {
     );
 
     const accessToken = await generateAccessToken({
-      login_id: login.id as string,
-      sub: client.id as string,
-      username: client.id as string,
-      client_id: client.id as string,
+      login_id: login.id,
+      sub: client.id,
+      username: client.id,
+      client_id: client.id,
       profile: client.resourceType + '/' + client.id,
       scope,
     });

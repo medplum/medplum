@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { QuestionnaireResponse, Reference, Task, QuestionnaireResponseItem } from '@medplum/fhirtypes';
-import { useMedplum, Loading } from '@medplum/react';
+import { useMedplum } from '@medplum/react';
 import { Box, Card, Stack, Text } from '@mantine/core';
 
 interface TaskQuestionnaireFormProps {
@@ -30,7 +30,7 @@ export const TaskQuestionnaireResponseSummaryPanel = ({ task }: TaskQuestionnair
         {questionnaireResponse ? (
           <QuestionnaireResponseComponent items={questionnaireResponse.item || []} />
         ) : (
-          <Loading />
+          <Text>No Chart Note recorded.</Text>
         )}
       </Stack>
     </Card>
@@ -46,11 +46,15 @@ const QuestionnaireResponseComponent = ({ items }: QuestionnaireResponseProps): 
     <>
       {items.map((item, index) => (
         <Box key={index}>
-          <Text c="dimmed">{item.text}</Text>
-          {item.answer?.map((answer) => (
-            <Text>{answer.valueString || answer.valueBoolean?.toString() || answer.valueInteger}</Text>
-          ))}
-          <QuestionnaireResponseComponent items={item.item || []} />
+          <Stack gap="xs">
+            <Text c="dimmed">{item.text}</Text>
+            {item.answer?.map((answer, answerIndex) => (
+              <Text key={answerIndex}>
+                {answer.valueString || answer.valueBoolean?.toString() || answer.valueInteger}
+              </Text>
+            ))}
+            <QuestionnaireResponseComponent items={item.item || []} />
+          </Stack>
         </Box>
       ))}
     </>

@@ -707,10 +707,7 @@ describe('FHIRCast routes', () => {
     payload.event['context.versionId'] = generateId();
 
     // Setup the key as if we have already opened this resource
-    await getRedis().set(
-      `medplum:fhircast:project:${project.id as string}:topic:${topic}:latest`,
-      JSON.stringify(payload)
-    );
+    await getRedis().set(`medplum:fhircast:project:${project.id}:topic:${topic}:latest`, JSON.stringify(payload));
 
     beforeContextRes = await request(server)
       .get(`${STU2_BASE_ROUTE}/${topic}`)
@@ -770,7 +767,7 @@ describe('FHIRCast routes', () => {
     expect(publishRes.status).toBe(201);
 
     const latestEventStr = (await getRedis().get(
-      `medplum:fhircast:project:${project.id as string}:topic:${topic}:latest`
+      `medplum:fhircast:project:${project.id}:topic:${topic}:latest`
     )) as string;
     expect(latestEventStr).toBeTruthy();
     const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'DiagnosticReport-open'>;
@@ -802,7 +799,7 @@ describe('FHIRCast routes', () => {
     expect(publishRes.status).toBe(201);
 
     const latestEventStr = (await getRedis().get(
-      `medplum:fhircast:project:${project.id as string}:topic:${topic}:latest`
+      `medplum:fhircast:project:${project.id}:topic:${topic}:latest`
     )) as string;
     expect(latestEventStr).toBeTruthy();
     const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'DiagnosticReport-update'>;

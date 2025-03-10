@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import { cleanupMedplumWebAPIs, polyfillMedplumWebAPIs } from '.';
 
 describe('Medplum polyfills', () => {
-  const originalWindow = window;
+  const originalWindow: Window = window;
 
   beforeEach(() => {
     cleanupMedplumWebAPIs();
@@ -25,7 +25,7 @@ describe('Medplum polyfills', () => {
         window.location = undefined;
         polyfillMedplumWebAPIs({ location: true });
         expect(window.location).not.toStrictEqual(undefined);
-        window.location = originalLocation;
+        (window as typeof globalThis).location = originalLocation;
       });
 
       test('Disable location polyfill', () => {
@@ -34,7 +34,7 @@ describe('Medplum polyfills', () => {
         window.location = undefined;
         polyfillMedplumWebAPIs({ location: false });
         expect(window.location).toStrictEqual(undefined);
-        window.location = originalLocation;
+        (window as typeof globalThis).location = originalLocation;
       });
 
       test('Polyfilling multiple times should not break', () => {

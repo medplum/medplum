@@ -52,7 +52,7 @@ export async function appLaunchHandler(req: FhirRequest): Promise<FhirResponse> 
 
   const url = new URL(clientApp.launchUri);
   url.searchParams.set('iss', concatUrls(getConfig().baseUrl, 'fhir/R4/'));
-  url.searchParams.set('launch', launch.id as string);
+  url.searchParams.set('launch', launch.id);
 
   return [redirect(url)];
 }

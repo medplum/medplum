@@ -594,7 +594,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
       'MSA|AA|9B38584D|Everything was okay dokay!|';
 
     const res = await request(app)
-      .post(`/fhir/R4/Agent/${agent.id as string}/$push`)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         contentType: ContentType.HL7_V2,
@@ -649,7 +649,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     );
 
     const res = await request(app)
-      .post(`/fhir/R4/Agent/${agent.id as string}/$push`)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         contentType: ContentType.PING,

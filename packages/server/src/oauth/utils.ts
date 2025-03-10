@@ -196,7 +196,7 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   }
 
   if (memberships.length === 1) {
-    return setLoginMembership(login, memberships[0].id as string);
+    return setLoginMembership(login, memberships[0].id);
   } else {
     return login;
   }
@@ -314,7 +314,7 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
  * @param login - The login resource.
  * @returns Array of profile resources that the user has access to.
  */
-export async function getMembershipsForLogin(login: Login): Promise<ProjectMembership[]> {
+export async function getMembershipsForLogin(login: Login): Promise<WithId<ProjectMembership>[]> {
   if (login.project?.reference === 'Project/new') {
     return [];
   }
@@ -434,7 +434,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   const auditEvent = createAuditEvent(
     UserAuthenticationEvent,
     LoginEvent,
-    project.id as string,
+    project.id,
     membership.profile,
     login.remoteAddress,
     AuditEventOutcome.Success
@@ -535,8 +535,8 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
 }
 
 export async function getAuthTokens(
-  user: User | ClientApplication,
-  login: Login,
+  user: WithId<User | ClientApplication>,
+  login: WithId<Login>,
   profile: Reference<ProfileResource>,
   options?: {
     accessLifetime?: string;
@@ -561,7 +561,7 @@ export async function getAuthTokens(
 
   const idToken = await generateIdToken({
     client_id: clientId,
-    login_id: login.id as string,
+    login_id: login.id,
     fhirUser: profile.reference,
     email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
     aud: clientId,
@@ -573,9 +573,9 @@ export async function getAuthTokens(
   const accessToken = await generateAccessToken(
     {
       client_id: clientId,
-      login_id: login.id as string,
+      login_id: login.id,
       sub: user.id,
-      username: user.id as string,
+      username: user.id,
       scope: login.scope as string,
       profile: profile.reference as string,
     },
@@ -586,7 +586,7 @@ export async function getAuthTokens(
     ? await generateRefreshToken(
         {
           client_id: clientId,
-          login_id: login.id as string,
+          login_id: login.id,
           refresh_secret: login.refreshSecret,
         },
         options?.refreshLifetime

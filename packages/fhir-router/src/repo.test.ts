@@ -58,15 +58,11 @@ describe('MemoryRepository', () => {
     const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
     expect(patient.id).toBeDefined();
 
-    const patient2 = await repo.readVersion<Patient>(
-      'Patient',
-      patient.id as string,
-      patient.meta?.versionId as string
-    );
+    const patient2 = await repo.readVersion<Patient>('Patient', patient.id, patient.meta?.versionId as string);
     expect(patient2.id).toBe(patient.id);
 
     try {
-      await repo.readVersion<Patient>('Patient', patient.id as string, randomUUID());
+      await repo.readVersion<Patient>('Patient', patient.id, randomUUID());
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;

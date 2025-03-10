@@ -1,6 +1,6 @@
 import { Patient } from '@medplum/fhirtypes';
 
-function patientPathPrefix(patientId: string): string {
+export function patientPathPrefix(patientId: string): string {
   return `/Patient/${patientId}`;
 }
 
