@@ -696,15 +696,11 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'display', type: 'TEXT' },
+      { name: 'isSynonym', type: 'BOOLEAN' },
     ],
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
       { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
-      {
-        columns: ['system', { expression: "to_tsvector('english'::regconfig, display)", name: 'display' }],
-        indexType: 'gin',
-        where: 'display IS NOT NULL',
-      },
       // This index definition is cheating since "display gin_trgm_ops" is of course not just a column name
       // It should have a special parser
       { columns: ['system', 'display gin_trgm_ops'], indexType: 'gin' },
