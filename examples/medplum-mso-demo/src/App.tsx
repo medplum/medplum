@@ -1,22 +1,21 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconBuildingCommunity, IconUser, IconUserCircle, IconUserPlus, IconBuildingHospital, IconStethoscope, IconReportMedical, IconNurse, IconMessage, IconUpload, IconHome } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
-import { OrganizationPage } from './pages/OrganizationPage';
+import { ClinicPage } from './pages/ClinicPage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
-import { PractitionerPage } from './pages/PractitionerPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SignInPage } from './pages/SignInPage';
-import { NewOrganizationPage } from './pages/NewOrganizationPage';
+import { NewClinicPage } from './pages/NewClinicPage';
 import { NewClinicianPage } from './pages/NewClinicianPage';
-import { ManageOrganizationPage } from './pages/ManageOrganizationPage';
+import { ManageClinicPage } from './pages/ManageClinicPage';
 import { UploadAccessPolicyPage } from './pages/UploadAccessPolicyPage';
+import { UploadBundlePage } from './pages/UploadBundlePage';
 import { ObservationPage } from './pages/ObservationPage';
 import { DiagnosticReportPage } from './pages/DiagnosticReportPage';
 import { EncounterPage } from './pages/EncounterPage';
 import { CommunicationPage } from './pages/CommunicationPage';
 import { Route, Routes, Navigate } from 'react-router';
-
 
 export function App(): JSX.Element {
   const medplum = useMedplum();
@@ -26,7 +25,6 @@ export function App(): JSX.Element {
     return <Loading />;
   }
 
-  // Define all menus
   const menus = [
     { 
       title: 'Managed Service Organization',
@@ -45,6 +43,11 @@ export function App(): JSX.Element {
         icon: <IconUpload />,
         label: 'Upload Access Policy', 
         href: '/admin/access-policy' 
+      },
+      { 
+        icon: <IconUpload />,
+        label: 'Upload FHIR Bundle', 
+        href: '/admin/upload-bundle' 
       },
     ]
   },
@@ -77,11 +80,6 @@ export function App(): JSX.Element {
         href: '/Patient' 
       },
       { 
-        icon: <IconUserCircle />, 
-        label: 'Clinicians', 
-        href: '/Practitioner' 
-      },
-      { 
         icon: <IconStethoscope />,
         label: 'Observations',
         href: '/Observation'
@@ -105,13 +103,11 @@ export function App(): JSX.Element {
   },
   ];
 
-
   return (
     <AppShell
       logo={<Logo size={24} />}
       menus={menus}
       >
-
           <Suspense fallback={<Loading />}>
             <Routes>
               { profile ? (
@@ -119,17 +115,17 @@ export function App(): JSX.Element {
                   <Route path="/signin" element={<SignInPage />} />
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/Patient" element={<PatientPage />} />
-                  <Route path="/Organization" element={<OrganizationPage />} />
-                  <Route path="/Organization/:id/manage" element={<ManageOrganizationPage />} />
-                  <Route path="/Practitioner" element={<PractitionerPage />} />
+                  <Route path="/Organization" element={<ClinicPage />} />
+                  <Route path="/Organization/:id/manage" element={<ManageClinicPage />} />
                   <Route path="/Observation" element={<ObservationPage />} />
                   <Route path="/DiagnosticReport" element={<DiagnosticReportPage />} />
                   <Route path="/Encounter" element={<EncounterPage />} />
                   <Route path="/Communication" element={<CommunicationPage />} />
                   <Route path="/:resourceType/:id" element={<ResourcePage />} />
-                  <Route path="/Organization/new" element={<NewOrganizationPage />} />
+                  <Route path="/Organization/new" element={<NewClinicPage />} />
                   <Route path="/Practitioner/new" element={<NewClinicianPage />} />
                   <Route path="/admin/access-policy" element={<UploadAccessPolicyPage />} />
+                  <Route path="/admin/upload-bundle" element={<UploadBundlePage />} />
                 </>
               ) : (
                 <>

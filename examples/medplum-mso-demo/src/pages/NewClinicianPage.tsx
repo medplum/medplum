@@ -16,6 +16,12 @@ interface NewClinicianForm {
   organizations: string[];
 }
 
+/**
+ * New clinician page component for the MSO demo.
+ * Allows admins to create new clinicians and assign them to organizations.
+ * 
+ * @returns {JSX.Element} The new clinician page component
+ */
 export function NewClinicianPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
@@ -168,8 +174,8 @@ export function NewClinicianPage(): JSX.Element {
         />
 
         <MultiSelect
-          label="Organizations"
-          placeholder="Select organizations"
+          label="Clinics"
+          placeholder="Select clinics"
           data={organizations.map(org => ({
             value: org.id as string,
             label: org.name as string

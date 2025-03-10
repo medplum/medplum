@@ -15,7 +15,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
  * @component
  * @returns {JSX.Element} The new clinic creation page
  */
-export function NewOrganizationPage(): JSX.Element {
+export function NewClinicPage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
   const [name, setName] = useState<string>('');
@@ -26,11 +26,12 @@ export function NewOrganizationPage(): JSX.Element {
       return;
     }
 
-    const newOrg = await medplum.createResource<Organization>({
-      resourceType: 'Organization',
-      name: name,
-      active: true
-    });
+    try {
+      await medplum.createResource<Organization>({
+        resourceType: 'Organization',
+        name: name,
+        active: true
+      });
 
     showNotification({
       title: 'Success',
@@ -40,6 +41,13 @@ export function NewOrganizationPage(): JSX.Element {
 
     // Navigate to the new organization's page
     navigate('/Organization');
+    } catch (error) {
+      showNotification({
+        title: 'Error',
+        message: 'Failed to create clinic',
+        color: 'red'
+      });
+    }
   };
 
   // If still checking admin status, show loading

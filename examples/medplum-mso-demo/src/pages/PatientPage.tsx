@@ -5,8 +5,12 @@ import { Document, ResourceName, SearchControl, useMedplum, useMedplumNavigate, 
 import { Outlet } from 'react-router';
 
 /**
- * Organization page that greets the user and displays a list of organizations.
- * @returns A React component that displays the Organization page.
+ * Patient page component for the MSO demo.
+ * Displays a list of patients accessible to the current user in the current project context.
+ * Provides search functionality by name, with navigation to patient details.
+ * 
+ * @component
+ * @returns {JSX.Element} The patients listing page
  */
 export function PatientPage(): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;

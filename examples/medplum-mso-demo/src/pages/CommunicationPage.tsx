@@ -30,7 +30,7 @@ export function CommunicationPage(): JSX.Element {
       <SearchControl
         search={{
           resourceType: 'Communication',
-          fields: ['subject', 'sender', 'recipient', 'payload'],
+          fields: ['payload','subject'],
         }}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         hideToolbar

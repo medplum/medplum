@@ -9,7 +9,10 @@ import { useParams } from 'react-router';
  *   - Phone numbers
  *   - Patient/Provider names
  *   - Patient/Provider profile photo
- * */
+ * 
+ * @component
+ * @returns {JSX.Element} The patient overview component
+ */
 export function PatientOverview(): JSX.Element {
   const { id } = useParams();
   return (

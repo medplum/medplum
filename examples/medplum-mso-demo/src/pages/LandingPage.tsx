@@ -4,6 +4,12 @@ import { Link } from 'react-router';
 import { Practitioner } from '@medplum/fhirtypes';
 import { useAdminStatus } from '../utils/admin';
 
+/**
+ * Landing page component for the MSO demo.
+ * Displays a welcome message and instructions for the user based on their role.
+ * 
+ * @returns {JSX.Element} The landing page component
+ */
 export function LandingPage(): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;
   const { isAdmin, loading } = useAdminStatus();
@@ -36,6 +42,9 @@ export function LandingPage(): JSX.Element {
                 <Anchor component={Link} to="/admin/access-policy">Upload the default AccessPolicy list</Anchor>
               </List.Item>
               <List.Item>
+                <Anchor component={Link} to="/upload-bundle">Upload example resources</Anchor>
+              </List.Item>
+              <List.Item>
                 <Anchor component={Link} to="/Organization/new">Create Clinics</Anchor>
               </List.Item>
               <List.Item>
@@ -49,7 +58,7 @@ export function LandingPage(): JSX.Element {
                 <List withPadding listStyleType="disc">
                   <List.Item>Log out from admin account</List.Item>
                   <List.Item>Login as one of the Clinicians</List.Item>
-                  <List.Item>Verify you only see resources affiliated with Patients in your organizations</List.Item>
+                  <List.Item>Verify you only see resources affiliated with Patients in your clinics</List.Item>
                 </List>
               </List.Item>
             </List>
@@ -64,9 +73,6 @@ export function LandingPage(): JSX.Element {
             <List type="ordered">
               <List.Item>
                 <Anchor component={Link} to="/Patient">Patients</Anchor>
-              </List.Item>
-              <List.Item>
-                <Anchor component={Link} to="/Practitioner">Clinicians</Anchor>
               </List.Item>
               <List.Item>
                 <Anchor component={Link} to="/Observation">Observations</Anchor>

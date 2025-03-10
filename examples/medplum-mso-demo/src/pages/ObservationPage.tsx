@@ -29,7 +29,7 @@ export function ObservationPage(): JSX.Element {
       <SearchControl
         search={{
           resourceType: 'Observation',
-          fields: ['code', 'subject', 'value'],
+          fields: ['code','subject'],
         }}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         hideToolbar

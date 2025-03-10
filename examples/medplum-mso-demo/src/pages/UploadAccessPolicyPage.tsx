@@ -9,6 +9,12 @@ import { IconCopy, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import { CopyButton } from '@mantine/core';
 import { useAdminStatus } from '../utils/admin';
 
+/**
+ * This page allows you to upload the Multi-Tenant Organization Access Policy required for the MSO demo.
+ * 
+ * @component
+ * @returns {JSX.Element} The upload access policy page
+ */
 export function UploadAccessPolicyPage(): JSX.Element {
   const medplum = useMedplum();
   const [existingPolicy, setExistingPolicy] = useState<AccessPolicy | undefined>();
@@ -118,6 +124,13 @@ export function UploadAccessPolicyPage(): JSX.Element {
           </Text>
         )}
 
+        <Button
+          onClick={handleUpload}
+          loading={loading}
+        >
+          {existingPolicy ? 'Update Policy' : 'Upload Policy'}
+        </Button>
+
         <Box pos="relative">
           <Code block>
             {JSON.stringify(MSO_ACCESS_POLICY, null, 2)}
@@ -137,13 +150,6 @@ export function UploadAccessPolicyPage(): JSX.Element {
             )}
           </CopyButton>
         </Box>
-
-        <Button
-          onClick={handleUpload}
-          loading={loading}
-        >
-          {existingPolicy ? 'Update Policy' : 'Upload Policy'}
-        </Button>
       </Stack>
     </Document>
   );

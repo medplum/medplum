@@ -29,7 +29,7 @@ export function EncounterPage(): JSX.Element {
       <SearchControl
         search={{
           resourceType: 'Encounter',
-          fields: ['type', 'subject', 'participant'],
+          fields: ['reasonCode', 'subject', 'status'],
         }}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         hideToolbar

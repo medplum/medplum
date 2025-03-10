@@ -3,6 +3,9 @@ import { useParams } from 'react-router';
 
 /*
  * The PatientTimeline component displays relevant events related to the patient
+ * 
+ * @component
+ * @returns {JSX.Element} The patient timeline component
  */
 export function Timeline(): JSX.Element {
   const { id } = useParams();

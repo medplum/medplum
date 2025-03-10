@@ -29,7 +29,7 @@ export function DiagnosticReportPage(): JSX.Element {
       <SearchControl
         search={{
           resourceType: 'DiagnosticReport',
-          fields: ['code', 'subject', 'result'],
+          fields: ['code', 'subject'],
         }}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         hideToolbar

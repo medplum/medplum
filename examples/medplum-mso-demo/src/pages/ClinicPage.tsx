@@ -12,7 +12,7 @@ import { useAdminStatus } from '../utils/admin';
  * @component
  * @returns {JSX.Element} The clinics listing page
  */
-export function OrganizationPage(): JSX.Element {
+export function ClinicPage(): JSX.Element {
   const { isAdmin, loading: adminLoading } = useAdminStatus();
   const navigate = useMedplumNavigate();
 
@@ -20,7 +20,7 @@ export function OrganizationPage(): JSX.Element {
     if (adminLoading) {
       return (
         <Document>
-          <Title order={2} mb="xl">Create New Clinician</Title>
+          <Title>Manage Clinics</Title>
           <Text>Loading...</Text>
         </Document>
       );
@@ -30,7 +30,7 @@ export function OrganizationPage(): JSX.Element {
     if (!isAdmin) {
       return (
         <Document>
-          <Title order={2} mb="xl">Create New Clinician</Title>
+          <Title >Manage Clinics</Title>
           <Alert 
             icon={<IconAlertCircle size={16} />} 
             title="Access Denied" 
@@ -46,6 +46,7 @@ export function OrganizationPage(): JSX.Element {
   return (
     <Document>
       <Title>Manage Clinics</Title>
+      <Text>Select a clinic to manage</Text>
       <SearchControl
         search={{
           resourceType: 'Organization',

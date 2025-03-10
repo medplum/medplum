@@ -1,18 +1,6 @@
 import { Organization, Patient, Practitioner, Reference, ProjectMembership, AccessPolicy, ProjectMembershipAccessParameter } from '@medplum/fhirtypes';
 import { MedplumClient } from '@medplum/core';
 
-async function getAccessPolicyByName(medplum: MedplumClient, name: string): Promise<AccessPolicy> {
-  const searchResult = await medplum.search('AccessPolicy', {
-    name: name
-  });
-  
-  const policy = searchResult.entry?.[0]?.resource as AccessPolicy;
-  if (!policy) {
-    throw new Error(`AccessPolicy with name "${name}" not found`);
-  }
-  
-  return policy;
-}
 
 /**
  * Enrolls a practitioner in an organization.
@@ -45,7 +33,6 @@ export async function enrollPractitioner(
 
     if (!organizationExists) {
       const policy = await getAccessPolicyByName(medplum, 'Managed Service Organization Access Policy');
-      console.log("policy", policy);
       
       if (existingAccess.length > 0) {
         existingAccess.push({
@@ -88,9 +75,6 @@ export async function enrollPatient(
     return;
   }
 
-  const patientResource = await medplum.get(`fhir/R4/Patient/${patient.id}`);
-  console.log("patientResource", JSON.stringify(patientResource, null, 2));
-
   // Create parameters with all existing accounts plus the new one
   const parameters = {
     resourceType: 'Parameters',
@@ -114,8 +98,7 @@ export async function enrollPatient(
 
   try {
     // Use the medplum client's post method which handles auth and CORS headers
-    const result = await medplum.post(`fhir/R4/Patient/${patient.id}/$set-accounts`, parameters);
-    console.log("result", result);
+    await medplum.post(`fhir/R4/Patient/${patient.id}/$set-accounts`, parameters);
   } catch (error) {
     console.error("Error enrolling patient:", error);
     throw new Error(`Failed to enroll patient: ${error}`);
@@ -133,14 +116,8 @@ export async function unEnrollPatient(
   patient: Patient,
   organization: Organization
 ): Promise<void> {
-  const patientResource = await medplum.get(`fhir/R4/Patient/${patient.id}`);
-  console.log("patientResource", JSON.stringify(patientResource, null, 2));
-  // Check if enrolled
   const accounts = patient.meta?.accounts || [];
   const orgReference = `Organization/${organization.id}`;
-  if (!accounts.some((a: Reference) => a.reference === orgReference)) {
-    return;
-  }
 
   // Create parameters with all accounts except the one to remove
   const parameters = {
@@ -156,10 +133,15 @@ export async function unEnrollPatient(
   };
 
   try {
-    // Use the medplum client's post method which handles auth and CORS headers
-    //const result = await medplum.post(`Patient/${patient.id}/$set-accounts`, parameters);
-    const result = await medplum.post(`fhir/R4/Patient/${patient.id}/$set-accounts`, parameters);
-    console.log("result", result);
+    await medplum.post(`fhir/R4/Patient/${patient.id}/$set-accounts`, parameters);
+
+    //currently for the removal of a Location or Organization from a Patient compartment, 
+    //the compartment also needs to be removed to refresh the compartment list
+    const patientResource = await medplum.get(`fhir/R4/Patient/${patient.id}`);
+    if (patientResource.meta?.compartment) {
+      delete patientResource.meta?.compartment;
+      await medplum.updateResource(patientResource);
+    }
   } catch (error) {
     console.error("Error unenrolling patient:", error);
     throw new Error(`Failed to unenroll patient: ${error}`);
@@ -198,6 +180,78 @@ export async function unEnrollPractitioner(
       throw new Error(`Failed to unenroll practitioner: ${error}`);
     }
   }
+}
 
+/**
+ * Gets practitioners enrolled in a specific organization.
+ * @param medplum - The Medplum client.
+ * @param organization - The organization to get enrolled practitioners for.
+ * @returns Array of practitioners enrolled in the organization.
+ */
+export async function getEnrolledPractitioners(
+  medplum: MedplumClient,
+  organization: Organization
+): Promise<Practitioner[]> {
+  // Search ProjectMemberships first
+  const membershipSearch = await medplum.search('ProjectMembership', {
+    _include: 'ProjectMembership:profile'
+  });
+
+  // Get practitioners with access to this organization
+  const practitioners = membershipSearch.entry
+    ?.filter(e => e.resource?.access?.some(a => 
+      a.parameter?.some(p => 
+        p.name === 'organization' && 
+        p.valueReference?.reference === `Organization/${organization.id}`
+      )
+    ))
+    .map(e => e.resource?.profile)
+    .filter(Boolean);
+
+  if (practitioners && practitioners.length > 0) {
+    // Get the actual Practitioner resources
+    const practitionerSearch = await medplum.search('Practitioner', {
+      _id: practitioners.map(p => p?.reference?.split('/')[1] as string).join(','),
+      _fields: 'name'
+    });
+    return practitionerSearch.entry?.map(e => e.resource as Practitioner) ?? [];
+  }
   
+  return [];
+}
+
+export async function getEnrolledPatients(
+  medplum: MedplumClient,
+  organization: Organization
+): Promise<Patient[]> {
+  // Invalidate the Patient search cache first
+  medplum.invalidateSearches('Patient');
+
+  const searchResult = await medplum.search('Patient', {
+    _compartment: `Organization/${organization.id}`,
+    _fields: 'name',
+  });
+  const patients = searchResult.entry?.map(e => e.resource as Patient) ?? [];
+
+  return patients;
+}
+
+
+/**
+ * Helper function to get an AccessPolicy by name.
+ * @param medplum - The Medplum client.
+ * @param name - The name of the AccessPolicy to retrieve.
+ * @returns The AccessPolicy.
+ */
+async function getAccessPolicyByName(medplum: MedplumClient, name: string): Promise<AccessPolicy> {
+  const searchResult = await medplum.search('AccessPolicy', {
+    name: name
+  });
+  
+  const policy = searchResult.entry?.[0]?.resource as AccessPolicy;
+  if (!policy) {
+    throw new Error(`AccessPolicy with name "${name}" not found`);
+  }
+  
+  return policy;
 }

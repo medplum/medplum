@@ -2,6 +2,12 @@ import { Title } from '@mantine/core';
 import { Document, ResourceHistoryTable } from '@medplum/react';
 import { useParams } from 'react-router';
 
+/**
+ * The PatientHistory component displays the history of a patient.
+ * 
+ * @component
+ * @returns {JSX.Element} The patient history component
+ */
 export function PatientHistory(): JSX.Element {
   const { id } = useParams();
   return (
