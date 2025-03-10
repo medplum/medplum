@@ -44,7 +44,7 @@
   "dependencies": {
     "@aws-sdk/client-acm": "3.758.0",
     "@aws-sdk/client-cloudformation": "3.758.0",
-    "@aws-sdk/client-cloudfront": "3.758.0",
+    "@aws-sdk/client-cloudfront": "3.764.0",
     "@aws-sdk/client-ecs": "3.758.0",
     "@aws-sdk/client-s3": "3.758.0",
     "@aws-sdk/client-ssm": "3.759.0",
