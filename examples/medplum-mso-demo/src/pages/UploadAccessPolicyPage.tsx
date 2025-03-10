@@ -1,4 +1,4 @@
-import { Button, Code, Stack, Text, Title, Box, ActionIcon, Alert } from '@mantine/core';
+import { Button, Code, Stack, Text, Title, Box, ActionIcon, Alert, CopyButton } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { AccessPolicy } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
@@ -6,14 +6,12 @@ import { useEffect, useState } from 'react';
 import { MSO_ACCESS_POLICY } from '../data/core/access-policy';
 import '@mantine/notifications/styles.css';
 import { IconCopy, IconCheck, IconAlertCircle } from '@tabler/icons-react';
-import { CopyButton } from '@mantine/core';
 import { useAdminStatus } from '../utils/admin';
 
 /**
  * This page allows you to upload the Multi-Tenant Organization Access Policy required for the MSO demo.
  * 
- * @component
- * @returns {JSX.Element} The upload access policy page
+ * @returns The upload access policy page
  */
 export function UploadAccessPolicyPage(): JSX.Element {
   const medplum = useMedplum();

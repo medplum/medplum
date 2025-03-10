@@ -1,10 +1,9 @@
-import { Button, Code, Stack, Text, Title, Box, ActionIcon, Alert } from '@mantine/core';
+import { Button, Code, Stack, Text, Title, Box, ActionIcon, Alert, CopyButton } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { Document, useMedplum } from '@medplum/react';
 import { useState } from 'react';
 import '@mantine/notifications/styles.css';
 import { IconCopy, IconCheck, IconAlertCircle } from '@tabler/icons-react';
-import { CopyButton } from '@mantine/core';
 import { useAdminStatus } from '../utils/admin';
 import { PATIENTS_BUNDLE, createResourcesBundle } from '../data/core/sample-bundle';
 import { Patient } from '@medplum/fhirtypes';
@@ -16,8 +15,7 @@ import { Patient } from '@medplum/fhirtypes';
  *
  * This is useful for testing the access control policies and for demonstrating the functionality of the system.
  * 
- * @component
- * @returns {JSX.Element} The upload bundle page
+ * @returns The upload bundle page
  */
 export function UploadBundlePage(): JSX.Element {
   const medplum = useMedplum();

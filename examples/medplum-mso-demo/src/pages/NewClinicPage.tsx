@@ -12,8 +12,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
  * A page component for creating a new clinic in the system.
  * Provides a form for entering clinic details and handles the creation process.
  * 
- * @component
- * @returns {JSX.Element} The new clinic creation page
+ * @returns The new clinic creation page
  */
 export function NewClinicPage(): JSX.Element {
   const medplum = useMedplum();
@@ -40,11 +39,11 @@ export function NewClinicPage(): JSX.Element {
     });
 
     // Navigate to the new organization's page
-    navigate('/Organization');
+    navigate('/Organization')?.catch(console.error);
     } catch (error) {
       showNotification({
         title: 'Error',
-        message: 'Failed to create clinic',
+        message: 'Failed to create clinic: ' + error,
         color: 'red'
       });
     }

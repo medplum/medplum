@@ -26,6 +26,7 @@ export async function isUserAdmin(medplum: MedplumClient): Promise<boolean> {
     const membership = searchResult.entry?.[0]?.resource as ProjectMembership | undefined;
     return !!membership?.admin;
   } catch (error) {
+    console.error('Error checking admin status:', error);
     return false;
   }
 }
@@ -63,7 +64,7 @@ export function useAdminStatus(): { isAdmin: boolean; loading: boolean } {
       }
     };
 
-    checkAdminStatus();
+    checkAdminStatus().catch(console.error);
   }, [medplum]);
 
   return { isAdmin: isAdminUser, loading };

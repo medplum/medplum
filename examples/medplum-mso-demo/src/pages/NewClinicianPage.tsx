@@ -20,7 +20,7 @@ interface NewClinicianForm {
  * New clinician page component for the MSO demo.
  * Allows admins to create new clinicians and assign them to organizations.
  * 
- * @returns {JSX.Element} The new clinician page component
+ * @returns The new clinician page component
  */
 export function NewClinicianPage(): JSX.Element {
   const medplum = useMedplum();
@@ -97,7 +97,7 @@ export function NewClinicianPage(): JSX.Element {
         color: 'green'
       });
 
-      navigate(`/${result.profile?.reference}`);
+      navigate(`/${result.profile?.reference}`)?.catch(console.error);
     } catch (error) {
       console.error('Error creating clinician:', error);
       showNotification({

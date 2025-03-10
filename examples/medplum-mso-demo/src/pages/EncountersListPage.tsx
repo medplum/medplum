@@ -9,8 +9,7 @@ import { Outlet } from 'react-router';
  * Shows encounters accessible to the current user in the current project context.
  * Provides search functionality by type, subject, and participants, with navigation to encounter details.
  * 
- * @component
- * @returns {JSX.Element} The encounters listing page
+ * @returns The encounters listing page
  */
 export function EncounterPage(): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;

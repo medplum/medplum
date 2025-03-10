@@ -1,5 +1,5 @@
-import { Badge, Button, Stack, Text, Title, List, Anchor } from '@mantine/core';
-import { Document, useMedplumProfile, useMedplum } from '@medplum/react';
+import { Badge, Stack, Text, Title, List, Anchor } from '@mantine/core';
+import { Document, useMedplumProfile } from '@medplum/react';
 import { Link } from 'react-router';
 import { Practitioner } from '@medplum/fhirtypes';
 import { useAdminStatus } from '../utils/admin';
@@ -8,7 +8,7 @@ import { useAdminStatus } from '../utils/admin';
  * Landing page component for the MSO demo.
  * Displays a welcome message and instructions for the user based on their role.
  * 
- * @returns {JSX.Element} The landing page component
+ * @returns The landing page component
  */
 export function LandingPage(): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;

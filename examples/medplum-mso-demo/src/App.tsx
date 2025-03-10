@@ -1,9 +1,9 @@
-import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconBuildingCommunity, IconUser, IconUserCircle, IconUserPlus, IconBuildingHospital, IconStethoscope, IconReportMedical, IconNurse, IconMessage, IconUpload, IconHome } from '@tabler/icons-react';
-import { Suspense, useEffect, useState } from 'react';
-import { ClinicPage } from './pages/ClinicPage';
+import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconBuildingCommunity, IconUser, IconUserPlus, IconBuildingHospital, IconStethoscope, IconReportMedical, IconNurse, IconMessage, IconUpload, IconHome } from '@tabler/icons-react';
+import { Suspense } from 'react';
+import { ClinicPage } from './pages/AllClinicsPage';
 import { LandingPage } from './pages/LandingPage';
-import { PatientPage } from './pages/PatientPage';
+import { PatientPage } from './pages/PatientsListPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SignInPage } from './pages/SignInPage';
 import { NewClinicPage } from './pages/NewClinicPage';
@@ -11,10 +11,10 @@ import { NewClinicianPage } from './pages/NewClinicianPage';
 import { ManageClinicPage } from './pages/ManageClinicPage';
 import { UploadAccessPolicyPage } from './pages/UploadAccessPolicyPage';
 import { UploadBundlePage } from './pages/UploadBundlePage';
-import { ObservationPage } from './pages/ObservationPage';
+import { ObservationPage } from './pages/ObservationsListPage';
 import { DiagnosticReportPage } from './pages/DiagnosticReportPage';
-import { EncounterPage } from './pages/EncounterPage';
-import { CommunicationPage } from './pages/CommunicationPage';
+import { EncounterPage } from './pages/EncountersListPage';
+import { CommunicationPage } from './pages/CommunicationsListPage';
 import { Route, Routes, Navigate } from 'react-router';
 
 export function App(): JSX.Element {

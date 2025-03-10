@@ -9,8 +9,7 @@ import { useAdminStatus } from '../utils/admin';
  * Shows clinics accessible to the current user in the current project context.
  * Provides search functionality and navigation to individual clinic details.
  * 
- * @component
- * @returns {JSX.Element} The clinics listing page
+ * @returns The clinics listing page
  */
 export function ClinicPage(): JSX.Element {
   const { isAdmin, loading: adminLoading } = useAdminStatus();

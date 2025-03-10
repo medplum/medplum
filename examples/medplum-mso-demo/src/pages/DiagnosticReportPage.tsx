@@ -9,8 +9,7 @@ import { Outlet } from 'react-router';
  * Shows reports accessible to the current user in the current project context.
  * Provides search functionality by code, subject, and results, with navigation to report details.
  * 
- * @component
- * @returns {JSX.Element} The diagnostic reports listing page
+ * @returns The diagnostic reports listing page
  */
 export function DiagnosticReportPage(): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;

@@ -3,19 +3,19 @@ import { Organization } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { useParams } from 'react-router';
 import { useEffect, useState } from 'react';
-import { MemberList } from '../components/MemberList';
 import { showNotification } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useAdminStatus } from '../utils/admin';
+import { ClinicianList } from '../components/ClinicianList';
+import { PatientList } from '../components/PatientList';
 
 /**
  * A page component for managing a specific clinic and its members.
  * Provides interfaces for enrolling and managing patients and practitioners
  * associated with the clinic.
  * 
- * @component
- * @returns {JSX.Element} The clinic management page
+ * @returns The clinic management page
  */
 export function ManageClinicPage(): JSX.Element {
   const medplum = useMedplum();
@@ -32,7 +32,7 @@ export function ManageClinicPage(): JSX.Element {
       } catch (error) {
         showNotification({
           title: 'Error',
-          message: 'Failed to load clinic details',
+          message: 'Error loading clinic details: ' + error,
           color: 'red',
         });
       }
@@ -40,7 +40,7 @@ export function ManageClinicPage(): JSX.Element {
     loadOrganization().catch((error) => {
       showNotification({
         title: 'Error',
-        message: 'Failed to load clinic details',
+        message: 'Error loading clinic details: ' + error,
         color: 'red',
       });
     });
@@ -93,16 +93,14 @@ export function ManageClinicPage(): JSX.Element {
             </Tabs.List>
 
             <Tabs.Panel value="practitioners">
-              <MemberList
-                resourceType="Practitioner"
+              <ClinicianList
                 organization={organization}
               />
             </Tabs.Panel>
 
             <Tabs.Panel value="patients">
-              <MemberList
-                resourceType="Patient"
-                organization={organization}
+              <PatientList
+               organization={organization}
               />
             </Tabs.Panel>
           </Tabs>
