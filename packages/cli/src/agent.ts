@@ -1,4 +1,4 @@
-import { ContentType, IssueSeverity, MedplumClient, MedplumClientOptions, isOk, isUUID } from '@medplum/core';
+import { ContentType, IssueSeverity, MedplumClient, MedplumClientOptions, WithId, isOk, isUUID } from '@medplum/core';
 import { Agent, Bundle, OperationOutcome, Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
 import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
@@ -15,7 +15,7 @@ export type ParamNames<R extends string[], O extends string[] = []> = {
 };
 
 export type AgentBulkOpResponse<T extends Parameters | OperationOutcome = Parameters | OperationOutcome> = {
-  agent: Agent;
+  agent: WithId<Agent>;
   result: T;
 };
 
@@ -80,7 +80,7 @@ agentStatusCommand
         });
 
         return {
-          id: response.agent.id as string,
+          id: response.agent.id,
           name: response.agent.name,
           enabledStatus: response.agent.status,
           version: statusEntry.version,
@@ -179,7 +179,7 @@ agentReloadConfigCommand
       options,
       parseSuccessfulResponse: (response: AgentBulkOpResponse<OperationOutcome>) => {
         return {
-          id: response.agent.id as string,
+          id: response.agent.id,
           name: response.agent.name,
         };
       },
@@ -212,7 +212,7 @@ agentUpgradeCommand
       options,
       parseSuccessfulResponse: (response: AgentBulkOpResponse<OperationOutcome>) => {
         return {
-          id: response.agent.id as string,
+          id: response.agent.id,
           name: response.agent.name,
           version: options.version ?? 'latest',
         };
@@ -288,7 +288,7 @@ export async function callAgentBulkOperation<
     const outcome = response.result;
     const issue = outcome.issue?.[0];
     const row = {
-      id: response.agent.id as string,
+      id: response.agent.id,
       name: response.agent.name,
       severity: issue.severity,
       code: issue.code,
@@ -354,7 +354,7 @@ export function parseAgentBulkOpBundle(bundle: Bundle<Parameters>): AgentBulkOpR
 }
 
 export function parseAgentBulkOpParameters(params: Parameters): AgentBulkOpResponse {
-  const agent = params.parameter?.find((p) => p.name === 'agent')?.resource;
+  const agent = params.parameter?.find((p) => p.name === 'agent')?.resource as WithId<Agent>;
   if (!agent) {
     throw new Error("Agent bulk operation response missing 'agent'");
   }

@@ -20,7 +20,7 @@ describe('Medplum Custom Search Parameters', () => {
     const { project } = await createTestProject();
     repo = new Repository({
       strictMode: true,
-      projects: [project.id as string],
+      projects: [project.id],
       author: { reference: 'User/' + randomUUID() },
     });
   });
@@ -294,7 +294,7 @@ describe('Medplum Custom Search Parameters', () => {
 
       expect(results.entry).toHaveLength(1);
       expect(results.entry?.[0].resource?.resourceType).toStrictEqual('Flag');
-      expect(results.entry?.[0].resource?.id as string).toStrictEqual(flag1.id as string);
+      expect(results.entry?.[0].resource?.id).toStrictEqual(flag1.id);
     }));
 
   test('Search by AsyncJob.type and AsyncJob.status', () =>

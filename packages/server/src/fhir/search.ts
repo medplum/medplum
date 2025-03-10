@@ -492,7 +492,7 @@ async function getSearchIncludeEntries(
     }
   }
 
-  const includedResources = (await repo.readReferences(references)).filter((v) => isResource(v));
+  const includedResources = (await repo.readReferences(references)).filter((v) => isResource(v)) as WithId<Resource>[];
   if (searchParam.target && canonicalReferences.length > 0) {
     const canonicalSearches = searchParam.target.map((resourceType) => {
       const searchRequest = {
@@ -514,13 +514,13 @@ async function getSearchIncludeEntries(
     const searchResults = await Promise.all(canonicalSearches);
     for (const result of searchResults) {
       for (const entry of result.entry) {
-        includedResources.push(entry.resource as Resource);
+        includedResources.push(entry.resource as WithId<Resource>);
       }
     }
   }
 
   return includedResources.map((resource) => ({
-    fullUrl: getFullUrl(resource.resourceType, resource.id as string),
+    fullUrl: getFullUrl(resource.resourceType, resource.id),
     search: { mode: 'include' },
     resource,
   }));

@@ -136,7 +136,7 @@ describe('Patient Summary Operation', () => {
       const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
       const patientRef = createReference(patient);
 
-      const everything: Resource[] = [
+      const everything: WithId<Resource>[] = [
         { resourceType: 'AllergyIntolerance', id: 'allergy1', patient: patientRef },
         { resourceType: 'Condition', id: 'condition1', subject: patientRef },
         {
@@ -242,7 +242,7 @@ describe('Patient Summary Operation', () => {
       const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
       const subject = createReference(patient);
 
-      const childObs: Observation = {
+      const childObs: WithId<Observation> = {
         resourceType: 'Observation',
         id: `child`,
         subject,
@@ -251,7 +251,7 @@ describe('Patient Summary Operation', () => {
         code: { text: 'test' },
       };
 
-      const parentObs: Observation = {
+      const parentObs: WithId<Observation> = {
         resourceType: 'Observation',
         id: `parent`,
         subject,
@@ -285,7 +285,7 @@ describe('Patient Summary Operation', () => {
       const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
       const subject = createReference(patient);
 
-      const childObs: Observation = {
+      const childObs: WithId<Observation> = {
         resourceType: 'Observation',
         id: `child`,
         subject,
@@ -293,7 +293,7 @@ describe('Patient Summary Operation', () => {
         code: { text: 'test' },
       };
 
-      const parentReport: DiagnosticReport = {
+      const parentReport: WithId<DiagnosticReport> = {
         resourceType: 'DiagnosticReport',
         id: `parent`,
         subject,

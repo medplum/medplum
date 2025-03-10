@@ -1,4 +1,4 @@
-import { deepClone, parseSearchRequest, sleep } from '@medplum/core';
+import { deepClone, parseSearchRequest, sleep, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Pool, PoolConfig } from 'pg';
 import { initAppServices, shutdownApp } from './app';
@@ -144,7 +144,7 @@ describe('Database migrations', () => {
       if (jobs.length) {
         await systemRepo.expungeResources(
           'AsyncJob',
-          jobs.map((job) => job.id as string)
+          jobs.map((job) => job.id)
         );
       }
     });
@@ -175,7 +175,7 @@ describe('Database migrations', () => {
       const systemRepo = getSystemRepo();
       const jobs = await systemRepo.searchResources<AsyncJob>(parseSearchRequest('AsyncJob?type=data-migration'));
       for (const job of jobs) {
-        await systemRepo.deleteResource('AsyncJob', job.id as string);
+        await systemRepo.deleteResource('AsyncJob', job.id);
       }
     });
 
@@ -200,14 +200,14 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        let updated: AsyncJob | undefined;
+        let updated: WithId<AsyncJob> | undefined;
         let tries = 0;
         while (updated?.status !== 'completed') {
           if (tries > MAX_POLL_TRIES) {
             throw new Error('Timed out while polling async job');
           }
           try {
-            updated = await getSystemRepo().readResource<AsyncJob>('AsyncJob', (asyncJob as AsyncJob).id as string);
+            updated = await getSystemRepo().readResource<AsyncJob>('AsyncJob', (asyncJob as WithId<AsyncJob>).id);
             expect(updated).toMatchObject<Partial<AsyncJob>>({
               resourceType: 'AsyncJob',
               status: 'completed',

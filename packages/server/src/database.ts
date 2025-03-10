@@ -1,4 +1,4 @@
-import { OperationOutcomeError, badRequest, parseSearchRequest, sleep } from '@medplum/core';
+import { OperationOutcomeError, WithId, badRequest, parseSearchRequest, sleep } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
@@ -279,7 +279,7 @@ function getMigrationVersions(migrationModule: Record<string, any>): number[] {
  * @param assertedDataVersion - The asserted data version that we expect to run.
  * @returns An `AsyncJob` if migration is started or already running, otherwise returns `undefined` if no migration to run.
  */
-export async function maybeStartDataMigration(assertedDataVersion?: number): Promise<AsyncJob | undefined> {
+export async function maybeStartDataMigration(assertedDataVersion?: number): Promise<WithId<AsyncJob> | undefined> {
   // If schema migrations didn't run, we should not attempt to run data migrations
   if (getConfig().database.runMigrations === false) {
     throw new OperationOutcomeError(badRequest('Cannot run data migration; schema migrations did not run'));
@@ -315,7 +315,7 @@ export async function maybeStartDataMigration(assertedDataVersion?: number): Pro
   }
 
   const systemRepo = getSystemRepo();
-  let dataMigrationJob: AsyncJob | undefined;
+  let dataMigrationJob: WithId<AsyncJob> | undefined;
 
   await systemRepo.withTransaction(
     async () => {

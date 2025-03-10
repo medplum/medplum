@@ -192,7 +192,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
-  const login = searchResult.entry[0].resource as Login;
+  const login = searchResult.entry[0].resource as WithId<Login>;
 
   if (clientId && login.client?.reference !== 'ClientApplication/' + clientId) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
@@ -579,7 +579,7 @@ async function validateClientIdAndSecret(
  * @param login - The user login.
  * @param client - The client application. Optional.
  */
-async function sendTokenResponse(res: Response, login: Login, client?: ClientApplication): Promise<void> {
+async function sendTokenResponse(res: Response, login: WithId<Login>, client?: ClientApplication): Promise<void> {
   const config = getConfig();
 
   const systemRepo = getSystemRepo();

@@ -13,7 +13,7 @@ import { LongJob } from './long-job';
  */
 
 export type ReindexJobData = {
-  readonly asyncJob: AsyncJob;
+  readonly asyncJob: WithId<AsyncJob>;
   readonly resourceTypes: ResourceType[];
   readonly maxResourceVersion?: number;
   readonly cursor?: string;
@@ -310,7 +310,7 @@ async function addReindexJobData(job: ReindexJobData): Promise<Job<ReindexJobDat
 
 export async function addReindexJob(
   resourceTypes: ResourceType[],
-  job: AsyncJob,
+  job: WithId<AsyncJob>,
   searchFilter?: SearchRequest,
   maxResourceVersion?: number
 ): Promise<Job<ReindexJobData>> {

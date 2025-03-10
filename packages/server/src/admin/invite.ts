@@ -58,7 +58,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 }
 
 export interface ServerInviteRequest extends InviteRequest {
-  project: Project;
+  project: WithId<Project>;
 }
 
 export interface ServerInviteResponse {
@@ -75,8 +75,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     request.email = request.email.toLowerCase();
   }
 
-  const project = request.project as WithId<Project>;
-  const email = request.email;
+  const { project, email } = request;
   let user = undefined;
   let existingUser = true;
   let passwordResetUrl = undefined;
@@ -188,7 +187,7 @@ async function searchForExistingProfile(request: ServerInviteRequest): Promise<W
         {
           code: '_project',
           operator: Operator.EQUALS,
-          value: project.id as string,
+          value: project.id,
         },
         {
           code: 'email',

@@ -304,7 +304,7 @@ export abstract class FhirRepository<TClient = unknown> {
       }
 
       const resource = matches[0];
-      await this.deleteResource(resource.resourceType, resource.id as string);
+      await this.deleteResource(resource.resourceType, resource.id);
     });
   }
 }

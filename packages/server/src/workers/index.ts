@@ -1,4 +1,4 @@
-import { BackgroundJobContext } from '@medplum/core';
+import { BackgroundJobContext, WithId } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
@@ -40,7 +40,7 @@ export async function closeWorkers(): Promise<void> {
  * @param context - The background job context.
  */
 export async function addBackgroundJobs(
-  resource: Resource,
+  resource: WithId<Resource>,
   previousVersion: Resource | undefined,
   context: BackgroundJobContext
 ): Promise<void> {

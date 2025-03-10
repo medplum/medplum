@@ -149,7 +149,7 @@ async function getSessions(systemRepo: Repository, user: WithId<User>): Promise<
     const browser = login.userAgent ? Bowser.getParser(login.userAgent) : undefined;
 
     result.push({
-      id: login.id as string,
+      id: login.id,
       lastUpdated: login.meta?.lastUpdated as string,
       authMethod: login.authMethod as string,
       remoteAddress: login.remoteAddress as string,

@@ -1,4 +1,4 @@
-import { Operator } from '@medplum/core';
+import { Operator, WithId } from '@medplum/core';
 import { ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -18,8 +18,8 @@ describe('OAuth Authorize', () => {
   const systemRepo = getSystemRepo();
   const email = randomUUID() + '@example.com';
   const password = randomUUID();
-  let project: Project;
-  let client: ClientApplication;
+  let project: WithId<Project>;
+  let client: WithId<ClientApplication>;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -62,7 +62,7 @@ describe('OAuth Authorize', () => {
   test('Wrong redirect', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: 'https://example2.com',
       scope: 'openid',
       code_challenge: 'xyz',
@@ -76,7 +76,7 @@ describe('OAuth Authorize', () => {
   test('Invalid response_type', async () => {
     const params = new URLSearchParams({
       response_type: 'xyz',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -92,7 +92,7 @@ describe('OAuth Authorize', () => {
   test('Unsupported request', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -109,7 +109,7 @@ describe('OAuth Authorize', () => {
   test('Missing scope', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -123,7 +123,7 @@ describe('OAuth Authorize', () => {
   test('Missing code_challenge_method', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -138,7 +138,7 @@ describe('OAuth Authorize', () => {
   test('Invalid audience', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -154,7 +154,7 @@ describe('OAuth Authorize', () => {
   test('Invalid launch', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -170,7 +170,7 @@ describe('OAuth Authorize', () => {
   test('Malformed audience', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -186,7 +186,7 @@ describe('OAuth Authorize', () => {
   test('Server URL audience', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -202,7 +202,7 @@ describe('OAuth Authorize', () => {
   test('FHIR URL audience', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -218,7 +218,7 @@ describe('OAuth Authorize', () => {
   test('Success', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -231,7 +231,7 @@ describe('OAuth Authorize', () => {
   test('prompt=none and no existing login', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -274,7 +274,7 @@ describe('OAuth Authorize', () => {
 
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -321,7 +321,7 @@ describe('OAuth Authorize', () => {
 
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid user/Patient.rs',
       code_challenge: 'xyz',
@@ -380,7 +380,7 @@ describe('OAuth Authorize', () => {
 
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -430,7 +430,7 @@ describe('OAuth Authorize', () => {
 
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'abc',
@@ -480,7 +480,7 @@ describe('OAuth Authorize', () => {
 
     const params2 = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -501,7 +501,7 @@ describe('OAuth Authorize', () => {
   test('Invalid id_token_hint', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -519,7 +519,7 @@ describe('OAuth Authorize', () => {
   test('Post success', async () => {
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: client.redirectUri as string,
       scope: 'openid',
       code_challenge: 'xyz',
@@ -551,13 +551,13 @@ describe('OAuth Authorize', () => {
     const client = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       secret: randomUUID(),
-      meta: { project: project.id as string },
+      meta: { project: project.id },
       name: 'Test Client Application',
     });
 
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: 'https://example2.com',
       scope: 'openid',
       code_challenge: 'xyz',
@@ -572,14 +572,14 @@ describe('OAuth Authorize', () => {
     const client = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
       secret: randomUUID(),
-      meta: { project: project.id as string },
+      meta: { project: project.id },
       name: 'Test Client Application',
       redirectUri: 'invalid',
     });
 
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: client.id as string,
+      client_id: client.id,
       redirect_uri: 'https://example2.com',
       scope: 'openid',
       code_challenge: 'xyz',
