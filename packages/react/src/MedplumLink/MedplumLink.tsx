@@ -37,9 +37,8 @@ export function MedplumLink(props: MedplumLinkProps): JSX.Element {
           e.preventDefault();
           onClick(e);
         } else if (to) {
-          if (isAuxClick(e)) {
-            // allow default browser behavior for anchor aux clicks
-          } else {
+          // allow default browser behavior for anchor aux clicks
+          if (!isAuxClick(e)) {
             // navigate() takes the place of default anchor click behavior
             e.preventDefault();
             navigate(href);
