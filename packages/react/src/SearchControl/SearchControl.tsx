@@ -40,7 +40,7 @@ import { SearchFilterEditor } from '../SearchFilterEditor/SearchFilterEditor';
 import { SearchFilterValueDialog } from '../SearchFilterValueDialog/SearchFilterValueDialog';
 import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilterValueDisplay';
 import { SearchPopupMenu } from '../SearchPopupMenu/SearchPopupMenu';
-import { isCheckboxCell, killEvent } from '../utils/dom';
+import { isAuxClick, isCheckboxCell, killEvent } from '../utils/dom';
 import classes from './SearchControl.module.css';
 import { getFieldDefinitions } from './SearchControlField';
 import { addFilter, buildFieldNameString, getOpString, renderValue, setPage } from './SearchUtils';
@@ -240,7 +240,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
     killEvent(e);
 
-    const isAux = e.button === 1 || e.ctrlKey || e.metaKey;
+    const isAux = isAuxClick(e);
 
     if (!isAux && props.onClick) {
       props.onClick(new SearchClickEvent(resource, e));
