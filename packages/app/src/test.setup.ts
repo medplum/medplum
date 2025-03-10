@@ -6,6 +6,10 @@ import { TextDecoder, TextEncoder } from 'node:util';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
+// jsdom does not implement Request
+// See: https://github.com/jsdom/jsdom/issues/1724
+globalThis.Request ??= jest.fn();
+
 Object.defineProperty(globalThis.window, 'TextDecoder', { value: TextDecoder });
 Object.defineProperty(globalThis.window, 'TextEncoder', { value: TextEncoder });
 
