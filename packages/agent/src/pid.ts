@@ -10,40 +10,7 @@ import process from 'node:process';
  * @returns The path to the PID file
  */
 export function getPidFilePath(appName: string): string {
-  const platform = os.platform();
-
-  switch (platform) {
-    case 'linux':
-      // Prefer /run if we have write access, fallback to /var/run, then /tmp
-      try {
-        fs.accessSync('/run', fs.constants.W_OK);
-        return path.join('/run', `${appName}.pid`);
-      } catch (_err) {
-        try {
-          fs.accessSync('/var/run', fs.constants.W_OK);
-          return path.join('/var/run', `${appName}.pid`);
-        } catch (_err) {
-          return path.join('/tmp', `${appName}.pid`);
-        }
-      }
-
-    case 'win32':
-      // Use %TEMP% directory for Windows
-      return path.join(os.tmpdir(), `${appName}.pid`);
-
-    case 'darwin':
-      // For macOS, try /var/run first, then fall back to /tmp
-      try {
-        fs.accessSync('/var/run', fs.constants.W_OK);
-        return path.join('/var/run', `${appName}.pid`);
-      } catch (_err) {
-        return path.join('/tmp', `${appName}.pid`);
-      }
-
-    default:
-      // Default fallback for any other OS
-      return path.join(os.tmpdir(), `${appName}.pid`);
-  }
+  return path.join(os.tmpdir(), `${appName}.pid`);
 }
 
 /**
@@ -69,12 +36,6 @@ export function removePidFile(pidFilePath: string): void {
 export function createPidFile(appName: string): string {
   const pid = process.pid;
   const pidFilePath = getPidFilePath(appName);
-  const platform = os.platform();
-
-  // Ensure the directory exists (mainly for Windows ProgramData)
-  if (platform === 'win32' && pidFilePath.includes('ProgramData')) {
-    fs.mkdirSync(path.dirname(pidFilePath), { recursive: true });
-  }
 
   // Check if PID file already exists
   if (fs.existsSync(pidFilePath)) {
@@ -93,7 +54,7 @@ export function createPidFile(appName: string): string {
   }
 
   // Write the PID file atomically using a temporary file
-  const tempFile = `${pidFilePath}.tmp`;
+  const tempFile = path.join(os.tmpdir(), `${pidFilePath}.tmp`);
   fs.writeFileSync(tempFile, pid.toString());
   fs.renameSync(tempFile, pidFilePath);
 
