@@ -333,7 +333,7 @@ interface GetBaseSelectQueryOptions {
   addColumns?: boolean;
   /** Callback invoked for each resource type and  its `SelectQuery` after all filters are applied. */
   resourceTypeQueryCallback?: (resourceType: SearchRequest['resourceType'], builder: SelectQuery) => void;
-  /** The maximum resource version to include in the search. */
+  /** The maximum resource version to include in the search. If zero is specified, only resources with a NULL version are included. */
   maxResourceVersion?: number;
 }
 function getBaseSelectQuery(
