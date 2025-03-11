@@ -1,4 +1,4 @@
-import { capitalize, generateId } from '@medplum/core';
+import { capitalize, generateId, getExtension } from '@medplum/core';
 import {
   Address,
   AllergyIntolerance,
@@ -288,7 +288,8 @@ class FhirToCcdaConverter {
       name: this.mapNames(patient.name),
       administrativeGenderCode: this.mapGender(patient.gender),
       birthTime: this.mapBirthDate(patient.birthDate),
-      raceCode: this.mapRace(patient.extension),
+      raceCode: this.mapRace(patient),
+      'sdtc:raceCode': this.mapDetailedRace(patient),
       ethnicGroupCode: this.mapEthnicity(patient.extension),
       languageCommunication: this.mapLanguageCommunication(patient.communication),
     };
@@ -371,13 +372,11 @@ class FhirToCcdaConverter {
 
   /**
    * Map the race to the C-CDA race.
-   * @param extensions - The extensions to map.
+   * @param patient - The patient to map.
    * @returns The C-CDA race.
    */
-  private mapRace(extensions: Extension[] | undefined): CcdaCode[] | undefined {
-    const raceExt = extensions?.find((e) => e.url === US_CORE_RACE_URL);
-    const ombCategory = raceExt?.extension?.find((e) => e.url === 'ombCategory')?.valueCoding;
-
+  private mapRace(patient: Patient): CcdaCode[] | undefined {
+    const ombCategory = getExtension(patient, US_CORE_RACE_URL, 'ombCategory')?.valueCoding;
     if (!ombCategory) {
       return undefined;
     }
@@ -386,6 +385,27 @@ class FhirToCcdaConverter {
       {
         '@_code': ombCategory.code,
         '@_displayName': ombCategory.display,
+        '@_codeSystem': OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
+        '@_codeSystemName': 'CDC Race and Ethnicity',
+      },
+    ];
+  }
+
+  /**
+   * Map the race to the C-CDA race.
+   * @param patient - The patient to map.
+   * @returns The C-CDA race.
+   */
+  private mapDetailedRace(patient: Patient): CcdaCode[] | undefined {
+    const detailed = getExtension(patient, US_CORE_RACE_URL, 'detailed')?.valueCoding;
+    if (!detailed) {
+      return undefined;
+    }
+
+    return [
+      {
+        '@_code': detailed.code,
+        '@_displayName': detailed.display,
         '@_codeSystem': OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
         '@_codeSystemName': 'CDC Race and Ethnicity',
       },
@@ -427,7 +447,7 @@ class FhirToCcdaConverter {
 
     return [
       {
-        '@_languageCode': communication[0].language?.coding?.[0]?.code,
+        languageCode: { '@_code': communication[0].language?.coding?.[0]?.code },
       },
     ];
   }
