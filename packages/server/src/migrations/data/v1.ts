@@ -16,6 +16,7 @@ export async function run(repo: Repository, asyncJob: WithId<AsyncJob>): Promise
       type: 'reindex',
       asyncJob,
       resourceTypes: getResourceTypes().filter((rt) => rt !== 'Binary'),
+      maxResourceVersion: 0, // zero effectively makes the filter any NULL resource version
     });
   });
 }
