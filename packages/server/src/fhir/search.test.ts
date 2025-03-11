@@ -33,6 +33,7 @@ import {
   Location,
   MeasureReport,
   Observation,
+  OperationDefinition,
   Organization,
   Patient,
   PlanDefinition,
@@ -4646,6 +4647,46 @@ describe('FHIR Search', () => {
         await expect(
           repo.search(parseSearchRequest('ResearchStudy?_has:EvidenceVariable:derived-from:_id=foo'))
         ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
+      }));
+
+    test('Named search queries', async () =>
+      withTestContext(async () => {
+        const op = await repo.createResource<OperationDefinition>({
+          resourceType: 'OperationDefinition',
+          code: 'mySearch',
+          name: 'mySearch',
+          kind: 'query',
+          status: 'active',
+          system: false,
+          type: true,
+          instance: false,
+          parameter: [{ use: 'out', name: 'result', type: 'Bundle', min: 1, max: '1' }],
+        });
+
+        await expect(repo.search(parseSearchRequest('Patient?_query=mySearch'))).rejects.toThrow(
+          'Named query must specify search criteria (OperationDefinition.parameter.documentation)'
+        );
+
+        await repo.updateResource<OperationDefinition>({
+          ...op,
+          parameter: [
+            {
+              use: 'out',
+              name: 'result',
+              type: 'Bundle',
+              min: 1,
+              max: '1',
+              documentation: 'Patient?name=Carmen Sandiego',
+            },
+          ],
+        });
+        await expect(repo.search(parseSearchRequest('Patient?_query=mySearch'))).resolves.toMatchObject<Bundle>({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          link: [
+            { relation: 'self', url: expect.stringContaining('/fhir/R4/Patient?_count=20&name=Carmen%20Sandiego') },
+          ],
+        });
       }));
   });
 
