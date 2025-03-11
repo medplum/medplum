@@ -78,6 +78,12 @@ export function NewClinicianPage(): JSX.Element {
         }]
       }));
 
+      // Base access policy in case all organizations are removed from the clinician
+      const accessPolicy = {
+        reference: `AccessPolicy/${policy.id}`,
+        display: policy.name
+      };
+
       // Create the practitioner with project invitation
       const result = await medplum.post('admin/projects/:projectId/invite', {
         resourceType: 'Practitioner',
@@ -87,7 +93,8 @@ export function NewClinicianPage(): JSX.Element {
         password: formData.password,
         sendEmail: false,
         membership: {
-          access
+          access,
+          accessPolicy
         }
       });
 

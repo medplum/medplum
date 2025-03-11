@@ -1,5 +1,5 @@
 import { Organization, Patient, Practitioner, Reference, ProjectMembership, AccessPolicy, ProjectMembershipAccessParameter } from '@medplum/fhirtypes';
-import { MedplumClient } from '@medplum/core';
+import { createReference, MedplumClient } from '@medplum/core';
 
 
 /**
@@ -36,12 +36,12 @@ export async function enrollPractitioner(
       
       if (existingAccess.length > 0) {
         existingAccess.push({
-          parameter: [{ name: 'organization', valueReference: { reference: `Organization/${organization.id}` } }],
+          parameter: [{ name: 'organization', valueReference: createReference(organization) }],
           policy: { reference: `AccessPolicy/${policy.id}` }
         });
       } else {
         membershipResource.access = [{
-          parameter: [{ name: 'organization', valueReference: { reference: `Organization/${organization.id}` } }],
+          parameter: [{ name: 'organization', valueReference: createReference(organization) }],
           policy: { reference: `AccessPolicy/${policy.id}` }
         }];
       }
@@ -89,9 +89,7 @@ export async function enrollPatient(
       // Add the new organization
       {
         name: "accounts",
-        valueReference: {
-          reference: orgReference
-        }
+        valueReference: createReference(organization)
       }
     ]
   };
@@ -132,18 +130,18 @@ export async function unEnrollPatient(
       }))
   };
 
+  //NOTE: If the patient has ben unenrolled from all organizations, this is a workaround to conform to the FHIR spec's
+  //inability to handle empty arrays. Instead of sending an empty array, we send the patient's own reference.
+  if (parameters.parameter.length === 0) {
+    parameters.parameter = [{
+      name: 'accounts',
+      valueReference: createReference(patient)
+    }];
+  }
+
   try {
     await medplum.post(`fhir/R4/Patient/${patient.id}/$set-accounts`, parameters);
-
-    //currently for the removal of a Location or Organization from a Patient compartment, 
-    //the compartment also needs to be removed to refresh the compartment list
-    const patientResource = await medplum.get(`fhir/R4/Patient/${patient.id}`);
-    if (patientResource.meta?.compartment) {
-      delete patientResource.meta?.compartment;
-      await medplum.updateResource(patientResource);
-    }
   } catch (error) {
-    console.error("Error unenrolling patient:", error);
     throw new Error(`Failed to unenroll patient: ${error}`);
   }
 }
