@@ -23,11 +23,9 @@ export function Form(props: FormProps): JSX.Element {
             setSubmitting(true);
             const result = props.onSubmit(formData);
             if (result?.then) {
-              result
-                .then(() => {
-                  setSubmitting(false);
-                })
-                .catch(console.error);
+              result.catch(console.error).finally(() => {
+                setSubmitting(false);
+              });
             } else {
               setSubmitting(false);
             }
