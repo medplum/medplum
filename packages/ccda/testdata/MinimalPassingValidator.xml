@@ -91,6 +91,7 @@
             <component>
                 <section nullFlavor="NI">
                     <templateId root="2.16.840.1.113883.10.20.22.2.6.1" extension="2015-08-01" />
+                    <templateId root="2.16.840.1.113883.10.20.22.2.6.1" />
                     <code code="48765-2" displayName="Allergies and Adverse Reactions"
                         codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
                     <title>Allergies, Adverse Reactions and Alerts</title>
@@ -109,6 +110,7 @@
             <component>
                 <section nullFlavor="NI">
                     <templateId root="2.16.840.1.113883.10.20.22.2.5.1" extension="2015-08-01" />
+                    <templateId root="2.16.840.1.113883.10.20.22.2.5.1" />
                     <code code="11450-4" displayName="Problem List"
                         codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
                     <title>Problem List</title>

@@ -22,6 +22,7 @@ const ARRAY_PATHS = [
 
   // Patient
   'patient.raceCode',
+  'patient.sdtc:raceCode',
   'patient.ethnicGroupCode',
   'patient.languageCommunication',
 
