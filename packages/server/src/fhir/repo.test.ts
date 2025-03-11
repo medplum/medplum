@@ -19,7 +19,6 @@ import {
   Login,
   Observation,
   OperationOutcome,
-  Organization,
   Patient,
   Practitioner,
   Project,
