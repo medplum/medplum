@@ -12,7 +12,7 @@ export function RegisterPage(): JSX.Element | null {
 
   useEffect(() => {
     if (medplum.getProfile()) {
-      navigate('/signin?project=new');
+      navigate('/signin?project=new')?.catch(console.error);
     }
   }, [medplum, navigate]);
 
