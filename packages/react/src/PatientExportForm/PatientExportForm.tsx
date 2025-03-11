@@ -1,4 +1,4 @@
-import { Button, Group, SegmentedControl, Stack } from '@mantine/core';
+import { Group, SegmentedControl, Stack } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { ContentType, normalizeErrorString, resolveId } from '@medplum/core';
 import { Patient, Reference } from '@medplum/fhirtypes';
@@ -7,6 +7,7 @@ import { IconCheck, IconX } from '@tabler/icons-react';
 import { useCallback } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { FormSection } from '../FormSection/FormSection';
 
 export interface PatientExportFormProps {
@@ -122,7 +123,7 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
           <DateTimeInput name="endDate" placeholder="End date" />
         </FormSection>
         <Group justify="right">
-          <Button type="submit">Request Export</Button>
+          <SubmitButton>Request Export</SubmitButton>
         </Group>
       </Stack>
     </Form>

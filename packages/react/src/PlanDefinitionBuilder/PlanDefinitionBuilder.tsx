@@ -18,6 +18,7 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { killEvent } from '../utils/dom';
 import classes from './PlanDefinitionBuilder.module.css';
@@ -91,7 +92,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
           setHoverKey={setHoverKey}
           onChange={(x) => changeProperty('action', x)}
         />
-        <Button type="submit">Save</Button>
+        <SubmitButton>Save</SubmitButton>
       </Form>
     </div>
   );
