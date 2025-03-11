@@ -1847,9 +1847,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     existing: WithId<Resource> | undefined,
     updated: WithId<Resource>
   ): Promise<Reference[] | undefined> {
-    const updatedAccounts = this.extractAccountReferences(updated.meta);
-    if (this.canWriteAccount()) {
-      // If the user specifies an account, allow it if they have permission.
+    if (updated.meta && this.canWriteAccount()) {
+      // If the user specifies accounts, allow it if they have permission.
+      const updatedAccounts = this.extractAccountReferences(updated.meta);
       return updatedAccounts;
     }
 
@@ -1936,7 +1936,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private canWriteAccount(): boolean {
-    return Boolean((this.isSuperAdmin() || this.isProjectAdmin()) && this.context.extendedMode);
+    return Boolean(this.context.extendedMode && (this.isSuperAdmin() || this.isProjectAdmin()));
   }
 
   /**
