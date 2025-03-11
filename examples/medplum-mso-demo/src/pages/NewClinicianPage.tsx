@@ -19,7 +19,7 @@ interface NewClinicianForm {
 /**
  * New clinician page component for the MSO demo.
  * Allows admins to create new clinicians and assign them to organizations.
- * 
+ *
  * @returns The new clinician page component
  */
 export function NewClinicianPage(): JSX.Element {
@@ -36,24 +36,28 @@ export function NewClinicianPage(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const { isAdmin, loading: adminLoading } = useAdminStatus();
 
-
   useEffect(() => {
     const fetchOrgs = async (): Promise<void> => {
-        try {
-            const orgs = await medplum.search('Organization', {});
-            setOrganizations(orgs.entry?.map(e => e.resource as Organization) ?? []);
-        } catch (error) {
-            console.error('Error fetching organizations:', error);
-        }
+      try {
+        const orgs = await medplum.search('Organization', {});
+        setOrganizations(orgs.entry?.map((e) => e.resource as Organization) ?? []);
+      } catch (error) {
+        console.error('Error fetching organizations:', error);
+      }
     };
     fetchOrgs().catch((error) => {
       console.error('Error fetching organizations:', error);
     });
-}, [medplum]); 
-
+  }, [medplum]);
 
   const handleCreateClinician = async (): Promise<void> => {
-    if (!formData.email || !formData.password || !formData.firstName || !formData.lastName || formData.organizations.length === 0) {
+    if (
+      !formData.email ||
+      !formData.password ||
+      !formData.firstName ||
+      !formData.lastName ||
+      formData.organizations.length === 0
+    ) {
       return;
     }
 
@@ -61,27 +65,29 @@ export function NewClinicianPage(): JSX.Element {
     try {
       // First get the access policy
       const policySearch = await medplum.search('AccessPolicy', {
-        name: 'Managed Service Organization Access Policy'
+        name: 'Managed Service Organization Access Policy',
       });
       const policy = policySearch.entry?.[0]?.resource as AccessPolicy;
-      
+
       if (!policy) {
         throw new Error('Access policy not found');
       }
 
       // Create the access array for each selected organization
-      const access = formData.organizations.map(orgId => ({
+      const access = formData.organizations.map((orgId) => ({
         policy: { reference: `AccessPolicy/${policy.id}` },
-        parameter: [{
-          name: 'organization',
-          valueReference: { reference: `Organization/${orgId}` }
-        }]
+        parameter: [
+          {
+            name: 'organization',
+            valueReference: { reference: `Organization/${orgId}` },
+          },
+        ],
       }));
 
       // Base access policy in case all organizations are removed from the clinician
       const accessPolicy = {
         reference: `AccessPolicy/${policy.id}`,
-        display: policy.name
+        display: policy.name,
       };
 
       // Create the practitioner with project invitation
@@ -94,14 +100,14 @@ export function NewClinicianPage(): JSX.Element {
         sendEmail: false,
         membership: {
           access,
-          accessPolicy
-        }
+          accessPolicy,
+        },
       });
 
       showNotification({
         title: 'Success',
         message: 'Clinician created successfully',
-        color: 'green'
+        color: 'green',
       });
 
       navigate(`/${result.profile?.reference}`)?.catch(console.error);
@@ -110,7 +116,7 @@ export function NewClinicianPage(): JSX.Element {
       showNotification({
         title: 'Error',
         message: 'Error creating clinician',
-        color: 'red'
+        color: 'red',
       });
     } finally {
       setLoading(false);
@@ -121,7 +127,7 @@ export function NewClinicianPage(): JSX.Element {
   if (adminLoading) {
     return (
       <Document>
-        <Title >Create New Clinician</Title>
+        <Title>Create New Clinician</Title>
         <Text>Loading...</Text>
       </Document>
     );
@@ -131,12 +137,8 @@ export function NewClinicianPage(): JSX.Element {
   if (!isAdmin) {
     return (
       <Document>
-        <Title >Create New Clinician</Title>
-        <Alert 
-          icon={<IconAlertCircle size={16} />} 
-          title="Access Denied" 
-          color="red"
-        >
+        <Title>Create New Clinician</Title>
+        <Alert icon={<IconAlertCircle size={16} />} title="Access Denied" color="red">
           You need to be an Admin to view this page. Please contact your system administrator for access.
         </Alert>
       </Document>
@@ -145,21 +147,21 @@ export function NewClinicianPage(): JSX.Element {
 
   return (
     <Document>
-      <Title >Create New Clinician</Title>
+      <Title>Create New Clinician</Title>
       <Stack gap="lg" mt="lg">
         <TextInput
           label="First Name"
           placeholder="Enter first name"
           value={formData.firstName}
-          onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, firstName: e.target.value }))}
           required
         />
-        
+
         <TextInput
           label="Last Name"
           placeholder="Enter last name"
           value={formData.lastName}
-          onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, lastName: e.target.value }))}
           required
         />
 
@@ -168,7 +170,7 @@ export function NewClinicianPage(): JSX.Element {
           type="email"
           placeholder="Enter email"
           value={formData.email}
-          onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
           required
         />
 
@@ -176,31 +178,35 @@ export function NewClinicianPage(): JSX.Element {
           label="Password"
           placeholder="Enter password"
           value={formData.password}
-          onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+          onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
           required
         />
 
         <MultiSelect
           label="Clinics"
           placeholder="Select clinics"
-          data={organizations.map(org => ({
+          data={organizations.map((org) => ({
             value: org.id as string,
-            label: org.name as string
+            label: org.name as string,
           }))}
           value={formData.organizations}
-          onChange={(values) => setFormData(prev => ({ ...prev, organizations: values }))}
-          
+          onChange={(values) => setFormData((prev) => ({ ...prev, organizations: values }))}
         />
-        
-        <Button 
+
+        <Button
           onClick={handleCreateClinician}
           loading={loading}
-          disabled={!formData.email || !formData.password || !formData.firstName || 
-                   !formData.lastName || formData.organizations.length === 0}
+          disabled={
+            !formData.email ||
+            !formData.password ||
+            !formData.firstName ||
+            !formData.lastName ||
+            formData.organizations.length === 0
+          }
         >
           Create Clinician
         </Button>
       </Stack>
     </Document>
   );
-} 
+}

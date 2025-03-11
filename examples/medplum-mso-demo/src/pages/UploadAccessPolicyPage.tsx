@@ -10,7 +10,7 @@ import { useAdminStatus } from '../utils/admin';
 
 /**
  * This page allows you to upload the Multi-Tenant Organization Access Policy required for the MSO demo.
- * 
+ *
  * @returns The upload access policy page
  */
 export function UploadAccessPolicyPage(): JSX.Element {
@@ -24,9 +24,9 @@ export function UploadAccessPolicyPage(): JSX.Element {
     const checkPolicy = async (): Promise<void> => {
       try {
         const searchResult = await medplum.search('AccessPolicy', {
-          name: MSO_ACCESS_POLICY.name
+          name: MSO_ACCESS_POLICY.name,
         });
-        
+
         if (searchResult.entry?.[0]?.resource) {
           setExistingPolicy(searchResult.entry[0].resource as AccessPolicy);
         }
@@ -45,13 +45,13 @@ export function UploadAccessPolicyPage(): JSX.Element {
         // Update existing policy
         const updated = await medplum.updateResource<AccessPolicy>({
           ...MSO_ACCESS_POLICY,
-          id: existingPolicy.id
+          id: existingPolicy.id,
         });
         setExistingPolicy(updated);
         showNotification({
           title: 'Success',
           message: 'Access policy updated successfully',
-          color: 'green'
+          color: 'green',
         });
       } else {
         // Create new policy
@@ -60,7 +60,7 @@ export function UploadAccessPolicyPage(): JSX.Element {
         showNotification({
           title: 'Success',
           message: 'Access policy created successfully',
-          color: 'green'
+          color: 'green',
         });
       }
     } catch (error) {
@@ -68,7 +68,7 @@ export function UploadAccessPolicyPage(): JSX.Element {
       showNotification({
         title: 'Error',
         message: 'Failed to upload access policy',
-        color: 'red'
+        color: 'red',
       });
     } finally {
       setLoading(false);
@@ -93,11 +93,7 @@ export function UploadAccessPolicyPage(): JSX.Element {
       <Document>
         <Stack gap="lg">
           <Title>Upload Access Policy</Title>
-          <Alert 
-            icon={<IconAlertCircle size={16} />} 
-            title="Access Denied" 
-            color="red"
-          >
+          <Alert icon={<IconAlertCircle size={16} />} title="Access Denied" color="red">
             You need to be an Admin to view this page.
           </Alert>
         </Stack>
@@ -109,30 +105,25 @@ export function UploadAccessPolicyPage(): JSX.Element {
     <Document>
       <Stack gap="lg">
         <Title>Upload Access Policy</Title>
-        
+
         <Text>
-          This page allows you to upload the Multi-Tenant Organization Access Policy required for the MSO demo.
-          This policy defines the access rules for organizations and practitioners in the system.
+          This page allows you to upload the Multi-Tenant Organization Access Policy required for the MSO demo. This
+          policy defines the access rules for organizations and practitioners in the system.
         </Text>
 
         {existingPolicy && (
           <Text color="yellow">
-            An existing policy with name "{MSO_ACCESS_POLICY.name}" was found. 
-            Uploading now will update the existing policy.
+            An existing policy with name "{MSO_ACCESS_POLICY.name}" was found. Uploading now will update the existing
+            policy.
           </Text>
         )}
 
-        <Button
-          onClick={handleUpload}
-          loading={loading}
-        >
+        <Button onClick={handleUpload} loading={loading}>
           {existingPolicy ? 'Update Policy' : 'Upload Policy'}
         </Button>
 
         <Box pos="relative">
-          <Code block>
-            {JSON.stringify(MSO_ACCESS_POLICY, null, 2)}
-          </Code>
+          <Code block>{JSON.stringify(MSO_ACCESS_POLICY, null, 2)}</Code>
           <CopyButton value={JSON.stringify(MSO_ACCESS_POLICY, null, 2)} timeout={2000}>
             {({ copied, copy }) => (
               <ActionIcon
@@ -151,4 +142,4 @@ export function UploadAccessPolicyPage(): JSX.Element {
       </Stack>
     </Document>
   );
-} 
+}

@@ -8,7 +8,7 @@ import { useParams } from 'react-router';
 /**
  * This is an example of a generic "Resource Display" page.
  * It uses the Medplum `<ResourceTable>` component to display a resource.
- * 
+ *
  * @returns The generic resource display page
  */
 export function ResourcePage(): JSX.Element | null {

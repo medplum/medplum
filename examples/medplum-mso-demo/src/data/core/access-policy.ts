@@ -6,40 +6,40 @@ export const MSO_ACCESS_POLICY: AccessPolicy = {
   resourceType: 'AccessPolicy',
   name: 'Managed Service Organization Access Policy',
   compartment: {
-    reference: '%organization'
+    reference: '%organization',
   },
   resource: [
     {
       resourceType: 'Organization',
-      readonly: true
+      readonly: true,
     },
     {
       resourceType: 'Practitioner',
-      readonly: true
+      readonly: true,
     },
     {
       resourceType: 'PractitionerRole',
-      readonly: true
+      readonly: true,
     },
     {
       resourceType: 'Patient',
-      criteria: 'Patient?_compartment=%organization'
+      criteria: 'Patient?_compartment=%organization',
     },
     {
       resourceType: 'Observation',
-      criteria: 'Observation?_compartment=%organization'
+      criteria: 'Observation?_compartment=%organization',
     },
     {
       resourceType: 'DiagnosticReport',
-      criteria: 'DiagnosticReport?_compartment=%organization'
+      criteria: 'DiagnosticReport?_compartment=%organization',
     },
     {
       resourceType: 'Encounter',
-      criteria: 'Encounter?_compartment=%organization'
+      criteria: 'Encounter?_compartment=%organization',
     },
     {
       resourceType: 'Communication',
-      criteria: 'Communication?_compartment=%organization'
-    }
-  ]
-}; 
+      criteria: 'Communication?_compartment=%organization',
+    },
+  ],
+};

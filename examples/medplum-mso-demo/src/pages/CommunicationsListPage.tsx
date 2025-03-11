@@ -1,7 +1,14 @@
 import { Title, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Practitioner } from '@medplum/fhirtypes';
-import { Document, ResourceName, SearchControl, useMedplum, useMedplumNavigate, useMedplumProfile } from '@medplum/react';
+import {
+  Document,
+  ResourceName,
+  SearchControl,
+  useMedplum,
+  useMedplumNavigate,
+  useMedplumProfile,
+} from '@medplum/react';
 import { Outlet } from 'react-router';
 
 /**
@@ -9,7 +16,7 @@ import { Outlet } from 'react-router';
  * Shows communications accessible to the current user in the current project context.
  * Provides search functionality by subject, sender, recipient, and payload content,
  * with navigation to communication details.
- * 
+ *
  * @returns The communications listing page
  */
 export function CommunicationPage(): JSX.Element {
@@ -20,16 +27,15 @@ export function CommunicationPage(): JSX.Element {
 
   return (
     <Document>
-      <Title>
-        Communications
-      </Title>
+      <Title>Communications</Title>
       <Text mb="sm">
-        Here are the Communications accessible to <ResourceName value={profile} link /> in <ResourceName value={project} link />
+        Here are the Communications accessible to <ResourceName value={profile} link /> in{' '}
+        <ResourceName value={project} link />
       </Text>
       <SearchControl
         search={{
           resourceType: 'Communication',
-          fields: ['payload','subject'],
+          fields: ['payload', 'subject'],
         }}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         hideToolbar
@@ -37,4 +43,4 @@ export function CommunicationPage(): JSX.Element {
       <Outlet />
     </Document>
   );
-} 
+}

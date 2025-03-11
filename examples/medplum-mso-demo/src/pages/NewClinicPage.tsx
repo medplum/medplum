@@ -11,7 +11,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 /**
  * A page component for creating a new clinic in the system.
  * Provides a form for entering clinic details and handles the creation process.
- * 
+ *
  * @returns The new clinic creation page
  */
 export function NewClinicPage(): JSX.Element {
@@ -29,22 +29,22 @@ export function NewClinicPage(): JSX.Element {
       await medplum.createResource<Organization>({
         resourceType: 'Organization',
         name: name,
-        active: true
+        active: true,
       });
 
-    showNotification({
-      title: 'Success',
-      message: 'Clinic created successfully',
-      color: 'green'
-    });
+      showNotification({
+        title: 'Success',
+        message: 'Clinic created successfully',
+        color: 'green',
+      });
 
-    // Navigate to the new organization's page
-    navigate('/Organization')?.catch(console.error);
+      // Navigate to the new organization's page
+      navigate('/Organization')?.catch(console.error);
     } catch (error) {
       showNotification({
         title: 'Error',
         message: 'Failed to create clinic: ' + error,
-        color: 'red'
+        color: 'red',
       });
     }
   };
@@ -67,11 +67,7 @@ export function NewClinicPage(): JSX.Element {
       <Document>
         <Stack gap="md">
           <Title>Create New Clinic</Title>
-          <Alert 
-            icon={<IconAlertCircle size={16} />} 
-            title="Access Denied" 
-            color="red"
-          >
+          <Alert icon={<IconAlertCircle size={16} />} title="Access Denied" color="red">
             You need to be an Admin to view this page. Please contact your system administrator for access.
           </Alert>
         </Stack>
@@ -96,4 +92,4 @@ export function NewClinicPage(): JSX.Element {
       </Stack>
     </Document>
   );
-} 
+}

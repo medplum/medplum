@@ -40,11 +40,11 @@ const root = createRoot(container);
 const router = createBrowserRouter([{ path: '*', element: <App /> }]);
 root.render(
   <StrictMode>
-      <MedplumProvider medplum={medplum}>
-        <MantineProvider theme={theme}>
-          <Notifications position="bottom-right" limit={5} />
-          <RouterProvider router={router} />
-        </MantineProvider>
-      </MedplumProvider>
+    <MedplumProvider medplum={medplum}>
+      <MantineProvider theme={theme}>
+        <Notifications position="bottom-right" limit={5} />
+        <RouterProvider router={router} />
+      </MantineProvider>
+    </MedplumProvider>
   </StrictMode>
 );

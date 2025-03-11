@@ -8,39 +8,34 @@ import { useAdminStatus } from '../utils/admin';
  * A page component that displays a searchable list of all clinics in the system.
  * Shows clinics accessible to the current user in the current project context.
  * Provides search functionality and navigation to individual clinic details.
- * 
+ *
  * @returns The clinics listing page
  */
 export function ClinicPage(): JSX.Element {
   const { isAdmin, loading: adminLoading } = useAdminStatus();
   const navigate = useMedplumNavigate();
 
-    // If still checking admin status, show loading
-    if (adminLoading) {
-      return (
-        <Document>
-          <Title>Manage Clinics</Title>
-          <Text>Loading...</Text>
-        </Document>
-      );
-    }
-  
-    // If user is not an admin, show access denied message
-    if (!isAdmin) {
-      return (
-        <Document>
-          <Title >Manage Clinics</Title>
-          <Alert 
-            icon={<IconAlertCircle size={16} />} 
-            title="Access Denied" 
-            color="red"
-          >
-            You need to be an Admin to view this page. Please contact your system administrator for access.
-          </Alert>
-        </Document>
-      );
-    }
-  
+  // If still checking admin status, show loading
+  if (adminLoading) {
+    return (
+      <Document>
+        <Title>Manage Clinics</Title>
+        <Text>Loading...</Text>
+      </Document>
+    );
+  }
+
+  // If user is not an admin, show access denied message
+  if (!isAdmin) {
+    return (
+      <Document>
+        <Title>Manage Clinics</Title>
+        <Alert icon={<IconAlertCircle size={16} />} title="Access Denied" color="red">
+          You need to be an Admin to view this page. Please contact your system administrator for access.
+        </Alert>
+      </Document>
+    );
+  }
 
   return (
     <Document>

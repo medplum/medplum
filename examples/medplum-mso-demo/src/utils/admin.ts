@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 
 /**
  * Checks if the current user is an admin by examining their ProjectMembership.
- * 
+ *
  * @param medplum - The Medplum client instance
  * @returns A Promise that resolves to a boolean indicating whether the user is an admin
  */
@@ -19,7 +19,7 @@ export async function isUserAdmin(medplum: MedplumClient): Promise<boolean> {
 
     // Search for the user's ProjectMembership
     const searchResult = await medplum.search('ProjectMembership', {
-      profile: `${profile.resourceType}/${profile.id}`
+      profile: `${profile.resourceType}/${profile.id}`,
     });
 
     // Check if any membership has admin=true
@@ -33,7 +33,7 @@ export async function isUserAdmin(medplum: MedplumClient): Promise<boolean> {
 
 /**
  * React hook that provides the admin status of the current user.
- * 
+ *
  * @returns An object containing the admin status and loading state
  */
 export function useAdminStatus(): { isAdmin: boolean; loading: boolean } {
@@ -57,4 +57,4 @@ export function useAdminStatus(): { isAdmin: boolean; loading: boolean } {
   }, [medplum]);
 
   return { isAdmin: isAdminUser, loading };
-} 
+}

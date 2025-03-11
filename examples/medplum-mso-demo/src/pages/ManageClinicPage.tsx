@@ -14,7 +14,7 @@ import { PatientList } from '../components/PatientList';
  * A page component for managing a specific clinic and its members.
  * Provides interfaces for enrolling and managing patients and practitioners
  * associated with the clinic.
- * 
+ *
  * @returns The clinic management page
  */
 export function ManageClinicPage(): JSX.Element {
@@ -61,11 +61,7 @@ export function ManageClinicPage(): JSX.Element {
     return (
       <Document>
         <Title>Manage Clinic</Title>
-        <Alert 
-          icon={<IconAlertCircle size={16} />} 
-          title="Access Denied" 
-          color="red"
-        >
+        <Alert icon={<IconAlertCircle size={16} />} title="Access Denied" color="red">
           You need to be an Admin to view this page. Please contact your system administrator for access.
         </Alert>
       </Document>
@@ -73,7 +69,11 @@ export function ManageClinicPage(): JSX.Element {
   }
 
   if (!organization) {
-    return <Document><Title>Loading...</Title></Document>;
+    return (
+      <Document>
+        <Title>Loading...</Title>
+      </Document>
+    );
   }
 
   return (
@@ -81,27 +81,19 @@ export function ManageClinicPage(): JSX.Element {
       {organization && (
         <>
           <Title>{organization.name}</Title>
-          
+
           <Tabs value={activeTab} onChange={setActiveTab}>
             <Tabs.List mb="md">
-              <Tabs.Tab value="practitioners">
-                Clinicians
-              </Tabs.Tab>
-              <Tabs.Tab value="patients">
-                Patients
-              </Tabs.Tab>
+              <Tabs.Tab value="practitioners">Clinicians</Tabs.Tab>
+              <Tabs.Tab value="patients">Patients</Tabs.Tab>
             </Tabs.List>
 
             <Tabs.Panel value="practitioners">
-              <ClinicianList
-                organization={organization}
-              />
+              <ClinicianList organization={organization} />
             </Tabs.Panel>
 
             <Tabs.Panel value="patients">
-              <PatientList
-               organization={organization}
-              />
+              <PatientList organization={organization} />
             </Tabs.Panel>
           </Tabs>
         </>

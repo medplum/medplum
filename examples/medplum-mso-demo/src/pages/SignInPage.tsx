@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router';
 /**
  * SignInPage component for the MSO demo.
  * Displays a sign-in form with Google OAuth credentials.
- * 
+ *
  * @returns The sign-in page
  */
 export function SignInPage(): JSX.Element {

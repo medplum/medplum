@@ -14,7 +14,7 @@ interface ClinicianListProps {
 /**
  * A component that displays a list of clinicians for an organization.
  * Supports searching, filtering, enrollment, and unenrollment actions.
- * 
+ *
  * @param props - The component props
  * @param props.organization - The organization to show clinicians for
  * @returns A table displaying the clinicians with their names and actions
@@ -30,7 +30,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
   const [availableClinicians, setAvailableClinicians] = useState<{ value: string; label: string }[]>([]);
   const [selectedClinicianIds, setSelectedClinicianIds] = useState<string[]>([]);
   const navigate = useMedplumNavigate();
-  
+
   // Load enrolled Practitioners to display for the current clinic
   const loadClinicians = useCallback(async (): Promise<void> => {
     try {
@@ -53,23 +53,23 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
   const loadAvailableClinicians = useCallback(async (): Promise<void> => {
     try {
       setIsLoading(true);
-      
+
       const searchResult = await medplum.search('Practitioner', {
         _count: 100,
         _fields: 'name',
       });
 
-      const allPractitioners = searchResult.entry?.map(e => e.resource as Practitioner) ?? [];
+      const allPractitioners = searchResult.entry?.map((e) => e.resource as Practitioner) ?? [];
       const enrolledPractitioners = await getEnrolledPractitioners(medplum, organization);
-      const availablePractitioners = allPractitioners.filter(practitioner => 
-        !enrolledPractitioners.some(p => p.id === practitioner.id)
+      const availablePractitioners = allPractitioners.filter(
+        (practitioner) => !enrolledPractitioners.some((p) => p.id === practitioner.id)
       );
-      
-      const options = availablePractitioners.map(practitioner => ({
+
+      const options = availablePractitioners.map((practitioner) => ({
         value: practitioner.id as string,
         label: getName(practitioner),
       }));
-      
+
       setAvailableClinicians(options);
     } catch (error) {
       showNotification({
@@ -97,7 +97,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
       setFilteredClinicians(clinicians);
       return;
     }
-    const filtered = clinicians.filter(clinician => {
+    const filtered = clinicians.filter((clinician) => {
       const name = getName(clinician).toLowerCase();
       return name.includes(searchFilter.toLowerCase());
     });
@@ -118,7 +118,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
     try {
       await unEnrollPractitioner(medplum, practitioner, organization);
       // Refresh the list after unenrollment
-      const updatedClinicians = clinicians.filter(c => c.id !== practitioner.id);
+      const updatedClinicians = clinicians.filter((c) => c.id !== practitioner.id);
       setClinicians(updatedClinicians);
       setFilteredClinicians(updatedClinicians);
 
@@ -143,12 +143,12 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
     setSelectedClinicianIds(selectedIds);
     try {
       const practitioners: Practitioner[] = [];
-      
+
       for (const id of selectedIds) {
         const practitioner = await medplum.readResource('Practitioner', id);
         practitioners.push(practitioner);
       }
-      
+
       setSelectedClinicians(practitioners);
     } catch (error) {
       console.error('Error loading selected clinicians:', error);
@@ -163,14 +163,14 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
           await enrollPractitioner(medplum, practitioner, organization);
           successCount++;
         }
-        
+
         showNotification({
           title: 'Success',
           message: `${successCount} clinician${successCount !== 1 ? 's' : ''} enrolled in ${organization.name}`,
           color: 'green',
         });
       }
-    
+
       // Reset form, close modal, and refresh the list
       setSelectedClinicians([]);
       setSelectedClinicianIds([]);
@@ -201,10 +201,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
           </Badge>
         </Group>
         <Group>
-          <Button 
-            leftSection={<IconPlus size={16} />}
-            onClick={() => setEnrollModalOpen(true)}
-          >
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setEnrollModalOpen(true)}>
             Enroll New Clinician
           </Button>
         </Group>
@@ -216,13 +213,13 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
             <Table.Th style={{ width: '80%' }}>Name</Table.Th>
             <Table.Th>
               <Group justify="flex-end">
-                <Button 
-                  size="xs" 
-                  variant="subtle" 
+                <Button
+                  size="xs"
+                  variant="subtle"
                   color="gray"
                   onClick={() => {
                     loadClinicians().catch(console.error);
-                  }} 
+                  }}
                   loading={isLoading}
                   p={6}
                   aria-label="Refresh list"
@@ -274,14 +271,10 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
               onChange={handleSelectionChange}
               maxDropdownHeight={200}
               disabled={isLoading}
-              description={isLoading ? "Loading available clinicians..." : "Select clinicians to enroll"}
+              description={isLoading ? 'Loading available clinicians...' : 'Select clinicians to enroll'}
               style={{ flex: 1 }}
             />
-            <Button
-              onClick={handleEnroll}
-              disabled={selectedClinicians.length === 0 || isLoading}
-              loading={isLoading}
-            >
+            <Button onClick={handleEnroll} disabled={selectedClinicians.length === 0 || isLoading} loading={isLoading}>
               Enroll
             </Button>
           </Group>
@@ -289,4 +282,4 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
       </Modal>
     </Stack>
   );
-} 
+}

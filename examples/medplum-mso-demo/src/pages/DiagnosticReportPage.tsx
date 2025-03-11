@@ -1,14 +1,21 @@
 import { Title, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Practitioner } from '@medplum/fhirtypes';
-import { Document, ResourceName, SearchControl, useMedplum, useMedplumNavigate, useMedplumProfile } from '@medplum/react';
+import {
+  Document,
+  ResourceName,
+  SearchControl,
+  useMedplum,
+  useMedplumNavigate,
+  useMedplumProfile,
+} from '@medplum/react';
 import { Outlet } from 'react-router';
 
 /**
  * A page component that displays a searchable list of diagnostic reports.
  * Shows reports accessible to the current user in the current project context.
  * Provides search functionality by code, subject, and results, with navigation to report details.
- * 
+ *
  * @returns The diagnostic reports listing page
  */
 export function DiagnosticReportPage(): JSX.Element {
@@ -19,11 +26,10 @@ export function DiagnosticReportPage(): JSX.Element {
 
   return (
     <Document>
-      <Title>
-        Diagnostic Reports
-      </Title>
+      <Title>Diagnostic Reports</Title>
       <Text mb="sm">
-        Here are the Diagnostic Reports accessible to <ResourceName value={profile} link /> in <ResourceName value={project} link />
+        Here are the Diagnostic Reports accessible to <ResourceName value={profile} link /> in{' '}
+        <ResourceName value={project} link />
       </Text>
       <SearchControl
         search={{
@@ -36,4 +42,4 @@ export function DiagnosticReportPage(): JSX.Element {
       <Outlet />
     </Document>
   );
-} 
+}

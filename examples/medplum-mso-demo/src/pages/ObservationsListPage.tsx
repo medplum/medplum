@@ -1,14 +1,21 @@
 import { Title, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Practitioner } from '@medplum/fhirtypes';
-import { Document, ResourceName, SearchControl, useMedplum, useMedplumNavigate, useMedplumProfile } from '@medplum/react';
+import {
+  Document,
+  ResourceName,
+  SearchControl,
+  useMedplum,
+  useMedplumNavigate,
+  useMedplumProfile,
+} from '@medplum/react';
 import { Outlet } from 'react-router';
 
 /**
  * A page component that displays a searchable list of clinical observations.
  * Shows observations accessible to the current user in the current project context.
  * Provides search functionality by code, subject, and value, with navigation to observation details.
- * 
+ *
  * @returns The observations listing page
  */
 export function ObservationPage(): JSX.Element {
@@ -19,16 +26,15 @@ export function ObservationPage(): JSX.Element {
 
   return (
     <Document>
-      <Title>
-        Observations
-      </Title>
+      <Title>Observations</Title>
       <Text mb="sm">
-        Here are the Observations accessible to <ResourceName value={profile} link /> in <ResourceName value={project} link />
+        Here are the Observations accessible to <ResourceName value={profile} link /> in{' '}
+        <ResourceName value={project} link />
       </Text>
       <SearchControl
         search={{
           resourceType: 'Observation',
-          fields: ['code','subject'],
+          fields: ['code', 'subject'],
         }}
         onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
         hideToolbar
@@ -36,4 +42,4 @@ export function ObservationPage(): JSX.Element {
       <Outlet />
     </Document>
   );
-} 
+}
