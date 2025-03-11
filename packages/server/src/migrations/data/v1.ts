@@ -3,20 +3,26 @@
  * Do not edit manually.
  */
 
-import { getResourceTypes, WithId } from '@medplum/core';
-import { AsyncJob } from '@medplum/fhirtypes';
+import { getResourceTypes } from '@medplum/core';
 import { AsyncJobExecutor } from '../../fhir/operations/utils/asyncjobexecutor';
-import { Repository } from '../../fhir/repo';
 import { addPostDeployMigrationJob } from '../../workers/post-deploy-migration';
+import { Migration } from './migration';
 
-export async function run(repo: Repository, asyncJob: WithId<AsyncJob>): Promise<void> {
+// This migration predates the __version column. Specifying zero filters
+// for resources with a NULL resource version
+const maxResourceVersion = 0;
+
+export const run: Migration['run'] = async (repo, asyncJob, isFirstServerStart) => {
   const exec = new AsyncJobExecutor(repo, asyncJob);
   await exec.run(async (asyncJob) => {
-    await addPostDeployMigrationJob({
-      type: 'reindex',
-      asyncJob,
-      resourceTypes: getResourceTypes().filter((rt) => rt !== 'Binary'),
-      maxResourceVersion: 0, // zero effectively makes the filter any NULL resource version
-    });
+    await addPostDeployMigrationJob(
+      {
+        type: 'reindex',
+        asyncJob,
+        resourceTypes: getResourceTypes().filter((rt) => rt !== 'Binary'),
+        maxResourceVersion,
+      },
+      isFirstServerStart
+    );
   });
-}
+};

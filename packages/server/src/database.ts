@@ -1,4 +1,11 @@
-import { OperationOutcomeError, WithId, badRequest, parseSearchRequest, sleep } from '@medplum/core';
+import {
+  badRequest,
+  getReferenceString,
+  OperationOutcomeError,
+  parseSearchRequest,
+  sleep,
+  WithId,
+} from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
@@ -7,9 +14,10 @@ import { Pool, PoolClient } from 'pg';
 import * as semver from 'semver';
 import { getConfig } from './config/loader';
 import { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
-import { getSystemRepo } from './fhir/repo';
+import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as dataMigrations from './migrations/data';
+import { Migration } from './migrations/data';
 import * as migrations from './migrations/schema';
 import { getServerVersion } from './util/version';
 
@@ -25,6 +33,7 @@ const DataVersion = {
 
 let pool: Pool | undefined;
 let readonlyPool: Pool | undefined;
+let isFirstServerStart = false;
 
 export async function getDataVersion(): Promise<number> {
   const result = await getDatabasePool(DatabaseMode.WRITER).query<{ dataVersion?: number }>(
@@ -54,6 +63,19 @@ export async function getPendingDataMigration(): Promise<number> {
 
 export async function markPendingDataMigrationCompleted(job: AsyncJob): Promise<void> {
   assert(job.dataVersion);
+  let duration = -1;
+  try {
+    if (job.transactionTime && job.requestTime) {
+      duration = (new Date(job.transactionTime).getTime() - new Date(job.requestTime).getTime()) / 1000;
+    }
+  } catch (err) {
+    globalLogger.error('Error computing duration of post-deploy migration', { error: err });
+  }
+
+  globalLogger.info('post-deploy migration completed', {
+    version: 'v' + job.dataVersion,
+    duration: duration !== -1 ? duration : 'unknown',
+  });
   await getDatabasePool(DatabaseMode.WRITER).query('UPDATE "DatabaseMigration" SET "dataVersion" = $1', [
     job.dataVersion,
   ]);
@@ -84,6 +106,13 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
 
   if (serverConfig.readonlyDatabase) {
     readonlyPool = await initPool(serverConfig.readonlyDatabase, serverConfig.readonlyDatabaseProxyEndpoint);
+  }
+}
+
+const AUTO_RUN_POST_DEPLOY_MIGRATIONS = true;
+export async function queuePostDeployMigrations(): Promise<void> {
+  if (AUTO_RUN_POST_DEPLOY_MIGRATIONS) {
+    await runAllPendingPostDeployMigrations(isFirstServerStart);
   }
 }
 
@@ -201,20 +230,20 @@ async function migrate(client: PoolClient): Promise<void> {
   const result = await client.query<{ version?: number; dataVersion?: number }>(
     'SELECT "version" FROM "DatabaseMigration"'
   );
-  let version = result.rows[0]?.version ?? DataVersion.UNKNOWN;
-  const allDataVersions = getMigrationVersions(dataMigrations);
+  const version = result.rows[0]?.version ?? DataVersion.UNKNOWN;
 
-  const pendingDataMigration = await getPendingDataMigration();
   // If this is the first time the server has been started up (version < 0)
   // We need to initialize our migrations table
   // This also opts us into the fast path for data migrations, so we can skip all checks for server version and go straight to the latest data version
   if (version < 0) {
-    const latestDataVersion = allDataVersions[allDataVersions.length - 1] ?? 0;
-    await client.query(`INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, $1)`, [
-      latestDataVersion,
-    ]);
-    version = 0;
-  } else if (pendingDataMigration > 0) {
+    await client.query(`INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, 0)`);
+    await runAllPendingPreDeployMigrations(client, 0);
+    isFirstServerStart = true;
+    return;
+  }
+
+  const pendingDataMigration = await getPendingDataMigration();
+  if (version && pendingDataMigration > 0) {
     // Before migrating, check if we have pending data migrations to apply
     // We have to check these first since they depend on particular versions of the server code to be present in order
     // To ensure that the migration is applied before at a particular point in time before the version that requires it
@@ -236,7 +265,7 @@ async function migrate(client: PoolClient): Promise<void> {
       // We allow any version where the data migration is greater than or equal to the specified `serverVersion` and it less than the `requiredBefore` version
       if (versionEntry.requiredBefore && semver.gte(serverVersion, versionEntry.requiredBefore)) {
         throw new Error(
-          `Unable to run data migration against the current server version. Migration requires server at version ${versionEntry.serverVersion} <= version < ${versionEntry.requiredBefore}, but current server version is ${serverVersion}`
+          `Unable to run post-deploy migration v${pendingDataMigration} on this server. v${pendingDataMigration} requires server at version ${versionEntry.serverVersion} <= version < ${versionEntry.requiredBefore}, but current server version is ${serverVersion}`
         );
       }
       // If we make it here, we have a pending migration, but we don't want to apply it until we make sure we apply all the schema migrations first
@@ -244,15 +273,42 @@ async function migrate(client: PoolClient): Promise<void> {
     }
   }
 
+  await runAllPendingPreDeployMigrations(client, version);
+}
+
+async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersion: number): Promise<void> {
   const migrationKeys = Object.keys(migrations);
-  for (let i = version + 1; i <= migrationKeys.length; i++) {
+  for (let i = currentVersion + 1; i <= migrationKeys.length; i++) {
     const migration = (migrations as Record<string, migrations.Migration>)['v' + i];
     if (migration) {
       const start = Date.now();
       await migration.run(client);
-      globalLogger.info('Database schema migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
+      globalLogger.info('Database pre-deploy migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
       await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [i]);
     }
+  }
+}
+
+async function runAllPendingPostDeployMigrations(isFirstServerStart: boolean): Promise<void> {
+  const pendingDataMigration = await getPendingDataMigration();
+  if (pendingDataMigration === DataVersion.UNKNOWN) {
+    throw new Error('Cannot run post-deploy migrations; data version is unknown');
+  }
+  if (pendingDataMigration === DataVersion.NONE) {
+    return;
+  }
+
+  const migrationKeys = Object.keys(dataMigrations);
+  const systemRepo = getSystemRepo();
+  for (let i = pendingDataMigration; i <= migrationKeys.length; i++) {
+    const migration = (dataMigrations as Record<string, Migration>)['v' + i];
+    const asyncJob = await createAsyncJobForPostDeployMigration(systemRepo, i);
+    globalLogger.info('Queueing post-deploy migration', {
+      version: `v${i}`,
+      asyncJob: getReferenceString(asyncJob),
+      isFirstServerStart,
+    });
+    await migration.run(systemRepo, asyncJob, isFirstServerStart);
   }
 }
 
@@ -356,15 +412,32 @@ export async function maybeStartDataMigration(assertedDataVersion?: number): Pro
         // That we must be on the right version to run this migration
         minServerVersion: getServerVersion(),
       });
-      const dataMigration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
+      const dataMigration = (dataMigrations as Record<string, Migration>)['v' + pendingDataMigration];
       // Don't await the migration, since it could be blocking
       dataMigration
         // We get a new system repo here so that we are not reusing with the system repo doing the transaction
-        .run(getSystemRepo(), dataMigrationJob)
+        .run(getSystemRepo(), dataMigrationJob, false)
         .catch((err) => globalLogger.error('Error while running data migration', { err }));
     },
     { serializable: true }
   );
 
   return dataMigrationJob;
+}
+
+async function createAsyncJobForPostDeployMigration(
+  repo: Repository,
+  migrationNumber: number
+): Promise<WithId<AsyncJob>> {
+  return repo.createResource({
+    resourceType: 'AsyncJob',
+    type: 'data-migration',
+    status: 'accepted',
+    request: `data-migration-v${migrationNumber}`,
+    requestTime: new Date().toISOString(),
+    dataVersion: migrationNumber,
+    // We know that because we were able to start the migration on this server instance,
+    // That we must be on the right version to run this migration
+    minServerVersion: getServerVersion(),
+  });
 }

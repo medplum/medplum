@@ -45,11 +45,11 @@ export class AsyncJobExecutor {
 
     const startTime = Date.now();
     const systemRepo = getSystemRepo();
-    log.info('Async job starting', { name: callback.name, asyncJobId: this.resource?.id });
+    log.info('AsyncJob execution starting', { name: callback.name, asyncJobId: this.resource?.id });
 
     this.run(callback)
       .then(async (output) => {
-        log.info('Async job completed', {
+        log.info('AsyncJob execution completed', {
           name: callback.name,
           asyncJobId: this.resource?.id,
           duration: `${Date.now() - startTime} ms`,
@@ -57,7 +57,12 @@ export class AsyncJobExecutor {
         await this.completeJob(systemRepo, output);
       })
       .catch(async (err) => {
-        log.error('Async job failed', { name: callback.name, asyncJobId: this.resource?.id, error: err });
+        log.error('AsyncJob execution failed', {
+          name: callback.name,
+          asyncJobId: this.resource?.id,
+          error: err.toString(),
+          stack: err.stack,
+        });
         await this.failJob(systemRepo, err);
       })
       .finally(() => {
@@ -90,15 +95,16 @@ export class AsyncJobExecutor {
     if (!job) {
       return undefined;
     }
-    if (job.type === 'data-migration') {
-      await markPendingDataMigrationCompleted(job);
-    }
-    return repo.updateResource<AsyncJob>({
+    const updatedJob: AsyncJob = {
       ...job,
       status: 'completed',
       transactionTime: new Date().toISOString(),
       output,
-    });
+    };
+    if (job.type === 'data-migration') {
+      await markPendingDataMigrationCompleted(updatedJob);
+    }
+    return repo.updateResource<AsyncJob>(updatedJob);
   }
 
   async updateJobProgress(
@@ -130,11 +136,13 @@ export class AsyncJobExecutor {
     if (err) {
       failedJob.output = {
         resourceType: 'Parameters',
-        parameter: [
+        parameter:
           err instanceof OperationOutcomeError
-            ? { name: 'outcome', resource: err.outcome }
-            : { name: 'error', valueString: err.message },
-        ],
+            ? [{ name: 'outcome', resource: err.outcome }]
+            : [
+                { name: 'error', valueString: err.message },
+                { name: 'stack', valueString: err.stack },
+              ],
       };
     }
     return repo.updateResource<AsyncJob>(failedJob);
