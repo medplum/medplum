@@ -6,11 +6,31 @@
   </a>
 </p>
 
-This example app demonstrates the following:
+## Overview
 
-- How to implement a multi-tenant healthcare platform where clinicians can work across multiple clinics
-- How to use AccessPolicy to control data access based on organizational affiliations
-- How to enroll and unenroll clinicians and patients in different organizations with automatic access policy updates
+- Clinician and Patient management interface - see `src/components/ClinicianList.tsx` and `src/components/PatientList.tsx`
+- Operations to enroll and unenroll clinicians and patients across different clinics with automatic access policy updates - see `src/utils/enrollment.ts`
+- Fetching all patients and clinicians enrolled in a clinic - see `src/utils/enrollment.ts`
+
+## Getting Started
+
+If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
+
+Clone the repo to your local machine.
+
+Next, install the dependencies.
+
+```bash
+npm install
+```
+
+Then, run the app
+
+```bash
+npm run dev
+```
+
+This app will run on `http://localhost:3000` and connect to a hosted Medplum project at `https://api.medplum.com/` by default.
 
 
 ## Background
@@ -58,34 +78,6 @@ This repo is organized into several main directories:
 3. **Enrolling a practitioner in a clinic**: Configures access policies for that Practitioner to be able to read/write to all Patients in that Clinic
 4. **Enrolling a patient in a clinic**: Configures access policies for Clinicians in that Clinic to be able to read/write to that Patient
 5. **Viewing patient data**: Practitioners can only see patients and their clinical data if they share an organizational affiliation
-
-## Getting Started
-
-If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
-
-[Fork](https://github.com/medplum/medplum-mso-demo/fork) and clone the repo to your local machine.
-
-Next, install the dependencies.
-
-```bash
-npm install
-```
-
-Then, run the app
-
-```bash
-npm run dev
-```
-
-This app will run on `http://localhost:3000` and connect to a hosted Medplum project at `https://api.medplum.com/` by default.
-
-## Setting Up Your Demo
-
-1. **Upload Access Policy**: Navigate to "Upload Access Policy" in the sidebar and upload the default AccessPolicy
-2. **Create Clinics**: Create multiple Clinics to represent different clinics
-3. **Create Clinicians**: Create Clinicians and assign them to one or more Clinics
-4. **Create Patients**: Create Patients and enroll them in one or more Clinics
-5. **Test Access Control**: Log in as different clinicians to verify they can only see patients and data from their affiliated clinics
 
 ## Resources Used
 
