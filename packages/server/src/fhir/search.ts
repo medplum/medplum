@@ -1549,12 +1549,23 @@ function linkLiteralReference(selectQuery: SelectQuery, lookupTable: string, lin
 }
 
 function getCanonicalJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
-  const eq = link.implementation.array ? 'IN_SUBQUERY' : '=';
+  let sourceTable: string, targetTable: string;
   if (link.direction === Direction.FORWARD) {
-    return new Condition(new Column(nextTable, 'url'), eq, new Column(currentTable, link.implementation.columnName));
+    sourceTable = currentTable;
+    targetTable = nextTable;
   } else {
-    return new Condition(new Column(currentTable, 'url'), eq, new Column(nextTable, link.implementation.columnName));
+    sourceTable = nextTable;
+    targetTable = currentTable;
   }
+
+  if (!getSearchParameter(targetTable, 'url')) {
+    throw new OperationOutcomeError(
+      badRequest(`${targetTable} cannot be chained via canonical reference (${sourceTable}:${link.code})`)
+    );
+  }
+
+  const eq = link.implementation.array ? 'IN_SUBQUERY' : '=';
+  return new Condition(new Column(targetTable, 'url'), eq, new Column(sourceTable, link.implementation.columnName));
 }
 
 function nextChainedTable(link: ChainedSearchLink): string {
