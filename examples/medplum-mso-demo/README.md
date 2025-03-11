@@ -89,15 +89,16 @@ This app will run on `http://localhost:3000` and connect to a hosted Medplum pro
 
 ## Resources Used
 
-This demo uses the following FHIR resources:
-- **AccessPolicy**: Defines the access rules for clinicians
-- **Organization**: Represents clinics or healthcare facilities
-- **Practitioner**: Represents healthcare providers
-- **Patient**: Represents individuals receiving care
+This demo uses the following FHIR and Medplum resources:
+- **AccessPolicy**: Defines the access rules for clinicians to resources across the project
+- **Organization**: Represents a clinic
+- **Practitioner**: Represents a clinician
+- **ProjectMembership**: Stores references to the clinics that the clinician can access
+- **Patient**: Represents an individual receiving care
 - **Observation**: Represents clinical measurements and findings
 - **DiagnosticReport**: Represents diagnostic test results
 - **Encounter**: Represents patient visits
-- **Communication**: Represents communications between practitioners
+- **Communication**: Represents communications between clinicians
 
 ## About Medplum
 
