@@ -1,22 +1,13 @@
 import { getReferenceString } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react';
-import { MemoryRouter } from 'react-router';
-import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, renderAppRoutes, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
 describe('QuestionnaireResponsePage', () => {
   function setup(url: string): void {
-    render(
-      <MedplumProvider medplum={medplum}>
-        <MemoryRouter initialEntries={[url]} initialIndex={0}>
-          <AppRoutes />
-        </MemoryRouter>
-      </MedplumProvider>
-    );
+    renderAppRoutes(medplum, url);
   }
 
   test('Renders', async () => {

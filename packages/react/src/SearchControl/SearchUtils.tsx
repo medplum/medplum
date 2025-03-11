@@ -12,6 +12,7 @@ import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { SearchControlField } from './SearchControlField';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 const searchParamToOperators: Record<string, Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
@@ -511,7 +512,7 @@ export function buildFieldNameString(key: string): string {
 export function renderValue(resource: Resource, field: SearchControlField): string | JSX.Element | null | undefined {
   const key = field.name;
   if (key === 'id') {
-    return resource.id;
+    return <MedplumLink to={`/${resource.resourceType}/${resource.id}`}>{resource.id}</MedplumLink>;
   }
 
   if (key === 'meta.versionId') {
