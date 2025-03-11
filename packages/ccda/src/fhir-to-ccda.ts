@@ -554,6 +554,89 @@ class FhirToCcdaConverter {
    */
   private createAllergyEntry(allergy: AllergyIntolerance): CcdaEntry {
     const reaction = allergy.reaction?.[0];
+
+    // Handle case where this represents "no known allergies"
+    if (allergy.clinicalStatus?.coding?.[0]?.code === 'active' && !allergy.code) {
+      return {
+        act: [
+          {
+            '@_classCode': 'ACT',
+            '@_moodCode': 'EVN',
+            templateId: [
+              {
+                '@_root': OID_ALLERGY_PROBLEM_ACT,
+                '@_extension': '2015-08-01',
+              },
+              {
+                '@_root': OID_ALLERGY_PROBLEM_ACT,
+              },
+            ],
+            id: this.mapIdentifiers(allergy.id, allergy.identifier),
+            code: {
+              '@_code': 'CONC',
+              '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
+            },
+            statusCode: {
+              '@_code': 'active',
+            },
+            effectiveTime: this.mapEffectivePeriod(allergy.recordedDate, undefined),
+            entryRelationship: [
+              {
+                '@_typeCode': 'SUBJ',
+                observation: [
+                  {
+                    '@_classCode': 'OBS',
+                    '@_moodCode': 'EVN',
+                    '@_negationInd': 'true',
+                    templateId: [
+                      {
+                        '@_root': OID_ALLERGY_OBSERVATION,
+                        '@_extension': '2014-06-09',
+                      },
+                      {
+                        '@_root': OID_ALLERGY_OBSERVATION,
+                      },
+                    ],
+                    id: this.mapIdentifiers(allergy.id, allergy.identifier),
+                    code: {
+                      '@_code': 'ASSERTION',
+                      '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
+                    },
+                    statusCode: {
+                      '@_code': 'completed',
+                    },
+                    effectiveTime: this.mapEffectivePeriod(allergy.recordedDate, undefined, true),
+                    value: {
+                      '@_xsi:type': 'CD',
+                      '@_code': '419199007',
+                      '@_displayName': 'Allergy to substance',
+                      '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+                      '@_codeSystemName': 'SNOMED CT',
+                    },
+                    participant: [
+                      {
+                        '@_typeCode': 'CSM',
+                        participantRole: {
+                          '@_classCode': 'MANU',
+                          playingEntity: {
+                            '@_classCode': 'MMAT',
+                            code: {
+                              '@_nullFlavor': 'NA',
+                            },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+    }
+
+    // Handle normal allergy case
     return {
       act: [
         {

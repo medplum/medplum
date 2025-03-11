@@ -189,6 +189,7 @@ export interface CcdaAssignedPerson {
 export interface CcdaObservation {
   '@_classCode': string;
   '@_moodCode': string;
+  '@_negationInd'?: string;
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code?: CcdaCode;
