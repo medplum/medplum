@@ -4636,6 +4636,17 @@ describe('FHIR Search', () => {
           expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
         }));
     });
+
+    test('Invalid canonical chained search link', async () =>
+      withTestContext(async () => {
+        await expect(
+          repo.search(parseSearchRequest('EvidenceVariable?derived-from:ResearchStudy.status=active'))
+        ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
+
+        await expect(
+          repo.search(parseSearchRequest('ResearchStudy?_has:EvidenceVariable:derived-from:_id=foo'))
+        ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
+      }));
   });
 
   describe('systemRepo', () => {
