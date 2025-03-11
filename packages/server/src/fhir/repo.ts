@@ -1450,20 +1450,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
-    // Carry forward anything added to the resource compartments array
-    if (resource.meta?.compartment?.length) {
-      for (const compartment of resource.meta.compartment) {
-        const id = resolveId(compartment);
-        if (
-          id &&
-          validator.isUUID(id) &&
-          (compartment.reference?.startsWith('Organization/') || compartment.reference?.startsWith('Location/'))
-        ) {
-          compartments.add(compartment.reference as string);
-        }
-      }
-    }
-
     const results: Reference[] = [];
     for (const reference of compartments.values()) {
       results.push({ reference });

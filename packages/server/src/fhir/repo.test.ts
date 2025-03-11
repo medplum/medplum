@@ -1155,29 +1155,6 @@ describe('FHIR Repo', () => {
       });
     }));
 
-  test('Allows adding compartments for specific types', async () =>
-    withTestContext(async () => {
-      const { repo, project } = await createTestProject({ withRepo: true });
-      const org = await repo.createResource<Organization>({ resourceType: 'Organization' });
-      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
-
-      const orgReference = createReference(org);
-      const practitionerReference = createReference(practitioner);
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        meta: { compartment: [orgReference, practitionerReference] },
-      });
-      expect(patient.meta?.compartment).toContainEqual(orgReference);
-      expect(patient.meta?.compartment).not.toContainEqual(practitionerReference);
-      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
-      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
-
-      const results = await repo.searchResources(
-        parseSearchRequest('Patient?_compartment=' + getReferenceString(orgReference))
-      );
-      expect(results).toHaveLength(1);
-    }));
-
   test('Prevents setting Project compartments', async () =>
     withTestContext(async () => {
       const { repo, project } = await createTestProject({ withRepo: true });
