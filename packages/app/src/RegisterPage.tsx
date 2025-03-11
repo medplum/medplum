@@ -1,15 +1,16 @@
 import { Alert, Title } from '@mantine/core';
-import { Document, Logo, RegisterForm, useMedplum, useMedplumNavigate } from '@medplum/react';
+import { Document, Logo, RegisterForm, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { useLayoutEffect } from 'react';
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { getConfig, isRegisterEnabled } from './config';
 
 export function RegisterPage(): JSX.Element | null {
   const medplum = useMedplum();
-  const navigate = useMedplumNavigate();
+  const navigate = useNavigate();
   const config = getConfig();
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (medplum.getProfile()) {
       navigate('/signin?project=new');
     }
