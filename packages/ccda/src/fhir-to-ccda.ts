@@ -378,7 +378,11 @@ class FhirToCcdaConverter {
   private mapRace(patient: Patient): CcdaCode[] | undefined {
     const ombCategory = getExtension(patient, US_CORE_RACE_URL, 'ombCategory')?.valueCoding;
     if (!ombCategory) {
-      return undefined;
+      return [
+        {
+          '@_nullFlavor': 'UNK',
+        },
+      ];
     }
 
     return [
@@ -422,7 +426,11 @@ class FhirToCcdaConverter {
     const ombCategory = ethnicityExt?.extension?.find((e) => e.url === 'ombCategory')?.valueCoding;
 
     if (!ombCategory) {
-      return undefined;
+      return [
+        {
+          '@_nullFlavor': 'UNK',
+        },
+      ];
     }
 
     return [
