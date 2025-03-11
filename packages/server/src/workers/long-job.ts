@@ -5,6 +5,7 @@ import * as semver from 'semver';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { getServerVersion } from '../util/version';
+import { globalLogger } from '../logger';
 
 export interface LongJobData {
   asyncJob: WithId<AsyncJob>;
@@ -53,7 +54,12 @@ export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
     return true;
   }
 
-  async execute(job: Job<TData>): Promise<void> {
+  async execute(job: Job<TData>, options: { iterationsPerJob?: number }): Promise<void> {
+    const iterationsPerJob = options?.iterationsPerJob ?? 1;
+    globalLogger.info('LongJob.execute()', {
+      jobId: job.id,
+      iterationsPerJob,
+    });
     // When version is asserted, we should check that we are on a version greater than or equal to that version
     if (job.data.asyncJob.minServerVersion && semver.lt(getServerVersion(), job.data.asyncJob.minServerVersion)) {
       // Since we can't handle this ourselves, re-enqueue the job for another worker that can
@@ -68,43 +74,54 @@ export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
     }
 
     try {
-      const result = await this.process(job);
-
-      // Check if AsyncJob resource should be updated; this usually
-      // happens less frequently than every iteration
-      const output = this.formatResults(result, job);
-      if (output) {
-        try {
-          await this.updateStatus(job, output);
-        } catch (err) {
-          if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
-            // Conflict: AsyncJob was updated by another party between when the job started and now!
-            // Check status to see if job was cancelled
-            const canContinue = await this.checkJobStatus(job);
-            if (!canContinue) {
-              // Job was cancelled or errored in parallel; this iteration should abort
-              return;
-            }
-          }
-
-          throw err;
+      let nextIterationData: TData | undefined;
+      for (let i = 0; i < iterationsPerJob; i++) {
+        if (nextIterationData) {
+          await job.updateData(nextIterationData);
+          nextIterationData = undefined;
         }
+        const result = await this.process(job);
+
+        // Check if AsyncJob resource should be updated; this usually
+        // happens less frequently than every iteration
+        const output = this.formatResults(result, job);
+        if (output) {
+          try {
+            await this.updateStatus(job, output);
+          } catch (err) {
+            if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
+              // Conflict: AsyncJob was updated by another party between when the job started and now!
+              // Check status to see if job was cancelled
+              const canContinue = await this.checkJobStatus(job);
+              if (!canContinue) {
+                // Job was cancelled or errored in parallel; this iteration should abort
+                return;
+              }
+            }
+
+            throw err;
+          }
+        }
+
+        const nextIteration = this.nextIterationData(result, job);
+        if (typeof nextIteration === 'boolean') {
+          // Job is complete, no more iterations should be enqueued
+          const jobSucceeded = nextIteration;
+          if (jobSucceeded) {
+            await this.finishJob(job, output);
+          } else {
+            await this.failJob(job);
+          }
+          return;
+        }
+        nextIterationData = nextIteration;
       }
 
-      const nextIteration = this.nextIterationData(result, job);
-      if (typeof nextIteration === 'boolean') {
-        // Job is complete, no more iterations should be enqueued
-        const jobSucceeded = nextIteration;
-        if (jobSucceeded) {
-          await this.finishJob(job, output);
-        } else {
-          await this.failJob(job);
-        }
-      } else {
-        // Enqueue job for the specified next iteration
-        // NOTE: We do not check the AsyncJob status before enqueuing: it will be checked
-        // at the beginning of the next iteration
-        await this.enqueueJob(nextIteration);
+      // Enqueue job for the specified next iteration
+      // NOTE: We do not check the AsyncJob status before enqueuing: it will be checked
+      // at the beginning of the next iteration
+      if (nextIterationData) {
+        await this.enqueueJob(nextIterationData);
       }
     } catch (err: unknown) {
       await this.failJob(job, err as Error);

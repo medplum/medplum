@@ -6,10 +6,10 @@
 import { PoolClient } from 'pg';
 
 async function query(client: PoolClient, queryStr: string): Promise<void> {
-  console.log((new Date()).toISOString(), queryStr);
   await client.query(queryStr);
 }
 
+// prettier-ignore
 export async function run(client: PoolClient): Promise<void> {
   await query(client, `CREATE FUNCTION token_array_to_text(text[])
     RETURNS text LANGUAGE sql IMMUTABLE

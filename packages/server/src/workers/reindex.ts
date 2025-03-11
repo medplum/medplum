@@ -1,11 +1,12 @@
 import { Operator, SearchRequest, normalizeErrorString, parseSearchRequest, WithId } from '@medplum/core';
 import { AsyncJob, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { MedplumServerConfig } from '../config/types';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { LongJob } from './long-job';
+import { getPostDeployMigrationQueue } from './post-deploy-migration';
 
 /*
  * The reindex worker updates resource rows in the database,
@@ -23,6 +24,8 @@ export type ReindexJobData = {
   readonly count?: number;
   readonly searchFilter?: SearchRequest;
   readonly results: Record<string, ReindexResult>;
+  /** Default is 1 */
+  readonly iterationsPerJob?: number;
   readonly requestId?: string;
   readonly traceId?: string;
 };
@@ -57,7 +60,10 @@ export function initReindexWorker(config: MedplumServerConfig): void {
 
   worker = new Worker<ReindexJobData>(
     queueName,
-    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => new ReindexJob().execute(job)),
+    (job) =>
+      tryRunInRequestContext(job.data.requestId, job.data.traceId, () =>
+        new ReindexJob().execute(job, { iterationsPerJob: job.data.iterationsPerJob })
+      ),
     {
       ...defaultOptions,
       ...config.bullmq,
@@ -119,7 +125,12 @@ export class ReindexJob extends LongJob<ReindexResult, ReindexJobData> {
 
     // Current result either completes a resource type, or should be recorded as an in-progress update
     // These should be recorded in the AsyncJob resource for visibility
-    return formatResults(job.data.results);
+    return {
+      resourceType: 'Parameters',
+      parameter: Object.keys(job.data.results).map((resourceType) =>
+        formatReindexResult(job.data.results[resourceType], resourceType)
+      ),
+    };
   }
 
   nextIterationData(result: ReindexResult, job: Job<ReindexJobData>): ReindexJobData | boolean {
@@ -154,7 +165,14 @@ export class ReindexJob extends LongJob<ReindexResult, ReindexJobData> {
   }
 
   enqueueJob(data: ReindexJobData): Promise<Job<ReindexJobData>> {
-    return addReindexJobData(data);
+    // If this job is a post-deploy migration, add to beginning (LIFO) of the post-deploy migration queue
+    // to ensure it continues to be processed before any other post-deploy migrations.
+    if (data.asyncJob.dataVersion) {
+      const postDeployQueue = getPostDeployMigrationQueue();
+      return postDeployQueue.add(jobName, data, { lifo: true }) as Promise<Job<ReindexJobData>>;
+    } else {
+      return addReindexJobData(data);
+    }
   }
 }
 
@@ -244,18 +262,6 @@ function searchRequestForNextPage(job: Job<ReindexJobData>): SearchRequest {
   return searchRequest;
 }
 
-/**
- * Format the current job result status for inclusion in the AsyncJob resource.
- * @param results - The current results from the job
- * @returns The formatted output parameters
- */
-function formatResults(results: ReindexJobData['results']): Parameters {
-  return {
-    resourceType: 'Parameters',
-    parameter: Object.keys(results).map((resourceType) => formatReindexResult(results[resourceType], resourceType)),
-  };
-}
-
 function formatReindexResult(result: ReindexResult, resourceType: string): ParametersParameter {
   if ('err' in result && result.err) {
     // Resource types that encountered an error report the error,
@@ -302,32 +308,36 @@ export function getReindexQueue(): Queue<ReindexJobData> | undefined {
   return queue;
 }
 
-async function addReindexJobData(job: ReindexJobData): Promise<Job<ReindexJobData>> {
+async function addReindexJobData(job: ReindexJobData, options?: JobsOptions): Promise<Job<ReindexJobData>> {
   if (!queue) {
-    throw new Error('Job queue not available');
+    throw new Error(`Job queue ${queueName} not available`);
   }
-  return queue.add(jobName, job);
+  return queue.add(jobName, job, options);
 }
 
 export async function addReindexJob(
   resourceTypes: ResourceType[],
   job: WithId<AsyncJob>,
   searchFilter?: SearchRequest,
-  maxResourceVersion?: number
+  maxResourceVersion?: number,
+  options?: JobsOptions
 ): Promise<Job<ReindexJobData>> {
   const { requestId, traceId } = getRequestContext();
   const endTimestamp = new Date(Date.now() + 1000 * 60 * 5).toISOString(); // Five minutes in the future
 
-  return addReindexJobData({
-    type: 'reindex',
-    resourceTypes,
-    endTimestamp,
-    asyncJob: job,
-    startTime: Date.now(),
-    searchFilter,
-    maxResourceVersion,
-    results: Object.create(null),
-    requestId,
-    traceId,
-  });
+  return addReindexJobData(
+    {
+      type: 'reindex',
+      resourceTypes,
+      endTimestamp,
+      asyncJob: job,
+      startTime: Date.now(),
+      searchFilter,
+      maxResourceVersion,
+      results: Object.create(null),
+      requestId,
+      traceId,
+    },
+    options
+  );
 }

@@ -1,23 +1,23 @@
-import { WithId } from '@medplum/core';
-import { AsyncJob } from '@medplum/fhirtypes';
+import { Pool, PoolClient } from 'pg';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { AsyncJobExecutor } from '../../fhir/operations/utils/asyncjobexecutor';
-import { Repository } from '../../fhir/repo';
-import { PostDeployMigrationAction, PostDeployMigrationResult } from './migration';
 import { addPostDeployMigrationJob } from '../../workers/post-deploy-migration';
-import { Pool, PoolClient } from 'pg';
+import { PostDeployMigration, PostDeployMigrationAction, PostDeployMigrationResult } from './migration';
 
-export async function run(repo: Repository, asyncJob: WithId<AsyncJob>): Promise<void> {
+export const run: PostDeployMigration['run'] = async (repo, asyncJob, isFirstServerStart) => {
   const exec = new AsyncJobExecutor(repo, asyncJob);
   await exec.run(async (_asyncJob) => {
-    await addPostDeployMigrationJob({
-      type: 'post-deploy-migration',
-      asyncJob,
-    });
+    await addPostDeployMigrationJob(
+      {
+        type: 'post-deploy-migration',
+        asyncJob,
+      },
+      isFirstServerStart
+    );
   });
-}
+};
 
-export async function processPostDeploy(): Promise<PostDeployMigrationResult> {
+export const process: PostDeployMigration['process'] = async (): Promise<PostDeployMigrationResult> => {
   const actions: PostDeployMigrationResult = [];
 
   const pool = getDatabasePool(DatabaseMode.WRITER);
@@ -26,23 +26,21 @@ export async function processPostDeploy(): Promise<PostDeployMigrationResult> {
   await runQueries(actions, pool);
 
   return actions;
-}
+};
 
 async function query(
   context: { actions: PostDeployMigrationAction[]; client: Pool | PoolClient },
   queryStr: string
 ): Promise<void> {
   const { actions, client } = context;
-  console.log(new Date().toISOString(), queryStr);
-
   const start = Date.now();
   await client.query(queryStr);
   actions.push({ name: queryStr, durationMs: Date.now() - start });
 }
 
-export async function runQueries(actions: PostDeployMigrationAction[], client: Pool | PoolClient): Promise<void> {
+// prettier-ignore
+async function runQueries(actions: PostDeployMigrationAction[], client: Pool | PoolClient): Promise<void> {
   const context = { actions, client };
-  /* prettier-ignore */
   await query(context,'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Account_tokens_idx" ON "Account" USING gin ("tokens")');
   await query(
     context,
@@ -1293,5 +1291,4 @@ export async function runQueries(actions: PostDeployMigrationAction[], client: P
     context,
     'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Agent_tokensTrgm_idx" ON "Agent" USING gin (token_array_to_text("tokensText") gin_trgm_ops)'
   );
-  /* prettier-ignore-end */
 }
