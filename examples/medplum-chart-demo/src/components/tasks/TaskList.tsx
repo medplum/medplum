@@ -12,7 +12,7 @@ import {
 } from '@medplum/react';
 import { IconFilePencil, IconHeart, IconListCheck, IconReportMedical } from '@tabler/icons-react';
 import { Fragment, ReactNode, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { DiagnosticReportModal } from './DiagnosticReportTask';
 import { QuestionnaireTask, ResponseDisplay } from './QuestionnaireTask';
 

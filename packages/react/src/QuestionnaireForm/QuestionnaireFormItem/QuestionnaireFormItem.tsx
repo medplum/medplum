@@ -162,7 +162,10 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
-          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
+          onChange={(e) => {
+            const value = e.currentTarget.value;
+            onChangeAnswer({ valueString: value === '' ? undefined : value });
+          }}
         />
       );
     case QuestionnaireItemType.text:
@@ -172,7 +175,10 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
-          onChange={(e) => onChangeAnswer({ valueString: e.currentTarget.value })}
+          onChange={(e) => {
+            const value = e.currentTarget.value;
+            onChangeAnswer({ valueString: value === '' ? undefined : value });
+          }}
         />
       );
     case QuestionnaireItemType.attachment:

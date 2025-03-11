@@ -45,6 +45,7 @@ export interface CcdaPatient {
   administrativeGenderCode?: CcdaCode;
   birthTime?: CcdaTimeStamp;
   raceCode?: CcdaCode[];
+  'sdtc:raceCode'?: CcdaCode[];
   ethnicGroupCode?: CcdaCode[];
   languageCommunication?: CcdaLanguageCommunication[];
 }
@@ -349,7 +350,7 @@ export interface CcdaManufacturedLabeledDrug {
 }
 
 export interface CcdaLanguageCommunication {
-  '@_languageCode'?: string;
+  languageCode?: CcdaCode;
 }
 
 export interface CcdaPerformer {

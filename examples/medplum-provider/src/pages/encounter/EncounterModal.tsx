@@ -1,11 +1,19 @@
-import { useNavigate } from 'react-router-dom';
-import { Button, Modal, Text, Card, Grid, Box, Stack } from '@mantine/core';
-import { useState } from 'react';
-import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
+import { Box, Button, Card, Grid, Modal, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { IconCircleCheck, IconCircleOff, IconAlertSquareRounded } from '@tabler/icons-react';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Coding, Encounter, PlanDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import {
+  Coding,
+  Encounter,
+  Patient,
+  PlanDefinition,
+  Questionnaire,
+  Task,
+  ValueSetExpansionContains,
+} from '@medplum/fhirtypes';
+import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
+import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './EncounterModal.module.css';
 
@@ -42,6 +50,7 @@ export const EncounterModal = (): JSX.Element => {
 
     try {
       const encounter = await medplum.createResource(encounterData);
+      await createQuestionnaireAndTask(encounter, patient);
 
       if (planDefinitionData) {
         await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinitionData.id as string, '$apply'), {
@@ -55,7 +64,37 @@ export const EncounterModal = (): JSX.Element => {
 
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
 
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/checkin`);
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/checkin`)?.catch(console.error);
+    } catch (err) {
+      showNotification({ color: 'red', icon: <IconCircleOff />, title: 'Error', message: normalizeErrorString(err) });
+    }
+  };
+
+  const createQuestionnaireAndTask = async (encounter: Encounter, patient: Patient): Promise<void> => {
+    try {
+      const savedQuestionnaire: Questionnaire = await medplum.createResource(questionnaire);
+      const taskData: Task = {
+        resourceType: 'Task',
+        status: 'ready',
+        intent: 'order',
+        authoredOn: new Date().toISOString(),
+        focus: createReference(encounter),
+        for: createReference(patient),
+        encounter: createReference(encounter),
+        input: [
+          {
+            type: {
+              text: 'Questionnaire',
+            },
+            valueReference: {
+              reference: getReferenceString(savedQuestionnaire),
+              display: savedQuestionnaire.title,
+            },
+          },
+        ],
+      };
+
+      await medplum.createResource(taskData);
     } catch (err) {
       showNotification({ color: 'red', icon: <IconCircleOff />, title: 'Error', message: normalizeErrorString(err) });
     }
@@ -65,7 +104,7 @@ export const EncounterModal = (): JSX.Element => {
     <Modal
       opened={isOpen}
       onClose={() => {
-        navigate(-1);
+        navigate(-1)?.catch(console.error);
         setIsOpen(false);
       }}
       size="60%"
@@ -151,4 +190,42 @@ export const EncounterModal = (): JSX.Element => {
       </Stack>
     </Modal>
   );
+};
+
+const questionnaire: Questionnaire = {
+  resourceType: 'Questionnaire',
+  identifier: [
+    {
+      value: 'SOAPNOTE',
+    },
+  ],
+  name: 'Fill chart note',
+  title: 'Fill chart note',
+  status: 'active',
+  item: [
+    {
+      id: 'id-1',
+      linkId: 'q1',
+      type: 'text',
+      text: 'Subjective evaluation',
+    },
+    {
+      id: 'id-2',
+      linkId: 'q2',
+      type: 'text',
+      text: 'Objective evaluation',
+    },
+    {
+      id: 'id-3',
+      linkId: 'q3',
+      type: 'text',
+      text: 'Assessment',
+    },
+    {
+      id: 'id-4',
+      linkId: 'q4',
+      type: 'text',
+      text: 'Treatment plan',
+    },
+  ],
 };

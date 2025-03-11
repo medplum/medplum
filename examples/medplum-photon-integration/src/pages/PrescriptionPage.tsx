@@ -3,7 +3,7 @@ import { getDisplayString, Operator } from '@medplum/core';
 import { MedicationRequest } from '@medplum/fhirtypes';
 import { Document, Loading, ResourceTable, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 
 export function PrescriptionPage(): JSX.Element {
   const medplum = useMedplum();
@@ -51,7 +51,7 @@ export function PrescriptionPage(): JSX.Element {
               }}
               hideFilters={true}
               hideToolbar={true}
-              onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+              onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
             />
           </Paper>
         </Tabs.Panel>

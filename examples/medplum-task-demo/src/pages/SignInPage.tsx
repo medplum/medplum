@@ -1,13 +1,13 @@
 import { Title } from '@mantine/core';
 import { Logo, SignInForm } from '@medplum/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 export function SignInPage(): JSX.Element {
   const navigate = useNavigate();
   return (
     <SignInForm
       googleClientId="921088377005-3j1sa10vr6hj86jgmdfh2l53v3mp7lfi.apps.googleusercontent.com"
-      onSuccess={() => navigate('/')}
+      onSuccess={() => navigate('/')?.catch(console.error)}
     >
       <Logo size={32} />
       <Title>Sign in to Medplum</Title>

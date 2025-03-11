@@ -25,7 +25,7 @@ describe('OAuth Routes', () => {
       .type('form')
       .send({
         grant_type: 'client_credentials',
-        client_id: client.id as string,
+        client_id: client.id,
         client_secret: client.secret as string,
       });
 

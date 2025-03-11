@@ -5,7 +5,7 @@ import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Coverage } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconAlertCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { NavigateFunction, useNavigate } from 'react-router-dom';
+import { NavigateFunction, useNavigate } from 'react-router';
 
 interface DeleteCoverageProps {
   readonly coverage: Coverage;
@@ -31,7 +31,7 @@ export function DeleteCoverage({ coverage }: DeleteCoverageProps): JSX.Element {
         title: 'Success',
         message: 'Coverage deleted',
       });
-      navigate('/Coverage');
+      navigate('/Coverage')?.catch(console.error);
     } catch (err) {
       showNotification({
         color: 'red',

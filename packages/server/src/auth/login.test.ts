@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { createReference, LOINC } from '@medplum/core';
+import { createReference, LOINC, WithId } from '@medplum/core';
 import { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -22,8 +22,8 @@ jest.mock('node-fetch');
 const app = express();
 const email = randomUUID() + '@example.com';
 const password = randomUUID();
-let project: Project;
-let client: ClientApplication;
+let project: WithId<Project>;
+let client: WithId<ClientApplication>;
 
 describe('Login', () => {
   beforeAll(() =>

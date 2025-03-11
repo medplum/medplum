@@ -366,7 +366,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(gone);
     }
 
-    const resource = JSON.parse(rows[0].content as string) as T;
+    const resource = JSON.parse(rows[0].content as string) as WithId<T>;
     await this.setCacheEntry(resource);
     return resource;
   }
@@ -730,7 +730,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource to store.
    * @param create - Whether the resource is being create, or updated in place.
    */
-  private async handleStorage(resource: Resource, create: boolean): Promise<void> {
+  private async handleStorage(resource: WithId<Resource>, create: boolean): Promise<void> {
     if (!this.isCacheOnly(resource)) {
       await this.writeToDatabase(resource, create);
     }
@@ -874,7 +874,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource to write to the database.
    * @param create - If true, then the resource is being created.
    */
-  private async writeToDatabase<T extends Resource>(resource: T, create: boolean): Promise<void> {
+  private async writeToDatabase<T extends WithId<Resource>>(resource: T, create: boolean): Promise<void> {
     await this.ensureInTransaction(async (client) => {
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
@@ -1737,7 +1737,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource to index.
    * @param create - If true, then the resource is being created.
    */
-  private async writeLookupTables(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
+  private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     await Promise.all(lookupTables.map((lookupTable) => lookupTable.indexResource(client, resource, create)));
   }
 
@@ -2461,7 +2461,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Writes a cache entry to Redis.
    * @param resource - The resource to cache.
    */
-  private async setCacheEntry(resource: Resource): Promise<void> {
+  private async setCacheEntry(resource: WithId<Resource>): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
       const cachedResource = deepClone(resource);
@@ -2473,7 +2473,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const projectId = resource.meta?.project;
     await getRedis().set(
-      getCacheKey(resource.resourceType, resource.id as string),
+      getCacheKey(resource.resourceType, resource.id),
       stringify({ resource, projectId }),
       'EX',
       REDIS_CACHE_EX_SECONDS

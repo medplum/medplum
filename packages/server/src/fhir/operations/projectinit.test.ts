@@ -1,4 +1,4 @@
-import { ContentType, createReference, isUUID } from '@medplum/core';
+import { ContentType, createReference, isUUID, WithId } from '@medplum/core';
 import { Practitioner, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -65,9 +65,9 @@ describe('Project $init', () => {
       });
     expect(res.status).toBe(201);
 
-    const project = res.body as Project;
+    const project = res.body as WithId<Project>;
     expect(project.id).toBeDefined();
-    expect(isUUID(project.id as string)).toBe(true);
+    expect(isUUID(project.id)).toBe(true);
     expect(project.owner).toStrictEqual(createReference(owner));
   });
 

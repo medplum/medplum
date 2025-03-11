@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { useMedplum, QuestionnaireForm, Loading } from '@medplum/react';
-import { Box, Stack, Text } from '@mantine/core';
+import { Box, Stack } from '@mantine/core';
+import { deepEquals } from '@medplum/core';
 
 interface TaskQuestionnaireFormProps {
   task: Task;
@@ -12,6 +13,25 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
   const medplum = useMedplum();
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>(undefined);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
+
+  const onChange = (response: QuestionnaireResponse): void => {
+    if (!questionnaireResponse) {
+      const updatedResponse: QuestionnaireResponse = { ...response, status: 'in-progress' };
+      setQuestionnaireResponse(updatedResponse);
+      onChangeResponse?.(updatedResponse);
+    } else {
+      const equals = deepEquals(response.item, questionnaireResponse?.item);
+      if (!equals) {
+        const updatedResponse: QuestionnaireResponse = {
+          ...questionnaireResponse,
+          item: response.item,
+          status: 'in-progress',
+        };
+        setQuestionnaireResponse(updatedResponse);
+        onChangeResponse?.(updatedResponse);
+      }
+    }
+  };
 
   useEffect(() => {
     const fetchResources = async (): Promise<void> => {
@@ -32,12 +52,10 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
     fetchResources().catch(console.error);
   }, [medplum, task]);
 
-  if (!questionnaire) {
+  if (!questionnaire || (task.output?.[0]?.valueReference && !questionnaireResponse)) {
     return (
       <Box p="md">
-        <Text>
-          <Loading />
-        </Text>
+        <Loading />
       </Box>
     );
   }
@@ -49,7 +67,7 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
           questionnaire={questionnaire}
           questionnaireResponse={questionnaireResponse}
           excludeButtons={true}
-          onChange={onChangeResponse}
+          onChange={onChange}
         />
       </Box>
     </Stack>

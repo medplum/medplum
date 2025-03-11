@@ -1,6 +1,6 @@
 {
   "name": "@medplum/e2e",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "End-to-end tests for Medplum",
   "keywords": [
     "e2e",
@@ -25,7 +25,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "devDependencies": {
-    "@playwright/test": "1.50.1"
+    "@playwright/test": "1.51.0"
   },
   "engines": {
     "node": ">=20.0.0"

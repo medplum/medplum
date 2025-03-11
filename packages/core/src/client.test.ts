@@ -41,7 +41,7 @@ import {
 } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
-import { ProfileResource, createReference, sleep } from './utils';
+import { ProfileResource, WithId, createReference, sleep } from './utils';
 
 const EXAMPLE_XML = `
 <note>
@@ -2089,7 +2089,7 @@ describe('Client', () => {
   test('Execute bot by ID', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const bot: Bot = {
+    const bot: WithId<Bot> = {
       resourceType: 'Bot',
       id: '123',
       name: 'Test Bot',
@@ -2097,7 +2097,7 @@ describe('Client', () => {
       code: 'export async function handler() {}',
     };
 
-    const result1 = await client.executeBot(bot.id as string, {});
+    const result1 = await client.executeBot(bot.id, {});
     expect(result1).toBeDefined();
     expect(fetch).toHaveBeenCalledWith('https://api.medplum.com/fhir/R4/Bot/123/$execute', expect.objectContaining({}));
   });

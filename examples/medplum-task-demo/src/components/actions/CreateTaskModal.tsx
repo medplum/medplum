@@ -2,7 +2,7 @@ import { Modal, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum } from '@medplum/react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 interface CreateTaskModalProps {
   readonly opened: boolean;
@@ -22,7 +22,7 @@ export function CreateTaskModal(props: CreateTaskModalProps): JSX.Element {
   const handleSubmit = (newResource: Resource): void => {
     medplum
       .createResource(newResource)
-      .then((result) => navigate(`/${getReferenceString(result)}`))
+      .then((result) => navigate(`/${getReferenceString(result)}`)?.catch(console.error))
       .catch((error) => console.error(error));
   };
 

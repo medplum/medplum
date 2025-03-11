@@ -5,7 +5,7 @@ import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconAlertCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { NavigateFunction, useNavigate } from 'react-router-dom';
+import { NavigateFunction, useNavigate } from 'react-router';
 
 interface DeleteTaskProps {
   readonly task: Task;
@@ -29,7 +29,7 @@ export function DeleteTask(props: DeleteTaskProps): JSX.Element {
         title: 'Success',
         message: 'Task deleted',
       });
-      navigate('/Task');
+      navigate('/Task')?.catch(console.error);
     } catch (error) {
       notifications.show({
         color: 'red',

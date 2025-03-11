@@ -5,7 +5,7 @@ import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 
 /**
  * This is an example of a generic "Resource Display" page.
@@ -23,7 +23,7 @@ export function ResourcePage(): JSX.Element | null {
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0];
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/${resourceType}/${id}/${newTab ?? ''}`);
+    navigate(`/${resourceType}/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   useEffect(() => {
@@ -46,7 +46,7 @@ export function ResourcePage(): JSX.Element | null {
           title: 'Success',
           message: 'Resource edited.',
         });
-        navigate(`/${resourceType}/${id}/details`);
+        navigate(`/${resourceType}/${id}/details`)?.catch(console.error);
         window.scroll(0, 0);
       })
       .catch((err) => {

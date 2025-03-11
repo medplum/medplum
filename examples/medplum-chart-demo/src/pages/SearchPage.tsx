@@ -4,7 +4,7 @@ import { Filter, formatSearchQuery, parseSearchRequest, SearchRequest, SortRule 
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { CreateEncounter } from '../components/actions/CreateEncounter';
 import classes from './SearchPage.module.css';
 
@@ -20,7 +20,7 @@ export function SearchPage(): JSX.Element {
 
     if (!parsedSearch.resourceType) {
       // If there is no search, go to the Encounter search page by default
-      navigate('/Encounter');
+      navigate('/Encounter')?.catch(console.error);
       return;
     }
 
@@ -35,7 +35,7 @@ export function SearchPage(): JSX.Element {
       saveLastSearch(populatedSearch);
       setSearch(populatedSearch);
     } else {
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
@@ -49,10 +49,10 @@ export function SearchPage(): JSX.Element {
       <SearchControl
         checkboxesEnabled={false}
         search={search}
-        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+        onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
         hideFilters={true}
         hideToolbar={search.resourceType !== 'Encounter'}

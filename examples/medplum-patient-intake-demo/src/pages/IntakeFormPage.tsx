@@ -4,7 +4,7 @@ import { Document, QuestionnaireForm, useMedplum, useMedplumProfile } from '@med
 import { useContext, useCallback } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { Loading } from '../components/Loading';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 
@@ -32,7 +32,7 @@ export function IntakeFormPage(): JSX.Element {
             title: 'Success',
             message: 'Answers recorded',
           });
-          navigate(`/Patient`);
+          navigate(`/Patient`)?.catch(console.error);
           window.scrollTo(0, 0);
         })
         .catch((err) => {

@@ -1,7 +1,7 @@
 import { Table } from '@mantine/core';
 import { List, MedicationKnowledge } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 interface FormularyDisplayProps {
   readonly formulary?: List;
@@ -21,7 +21,7 @@ export function FormularyDisplay(props: FormularyDisplayProps): JSX.Element {
     });
 
   function handleRowClick(_e: React.MouseEvent, resource: MedicationKnowledge): void {
-    navigate(`/MedicationKnowledge/${resource.id}`);
+    navigate(`/MedicationKnowledge/${resource.id}`)?.catch(console.error);
   }
 
   return (

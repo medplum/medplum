@@ -82,7 +82,7 @@ export async function searchScimUsers(
  */
 export async function createScimUser(
   invitedBy: Reference<User>,
-  project: Project,
+  project: WithId<Project>,
   scimUser: ScimUser
 ): Promise<ScimUser> {
   const resourceType = getScimUserResourceType(scimUser);

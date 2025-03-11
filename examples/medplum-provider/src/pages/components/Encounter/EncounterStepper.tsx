@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button, Group, Flex, Paper, useMantineTheme } from '@mantine/core';
 import { IconCheck, IconArrowRight } from '@tabler/icons-react';
 import classes from './EncounterStepper.module.css';
-import { useLocation, Link, useParams } from 'react-router-dom';
+import { useLocation, Link, useParams } from 'react-router';
 
 const steps = [
   { label: 'Check in', path: 'checkin' },

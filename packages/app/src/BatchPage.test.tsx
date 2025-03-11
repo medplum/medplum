@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { BatchPage } from './BatchPage';
 import { act, fireEvent, render, RenderResult, screen, UserEvent, userEvent } from './test-utils/render';
 

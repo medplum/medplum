@@ -73,7 +73,7 @@ describe('FHIR Search', () => {
       const { project } = await createTestProject();
       repo = new Repository({
         strictMode: true,
-        projects: [project.id as string],
+        projects: [project.id],
         author: { reference: 'User/' + randomUUID() },
       });
     });
@@ -294,7 +294,7 @@ describe('FHIR Search', () => {
         // _summary=text
         const textResults = await repo.search({
           resourceType: 'Patient',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id }],
           summary: 'text',
         });
         expect(textResults.entry).toHaveLength(1);
@@ -315,7 +315,7 @@ describe('FHIR Search', () => {
         // _summary=data
         const dataResults = await repo.search({
           resourceType: 'Patient',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id }],
           summary: 'data',
         });
         expect(dataResults.entry).toHaveLength(1);
@@ -327,7 +327,7 @@ describe('FHIR Search', () => {
         // _summary=true
         const summaryResults = await repo.search({
           resourceType: 'Patient',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id }],
           summary: 'true',
         });
         expect(summaryResults.entry).toHaveLength(1);
@@ -356,7 +356,7 @@ describe('FHIR Search', () => {
 
         const results = await repo.search({
           resourceType: 'Patient',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id as string }],
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: resource.id }],
           fields: ['birthDate', 'deceased'],
         });
         expect(results.entry).toHaveLength(1);
@@ -781,7 +781,7 @@ describe('FHIR Search', () => {
         expect(searchResult1.entry?.length).toStrictEqual(1);
         expect(searchResult1.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
 
-        await repo.deleteResource('Patient', patient.id as string);
+        await repo.deleteResource('Patient', patient.id);
 
         const searchResult2 = await repo.search({
           resourceType: 'Patient',
@@ -826,7 +826,7 @@ describe('FHIR Search', () => {
         expect(searchResult1.entry?.length).toStrictEqual(1);
         expect(searchResult1.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
 
-        await repo.deleteResource('Patient', patient.id as string);
+        await repo.deleteResource('Patient', patient.id);
 
         const searchResult2 = await repo.search({
           resourceType: 'Patient',
@@ -917,7 +917,7 @@ describe('FHIR Search', () => {
             {
               code: '_id',
               operator: Operator.EQUALS,
-              value: patient.id as string,
+              value: patient.id,
             },
           ],
         });
@@ -936,7 +936,7 @@ describe('FHIR Search', () => {
             {
               code: '_id',
               operator: Operator.NOT_EQUALS,
-              value: patient.id as string,
+              value: patient.id,
             },
           ],
         });
@@ -1095,7 +1095,7 @@ describe('FHIR Search', () => {
             filters: [
               {
                 code: 'type',
-                operator: Operator.CONTAINS,
+                operator: Operator.EQUALS,
                 value: auditEvents[i].type?.code as string,
               },
             ],
@@ -1759,7 +1759,7 @@ describe('FHIR Search', () => {
             {
               code: 'patient',
               operator: Operator.EQUALS,
-              value: patient.id as string,
+              value: patient.id,
             },
           ],
         });
@@ -1788,7 +1788,7 @@ describe('FHIR Search', () => {
             {
               code: 'subject',
               operator: Operator.EQUALS,
-              value: patient.id as string,
+              value: patient.id,
             },
           ],
         });
@@ -1891,7 +1891,7 @@ describe('FHIR Search', () => {
               { type: 'seealso', other: createReference(link2) },
             ],
           });
-          patientIds.unshift(patient.id as string);
+          patientIds.unshift(patient.id);
         }
 
         const result = await repo.search(
@@ -1937,7 +1937,7 @@ describe('FHIR Search', () => {
             birthDate: '1994-11-0' + i,
             link: [{ type: 'seealso', other: createReference(middlePatient) }],
           });
-          patientIds.unshift(patient.id as string);
+          patientIds.unshift(patient.id);
         }
 
         const result = await repo.search(
@@ -2108,7 +2108,7 @@ describe('FHIR Search', () => {
             },
           ],
           total: 'accurate',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id as string }],
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id }],
         });
         expect(bundle.total).toStrictEqual(1);
         expect(bundleContains(bundle, order)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
@@ -2137,7 +2137,7 @@ describe('FHIR Search', () => {
             },
           ],
           total: 'accurate',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: response.id as string }],
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: response.id }],
         });
         expect(bundle.total).toStrictEqual(1);
         expect(bundleContains(bundle, response)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
@@ -2172,7 +2172,7 @@ describe('FHIR Search', () => {
             },
           ],
           total: 'accurate',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: plan.id as string }],
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: plan.id }],
         });
         expect(bundle.total).toStrictEqual(1);
         expect(bundleContains(bundle, plan)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
@@ -2272,7 +2272,7 @@ describe('FHIR Search', () => {
             },
           ],
           total: 'accurate',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: questionnaire.id as string }],
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: questionnaire.id }],
         });
         expect(bundle.total).toStrictEqual(1);
         expect(bundleContains(bundle, questionnaire)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
@@ -2743,7 +2743,7 @@ describe('FHIR Search', () => {
             },
           ],
           total: 'accurate',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id as string }],
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id }],
         });
         expect(bundle.total).toStrictEqual(1);
         expect(bundleContains(bundle, order)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
@@ -4203,6 +4203,8 @@ describe('FHIR Search', () => {
 
     test('Reference search with inline resource', async () =>
       withTestContext(async () => {
+        const date = new Date().toISOString();
+
         // Test the Bundle-composition search parameter
         // "expression" : "Bundle.entry[0].resource as Composition"
         // This is a special case of inlined resource
@@ -4213,7 +4215,7 @@ describe('FHIR Search', () => {
           resourceType: 'Composition',
           status: 'final',
           type: { text: 'test' },
-          date: '2025-01-01',
+          date,
           author: [{ reference: 'Practitioner/example' }],
           title: 'Test Composition',
         });
@@ -4234,7 +4236,9 @@ describe('FHIR Search', () => {
         expect(searchResult1.entry?.[0]?.resource?.id).toBe(bundle.id);
 
         // Chained search on the Composition
-        const searchResult2 = await repo.search(parseSearchRequest(`Bundle?composition.date=2025-01-01`));
+        const searchResult2 = await repo.search(
+          parseSearchRequest(`Bundle?composition.date=${encodeURIComponent(date)}`)
+        );
         expect(searchResult2.entry).toHaveLength(1);
         expect(searchResult2.entry?.[0]?.resource?.id).toBe(bundle.id);
       }));
@@ -4294,34 +4298,39 @@ describe('FHIR Search', () => {
         return resources;
       }
 
-      function expectResultsContents<Parent extends WithId<Resource>, Child extends WithId<Resource>>(
+      function expectSearchByReferenceResults<Parent extends WithId<Resource>, Child extends WithId<Resource>>(
         parents: Parent[],
         childrenByParent: Child[][],
         count: number,
         results: Record<string, Child[]>
       ): void {
+        // Each parent should be present in the results
         expect(Object.keys(results)).toHaveLength(parents.length);
-        for (const [parent, children] of zip(parents, childrenByParent)) {
+        // All children are accounted for as well
+        expect(childrenByParent).toHaveLength(parents.length);
+
+        for (let i = 0; i < parents.length; i++) {
+          const parent = parents[i];
+          const children = childrenByParent[i];
           const result = results[getReferenceString(parent)];
+          expect(result).toBeDefined();
+
+          // `count` caps the number of children included in results
           expect(result).toHaveLength(Math.min(children.length, count));
-          for (const child of result) {
-            expect(children.map((c) => c.id)).toContain(child.id);
-          }
+
+          // children returned should be a subset of the original, exhaustive, list of children
+          expect(children.map((c) => c.id)).toEqual(expect.arrayContaining(result.map((r) => r.id)));
         }
       }
 
-      function zip<A, B>(a: A[], b: B[]): [A, B][] {
-        return a.map((k, i) => [k, b[i]]);
-      }
       test('Basic reference', async () =>
         withTestContext(async () => {
           const patients = await createPatients(repo, 3);
-          const patientObservations = [
+          const observations = [
             await createObservations(repo, 2, { subject: patients[0] }),
             await createObservations(repo, 0, { subject: patients[1] }),
             await createObservations(repo, 4, { subject: patients[2] }),
           ];
-          const observation = patientObservations[0][0];
           const count = 3;
           const result = await repo.searchByReference<Observation>(
             { resourceType: 'Observation', count },
@@ -4329,10 +4338,7 @@ describe('FHIR Search', () => {
             patients.map((p) => getReferenceString(p))
           );
 
-          expectResultsContents(patients, patientObservations, count, result);
-          const resultRepoObservation = result[getReferenceString(patients[0])][0];
-          expect(resultRepoObservation).toEqual(observation);
-          expect(resultRepoObservation.meta?.tag).toBeUndefined();
+          expectSearchByReferenceResults(patients, observations, count, result);
         }));
 
       test('Array reference column', async () =>
@@ -4343,7 +4349,6 @@ describe('FHIR Search', () => {
             await createObservations(repo, 0, { hasMember: [parentObservations[1]] }),
             await createObservations(repo, 4, { hasMember: [parentObservations[2]] }),
           ];
-          const observation = childObservations[0][0];
           const count = 3;
           const result = await repo.searchByReference<Observation>(
             { resourceType: 'Observation', count },
@@ -4351,10 +4356,7 @@ describe('FHIR Search', () => {
             parentObservations.map((o) => getReferenceString(o))
           );
 
-          expectResultsContents(parentObservations, childObservations, count, result);
-          const resultRepoObservation = result[getReferenceString(parentObservations[0])][0];
-          expect(resultRepoObservation).toEqual(observation);
-          expect(resultRepoObservation.meta?.tag).toBeUndefined();
+          expectSearchByReferenceResults(parentObservations, childObservations, count, result);
         }));
 
       test('Invalid reference field', async () =>
@@ -4381,7 +4383,7 @@ describe('FHIR Search', () => {
             patients.map((p) => getReferenceString(p))
           );
 
-          expectResultsContents(patients, patientObservations, count, resultDesc);
+          expectSearchByReferenceResults(patients, patientObservations, count, resultDesc);
           expect(resultDesc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['2', '1', '0']);
           expect(resultDesc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['1', '0']);
 
@@ -4391,7 +4393,7 @@ describe('FHIR Search', () => {
             'subject',
             patients.map((p) => getReferenceString(p))
           );
-          expectResultsContents(patients, patientObservations, count, resultAsc);
+          expectSearchByReferenceResults(patients, patientObservations, count, resultAsc);
           expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['0', '1', '2']);
           expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['0', '1']);
         }));
@@ -4408,7 +4410,7 @@ describe('FHIR Search', () => {
             patients.map((p) => getReferenceString(p))
           );
 
-          expectResultsContents(patients, patientObservations, count, result);
+          expectSearchByReferenceResults(patients, patientObservations, count, result);
           const observation = patientObservations[0][0];
           const resultObservation = result[getReferenceString(patients[0])][0];
           expect({ ...observation, meta: undefined }).toEqual({
@@ -4458,7 +4460,7 @@ describe('FHIR Search', () => {
           for (let i = 0; i < patients.length; i++) {
             childrenByParent.push([...patientObservations[i], ...patientServiceRequests[i]]);
           }
-          expectResultsContents(patients, childrenByParent, count, result);
+          expectSearchByReferenceResults(patients, childrenByParent, count, result);
 
           // First patient has only ServiceRequests
           expect(result[getReferenceString(patients[0])].map((r) => r.resourceType)).toStrictEqual([
@@ -4650,8 +4652,8 @@ describe('FHIR Search', () => {
 
     test('Filter by _project', () =>
       withTestContext(async () => {
-        const project1 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id as string;
-        const project2 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id as string;
+        const project1 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
+        const project2 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
 
         const patient1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
@@ -4808,7 +4810,7 @@ describe('FHIR Search', () => {
 
     test('Sort by _lastUpdated', () =>
       withTestContext(async () => {
-        const project = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id as string;
+        const project = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
 
         const patient1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
@@ -4887,29 +4889,25 @@ describe('FHIR Search', () => {
 
         const patient1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
-          name: [{ given: ['Alice'], family: 'Smith' }],
-          meta: {
-            project,
-          },
+          meta: { project },
         });
 
         const patient2 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
-          name: [{ given: ['Bob'], family: 'Smith' }],
-          meta: {
-            project,
-          },
+          meta: { project },
         });
 
         const getVersionQuery = (id: string): SelectQuery =>
           new SelectQuery('Patient').column('__version').where('id', '=', id);
 
+        // patient1 at OLDER_VERSION, patient2 at Repository.VERSION
         const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
         const OLDER_VERSION = Repository.VERSION - 1;
         await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient1.id]);
         expect((await getVersionQuery(patient1.id).execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
         expect((await getVersionQuery(patient2.id).execute(client))[0].__version).toStrictEqual(Repository.VERSION);
 
+        // without maxResourceVersion, both patients are returned
         const bundle1 = await systemRepo.search({
           resourceType: 'Patient',
           filters: [
@@ -4925,6 +4923,7 @@ describe('FHIR Search', () => {
         expect(ids).toContain(patient1.id);
         expect(ids).toContain(patient2.id);
 
+        // with maxResourceVersion: OLDER_VERSION, exepct only the outdated patient1
         const bundle2 = await systemRepo.search(
           {
             resourceType: 'Patient',
@@ -4940,6 +4939,26 @@ describe('FHIR Search', () => {
         );
         expect(bundle2.entry?.length).toStrictEqual(1);
         expect(bundle2.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
+
+        // with maxResourceVersion: 0, expect only patients with __version === NULL
+        await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [null, patient1.id]);
+        expect((await getVersionQuery(patient1.id).execute(client))[0].__version).toStrictEqual(null);
+
+        const bundle3 = await systemRepo.search(
+          {
+            resourceType: 'Patient',
+            filters: [
+              {
+                code: '_project',
+                operator: Operator.EQUALS,
+                value: project,
+              },
+            ],
+          },
+          { maxResourceVersion: 0 }
+        );
+        expect(bundle3.entry?.length).toStrictEqual(1);
+        expect(bundle3.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
       }));
   });
 });

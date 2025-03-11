@@ -1,7 +1,7 @@
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ReactElement } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { fireEvent, render, screen } from '../test-utils/render';
 import { MedplumLink } from './MedplumLink';
 

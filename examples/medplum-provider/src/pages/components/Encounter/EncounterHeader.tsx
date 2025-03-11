@@ -1,8 +1,9 @@
 import React from 'react';
-import { Box, Text, Group, Badge, Paper } from '@mantine/core';
+import { Box, Text, Group, Paper } from '@mantine/core';
 import { Patient, Encounter, Practitioner, HumanName } from '@medplum/fhirtypes';
 import classes from './EncounterHeader.module.css';
 import { formatHumanName } from '@medplum/core';
+import { StatusBadge } from '@medplum/react';
 
 interface EncounterHeaderProps {
   patient: Patient;
@@ -41,9 +42,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             <Text className={classes.label} c="dimmed">
               Status
             </Text>
-            <Badge className={classes.badge} radius="xl">
-              {encounter.status}
-            </Badge>
+            <StatusBadge status={encounter.status} />
           </Box>
 
           <Box>

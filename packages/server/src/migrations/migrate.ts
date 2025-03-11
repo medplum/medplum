@@ -25,6 +25,8 @@ import { doubleEscapeSingleQuotes, parseIndexColumns, splitIndexColumnNames } fr
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
 let DRY_RUN = false;
+let ALLOW_POST_DEPLOY_ACTIONS = false;
+let SKIP_POST_DEPLOY_ACTIONS = false;
 
 export interface SchemaDefinition {
   tables: TableDefinition[];
@@ -80,7 +82,8 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
 
 export async function main(): Promise<void> {
   DRY_RUN = process.argv.includes('--dryRun');
-
+  ALLOW_POST_DEPLOY_ACTIONS = process.argv.includes('--allowPostDeploy');
+  SKIP_POST_DEPLOY_ACTIONS = process.argv.includes('--skipPostDeploy');
   indexStructureDefinitionsAndSearchParameters();
 
   const dbClient = new Client({
@@ -111,11 +114,15 @@ export async function main(): Promise<void> {
 export type BuildMigrationOptions = {
   dbClient: Client | Pool;
   dropUnmatchedIndexes?: boolean;
+  allowPostDeployActions?: boolean;
 };
 
 export async function buildMigration(b: FileBuilder, options: BuildMigrationOptions): Promise<void> {
   const startDefinition = await buildStartDefinition(options);
   const targetDefinition = buildTargetDefinition();
+  if (typeof options.allowPostDeployActions === 'boolean') {
+    ALLOW_POST_DEPLOY_ACTIONS = options.allowPostDeployActions;
+  }
   writeMigrations(b, startDefinition, targetDefinition, options);
 }
 
@@ -819,27 +826,33 @@ function writeUpdateColumn(
   targetDef: ColumnDefinition
 ): void {
   if (startDef.defaultValue !== targetDef.defaultValue) {
-    if (targetDef.defaultValue) {
-      b.appendNoWrap(
-        `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" SET DEFAULT ${targetDef.defaultValue}');`
-      );
-    } else {
-      b.appendNoWrap(
-        `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" DROP DEFAULT');`
-      );
-    }
+    postDeployAction(() => {
+      if (targetDef.defaultValue) {
+        b.appendNoWrap(
+          `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" SET DEFAULT ${targetDef.defaultValue}');`
+        );
+      } else {
+        b.appendNoWrap(
+          `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" DROP DEFAULT');`
+        );
+      }
+    }, `Change default value of ${tableDefinition.name}.${targetDef.name}`);
   }
 
   if (startDef.notNull !== targetDef.notNull) {
-    b.appendNoWrap(
-      `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" ${targetDef.notNull ? 'SET' : 'DROP'} NOT NULL');`
-    );
+    postDeployAction(() => {
+      b.appendNoWrap(
+        `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" ${targetDef.notNull ? 'SET' : 'DROP'} NOT NULL');`
+      );
+    }, `Change NOT NULL of ${tableDefinition.name}.${targetDef.name}`);
   }
 
   if (startDef.type !== targetDef.type) {
-    b.appendNoWrap(
-      `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" TYPE ${targetDef.type}');`
-    );
+    postDeployAction(() => {
+      b.appendNoWrap(
+        `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" TYPE ${targetDef.type}');`
+      );
+    }, `Change type of ${tableDefinition.name}.${targetDef.name}`);
   }
 }
 
@@ -850,8 +863,13 @@ function writeDropColumn(b: FileBuilder, tableDefinition: TableDefinition, colum
 }
 
 function writeAddPrimaryKey(b: FileBuilder, tableDefinition: TableDefinition, primaryKeyColumns: string[]): void {
-  b.appendNoWrap(
-    `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ADD PRIMARY KEY (${primaryKeyColumns.map((c) => `"${c}"`).join(', ')})');`
+  postDeployAction(
+    () => {
+      b.appendNoWrap(
+        `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ADD PRIMARY KEY (${primaryKeyColumns.map((c) => `"${c}"`).join(', ')})');`
+      );
+    },
+    `ADD PRIMARY KEY ${tableDefinition.name} (${primaryKeyColumns.join(', ')})`
   );
 }
 
@@ -889,7 +907,14 @@ function migrateIndexes(
 }
 
 function writeAddIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDefinition: IndexDefinition): void {
-  b.appendNoWrap(`await client.query('${buildIndexSql(tableDefinition.name, indexDefinition)}');`);
+  postDeployAction(
+    () => {
+      b.appendNoWrap(`await client.query('${buildIndexSql(tableDefinition.name, indexDefinition)}');`);
+    },
+    `CREATE INDEX ${tableDefinition.name} (${indexDefinition.columns.map((c) =>
+      typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)
+    )})`
+  );
 }
 
 function writeDropIndex(b: FileBuilder, indexName: string): void {
@@ -1015,4 +1040,25 @@ if (require.main === module) {
     console.error(reason);
     process.exit(1);
   });
+}
+
+/**
+ * Guard function that should be called before writes of post-deploy actions.
+ * If `--skipPostDeploy` is provided, the action is skipped.
+ * If `--allowPostDeploy` is not provided, the action is performed.
+ * Otherwise, an error is thrown to halt the migration generation process.
+ * @param action - The post-deploy action to perform if the guard passes.
+ * @param description - A human-readable description of the action that is being checked
+ */
+function postDeployAction(action: () => void, description: string): void {
+  if (SKIP_POST_DEPLOY_ACTIONS) {
+    console.log(`Skipping post-deploy migration for: ${description}`);
+    return;
+  }
+
+  if (!ALLOW_POST_DEPLOY_ACTIONS) {
+    throw new Error(`Post-deploy migration required for: ${description}`);
+  }
+
+  action();
 }

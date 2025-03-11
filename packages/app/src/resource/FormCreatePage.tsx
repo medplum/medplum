@@ -3,7 +3,7 @@ import { addProfileToResource } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, SupportedProfileStructureDefinition } from '@medplum/react';
 import { useCallback, useState } from 'react';
-import { useLocation, useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router';
 import { ProfileTabs } from './ProfileTabs';
 import { useCreateResource } from './useCreateResource';
 import { cleanResource } from './utils';

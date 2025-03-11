@@ -12,7 +12,7 @@ import {
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { getRecipients, checkForInvalidRecipient } from '../../utils';
 
 interface CreateThreadProps {
@@ -106,7 +106,7 @@ export function CreateThread({ opened, handlers }: CreateThreadProps): JSX.Eleme
         title: 'Success',
         message: 'Thread created',
       });
-      navigate(`/Communication/${result.id}`);
+      navigate(`/Communication/${result.id}`)?.catch(console.error);
     } catch (err) {
       showNotification({
         icon: <IconCircleOff />,

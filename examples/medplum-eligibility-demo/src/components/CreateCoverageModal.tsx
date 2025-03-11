@@ -4,7 +4,7 @@ import { getReferenceString } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 
 interface CreateCoverageModalProps {
   readonly opened: boolean;
@@ -24,7 +24,7 @@ export function CreateCoverageModal({ opened, onClose }: CreateCoverageModalProp
     // Create the Coverage and navigate to its details page
     medplum
       .createResource(newResource)
-      .then((result) => navigate(`/${getReferenceString(result)}`))
+      .then((result) => navigate(`/${getReferenceString(result)}`)?.catch(console.error))
       .then(() =>
         showNotification({
           icon: <IconCircleCheck />,

@@ -1,3 +1,4 @@
+import { Questionnaire } from '@medplum/fhirtypes';
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import {
   IconDatabaseImport,
@@ -9,7 +10,7 @@ import {
   IconUser,
 } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router';
 import { IntakeFormPage } from './pages/IntakeFormPage';
 import { IntakeResponsePage } from './pages/IntakeResponsePage';
 import { LandingPage } from './pages/LandingPage';
@@ -20,7 +21,6 @@ import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
 import { IntakeQuestionnaireContext } from './Questionnaire.context';
-import { Questionnaire } from '@medplum/fhirtypes';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -87,10 +87,14 @@ export function App(): JSX.Element | null {
             <Routes>
               <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
               <Route path="/signin" element={<SignInPage />} />
-              <Route path="/Patient/:id/*" element={<PatientPage />} />
+              <Route path="/Patient/:id">
+                <Route path="*" element={<PatientPage />} />
+              </Route>
               <Route path="/Patient/:patientId/intake/:responseId" element={<IntakeResponsePage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
-              <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
+              <Route path="/:resourceType/:id">
+                <Route path="*" element={<ResourcePage />} />
+              </Route>
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/upload/:dataType" element={<UploadDataPage />} />
               <Route path="/Questionnaire/:questionnaireId/edit" element={<QuestionnaireCustomizationPage />} />

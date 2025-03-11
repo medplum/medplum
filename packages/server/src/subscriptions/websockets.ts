@@ -1,4 +1,4 @@
-import { badRequest, createReference, normalizeErrorString } from '@medplum/core';
+import { badRequest, createReference, normalizeErrorString, WithId } from '@medplum/core';
 import { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
 import { Redis } from 'ioredis';
 import { JWTPayload } from 'jose';
@@ -43,7 +43,11 @@ async function setupSubscriptionHandler(): Promise<void> {
   redisSubscriber = getRedisSubscriber();
   redisSubscriber.on('message', (channel: string, events: string) => {
     globalLogger.debug('[WS] redis subscription events', { channel, events });
-    const subEventArgsArr = JSON.parse(events) as [Resource, subscriptionId: string, options?: SubEventsOptions][];
+    const subEventArgsArr = JSON.parse(events) as [
+      WithId<Resource>,
+      subscriptionId: string,
+      options?: SubEventsOptions,
+    ][];
     for (const [resource, subscriptionId, options] of subEventArgsArr) {
       const bundle = createSubEventNotification(resource, subscriptionId, options);
       for (const socket of subToWsLookup.get(subscriptionId) ?? []) {
@@ -288,7 +292,7 @@ export function createHandshakeBundle(subscriptionId: string): Bundle {
   };
 }
 
-export function createSubEventNotification<T extends Resource = Resource>(
+export function createSubEventNotification<T extends WithId<Resource>>(
   resource: T,
   subscriptionId: string,
   options?: SubEventsOptions
@@ -319,7 +323,7 @@ export function createSubEventNotification<T extends Resource = Resource>(
         ? [
             {
               resource,
-              fullUrl: getFullUrl(resource.resourceType, resource.id as string),
+              fullUrl: getFullUrl(resource.resourceType, resource.id),
             },
           ]
         : []),

@@ -1,4 +1,12 @@
-import { OperationOutcomeError, badRequest, capitalize, isEmpty, isResource, validateResource } from '@medplum/core';
+import {
+  OperationOutcomeError,
+  badRequest,
+  capitalize,
+  flatMapFilter,
+  isEmpty,
+  isResource,
+  validateResource,
+} from '@medplum/core';
 import { FhirRequest } from '@medplum/fhir-router';
 import {
   OperationDefinition,
@@ -209,6 +217,7 @@ export function buildOutputParameters(operation: OperationDefinition, output: an
 
 function makeParameter(param: OperationDefinitionParameter, value: any): ParametersParameter | undefined {
   if (param.part) {
+    // Handle nested parameters by flattening dictionary object value
     const parts: ParametersParameter[] = [];
     for (const part of param.part) {
       const nestedValue = value[part.name ?? ''];
@@ -219,17 +228,14 @@ function makeParameter(param: OperationDefinitionParameter, value: any): Paramet
         }
       }
     }
+
     return { name: param.name, part: parts };
   }
-  const type =
-    param.type && param.type !== 'Element'
-      ? [param.type]
-      : param.extension
-          ?.filter((e) => e.url === 'http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type')
-          ?.map((e) => e.valueUri as string);
+
+  const type = getParameterType(param);
   if (type?.length === 1) {
-    return { name: param.name, ['value' + capitalize(type[0] as string)]: value };
-  } else if (typeof value.type === 'string' && value.value && type?.length) {
+    return { name: param.name, ['value' + capitalize(type[0])]: value };
+  } else if (typeof value.type === 'string' && value.value !== undefined && type?.length) {
     // Handle TypedValue
     for (const t of type) {
       if (value.type === t) {
@@ -238,6 +244,17 @@ function makeParameter(param: OperationDefinitionParameter, value: any): Paramet
     }
   }
   return undefined;
+}
+
+function getParameterType(param: OperationDefinitionParameter): string[] | undefined {
+  if (param.type && param.type !== 'Element') {
+    return [param.type];
+  }
+  return flatMapFilter(param.extension, (e) =>
+    e.url === 'http://hl7.org/fhir/StructureDefinition/operationdefinition-allowed-type'
+      ? (e.valueUri as string)
+      : undefined
+  );
 }
 
 export function clamp(n: number, min: number, max: number): number {

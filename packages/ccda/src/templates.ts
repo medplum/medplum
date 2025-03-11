@@ -77,6 +77,7 @@ export const CCDA_TEMPLATE_IDS = [
 // Allergies and Intolerances 2.16.840.1.113883.10.20.22.2.6.1 Allergies Section (entries required)
 export const ALLERGIES_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
   { '@_root': OID_ALLERGIES_SECTION_ENTRIES_REQUIRED, '@_extension': '2015-08-01' },
+  { '@_root': OID_ALLERGIES_SECTION_ENTRIES_REQUIRED },
 ];
 
 // Medications 2.16.840.1.113883.10.20.22.2.1.1 Medications Section (entries required)
@@ -87,6 +88,7 @@ export const MEDICATIONS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
 // Problems 2.16.840.1.113883.10.20.22.2.5.1 Problem Section (entries required)
 export const PROBLEMS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
   { '@_root': OID_PROBLEMS_SECTION_ENTRIES_REQUIRED, '@_extension': '2015-08-01' },
+  { '@_root': OID_PROBLEMS_SECTION_ENTRIES_REQUIRED },
 ];
 
 // Immunizations 2.16.840.1.113883.10.20.22.2.2.1 Immunizations Section (entries required)

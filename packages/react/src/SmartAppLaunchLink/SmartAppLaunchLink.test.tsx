@@ -2,7 +2,7 @@ import { createReference } from '@medplum/core';
 import { HomerEncounter, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SmartAppLaunchLink } from './SmartAppLaunchLink';
 

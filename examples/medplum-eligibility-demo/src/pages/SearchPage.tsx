@@ -9,7 +9,7 @@ import {
 } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { CreateCoverageModal } from '../components/CreateCoverageModal';
 
 export function SearchPage(): JSX.Element {
@@ -24,7 +24,7 @@ export function SearchPage(): JSX.Element {
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
     // Default to the Coverage search page
     if (!parsedSearch.resourceType) {
-      navigate('/Coverage');
+      navigate('/Coverage')?.catch(console.error);
       return;
     }
 
@@ -37,7 +37,7 @@ export function SearchPage(): JSX.Element {
     ) {
       setSearch(populatedSearch);
     } else {
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
@@ -49,12 +49,12 @@ export function SearchPage(): JSX.Element {
     <Document>
       <SearchControl
         search={search}
-        onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+        onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
         hideFilters={true}
         onNew={() => handlers.open()}
         hideToolbar={search.resourceType === 'Coverage'}
         onChange={(e) => {
-          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+          navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
         }}
       />
       <CreateCoverageModal opened={opened} onClose={handlers.close} />

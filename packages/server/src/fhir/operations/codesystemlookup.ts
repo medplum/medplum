@@ -1,6 +1,6 @@
-import { OperationOutcomeError, TypedValue, allOk, append, badRequest, notFound } from '@medplum/core';
+import { OperationOutcomeError, TypedValue, allOk, append, badRequest, notFound, serverError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem, Coding } from '@medplum/fhirtypes';
+import { CodeSystem, CodeSystemProperty, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { Column, Condition, SelectQuery } from '../sql';
@@ -102,10 +102,29 @@ export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Prom
     if (property.code && property.value) {
       output.property = append(output.property, {
         code: property.code,
-        description: property.targetDisplay ?? property.description,
-        value: { type: property.type, value: property.value },
+        description: property.targetDisplay ?? property.description ?? undefined,
+        value: toTypedValue(property.value, property.type),
       });
     }
   }
   return output;
+}
+
+function toTypedValue(value: string, type: CodeSystemProperty['type']): TypedValue {
+  switch (type) {
+    case 'boolean':
+      if (value === 'true') {
+        return { type, value: true };
+      } else if (value === 'false') {
+        return { type, value: false };
+      } else {
+        throw new OperationOutcomeError(serverError(new Error('Invalid value for boolean property: ' + value)));
+      }
+    case 'integer':
+      return { type, value: parseInt(value, 10) };
+    case 'decimal':
+      return { type, value: parseFloat(value) };
+    default:
+      return { type, value };
+  }
 }

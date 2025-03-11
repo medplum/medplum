@@ -1,6 +1,6 @@
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceHistoryTable, useMedplum } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 export function ResourceHistoryTab(): JSX.Element {
   const medplum = useMedplum();

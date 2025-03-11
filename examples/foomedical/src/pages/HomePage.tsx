@@ -20,7 +20,7 @@ import { formatHumanName } from '@medplum/core';
 import { Patient, Practitioner } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react';
 import { IconChecklist, IconGift, IconSquareCheck } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import DoctorImage from '../img/homePage/doctor.svg';
 import HealthRecordImage from '../img/homePage/health-record.svg';
 import HealthVisitImage from '../img/homePage/health-visit.jpg';
@@ -131,7 +131,7 @@ export function HomePage(): JSX.Element {
         <Group justify="center">
           <IconGift />
           <p>Put calls to action here</p>
-          <Button variant="white" onClick={() => navigate('/messages')}>
+          <Button variant="white" onClick={() => navigate('/messages')?.catch(console.error)}>
             Send Message
           </Button>
         </Group>
@@ -224,7 +224,7 @@ export function HomePage(): JSX.Element {
                     <Text size="sm" color="dimmed" my="sm">
                       Having a consistent, trusted provider can lead to better health.
                     </Text>
-                    <Button onClick={() => navigate('/account/provider')}>Choose Provider</Button>
+                    <Button onClick={() => navigate('/account/provider')?.catch(console.error)}>Choose Provider</Button>
                   </div>
                 </Group>
               </Card>

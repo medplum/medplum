@@ -116,7 +116,7 @@ export class AddressTable extends LookupTable {
     }
 
     const resourceType = resource.resourceType;
-    const resourceId = resource.id as string;
+    const resourceId = resource.id;
     const values = addresses.map((address) => ({
       resourceId,
       address: formatAddress(address),
@@ -163,7 +163,7 @@ export class AddressTable extends LookupTable {
     }
 
     const tableName = this.getTableName();
-    const resourceId = resource.id as string;
+    const resourceId = resource.id;
     await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
   }
 

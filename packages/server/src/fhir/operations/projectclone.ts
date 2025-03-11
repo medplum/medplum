@@ -53,7 +53,7 @@ class ProjectCloner {
       const bundle = await repo.search({
         resourceType,
         count: maxResourcesPerResourceType,
-        filters: [{ code: '_project', operator: Operator.EQUALS, value: project.id as string }],
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: project.id }],
       });
 
       if (!bundle.entry) {
@@ -61,10 +61,10 @@ class ProjectCloner {
       }
 
       for (const entry of bundle.entry) {
-        if (!entry.resource || !this.isAllowedResourceId(entry.resource.id as string)) {
+        if (!entry.resource || !this.isAllowedResourceId(entry.resource.id)) {
           continue;
         }
-        this.idMap.set(entry.resource.id as string, repo.generateId());
+        this.idMap.set(entry.resource.id, repo.generateId());
         buildBinaryIds(entry.resource, binaryIds);
         if (entry.resource.resourceType !== 'Project') {
           allResources.push(entry.resource);
@@ -76,7 +76,7 @@ class ProjectCloner {
     if (this.isAllowedResourceType('Binary')) {
       for (const binaryId of binaryIds) {
         const binary = await repo.readResource<Binary>('Binary', binaryId);
-        this.idMap.set(binary.id as string, repo.generateId());
+        this.idMap.set(binary.id, repo.generateId());
         allResources.push(binary);
       }
     }

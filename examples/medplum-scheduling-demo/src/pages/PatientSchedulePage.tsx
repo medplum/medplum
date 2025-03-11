@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { CreateAppointment } from '../components/actions/CreateAppointment';
 import { ScheduleContext } from '../Schedule.context';
 

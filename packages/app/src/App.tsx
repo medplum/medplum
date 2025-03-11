@@ -17,7 +17,7 @@ import {
   IconWebhook,
 } from '@tabler/icons-react';
 import { FunctionComponent, Suspense } from 'react';
-import { useLocation, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router';
 import { AppRoutes } from './AppRoutes';
 
 import './App.css';

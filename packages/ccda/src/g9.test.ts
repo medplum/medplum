@@ -100,6 +100,14 @@ describe('170.315(g)(9)', () => {
                   display: 'White',
                 },
               },
+              {
+                url: 'detailed',
+                valueCoding: {
+                  system: RACE_CODE_SYSTEM,
+                  code: '2108-9',
+                  display: 'White European',
+                },
+              },
             ],
           },
           {
@@ -130,6 +138,13 @@ describe('170.315(g)(9)', () => {
       expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.[0]?.['@_codeSystemName']).toEqual(
         'CDC Race and Ethnicity'
       );
+
+      // Test detailed race code
+      const detailed = output.recordTarget?.[0]?.patientRole?.patient?.['sdtc:raceCode']?.[0];
+      expect(detailed?.['@_code']).toEqual('2108-9');
+      expect(detailed?.['@_displayName']).toEqual('White European');
+      expect(detailed?.['@_codeSystem']).toEqual(OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM);
+      expect(detailed?.['@_codeSystemName']).toEqual('CDC Race and Ethnicity');
 
       // Test ethnicity code
       expect(output.recordTarget?.[0]?.patientRole?.patient?.ethnicGroupCode?.[0]?.['@_code']).toEqual('2186-5');
@@ -190,9 +205,9 @@ describe('170.315(g)(9)', () => {
       };
       const input = createCompositionBundle(patient);
       const output = convertFhirToCcda(input);
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.languageCommunication?.[0]?.['@_languageCode']).toEqual(
-        'en-US'
-      );
+      expect(
+        output.recordTarget?.[0]?.patientRole?.patient?.languageCommunication?.[0]?.languageCode?.['@_code']
+      ).toEqual('en-US');
     });
 
     // Current Address

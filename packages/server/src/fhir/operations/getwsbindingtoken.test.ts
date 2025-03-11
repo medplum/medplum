@@ -103,7 +103,7 @@ describe('Get WebSocket binding token', () => {
       expect(createdSub.id).toBeDefined();
 
       const res2 = await request(app)
-        .delete(`/fhir/R4/Subscription/${createdSub.id as string}`)
+        .delete(`/fhir/R4/Subscription/${createdSub.id}`)
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res2.body).toMatchObject<OperationOutcome>({
