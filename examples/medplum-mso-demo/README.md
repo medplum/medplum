@@ -8,9 +8,9 @@
 
 ## Overview
 
-- Clinician and Patient management interface - see `src/components/ClinicianList.tsx` and `src/components/PatientList.tsx`
-- Operations to enroll and unenroll clinicians and patients across different clinics with automatic access policy updates - see `src/utils/enrollment.ts`
-- Fetching all patients and clinicians enrolled in a clinic - see `src/utils/enrollment.ts`
+- Clinician and Patient management interface - see [src/components/ClinicianList.tsx](./src/components/ClinicianList.tsx) and [src/components/PatientList.tsx](./src/components/PatientList.tsx)
+- Operations to enroll and unenroll clinicians and patients across different clinics with automatic access policy updates - see [src/components/utils/enrollment.ts](./src/utils/enrollment.ts)
+- Fetching all patients and clinicians enrolled in a clinic - see [src/components/utils/enrollment.ts](./src/utils/enrollment.ts)
 
 ## Getting Started
 
