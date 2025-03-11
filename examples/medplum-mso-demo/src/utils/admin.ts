@@ -32,17 +32,6 @@ export async function isUserAdmin(medplum: MedplumClient): Promise<boolean> {
 }
 
 /**
- * Synchronous version that checks if the current user's ProjectMembership has admin=true.
- * This requires that the ProjectMembership has already been loaded.
- * 
- * @param membership - The user's ProjectMembership resource
- * @returns Boolean indicating whether the user is an admin
- */
-export function isAdmin(membership: ProjectMembership | undefined): boolean {
-  return !!membership?.admin;
-}
-
-/**
  * React hook that provides the admin status of the current user.
  * 
  * @returns An object containing the admin status and loading state

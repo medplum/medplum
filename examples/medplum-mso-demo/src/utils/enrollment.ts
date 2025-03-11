@@ -1,7 +1,6 @@
 import { Organization, Patient, Practitioner, Reference, ProjectMembership, AccessPolicy, ProjectMembershipAccessParameter } from '@medplum/fhirtypes';
 import { createReference, MedplumClient } from '@medplum/core';
 
-
 /**
  * Enrolls a practitioner in an organization.
  * @param medplum - The Medplum client.
@@ -218,6 +217,12 @@ export async function getEnrolledPractitioners(
   return [];
 }
 
+/**
+ * Gets patients enrolled in a specific organization.
+ * @param medplum - The Medplum client.
+ * @param organization - The organization to get enrolled patients for.
+ * @returns Array of patients enrolled in the organization.
+ */
 export async function getEnrolledPatients(
   medplum: MedplumClient,
   organization: Organization
@@ -233,7 +238,6 @@ export async function getEnrolledPatients(
 
   return patients;
 }
-
 
 /**
  * Helper function to get an AccessPolicy by name.
