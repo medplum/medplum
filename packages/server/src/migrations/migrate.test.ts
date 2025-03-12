@@ -17,7 +17,7 @@ describe('Generator', () => {
     });
 
     test('Patient', () => {
-      const result: SchemaDefinition = { tables: [] };
+      const result: SchemaDefinition = { tables: [], functions: [] };
       const dataTypes: [ResourceType, InternalTypeSchema][] = [['Patient', getDataType('Patient')]];
       for (const [resourceType, typeSchema] of dataTypes) {
         buildCreateTables(result, resourceType, typeSchema);
