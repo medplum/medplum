@@ -69,20 +69,34 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
     const insurerName = in1Segment.getField(4)?.getComponent(1) ?? ''; // IN1.4 Insurance Company Name
     const subscriberId = in1Segment.getField(36)?.getComponent(1) ?? ''; // IN1.36 Policy Number
 
+    // Check if insurer organization exists
+    let insurerOrg = await medplum.searchOne('Organization', 'identifier=' + insurerId);
+    if (!insurerOrg) {
+      // Create new organization if it doesn't exist
+      insurerOrg = await medplum.createResource({
+        resourceType: 'Organization',
+        identifier: [{
+          system: 'http://terminology.hl7.org/CodeSystem/insurance-plan-identifier',
+          value: insurerId
+        }],
+        name: insurerName,
+        type: [{
+          coding: [{
+            system: 'http://terminology.hl7.org/CodeSystem/organization-type',
+            code: 'ins',
+            display: 'Insurance Company'
+          }]
+        }]
+      });
+    }
+
     coverage = await medplum.createResource<Coverage>({
       resourceType: 'Coverage',
       status: 'active',
       subscriber: createReference(patient),
       subscriberId: subscriberId,
       beneficiary: createReference(patient),
-      payor: [
-        {
-          display: insurerName,
-          identifier: {
-            value: insurerId,
-          },
-        },
-      ],
+      payor: [createReference(insurerOrg)], // Use reference to Organization instead of display name
     });
   }
 
