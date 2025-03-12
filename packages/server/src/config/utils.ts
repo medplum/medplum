@@ -53,6 +53,7 @@ const booleanKeys = [
   'registerEnabled',
   'require',
   'rejectUnauthorized',
+  'disableAutoRunPostDeployMigrations',
 ];
 
 export function isBooleanConfig(key: string): boolean {

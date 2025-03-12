@@ -278,7 +278,7 @@ async function migrate(client: PoolClient): Promise<void> {
       // We allow any version where the data migration is greater than or equal to the specified `serverVersion` and it less than the `requiredBefore` version
       if (versionEntry.requiredBefore && semver.gte(serverVersion, versionEntry.requiredBefore)) {
         throw new Error(
-          `Unable to run post-deploy migration v${pendingPostDeployMigration} on this server. v${pendingPostDeployMigration} requires server at version ${versionEntry.serverVersion} <= version < ${versionEntry.requiredBefore}, but current server version is ${serverVersion}`
+          `Unable to run this version of Medplum server. Pending post-deploy migration v${pendingPostDeployMigration} requires server at version ${versionEntry.serverVersion} <= version < ${versionEntry.requiredBefore}, but current server version is ${serverVersion}`
         );
       }
       // If we make it here, we have a pending migration, but we don't want to apply it until we make sure we apply all the schema migrations first
@@ -301,7 +301,9 @@ async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersi
   }
 }
 
-export async function queueAllPendingPostDeployMigrations(): Promise<void> {
+export async function maybeQueueAllPendingPostDeployMigrations(): Promise<void> {
+  const isDisabled = getConfig().disableAutoRunPostDeployMigrations;
+
   const pendingPostDeployMigration = await getPendingPostDeployMigration();
   if (pendingPostDeployMigration === Version.UNKNOWN) {
     //TODO{mattlong} - throwing here feels wrong since it'd stop the server from starting
@@ -324,6 +326,13 @@ export async function queueAllPendingPostDeployMigrations(): Promise<void> {
      
      e.g., should there only ever be one AsyncJob referencing post-deploy migration v2?
     */
+    if (isDisabled) {
+      globalLogger.info('Not queueing pending post-deploy migration because auto-run is disabled', {
+        version: `v${i}`,
+      });
+      continue;
+    }
+
     const asyncJob = await createAsyncJobForPostDeployMigration(systemRepo, i);
     globalLogger.info('Queueing post-deploy migration', {
       version: `v${i}`,
@@ -411,17 +420,14 @@ export async function maybeStartPostDeployMigration(
       }
       if (existingJob) {
         postDeployMigrationJob = existingJob;
-        return;
+      } else {
+        postDeployMigrationJob = await createAsyncJobForPostDeployMigration(systemRepo, pendingPostDeployMigration);
       }
-      // If there isn't an existing job, create a new one and start data migration
-      postDeployMigrationJob = await createAsyncJobForPostDeployMigration(systemRepo, pendingPostDeployMigration);
 
       const migration = getPostDeployMigration(pendingPostDeployMigration);
-      // Don't await the migration, since it could be blocking
-      migration
-        // We get a new system repo here so that we are not reusing with the system repo doing the transaction
-        .run(getSystemRepo(), postDeployMigrationJob, false)
-        .catch((err) => globalLogger.error('Error while running data migration', { err }));
+      // We get a new system repo here so that we are not reusing with the system repo doing the transaction
+      await migration.run(getSystemRepo(), postDeployMigrationJob, false);
+      // .catch((err) => globalLogger.error('Error while running data migration', { err }));
     },
     { serializable: true }
   );

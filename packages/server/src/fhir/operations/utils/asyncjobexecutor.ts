@@ -29,12 +29,21 @@ export class AsyncJobExecutor {
     }
     return this.resource;
   }
-
   /**
    * Begins execution of the async job and coordinates resource updates and logging throughout the job lifecycle.
    * @param callback - The callback to execute.
    */
   start(callback: (job: AsyncJob) => Promise<any>): void {
+    // Rely on `startAsync` for error handling/logging
+    this.startAsync(callback).catch(() => {});
+  }
+
+  /**
+   * Executes the async job and coordinates resource updates and logging throughout the job lifecycle.
+   * @param callback - The callback to execute.
+   * @returns A promise that resolves when the job is completed or fails.
+   */
+  async startAsync(callback: (job: AsyncJob) => Promise<any>): Promise<AsyncJob | undefined> {
     const log = getLogger();
     if (!this.resource) {
       throw new Error('AsyncJob missing');
@@ -47,14 +56,14 @@ export class AsyncJobExecutor {
     const systemRepo = getSystemRepo();
     log.info('AsyncJob execution starting', { name: callback.name, asyncJobId: this.resource?.id });
 
-    this.run(callback)
+    return this.run(callback)
       .then(async (output) => {
         log.info('AsyncJob execution completed', {
           name: callback.name,
           asyncJobId: this.resource?.id,
           duration: `${Date.now() - startTime} ms`,
         });
-        await this.completeJob(systemRepo, output);
+        return this.completeJob(systemRepo, output);
       })
       .catch(async (err) => {
         log.error('AsyncJob execution failed', {
@@ -63,7 +72,7 @@ export class AsyncJobExecutor {
           error: err.toString(),
           stack: err.stack,
         });
-        await this.failJob(systemRepo, err);
+        return this.failJob(systemRepo, err);
       })
       .finally(() => {
         this.repo[Symbol.dispose]();
