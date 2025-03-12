@@ -16,20 +16,20 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   const systemString = 'MRN';
 
   // Verify message type is DFT
-  const messageType = input.getSegment('MSH')?.getField(9)?.getComponent(1) as string;
+  const messageType = input.getSegment('MSH')?.getField(9)?.getComponent(1) ?? '';
   if (messageType !== 'DFT') {
     throw new Error('Not a DFT message');
   }
 
   // Get patient information
-  const mrnNumber = input.getSegment('PID')?.getField(3)?.getComponent(1) as string;
-  const givenName = input.getSegment('PID')?.getField(5)?.getComponent(2) as string;
-  const familyName = input.getSegment('PID')?.getField(5)?.getComponent(1) as string;
-  const addressLine = input.getSegment('PID')?.getField(11)?.getComponent(1) as string;
-  const city = input.getSegment('PID')?.getField(11)?.getComponent(3) as string;
-  const state = input.getSegment('PID')?.getField(11)?.getComponent(4) as string;
-  const postalCode = input.getSegment('PID')?.getField(11)?.getComponent(5) as string;
-  const country = input.getSegment('PID')?.getField(11)?.getComponent(6) as string;
+  const mrnNumber = input.getSegment('PID')?.getField(3)?.getComponent(1) ?? ''; // PID.3 Patient Identifier List
+  const givenName = input.getSegment('PID')?.getField(5)?.getComponent(2) ?? ''; // PID.5 Patient Name (XPN.2 Given Name)
+  const familyName = input.getSegment('PID')?.getField(5)?.getComponent(1) ?? ''; // PID.5 Patient Name (XPN.1 Family Name)
+  const addressLine = input.getSegment('PID')?.getField(11)?.getComponent(1) ?? ''; // PID.11 Patient Address (XAD.1 Street Address)
+  const city = input.getSegment('PID')?.getField(11)?.getComponent(3) ?? ''; // PID.11 Patient Address (XAD.3 City)
+  const state = input.getSegment('PID')?.getField(11)?.getComponent(4) ?? ''; // PID.11 Patient Address (XAD.4 State or Province)
+  const postalCode = input.getSegment('PID')?.getField(11)?.getComponent(5) ?? ''; // PID.11 Patient Address (XAD.5 Zip or Postal Code)
+  const country = input.getSegment('PID')?.getField(11)?.getComponent(6) ?? ''; // PID.11 Patient Address (XAD.6 Country)
 
   // Find or create patient
   let patient = await medplum.searchOne('Patient', 'identifier=' + mrnNumber);
@@ -65,9 +65,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   let coverage: Coverage | undefined;
 
   if (in1Segment) {
-    const insurerId = in1Segment.getField(3)?.getComponent(1) as string;
-    const insurerName = in1Segment.getField(4)?.getComponent(1) as string;
-    const subscriberId = in1Segment.getField(36)?.getComponent(1) as string;
+    const insurerId = in1Segment.getField(3)?.getComponent(1) ?? ''; // IN1.3 Insurance Company ID
+    const insurerName = in1Segment.getField(4)?.getComponent(1) ?? ''; // IN1.4 Insurance Company Name
+    const subscriberId = in1Segment.getField(36)?.getComponent(1) ?? ''; // IN1.36 Policy Number
 
     coverage = await medplum.createResource<Coverage>({
       resourceType: 'Coverage',
@@ -88,8 +88,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
 
   // Get all procedures
   const procedures = input.getAllSegments('PR1').map((pr1) => ({
-    code: pr1.getField(3)?.getComponent(1) as string,
-    display: pr1.getField(3)?.getComponent(2) as string,
+    code: pr1.getField(3)?.getComponent(1) ?? '', // PR1.3.1 Procedure Code
+    display: pr1.getField(3)?.getComponent(2) ?? '', // PR1.3.2 Procedure Description
   }));
 
   if (procedures.length !== 0 && coverage) {
