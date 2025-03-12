@@ -75,18 +75,24 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
       // Create new organization if it doesn't exist
       insurerOrg = await medplum.createResource({
         resourceType: 'Organization',
-        identifier: [{
-          system: 'http://terminology.hl7.org/CodeSystem/insurance-plan-identifier',
-          value: insurerId
-        }],
+        identifier: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/insurance-plan-identifier',
+            value: insurerId,
+          },
+        ],
         name: insurerName,
-        type: [{
-          coding: [{
-            system: 'http://terminology.hl7.org/CodeSystem/organization-type',
-            code: 'ins',
-            display: 'Insurance Company'
-          }]
-        }]
+        type: [
+          {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/organization-type',
+                code: 'ins',
+                display: 'Insurance Company',
+              },
+            ],
+          },
+        ],
       });
     }
 
