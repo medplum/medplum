@@ -1,9 +1,10 @@
-import { Button, Center, Checkbox, Group, Stack, Title } from '@mantine/core';
+import { Center, Checkbox, Group, Stack, Title } from '@mantine/core';
 import { LoginAuthenticationResponse } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
-import { Form } from '../Form/Form';
-import { Logo } from '../Logo/Logo';
 import { Fragment } from 'react/jsx-runtime';
+import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
+import { Logo } from '../Logo/Logo';
 
 export interface ChooseScopeFormProps {
   readonly login: string;
@@ -71,7 +72,7 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
           })}
         </Stack>
         <Group justify="flex-end" mt="xl">
-          <Button type="submit">Set scope</Button>
+          <SubmitButton>Set scope</SubmitButton>
         </Group>
       </Stack>
     </Form>

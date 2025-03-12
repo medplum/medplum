@@ -1,9 +1,10 @@
-import { Button, Group, Modal, NativeSelect, Stack, TextInput } from '@mantine/core';
+import { Group, Modal, NativeSelect, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { deepClone, normalizeErrorString, WithId } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 
 interface BookmarkDialogProps {
   readonly pathname: string;
@@ -49,9 +50,7 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
           <SelectMenu config={config}></SelectMenu>
           <TextInput label="Bookmark Name" type="text" name="bookmarkname" placeholder="Bookmark Name" withAsterisk />
           <Group justify="flex-end">
-            <Button mt="sm" type="submit">
-              OK
-            </Button>
+            <SubmitButton mt="sm">OK</SubmitButton>
           </Group>
         </Stack>
       </Form>
