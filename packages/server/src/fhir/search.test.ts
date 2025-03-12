@@ -41,6 +41,7 @@ import {
   Provenance,
   Questionnaire,
   QuestionnaireResponse,
+  ResearchStudy,
   Resource,
   RiskAssessment,
   SearchParameter,
@@ -1987,6 +1988,19 @@ describe('FHIR Search', () => {
         );
         expect(result2.entry).toHaveLength(1);
         expect(result2.entry?.[0]?.resource?.id).toEqual(evidenceVariable.id);
+
+        const study = await repo.createResource<ResearchStudy>({
+          resourceType: 'ResearchStudy',
+          status: 'active',
+          outcomeMeasure: [{ reference: createReference(evidenceVariable) }],
+        });
+        const result3 = await repo.search(
+          parseSearchRequest(
+            `ResearchStudy?outcome-measure-reference:EvidenceVariable.derived-from:Questionnaire.identifier=${q}`
+          )
+        );
+        expect(result3.entry).toHaveLength(1);
+        expect(result3.entry?.[0]?.resource?.id).toEqual(study.id);
       }));
 
     test('Rejects too long chained search', () =>
