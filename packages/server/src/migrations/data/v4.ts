@@ -41,13 +41,16 @@ const migration: CustomPostDeployMigration = {
     await pool.query(`SET statement_timeout TO 0`);
 
     const sleepTime = 5000;
-    globalLogger.info(`About to throw an error in ${sleepTime} seconds...`, {
+    globalLogger.info(`Sleeping for ${sleepTime} seconds...`, {
       job: job.id,
       attemptsMade: job.attemptsMade,
       attemptsStarted: job.attemptsStarted,
     });
     await sleep(sleepTime);
-    // throw new Error('Uh oh, we had an error');
+
+    if (job.attemptsStarted < 2) {
+      throw new Error('Uh oh, we had an error. The job should retry.');
+    }
 
     return { actions };
   },

@@ -61,7 +61,12 @@ export async function initPostDeployMigrationWorker(config: MedplumServerConfig)
             iterationsPerJob: job.data.iterationsPerJob,
           });
         } else if (job.data.type === 'custom') {
-          return executeCustomMigrationJob(job as Job<CustomMigrationJobData>);
+          const result = await executeCustomMigrationJob(job as Job<CustomMigrationJobData>);
+          globalLogger.info('custom migration completed', {
+            result,
+            version: job.data.asyncJob.dataVersion,
+          });
+          return result;
         } else {
           throw new Error(`Unknown job type: ${(job.data as any).type as unknown}`);
         }
@@ -75,7 +80,8 @@ export async function initPostDeployMigrationWorker(config: MedplumServerConfig)
       maxStalledCount: 500,
     }
   );
-  worker.on('failed', (job, err) => globalLogger.info(`Failed PostDeployMigrationJob ${job?.id} with ${err}`));
+  worker.on('failed', (job, err) => globalLogger.info(`PostDeployMigration worker failed job ${job?.id} with ${err}`));
+  worker.on('completed', (job) => globalLogger.info(`PostDeployMigration worker completed job ${job?.id}`));
 }
 
 /**
@@ -96,10 +102,10 @@ export async function closePostDeployMigrationWorker(): Promise<void> {
   }
 }
 
-async function executeCustomMigrationJob(job: Job<CustomMigrationJobData>): Promise<void> {
+async function executeCustomMigrationJob(job: Job<CustomMigrationJobData>): Promise<any> {
   const systemRepo = getSystemRepo();
   const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
-  exec.start(async (asyncJob) => {
+  return exec.startAsync(async (asyncJob) => {
     if (!asyncJob.dataVersion) {
       throw new Error(`Migration number (AsyncJob.dataVersion) not found in ${getReferenceString(asyncJob)}`);
     }
@@ -112,6 +118,9 @@ async function executeCustomMigrationJob(job: Job<CustomMigrationJobData>): Prom
       version: asyncJob.dataVersion,
     });
     const result = await migration.process(job);
+    globalLogger.info('post-deploy-migration worker completed process', {
+      version: asyncJob.dataVersion,
+    });
     const output = getAsyncJobOutputFromResults(result);
     return output;
   });
@@ -149,8 +158,12 @@ export async function addPostDeployMigrationJobData<T extends CustomMigrationJob
   job: T,
   options?: JobsOptions
 ): Promise<Job<T>> {
+  globalLogger.info('Queueing post-deploy migration', {
+    version: `v${job.asyncJob.dataVersion}`,
+    asyncJob: getReferenceString(job.asyncJob),
+  });
   const queue = getPostDeployMigrationQueue();
-  return queue.add(jobName, job, options) as Promise<Job<T>>;
+  return queue.add(jobName, job, { ...options /*jobId: `v${job.asyncJob.dataVersion}` */ }) as Promise<Job<T>>;
 }
 
 export async function addPostDeployMigrationJob(

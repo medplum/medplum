@@ -69,7 +69,8 @@ export function initReindexWorker(config: MedplumServerConfig): void {
       ...config.bullmq,
     }
   );
-  worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
+  worker.on('failed', (job, err) => globalLogger.info(`Reindex worker failed job ${job?.id} with ${err}`));
+  worker.on('completed', (job) => globalLogger.info(`Reindex worker completed job ${job?.id}`));
 }
 
 /**
