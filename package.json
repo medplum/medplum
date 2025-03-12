@@ -7,7 +7,7 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "turbo run build --filter=!@medplum/docs",
+    "build": "turbo run build --filter=!@medplum/docs --filter=!./examples/*",
     "build:all": "turbo run build",
     "build:docs": "turbo run build --filter=@medplum/docs",
     "build:fast": "turbo run build --filter=@medplum/app --filter=@medplum/server",
