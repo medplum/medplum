@@ -56,6 +56,7 @@ import {
   Bundle,
   BundleEntry,
   Meta,
+  OperationDefinition,
   OperationOutcome,
   Project,
   Reference,
@@ -1179,6 +1180,34 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   ): Promise<Bundle<WithId<T>>> {
     const startTime = Date.now();
     try {
+      const namedQuery = searchRequest.filters?.filter((f) => f.code === '_query');
+      if (namedQuery?.length) {
+        if (namedQuery.length > 1) {
+          throw new OperationOutcomeError(badRequest('Only one named query may be specified at once'));
+        }
+
+        const name = namedQuery[0].value;
+        const queryDefinition = await this.searchOne<OperationDefinition>(
+          parseSearchRequest('OperationDefinition?kind=query&status=active&code=' + name)
+        );
+        if (!queryDefinition) {
+          throw new OperationOutcomeError(badRequest(`Named search query "${name}" not found`));
+        }
+        const outParam = queryDefinition.parameter?.find((p) => p.use === 'out' && p.type === 'Bundle');
+        if (!outParam?.documentation) {
+          throw new OperationOutcomeError(
+            badRequest('Named query must specify search criteria', 'OperationDefinition.parameter.documentation')
+          );
+        }
+        try {
+          searchRequest = parseSearchRequest(outParam.documentation);
+        } catch (_err) {
+          throw new OperationOutcomeError(
+            badRequest('Invalid search criteria for named search', 'OperationDefinition.parameter.documentation')
+          );
+        }
+      }
+
       // Resource type validation is performed in the searchImpl function
       const result = await searchImpl(this, searchRequest, options);
       const durationMs = Date.now() - startTime;
