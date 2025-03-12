@@ -605,7 +605,11 @@ class FhirToCcdaConverter {
                     statusCode: {
                       '@_code': 'completed',
                     },
-                    effectiveTime: this.mapEffectivePeriod(allergy.recordedDate, undefined, true),
+                    effectiveTime: this.mapEffectivePeriod(
+                      allergy.onsetPeriod?.start ?? allergy.onsetDateTime,
+                      allergy.onsetPeriod?.end,
+                      true
+                    ),
                     value: {
                       '@_xsi:type': 'CD',
                       '@_code': '419199007',
