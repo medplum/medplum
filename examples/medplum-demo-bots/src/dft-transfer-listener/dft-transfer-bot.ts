@@ -17,7 +17,10 @@ import { Claim, Coverage, Patient, Organization } from '@medplum/fhirtypes';
  * @param pidSegment - The PID segment from an HL7 message
  * @returns The created or found Patient resource
  */
-export async function handlePatientFromPid(medplum: MedplumClient, pidSegment: Hl7Segment | undefined): Promise<Patient | undefined> {
+export async function handlePatientFromPid(
+  medplum: MedplumClient,
+  pidSegment: Hl7Segment | undefined
+): Promise<Patient | undefined> {
   if (!pidSegment) {
     return undefined;
   }
@@ -89,18 +92,24 @@ export async function handleInsuranceFromIn1(
     // Create new organization if it doesn't exist
     insurerOrg = await medplum.createResource({
       resourceType: 'Organization',
-      identifier: [{
-        system: 'http://terminology.hl7.org/CodeSystem/insurance-plan-identifier',
-        value: insurerId,
-      }],
+      identifier: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/insurance-plan-identifier',
+          value: insurerId,
+        },
+      ],
       name: insurerName,
-      type: [{
-        coding: [{
-          system: 'http://terminology.hl7.org/CodeSystem/organization-type',
-          code: 'ins',
-          display: 'Insurance Company',
-        }],
-      }],
+      type: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/organization-type',
+              code: 'ins',
+              display: 'Insurance Company',
+            },
+          ],
+        },
+      ],
     });
   }
 
@@ -113,7 +122,7 @@ export async function handleInsuranceFromIn1(
     payor: [createReference(insurerOrg)],
   });
 
-  return [ coverage, insurerOrg ];
+  return [coverage, insurerOrg];
 }
 
 /**
