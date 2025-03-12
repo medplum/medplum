@@ -23,7 +23,7 @@ EVN|P03|20240218153044
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA
 FT1|1|ABC123|9876|20240218|20240218|CG|150.00|1|Units|||||||||||||99213^Office Visit^CPT
 PR1|1||99213^Office Visit^CPT|20240218|GP
-IN1|1|MEDICARE|12345|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
+IN1|1|MEDICARE|INS123|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
     const contentType = 'x-application/hl7-v2+er7';
     const secrets = {};
     const result = await handler(medplum, { bot, input, contentType, secrets });
@@ -35,11 +35,18 @@ IN1|1|MEDICARE|12345|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
     expect(patient?.name?.[0].family).toBe('DOE');
     expect(patient?.name?.[0].given?.[0]).toBe('JOHN');
 
+    // Verify Organization creation
+    const organization = await medplum.searchOne('Organization', 'identifier=INS123');
+    expect(organization).toBeDefined();
+    expect(organization?.name).toBe('MEDICARE');
+    expect(organization?.type?.[0].coding?.[0].code).toBe('ins');
+
     // Verify Coverage creation
     const coverage = await medplum.searchOne('Coverage', 'subscriber=Patient/' + patient?.id);
     expect(coverage).toBeDefined();
     expect(coverage?.subscriberId).toBe('123456789A');
     expect(coverage?.payor?.[0].display).toBe('MEDICARE');
+    expect(coverage?.payor?.[0].reference).toBe('Organization/' + organization?.id);
     expect(coverage?.beneficiary?.reference).toBe('Patient/' + patient?.id);
 
     // Verify Claim creation
