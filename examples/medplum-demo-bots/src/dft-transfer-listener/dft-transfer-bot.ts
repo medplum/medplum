@@ -8,28 +8,29 @@
  *
  * More information about the sections of DFT messages can be found here: https://rhapsody.health/resources/hl7-dft-message/
  */
-import { BotEvent, createReference, Hl7Message, MedplumClient } from '@medplum/core';
-import { Claim, Coverage, Patient } from '@medplum/fhirtypes';
+import { BotEvent, createReference, Hl7Message, MedplumClient, Hl7Segment } from '@medplum/core';
+import { Claim, Coverage, Patient, Organization } from '@medplum/fhirtypes';
 
-export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
-  const input = event.input;
-  const systemString = 'MRN';
-
-  // Verify message type is DFT
-  const messageType = input.getSegment('MSH')?.getField(9)?.getComponent(1) ?? '';
-  if (messageType !== 'DFT') {
-    throw new Error('Not a DFT message');
+/**
+ * Creates or finds a Patient resource based on PID segment information
+ * @param medplum - The Medplum client
+ * @param pidSegment - The PID segment from an HL7 message
+ * @returns The created or found Patient resource
+ */
+export async function handlePatientFromPid(medplum: MedplumClient, pidSegment: Hl7Segment | undefined): Promise<Patient | undefined> {
+  if (!pidSegment) {
+    return undefined;
   }
 
   // Get patient information
-  const mrnNumber = input.getSegment('PID')?.getField(3)?.getComponent(1) ?? ''; // PID.3 Patient Identifier List
-  const givenName = input.getSegment('PID')?.getField(5)?.getComponent(2) ?? ''; // PID.5 Patient Name (XPN.2 Given Name)
-  const familyName = input.getSegment('PID')?.getField(5)?.getComponent(1) ?? ''; // PID.5 Patient Name (XPN.1 Family Name)
-  const addressLine = input.getSegment('PID')?.getField(11)?.getComponent(1) ?? ''; // PID.11 Patient Address (XAD.1 Street Address)
-  const city = input.getSegment('PID')?.getField(11)?.getComponent(3) ?? ''; // PID.11 Patient Address (XAD.3 City)
-  const state = input.getSegment('PID')?.getField(11)?.getComponent(4) ?? ''; // PID.11 Patient Address (XAD.4 State or Province)
-  const postalCode = input.getSegment('PID')?.getField(11)?.getComponent(5) ?? ''; // PID.11 Patient Address (XAD.5 Zip or Postal Code)
-  const country = input.getSegment('PID')?.getField(11)?.getComponent(6) ?? ''; // PID.11 Patient Address (XAD.6 Country)
+  const mrnNumber = pidSegment?.getField(3)?.getComponent(1) ?? ''; // PID.3 Patient Identifier List
+  const givenName = pidSegment?.getField(5)?.getComponent(2) ?? ''; // PID.5 Patient Name (XPN.2 Given Name)
+  const familyName = pidSegment?.getField(5)?.getComponent(1) ?? ''; // PID.5 Patient Name (XPN.1 Family Name)
+  const addressLine = pidSegment?.getField(11)?.getComponent(1) ?? ''; // PID.11 Patient Address (XAD.1 Street Address)
+  const city = pidSegment?.getField(11)?.getComponent(3) ?? ''; // PID.11 Patient Address (XAD.3 City)
+  const state = pidSegment?.getField(11)?.getComponent(4) ?? ''; // PID.11 Patient Address (XAD.4 State or Province)
+  const postalCode = pidSegment?.getField(11)?.getComponent(5) ?? ''; // PID.11 Patient Address (XAD.5 Zip or Postal Code)
+  const country = pidSegment?.getField(11)?.getComponent(6) ?? ''; // PID.11 Patient Address (XAD.6 Country)
 
   // Find or create patient
   let patient = await medplum.searchOne('Patient', 'identifier=' + mrnNumber);
@@ -38,7 +39,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
       resourceType: 'Patient',
       identifier: [
         {
-          system: systemString,
+          system: 'MRN',
           value: mrnNumber,
         },
       ],
@@ -59,107 +60,155 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
       ],
     });
   }
+  return patient;
+}
 
-  // Process insurance information if present
-  const in1Segment = input.getSegment('IN1');
-  let coverage: Coverage | undefined;
+/**
+ * Creates or finds insurance resources based on IN1 segment information
+ * @param medplum - The Medplum client
+ * @param in1Segment - The IN1 segment from an HL7 message
+ * @param patient - The patient to link the coverage to
+ * @returns The created insurance resources
+ */
+export async function handleInsuranceFromIn1(
+  medplum: MedplumClient,
+  in1Segment: Hl7Segment | undefined,
+  patient: Patient
+): Promise<[Coverage, Organization] | undefined> {
+  if (!in1Segment) {
+    return undefined;
+  }
 
-  if (in1Segment) {
-    const insurerId = in1Segment.getField(3)?.getComponent(1) ?? ''; // IN1.3 Insurance Company ID
-    const insurerName = in1Segment.getField(4)?.getComponent(1) ?? ''; // IN1.4 Insurance Company Name
-    const subscriberId = in1Segment.getField(36)?.getComponent(1) ?? ''; // IN1.36 Policy Number
+  const insurerId = in1Segment.getField(3)?.getComponent(1) ?? ''; // IN1.3 Insurance Company ID
+  const insurerName = in1Segment.getField(4)?.getComponent(1) ?? ''; // IN1.4 Insurance Company Name
+  const subscriberId = in1Segment.getField(36)?.getComponent(1) ?? ''; // IN1.36 Policy Number
 
-    // Check if insurer organization exists
-    let insurerOrg = await medplum.searchOne('Organization', 'identifier=' + insurerId);
-    if (!insurerOrg) {
-      // Create new organization if it doesn't exist
-      insurerOrg = await medplum.createResource({
-        resourceType: 'Organization',
-        identifier: [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/insurance-plan-identifier',
-            value: insurerId,
-          },
-        ],
-        name: insurerName,
-        type: [
-          {
-            coding: [
-              {
-                system: 'http://terminology.hl7.org/CodeSystem/organization-type',
-                code: 'ins',
-                display: 'Insurance Company',
-              },
-            ],
-          },
-        ],
-      });
-    }
-
-    coverage = await medplum.createResource<Coverage>({
-      resourceType: 'Coverage',
-      status: 'active',
-      subscriber: createReference(patient),
-      subscriberId: subscriberId,
-      beneficiary: createReference(patient),
-      payor: [createReference(insurerOrg)], // Use reference to Organization instead of display name
+  // Check if insurer organization exists
+  let insurerOrg = await medplum.searchOne('Organization', 'identifier=' + insurerId);
+  if (!insurerOrg) {
+    // Create new organization if it doesn't exist
+    insurerOrg = await medplum.createResource({
+      resourceType: 'Organization',
+      identifier: [{
+        system: 'http://terminology.hl7.org/CodeSystem/insurance-plan-identifier',
+        value: insurerId,
+      }],
+      name: insurerName,
+      type: [{
+        coding: [{
+          system: 'http://terminology.hl7.org/CodeSystem/organization-type',
+          code: 'ins',
+          display: 'Insurance Company',
+        }],
+      }],
     });
   }
 
+  const coverage = await medplum.createResource<Coverage>({
+    resourceType: 'Coverage',
+    status: 'active',
+    subscriber: createReference(patient),
+    subscriberId: subscriberId,
+    beneficiary: createReference(patient),
+    payor: [createReference(insurerOrg)],
+  });
+
+  return [ coverage, insurerOrg ];
+}
+
+/**
+ * Creates a Claim resource based on PR1 segments and insurance information
+ * @param medplum - The Medplum client
+ * @param pr1Segments - Array of PR1 segments from an HL7 message
+ * @param patient - The patient to link the claim to
+ * @param insuranceInfo - The coverage and organization to link the claim to
+ * @returns The created Claim resource
+ */
+export async function handleClaimFromPr1s(
+  medplum: MedplumClient,
+  pr1Segments: Hl7Segment[],
+  patient: Patient,
+  insuranceInfo: [Coverage, Organization] | undefined
+): Promise<Claim | undefined> {
   // Get all procedures
-  const procedures = input.getAllSegments('PR1').map((pr1) => ({
+  const procedures = pr1Segments.map((pr1) => ({
     code: pr1.getField(3)?.getComponent(1) ?? '', // PR1.3.1 Procedure Code
     display: pr1.getField(3)?.getComponent(2) ?? '', // PR1.3.2 Procedure Description
   }));
 
-  if (procedures.length !== 0 && coverage) {
-    // Create claim
-    await medplum.createResource<Claim>({
-      resourceType: 'Claim',
-      status: 'active',
-      type: {
-        coding: [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/claim-type',
-            code: 'professional',
-          },
-        ],
-      },
-      use: 'claim',
-      patient: createReference(patient),
-      created: new Date().toISOString(),
-      provider: {
-        display: 'Unknown',
-      },
-      priority: {
-        coding: [
-          {
-            system: 'http://terminology.hl7.org/CodeSystem/processpriority',
-            code: 'normal',
-          },
-        ],
-      },
-      insurance: [
+  if (procedures.length === 0 || !insuranceInfo) {
+    return undefined;
+  }
+
+  const [coverage] = insuranceInfo;
+
+  return await medplum.createResource<Claim>({
+    resourceType: 'Claim',
+    status: 'active',
+    type: {
+      coding: [
         {
-          sequence: 1,
-          focal: true,
-          coverage: createReference(coverage),
+          system: 'http://terminology.hl7.org/CodeSystem/claim-type',
+          code: 'professional',
         },
       ],
-      item: procedures.map((proc, index) => ({
-        sequence: index + 1,
-        productOrService: {
-          coding: [
-            {
-              system: 'CPT',
-              code: proc.code,
-              display: proc.display,
-            },
-          ],
+    },
+    use: 'claim',
+    patient: createReference(patient),
+    created: new Date().toISOString(),
+    provider: {
+      display: 'Unknown',
+    },
+    priority: {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/processpriority',
+          code: 'normal',
         },
-      })),
-    });
+      ],
+    },
+    insurance: [
+      {
+        sequence: 1,
+        focal: true,
+        coverage: createReference(coverage),
+      },
+    ],
+    item: procedures.map((proc, index) => ({
+      sequence: index + 1,
+      productOrService: {
+        coding: [
+          {
+            system: 'CPT',
+            code: proc.code,
+            display: proc.display,
+          },
+        ],
+      },
+    })),
+  });
+}
+
+export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
+  const input = event.input;
+
+  // Verify message type is DFT
+  const messageType = input.getSegment('MSH')?.getField(9)?.getComponent(1) ?? '';
+  if (messageType !== 'DFT') {
+    throw new Error('Not a DFT message');
   }
+
+  // Get patient information
+  const patient = await handlePatientFromPid(medplum, input.getSegment('PID'));
+  if (!patient) {
+    throw new Error('Unable to find or create patient');
+  }
+
+  // Process insurance information if present
+  const insuranceInfo = await handleInsuranceFromIn1(medplum, input.getSegment('IN1'), patient);
+
+  // Create claim from procedures if present
+  await handleClaimFromPr1s(medplum, input.getAllSegments('PR1'), patient, insuranceInfo);
 
   return input.buildAck();
 }
