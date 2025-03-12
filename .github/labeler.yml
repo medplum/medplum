@@ -1,0 +1,30 @@
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file: 'package-lock.json'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/docs/blog/**/*
+          - packages/docs/docs/**/*
+          - packages/docs/src/**/*
+
+example:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/examples/src/**/*
+          - examples/*/src/**/*
+
+auth:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/server/src/auth/**/*
+          - packages/server/src/oauth/**/*
+          - packages/server/src/scim/**/*
+
+security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - packages/server/src/auth/**/*
+          - packages/server/src/oauth/**/*
+          - packages/server/src/scim/**/*
