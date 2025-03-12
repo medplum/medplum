@@ -54,7 +54,7 @@ export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
     return true;
   }
 
-  async execute(job: Job<TData>, options: { iterationsPerJob?: number }): Promise<void> {
+  async execute(job: Job<TData>, options?: { iterationsPerJob?: number }): Promise<void> {
     const iterationsPerJob = options?.iterationsPerJob ?? 1;
     globalLogger.info('LongJob.execute()', {
       jobId: job.id,

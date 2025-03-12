@@ -75,6 +75,9 @@ export interface MedplumServerConfig {
 
   /** @deprecated */
   auditEventLogStream?: string;
+
+  /** Disable auto-running post-deploy migrations after server startup */
+  disableAutoRunPostDeployMigrations?: boolean;
 }
 
 /**

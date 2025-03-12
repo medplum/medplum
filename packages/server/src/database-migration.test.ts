@@ -5,7 +5,11 @@ import { initAppServices, shutdownApp } from './app';
 import * as configLoaderModule from './config/loader';
 import { loadTestConfig } from './config/loader';
 import { MedplumServerConfig } from './config/types';
-import { getPendingDataMigration, markPendingDataMigrationCompleted, maybeStartDataMigration } from './database';
+import {
+  getPendingPostDeployMigration,
+  markPendingDataMigrationCompleted,
+  maybeStartPostDeployMigration,
+} from './database';
 import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
 import { createTestProject, withTestContext } from './test.setup';
@@ -155,7 +159,7 @@ describe('Database migrations', () => {
 
     test('Schema migrations did not run', () =>
       withTestContext(async () => {
-        await expect(maybeStartDataMigration()).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration()).rejects.toThrow(
           'Cannot run data migration; schema migrations did not run'
         );
       }));
@@ -188,7 +192,7 @@ describe('Database migrations', () => {
       withTestContext(async () => {
         jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '3.3.0');
 
-        const asyncJob = await maybeStartDataMigration();
+        const asyncJob = await maybeStartPostDeployMigration();
         expect(asyncJob).toMatchObject<AsyncJob>({
           id: expect.any(String),
           type: 'data-migration',
@@ -230,7 +234,7 @@ describe('Database migrations', () => {
           dataVersion: 1,
           minServerVersion: '3.3.0',
         });
-        await expect(maybeStartDataMigration()).resolves.toBeUndefined();
+        await expect(maybeStartPostDeployMigration()).resolves.toBeUndefined();
       }));
 
     test('Data migration already in progress', () =>
@@ -244,7 +248,7 @@ describe('Database migrations', () => {
           dataVersion: 1,
           minServerVersion: '3.3.0',
         });
-        await expect(maybeStartDataMigration()).resolves.toMatchObject({
+        await expect(maybeStartPostDeployMigration()).resolves.toMatchObject({
           id: asyncJob.id,
           type: 'data-migration',
           status: 'accepted',
@@ -268,7 +272,7 @@ describe('Database migrations', () => {
 
         expect(asyncJob.meta?.compartment).toBeDefined();
 
-        await expect(maybeStartDataMigration()).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration()).rejects.toThrow(
           'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project'
         );
       }));
@@ -297,7 +301,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        await expect(maybeStartDataMigration()).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration()).rejects.toThrow(
           'Data migration unable to start due to more than one existing data-migration AsyncJob with accepted status'
         );
       }));
@@ -314,7 +318,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        await expect(maybeStartDataMigration(1)).resolves.toBeUndefined();
+        await expect(maybeStartPostDeployMigration(1)).resolves.toBeUndefined();
       }));
 
     test('Asserted version is greater than current version AND there is NO pending migration', () =>
@@ -329,7 +333,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        await expect(maybeStartDataMigration(2)).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration(2)).rejects.toThrow(
           'Data migration assertion failed. Expected pending migration to be migration 2, server has no pending data migration'
         );
       }));
@@ -342,9 +346,9 @@ describe('Database migrations', () => {
           )
         ).resolves.toBeUndefined();
 
-        expect(await getPendingDataMigration()).toStrictEqual(1);
+        expect(await getPendingPostDeployMigration()).toStrictEqual(1);
 
-        await expect(maybeStartDataMigration(2)).rejects.toThrow(
+        await expect(maybeStartPostDeployMigration(2)).rejects.toThrow(
           'Data migration assertion failed. Expected pending migration to be migration 2, server has current pending data migration 1'
         );
       }));
