@@ -1,4 +1,4 @@
-import { Operator, SearchRequest, normalizeErrorString, parseSearchRequest, WithId } from '@medplum/core';
+import { normalizeErrorString, Operator, parseSearchRequest, SearchRequest, WithId } from '@medplum/core';
 import { AsyncJob, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { MedplumServerConfig } from '../config/types';
@@ -6,7 +6,7 @@ import { getRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { LongJob } from './long-job';
-import { getPostDeployMigrationQueue } from './post-deploy-migration';
+import { addPostDeployMigrationJobData } from './post-deploy-migration';
 
 /*
  * The reindex worker updates resource rows in the database,
@@ -168,8 +168,7 @@ export class ReindexJob extends LongJob<ReindexResult, ReindexJobData> {
     // If this job is a post-deploy migration, add to beginning (LIFO) of the post-deploy migration queue
     // to ensure it continues to be processed before any other post-deploy migrations.
     if (data.asyncJob.dataVersion) {
-      const postDeployQueue = getPostDeployMigrationQueue();
-      return postDeployQueue.add(jobName, data, { lifo: true }) as Promise<Job<ReindexJobData>>;
+      return addPostDeployMigrationJobData(data, { lifo: true }) as Promise<Job<ReindexJobData>>;
     } else {
       return addReindexJobData(data);
     }

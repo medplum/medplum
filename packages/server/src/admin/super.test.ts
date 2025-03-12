@@ -604,7 +604,7 @@ describe('Super Admin routes', () => {
       const asyncJob = res1.body as WithId<AsyncJob>;
 
       const maybeStartDataMigrationSpy = jest
-        .spyOn(database, 'maybeStartDataMigration')
+        .spyOn(database, 'maybeStartPostDeployMigration')
         .mockImplementation(async () => asyncJob);
 
       const res2 = await request(app)

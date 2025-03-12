@@ -6,22 +6,24 @@ import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import * as postDeployMigrations from '../migrations/data';
-import { Migration, PostDeployMigration, PostDeployMigrationResult } from '../migrations/data';
 import { ReindexJob, ReindexJobData } from './reindex';
+import { getPostDeployMigration } from '../migrations/migration-utils';
 
-export type PostDeployMigrationJobData = {
-  readonly type: 'post-deploy-migration';
+export type CustomMigrationJobData = {
+  readonly type: 'custom';
   readonly asyncJob: WithId<AsyncJob>;
-  readonly results: PostDeployMigrationResult;
+  readonly results: CustomMigrationResult;
   readonly requestId?: string;
   readonly traceId?: string;
 };
 
+export type CustomMigrationAction = { name: string; durationMs: number };
+export type CustomMigrationResult = { actions: CustomMigrationAction[] };
+
 const queueName = 'PostDeployMigrationQueue';
 const jobName = 'PostDeployMigrationJobData';
-let queue: Queue<PostDeployMigrationJobData | ReindexJobData> | undefined = undefined;
-let worker: Worker<PostDeployMigrationJobData | ReindexJobData> | undefined = undefined;
+let queue: Queue<CustomMigrationJobData | ReindexJobData> | undefined = undefined;
+let worker: Worker<CustomMigrationJobData | ReindexJobData> | undefined = undefined;
 
 export async function initPostDeployMigrationWorker(config: MedplumServerConfig): Promise<void> {
   if (queue && worker) {
@@ -32,7 +34,7 @@ export async function initPostDeployMigrationWorker(config: MedplumServerConfig)
     connection: config.redis,
   };
 
-  queue = new Queue<PostDeployMigrationJobData | ReindexJobData>(queueName, {
+  queue = new Queue<CustomMigrationJobData | ReindexJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       // aside from jobs being interrupted/stalled, we don't expect any other failures, so use a modest retry policy
@@ -46,7 +48,7 @@ export async function initPostDeployMigrationWorker(config: MedplumServerConfig)
   // Ensure post-deploy migrations execute sequentially by only allowing one worker
   await queue.setGlobalConcurrency(1);
 
-  worker = new Worker<PostDeployMigrationJobData | ReindexJobData>(
+  worker = new Worker<CustomMigrationJobData | ReindexJobData>(
     queueName,
     async (job) =>
       tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => {
@@ -58,8 +60,8 @@ export async function initPostDeployMigrationWorker(config: MedplumServerConfig)
           return new ReindexJob().execute(job as Job<ReindexJobData>, {
             iterationsPerJob: job.data.iterationsPerJob,
           });
-        } else if (job.data.type === 'post-deploy-migration') {
-          return executePostDeployMigrationJob(job as Job<PostDeployMigrationJobData>);
+        } else if (job.data.type === 'custom') {
+          return executeCustomMigrationJob(job as Job<CustomMigrationJobData>);
         } else {
           throw new Error(`Unknown job type: ${(job.data as any).type as unknown}`);
         }
@@ -94,45 +96,31 @@ export async function closePostDeployMigrationWorker(): Promise<void> {
   }
 }
 
-function getPostDeployMigration(asyncJob: AsyncJob): PostDeployMigration {
-  const migrationNumber = asyncJob.dataVersion;
-  if (!migrationNumber) {
-    throw new Error(` Migration number (AsyncJob.dataVersion) not found in ${getReferenceString(asyncJob)}`);
-  }
-
-  // Get the post-deploy migration from the post-deploy migrations module
-  const migration = (postDeployMigrations as Record<string, Migration>)['v' + migrationNumber];
-  if (!migration) {
-    throw new Error(`Migration definition not found for v${migrationNumber}`);
-  }
-
-  // Ensure that the migration defines the necessary interface
-  if (!('process' in migration) || typeof migration.process !== 'function') {
-    throw new Error(`process function not defined for migration v${migrationNumber}`);
-  }
-
-  return migration as PostDeployMigration;
-}
-
-export async function executePostDeployMigrationJob(job: Job<PostDeployMigrationJobData>): Promise<void> {
+async function executeCustomMigrationJob(job: Job<CustomMigrationJobData>): Promise<void> {
   const systemRepo = getSystemRepo();
   const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
   exec.start(async (asyncJob) => {
-    const postDeployMigration = getPostDeployMigration(asyncJob);
+    if (!asyncJob.dataVersion) {
+      throw new Error(`Migration number (AsyncJob.dataVersion) not found in ${getReferenceString(asyncJob)}`);
+    }
+    const migration = getPostDeployMigration(asyncJob.dataVersion);
+    if (migration.type !== 'custom') {
+      throw new Error(`Post-deploy migration ${asyncJob.dataVersion} is not a custom migration`);
+    }
 
     globalLogger.info('post-deploy-migration worker executing process', {
       version: asyncJob.dataVersion,
     });
-    const result = await postDeployMigration.process(job);
+    const result = await migration.process(job);
     const output = getAsyncJobOutputFromResults(result);
     return output;
   });
 }
 
-function getAsyncJobOutputFromResults(result: PostDeployMigrationResult): Parameters {
+function getAsyncJobOutputFromResults(result: CustomMigrationResult): Parameters {
   return {
     resourceType: 'Parameters',
-    parameter: result.map((r) => {
+    parameter: result.actions.map((r) => {
       return {
         name: r.name,
         part: [
@@ -150,26 +138,24 @@ function getAsyncJobOutputFromResults(result: PostDeployMigrationResult): Parame
  * Returns the post-deploy migration queue instance or throws if it hasn't been initialized.
  * @returns The post-deploy migration queue
  */
-export function getPostDeployMigrationQueue(): NonNullable<typeof queue> {
+function getPostDeployMigrationQueue(): NonNullable<typeof queue> {
   if (!queue) {
-    throw new Error(`Job queue ${queueName} not available`);
+    throw new Error(`Post-deploy migration queue ${queueName} not available`);
   }
   return queue;
 }
 
-async function addPostDeployMigrationJobData(
-  job: PostDeployMigrationJobData | ReindexJobData,
+export async function addPostDeployMigrationJobData<T extends CustomMigrationJobData | ReindexJobData>(
+  job: T,
   options?: JobsOptions
-): Promise<Job<PostDeployMigrationJobData | ReindexJobData>> {
-  if (!queue) {
-    throw new Error('Job queue not available');
-  }
-  return queue.add(jobName, job, options);
+): Promise<Job<T>> {
+  const queue = getPostDeployMigrationQueue();
+  return queue.add(jobName, job, options) as Promise<Job<T>>;
 }
 
 export async function addPostDeployMigrationJob(
   jobData:
-    | { type: 'post-deploy-migration'; asyncJob: WithId<AsyncJob> }
+    | { type: 'custom'; asyncJob: WithId<AsyncJob> }
     | {
         type: 'reindex';
         asyncJob: WithId<AsyncJob>;
@@ -181,14 +167,14 @@ export async function addPostDeployMigrationJob(
   options?: {
     jobOptions?: JobsOptions;
   }
-): Promise<Job<PostDeployMigrationJobData | ReindexJobData>> {
+): Promise<Job<CustomMigrationJobData | ReindexJobData>> {
   const { requestId, traceId } = getRequestContext();
 
-  if (jobData.type === 'post-deploy-migration') {
+  if (jobData.type === 'custom') {
     return addPostDeployMigrationJobData(
       {
         ...jobData,
-        results: [],
+        results: { actions: [] },
         requestId,
         traceId,
       },
@@ -210,6 +196,6 @@ export async function addPostDeployMigrationJob(
       options?.jobOptions
     );
   } else {
-    throw new Error(`Unknown job type: ${(jobData as any).type}`);
+    throw new Error(`Unknown post-deploy migration job type: ${(jobData as any).type}`);
   }
 }
