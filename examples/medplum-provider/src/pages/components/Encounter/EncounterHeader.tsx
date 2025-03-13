@@ -17,7 +17,6 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     <Paper shadow="sm" px="lg" pt="xs" withBorder>
       <Box className={classes.row}>
         <Group gap="xl">
-          
           <Box>
             <Text className={classes.label} c="dimmed">
               Practitioner
@@ -26,7 +25,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
               {practitioner ? `${formatHumanName(practitioner.name?.[0] as HumanName)}` : 'N/A'}
             </Text>
           </Box>
-  
+
           <Box>
             <Text className={classes.label} c="dimmed">
               Status
