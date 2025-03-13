@@ -132,8 +132,7 @@ export const EncounterChart = (): JSX.Element => {
   const onChange = (response: QuestionnaireResponse): void => {
     if (!questionnaireResponse) {
       const updatedResponse: QuestionnaireResponse = { ...response, status: 'in-progress' };
-      saveQuestionnaireResponse(updatedResponse)
-      .catch((err) => {
+      saveQuestionnaireResponse(updatedResponse).catch((err) => {
         showNotification({
           color: 'red',
           icon: <IconCircleOff />,
@@ -149,8 +148,7 @@ export const EncounterChart = (): JSX.Element => {
           item: response.item,
           status: 'in-progress',
         };
-        saveQuestionnaireResponse(updatedResponse)
-        .catch((err) => {
+        saveQuestionnaireResponse(updatedResponse).catch((err) => {
           showNotification({
             color: 'red',
             icon: <IconCircleOff />,
