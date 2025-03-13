@@ -6,12 +6,12 @@ import { MantineProvider } from '@mantine/core';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
 import { act, fireEvent, RenderResult, screen, render as testingLibraryRender, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import userEvent, { UserEvent } from '@testing-library/user-event';
 import { ReactNode } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 
-export { act, fireEvent, RenderResult, screen, userEvent, waitFor };
+export { RenderResult, act, fireEvent, screen, userEvent, UserEvent, waitFor };
 
 const theme = {};
 

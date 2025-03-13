@@ -3,10 +3,10 @@ import { UpdateResourceOptions } from '@medplum/fhir-router';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { getLogger } from 'nodemailer/lib/shared';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
 import { markPendingDataMigrationCompleted } from '../../../database';
+import { getLogger } from '../../../logger';
 import { sendOutcome } from '../../outcomes';
 import { Repository, getSystemRepo } from '../../repo';
 

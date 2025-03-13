@@ -41,6 +41,7 @@ import {
   Provenance,
   Questionnaire,
   QuestionnaireResponse,
+  ResearchStudy,
   Resource,
   RiskAssessment,
   SearchParameter,
@@ -1987,6 +1988,19 @@ describe('FHIR Search', () => {
         );
         expect(result2.entry).toHaveLength(1);
         expect(result2.entry?.[0]?.resource?.id).toEqual(evidenceVariable.id);
+
+        const study = await repo.createResource<ResearchStudy>({
+          resourceType: 'ResearchStudy',
+          status: 'active',
+          outcomeMeasure: [{ reference: createReference(evidenceVariable) }],
+        });
+        const result3 = await repo.search(
+          parseSearchRequest(
+            `ResearchStudy?outcome-measure-reference:EvidenceVariable.derived-from:Questionnaire.identifier=${q}`
+          )
+        );
+        expect(result3.entry).toHaveLength(1);
+        expect(result3.entry?.[0]?.resource?.id).toEqual(study.id);
       }));
 
     test('Rejects too long chained search', () =>
@@ -4636,6 +4650,17 @@ describe('FHIR Search', () => {
           expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
         }));
     });
+
+    test('Invalid canonical chained search link', async () =>
+      withTestContext(async () => {
+        await expect(
+          repo.search(parseSearchRequest('EvidenceVariable?derived-from:ResearchStudy.status=active'))
+        ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
+
+        await expect(
+          repo.search(parseSearchRequest('ResearchStudy?_has:EvidenceVariable:derived-from:_id=foo'))
+        ).rejects.toThrow('ResearchStudy cannot be chained via canonical reference (EvidenceVariable:derived-from)');
+      }));
   });
 
   describe('systemRepo', () => {

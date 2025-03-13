@@ -30,7 +30,11 @@ export function RegisterPage(): JSX.Element | null {
     <RegisterForm
       type="project"
       projectId="new"
-      onSuccess={() => navigate('/')?.catch(console.error)}
+      onSuccess={() => {
+        // Use window.location.href to force a reload
+        // Otherwise we get caught in a React render loop
+        window.location.href = '/';
+      }}
       googleClientId={config.googleClientId}
       recaptchaSiteKey={config.recaptchaSiteKey}
     >

@@ -1,10 +1,11 @@
-import { Anchor, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
+import { Anchor, Group, Modal, Radio, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { HTTP_HL7_ORG, LOINC, SNOMED, createReference, formatCodeableConcept } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { killEvent } from '../utils/dom';
 import { ConceptBadge } from './ConceptBadge';
 
@@ -125,7 +126,7 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
               ))}
             </Radio.Group>
             <Group justify="flex-end" gap={4} mt="md">
-              <Button type="submit">Save</Button>
+              <SubmitButton>Save</SubmitButton>
             </Group>
           </Stack>
         </Form>

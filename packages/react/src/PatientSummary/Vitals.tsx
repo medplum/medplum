@@ -1,10 +1,11 @@
-import { Anchor, Button, Grid, Group, Modal, SimpleGrid, Text, Textarea, TextInput, Tooltip } from '@mantine/core';
+import { Anchor, Grid, Group, Modal, SimpleGrid, Text, Textarea, TextInput, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { Fragment, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { killEvent } from '../utils/dom';
 import { ConceptBadge } from './ConceptBadge';
 import {
@@ -219,7 +220,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
           </SimpleGrid>
           <Textarea name="notes" label="Notes" />
           <Group justify="flex-end" gap={4} mt="md">
-            <Button type="submit">Save</Button>
+            <SubmitButton>Save</SubmitButton>
           </Group>
         </Form>
       </Modal>
