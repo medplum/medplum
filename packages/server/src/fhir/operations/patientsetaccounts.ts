@@ -86,7 +86,7 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
     if (entry.search?.mode === 'match') {
       const resource = entry.resource;
       if (resource && resource.resourceType !== 'Patient') {
-        delete resource.meta
+        delete resource.meta;
 
         await ctx.repo.updateResource(resource);
         count++;
