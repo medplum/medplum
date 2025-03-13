@@ -54,8 +54,8 @@ export function createPidFile(appName: string): string {
   }
 
   // Write the PID file atomically using a temporary file
-  const tempFile = path.join(os.tmpdir(), `${pidFilePath}.tmp`);
-  fs.writeFileSync(tempFile, pid.toString());
+  const tempFile = `${pidFilePath}.tmp`;
+  fs.writeFileSync(tempFile, pid.toString(), { flag: 'w+' });
   fs.renameSync(tempFile, pidFilePath);
 
   console.log(`PID file created at: ${pidFilePath}`);
