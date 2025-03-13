@@ -10,6 +10,7 @@ import { TaskPanel } from '../components/Task/TaskPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { usePatient } from '../../hooks/usePatient';
 import { useEncounter } from '../../hooks/useEncounter';
+import { SAVE_TIMEOUT_MS } from '../../config/constants';
 
 export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
