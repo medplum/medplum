@@ -9,11 +9,9 @@ import { IconCircleOff } from '@tabler/icons-react';
 import { TaskQuestionnaireResponseSummaryPanel } from '../components/Task/TaskQuestionnaireResponseSummaryPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { useEncounter } from '../../hooks/useEncounter';
-import { usePatient } from '../../hooks/usePatient';
 
 export const EncounterComplete = (): JSX.Element => {
   const medplum = useMedplum();
-  const patient = usePatient();
   const encounter = useEncounter();
   const [task, setTask] = useState<Task | undefined>();
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
@@ -63,14 +61,16 @@ export const EncounterComplete = (): JSX.Element => {
     });
   }, [medplum, encounter, fetchTasks]);
 
-  if (!patient || !encounter) {
+  if (!encounter) {
     return <Loading />;
   }
 
   return (
     <>
       <Stack justify="space-between" gap={0}>
-        <EncounterHeader patient={patient} encounter={encounter} practitioner={practitioner} />
+        <Box p="md">
+          <EncounterHeader encounter={encounter} practitioner={practitioner} />
+        </Box>
 
         <Box p="md">
           <Text size="lg" color="dimmed" mb="lg">

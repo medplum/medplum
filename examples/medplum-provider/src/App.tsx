@@ -26,7 +26,6 @@ import { OnboardingPage } from './pages/OnboardingPage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { EncounterChart } from './pages/encounter/EncounterChart';
-import { EncounterCheckIn } from './pages/encounter/EncounterCheckIn';
 import { EncounterComplete } from './pages/encounter/EncounterComplete';
 import { EncounterModal } from './pages/encounter/EncounterModal';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
@@ -125,8 +124,7 @@ export function App(): JSX.Element | null {
               <Route path="/" element={<HomePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
-                <Route path="Encounter/:encounterId" element={<Navigate to="checkin" replace />} />
-                <Route path="Encounter/:encounterId/checkin" element={<EncounterCheckIn />}></Route>
+                <Route path="Encounter/:encounterId" element={<Navigate to="chart" replace />} />
                 <Route path="Encounter/:encounterId/chart" element={<EncounterChart />}>
                   <Route path="Task/:taskId" element={<TaskDetails />} />
                 </Route>
