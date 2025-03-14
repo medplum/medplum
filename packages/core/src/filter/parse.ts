@@ -59,7 +59,11 @@ function getOperator(value: string): Operator {
 }
 
 class FilterParameterParser {
-  constructor(readonly parser: Parser) {}
+  readonly parser: Parser;
+
+  constructor(parser: Parser) {
+    this.parser = parser;
+  }
 
   parse(): FhirFilterExpression {
     let result: FhirFilterExpression;

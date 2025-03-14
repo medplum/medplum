@@ -13,14 +13,12 @@ export interface Channel {
 }
 
 export abstract class BaseChannel implements Channel {
+  readonly app: App;
   private definition: AgentChannel;
   private endpoint: Endpoint;
 
-  constructor(
-    readonly app: App,
-    definition: AgentChannel,
-    endpoint: Endpoint
-  ) {
+  constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
+    this.app = app;
     this.definition = definition;
     this.endpoint = endpoint;
   }
@@ -65,10 +63,11 @@ export function needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endp
   return true;
 }
 
-export enum ChannelType {
-  HL7_V2 = 'HL7_V2',
-  DICOM = 'DICOM',
-}
+export const ChannelType = {
+  HL7_V2: 'HL7_V2',
+  DICOM: 'DICOM',
+} as const;
+export type ChannelType = (typeof ChannelType)[keyof typeof ChannelType];
 
 export function getChannelType(endpoint: Endpoint): ChannelType {
   if (endpoint.address.startsWith('dicom')) {

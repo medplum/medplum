@@ -11,11 +11,7 @@ export class AgentHl7Channel extends BaseChannel {
   readonly connections = new Map<string, AgentHl7ChannelConnection>();
   readonly log: Logger;
 
-  constructor(
-    readonly app: App,
-    definition: AgentChannel,
-    endpoint: Endpoint
-  ) {
+  constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
 
     this.server = new Hl7Server((connection) => this.handleNewConnection(connection));
@@ -63,12 +59,13 @@ export class AgentHl7Channel extends BaseChannel {
 }
 
 export class AgentHl7ChannelConnection {
+  readonly channel: AgentHl7Channel;
+  readonly hl7Connection: Hl7Connection;
   readonly remote: string;
 
-  constructor(
-    readonly channel: AgentHl7Channel,
-    readonly hl7Connection: Hl7Connection
-  ) {
+  constructor(channel: AgentHl7Channel, hl7Connection: Hl7Connection) {
+    this.channel = channel;
+    this.hl7Connection = hl7Connection;
     this.remote = `${hl7Connection.socket.remoteAddress}:${hl7Connection.socket.remotePort}`;
 
     // Add listener immediately to handle incoming messages

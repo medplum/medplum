@@ -15,7 +15,7 @@
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "scripts": {
-    "build": "npm run clean && tsc && vite build",
+    "build": "npm run clean && tsc --erasableSyntaxOnly && vite build",
     "clean": "rimraf dist",
     "dev": "vite",
     "lint": "eslint ."

@@ -29,27 +29,29 @@ export const projectAdminResourceTypes = [
  *
  * Codes taken from http://hl7.org/fhir/codesystem-restful-interaction.html
  */
-export enum AccessPolicyInteraction {
-  READ = 'read',
-  VREAD = 'vread',
-  UPDATE = 'update',
-  PATCH = 'patch',
-  DELETE = 'delete',
-  HISTORY = 'history',
-  HISTORY_INSTANCE = 'history-instance',
-  HISTORY_TYPE = 'history-type',
-  HISTORY_SYSTEM = 'history-system',
-  CREATE = 'create',
-  SEARCH = 'search',
-  SEARCH_TYPE = 'search-type',
-  SEARCH_SYSTEM = 'search-system',
-  SEARCH_COMPARTMENT = 'search-compartment',
-  CAPABILITIES = 'capabilities',
-  TRANSACTION = 'transaction',
-  BATCH = 'batch',
-  OPERATION = 'operation',
-}
-const resourceReadInteractions = [
+export const AccessPolicyInteraction = {
+  READ: 'read',
+  VREAD: 'vread',
+  UPDATE: 'update',
+  PATCH: 'patch',
+  DELETE: 'delete',
+  HISTORY: 'history',
+  HISTORY_INSTANCE: 'history-instance',
+  HISTORY_TYPE: 'history-type',
+  HISTORY_SYSTEM: 'history-system',
+  CREATE: 'create',
+  SEARCH: 'search',
+  SEARCH_TYPE: 'search-type',
+  SEARCH_SYSTEM: 'search-system',
+  SEARCH_COMPARTMENT: 'search-compartment',
+  CAPABILITIES: 'capabilities',
+  TRANSACTION: 'transaction',
+  BATCH: 'batch',
+  OPERATION: 'operation',
+} as const;
+export type AccessPolicyInteraction = (typeof AccessPolicyInteraction)[keyof typeof AccessPolicyInteraction];
+
+const resourceReadInteractions: AccessPolicyInteraction[] = [
   AccessPolicyInteraction.READ,
   AccessPolicyInteraction.VREAD,
   AccessPolicyInteraction.HISTORY,

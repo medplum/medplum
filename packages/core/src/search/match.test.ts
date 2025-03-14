@@ -135,7 +135,7 @@ describe('Search matching', () => {
     const resource: Observation = { resourceType: 'Observation', subject: { reference: 'Patient/123' } } as Observation;
     const search = {
       resourceType: 'Observation',
-      filters: [{ code: 'subject', operator: Operator.EQUALS, value: 'Patient/123' }],
+      filters: [{ code: 'subject', operator: Operator.EQUALS as Operator, value: 'Patient/123' }],
     };
 
     search.filters[0].operator = Operator.EQUALS;
@@ -157,7 +157,7 @@ describe('Search matching', () => {
     const resource: Observation = { resourceType: 'Observation' } as Observation;
     const search = {
       resourceType: 'Observation',
-      filters: [{ code: 'subject', operator: Operator.EQUALS, value: '' }],
+      filters: [{ code: 'subject', operator: Operator.EQUALS as Operator, value: '' }],
     };
 
     search.filters[0].operator = Operator.EQUALS;

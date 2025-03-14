@@ -113,11 +113,12 @@ export function reorderBundle(bundle: Bundle): Bundle {
 
 type AdjacencyList = Record<string, string[]>;
 
-enum VertexState {
-  NotVisited,
-  Visiting,
-  Visited,
-}
+const VertexState = {
+  NotVisited: 'NotVisited',
+  Visiting: 'Visiting',
+  Visited: 'Visited',
+} as const;
+type VertexState = (typeof VertexState)[keyof typeof VertexState];
 
 function topologicalSortWithCycles(graph: AdjacencyList): { sorted: string[]; cycles: string[][] } {
   const sorted: string[] = [];

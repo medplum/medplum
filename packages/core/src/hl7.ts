@@ -8,14 +8,28 @@ import { isStringArray } from './utils';
  * @see See this tutorial on MSH, and why it's a bad idea to use anything other than the default values: https://www.hl7soup.com/HL7TutorialMSH.html
  */
 export class Hl7Context {
+  readonly segmentSeparator: string;
+  readonly fieldSeparator: string;
+  readonly componentSeparator: string;
+  readonly repetitionSeparator: string;
+  readonly escapeCharacter: string;
+  readonly subcomponentSeparator: string;
+
   constructor(
-    public readonly segmentSeparator = '\r',
-    public readonly fieldSeparator = '|',
-    public readonly componentSeparator = '^',
-    public readonly repetitionSeparator = '~',
-    public readonly escapeCharacter = '\\',
-    public readonly subcomponentSeparator = '&'
-  ) {}
+    segmentSeparator = '\r',
+    fieldSeparator = '|',
+    componentSeparator = '^',
+    repetitionSeparator = '~',
+    escapeCharacter = '\\',
+    subcomponentSeparator = '&'
+  ) {
+    this.segmentSeparator = segmentSeparator;
+    this.fieldSeparator = fieldSeparator;
+    this.componentSeparator = componentSeparator;
+    this.repetitionSeparator = repetitionSeparator;
+    this.escapeCharacter = escapeCharacter;
+    this.subcomponentSeparator = subcomponentSeparator;
+  }
 
   /**
    * Returns the MSH-1 field value based on the configured separators.

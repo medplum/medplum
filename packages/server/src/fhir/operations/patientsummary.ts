@@ -142,6 +142,9 @@ export async function getPatientSummary(
  * The main complexity is in the choice of which section to put each resource.
  */
 export class PatientSummaryBuilder {
+  private readonly author: ProfileResource;
+  private readonly patient: Patient;
+  private readonly everything: WithId<Resource>[];
   private readonly allergies: Resource[] = [];
   private readonly medications: Resource[] = [];
   private readonly problemList: Resource[] = [];
@@ -154,11 +157,11 @@ export class PatientSummaryBuilder {
   private readonly devices: Resource[] = [];
   private readonly nestedIds = new Set<string>();
 
-  constructor(
-    private readonly author: ProfileResource,
-    private readonly patient: Patient,
-    private readonly everything: WithId<Resource>[]
-  ) {}
+  constructor(author: ProfileResource, patient: Patient, everything: WithId<Resource>[]) {
+    this.author = author;
+    this.patient = patient;
+    this.everything = everything;
+  }
 
   build(): Bundle {
     this.buildNestedIds();

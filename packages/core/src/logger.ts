@@ -10,13 +10,16 @@
  *
  * The zero value means no server logs will be emitted.
  */
-export enum LogLevel {
-  NONE = 0,
-  ERROR,
-  WARN,
-  INFO,
-  DEBUG,
-}
+export const LogLevel = {
+  NONE: 0,
+  ERROR: 1,
+  WARN: 2,
+  INFO: 3,
+  DEBUG: 4,
+};
+export type LogLevel = (typeof LogLevel)[keyof typeof LogLevel];
+
+export const LogLevelNames = ['NONE', 'ERROR', 'WARN', 'INFO', 'DEBUG'];
 
 export interface LoggerOptions {
   prefix?: string;
@@ -32,13 +35,23 @@ export interface LoggerConfig {
 export type LoggerConfigOverride = Partial<LoggerConfig>;
 
 export class Logger {
+  readonly write: (msg: string) => void;
+  readonly metadata: Record<string, any>;
+  readonly options?: LoggerOptions;
   readonly prefix?: string;
+  level: LogLevel;
+
   constructor(
-    readonly write: (msg: string) => void,
-    readonly metadata: Record<string, any> = {},
-    public level: LogLevel = LogLevel.INFO,
-    readonly options?: LoggerOptions
+    write: (msg: string) => void,
+    metadata: Record<string, any> = {},
+    level: LogLevel = LogLevel.INFO,
+    options: LoggerOptions = {}
   ) {
+    this.write = write;
+    this.metadata = metadata;
+    this.level = level;
+    this.options = options;
+
     if (options?.prefix) {
       this.prefix = options.prefix;
     }
@@ -91,7 +104,7 @@ export class Logger {
     }
     this.write(
       JSON.stringify({
-        level: LogLevel[level],
+        level: LogLevelNames[level],
         timestamp: new Date().toISOString(),
         msg: this.prefix ? `${this.prefix}${msg}` : msg,
         ...data,
