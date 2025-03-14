@@ -4,14 +4,13 @@ import { Job } from 'bullmq';
 import * as semver from 'semver';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
-import { getServerVersion } from '../util/version';
 import { globalLogger } from '../logger';
+import { getServerVersion } from '../util/version';
+import { InProgressAsyncJobStatuses, updateAsyncJobOutput } from './utils';
 
 export interface LongJobData {
   asyncJob: WithId<AsyncJob>;
 }
-
-const inProgressJobStatus: AsyncJob['status'][] = ['accepted', 'active'];
 
 export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
   private systemRepo: Repository;
@@ -21,16 +20,7 @@ export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
   }
 
   async updateStatus(job: Job<TData>, output: Parameters): Promise<void> {
-    const exec = new AsyncJobExecutor(this.systemRepo, job.data.asyncJob);
-    const updatedJob = await exec.updateJobProgress(this.systemRepo, output, {
-      // Conditional update to ensure this update does not clobber another,
-      // which could result in e.g. continuing a job that was cancelled
-      ifMatch: job.data.asyncJob.meta?.versionId,
-    });
-
-    if (updatedJob) {
-      job.data.asyncJob = updatedJob;
-    }
+    return updateAsyncJobOutput(this.systemRepo, job, output);
   }
 
   async finishJob(job: Job<TData>, output?: Parameters): Promise<void> {
@@ -46,7 +36,7 @@ export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
   async checkJobStatus(job: Job<TData>): Promise<boolean> {
     const asyncJob = await this.systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJob.id);
 
-    if (!inProgressJobStatus.includes(asyncJob.status)) {
+    if (!InProgressAsyncJobStatuses.includes(asyncJob.status)) {
       return false;
     }
 

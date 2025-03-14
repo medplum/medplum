@@ -1,11 +1,4 @@
-import {
-  badRequest,
-  getReferenceString,
-  OperationOutcomeError,
-  parseSearchRequest,
-  sleep,
-  WithId,
-} from '@medplum/core';
+import { badRequest, OperationOutcomeError, parseSearchRequest, sleep, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
@@ -302,6 +295,9 @@ async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersi
 }
 
 export async function maybeQueueAllPendingPostDeployMigrations(): Promise<void> {
+  //TODO{mattlong} Don't queue all pending migrations; only the next one
+  // and have them daisy-chain in an onComplete handler somewhere
+
   const isDisabled = getConfig().disableAutoRunPostDeployMigrations;
 
   const pendingPostDeployMigration = await getPendingPostDeployMigration();
@@ -334,11 +330,6 @@ export async function maybeQueueAllPendingPostDeployMigrations(): Promise<void> 
     }
 
     const asyncJob = await createAsyncJobForPostDeployMigration(systemRepo, i);
-    globalLogger.info('Queueing post-deploy migration', {
-      version: `v${i}`,
-      asyncJob: getReferenceString(asyncJob),
-      isFirstServerStart,
-    });
     await migration.run(systemRepo, asyncJob, isFirstServerStart);
   }
 }
@@ -397,6 +388,8 @@ export async function maybeStartPostDeployMigration(
 
   await systemRepo.withTransaction(
     async () => {
+      //TODO{mattlong} depend on only one AsyncJob with status=accepted to prevent more
+      // than one post-deploy migration from running at a time.
       // Check if there is already a migration job in progress
       const existingJobs = await systemRepo.searchResources<AsyncJob>(
         parseSearchRequest('AsyncJob?status=accepted&type=data-migration&_count=2')

@@ -33,7 +33,7 @@ import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { QueueRegistry, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -78,8 +78,9 @@ let worker: Worker<SubscriptionJobData> | undefined = undefined;
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
  * @param config - The Medplum server config to use.
+ * @param queueRegistry - The queue registry to use.
  */
-export function initSubscriptionWorker(config: MedplumServerConfig): void {
+export function initSubscriptionWorker(config: MedplumServerConfig, queueRegistry: QueueRegistry): void {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
@@ -94,6 +95,7 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
       },
     },
   });
+  queueRegistry.addQueue(queueName, queue);
 
   worker = new Worker<SubscriptionJobData>(
     queueName,
