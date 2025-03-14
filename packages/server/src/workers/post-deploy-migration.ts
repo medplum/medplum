@@ -9,6 +9,7 @@ import { globalLogger } from '../logger';
 import { ReindexJob, ReindexJobData } from './reindex';
 import { getPostDeployMigration } from '../migrations/migration-utils';
 import { checkAsyncJobStatus, QueueRegistry } from './utils';
+import { maybeRunPendingPostDeployMigration } from '../database';
 
 export interface PostDeployJobData {
   asyncJob: WithId<AsyncJob>;
@@ -44,12 +45,7 @@ export async function initPostDeployMigrationWorker(
   queue = new Queue<CustomMigrationJobData | ReindexJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
-      // aside from jobs being interrupted/stalled, we don't expect any other failures, so use a modest retry policy
-      attempts: 1, // includes the initial attempt, so retries six times after: 1, 2, 4, 8, 16, 32 minutes
-      backoff: {
-        type: 'exponential', // 2 ^ (attempt - 1) * delay
-        delay: 1000 * 60, // 1 minute:
-      },
+      attempts: 1, // No retries
     },
   });
   queueRegistry.addQueue(queueName, queue);
@@ -83,7 +79,7 @@ export async function initPostDeployMigrationWorker(
         if (job.data.type === 'reindex') {
           await new ReindexJob().execute(job as Job<ReindexJobData>);
         } else if (job.data.type === 'custom') {
-          await executeCustomMigrationJobOld(job as Job<CustomMigrationJobData>);
+          await executeCustomMigrationJob(job as Job<CustomMigrationJobData>);
         } else {
           throw new Error(`Unknown job type: ${(job.data as any).type as unknown}`);
         }
@@ -91,14 +87,13 @@ export async function initPostDeployMigrationWorker(
     {
       ...config.bullmq,
       ...defaultOptions,
-      // Every time a server stops while a job is in process, the job is stalled
-      // Since post-deploy migrations can take a very long time (days or weeks), they are expected
-      // to be interrupted by server reboots/redeploys of new versions, so allow for a lot of stalled jobs
-      // maxStalledCount: 500,
     }
   );
   worker.on('failed', (job, err) => globalLogger.info(`PostDeployMigration worker failed job ${job?.id} with ${err}`));
-  worker.on('completed', (job) => globalLogger.info(`PostDeployMigration worker completed job ${job?.id}`));
+  worker.on('completed', async (job) => {
+    globalLogger.info(`PostDeployMigration worker completed job ${job?.id}`);
+    await maybeRunPendingPostDeployMigration();
+  });
 }
 
 /**
@@ -119,24 +114,7 @@ export async function closePostDeployMigrationWorker(): Promise<void> {
   }
 }
 
-export async function executeCustomMigrationJobOld(job: Job<CustomMigrationJobData>): Promise<void> {
-  if (!job.data.asyncJob.dataVersion) {
-    throw new Error(`Migration number (AsyncJob.dataVersion) not found in ${getReferenceString(job.data.asyncJob)}`);
-  }
-  const migration = getPostDeployMigration(job.data.asyncJob.dataVersion);
-  if (migration.type !== 'custom') {
-    throw new Error(`Post-deploy migration ${job.data.asyncJob.dataVersion} is not a custom migration`);
-  }
-
-  const result = await migration.process(job);
-  const output = getAsyncJobOutputFromResults(result);
-
-  const systemRepo = getSystemRepo();
-  const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
-  await exec.completeJob(systemRepo, output);
-}
-
-/*async function executeCustomMigrationJobNew(job: Job<CustomMigrationJobData>): Promise<any> {
+async function executeCustomMigrationJob(job: Job<CustomMigrationJobData>): Promise<any> {
   const systemRepo = getSystemRepo();
   const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
   return exec.startAsync(async (asyncJob) => {
@@ -158,7 +136,7 @@ export async function executeCustomMigrationJobOld(job: Job<CustomMigrationJobDa
     const output = getAsyncJobOutputFromResults(result);
     return output;
   });
-}*/
+}
 
 function getAsyncJobOutputFromResults(result: CustomMigrationResult): Parameters {
   return {
