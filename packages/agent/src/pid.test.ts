@@ -126,7 +126,7 @@ describe('PID File Manager', () => {
 
     // Verify PID file is removed after process exit
     expect(fs.existsSync(pidFilePath)).toBe(false);
-  }, 10000); // Increase timeout to 10 seconds for this test
+  });
 
   test('prevents running multiple instances of the same app', async () => {
     // Create a test app that runs for a longer time
@@ -162,7 +162,7 @@ describe('PID File Manager', () => {
     await new Promise((resolve) => {
       child1.on('exit', resolve);
     });
-  }, 10000);
+  });
 
   test('handles stale PID files correctly', async () => {
     const pidFilePath = getPidFilePath(APP_NAME);
@@ -187,7 +187,7 @@ describe('PID File Manager', () => {
     await new Promise((resolve) => {
       child.on('exit', resolve);
     });
-  }, 10000);
+  });
 
   test('removes PID file on process termination', async () => {
     const pidFilePath = getPidFilePath(APP_NAME);
@@ -212,7 +212,7 @@ describe('PID File Manager', () => {
 
     // Verify PID file is removed after forceful termination
     expect(fs.existsSync(pidFilePath)).toBe(false);
-  }, 10000);
+  });
 
   test('returns appropriate file path for the current OS', () => {
     const pidFilePath = getPidFilePath(APP_NAME);
@@ -227,9 +227,7 @@ describe('PID File Manager', () => {
     if (platform === 'win32') {
       expect(pidFilePath).toContain('Temp');
     } else if (platform === 'darwin' || platform === 'linux') {
-      expect(
-        pidFilePath.startsWith('/tmp/') || pidFilePath.startsWith('/var/run/') || pidFilePath.startsWith('/run/')
-      ).toBe(true);
+      expect(pidFilePath.startsWith('/var/run/')).toBe(true);
     }
   });
 
