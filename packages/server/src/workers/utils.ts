@@ -1,17 +1,20 @@
-import { createReference, getExtension, isResource, Operator } from '@medplum/core';
+import { createReference, getExtension, isResource, Operator, WithId } from '@medplum/core';
 import {
+  AsyncJob,
   AuditEvent,
   AuditEventEntity,
   Bot,
   Coding,
+  Parameters,
   Practitioner,
   ProjectMembership,
   Reference,
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
+import { Job, Queue } from 'bullmq';
 import { buildTracingExtension } from '../context';
-import { getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 
@@ -157,3 +160,63 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
 function defaultStatusCheck(status: number): boolean {
   return status >= 200 && status < 400;
 }
+
+export const InProgressAsyncJobStatuses: AsyncJob['status'][] = ['accepted', 'active'];
+
+export async function checkAsyncJobStatus(
+  repo: Repository,
+  job: Job<{ asyncJob: WithId<AsyncJob> }>
+): Promise<boolean> {
+  const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', job.data.asyncJob.id);
+
+  if (!InProgressAsyncJobStatuses.includes(asyncJob.status)) {
+    return false;
+  }
+
+  job.data.asyncJob = asyncJob;
+  return true;
+}
+
+export async function updateAsyncJobOutput(
+  repo: Repository,
+  job: Job<{ asyncJob: WithId<AsyncJob> }>,
+  output: Parameters
+): Promise<void> {
+  const updatedJob = await repo.updateResource<AsyncJob>(
+    {
+      ...job.data.asyncJob,
+      output,
+    },
+    {
+      // Conditional update to ensure this update does not clobber another,
+      // which could result in e.g. continuing a job that was cancelled
+      ifMatch: job.data.asyncJob.meta?.versionId,
+    }
+  );
+
+  if (updatedJob) {
+    job.data.asyncJob = updatedJob;
+  }
+}
+
+export class QueueRegistry {
+  private readonly queueMap: Record<string, Queue | undefined>;
+
+  constructor() {
+    this.queueMap = {};
+  }
+
+  addQueue(name: string, queue: Queue): void {
+    this.queueMap[name] = queue;
+  }
+
+  removeQueue(name: string): void {
+    delete this.queueMap[name];
+  }
+
+  getQueueByName(name: string): Queue | undefined {
+    return this.queueMap[name];
+  }
+}
+
+export const queueRegistry = new QueueRegistry();

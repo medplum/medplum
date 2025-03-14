@@ -17,6 +17,7 @@ import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
+import { QueueRegistry } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,
@@ -43,8 +44,9 @@ let worker: Worker<BatchJobData> | undefined = undefined;
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
  * @param config - The Medplum server config to use.
+ * @param queueRegistry - The queue registry to use.
  */
-export function initBatchWorker(config: MedplumServerConfig): void {
+export function initBatchWorker(config: MedplumServerConfig, queueRegistry: QueueRegistry): void {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
@@ -62,6 +64,7 @@ export function initBatchWorker(config: MedplumServerConfig): void {
       ...config.bullmq,
     }
   );
+  queueRegistry.addQueue(queueName, queue);
 }
 
 /**

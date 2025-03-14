@@ -5,9 +5,10 @@ import { globalLogger } from '../logger';
 import { closeBatchWorker, initBatchWorker } from './batch';
 import { addCronJobs, closeCronWorker, initCronWorker } from './cron';
 import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
+import { closePostDeployMigrationWorker, initPostDeployMigrationWorker } from './post-deploy-migration';
 import { closeReindexWorker, initReindexWorker } from './reindex';
 import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
-import { closePostDeployMigrationWorker, initPostDeployMigrationWorker } from './post-deploy-migration';
+import { queueRegistry } from './utils';
 
 /**
  * Initializes all background workers.
@@ -15,12 +16,12 @@ import { closePostDeployMigrationWorker, initPostDeployMigrationWorker } from '.
  */
 export async function initWorkers(config: MedplumServerConfig): Promise<void> {
   globalLogger.debug('Initializing workers...');
-  initSubscriptionWorker(config);
-  initDownloadWorker(config);
-  initCronWorker(config);
-  initReindexWorker(config);
-  initBatchWorker(config);
-  await initPostDeployMigrationWorker(config);
+  initSubscriptionWorker(config, queueRegistry);
+  initDownloadWorker(config, queueRegistry);
+  initCronWorker(config, queueRegistry);
+  initReindexWorker(config, queueRegistry);
+  initBatchWorker(config, queueRegistry);
+  await initPostDeployMigrationWorker(config, queueRegistry);
   globalLogger.debug('Workers initialized');
 }
 

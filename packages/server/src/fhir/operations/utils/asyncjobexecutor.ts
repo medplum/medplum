@@ -1,5 +1,4 @@
 import { OperationOutcomeError, WithId, accepted } from '@medplum/core';
-import { UpdateResourceOptions } from '@medplum/fhir-router';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -99,43 +98,25 @@ export class AsyncJobExecutor {
     return output ?? undefined;
   }
 
-  async completeJob(repo: Repository, output?: Parameters): Promise<AsyncJob | undefined> {
-    const job = this.resource;
-    if (!job) {
-      return undefined;
+  async completeJob(repo: Repository, output?: Parameters): Promise<AsyncJob> {
+    if (!this.resource) {
+      throw new Error('Cannot completeJob since AsyncJob is not specified');
     }
     const updatedJob: AsyncJob = {
-      ...job,
+      ...this.resource,
       status: 'completed',
       transactionTime: new Date().toISOString(),
       output,
     };
-    if (job.type === 'data-migration') {
+    if (updatedJob.type === 'data-migration') {
       await markPendingDataMigrationCompleted(updatedJob);
     }
     return repo.updateResource<AsyncJob>(updatedJob);
   }
 
-  async updateJobProgress(
-    repo: Repository,
-    output: Parameters,
-    options?: UpdateResourceOptions
-  ): Promise<WithId<AsyncJob> | undefined> {
+  async failJob(repo: Repository, err?: Error): Promise<AsyncJob> {
     if (!this.resource) {
-      return undefined;
-    }
-    return repo.updateResource<AsyncJob>(
-      {
-        ...this.resource,
-        output,
-      },
-      options
-    );
-  }
-
-  async failJob(repo: Repository, err?: Error): Promise<AsyncJob | undefined> {
-    if (!this.resource) {
-      return undefined;
+      throw new Error('Cannot failJob since AsyncJob is not specified');
     }
     const failedJob: AsyncJob = {
       ...this.resource,
