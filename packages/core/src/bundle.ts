@@ -114,10 +114,10 @@ export function reorderBundle(bundle: Bundle): Bundle {
 type AdjacencyList = Record<string, string[]>;
 
 const VertexState = {
-  NotVisited: 'NotVisited' as const,
-  Visiting: 'Visiting' as const,
-  Visited: 'Visited' as const,
-};
+  NotVisited: 'NotVisited',
+  Visiting: 'Visiting',
+  Visited: 'Visited',
+} as const;
 type VertexState = (typeof VertexState)[keyof typeof VertexState];
 
 function topologicalSortWithCycles(graph: AdjacencyList): { sorted: string[]; cycles: string[][] } {
