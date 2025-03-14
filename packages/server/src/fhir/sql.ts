@@ -317,18 +317,15 @@ export class Union implements Expression {
   }
 }
 
+export type JoinType = 'INNER JOIN' | 'LEFT JOIN' | 'INNER JOIN LATERAL';
+
 export class Join {
-  readonly joinType: 'LEFT JOIN' | 'INNER JOIN' | 'INNER JOIN LATERAL';
+  readonly joinType: JoinType;
   readonly joinItem: SelectQuery | string;
   readonly joinAlias: string;
   readonly onExpression: Expression;
 
-  constructor(
-    joinType: 'LEFT JOIN' | 'INNER JOIN' | 'INNER JOIN LATERAL',
-    joinItem: SelectQuery | string,
-    joinAlias: string,
-    onExpression: Expression
-  ) {
+  constructor(joinType: JoinType, joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression) {
     this.joinType = joinType;
     this.joinItem = joinItem;
     this.joinAlias = joinAlias;
