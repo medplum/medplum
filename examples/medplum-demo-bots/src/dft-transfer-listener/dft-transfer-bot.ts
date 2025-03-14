@@ -151,7 +151,7 @@ export async function handleClaimFromPr1s(
 
   const [coverage] = insuranceInfo;
 
-  return await medplum.createResource<Claim>({
+  const claim = await medplum.createResource<Claim>({
     resourceType: 'Claim',
     status: 'active',
     type: {
@@ -196,6 +196,8 @@ export async function handleClaimFromPr1s(
       },
     })),
   });
+
+  return claim;
 }
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
