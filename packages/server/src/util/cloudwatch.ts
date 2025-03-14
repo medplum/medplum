@@ -16,8 +16,8 @@ interface LogEvent extends InputLogEvent {
 
 /** @deprecated */
 export class CloudWatchLogger {
-  private logGroupName: string;
-  private logStreamName: string;
+  private readonly logGroupName: string;
+  private readonly logStreamName: string;
   private client: CloudWatchLogsClient;
   private queue: LogEvent[];
   private initPromise?: Promise<void>;
