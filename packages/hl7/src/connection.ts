@@ -15,14 +15,16 @@ export type Hl7MessageQueueItem = {
 };
 
 export class Hl7Connection extends Hl7Base {
+  readonly socket: net.Socket;
+  readonly encoding: string;
   private chunks: Buffer[] = [];
   private readonly messageQueue: Hl7MessageQueueItem[] = [];
 
-  constructor(
-    readonly socket: net.Socket,
-    readonly encoding: string = 'utf-8'
-  ) {
+  constructor(socket: net.Socket, encoding: string = 'utf-8') {
     super();
+
+    this.socket = socket;
+    this.encoding = encoding;
 
     socket.on('data', (data: Buffer) => {
       try {

@@ -2,17 +2,22 @@ import { Hl7Message } from '@medplum/core';
 import { Hl7Connection } from './connection';
 
 export class Hl7MessageEvent extends Event {
-  constructor(
-    public readonly connection: Hl7Connection,
-    public readonly message: Hl7Message
-  ) {
+  readonly connection: Hl7Connection;
+  readonly message: Hl7Message;
+
+  constructor(connection: Hl7Connection, message: Hl7Message) {
     super('message');
+    this.connection = connection;
+    this.message = message;
   }
 }
 
 export class Hl7ErrorEvent extends Event {
-  constructor(public readonly error: Error) {
+  readonly error: Error;
+
+  constructor(error: Error) {
     super('error');
+    this.error = error;
   }
 }
 
