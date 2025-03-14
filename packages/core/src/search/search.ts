@@ -50,44 +50,44 @@ export interface IncludeTarget {
  * See: https://www.hl7.org/fhir/search.html
  */
 export const Operator = {
-  EQUALS: 'eq' as const,
-  NOT_EQUALS: 'ne' as const,
+  EQUALS: 'eq',
+  NOT_EQUALS: 'ne',
 
   // Numbers
-  GREATER_THAN: 'gt' as const,
-  LESS_THAN: 'lt' as const,
-  GREATER_THAN_OR_EQUALS: 'ge' as const,
-  LESS_THAN_OR_EQUALS: 'le' as const,
+  GREATER_THAN: 'gt',
+  LESS_THAN: 'lt',
+  GREATER_THAN_OR_EQUALS: 'ge',
+  LESS_THAN_OR_EQUALS: 'le',
 
   // Dates
-  STARTS_AFTER: 'sa' as const,
-  ENDS_BEFORE: 'eb' as const,
-  APPROXIMATELY: 'ap' as const,
+  STARTS_AFTER: 'sa',
+  ENDS_BEFORE: 'eb',
+  APPROXIMATELY: 'ap',
 
   // String
-  CONTAINS: 'contains' as const,
-  STARTS_WITH: 'sw' as const,
-  EXACT: 'exact' as const,
+  CONTAINS: 'contains',
+  STARTS_WITH: 'sw',
+  EXACT: 'exact',
 
   // Token
-  TEXT: 'text' as const,
-  NOT: 'not' as const,
-  ABOVE: 'above' as const,
-  BELOW: 'below' as const,
-  IN: 'in' as const,
-  NOT_IN: 'not-in' as const,
-  OF_TYPE: 'of-type' as const,
+  TEXT: 'text',
+  NOT: 'not',
+  ABOVE: 'above',
+  BELOW: 'below',
+  IN: 'in',
+  NOT_IN: 'not-in',
+  OF_TYPE: 'of-type',
 
   // All
-  MISSING: 'missing' as const,
-  PRESENT: 'present' as const,
+  MISSING: 'missing',
+  PRESENT: 'present',
 
   // Reference
-  IDENTIFIER: 'identifier' as const,
+  IDENTIFIER: 'identifier',
 
   // _include and _revinclude
-  ITERATE: 'iterate' as const,
-};
+  ITERATE: 'iterate',
+} as const;
 export type Operator = (typeof Operator)[keyof typeof Operator];
 
 /**
