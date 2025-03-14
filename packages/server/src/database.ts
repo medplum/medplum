@@ -221,7 +221,7 @@ async function migrate(client: PoolClient): Promise<void> {
     // To ensure that the migration is applied before at a particular point in time before the version that requires it
     const manifest = JSON.parse(
       readFileSync(resolve(__dirname, 'migrations/data/data-version-manifest.json'), { encoding: 'utf-8' })
-    ) as Record<string, { serverVersion: string; requiredBefore: string }>;
+    ) as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
     const versionEntry = manifest['v' + pendingDataMigration];
 
     const serverVersion = getServerVersion();
@@ -235,7 +235,7 @@ async function migrate(client: PoolClient): Promise<void> {
     // 3. Greater than or equal to the requiredBefore version (version >= entry.requiredBefore) -- throw from this function and do not allow server to startup
     if (semver.gte(serverVersion, versionEntry.serverVersion)) {
       // We allow any version where the data migration is greater than or equal to the specified `serverVersion` and it less than the `requiredBefore` version
-      if (semver.gte(serverVersion, versionEntry.requiredBefore)) {
+      if (versionEntry.requiredBefore && semver.gte(serverVersion, versionEntry.requiredBefore)) {
         throw new Error(
           `Unable to run data migration against the current server version. Migration requires server at version ${versionEntry.serverVersion} <= version < ${versionEntry.requiredBefore}, but current server version is ${serverVersion}`
         );
