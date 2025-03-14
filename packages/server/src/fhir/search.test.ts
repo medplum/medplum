@@ -4677,26 +4677,31 @@ describe('FHIR Search', () => {
 
     test('Filter by _project', () =>
       withTestContext(async () => {
+        const idValue = randomUUID();
         const project1 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
         const project2 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
 
         const patient1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
-          name: [{ given: ['Alice1'], family: 'Smith1' }],
+          identifier: [{ system: 'id', value: idValue }],
           meta: {
             project: project1,
           },
         });
-        expect(patient1).toBeDefined();
 
         const patient2 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
-          name: [{ given: ['Alice2'], family: 'Smith2' }],
+          identifier: [{ system: 'id', value: idValue }],
           meta: {
             project: project2,
           },
         });
-        expect(patient2).toBeDefined();
+
+        const patient3 = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ system: 'id', value: idValue }],
+          // no project
+        });
 
         const bundle = await systemRepo.search({
           resourceType: 'Patient',
@@ -4711,6 +4716,43 @@ describe('FHIR Search', () => {
         expect(bundle.entry?.length).toStrictEqual(1);
         expect(bundleContains(bundle as Bundle, patient1 as Patient)).toBeDefined();
         expect(bundleContains(bundle as Bundle, patient2 as Patient)).toBeUndefined();
+
+        const missingBundle = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'identifier',
+              operator: Operator.EQUALS,
+              value: idValue,
+            },
+            {
+              code: '_project',
+              operator: Operator.MISSING,
+              value: 'true',
+            },
+          ],
+        });
+        expect(missingBundle.entry?.length).toStrictEqual(1);
+        expect(bundleContains(missingBundle, patient3)).toBeDefined();
+
+        const presentBundle = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'identifier',
+              operator: Operator.EQUALS,
+              value: idValue,
+            },
+            {
+              code: '_project',
+              operator: Operator.PRESENT,
+              value: 'true',
+            },
+          ],
+        });
+        expect(presentBundle.entry?.length).toStrictEqual(2);
+        expect(bundleContains(presentBundle, patient1)).toBeDefined();
+        expect(bundleContains(presentBundle, patient2)).toBeDefined();
       }));
 
     test('Filter by _lastUpdated', () =>
