@@ -7,16 +7,17 @@ import { Pool, PoolClient } from 'pg';
 import * as semver from 'semver';
 import { getConfig } from './config/loader';
 import { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
-import { getSystemRepo } from './fhir/repo';
+import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
 import {
-  createAsyncJobForPostDeployMigration,
   getPostDeployMigration,
   getPostDeployMigrationVersions,
   getPreDeployMigration,
   getPreDeployMigrationVersions,
+  upsertPostDeployMigrationAsyncJob,
 } from './migrations/migration-utils';
 import { getServerVersion } from './util/version';
+import { InProgressAsyncJobStatuses } from './workers/utils';
 
 export enum DatabaseMode {
   READER = 'reader',
@@ -30,7 +31,7 @@ const Version = {
 
 let pool: Pool | undefined;
 let readonlyPool: Pool | undefined;
-let isFirstServerStart = false;
+// let isFirstServerStart = false;
 
 async function getPreDeployVersion(): Promise<number> {
   // This generic type is not technically correct, but leads to the desired forced checks for undefined `version` and `dataVersion`
@@ -244,7 +245,7 @@ async function migrate(client: PoolClient): Promise<void> {
     // Using a global module variable to track this feels gross,
     // but returning a boolean from `migrate()` and having to bubble it up and back down
     // several function calls seems even worse.
-    isFirstServerStart = true;
+    // isFirstServerStart = true;
     return;
   }
 
@@ -294,44 +295,30 @@ async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersi
   }
 }
 
-export async function maybeQueueAllPendingPostDeployMigrations(): Promise<void> {
-  //TODO{mattlong} Don't queue all pending migrations; only the next one
-  // and have them daisy-chain in an onComplete handler somewhere
-
-  const isDisabled = getConfig().disableAutoRunPostDeployMigrations;
+export async function maybeRunPendingPostDeployMigration(): Promise<void> {
+  const isDisabled = getConfig().database.runMigrations === false || getConfig().disableAutoRunPostDeployMigrations;
 
   const pendingPostDeployMigration = await getPendingPostDeployMigration();
   if (pendingPostDeployMigration === Version.UNKNOWN) {
     //TODO{mattlong} - throwing here feels wrong since it'd stop the server from starting
     // up if this somehow managed to trigger, but it would mean something is pretty
     // wrong, so maybe throwing is the correct behavior?
-    throw new Error('Cannot run post-deploy migrations; post-deploy version is unknown');
+    throw new Error('Cannot run post-deploy migrations; next post-deploy migration version is unknown');
   }
 
   if (pendingPostDeployMigration === Version.NONE) {
     return;
   }
 
-  const systemRepo = getSystemRepo();
-  for (let i = pendingPostDeployMigration; i <= getPostDeployMigrationVersions().length; i++) {
-    const migration = getPostDeployMigration(i);
-    /*
-     TODO{mattlong} - should somehow check for existing AsyncJob. This gets at the bigger
-     open question of what exactly is the relationship between the AsyncJobs and the BullMQ jobs?
-     which is the source of truth?
-     
-     e.g., should there only ever be one AsyncJob referencing post-deploy migration v2?
-    */
-    if (isDisabled) {
-      globalLogger.info('Not queueing pending post-deploy migration because auto-run is disabled', {
-        version: `v${i}`,
-      });
-      continue;
-    }
-
-    const asyncJob = await createAsyncJobForPostDeployMigration(systemRepo, i);
-    await migration.run(systemRepo, asyncJob, isFirstServerStart);
+  if (isDisabled) {
+    globalLogger.info('Not queueing pending post-deploy migration because auto-run is disabled', {
+      version: `v${pendingPostDeployMigration}`,
+    });
+    return;
   }
+
+  const systemRepo = getSystemRepo();
+  await runPostDeployMigration(systemRepo, pendingPostDeployMigration);
 }
 
 /**
@@ -340,11 +327,11 @@ export async function maybeQueueAllPendingPostDeployMigrations(): Promise<void> 
  * If pending post-deploy migrations were not assessed due to `config.runMigrations` being false,
  * this function throws
  *
- * @param assertedDataVersion - The asserted data version that we expect to run.
+ * @param requestedDataVersion - The data version requested to run.
  * @returns An `AsyncJob` if migration is started or already running, otherwise returns `undefined` if no migration to run.
  */
 export async function maybeStartPostDeployMigration(
-  assertedDataVersion?: number
+  requestedDataVersion?: number
 ): Promise<WithId<AsyncJob> | undefined> {
   // If schema migrations didn't run, we should not attempt to run data migrations
   if (getConfig().database.runMigrations === false) {
@@ -363,18 +350,22 @@ export async function maybeStartPostDeployMigration(
 
   // If a version has been asserted, check if we have that version pending
   // Or if we have already applied it
-  if (assertedDataVersion) {
+  if (requestedDataVersion) {
+    if (requestedDataVersion <= 0) {
+      throw new OperationOutcomeError(badRequest('post-deploy migration number must be greater than zero.'));
+    }
+
     const postDeployVersion = await getPostDeployVersion();
     // We have already applied this data version, there is no migration to run
-    if (assertedDataVersion <= postDeployVersion) {
+    if (requestedDataVersion <= postDeployVersion) {
       return undefined;
     }
     // The post-deploy version is higher than the version we expect to apply next, we cannot apply this migration
     // This is also true when pending migration is NONE
-    if (assertedDataVersion > pendingPostDeployMigration) {
+    if (requestedDataVersion > pendingPostDeployMigration) {
       throw new OperationOutcomeError(
         badRequest(
-          `Post-deploy migration assertion failed. Expected pending migration to be migration ${assertedDataVersion}, server has ${pendingPostDeployMigration > 0 ? `current pending post-deploy migration ${pendingPostDeployMigration}` : 'no pending post-deploy migration'}`
+          `Post-deploy migration assertion failed. Expected pending migration to be migration ${requestedDataVersion}, server has ${pendingPostDeployMigration > 0 ? `current pending post-deploy migration ${pendingPostDeployMigration}` : 'no pending post-deploy migration'}`
         )
       );
     }
@@ -384,21 +375,27 @@ export async function maybeStartPostDeployMigration(
   }
 
   const systemRepo = getSystemRepo();
-  let postDeployMigrationJob: WithId<AsyncJob> | undefined;
+  const asyncJob = await runPostDeployMigration(systemRepo, pendingPostDeployMigration);
+  return asyncJob;
+}
 
-  await systemRepo.withTransaction(
+async function runPostDeployMigration(systemRepo: Repository, version: number): Promise<WithId<AsyncJob>> {
+  const migration = getPostDeployMigration(version);
+  return systemRepo.withTransaction(
     async () => {
       //TODO{mattlong} depend on only one AsyncJob with status=accepted to prevent more
       // than one post-deploy migration from running at a time.
       // Check if there is already a migration job in progress
       const existingJobs = await systemRepo.searchResources<AsyncJob>(
-        parseSearchRequest('AsyncJob?status=accepted&type=data-migration&_count=2')
+        parseSearchRequest(
+          `AsyncJob?status=${InProgressAsyncJobStatuses.join(',')}&type=data-migration&_count=2&_project:missing=true`
+        )
       );
       // If there is more than one existing job, we should throw
       if (existingJobs.length > 1) {
         throw new OperationOutcomeError(
           badRequest(
-            'Data migration unable to start due to more than one existing data-migration AsyncJob with accepted status'
+            'Unable to start post-deploy migration since there are more than one existing data-migration AsyncJob with accepted status'
           )
         );
       }
@@ -411,19 +408,13 @@ export async function maybeStartPostDeployMigration(
           )
         );
       }
-      if (existingJob) {
-        postDeployMigrationJob = existingJob;
-      } else {
-        postDeployMigrationJob = await createAsyncJobForPostDeployMigration(systemRepo, pendingPostDeployMigration);
-      }
+      const asyncJob = await upsertPostDeployMigrationAsyncJob(systemRepo, version, existingJob);
 
-      const migration = getPostDeployMigration(pendingPostDeployMigration);
       // We get a new system repo here so that we are not reusing with the system repo doing the transaction
-      await migration.run(getSystemRepo(), postDeployMigrationJob, false);
-      // .catch((err) => globalLogger.error('Error while running data migration', { err }));
+      await migration.run(getSystemRepo(), asyncJob, false);
+
+      return asyncJob;
     },
     { serializable: true }
   );
-
-  return postDeployMigrationJob;
 }

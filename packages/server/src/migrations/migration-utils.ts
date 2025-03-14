@@ -99,3 +99,29 @@ export async function createAsyncJobForPostDeployMigration(
     minServerVersion: getServerVersion(),
   });
 }
+
+export async function upsertPostDeployMigrationAsyncJob(
+  repo: Repository,
+  migrationNumber: number,
+  existingAsyncJob?: WithId<AsyncJob>
+): Promise<WithId<AsyncJob>> {
+  const toSave: AsyncJob = {
+    resourceType: 'AsyncJob',
+    type: 'data-migration',
+    status: 'accepted',
+    request: `data-migration-v${migrationNumber}`,
+    dataVersion: migrationNumber,
+    output: undefined,
+    requestTime: existingAsyncJob?.requestTime ?? new Date().toISOString(),
+    // We know that because we were able to start the migration on this server instance,
+    // That we must be on the right version to run this migration
+    minServerVersion: existingAsyncJob?.minServerVersion ?? getServerVersion(),
+    id: existingAsyncJob?.id,
+  };
+
+  if (toSave.id) {
+    return repo.updateResource(toSave);
+  }
+
+  return repo.createResource(toSave);
+}

@@ -31,7 +31,7 @@ const migration: CustomPostDeployMigration = {
     const pool = getDatabasePool(DatabaseMode.WRITER);
     await pool.query(`SET statement_timeout TO 0`);
 
-    const sleepTime = 5000;
+    const sleepTime = 7000;
     globalLogger.info(`Sleeping for ${sleepTime} seconds...`, {
       job: job.id,
       attemptsMade: job.attemptsMade,
@@ -39,8 +39,6 @@ const migration: CustomPostDeployMigration = {
     });
     await sleep(sleepTime);
     actions.push({ name: 'sleep', durationMs: sleepTime });
-
-    throw new Error('Uh oh, we had an error. The job should retry.');
 
     return { actions };
   },
