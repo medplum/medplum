@@ -1,9 +1,9 @@
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
+import { isDateTimeString } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import { TypedValue, globalSchema, stringifyTypedValue } from '../types';
 import { append, sortStringArray } from '../utils';
-import { isDateTimeString } from '../fhirpath/utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 export const DEFAULT_MAX_SEARCH_COUNT = 1000;
@@ -49,45 +49,46 @@ export interface IncludeTarget {
  * These operators represent "modifiers" and "prefixes" in FHIR search.
  * See: https://www.hl7.org/fhir/search.html
  */
-export enum Operator {
-  EQUALS = 'eq',
-  NOT_EQUALS = 'ne',
+export const Operator = {
+  EQUALS: 'eq' as const,
+  NOT_EQUALS: 'ne' as const,
 
   // Numbers
-  GREATER_THAN = 'gt',
-  LESS_THAN = 'lt',
-  GREATER_THAN_OR_EQUALS = 'ge',
-  LESS_THAN_OR_EQUALS = 'le',
+  GREATER_THAN: 'gt' as const,
+  LESS_THAN: 'lt' as const,
+  GREATER_THAN_OR_EQUALS: 'ge' as const,
+  LESS_THAN_OR_EQUALS: 'le' as const,
 
   // Dates
-  STARTS_AFTER = 'sa',
-  ENDS_BEFORE = 'eb',
-  APPROXIMATELY = 'ap',
+  STARTS_AFTER: 'sa' as const,
+  ENDS_BEFORE: 'eb' as const,
+  APPROXIMATELY: 'ap' as const,
 
   // String
-  CONTAINS = 'contains',
-  STARTS_WITH = 'sw',
-  EXACT = 'exact',
+  CONTAINS: 'contains' as const,
+  STARTS_WITH: 'sw' as const,
+  EXACT: 'exact' as const,
 
   // Token
-  TEXT = 'text',
-  NOT = 'not',
-  ABOVE = 'above',
-  BELOW = 'below',
-  IN = 'in',
-  NOT_IN = 'not-in',
-  OF_TYPE = 'of-type',
+  TEXT: 'text' as const,
+  NOT: 'not' as const,
+  ABOVE: 'above' as const,
+  BELOW: 'below' as const,
+  IN: 'in' as const,
+  NOT_IN: 'not-in' as const,
+  OF_TYPE: 'of-type' as const,
 
   // All
-  MISSING = 'missing',
-  PRESENT = 'present',
+  MISSING: 'missing' as const,
+  PRESENT: 'present' as const,
 
   // Reference
-  IDENTIFIER = 'identifier',
+  IDENTIFIER: 'identifier' as const,
 
   // _include and _revinclude
-  ITERATE = 'iterate',
-}
+  ITERATE: 'iterate' as const,
+};
+export type Operator = (typeof Operator)[keyof typeof Operator];
 
 /**
  * Parameter names may specify a modifier as a suffix.
@@ -367,7 +368,7 @@ export function parseParameter(searchParam: SearchParameter, modifier: string, v
 }
 
 function parseUnknownParameter(code: string, modifier: string, value: string): Filter {
-  let operator = Operator.EQUALS;
+  let operator: Operator = Operator.EQUALS;
   if (modifier) {
     operator = modifier as Operator;
   } else if (value.length >= 2) {
