@@ -53,7 +53,8 @@ export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
     return true;
   }
 
-  async execute(job: Job<TData>): Promise<void> {
+  async execute(job: Job<TData>, options?: { iterationsPerJob?: number }): Promise<void> {
+    const iterationsPerJob = options?.iterationsPerJob ?? 1;
     // When version is asserted, we should check that we are on a version greater than or equal to that version
     if (job.data.asyncJob.minServerVersion && semver.lt(getServerVersion(), job.data.asyncJob.minServerVersion)) {
       // Since we can't handle this ourselves, re-enqueue the job for another worker that can
@@ -68,6 +69,12 @@ export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
     }
 
     try {
+      let nextIterationData: TData | undefined;
+      for (let i = 0; i < iterationsPerJob; i++) {
+        if (nextIterationData) {
+          await job.updateData(nextIterationData);
+          nextIterationData = undefined;
+        }
       const result = await this.process(job);
 
       // Check if AsyncJob resource should be updated; this usually
@@ -100,11 +107,16 @@ export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
         } else {
           await this.failJob(job);
         }
-      } else {
+          return;
+        }
+        nextIterationData = nextIteration;
+      }
+
         // Enqueue job for the specified next iteration
         // NOTE: We do not check the AsyncJob status before enqueuing: it will be checked
         // at the beginning of the next iteration
-        await this.enqueueJob(nextIteration);
+      if (nextIterationData) {
+        await this.enqueueJob(nextIterationData);
       }
     } catch (err: unknown) {
       await this.failJob(job, err as Error);
