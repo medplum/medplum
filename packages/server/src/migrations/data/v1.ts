@@ -14,7 +14,9 @@ export async function run(repo: Repository, asyncJob: WithId<AsyncJob>): Promise
   await exec.run(async (asyncJob) => {
     await addReindexJob(
       getResourceTypes().filter((rt) => rt !== 'Binary'),
-      asyncJob
+      asyncJob,
+      undefined,
+      0 // maxResourceVersion of zero makes the filter __version === NULL which is more precise
     );
   });
 }
