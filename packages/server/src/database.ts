@@ -13,10 +13,11 @@ import * as dataMigrations from './migrations/data';
 import * as migrations from './migrations/schema';
 import { getServerVersion } from './util/version';
 
-export enum DatabaseMode {
-  READER = 'reader',
-  WRITER = 'writer',
-}
+export const DatabaseMode = {
+  READER: 'reader',
+  WRITER: 'writer',
+} as const;
+export type DatabaseMode = (typeof DatabaseMode)[keyof typeof DatabaseMode];
 
 const DataVersion = {
   UNKNOWN: -1,

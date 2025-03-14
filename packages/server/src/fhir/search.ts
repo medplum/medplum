@@ -1134,7 +1134,7 @@ function buildStringSearchFilter(
   return expression;
 }
 
-const prefixMatchOperators = [Operator.EQUALS, Operator.STARTS_WITH];
+const prefixMatchOperators: Operator[] = [Operator.EQUALS, Operator.STARTS_WITH];
 function buildStringFilterExpression(column: Column, operator: Operator, values: string[]): Expression {
   const conditions = values.map((v) => {
     if (operator === Operator.EXACT) {

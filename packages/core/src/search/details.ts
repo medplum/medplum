@@ -14,18 +14,19 @@ import { PropertyType, getElementDefinition, globalSchema } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { lazy } from '../utils';
 
-export enum SearchParameterType {
-  BOOLEAN = 'BOOLEAN',
-  NUMBER = 'NUMBER',
-  QUANTITY = 'QUANTITY',
-  TEXT = 'TEXT',
-  REFERENCE = 'REFERENCE',
-  CANONICAL = 'CANONICAL',
-  DATE = 'DATE',
-  DATETIME = 'DATETIME',
-  PERIOD = 'PERIOD',
-  UUID = 'UUID',
-}
+export const SearchParameterType = {
+  BOOLEAN: 'BOOLEAN',
+  NUMBER: 'NUMBER',
+  QUANTITY: 'QUANTITY',
+  TEXT: 'TEXT',
+  REFERENCE: 'REFERENCE',
+  CANONICAL: 'CANONICAL',
+  DATE: 'DATE',
+  DATETIME: 'DATETIME',
+  PERIOD: 'PERIOD',
+  UUID: 'UUID',
+};
+export type SearchParameterType = (typeof SearchParameterType)[keyof typeof SearchParameterType];
 
 export interface SearchParameterDetails {
   readonly type: SearchParameterType;
