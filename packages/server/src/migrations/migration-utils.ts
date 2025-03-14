@@ -1,10 +1,11 @@
-import { WithId } from '@medplum/core';
+import { badRequest, OperationOutcomeError, parseSearchRequest, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
-import { Repository } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { getServerVersion } from '../util/version';
-import * as preDeploymigrations from './schema';
+import { InProgressAsyncJobStatuses } from '../workers/utils';
 import * as postDeployMigrations from './data';
-import { PostDeployMigration, CustomPostDeployMigration, ReindexPostDeployMigration } from './data/types';
+import { CustomPostDeployMigration, PostDeployMigration, ReindexPostDeployMigration } from './data/types';
+import * as preDeploymigrations from './schema';
 import { PreDeployMigration } from './schema/types';
 
 /**
@@ -124,4 +125,44 @@ export async function upsertPostDeployMigrationAsyncJob(
   }
 
   return repo.createResource(toSave);
+}
+
+export async function runPostDeployMigration(systemRepo: Repository, version: number): Promise<WithId<AsyncJob>> {
+  const migration = getPostDeployMigration(version);
+  return systemRepo.withTransaction(
+    async () => {
+      //TODO{mattlong} depend on only one AsyncJob with status=accepted to prevent more
+      // than one post-deploy migration from running at a time.
+      // Check if there is already a migration job in progress
+      const existingJobs = await systemRepo.searchResources<AsyncJob>(
+        parseSearchRequest(
+          `AsyncJob?status=${InProgressAsyncJobStatuses.join(',')}&type=data-migration&_count=2&_project:missing=true`
+        )
+      );
+      // If there is more than one existing job, we should throw
+      if (existingJobs.length > 1) {
+        throw new OperationOutcomeError(
+          badRequest(
+            'Unable to start post-deploy migration since there are more than one existing data-migration AsyncJob with accepted status'
+          )
+        );
+      }
+      const existingJob = existingJobs[0];
+      // If there is an existing job and it has any compartments, we should always throw (someone has created a data-migration job in their project)
+      if (existingJob?.meta?.compartment) {
+        throw new OperationOutcomeError(
+          badRequest(
+            'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project'
+          )
+        );
+      }
+      const asyncJob = await upsertPostDeployMigrationAsyncJob(systemRepo, version, existingJob);
+
+      // We get a new system repo here so that we are not reusing with the system repo doing the transaction
+      await migration.run(getSystemRepo(), asyncJob, false);
+
+      return asyncJob;
+    },
+    { serializable: true }
+  );
 }

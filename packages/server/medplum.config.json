@@ -28,6 +28,8 @@
     "username": "medplum",
     "password": "medplum"
   },
+  "disableAutoRunPostDeployMigrations": false,
+  "logLevel": "debug",
   "redis": {
     "host": "localhost",
     "port": 6379,

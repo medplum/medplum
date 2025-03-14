@@ -18,6 +18,7 @@ CREATE USER medplum WITH PASSWORD 'medplum';
 Create a "medplum" database:
 
 ```PLpgSQL
+DROP DATABASE IF EXISTS medplum;
 CREATE DATABASE medplum;
 GRANT ALL PRIVILEGES ON DATABASE medplum TO medplum;
 ```
