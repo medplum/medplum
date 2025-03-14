@@ -13,7 +13,7 @@
   "scripts": {
     "baseschema": "ts-node src/baseschema.ts && npx prettier ../core/src/base-schema.json --write",
     "benchmark": "ts-node src/benchmarks.ts",
-    "build": "npm run clean && tsc",
+    "build": "npm run clean && tsc --erasableSyntaxOnly",
     "clean": "rimraf dist",
     "compare": "ts-node src/compare.ts",
     "docs": "ts-node src/docs.ts && cd ../.. && git apply packages/generator/src/ONC-compliance-text.patch",

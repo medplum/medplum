@@ -36,7 +36,7 @@
   ],
   "type": "module",
   "scripts": {
-    "build": "npm run clean && tsc && node esbuild.mjs",
+    "build": "npm run clean && tsc --erasableSyntaxOnly && node esbuild.mjs",
     "clean": "rimraf dist",
     "lint": "eslint .",
     "medplum": "ts-node src/index.ts",
