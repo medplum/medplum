@@ -1049,6 +1049,7 @@ function trySpecialSearchParameter(
   switch (filter.code) {
     case '_id':
       return buildIdSearchFilter(
+        repo,
         table,
         { columnName: 'id', type: SearchParameterType.UUID, searchStrategy: 'column' },
         filter.operator,
@@ -1063,6 +1064,7 @@ function trySpecialSearchParameter(
     case '_compartment':
     case '_project':
       return buildIdSearchFilter(
+        repo,
         table,
         { columnName: 'compartments', type: SearchParameterType.UUID, array: true, searchStrategy: 'column' },
         filter.operator,
@@ -1162,6 +1164,7 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
 
 /**
  * Adds an ID search filter as "WHERE" clause to the query builder.
+ * @param repo - The repository.
  * @param table - The resource table name or alias.
  * @param impl - The search parameter implementation info.
  * @param operator - The search operator.
@@ -1169,12 +1172,17 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
  * @returns The select query condition.
  */
 function buildIdSearchFilter(
+  repo: Repository,
   table: string,
   impl: ColumnSearchParameterImplementation,
   operator: Operator,
   values: string[]
 ): Expression {
   const column = new Column(table, impl.columnName);
+
+  if (repo.isSuperAdmin() && operator === Operator.MISSING && values.length === 1 && values[0] === 'true') {
+    return new Condition(column, '=', null);
+  }
 
   for (let i = 0; i < values.length; i++) {
     if (values[i].includes('/')) {
