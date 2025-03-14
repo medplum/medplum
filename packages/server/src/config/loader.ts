@@ -66,6 +66,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.database.port = process.env['POSTGRES_PORT'] ? Number.parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
   config.database.dbname = 'medplum_test';
   config.database.runMigrations = false;
+  config.database.disableRunPostDeployMigrations = true;
   config.readonlyDatabase = {
     ...config.database,
     username: 'medplum_test_readonly',
