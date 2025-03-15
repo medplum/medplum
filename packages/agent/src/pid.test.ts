@@ -1,89 +1,110 @@
-import { sleep } from '@medplum/core';
-import { ChildProcess, spawn } from 'node:child_process';
+import { ChildProcess, execSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createPidFile, getPidFilePath, removePidFile } from './pid';
 
+const TEST_APP_TEMPLATE_PATH = path.resolve(__dirname, '../testdata/test-app-template.ts');
 const APP_NAME = 'test-pid-app';
 
+let compiledTemplate: string | undefined;
+console.log = jest.fn();
+
 function createTestApp(appName: string): string {
-  const scriptPath = path.join(__dirname, `${appName}-test-app.js`);
-  const script = `
-    const { createPidFile } = require('./pid');
+  if (!compiledTemplate) {
+    // Compile template
+    console.log(`Compiling template from ${TEST_APP_TEMPLATE_PATH}...`);
+    // We compile with esbuild, otherwise if trying to dynamically import the file directly in a new file, we will run into
+    // The issue of trying to import uncompiled TS files directly into the Node runtime
+    // Compiling dynamically like this ensures we always have the latest version of the PID module
+    compiledTemplate = execSync(
+      `esbuild ${TEST_APP_TEMPLATE_PATH} --bundle --platform=node --target=node20 --format=cjs`,
+      {
+        stdio: 'pipe',
+        encoding: 'utf-8',
+      }
+    );
+  }
 
-    // Handle normal exit
-    process.on('exit', () => removePidFile(pidFilePath));
-  
-    // Handle various signals
-    for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
-      process.on(signal, () => {
-        removePidFile(pidFilePath);
-        process.exit(0);
-      });
+  try {
+    const scriptPath = path.join(tmpdir(), `${appName}-test-app.js`);
+    fs.writeFileSync(scriptPath, compiledTemplate.replace('$___APP_NAME___$', APP_NAME));
+
+    // Verify the JS file was created
+    if (!fs.existsSync(scriptPath)) {
+      throw new Error(`Failed to write ${scriptPath} - not found`);
     }
-  
-    // Handle uncaught exceptions
-    process.on('uncaughtException', (err) => {
-      console.error('Uncaught exception:', err);
-      removePidFile(pidFilePath);
-      process.exit(1);
-    });
-
-    // Create PID file
-    try {
-      const pidFilePath = createPidFile('${appName}');
-      console.log(\`Test app running with PID: \${process.pid}\`);
-      console.log(\`PID file created at: \${pidFilePath}\`);
-    } catch (err) {
-      console.error('Failed to create PID file, another instance may be running');
-      process.exit(1);  
-    }
-  `;
-
-  fs.writeFileSync(scriptPath, script);
-  return scriptPath;
+    console.log(`Successfully compiled to ${scriptPath}`);
+    return scriptPath;
+  } catch (err) {
+    console.error(`Failed to compile TypeScript file: ${err}`);
+    throw err;
+  }
 }
 
 function spawnProcess(
   scriptPath: string,
   args = [],
   options = {}
-): { child: ChildProcess; output: { stdout: string; stderr: string }; stdoutEndPromise: Promise<void> } {
+): {
+  child: ChildProcess;
+  output: { stdout: string; stderr: string };
+  readyPromise: Promise<void>;
+  exitPromise: Promise<void>;
+} {
   const child = spawn(process.execPath, [scriptPath, ...args], {
-    stdio: 'pipe',
+    stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
     ...options,
   });
 
-  child.stdin.end();
+  child.stdin?.end();
 
   // Buffer for stdout and stderr
   let stdout = '';
   let stderr = '';
 
-  child.stdout.on('data', (data) => {
+  child.stdout?.on('data', (data) => {
     stdout += data.toString();
   });
 
-  child.stderr.on('data', (data) => {
+  child.stderr?.on('data', (data) => {
     stderr += data.toString();
   });
 
-  const stdoutEndPromise = new Promise<void>((resolve) => {
-    child.stdout.on('end', resolve);
+  child.on('error', (err) => {
+    console.error(err);
+  });
+
+  const readyPromise = new Promise<void>((resolve) => {
+    child.on('message', resolve);
+  });
+
+  const exitPromise = new Promise<void>((resolve) => {
+    child.on('exit', resolve);
   });
 
   return {
     child,
-    output: { stdout, stderr },
-    stdoutEndPromise,
+    output: {
+      get stdout() {
+        return stdout;
+      },
+      get stderr() {
+        return stderr;
+      },
+    },
+    readyPromise,
+    exitPromise,
   };
 }
 
 // Make sure we don't leave around any pid files or test files
 afterAll(() => {
-  const appPath = path.join(__dirname, `${APP_NAME}-test-app.js`);
-  if (fs.existsSync(appPath)) {
-    fs.unlinkSync(appPath);
+  for (const appName of [APP_NAME, `${APP_NAME}-test-app`]) {
+    const jsAppPath = path.join(__dirname, `${appName}.js`);
+    if (fs.existsSync(jsAppPath)) {
+      fs.unlinkSync(jsAppPath);
+    }
   }
 
   const pidFilePath = getPidFilePath(APP_NAME);
@@ -100,29 +121,28 @@ describe('PID File Manager', () => {
     }
   });
 
-  test.only('creates and removes PID file on normal process lifecycle', async () => {
+  test('creates and removes PID file on normal process lifecycle', async () => {
     const pidFilePath = getPidFilePath(APP_NAME);
 
     // Create a test app
     const appPath = createTestApp(APP_NAME);
 
     // Run the app
-    const { child, output, stdoutEndPromise } = spawnProcess(appPath, [], { timeout: 2000 });
+    const { child, readyPromise, exitPromise } = spawnProcess(appPath, [], { timeout: 5000 });
 
-    await stdoutEndPromise;
-    console.log(output);
+    await readyPromise;
 
     // Verify PID file exists
     expect(fs.existsSync(pidFilePath)).toBe(true);
+
+    child.disconnect();
 
     // Verify PID file content matches the process PID
     const pidContent = fs.readFileSync(pidFilePath, 'utf8').trim();
     expect(pidContent).toBe(child.pid?.toString());
 
     // Wait for the process to exit
-    await new Promise((resolve) => {
-      child.on('exit', resolve);
-    });
+    await exitPromise;
 
     // Verify PID file is removed after process exit
     expect(fs.existsSync(pidFilePath)).toBe(false);
@@ -133,16 +153,16 @@ describe('PID File Manager', () => {
     const appPath = createTestApp(APP_NAME);
 
     // Run the first instance
-    const { child: child1, stdoutEndPromise } = spawnProcess(appPath);
+    const { child: child1, readyPromise } = spawnProcess(appPath);
 
     // Wait for the first app to initialize
-    await stdoutEndPromise;
+    await readyPromise;
 
     // Try to run a second instance, which should fail
-    const child2 = spawn(process.execPath, [appPath]);
+    const child2 = spawn(process.execPath, [appPath], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
 
     let stderr = '';
-    child2.stderr.on('data', (data) => {
+    child2.stderr?.on('data', (data) => {
       stderr += data.toString();
     });
 
@@ -153,7 +173,7 @@ describe('PID File Manager', () => {
 
     // Second instance should exit with a non-zero code
     expect(exitCode).not.toBe(0);
-    expect(stderr).toContain('Process already running');
+    expect(stderr).toContain('Failed to create PID file');
 
     // Clean up - kill the first process
     child1.kill('SIGTERM');
@@ -174,19 +194,19 @@ describe('PID File Manager', () => {
 
     // Create and run test app
     const appPath = createTestApp(APP_NAME);
-    const { child, stdoutEndPromise } = spawnProcess(appPath);
+    const { child, readyPromise, exitPromise } = spawnProcess(appPath);
 
     // Wait for the app to initialize
-    await stdoutEndPromise;
+    await readyPromise;
 
     // Verify PID file has been overwritten
     const pidContent = fs.readFileSync(pidFilePath, 'utf8').trim();
     expect(pidContent).toBe(child.pid?.toString());
 
+    child.disconnect();
+
     // Wait for the process to exit
-    await new Promise((resolve) => {
-      child.on('exit', resolve);
-    });
+    await exitPromise;
   });
 
   test('removes PID file on process termination', async () => {
@@ -196,10 +216,10 @@ describe('PID File Manager', () => {
     const appPath = createTestApp(APP_NAME);
 
     // Run the app
-    const { child, stdoutEndPromise } = spawnProcess(appPath);
+    const { child, readyPromise, exitPromise } = spawnProcess(appPath);
 
     // Wait for the app to initialize
-    await stdoutEndPromise;
+    await readyPromise;
 
     // Verify PID file exists
     expect(fs.existsSync(pidFilePath)).toBe(true);
@@ -207,8 +227,7 @@ describe('PID File Manager', () => {
     // Forcefully kill the process
     child.kill('SIGTERM');
 
-    // Wait a moment for cleanup
-    await sleep(500);
+    await exitPromise;
 
     // Verify PID file is removed after forceful termination
     expect(fs.existsSync(pidFilePath)).toBe(false);
@@ -227,7 +246,7 @@ describe('PID File Manager', () => {
     if (platform === 'win32') {
       expect(pidFilePath).toContain('Temp');
     } else if (platform === 'darwin' || platform === 'linux') {
-      expect(pidFilePath.startsWith('/var/run/')).toBe(true);
+      expect(pidFilePath.startsWith(tmpdir())).toBe(true);
     }
   });
 
