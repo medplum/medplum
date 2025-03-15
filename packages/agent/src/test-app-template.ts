@@ -1,4 +1,4 @@
-import { createPidFile, registerAgentCleanup } from '../src/pid';
+import { createPidFile, registerAgentCleanup } from './pid';
 
 process.on('disconnect', () => {
   console.log('Parent process has disconnected');
