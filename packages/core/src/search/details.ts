@@ -25,7 +25,7 @@ export const SearchParameterType = {
   DATETIME: 'DATETIME',
   PERIOD: 'PERIOD',
   UUID: 'UUID',
-};
+} as const;
 export type SearchParameterType = (typeof SearchParameterType)[keyof typeof SearchParameterType];
 
 export interface SearchParameterDetails {
