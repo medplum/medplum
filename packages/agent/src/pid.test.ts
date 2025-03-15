@@ -27,7 +27,7 @@ function createTestApp(appName: string): string {
   }
 
   try {
-    const scriptPath = path.join(tmpdir(), `${appName}-test-app.js`);
+    const scriptPath = path.join(tmpdir(), `${appName}.js`);
     fs.writeFileSync(scriptPath, compiledTemplate.replace('$___APP_NAME___$', APP_NAME));
 
     // Verify the JS file was created
@@ -100,11 +100,9 @@ function spawnProcess(
 
 // Make sure we don't leave around any pid files or test files
 afterAll(() => {
-  for (const appName of [APP_NAME, `${APP_NAME}-test-app`]) {
-    const jsAppPath = path.join(__dirname, `${appName}.js`);
-    if (fs.existsSync(jsAppPath)) {
-      fs.unlinkSync(jsAppPath);
-    }
+  const jsAppPath = path.join(tmpdir(), `${APP_NAME}.js`);
+  if (fs.existsSync(jsAppPath)) {
+    fs.unlinkSync(jsAppPath);
   }
 
   const pidFilePath = getPidFilePath(APP_NAME);
