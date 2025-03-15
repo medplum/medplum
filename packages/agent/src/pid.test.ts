@@ -14,7 +14,7 @@ function createTestApp(appName: string): string {
   if (!compiledTemplate) {
     // Compile template
     console.log(`Compiling template from ${TEST_APP_TEMPLATE_PATH}...`);
-    // We compile with esbuild, otherwise if trying to dynamically import the file directly in a new file, we will run into
+    // We compile with esbuild, otherwise if trying to dynamically import the file directly in a new Node process, we will run into
     // The issue of trying to import uncompiled TS files directly into the Node runtime
     // Compiling dynamically like this ensures we always have the latest version of the PID module
     compiledTemplate = execSync(
