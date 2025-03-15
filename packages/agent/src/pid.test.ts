@@ -2,9 +2,9 @@ import { ChildProcess, execSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { createPidFile, getPidFilePath, removePidFile } from './pid';
+import { createPidFile, ensureDirectoryExists, getPidFilePath, removePidFile } from './pid';
 
-const TEST_APP_TEMPLATE_PATH = path.resolve(__dirname, '../testdata/test-app-template.ts');
+const TEST_APP_TEMPLATE_PATH = path.resolve(__dirname, 'test-app-template.ts');
 const APP_NAME = 'test-pid-app';
 
 let compiledTemplate: string | undefined;
@@ -188,6 +188,7 @@ describe('PID File Manager', () => {
     // Create a "stale" PID file with a PID that doesn't exist
     // Use a very high PID that's unlikely to exist
     const stalePid = '999999';
+    ensureDirectoryExists(path.dirname(pidFilePath));
     fs.writeFileSync(pidFilePath, stalePid);
 
     // Create and run test app
