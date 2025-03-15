@@ -17,7 +17,7 @@ import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
-import { DatabaseMode, getDatabasePool, maybeStartDataMigration } from '../database';
+import { DatabaseMode, getDatabasePool, maybeStartPostDeployMigration } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -268,7 +268,7 @@ superAdminRouter.post(
     }
 
     const { baseUrl } = getConfig();
-    const dataMigrationJob = await maybeStartDataMigration(req?.body?.dataVersion as number | undefined);
+    const dataMigrationJob = await maybeStartPostDeployMigration(req?.body?.dataVersion as number | undefined);
     // If there is no migration job to run, return allOk
     if (!dataMigrationJob) {
       sendOutcome(res, allOk);

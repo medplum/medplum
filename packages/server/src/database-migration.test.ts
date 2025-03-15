@@ -5,19 +5,25 @@ import { initAppServices, shutdownApp } from './app';
 import * as configLoaderModule from './config/loader';
 import { loadTestConfig } from './config/loader';
 import { MedplumServerConfig } from './config/types';
-import { getPendingDataMigration, markPendingDataMigrationCompleted, maybeStartDataMigration } from './database';
+import {
+  getPendingPostDeployMigration,
+  markPendingDataMigrationCompleted,
+  maybeStartPostDeployMigration,
+} from './database';
 import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
 import { createTestProject, withTestContext } from './test.setup';
 import * as versionModule from './util/version';
+import { ReindexPostDeployMigration } from './migrations/data/types';
 
 const MAX_POLL_TRIES = 5;
 
 jest.mock('./migrations/data/v1', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { AsyncJobExecutor } = require('./fhir/operations/utils/asyncjobexecutor');
-  return {
-    run: async function run(repo: Repository, asyncJob: AsyncJob): Promise<void> {
+  const migration: ReindexPostDeployMigration = {
+    type: 'reindex',
+    run: async (repo: Repository, asyncJob: AsyncJob): Promise<void> => {
       const exec = new AsyncJobExecutor(repo, asyncJob);
       await exec.run(async (asyncJob: AsyncJob) => {
         async function runMigration(): Promise<void> {
@@ -28,6 +34,8 @@ jest.mock('./migrations/data/v1', () => {
       });
     },
   };
+
+  return { migration };
 });
 
 jest.mock('./migrations/data/index', () => {
@@ -53,6 +61,8 @@ describe('Database migrations', () => {
     noMigrationsConfig = await loadTestConfig();
     migrationsConfig = deepClone(noMigrationsConfig);
     migrationsConfig.database.runMigrations = true;
+    // We want to control when post deploy migrations are run
+    migrationsConfig.database.disableRunPostDeployMigrations = true;
 
     poolConfig = {
       host: noMigrationsConfig.database.host,
@@ -95,7 +105,7 @@ describe('Database migrations', () => {
         jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '4.0.0');
         await expect(initAppServices(migrationsConfig)).rejects.toThrow(
           new Error(
-            'Unable to run data migration against the current server version. Migration requires server at version 3.3.0 <= version < 4.0.0, but current server version is 4.0.0'
+            'Unable to run this version of Medplum server. Pending post-deploy migration v1 requires server at version 3.3.0 <= version < 4.0.0, but current server version is 4.0.0'
           )
         );
         await shutdownApp();
@@ -155,8 +165,8 @@ describe('Database migrations', () => {
 
     test('Schema migrations did not run', () =>
       withTestContext(async () => {
-        await expect(maybeStartDataMigration()).rejects.toThrow(
-          'Cannot run data migration; schema migrations did not run'
+        await expect(maybeStartPostDeployMigration()).rejects.toThrow(
+          'Cannot run post-deploy migration since pre-deploy migrations did not run'
         );
       }));
   });
@@ -184,11 +194,29 @@ describe('Database migrations', () => {
       getConfigSpy.mockRestore();
     });
 
+    async function waitForCompleted(asyncJobId: string): Promise<WithId<AsyncJob> | undefined> {
+      let updated: WithId<AsyncJob> | undefined;
+      let tries = 0;
+      while (updated?.status !== 'completed') {
+        if (tries > MAX_POLL_TRIES) {
+          throw new Error('Timed out while polling async job');
+        }
+        updated = await getSystemRepo().readResource<AsyncJob>('AsyncJob', asyncJobId);
+        tries += 1;
+        await sleep(100);
+      }
+      return updated;
+    }
+
     test('No data migration in progress -- start migration job', () =>
       withTestContext(async () => {
         jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '3.3.0');
 
-        const asyncJob = await maybeStartDataMigration();
+        const asyncJob = await maybeStartPostDeployMigration();
+        if (!asyncJob) {
+          throw new Error('Expected to start post-deploy migration');
+        }
+
         expect(asyncJob).toMatchObject<AsyncJob>({
           id: expect.any(String),
           type: 'data-migration',
@@ -200,23 +228,11 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        let updated: WithId<AsyncJob> | undefined;
-        let tries = 0;
-        while (updated?.status !== 'completed') {
-          if (tries > MAX_POLL_TRIES) {
-            throw new Error('Timed out while polling async job');
-          }
-          try {
-            updated = await getSystemRepo().readResource<AsyncJob>('AsyncJob', (asyncJob as WithId<AsyncJob>).id);
-            expect(updated).toMatchObject<Partial<AsyncJob>>({
-              resourceType: 'AsyncJob',
-              status: 'completed',
-            });
-          } catch (_err) {
-            tries += 1;
-          }
-          await sleep(100);
-        }
+        const updated = await waitForCompleted(asyncJob.id);
+        expect(updated).toMatchObject<Partial<AsyncJob>>({
+          resourceType: 'AsyncJob',
+          status: 'completed',
+        });
       }));
 
     test('No pending data migration', () =>
@@ -230,10 +246,10 @@ describe('Database migrations', () => {
           dataVersion: 1,
           minServerVersion: '3.3.0',
         });
-        await expect(maybeStartDataMigration()).resolves.toBeUndefined();
+        await expect(maybeStartPostDeployMigration()).resolves.toBeUndefined();
       }));
 
-    test('Data migration already in progress', () =>
+    test('Existing AsyncJob that gets requeued and completes', () =>
       withTestContext(async () => {
         const asyncJob = await getSystemRepo().createResource<AsyncJob>({
           resourceType: 'AsyncJob',
@@ -244,19 +260,25 @@ describe('Database migrations', () => {
           dataVersion: 1,
           minServerVersion: '3.3.0',
         });
-        await expect(maybeStartDataMigration()).resolves.toMatchObject({
+        await expect(maybeStartPostDeployMigration()).resolves.toMatchObject({
           id: asyncJob.id,
           type: 'data-migration',
           status: 'accepted',
         });
+
+        const updated = await waitForCompleted(asyncJob.id);
+        expect(updated).toMatchObject<Partial<AsyncJob>>({
+          resourceType: 'AsyncJob',
+          status: 'completed',
+        });
       }));
 
-    test('Existing data migration job in a project', () =>
+    test('Existing data migration job in a project is ignored', () =>
       withTestContext(async () => {
         const { repo } = await createTestProject({ withRepo: true });
 
         // Not using system repo to create the job so that AsyncJob has a compartment
-        const asyncJob = await repo.createResource<AsyncJob>({
+        const projectAsyncJob = await repo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
           status: 'accepted',
@@ -266,18 +288,35 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        expect(asyncJob.meta?.compartment).toBeDefined();
+        const asyncJob = await maybeStartPostDeployMigration();
+        if (!asyncJob) {
+          throw new Error('Expected to start post-deploy migration');
+        }
+        expect(asyncJob).toMatchObject<AsyncJob>({
+          type: 'data-migration',
+          resourceType: 'AsyncJob',
+          status: 'accepted',
+          request: expect.any(String),
+          requestTime: expect.any(String),
+          dataVersion: 1,
+          minServerVersion: '3.3.0',
+        });
 
-        await expect(maybeStartDataMigration()).rejects.toThrow(
-          'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project'
-        );
+        const updated = await waitForCompleted(asyncJob.id);
+        expect(updated).toMatchObject<Partial<AsyncJob>>({
+          resourceType: 'AsyncJob',
+          status: 'completed',
+        });
+
+        // The project AsyncJob should not be found/returned
+        expect(asyncJob?.id).toBeDefined();
+        expect(asyncJob?.id).not.toStrictEqual(projectAsyncJob.id);
       }));
 
     test('Multiple data migration jobs with accepted status', () =>
       withTestContext(async () => {
-        const { repo } = await createTestProject({ withRepo: true });
-
-        await repo.createResource<AsyncJob>({
+        const systemRepo = getSystemRepo();
+        await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
           status: 'accepted',
@@ -287,7 +326,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        await getSystemRepo().createResource<AsyncJob>({
+        await systemRepo.createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           type: 'data-migration',
           status: 'accepted',
@@ -297,8 +336,8 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        await expect(maybeStartDataMigration()).rejects.toThrow(
-          'Data migration unable to start due to more than one existing data-migration AsyncJob with accepted status'
+        await expect(maybeStartPostDeployMigration()).rejects.toThrow(
+          'Unable to start post-deploy migration since there are more than one existing data-migration AsyncJob with accepted status'
         );
       }));
 
@@ -314,7 +353,7 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        await expect(maybeStartDataMigration(1)).resolves.toBeUndefined();
+        await expect(maybeStartPostDeployMigration(1)).resolves.toBeUndefined();
       }));
 
     test('Asserted version is greater than current version AND there is NO pending migration', () =>
@@ -329,8 +368,8 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
-        await expect(maybeStartDataMigration(2)).rejects.toThrow(
-          'Data migration assertion failed. Expected pending migration to be migration 2, server has no pending data migration'
+        await expect(maybeStartPostDeployMigration(2)).rejects.toThrow(
+          'Post-deploy migration assertion failed. Expected pending migration to be migration 2, server has no pending post-deploy migration'
         );
       }));
 
@@ -342,10 +381,10 @@ describe('Database migrations', () => {
           )
         ).resolves.toBeUndefined();
 
-        expect(await getPendingDataMigration()).toStrictEqual(1);
+        expect(await getPendingPostDeployMigration()).toStrictEqual(1);
 
-        await expect(maybeStartDataMigration(2)).rejects.toThrow(
-          'Data migration assertion failed. Expected pending migration to be migration 2, server has current pending data migration 1'
+        await expect(maybeStartPostDeployMigration(2)).rejects.toThrow(
+          'Post-deploy migration assertion failed. Expected pending migration to be migration 2, server has current pending post-deploy migration 1'
         );
       }));
   });

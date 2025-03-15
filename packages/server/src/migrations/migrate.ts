@@ -742,6 +742,12 @@ function writeMigrations(
 ): void {
   b.append("import { PoolClient } from 'pg';");
   b.newLine();
+  b.append('async function query(client: PoolClient, queryStr: string): Promise<void> {');
+  b.append('  console.log((new Date()).toISOString(), queryStr);');
+  b.append('  await client.query(queryStr);');
+  b.append('}');
+  b.newLine();
+  b.append('// prettier-ignore');
   b.append('export async function run(client: PoolClient): Promise<void> {');
   b.indentCount++;
 

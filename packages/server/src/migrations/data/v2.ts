@@ -12,9 +12,9 @@ export const migration: ReindexPostDeployMigration = {
         type: 'reindex',
         asyncJob,
         resourceTypes: getResourceTypes().filter((rt) => rt !== 'Binary'),
-        // This migration predates the __version column. Specifying zero filters
-        // for resources with a NULL resource version
-        maxResourceVersion: 0,
+        // Repository.VERSION was bumped to 2 for token-column search parameters,
+        // so reindex all resources with a lower version.
+        maxResourceVersion: 1,
       });
     });
   },

@@ -18,6 +18,7 @@ import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { getLogger, globalLogger } from '../logger';
 import { parseTraceparent } from '../traceparent';
+import { QueueRegistry } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -48,8 +49,9 @@ let worker: Worker<DownloadJobData> | undefined = undefined;
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
  * @param config - The Medplum server config to use.
+ * @param queueRegistry - The queue registry to use.
  */
-export function initDownloadWorker(config: MedplumServerConfig): void {
+export function initDownloadWorker(config: MedplumServerConfig, queueRegistry: QueueRegistry): void {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
@@ -64,6 +66,7 @@ export function initDownloadWorker(config: MedplumServerConfig): void {
       },
     },
   });
+  queueRegistry.addQueue(queueName, queue);
 
   worker = new Worker<DownloadJobData>(
     queueName,
