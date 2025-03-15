@@ -1,5 +1,5 @@
-<h1 align="center">Medplum Charting Demo</h1>
-<p align="center">A starter application for building a charting app on Medplum.</p>
+<h1 align="center">Medplum Provider</h1>
+<p align="center">A starter application for building a health record system on Medplum.</p>
 <p align="center">
 <a href="https://github.com/medplum/medplum-hello-world/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/license-Apache-blue.svg" />
@@ -12,34 +12,18 @@ This example app demonstrates the following:
   - More information on a [charting experience](https://www.medplum.com/docs/charting)
 - Using [Medplum GraphQL](https://graphiql.medplum.com/) queries to fetch linked resources
 
-### Components of the Patient Chart
+### Workflows
 
-The Patient Chart has 3 distinct panels
+The application will feature the following core workflows:
 
-1. Clinical Chart
-   The left panel shows the patient history and their status. Notable information in the clinical chart includes the following Resources:
-
-   - Patient Information
-   - Upcoming Appointments
-   - Documented Visits
-   - List of Allergies
-   - List of Problems
-   - Medication Requests
-   - Smoking Status
-   - Vitals
-
-2. Tasks
-   The center panel shows list of the Task resource with a different focus resource. See our [Tasks Guide](https://www.medplum.com/docs/careplans/tasks) for more details.
-
-   - Each focus is interactive to either review or fill out
-   - This example project demonstrates interactions of the following resources:
-     - Questionnaire
-     - QuestionnaireResponse
-     - DiagnosticReport
-     - CarePlan
-
-3. SOAP Note
-   The right most panel documents an encounter with the patient through a questionnaire. Filling out and submitting the questionnaire automatically creates a task, with the response as the focus to be reviewed.
+* Visit documentation
+* Task creation and assignment
+* Appointment scheduling
+* Patient registration/onboarding
+* Lab orders
+* Ordering medications
+* Claim creation and billing
+* Patient/Provider Messaging
 
 ### Getting Started
 
