@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { createPidFile, getPidFilePath, removePidFile } from './pid';
+import { createPidFile, getPidFilePath, pidLogger, registerAgentCleanup, removePidFile } from './pid';
 
 jest.mock('node:fs');
 jest.mock('node:os', () => ({
@@ -17,6 +17,13 @@ describe('PID File Manager', () => {
     jest.clearAllMocks();
     mockedFs.existsSync.mockReturnValue(false);
     mockedFs.mkdirSync.mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    // Clean up any listeners we may have added
+    process.removeAllListeners('SIGTERM');
+    process.removeAllListeners('SIGINT');
+    process.removeAllListeners('uncaughtException');
   });
 
   test('creates and removes PID file on normal process lifecycle', () => {
@@ -131,10 +138,89 @@ describe('PID File Manager', () => {
       throw new Error('Permission denied');
     });
 
-    // Should throw
-    expect(() => removePidFile(TEST_PID_PATH)).toThrow('Permission denied');
+    // Should not throw
+    expect(() => removePidFile(TEST_PID_PATH)).not.toThrow('Permission denied');
 
     // Verify unlink was attempted
     expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
+  });
+
+  describe('registerAgentCleanup', () => {
+    let originalExit: typeof process.exit;
+
+    beforeEach(() => {
+      mockedFs.existsSync.mockReturnValue(true);
+      mockedFs.unlinkSync.mockImplementation(() => undefined);
+      originalExit = process.exit;
+      process.exit = jest.fn() as unknown as typeof process.exit;
+    });
+
+    afterEach(() => {
+      process.exit = originalExit;
+    });
+
+    test('registers handlers for SIGTERM, SIGINT, and uncaughtException', () => {
+      const addListenerSpy = jest.spyOn(process, 'on');
+      registerAgentCleanup(TEST_PID_PATH);
+
+      expect(addListenerSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
+      expect(addListenerSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
+      expect(addListenerSpy).toHaveBeenCalledWith('uncaughtException', expect.any(Function));
+    });
+
+    test('removes PID file and exits on SIGTERM', () => {
+      registerAgentCleanup(TEST_PID_PATH);
+      process.emit('SIGTERM');
+
+      expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
+      expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
+      expect(process.exit).toHaveBeenCalledWith(0);
+    });
+
+    test('removes PID file and exits on SIGINT', () => {
+      registerAgentCleanup(TEST_PID_PATH);
+      process.emit('SIGINT');
+
+      expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
+      expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
+      expect(process.exit).toHaveBeenCalledWith(0);
+    });
+
+    test('removes PID file and exits on uncaughtException', () => {
+      registerAgentCleanup(TEST_PID_PATH);
+      process.emit('uncaughtException', new Error('Test error'));
+
+      expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
+      expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
+      expect(process.exit).toHaveBeenCalledWith(1);
+    });
+
+    test('handles non-existent PID file during cleanup and still exits', () => {
+      mockedFs.existsSync.mockReturnValue(false);
+      registerAgentCleanup(TEST_PID_PATH);
+
+      process.emit('SIGTERM');
+
+      expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
+      expect(mockedFs.unlinkSync).not.toHaveBeenCalled();
+      expect(process.exit).toHaveBeenCalledWith(0);
+    });
+
+    test('handles file system errors during cleanup and still exits', () => {
+      const pidLoggerErrorSpy = jest.spyOn(pidLogger, 'error').mockImplementation();
+      mockedFs.unlinkSync.mockImplementation(() => {
+        throw new Error('Permission denied');
+      });
+
+      registerAgentCleanup(TEST_PID_PATH);
+      process.emit('SIGTERM');
+
+      expect(pidLoggerErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error removing PID file: /tmp/medplum-agent/test-pid-app.pid'),
+        new Error('Permission denied')
+      );
+      expect(process.exit).toHaveBeenCalledWith(0);
+      pidLoggerErrorSpy.mockRestore();
+    });
   });
 });
