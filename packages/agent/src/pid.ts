@@ -41,6 +41,31 @@ export function removePidFile(pidFilePath: string): void {
 }
 
 /**
+ * Returns true if a PID points to an existing process, else returns false.
+ * @param pid - The PID to check if it exists.
+ * @returns Boolean indicating if a process with the given PID exists.
+ */
+export function checkProcessExists(pid: number): boolean {
+  try {
+    // Sending signal 0 doesn't actually send a signal but checks if process exists
+    process.kill(pid, 0);
+    // If we didn't throw an error above, the process is still running, and PID is not stale
+    return true;
+  } catch (err) {
+    // If the error is "ESRCH", the process doesn't exist
+    if ((err as Error & { code: string }).code === 'ESRCH') {
+      return false;
+    }
+    // If the error is "EPERM", the process exists but we don't have permission
+    if ((err as Error & { code: string }).code === 'EPERM') {
+      return true;
+    }
+    // For any other errors, throw them
+    throw err;
+  }
+}
+
+/**
  * Create a PID file for the current process
  * @param appName - Optional application name, defaults to script filename
  * @returns Object containing success status and pidFilePath
@@ -54,21 +79,13 @@ export function createPidFile(appName: string): string {
     const existingPid = fs.readFileSync(pidFilePath, 'utf8').trim();
 
     // Check if the process with this PID is still running
-    let processRunning = false;
-    try {
-      pidLogger.info('Checking if process is running');
-      // Sending signal 0 doesn't actually send a signal but checks if process exists
-      process.kill(Number.parseInt(existingPid, 10), 0);
-      // If we didn't throw an error above, the process is still running, and PID is not stale
-      processRunning = true;
-    } catch (_err) {
-      // Process not running, we can overwrite the PID file
-      pidLogger.info('Stale PID file found. Overwriting...');
-    }
-
-    if (processRunning) {
+    pidLogger.info('Checking if process is running');
+    if (checkProcessExists(Number.parseInt(existingPid, 10))) {
       throw new Error(`${appName} already running`);
     }
+
+    // If we make it here, PID file exists but it's stale
+    pidLogger.info('Stale PID file found. Overwriting...');
   }
 
   // We need to make sure the directory exists first since we aren't just using a system-created dir like /var/run
