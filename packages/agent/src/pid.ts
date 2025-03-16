@@ -45,12 +45,8 @@ export function createPidFile(appName: string): string {
   const pid = process.pid;
   const pidFilePath = getPidFilePath(appName);
 
-  let dirExists = false;
-
   // Check if PID file already exists
   if (fs.existsSync(pidFilePath)) {
-    // Avoids extra syscalls later if we already know that a dir exists
-    dirExists = true;
     const existingPid = fs.readFileSync(pidFilePath, 'utf8').trim();
 
     // Check if the process with this PID is still running
@@ -72,9 +68,7 @@ export function createPidFile(appName: string): string {
   }
 
   // We need to make sure the directory exists first since we aren't just using a system-created dir like /var/run
-  if (!dirExists) {
-    ensureDirectoryExists(path.dirname(pidFilePath));
-  }
+  ensureDirectoryExists(path.dirname(pidFilePath));
 
   // Write the PID file atomically using a temporary file
   const tempFile = `${pidFilePath}.tmp`;
