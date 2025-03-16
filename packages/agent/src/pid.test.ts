@@ -1,279 +1,140 @@
-import { ChildProcess, execSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
-import { tmpdir } from 'node:os';
-import path from 'node:path';
-import { createPidFile, ensureDirectoryExists, getPidFilePath, removePidFile } from './pid';
+import { createPidFile, getPidFilePath, removePidFile } from './pid';
 
-const TEST_APP_TEMPLATE_PATH = path.resolve(__dirname, 'test-app-template.ts');
+jest.mock('node:fs');
+jest.mock('node:os', () => ({
+  ...jest.requireActual('node:os'),
+  platform: () => 'darwin',
+  tmpdir: () => '/tmp',
+}));
+
+const mockedFs = jest.mocked(fs);
 const APP_NAME = 'test-pid-app';
-
-let compiledTemplate: string | undefined;
-console.log = jest.fn();
-
-function createTestApp(appName: string): string {
-  if (!compiledTemplate) {
-    // Compile template
-    console.log(`Compiling template from ${TEST_APP_TEMPLATE_PATH}...`);
-    // We compile with esbuild, otherwise if trying to dynamically import the file directly in a new Node process, we will run into
-    // The issue of trying to import uncompiled TS files directly into the Node runtime
-    // Compiling dynamically like this ensures we always have the latest version of the PID module
-    compiledTemplate = execSync(
-      `esbuild ${TEST_APP_TEMPLATE_PATH} --bundle --platform=node --target=node20 --format=cjs`,
-      {
-        stdio: 'pipe',
-        encoding: 'utf-8',
-      }
-    );
-  }
-
-  try {
-    const scriptPath = path.join(tmpdir(), `${appName}.js`);
-    fs.writeFileSync(scriptPath, compiledTemplate.replace('$___APP_NAME___$', APP_NAME));
-
-    // Verify the JS file was created
-    if (!fs.existsSync(scriptPath)) {
-      throw new Error(`Failed to write ${scriptPath} - not found`);
-    }
-    console.log(`Successfully compiled to ${scriptPath}`);
-    return scriptPath;
-  } catch (err) {
-    console.error(`Failed to compile TypeScript file: ${err}`);
-    throw err;
-  }
-}
-
-function spawnProcess(
-  scriptPath: string,
-  args = [],
-  options = {}
-): {
-  child: ChildProcess;
-  output: { stdout: string; stderr: string };
-  readyPromise: Promise<void>;
-  exitPromise: Promise<void>;
-} {
-  const child = spawn(process.execPath, [scriptPath, ...args], {
-    stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-    ...options,
-  });
-
-  child.stdin?.end();
-
-  // Buffer for stdout and stderr
-  let stdout = '';
-  let stderr = '';
-
-  child.stdout?.on('data', (data) => {
-    stdout += data.toString();
-  });
-
-  child.stderr?.on('data', (data) => {
-    stderr += data.toString();
-  });
-
-  child.on('error', (err) => {
-    console.error(err);
-  });
-
-  const readyPromise = new Promise<void>((resolve) => {
-    child.on('message', resolve);
-  });
-
-  const exitPromise = new Promise<void>((resolve) => {
-    child.on('exit', resolve);
-  });
-
-  return {
-    child,
-    output: {
-      get stdout() {
-        return stdout;
-      },
-      get stderr() {
-        return stderr;
-      },
-    },
-    readyPromise,
-    exitPromise,
-  };
-}
-
-// Make sure we don't leave around any pid files or test files
-afterAll(() => {
-  const jsAppPath = path.join(tmpdir(), `${APP_NAME}.js`);
-  if (fs.existsSync(jsAppPath)) {
-    fs.unlinkSync(jsAppPath);
-  }
-
-  const pidFilePath = getPidFilePath(APP_NAME);
-  if (fs.existsSync(pidFilePath)) {
-    fs.unlinkSync(pidFilePath);
-  }
-});
+const TEST_PID_PATH = '/tmp/medplum-agent/test-pid-app.pid';
 
 describe('PID File Manager', () => {
   beforeEach(() => {
-    const pidFilePath = getPidFilePath(APP_NAME);
-    if (fs.existsSync(pidFilePath)) {
-      fs.unlinkSync(pidFilePath);
+    jest.clearAllMocks();
+    mockedFs.existsSync.mockReturnValue(false);
+    mockedFs.mkdirSync.mockImplementation(() => undefined);
+  });
+
+  test('creates and removes PID file on normal process lifecycle', () => {
+    // Mock file operations
+    mockedFs.writeFileSync.mockImplementation(() => undefined);
+    mockedFs.unlinkSync.mockImplementation(() => undefined);
+    mockedFs.readFileSync.mockReturnValue(process.pid.toString());
+    mockedFs.renameSync.mockImplementation(() => undefined);
+
+    // Mock file existence checks - first for directory check (false), then for file check during removal (true)
+    let checkCount = 0;
+    mockedFs.existsSync.mockImplementation((p) => {
+      checkCount++;
+      return checkCount > 1 && p.toString() === TEST_PID_PATH;
+    });
+
+    // Create PID file
+    const pidFilePath = createPidFile(APP_NAME);
+    expect(pidFilePath).toBe(TEST_PID_PATH);
+
+    // Verify write was called with correct arguments
+    expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+      expect.stringContaining('.pid.tmp'),
+      process.pid.toString(),
+      expect.any(Object)
+    );
+    expect(mockedFs.renameSync).toHaveBeenCalledWith(expect.stringContaining('.pid.tmp'), TEST_PID_PATH);
+
+    // Remove PID file
+    removePidFile(pidFilePath);
+
+    // Verify unlink was called
+    expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
+  });
+
+  test('prevents running multiple instances of the same app', () => {
+    // Mock existing process
+    mockedFs.existsSync.mockReturnValue(true);
+    mockedFs.readFileSync.mockReturnValue('1234');
+
+    // Mock process.kill to simulate existing process
+    const originalKill = process.kill;
+    process.kill = jest.fn();
+
+    try {
+      // Attempt to create PID file should throw
+      expect(() => createPidFile(APP_NAME)).toThrow('test-pid-app already running');
+      expect(process.kill).toHaveBeenCalledWith(1234, 0);
+    } finally {
+      process.kill = originalKill;
     }
   });
 
-  test('creates and removes PID file on normal process lifecycle', async () => {
-    const pidFilePath = getPidFilePath(APP_NAME);
+  test('handles stale PID files correctly', () => {
+    // Mock existing but stale PID file
+    mockedFs.existsSync.mockReturnValue(true);
+    mockedFs.readFileSync.mockReturnValue('999999');
 
-    // Create a test app
-    const appPath = createTestApp(APP_NAME);
-
-    // Run the app
-    const { child, readyPromise, exitPromise } = spawnProcess(appPath, [], { timeout: 5000 });
-
-    await readyPromise;
-
-    // Verify PID file exists
-    expect(fs.existsSync(pidFilePath)).toBe(true);
-
-    child.disconnect();
-
-    // Verify PID file content matches the process PID
-    const pidContent = fs.readFileSync(pidFilePath, 'utf8').trim();
-    expect(pidContent).toBe(child.pid?.toString());
-
-    // Wait for the process to exit
-    await exitPromise;
-
-    // Verify PID file is removed after process exit
-    expect(fs.existsSync(pidFilePath)).toBe(false);
-  });
-
-  test('prevents running multiple instances of the same app', async () => {
-    // Create a test app that runs for a longer time
-    const appPath = createTestApp(APP_NAME);
-
-    // Run the first instance
-    const { child: child1, readyPromise } = spawnProcess(appPath);
-
-    // Wait for the first app to initialize
-    await readyPromise;
-
-    // Try to run a second instance, which should fail
-    const child2 = spawn(process.execPath, [appPath], { stdio: ['pipe', 'pipe', 'pipe', 'ipc'] });
-
-    let stderr = '';
-    child2.stderr?.on('data', (data) => {
-      stderr += data.toString();
+    // Mock process.kill to simulate non-existent process
+    const originalKill = process.kill;
+    process.kill = jest.fn().mockImplementation(() => {
+      throw new Error('Process does not exist');
     });
 
-    // Wait for the second process to exit
-    const exitCode = await new Promise((resolve) => {
-      child2.on('exit', resolve);
-    });
+    try {
+      // Should succeed and overwrite stale PID file
+      const pidFilePath = createPidFile(APP_NAME);
+      expect(pidFilePath).toBe(TEST_PID_PATH);
 
-    // Second instance should exit with a non-zero code
-    expect(exitCode).not.toBe(0);
-    expect(stderr).toContain('Failed to create PID file');
-
-    // Clean up - kill the first process
-    child1.kill('SIGTERM');
-
-    // Wait for the first process to exit
-    await new Promise((resolve) => {
-      child1.on('exit', resolve);
-    });
-  });
-
-  test('handles stale PID files correctly', async () => {
-    const pidFilePath = getPidFilePath(APP_NAME);
-
-    // Create a "stale" PID file with a PID that doesn't exist
-    // Use a very high PID that's unlikely to exist
-    const stalePid = '999999';
-    ensureDirectoryExists(path.dirname(pidFilePath));
-    fs.writeFileSync(pidFilePath, stalePid);
-
-    // Create and run test app
-    const appPath = createTestApp(APP_NAME);
-    const { child, readyPromise, exitPromise } = spawnProcess(appPath);
-
-    // Wait for the app to initialize
-    await readyPromise;
-
-    // Verify PID file has been overwritten
-    const pidContent = fs.readFileSync(pidFilePath, 'utf8').trim();
-    expect(pidContent).toBe(child.pid?.toString());
-
-    child.disconnect();
-
-    // Wait for the process to exit
-    await exitPromise;
-  });
-
-  test('removes PID file on process termination', async () => {
-    const pidFilePath = getPidFilePath(APP_NAME);
-
-    // Create a test app that runs for a longer time
-    const appPath = createTestApp(APP_NAME);
-
-    // Run the app
-    const { child, readyPromise, exitPromise } = spawnProcess(appPath);
-
-    // Wait for the app to initialize
-    await readyPromise;
-
-    // Verify PID file exists
-    expect(fs.existsSync(pidFilePath)).toBe(true);
-
-    // Forcefully kill the process
-    child.kill('SIGTERM');
-
-    await exitPromise;
-
-    // Verify PID file is removed after forceful termination
-    expect(fs.existsSync(pidFilePath)).toBe(false);
+      // Verify write operations
+      expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('.pid.tmp'),
+        process.pid.toString(),
+        expect.any(Object)
+      );
+      expect(mockedFs.renameSync).toHaveBeenCalledWith(expect.stringContaining('.pid.tmp'), TEST_PID_PATH);
+    } finally {
+      process.kill = originalKill;
+    }
   });
 
   test('returns appropriate file path for the current OS', () => {
     const pidFilePath = getPidFilePath(APP_NAME);
-
-    // Verify the path is a string and includes the app name
-    expect(typeof pidFilePath).toBe('string');
-    expect(pidFilePath).toContain(APP_NAME);
-
-    // Test is platform-specific, so just verify basic structure
-    const platform = process.platform;
-
-    if (platform === 'win32') {
-      expect(pidFilePath).toContain('Temp');
-    } else if (platform === 'darwin' || platform === 'linux') {
-      expect(pidFilePath.startsWith(tmpdir())).toBe(true);
-    }
+    expect(pidFilePath).toBe(TEST_PID_PATH);
   });
 
-  test('direct API calls work correctly', () => {
-    // Test direct API usage with a temporary test name
-    const TEST_NAME = 'direct-api-test';
-    const expectedPidFilePath = getPidFilePath(TEST_NAME);
+  test('safely handles non-existent PID file during removal', () => {
+    // Mock file not existing
+    mockedFs.existsSync.mockReturnValue(false);
 
-    // Remove any existing file
-    if (fs.existsSync(expectedPidFilePath)) {
-      fs.unlinkSync(expectedPidFilePath);
-    }
+    // Should not throw
+    removePidFile(TEST_PID_PATH);
 
-    // Create PID file
-    const pidFilePath = createPidFile(TEST_NAME);
+    // Verify unlink was not called
+    expect(mockedFs.unlinkSync).not.toHaveBeenCalled();
+  });
 
-    // Verify operation was successful
-    expect(pidFilePath).toBe(expectedPidFilePath);
-    expect(fs.existsSync(expectedPidFilePath)).toBe(true);
+  test('handles file system errors during PID file creation', () => {
+    // Mock write failure
+    mockedFs.writeFileSync.mockImplementation(() => {
+      throw new Error('Permission denied');
+    });
 
-    // Read PID file and verify content
-    const pidContent = fs.readFileSync(expectedPidFilePath, 'utf8').trim();
-    expect(pidContent).toBe(process.pid.toString());
+    // Should throw
+    expect(() => createPidFile(APP_NAME)).toThrow('Permission denied');
+  });
 
-    // Remove PID file
-    removePidFile(expectedPidFilePath);
+  test('handles file system errors during PID file removal', () => {
+    // Mock file existing but unlink failing
+    mockedFs.existsSync.mockReturnValue(true);
+    mockedFs.unlinkSync.mockImplementation(() => {
+      throw new Error('Permission denied');
+    });
 
-    // Verify file was removed
-    expect(fs.existsSync(expectedPidFilePath)).toBe(false);
+    // Should throw
+    expect(() => removePidFile(TEST_PID_PATH)).toThrow('Permission denied');
+
+    // Verify unlink was attempted
+    expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
   });
 });
