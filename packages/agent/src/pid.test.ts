@@ -85,7 +85,10 @@ describe('PID File Manager', () => {
     // Mock process.kill to simulate non-existent process
     const originalKill = process.kill;
     process.kill = jest.fn().mockImplementation(() => {
-      throw new Error('Process does not exist');
+      // This is the Error thrown from Node when a process does not exist
+      const esrchError = new Error();
+      (esrchError as Error & { code: string }).code = 'ESRCH';
+      throw esrchError;
     });
 
     try {
@@ -100,6 +103,54 @@ describe('PID File Manager', () => {
         expect.any(Object)
       );
       expect(mockedFs.renameSync).toHaveBeenCalledWith(expect.stringContaining('.pid.tmp'), TEST_PID_PATH);
+    } finally {
+      process.kill = originalKill;
+    }
+  });
+
+  test('handles EPERM errors correctly', () => {
+    // Mock existing but stale PID file
+    mockedFs.existsSync.mockReturnValue(true);
+    mockedFs.readFileSync.mockReturnValue('999999');
+
+    // Mock process.kill to simulate non-existent process
+    const originalKill = process.kill;
+    process.kill = jest.fn().mockImplementation(() => {
+      const epermError = new Error();
+      (epermError as Error & { code: string }).code = 'EPERM';
+      throw epermError;
+    });
+
+    try {
+      // Should fail
+      expect(() => createPidFile(APP_NAME)).toThrow(`${APP_NAME} already running`);
+
+      // Verify write operations didn't occur
+      expect(mockedFs.writeFileSync).not.toHaveBeenCalled();
+      expect(mockedFs.renameSync).not.toHaveBeenCalled();
+    } finally {
+      process.kill = originalKill;
+    }
+  });
+
+  test('handles other errors', () => {
+    // Mock existing but stale PID file
+    mockedFs.existsSync.mockReturnValue(true);
+    mockedFs.readFileSync.mockReturnValue('999999');
+
+    // Mock process.kill to simulate non-existent process
+    const originalKill = process.kill;
+    process.kill = jest.fn().mockImplementation(() => {
+      throw new Error('Unknown error');
+    });
+
+    try {
+      // Should fail
+      expect(() => createPidFile(APP_NAME)).toThrow(new Error('Unknown error'));
+
+      // Verify write operations didn't occur
+      expect(mockedFs.writeFileSync).not.toHaveBeenCalled();
+      expect(mockedFs.renameSync).not.toHaveBeenCalled();
     } finally {
       process.kill = originalKill;
     }
