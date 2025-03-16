@@ -4,7 +4,7 @@ import { platform, tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
-const pidLogger = new Logger((msg) => `[PID]: ${msg}`);
+export const pidLogger = new Logger((msg) => `[PID]: ${msg}`);
 
 /**
  * Get the appropriate PID file location based on OS
@@ -31,8 +31,12 @@ export function getPidFilePath(appName: string): string {
  */
 export function removePidFile(pidFilePath: string): void {
   if (fs.existsSync(pidFilePath)) {
-    fs.unlinkSync(pidFilePath);
-    pidLogger.info(`PID file removed: ${pidFilePath}`);
+    try {
+      fs.unlinkSync(pidFilePath);
+      pidLogger.info(`PID file removed: ${pidFilePath}`);
+    } catch (err) {
+      pidLogger.error(`Error removing PID file: ${pidFilePath}`, err as Error);
+    }
   }
 }
 
@@ -80,7 +84,10 @@ export function createPidFile(appName: string): string {
   return pidFilePath;
 }
 
-// Function to create directory if it doesn't exist
+/**
+ * Ensures PID directory exists.
+ * @param directoryPath - The path to the directory.
+ */
 export function ensureDirectoryExists(directoryPath: string): void {
   if (!fs.existsSync(directoryPath)) {
     fs.mkdirSync(directoryPath, { recursive: true });
