@@ -1,4 +1,4 @@
-import { Logger, normalizeErrorString } from '@medplum/core';
+import { Logger } from '@medplum/core';
 import fs from 'node:fs';
 import { platform, tmpdir } from 'node:os';
 import path from 'node:path';
@@ -31,12 +31,8 @@ export function getPidFilePath(appName: string): string {
  */
 export function removePidFile(pidFilePath: string): void {
   if (fs.existsSync(pidFilePath)) {
-    try {
-      fs.unlinkSync(pidFilePath);
-      pidLogger.info(`PID file removed: ${pidFilePath}`);
-    } catch (err) {
-      pidLogger.error(`Failed to remove PID file: ${normalizeErrorString(err)}`);
-    }
+    fs.unlinkSync(pidFilePath);
+    pidLogger.info(`PID file removed: ${pidFilePath}`);
   }
 }
 
