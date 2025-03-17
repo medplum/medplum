@@ -502,7 +502,7 @@ class CcdaToFhirConverter {
       resourceType: 'CarePlan',
       id: this.mapId(act.id),
       identifier: this.mapIdentifiers(act.id),
-      status: 'active',
+      status: 'completed',
       intent: 'plan',
       title: 'CARE PLAN',
       category: act.code ? [this.mapCode(act.code) as CodeableConcept] : undefined,
