@@ -24,9 +24,9 @@
     ]
   },
   "devDependencies": {
-    "@mantine/core": "7.17.1",
-    "@mantine/hooks": "7.17.1",
-    "@mantine/notifications": "7.17.1",
+    "@mantine/core": "7.17.2",
+    "@mantine/hooks": "7.17.2",
+    "@mantine/notifications": "7.17.2",
     "@medplum/bot-layer": "4.0.3",
     "@medplum/core": "4.0.3",
     "@medplum/eslint-config": "4.0.3",
@@ -46,7 +46,7 @@
     "react-router": "7.3.0",
     "rimraf": "6.0.1",
     "typescript": "5.8.2",
-    "vite": "6.2.1",
+    "vite": "6.2.2",
     "vitest": "3.0.8"
   }
 }
