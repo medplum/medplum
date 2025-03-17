@@ -99,7 +99,7 @@
   "devDependencies": {
     "@jest/test-sequencer": "29.7.0",
     "@medplum/fhirtypes": "4.0.3",
-    "@types/bcryptjs": "2.4.6",
+    "@types/bcryptjs": "3.0.0",
     "@types/body-parser": "1.19.5",
     "@types/bytes": "3.1.5",
     "@types/compression": "1.7.5",
