@@ -4,6 +4,7 @@ import { Document, useMedplum } from '@medplum/react';
 import { useParams } from 'react-router';
 import { useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString } from '@medplum/core';
 import '@mantine/notifications/styles.css';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { useAdminStatus } from '../utils/admin';
@@ -26,21 +27,14 @@ export function ManageClinicPage(): JSX.Element {
 
   useEffect(() => {
     const loadOrganization = async (): Promise<void> => {
-      try {
-        const org = await medplum.readResource('Organization', id as string);
-        setOrganization(org);
-      } catch (error) {
-        showNotification({
-          title: 'Error',
-          message: 'Error loading clinic details: ' + error,
-          color: 'red',
-        });
-      }
+      const org = await medplum.readResource('Organization', id as string);
+      setOrganization(org);
     };
+    
     loadOrganization().catch((error) => {
       showNotification({
         title: 'Error',
-        message: 'Error loading clinic details: ' + error,
+        message: normalizeErrorString(error),
         color: 'red',
       });
     });

@@ -1,4 +1,4 @@
-import { MedplumClient } from '@medplum/core';
+import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -26,7 +26,7 @@ export async function isUserAdmin(medplum: MedplumClient): Promise<boolean> {
     const membership = searchResult.entry?.[0]?.resource as ProjectMembership | undefined;
     return !!membership?.admin;
   } catch (error) {
-    console.error('Error checking admin status:', error);
+    console.error('Error checking admin status:', normalizeErrorString(error));
     return false;
   }
 }
@@ -43,17 +43,14 @@ export function useAdminStatus(): { isAdmin: boolean; loading: boolean } {
 
   useEffect(() => {
     const checkAdminStatus = async (): Promise<void> => {
-      try {
-        const adminStatus = await isUserAdmin(medplum);
-        setIsAdminUser(adminStatus);
-      } catch (error) {
-        console.error('Error checking admin status:', error);
-      } finally {
-        setLoading(false);
-      }
+      const adminStatus = await isUserAdmin(medplum);
+      setIsAdminUser(adminStatus);
     };
 
-    checkAdminStatus().catch(console.error);
+    checkAdminStatus().catch((error) => {
+      console.error('Error checking admin status:', normalizeErrorString(error));
+    });
+    setLoading(false);
   }, [medplum]);
 
   return { isAdmin: isAdminUser, loading };

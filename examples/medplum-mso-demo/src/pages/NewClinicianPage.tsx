@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { Organization, AccessPolicy } from '@medplum/fhirtypes';
 import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString } from '@medplum/core';
 import '@mantine/notifications/styles.css';
 import { useAdminStatus } from '../utils/admin';
 import { IconAlertCircle } from '@tabler/icons-react';
@@ -38,15 +39,16 @@ export function NewClinicianPage(): JSX.Element {
 
   useEffect(() => {
     const fetchOrgs = async (): Promise<void> => {
-      try {
-        const orgs = await medplum.search('Organization', {});
-        setOrganizations(orgs.entry?.map((e) => e.resource as Organization) ?? []);
-      } catch (error) {
-        console.error('Error fetching organizations:', error);
-      }
+      const orgs = await medplum.search('Organization', {});
+      setOrganizations(orgs.entry?.map((e) => e.resource as Organization) ?? []);
     };
+    
     fetchOrgs().catch((error) => {
-      console.error('Error fetching organizations:', error);
+      showNotification({
+        title: 'Error',
+        message: normalizeErrorString(error),
+        color: 'red',
+      });
     });
   }, [medplum]);
 
@@ -112,10 +114,10 @@ export function NewClinicianPage(): JSX.Element {
 
       navigate(`/${result.profile?.reference}`)?.catch(console.error);
     } catch (error) {
-      console.error('Error creating clinician:', error);
+      console.error('Error creating clinician:', normalizeErrorString(error));
       showNotification({
         title: 'Error',
-        message: 'Error creating clinician',
+        message: normalizeErrorString(error),
         color: 'red',
       });
     } finally {

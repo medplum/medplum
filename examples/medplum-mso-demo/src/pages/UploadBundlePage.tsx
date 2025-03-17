@@ -1,6 +1,7 @@
 import { Button, Code, Stack, Text, Title, Box, ActionIcon, Alert, CopyButton } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { Document, useMedplum } from '@medplum/react';
+import { normalizeErrorString } from '@medplum/core';
 import { useState } from 'react';
 import '@mantine/notifications/styles.css';
 import { IconCopy, IconCheck, IconAlertCircle } from '@tabler/icons-react';
@@ -60,10 +61,10 @@ export function UploadBundlePage(): JSX.Element {
         color: 'green',
       });
     } catch (error) {
-      console.error('Error uploading resources:', error);
+      console.error('Error uploading resources:', normalizeErrorString(error));
       showNotification({
         title: 'Error',
-        message: 'Failed to upload FHIR resources',
+        message: normalizeErrorString(error),
         color: 'red',
       });
     } finally {

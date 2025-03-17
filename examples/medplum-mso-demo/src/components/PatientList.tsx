@@ -1,6 +1,7 @@
 import { Table, Button, Text, Group, TextInput, Badge, Modal, Stack, MultiSelect } from '@mantine/core';
 import { useMedplum, useMedplumNavigate } from '@medplum/react';
 import { Organization, Patient } from '@medplum/fhirtypes';
+import { normalizeErrorString } from '@medplum/core';
 import { useEffect, useState, useCallback } from 'react';
 import { unEnrollPatient, enrollPatient, getEnrolledPatients } from '../utils/enrollment';
 import { showNotification } from '@mantine/notifications';
@@ -41,7 +42,7 @@ export function PatientList({ organization }: PatientListProps): JSX.Element {
     } catch (error) {
       showNotification({
         title: 'Error',
-        message: `Error loading patients: ${error}`,
+        message: normalizeErrorString(error),
         color: 'red',
       });
     } finally {
@@ -72,7 +73,7 @@ export function PatientList({ organization }: PatientListProps): JSX.Element {
     } catch (error) {
       showNotification({
         title: 'Error',
-        message: `Error loading available patients: ${error}`,
+        message: normalizeErrorString(error),
         color: 'red',
       });
     } finally {
@@ -130,7 +131,7 @@ export function PatientList({ organization }: PatientListProps): JSX.Element {
     } catch (error) {
       showNotification({
         title: 'Error',
-        message: `Error unenrolling ${getName(patient)} from ${organization.name}. Error: ${error}`,
+        message: normalizeErrorString(error),
         color: 'red',
       });
     }
@@ -149,7 +150,7 @@ export function PatientList({ organization }: PatientListProps): JSX.Element {
 
       setSelectedPatients(patients);
     } catch (error) {
-      console.error('Error loading selected patients:', error);
+      console.error('Error loading selected patients:', normalizeErrorString(error));
     }
   };
 
@@ -177,7 +178,7 @@ export function PatientList({ organization }: PatientListProps): JSX.Element {
     } catch (error) {
       showNotification({
         title: 'Error',
-        message: `Failed to enroll patient: ${error}`,
+        message: normalizeErrorString(error),
         color: 'red',
       });
     }

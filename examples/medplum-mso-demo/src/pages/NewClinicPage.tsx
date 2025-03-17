@@ -1,6 +1,7 @@
 import { Button, TextInput, Title, Stack, Alert, Text } from '@mantine/core';
 import { useMedplum, Document } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString } from '@medplum/core';
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Organization } from '@medplum/fhirtypes';
@@ -43,7 +44,7 @@ export function NewClinicPage(): JSX.Element {
     } catch (error) {
       showNotification({
         title: 'Error',
-        message: 'Failed to create clinic: ' + error,
+        message: normalizeErrorString(error),
         color: 'red',
       });
     }

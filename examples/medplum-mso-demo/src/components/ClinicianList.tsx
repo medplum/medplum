@@ -1,6 +1,7 @@
 import { Table, Button, Text, Group, TextInput, Badge, Modal, Stack, MultiSelect } from '@mantine/core';
 import { useMedplum, useMedplumNavigate } from '@medplum/react';
 import { Organization, Practitioner } from '@medplum/fhirtypes';
+import { normalizeErrorString } from '@medplum/core';
 import { useEffect, useState, useCallback } from 'react';
 import { unEnrollPractitioner, enrollPractitioner, getEnrolledPractitioners } from '../utils/enrollment';
 import { showNotification } from '@mantine/notifications';
@@ -41,7 +42,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
     } catch (error) {
       showNotification({
         title: 'Error',
-        message: `Error loading clinicians: ${error}`,
+        message: normalizeErrorString(error),
         color: 'red',
       });
     } finally {
@@ -74,7 +75,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
     } catch (error) {
       showNotification({
         title: 'Error',
-        message: `Error loading available clinicians: ${error}`,
+        message: normalizeErrorString(error),
         color: 'red',
       });
     } finally {
@@ -128,11 +129,12 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
         color: 'green',
       });
 
-      loadClinicians().catch(console.error);
+      await loadClinicians();
+
     } catch (error) {
-      showNotification({
+      showNotification({  
         title: 'Error',
-        message: `Error unenrolling ${getName(practitioner)} from ${organization.name}. Error: ${error}`,
+        message: normalizeErrorString(error),
         color: 'red',
       });
     }
@@ -151,7 +153,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
 
       setSelectedClinicians(practitioners);
     } catch (error) {
-      console.error('Error loading selected clinicians:', error);
+      console.error('Error loading selected clinicians:', normalizeErrorString(error));
     }
   };
 
@@ -159,10 +161,12 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
     try {
       if (selectedClinicians.length > 0) {
         const results = await Promise.allSettled(
-          selectedClinicians.map((practitioner) => enrollPractitioner(medplum, practitioner, organization))
+          selectedClinicians.map(practitioner =>
+            enrollPractitioner(medplum, practitioner, organization)
+          )
         );
 
-        const successCount = results.filter((result) => result.status === 'fulfilled').length;
+        const successCount = results.filter(result => result.status === 'fulfilled').length;
 
         showNotification({
           title: 'Success',
@@ -179,7 +183,7 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
     } catch (error) {
       showNotification({
         title: 'Error',
-        message: `Failed to enroll clinician: ${error}`,
+        message: normalizeErrorString(error),
         color: 'red',
       });
     }

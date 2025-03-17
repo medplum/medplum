@@ -2,6 +2,7 @@ import { Button, Code, Stack, Text, Title, Box, ActionIcon, Alert, CopyButton } 
 import { showNotification } from '@mantine/notifications';
 import { AccessPolicy } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
+import { normalizeErrorString } from '@medplum/core';
 import { useEffect, useState } from 'react';
 import { MSO_ACCESS_POLICY } from '../data/core/access-policy';
 import '@mantine/notifications/styles.css';
@@ -31,7 +32,7 @@ export function UploadAccessPolicyPage(): JSX.Element {
           setExistingPolicy(searchResult.entry[0].resource as AccessPolicy);
         }
       } catch (error) {
-        console.error('Error checking policy:', error);
+        console.error('Error checking policy:', normalizeErrorString(error));
       }
     };
 
@@ -67,7 +68,7 @@ export function UploadAccessPolicyPage(): JSX.Element {
       console.error('Error uploading policy:', error);
       showNotification({
         title: 'Error',
-        message: 'Failed to upload access policy',
+        message: normalizeErrorString(error),
         color: 'red',
       });
     } finally {

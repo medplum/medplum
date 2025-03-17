@@ -36,84 +36,6 @@ export function App(): JSX.Element {
     return <Loading />;
   }
 
-  const menus = [
-    {
-      title: 'Managed Service Organization',
-      links: [
-        {
-          icon: <IconHome />,
-          label: 'Directions',
-          href: '/',
-        },
-      ],
-    },
-    {
-      title: 'Upload Data',
-      links: [
-        {
-          icon: <IconUpload />,
-          label: 'Upload Access Policy',
-          href: '/admin/access-policy',
-        },
-        {
-          icon: <IconUpload />,
-          label: 'Upload FHIR Bundle',
-          href: '/admin/upload-bundle',
-        },
-      ],
-    },
-    {
-      title: 'Management',
-      links: [
-        {
-          icon: <IconBuildingHospital />,
-          label: 'Create New Clinic',
-          href: '/Organization/new',
-        },
-        {
-          icon: <IconUserPlus />,
-          label: 'Create New Clinician',
-          href: '/Practitioner/new',
-        },
-        {
-          icon: <IconBuildingCommunity />,
-          label: 'Manage Clinics',
-          href: '/Organization',
-        },
-      ],
-    },
-    {
-      title: 'Resources',
-      links: [
-        {
-          icon: <IconUser />,
-          label: 'Patients',
-          href: '/Patient',
-        },
-        {
-          icon: <IconStethoscope />,
-          label: 'Observations',
-          href: '/Observation',
-        },
-        {
-          icon: <IconReportMedical />,
-          label: 'Diagnostic Reports',
-          href: '/DiagnosticReport',
-        },
-        {
-          icon: <IconNurse />,
-          label: 'Encounters',
-          href: '/Encounter',
-        },
-        {
-          icon: <IconMessage />,
-          label: 'Communications',
-          href: '/Communication',
-        },
-      ],
-    },
-  ];
-
   return (
     <AppShell logo={<Logo size={24} />} menus={menus}>
       <Suspense fallback={<Loading />}>
@@ -146,3 +68,81 @@ export function App(): JSX.Element {
     </AppShell>
   );
 }
+
+const menus = [
+  {
+    title: 'Managed Service Organization',
+    links: [
+      {
+        icon: <IconHome />,
+        label: 'Directions',
+        href: '/',
+      },
+    ],
+  },
+  {
+    title: 'Upload Data',
+    links: [
+      {
+        icon: <IconUpload />,
+        label: 'Upload Access Policy',
+        href: '/admin/access-policy',
+      },
+      {
+        icon: <IconUpload />,
+        label: 'Upload FHIR Bundle',
+        href: '/admin/upload-bundle',
+      },
+    ],
+  },
+  {
+    title: 'Management',
+    links: [
+      {
+        icon: <IconBuildingHospital />,
+        label: 'Create New Clinic',
+        href: '/Organization/new',
+      },
+      {
+        icon: <IconUserPlus />,
+        label: 'Create New Clinician',
+        href: '/Practitioner/new',
+      },
+      {
+        icon: <IconBuildingCommunity />,
+        label: 'Manage Clinics',
+        href: '/Organization',
+      },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      {
+        icon: <IconUser />,
+        label: 'Patients',
+        href: '/Patient',
+      },
+      {
+        icon: <IconStethoscope />,
+        label: 'Observations',
+        href: '/Observation',
+      },
+      {
+        icon: <IconReportMedical />,
+        label: 'Diagnostic Reports',
+        href: '/DiagnosticReport',
+      },
+      {
+        icon: <IconNurse />,
+        label: 'Encounters',
+        href: '/Encounter',
+      },
+      {
+        icon: <IconMessage />,
+        label: 'Communications',
+        href: '/Communication',
+      },
+    ],
+  },
+];

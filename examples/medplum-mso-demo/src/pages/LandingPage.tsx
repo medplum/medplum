@@ -46,7 +46,7 @@ export function LandingPage(): JSX.Element {
                 </Anchor>
               </List.Item>
               <List.Item>
-                <Anchor component={Link} to="/upload-bundle">
+                <Anchor component={Link} to="/admin/upload-bundle">
                   Upload example resources
                 </Anchor>
               </List.Item>

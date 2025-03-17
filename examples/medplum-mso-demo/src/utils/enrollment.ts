@@ -7,7 +7,7 @@ import {
   AccessPolicy,
   ProjectMembershipAccessParameter,
 } from '@medplum/fhirtypes';
-import { createReference, MedplumClient } from '@medplum/core';
+import { createReference, MedplumClient, normalizeErrorString, getReferenceString } from '@medplum/core';
 
 /**
  * Enrolls a practitioner in an organization.
@@ -22,7 +22,7 @@ export async function enrollPractitioner(
   organization: Organization
 ): Promise<ProjectMembership> {
   const projectMembershipSearch = await medplum.search('ProjectMembership', {
-    profile: `Practitioner/${practitioner.id}`,
+    profile: getReferenceString(practitioner),
   });
 
   if (projectMembershipSearch.entry?.[0]?.resource) {
@@ -33,7 +33,7 @@ export async function enrollPractitioner(
     const organizationExists = existingAccess.some((access) =>
       access.parameter?.some(
         (param) =>
-          param.name === 'organization' && param.valueReference?.reference === `Organization/${organization.id}`
+          param.name === 'organization' && param.valueReference?.reference === getReferenceString(organization)
       )
     );
 
@@ -43,13 +43,13 @@ export async function enrollPractitioner(
       if (existingAccess.length > 0) {
         existingAccess.push({
           parameter: [{ name: 'organization', valueReference: createReference(organization) }],
-          policy: { reference: `AccessPolicy/${policy.id}` },
+          policy: { reference: getReferenceString(policy) },
         });
       } else {
         membershipResource.access = [
           {
             parameter: [{ name: 'organization', valueReference: createReference(organization) }],
-            policy: { reference: `AccessPolicy/${policy.id}` },
+            policy: { reference: getReferenceString(policy) },
           },
         ];
       }
@@ -59,7 +59,7 @@ export async function enrollPractitioner(
       const updatedResource = await medplum.updateResource(membershipResource);
       return updatedResource;
     } catch (error) {
-      throw new Error(`Failed to enroll practitioner: ${error}`);
+      throw new Error(normalizeErrorString(error));
     }
   }
   throw new Error('No project membership found for practitioner');
@@ -78,7 +78,7 @@ export async function enrollPatient(
 ): Promise<void> {
   // Check if already enrolled
   const accounts = patient.meta?.accounts || [];
-  const orgReference = `Organization/${organization.id}`;
+  const orgReference = getReferenceString(organization);
   if (accounts.some((a: Reference) => a.reference === orgReference)) {
     return;
   }
@@ -106,8 +106,8 @@ export async function enrollPatient(
     // Use the medplum client's post method which handles auth and CORS headers
     await medplum.post(`fhir/R4/Patient/${patient.id}/$set-accounts`, parameters);
   } catch (error) {
-    console.error('Error enrolling patient:', error);
-    throw new Error(`Failed to enroll patient: ${error}`);
+    console.error('Error enrolling patient:', normalizeErrorString(error));
+    throw new Error(normalizeErrorString(error));
   }
 }
 
@@ -123,7 +123,7 @@ export async function unEnrollPatient(
   organization: Organization
 ): Promise<void> {
   const accounts = patient.meta?.accounts || [];
-  const orgReference = `Organization/${organization.id}`;
+  const orgReference = getReferenceString(organization);
 
   // Create parameters with all accounts except the one to remove
   const parameters = {
@@ -152,7 +152,7 @@ export async function unEnrollPatient(
   try {
     await medplum.post(`fhir/R4/Patient/${patient.id}/$set-accounts`, parameters);
   } catch (error) {
-    throw new Error(`Failed to unenroll patient: ${error}`);
+    throw new Error(normalizeErrorString(error));
   }
 }
 
@@ -168,7 +168,7 @@ export async function unEnrollPractitioner(
   organization: Organization
 ): Promise<void> {
   const projectMembershipSearch = await medplum.search('ProjectMembership', {
-    profile: `Practitioner/${practitioner.id}`,
+    profile: getReferenceString(practitioner),
   });
 
   const membershipResource = projectMembershipSearch.entry?.[0]?.resource;
@@ -178,14 +178,14 @@ export async function unEnrollPractitioner(
     membershipResource.access = membershipResource.access?.filter((access) =>
       access.parameter?.some(
         (param: ProjectMembershipAccessParameter) =>
-          param.valueReference?.reference !== `Organization/${organization.id}`
+          param.valueReference?.reference !== getReferenceString(organization)
       )
     );
 
     try {
       await medplum.updateResource(membershipResource);
     } catch (error) {
-      throw new Error(`Failed to unenroll practitioner: ${error}`);
+      throw new Error(normalizeErrorString(error));
     }
   }
 }
@@ -210,7 +210,7 @@ export async function getEnrolledPractitioners(
     ?.filter((e) =>
       e.resource?.access?.some((a) =>
         a.parameter?.some(
-          (p) => p.name === 'organization' && p.valueReference?.reference === `Organization/${organization.id}`
+          (p) => p.name === 'organization' && p.valueReference?.reference === getReferenceString(organization)
         )
       )
     )
@@ -240,7 +240,7 @@ export async function getEnrolledPatients(medplum: MedplumClient, organization: 
   medplum.invalidateSearches('Patient');
 
   const searchResult = await medplum.search('Patient', {
-    _compartment: `Organization/${organization.id}`,
+    _compartment: getReferenceString(organization),
     _fields: 'name',
   });
   const patients = searchResult.entry?.map((e) => e.resource as Patient) ?? [];
