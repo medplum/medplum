@@ -1327,22 +1327,26 @@ class FhirToCcdaConverter {
     }
   }
 
-  private createPlanOfTreatmentCarePlanEntry(resource: CarePlan): CcdaEntry {
-    return {
-      act: [
-        {
-          '@_classCode': 'ACT',
-          '@_moodCode': 'INT',
-          id: this.mapIdentifiers(resource.id, resource.identifier),
-          code: mapCodeableConceptToCcdaValue(resource.category?.[0]) as CcdaCode,
-          templateId: [{ '@_root': OID_INSTRUCTIONS }],
-          statusCode: { '@_code': 'completed' },
-          text: resource.description
-            ? { '#text': resource.description }
-            : this.createTextFromExtensions(resource.extension),
-        },
-      ],
-    };
+  private createPlanOfTreatmentCarePlanEntry(resource: CarePlan): CcdaEntry | undefined {
+    if (resource.status === 'completed') {
+      return {
+        act: [
+          {
+            '@_classCode': 'ACT',
+            '@_moodCode': 'INT',
+            templateId: [{ '@_root': OID_INSTRUCTIONS }],
+            id: this.mapIdentifiers(resource.id, resource.identifier),
+            code: mapCodeableConceptToCcdaValue(resource.category?.[0]) as CcdaCode,
+            text: resource.description
+              ? { '#text': resource.description }
+              : this.createTextFromExtensions(resource.extension),
+            statusCode: { '@_code': resource.status },
+          },
+        ],
+      };
+    }
+
+    return undefined;
   }
 
   private createPlanOfTreatmentGoalEntry(resource: Goal): CcdaEntry {
