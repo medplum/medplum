@@ -1,5 +1,6 @@
 import {
   allOk,
+  Filter,
   flatMapFilter,
   getReferenceString,
   isReference,
@@ -79,7 +80,7 @@ export async function getPatientEverything(
   types.push('Patient');
   sortStringArray(types);
 
-  const filters = [
+  const filters: Filter[] = [
     {
       code: '_compartment',
       operator: Operator.EQUALS,
