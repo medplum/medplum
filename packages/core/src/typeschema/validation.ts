@@ -180,7 +180,7 @@ class ResourceValidator implements CrawlerVisitor {
     _parent: TypedValueWithPath,
     key: string,
     path: string,
-    propertyValues: (TypedValueWithPath | TypedValueWithPath[])[],
+    value: TypedValueWithPath | TypedValueWithPath[],
     schema: InternalTypeSchema
   ): void {
     const element = schema.elements[key];
@@ -188,57 +188,55 @@ class ResourceValidator implements CrawlerVisitor {
       throw new Error(`Missing element validation schema for ${key}`);
     }
 
-    for (const value of propertyValues) {
-      if (!this.checkPresence(value, element, path)) {
+    if (!this.checkPresence(value, element, path)) {
+      return;
+    }
+    // Check cardinality
+    let values: TypedValueWithPath[];
+    if (element.isArray) {
+      if (!Array.isArray(value)) {
+        this.issues.push(createStructureIssue(path, 'Expected array of values for property'));
         return;
       }
-      // Check cardinality
-      let values: TypedValueWithPath[];
-      if (element.isArray) {
-        if (!Array.isArray(value)) {
-          this.issues.push(createStructureIssue(path, 'Expected array of values for property'));
-          return;
-        }
-        values = value;
-      } else {
-        if (Array.isArray(value)) {
-          this.issues.push(createStructureIssue(path, 'Expected single value for property'));
-          return;
-        }
-        values = [value];
+      values = value;
+    } else {
+      if (Array.isArray(value)) {
+        this.issues.push(createStructureIssue(path, 'Expected single value for property'));
+        return;
       }
-
-      if (values.length < element.min || values.length > element.max) {
-        this.issues.push(
-          createStructureIssue(
-            element.path,
-            `Invalid number of values: expected ${element.min}..${
-              Number.isFinite(element.max) ? element.max : '*'
-            }, but found ${values.length}`
-          )
-        );
-      }
-
-      if (!matchesSpecifiedValue(value, element)) {
-        this.issues.push(createStructureIssue(path, 'Value did not match expected pattern'));
-      }
-
-      const sliceCounts: Record<string, number> | undefined = element.slicing
-        ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
-        : undefined;
-      for (const value of values) {
-        this.constraintsCheck(value, element);
-        this.referenceTypeCheck(value, element);
-        this.checkPropertyValue(value);
-
-        const sliceName = checkSliceElement(value, element.slicing);
-        if (sliceName && sliceCounts) {
-          sliceCounts[sliceName] += 1;
-        }
-      }
-
-      this.validateSlices(element.slicing?.slices, sliceCounts, path);
+      values = [value];
     }
+
+    if (values.length < element.min || values.length > element.max) {
+      this.issues.push(
+        createStructureIssue(
+          element.path,
+          `Invalid number of values: expected ${element.min}..${
+            Number.isFinite(element.max) ? element.max : '*'
+          }, but found ${values.length}`
+        )
+      );
+    }
+
+    if (!matchesSpecifiedValue(value, element)) {
+      this.issues.push(createStructureIssue(path, 'Value did not match expected pattern'));
+    }
+
+    const sliceCounts: Record<string, number> | undefined = element.slicing
+      ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
+      : undefined;
+    for (const value of values) {
+      this.constraintsCheck(value, element);
+      this.referenceTypeCheck(value, element);
+      this.checkPropertyValue(value);
+
+      const sliceName = checkSliceElement(value, element.slicing);
+      if (sliceName && sliceCounts) {
+        sliceCounts[sliceName] += 1;
+      }
+    }
+
+    this.validateSlices(element.slicing?.slices, sliceCounts, path);
   }
 
   private checkPresence(

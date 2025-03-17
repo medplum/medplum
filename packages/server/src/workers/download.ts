@@ -240,13 +240,11 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 function getAttachments(resource: Resource): Attachment[] {
   const attachments: Attachment[] = [];
   crawlTypedValue(toTypedValue(resource), {
-    visitProperty: (_parent, _key, _path, propertyValues) => {
-      for (const propertyValue of propertyValues) {
-        if (propertyValue) {
-          for (const value of arrayify(propertyValue) as TypedValue[]) {
-            if (value.type === 'Attachment') {
-              attachments.push(value.value as Attachment);
-            }
+    visitProperty: (_parent, _key, _path, propertyValue) => {
+      if (propertyValue) {
+        for (const value of arrayify(propertyValue) as TypedValue[]) {
+          if (value.type === 'Attachment') {
+            attachments.push(value.value as Attachment);
           }
         }
       }

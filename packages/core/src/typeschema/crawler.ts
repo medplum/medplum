@@ -13,7 +13,7 @@ export interface CrawlerVisitor {
     parent: TypedValueWithPath,
     key: string,
     path: string,
-    propertyValues: (TypedValueWithPath | TypedValueWithPath[])[],
+    propertyValues: TypedValueWithPath | TypedValueWithPath[],
     schema: InternalTypeSchema
   ) => void;
 }
@@ -116,7 +116,9 @@ class Crawler {
   private crawlProperty(parent: TypedValueWithPath, key: string, schema: InternalTypeSchema, path: string): void {
     const propertyValues = getNestedProperty(parent, key, { withPath: true });
     if (this.visitor.visitProperty) {
-      this.visitor.visitProperty(parent, key, path, propertyValues, schema);
+      for (const value of propertyValues) {
+        this.visitor.visitProperty(parent, key, path, value, schema);
+      }
     }
 
     for (const propertyValue of propertyValues) {
