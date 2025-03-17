@@ -14,7 +14,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "build": "npm run clean && tsc --erasableSyntaxOnly",
+    "build": "npm run clean && tsc",
     "clean": "rimraf dist",
     "lint": "eslint ."
   },

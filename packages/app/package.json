@@ -19,7 +19,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "npm run clean && tsc --erasableSyntaxOnly && vite build",
+    "build": "npm run clean && tsc && vite build",
     "clean": "rimraf dist",
     "dev": "vite",
     "lint": "eslint .",
