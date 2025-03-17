@@ -45,12 +45,13 @@ export function useAdminStatus(): { isAdmin: boolean; loading: boolean } {
     const checkAdminStatus = async (): Promise<void> => {
       const adminStatus = await isUserAdmin(medplum);
       setIsAdminUser(adminStatus);
+      setLoading(false);
     };
 
     checkAdminStatus().catch((error) => {
       console.error('Error checking admin status:', normalizeErrorString(error));
+      setLoading(false);
     });
-    setLoading(false);
   }, [medplum]);
 
   return { isAdmin: isAdminUser, loading };
