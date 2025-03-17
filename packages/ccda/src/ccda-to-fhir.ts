@@ -158,8 +158,7 @@ class CcdaToFhirConverter {
   private createPatient(patientRole: CcdaPatientRole): Patient {
     const patient = patientRole.patient;
     const extensions: Extension[] = [];
-
-    if (patient.raceCode && patient.raceCode.length > 0) {
+    if (patient.raceCode && patient.raceCode.length > 0 && !patient.raceCode[0]['@_nullFlavor']) {
       extensions.push({
         url: US_CORE_RACE_URL,
         extension: patient.raceCode.map((raceCode) => ({
@@ -169,7 +168,7 @@ class CcdaToFhirConverter {
       });
     }
 
-    if (patient.ethnicGroupCode && patient.ethnicGroupCode.length > 0) {
+    if (patient.ethnicGroupCode && patient.ethnicGroupCode.length > 0 && !patient.ethnicGroupCode[0]['@_nullFlavor']) {
       extensions.push({
         url: US_CORE_ETHNICITY_URL,
         extension: patient.ethnicGroupCode.map((ethnicGroupCode) => ({

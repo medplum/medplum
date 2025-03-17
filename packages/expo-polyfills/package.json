@@ -59,7 +59,7 @@
     "expo-secure-store": "14.0.1",
     "expo-standard-web-crypto": "2.0.1",
     "jest": "29.7.0",
-    "jest-expo": "52.0.5",
+    "jest-expo": "52.0.6",
     "jest-websocket-mock": "2.5.0",
     "react-native": "0.75.4",
     "ts-jest": "29.2.6"

@@ -21,13 +21,13 @@
     ]
   },
   "devDependencies": {
-    "@babel/core": "7.26.9",
+    "@babel/core": "7.26.10",
     "@babel/preset-env": "7.26.9",
     "@babel/preset-react": "7.26.3",
     "@babel/preset-typescript": "7.26.0",
-    "@mantine/core": "7.17.1",
-    "@mantine/hooks": "7.17.1",
-    "@mantine/notifications": "7.17.1",
+    "@mantine/core": "7.17.2",
+    "@mantine/hooks": "7.17.2",
+    "@mantine/notifications": "7.17.2",
     "@medplum/core": "4.0.3",
     "@medplum/eslint-config": "4.0.3",
     "@medplum/fhirtypes": "4.0.3",
@@ -55,6 +55,6 @@
     "react-dom": "18.2.0",
     "react-router": "7.3.0",
     "typescript": "5.8.2",
-    "vite": "6.2.1"
+    "vite": "6.2.2"
   }
 }

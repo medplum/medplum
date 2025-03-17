@@ -1042,13 +1042,22 @@ function trySpecialSearchParameter(
         filter
       );
     case '_compartment':
-    case '_project':
+    case '_project': {
+      if (filter.code === '_project') {
+        if (filter.operator === Operator.MISSING) {
+          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '=' : '!=', null);
+        } else if (filter.operator === Operator.PRESENT) {
+          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '!=' : '=', null);
+        }
+      }
+
       return buildIdSearchFilter(
         table,
         { columnName: 'compartments', type: SearchParameterType.UUID, array: true, searchStrategy: 'column' },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
+    }
     case '_filter':
       return buildFilterParameterExpression(repo, selectQuery, resourceType, table, parseFilterParameter(filter.value));
     default:

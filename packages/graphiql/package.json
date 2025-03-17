@@ -26,8 +26,8 @@
   "devDependencies": {
     "@graphiql/react": "0.28.2",
     "@graphiql/toolkit": "0.11.1",
-    "@mantine/core": "7.17.1",
-    "@mantine/hooks": "7.17.1",
+    "@mantine/core": "7.17.2",
+    "@mantine/hooks": "7.17.2",
     "@medplum/core": "4.0.3",
     "@medplum/fhirtypes": "4.0.3",
     "@medplum/react": "4.0.3",
@@ -40,7 +40,7 @@
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "vite": "6.2.1"
+    "vite": "6.2.2"
   },
   "engines": {
     "node": ">=20.0.0"

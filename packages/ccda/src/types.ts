@@ -98,6 +98,7 @@ export interface CcdaCode<T extends string = string> {
   '@_displayName'?: string;
   originalText?: CcdaText;
   translation?: CcdaCode[];
+  '@_nullFlavor'?: 'UNK' | 'NA';
 }
 
 export interface CcdaText {
@@ -188,6 +189,7 @@ export interface CcdaAssignedPerson {
 export interface CcdaObservation {
   '@_classCode': string;
   '@_moodCode': string;
+  '@_negationInd'?: string;
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code?: CcdaCode;

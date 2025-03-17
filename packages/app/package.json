@@ -30,10 +30,10 @@
     "last 1 Chrome versions"
   ],
   "devDependencies": {
-    "@mantine/core": "7.17.1",
-    "@mantine/dropzone": "7.17.1",
-    "@mantine/hooks": "7.17.1",
-    "@mantine/notifications": "7.17.1",
+    "@mantine/core": "7.17.2",
+    "@mantine/dropzone": "7.17.2",
+    "@mantine/hooks": "7.17.2",
+    "@mantine/notifications": "7.17.2",
     "@medplum/core": "4.0.3",
     "@medplum/definitions": "4.0.3",
     "@medplum/fhirtypes": "4.0.3",
@@ -51,7 +51,7 @@
     "react-dom": "18.2.0",
     "react-router": "7.3.0",
     "rfc6902": "5.1.2",
-    "vite": "6.2.1"
+    "vite": "6.2.2"
   },
   "engines": {
     "node": ">=20.0.0"
