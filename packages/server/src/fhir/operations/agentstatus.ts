@@ -37,8 +37,8 @@ export async function agentStatusHandler(req: FhirRequest): Promise<FhirResponse
   const { repo } = getAuthenticatedContext();
 
   const agents = await getAgentsForRequest(req, repo);
-  if (!agents) {
-    return [badRequest('Must specify agent ID, identifier, or a valid search')];
+  if (!agents?.length) {
+    return [badRequest('No agent(s) for given query')];
   }
 
   const outputBundle = await getStatusForAgents(agents);
