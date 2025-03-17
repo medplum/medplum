@@ -73,7 +73,7 @@ export async function handlePatientFromPid(
  * @param patient - The patient to link the coverage to
  * @returns The created insurance resources
  */
-export async function handleInsuranceFromIn1(
+export async function handleCoverageFromIn1(
   medplum: MedplumClient,
   in1Segment: Hl7Segment | undefined,
   patient: Patient
