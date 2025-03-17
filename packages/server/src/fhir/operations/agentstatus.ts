@@ -7,7 +7,7 @@ import { getRedis } from '../../redis';
 import { getAgentForRequest } from './utils/agentutils';
 import { buildOutputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
+export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
   name: 'agent-status',
   status: 'active',
