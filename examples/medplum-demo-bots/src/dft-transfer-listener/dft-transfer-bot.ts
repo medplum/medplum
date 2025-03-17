@@ -11,6 +11,30 @@
 import { BotEvent, createReference, Hl7Message, MedplumClient, Hl7Segment } from '@medplum/core';
 import { Claim, Coverage, Patient, Organization } from '@medplum/fhirtypes';
 
+export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
+  const input = event.input;
+
+  // Verify message type is DFT
+  const messageType = input.getSegment('MSH')?.getField(9)?.getComponent(1) ?? '';
+  if (messageType !== 'DFT') {
+    throw new Error('Not a DFT message');
+  }
+
+  // Get patient information
+  const patient = await handlePatientFromPid(medplum, input.getSegment('PID'));
+  if (!patient) {
+    throw new Error('Unable to find or create patient');
+  }
+
+  // Process insurance information if present
+  const insuranceInfo = await handleCoverageFromIn1(medplum, input.getSegment('IN1'), patient);
+
+  // Create claim from procedures if present
+  await handleClaimFromPr1s(medplum, input.getAllSegments('PR1'), patient, insuranceInfo);
+
+  return input.buildAck();
+}
+
 /**
  * Creates or finds a Patient resource based on PID segment information
  * @param medplum - The Medplum client
@@ -198,28 +222,4 @@ export async function handleClaimFromPr1s(
   });
 
   return claim;
-}
-
-export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
-  const input = event.input;
-
-  // Verify message type is DFT
-  const messageType = input.getSegment('MSH')?.getField(9)?.getComponent(1) ?? '';
-  if (messageType !== 'DFT') {
-    throw new Error('Not a DFT message');
-  }
-
-  // Get patient information
-  const patient = await handlePatientFromPid(medplum, input.getSegment('PID'));
-  if (!patient) {
-    throw new Error('Unable to find or create patient');
-  }
-
-  // Process insurance information if present
-  const insuranceInfo = await handleCoverageFromIn1(medplum, input.getSegment('IN1'), patient);
-
-  // Create claim from procedures if present
-  await handleClaimFromPr1s(medplum, input.getAllSegments('PR1'), patient, insuranceInfo);
-
-  return input.buildAck();
 }
