@@ -113,10 +113,9 @@ describe('Agent Status', () => {
     );
   });
 
-  test('Get agent statuses -- search returns no results', async () => {
+  test('Get agent statuses -- no ID or identifier', async () => {
     const res = await request(app)
       .get('/fhir/R4/Agent/$status')
-      .query({ name: 'INVALID_NAME' })
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
@@ -127,7 +126,7 @@ describe('Agent Status', () => {
         expect.objectContaining<OperationOutcomeIssue>({
           severity: 'error',
           code: 'invalid',
-          details: { text: 'No agent(s) for given query' },
+          details: { text: 'Must specify agent ID or identifier' },
         }),
       ]),
     });

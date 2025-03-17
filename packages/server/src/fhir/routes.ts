@@ -11,6 +11,7 @@ import { recordHistogramValue } from '../otel/otel';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
+import { agentBulkStatusHandler } from './operations/agentbulkstatus';
 import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
@@ -219,7 +220,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Agent/:id/$status', agentStatusHandler);
 
   // Agent $bulk-status operation
-  router.add('GET', '/Agent/$bulk-status', agentStatusHandler);
+  router.add('GET', '/Agent/$bulk-status', agentBulkStatusHandler);
 
   // Agent $reload-config operation
   router.add('GET', '/Agent/$reload-config', agentReloadConfigHandler);
