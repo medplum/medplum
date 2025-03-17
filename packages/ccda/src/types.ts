@@ -82,7 +82,8 @@ export interface CcdaSection {
   code?: CcdaCode;
   title?: string;
   text?: CcdaNarrative | string;
-  entry: CcdaEntry[];
+  author?: CcdaAuthor[];
+  entry?: CcdaEntry[];
 }
 
 export interface CcdaTemplateId {

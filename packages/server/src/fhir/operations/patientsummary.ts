@@ -40,6 +40,7 @@ export const LOINC_SOCIAL_HISTORY_SECTION = '29762-2';
 export const LOINC_VITAL_SIGNS_SECTION = '8716-3';
 export const LOINC_PROCEDURES_SECTION = '47519-4';
 export const LOINC_PLAN_OF_TREATMENT_SECTION = '18776-5';
+export const LOINC_ASSESSMENTS_SECTION = '51848-0';
 export const LOINC_DEVICES_SECTION = '46264-8';
 
 // International Patient Summary Implementation Guide
@@ -73,6 +74,8 @@ export const operation: OperationDefinition = {
 
 const resourceTypes: ResourceType[] = [
   'AllergyIntolerance',
+  'CarePlan',
+  'ClinicalImpression',
   'Condition',
   'Device',
   'DeviceUseStatement',
@@ -152,6 +155,7 @@ export class PatientSummaryBuilder {
   private readonly socialHistory: Resource[] = [];
   private readonly vitalSigns: Resource[] = [];
   private readonly procedures: Resource[] = [];
+  private readonly assessments: Resource[] = [];
   private readonly planOfTreatment: Resource[] = [];
   private readonly immunizations: Resource[] = [];
   private readonly devices: Resource[] = [];
@@ -192,6 +196,14 @@ export class PatientSummaryBuilder {
           }
         }
       }
+
+      if (resource.resourceType === 'CarePlan' && resource.activity) {
+        for (const activity of resource.activity) {
+          if (activity.reference?.reference) {
+            this.nestedIds.add(resolveId(activity.reference) as string);
+          }
+        }
+      }
     }
   }
 
@@ -220,8 +232,14 @@ export class PatientSummaryBuilder {
       case 'AllergyIntolerance':
         this.allergies.push(resource);
         break;
+      case 'CarePlan':
+        this.planOfTreatment.push(resource);
+        break;
       case 'Condition':
         this.problemList.push(resource);
+        break;
+      case 'ClinicalImpression':
+        this.assessments.push(resource);
         break;
       case 'DeviceUseStatement':
         this.devices.push(resource);
@@ -333,6 +351,7 @@ export class PatientSummaryBuilder {
         createSection(LOINC_VITAL_SIGNS_SECTION, 'Vital Signs', this.vitalSigns),
         createSection(LOINC_PROCEDURES_SECTION, 'Procedures', this.procedures),
         createSection(LOINC_DEVICES_SECTION, 'Devices', this.devices),
+        createSection(LOINC_ASSESSMENTS_SECTION, 'Assessments', this.assessments),
         createSection(LOINC_PLAN_OF_TREATMENT_SECTION, 'Plan of Treatment', this.planOfTreatment),
       ],
     };
