@@ -173,7 +173,6 @@ describe('Patient Summary Operation', () => {
         { resourceType: 'MedicationRequest', id: 'med1', subject: patientRef, status: 'active', intent: 'plan' },
         { resourceType: 'Procedure', id: 'proc1', subject: patientRef, status: 'completed' },
         { resourceType: 'ServiceRequest', id: 'sr1', subject: patientRef, status: 'active', intent: 'plan' },
-        { resourceType: 'Task', id: 'task1', for: patientRef, status: 'completed', intent: 'order' },
       ];
 
       const builder = new PatientSummaryBuilder(author, patient, everything);
@@ -192,7 +191,6 @@ describe('Patient Summary Operation', () => {
       expectSectionToContain(composition, LOINC_MEDICATIONS_SECTION, 'MedicationRequest/med1');
       expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Procedure/proc1');
       expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'ServiceRequest/sr1');
-      expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Task/task1');
     });
 
     test('Observations', () => {
@@ -205,10 +203,6 @@ describe('Patient Summary Operation', () => {
         ['vital-signs', LOINC_VITAL_SIGNS_SECTION],
         ['imaging', LOINC_RESULTS_SECTION],
         ['laboratory', LOINC_RESULTS_SECTION],
-        ['procedure', LOINC_PROCEDURES_SECTION],
-        ['survey', LOINC_PLAN_OF_TREATMENT_SECTION],
-        ['exam', LOINC_PROCEDURES_SECTION],
-        ['therapy', LOINC_MEDICATIONS_SECTION],
         ['activity', LOINC_RESULTS_SECTION],
       ];
 

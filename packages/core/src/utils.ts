@@ -1404,3 +1404,21 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
   }
   return result;
 }
+
+/**
+ * Returns the escaped HTML string of the input string.
+ * @param unsafe - The unsafe HTML string to escape.
+ * @returns The escaped HTML string.
+ */
+export function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/“/g, '&ldquo;')
+    .replace(/”/g, '&rdquo;')
+    .replace(/‘/g, '&lsquo;')
+    .replace(/’/g, '&rsquo;')
+    .replace(/…/g, '&hellip;');
+}

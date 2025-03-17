@@ -1,6 +1,7 @@
 import {
   buildTypeName,
   capitalize,
+  escapeHtml,
   FileBuilder,
   getAllDataTypes,
   indexStructureDefinitionBundle,
@@ -369,19 +370,6 @@ function getTypeScriptTypeForProperty(
     return baseType + '[]';
   }
   return baseType;
-}
-
-function escapeHtml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/“/g, '&ldquo;')
-    .replace(/”/g, '&rdquo;')
-    .replace(/‘/g, '&lsquo;')
-    .replace(/’/g, '&rsquo;')
-    .replace(/…/g, '&hellip;');
 }
 
 if (process.argv[1].endsWith('index.ts')) {
