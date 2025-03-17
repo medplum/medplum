@@ -67,6 +67,7 @@ export async function agentBulkStatusHandler(req: FhirRequest): Promise<FhirResp
       try {
         output = buildOutputParameters(statusOperation, info);
       } catch (err) {
+        // If we catch an error here, that means we have an invalid agent info entry
         output = badRequest(`Invalid agent info: ${normalizeErrorString(err)}`);
       }
     }
