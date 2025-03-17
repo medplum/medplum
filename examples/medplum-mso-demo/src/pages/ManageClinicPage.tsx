@@ -30,7 +30,7 @@ export function ManageClinicPage(): JSX.Element {
       const org = await medplum.readResource('Organization', id as string);
       setOrganization(org);
     };
-    
+
     loadOrganization().catch((error) => {
       showNotification({
         title: 'Error',

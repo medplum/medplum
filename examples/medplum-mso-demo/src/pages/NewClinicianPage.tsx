@@ -42,7 +42,7 @@ export function NewClinicianPage(): JSX.Element {
       const orgs = await medplum.search('Organization', {});
       setOrganizations(orgs.entry?.map((e) => e.resource as Organization) ?? []);
     };
-    
+
     fetchOrgs().catch((error) => {
       showNotification({
         title: 'Error',

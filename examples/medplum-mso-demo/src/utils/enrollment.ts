@@ -32,8 +32,7 @@ export async function enrollPractitioner(
     // Check if organization reference already exists in any access array
     const organizationExists = existingAccess.some((access) =>
       access.parameter?.some(
-        (param) =>
-          param.name === 'organization' && param.valueReference?.reference === getReferenceString(organization)
+        (param) => param.name === 'organization' && param.valueReference?.reference === getReferenceString(organization)
       )
     );
 

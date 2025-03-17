@@ -130,9 +130,8 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
       });
 
       await loadClinicians();
-
     } catch (error) {
-      showNotification({  
+      showNotification({
         title: 'Error',
         message: normalizeErrorString(error),
         color: 'red',
@@ -161,12 +160,10 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
     try {
       if (selectedClinicians.length > 0) {
         const results = await Promise.allSettled(
-          selectedClinicians.map(practitioner =>
-            enrollPractitioner(medplum, practitioner, organization)
-          )
+          selectedClinicians.map((practitioner) => enrollPractitioner(medplum, practitioner, organization))
         );
 
-        const successCount = results.filter(result => result.status === 'fulfilled').length;
+        const successCount = results.filter((result) => result.status === 'fulfilled').length;
 
         showNotification({
           title: 'Success',
