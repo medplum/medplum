@@ -4,7 +4,7 @@ import { Bundle, BundleEntry, OperationDefinition, OperationOutcome, Parameters 
 import { AgentConnectionState, AgentInfo } from '../../agent/utils';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
-import { agentStatusHandler, operation as statusOperation } from './agentstatus';
+import { operation as statusOperation } from './agentstatus';
 import { getAgentsForRequest, makeResultWrapperEntry } from './utils/agentutils';
 import { buildOutputParameters } from './utils/parameters';
 
@@ -36,10 +36,6 @@ export const operation: OperationDefinition = {
  */
 export async function agentBulkStatusHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
-
-  if (req.params.id) {
-    return agentStatusHandler({ ...req, params: { id: req.params.id } });
-  }
 
   const agents = await getAgentsForRequest(req, repo);
   if (!agents?.length) {
