@@ -1,5 +1,5 @@
 import { Hl7Message } from '@medplum/core';
-import { decode, encode } from 'iconv-lite';
+import iconv from 'iconv-lite';
 import net from 'node:net';
 import { Hl7Base } from './base';
 import { CR, FS, VT } from './constants';
@@ -32,7 +32,7 @@ export class Hl7Connection extends Hl7Base {
         if (data.at(-2) === FS && data.at(-1) === CR) {
           const buffer = Buffer.concat(this.chunks);
           const contentBuffer = buffer.subarray(1, buffer.length - 2);
-          const contentString = decode(contentBuffer, this.encoding);
+          const contentString = iconv.decode(contentBuffer, this.encoding);
           const message = Hl7Message.parse(contentString);
           this.dispatchEvent(new Hl7MessageEvent(this, message));
           this.resetBuffer();
@@ -71,7 +71,7 @@ export class Hl7Connection extends Hl7Base {
   private sendImpl(reply: Hl7Message, queueItem: Hl7MessageQueueItem): void {
     this.messageQueue.push(queueItem);
     const replyString = reply.toString();
-    const replyBuffer = encode(replyString, this.encoding);
+    const replyBuffer = iconv.encode(replyString, this.encoding);
     const outputBuffer = Buffer.alloc(replyBuffer.length + 3);
     outputBuffer.writeInt8(VT, 0);
     replyBuffer.copy(outputBuffer, 1);
