@@ -157,21 +157,19 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
 
   const handleEnroll = async (): Promise<void> => {
     try {
-if (selectedClinicians.length > 0) {
-  const results = await Promise.allSettled(
-    selectedClinicians.map(practitioner =>
-      enrollPractitioner(medplum, practitioner, organization)
-    )
-  );
+      if (selectedClinicians.length > 0) {
+        const results = await Promise.allSettled(
+          selectedClinicians.map((practitioner) => enrollPractitioner(medplum, practitioner, organization))
+        );
 
-  const successCount = results.filter(result => result.status === 'fulfilled').length;
+        const successCount = results.filter((result) => result.status === 'fulfilled').length;
 
-  showNotification({
-    title: 'Success',
-    message: `${successCount} clinician${successCount !== 1 ? 's' : ''} enrolled in ${organization.name}`,
-    color: 'green',
-  });
-}
+        showNotification({
+          title: 'Success',
+          message: `${successCount} clinician${successCount !== 1 ? 's' : ''} enrolled in ${organization.name}`,
+          color: 'green',
+        });
+      }
 
       // Reset form, close modal, and refresh the list
       setSelectedClinicians([]);
