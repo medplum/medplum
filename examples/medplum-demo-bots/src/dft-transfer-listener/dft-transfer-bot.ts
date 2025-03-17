@@ -216,7 +216,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   }
 
   // Process insurance information if present
-  const insuranceInfo = await handleInsuranceFromIn1(medplum, input.getSegment('IN1'), patient);
+  const insuranceInfo = await handleCoverageFromIn1(medplum, input.getSegment('IN1'), patient);
 
   // Create claim from procedures if present
   await handleClaimFromPr1s(medplum, input.getAllSegments('PR1'), patient, insuranceInfo);
