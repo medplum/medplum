@@ -98,7 +98,7 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import { buildSearchExpression, searchByReferenceImpl, searchImpl, SearchOptions } from './search';
+import { SearchOptions, buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
@@ -432,9 +432,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return await this.readResourceFromDatabase(resourceType, id);
     } catch (err) {
       if (err instanceof OperationOutcomeError) {
-        return err;
+        if (isNotFound(err.outcome) || isGone(err.outcome)) {
+          // Only return "not found" or "gone" errors
+          return err;
+        }
+        // Other errors should be treated as database errors
+        throw err;
       }
-      return new OperationOutcomeError(normalizeOperationOutcome(err), err);
+      throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
     }
   }
 
@@ -1724,7 +1729,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param create - If true, then the resource is being created.
    */
   private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
-    await Promise.all(lookupTables.map((lookupTable) => lookupTable.indexResource(client, resource, create)));
+    for (const lookupTable of lookupTables) {
+      await lookupTable.indexResource(client, resource, create);
+    }
   }
 
   /**
