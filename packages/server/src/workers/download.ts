@@ -15,7 +15,7 @@ import { getConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
-import { getBinaryStorage } from '../fhir/storage';
+import { getBinaryStorage } from '../storage/loader';
 import { getLogger, globalLogger } from '../logger';
 import { parseTraceparent } from '../traceparent';
 

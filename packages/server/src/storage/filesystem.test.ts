@@ -5,9 +5,9 @@ import fs from 'fs';
 import { Readable } from 'stream';
 import { loadTestConfig } from '../config/loader';
 import { streamToString } from '../test.setup';
-import { getBinaryStorage, initBinaryStorage } from './storage';
+import { getBinaryStorage, initBinaryStorage } from './loader';
 
-describe('Storage', () => {
+describe('FileSystemStorage', () => {
   beforeAll(async () => {
     await loadTestConfig();
   });
