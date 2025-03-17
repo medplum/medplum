@@ -11,7 +11,6 @@ import { recordHistogramValue } from '../otel/otel';
 import { bulkDataRouter } from './bulkdata';
 import { jobRouter } from './job';
 import { getCapabilityStatement } from './metadata';
-import { agentBulkStatusHandler } from './operations/agentbulkstatus';
 import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
@@ -35,6 +34,7 @@ import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
+import { patientSetAccountsHandler } from './operations/patientsetaccounts';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
@@ -48,7 +48,6 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { patientSetAccountsHandler } from './operations/patientsetaccounts';
 
 export const fhirRouter = Router();
 
@@ -220,7 +219,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Agent/:id/$status', agentStatusHandler);
 
   // Agent $bulk-status operation
-  router.add('GET', '/Agent/$bulk-status', agentBulkStatusHandler);
+  router.add('GET', '/Agent/$bulk-status', agentStatusHandler);
 
   // Agent $reload-config operation
   router.add('GET', '/Agent/$reload-config', agentReloadConfigHandler);

@@ -1,11 +1,10 @@
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, isOperationOutcome } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition } from '@medplum/fhirtypes';
-import { AgentConnectionState, AgentInfo } from '../../agent/utils';
+import { OperationDefinition, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { getAuthenticatedContext } from '../../context';
-import { getRedis } from '../../redis';
-import { getAgentForRequest } from './utils/agentutils';
-import { buildOutputParameters } from './utils/parameters';
+import { getStatusForAgents } from './agentbulkstatus';
+import { getAgentsForRequest, isSingleAgentRequest } from './utils/agentutils';
 
 export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -37,23 +36,24 @@ export const operation: OperationDefinition = {
 export async function agentStatusHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
 
-  // Read the agent as the user to verify access
-  const agent = await getAgentForRequest(req, repo);
-  if (!agent) {
-    return [badRequest('Must specify agent ID or identifier')];
+  const agents = await getAgentsForRequest(req, repo);
+  if (!agents) {
+    return [badRequest('Must specify agent ID, identifier, or a valid search')];
   }
 
-  let output: AgentInfo;
+  const outputBundle = await getStatusForAgents(agents);
 
-  // Get the agent status details from Redis
-  // This is set by the agent websocket connection
-  // See: packages/server/src/agent/websockets.ts
-  const statusStr = await getRedis().get(`medplum:agent:${agent.id}:info`);
-  if (statusStr) {
-    output = JSON.parse(statusStr);
-  } else {
-    output = { status: AgentConnectionState.UNKNOWN, version: 'unknown' };
+  if (isSingleAgentRequest(req)) {
+    assert(outputBundle?.entry?.length === 1);
+    const parameters = outputBundle?.entry?.[0]?.resource as Parameters;
+    const result = parameters.parameter?.find((param) => param.name === 'result')?.resource as
+      | OperationOutcome
+      | Parameters;
+    if (isOperationOutcome(result)) {
+      return [result];
+    }
+    return [allOk, result];
   }
 
-  return [allOk, buildOutputParameters(operation, output)];
+  return [allOk, outputBundle];
 }

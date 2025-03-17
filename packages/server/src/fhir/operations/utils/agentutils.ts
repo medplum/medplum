@@ -80,6 +80,16 @@ export async function getAgentsForRequest(req: FhirRequest, repo: Repository): P
   return repo.searchResources(parseSearchRequest('Agent', req.query));
 }
 
+/**
+ * Checks if an agent FHIR operation request is for a single agent or multiple agents.
+ *
+ * @param req - The FHIR request to determine whether is for a single agent or not.
+ * @returns True if request is for a single agent, otherwise false.
+ */
+export function isSingleAgentRequest(req: FhirRequest): boolean {
+  return Boolean(req.params.id || req.query.identifier);
+}
+
 export async function getDevice(repo: Repository, params: AgentPushParameters): Promise<Device | undefined> {
   const { destination, contentType } = params;
   if (destination.startsWith('Device/')) {
