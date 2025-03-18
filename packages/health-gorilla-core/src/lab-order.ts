@@ -187,8 +187,11 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
 }
 
 export class LabOrderValidationError extends Error {
-  constructor(readonly errors: LabOrderInputErrors) {
+  readonly errors: LabOrderInputErrors;
+
+  constructor(errors: LabOrderInputErrors) {
     super(`Invalid lab order inputs: ${JSON.stringify(errors)}`);
+    this.errors = errors;
   }
 }
 

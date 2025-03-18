@@ -1042,13 +1042,22 @@ function trySpecialSearchParameter(
         filter
       );
     case '_compartment':
-    case '_project':
+    case '_project': {
+      if (filter.code === '_project') {
+        if (filter.operator === Operator.MISSING) {
+          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '=' : '!=', null);
+        } else if (filter.operator === Operator.PRESENT) {
+          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '!=' : '=', null);
+        }
+      }
+
       return buildIdSearchFilter(
         table,
         { columnName: 'compartments', type: SearchParameterType.UUID, array: true, searchStrategy: 'column' },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
+    }
     case '_filter':
       return buildFilterParameterExpression(repo, selectQuery, resourceType, table, parseFilterParameter(filter.value));
     default:
@@ -1125,7 +1134,7 @@ function buildStringSearchFilter(
   return expression;
 }
 
-const prefixMatchOperators = [Operator.EQUALS, Operator.STARTS_WITH];
+const prefixMatchOperators: Operator[] = [Operator.EQUALS, Operator.STARTS_WITH];
 function buildStringFilterExpression(column: Column, operator: Operator, values: string[]): Expression {
   const conditions = values.map((v) => {
     if (operator === Operator.EXACT) {

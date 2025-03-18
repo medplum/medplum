@@ -16,11 +16,7 @@ export class AgentDicomChannel extends BaseChannel {
   readonly tempDir: string;
   readonly log: Logger;
 
-  constructor(
-    readonly app: App,
-    definition: AgentChannel,
-    endpoint: Endpoint
-  ) {
+  constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
 
     class DcmjsDimseScp extends dimse.Scp {

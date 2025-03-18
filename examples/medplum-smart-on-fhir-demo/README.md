@@ -75,7 +75,7 @@ To test the EHR launch flow, you'll need to:
 2. Configure your EHR launch URL as: `http://localhost:8001/launch`
 3. Launch the app from your EHR system using the SMART on FHIR app launcher
 
-For detailed instructions on setting up SMART on FHIR apps with Medplum, see the [SMART App Launch Guide](https://www.medplum.com/docs/integration/smart-app-launch) in the Medplum documentation. Set the launch URL to `http://localhost:8001/launch` and the redirect URL to `http://localhost:8001/launch`.
+For detailed instructions on setting up SMART on FHIR apps with Medplum, see the [SMART App Launch Guide](https://www.medplum.com/docs/integration/smart-app-launch) in the Medplum documentation. Set the launch URI to `http://localhost:8001/launch` and the redirect URI to `http://localhost:8001/launch`.
 
 ## Learn More
 

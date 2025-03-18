@@ -5,6 +5,7 @@ import {
   Bundle,
   CarePlan,
   CareTeam,
+  ClinicalImpression,
   CodeableConcept,
   Composition,
   CompositionEvent,
@@ -45,6 +46,7 @@ import {
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_ALLERGY_OBSERVATION,
   OID_ALLERGY_PROBLEM_ACT,
+  OID_ASSESSMENTS_SECTION,
   OID_AUTHOR_PARTICIPANT,
   OID_CARE_TEAM_ORGANIZER_ENTRY,
   OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
@@ -378,7 +380,11 @@ class FhirToCcdaConverter {
   private mapRace(patient: Patient): CcdaCode[] | undefined {
     const ombCategory = getExtension(patient, US_CORE_RACE_URL, 'ombCategory')?.valueCoding;
     if (!ombCategory) {
-      return undefined;
+      return [
+        {
+          '@_nullFlavor': 'UNK',
+        },
+      ];
     }
 
     return [
@@ -422,7 +428,11 @@ class FhirToCcdaConverter {
     const ombCategory = ethnicityExt?.extension?.find((e) => e.url === 'ombCategory')?.valueCoding;
 
     if (!ombCategory) {
-      return undefined;
+      return [
+        {
+          '@_nullFlavor': 'UNK',
+        },
+      ];
     }
 
     return [
@@ -481,6 +491,12 @@ class FhirToCcdaConverter {
     }
 
     const resources = this.findResourcesByReferences(section.entry);
+
+    // Assessments section is special case, because it does not have any "entry" elements
+    // Instead, the entire clinical impression resource is included in the section
+    if (sectionCode === '51848-0' && resources.length === 1 && resources[0].resourceType === 'ClinicalImpression') {
+      return this.createClinicalImpressionSection(section, resources[0] as ClinicalImpression);
+    }
 
     return {
       templateId: templateId,
@@ -546,6 +562,93 @@ class FhirToCcdaConverter {
    */
   private createAllergyEntry(allergy: AllergyIntolerance): CcdaEntry {
     const reaction = allergy.reaction?.[0];
+
+    // Handle case where this represents "no known allergies"
+    if (allergy.clinicalStatus?.coding?.[0]?.code === 'active' && !allergy.code) {
+      return {
+        act: [
+          {
+            '@_classCode': 'ACT',
+            '@_moodCode': 'EVN',
+            templateId: [
+              {
+                '@_root': OID_ALLERGY_PROBLEM_ACT,
+                '@_extension': '2015-08-01',
+              },
+              {
+                '@_root': OID_ALLERGY_PROBLEM_ACT,
+              },
+            ],
+            id: this.mapIdentifiers(allergy.id, allergy.identifier),
+            code: {
+              '@_code': 'CONC',
+              '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
+            },
+            statusCode: {
+              '@_code': 'active',
+            },
+            effectiveTime: this.mapEffectivePeriod(allergy.recordedDate, undefined),
+            entryRelationship: [
+              {
+                '@_typeCode': 'SUBJ',
+                observation: [
+                  {
+                    '@_classCode': 'OBS',
+                    '@_moodCode': 'EVN',
+                    '@_negationInd': 'true',
+                    templateId: [
+                      {
+                        '@_root': OID_ALLERGY_OBSERVATION,
+                        '@_extension': '2014-06-09',
+                      },
+                      {
+                        '@_root': OID_ALLERGY_OBSERVATION,
+                      },
+                    ],
+                    id: this.mapIdentifiers(allergy.id, allergy.identifier),
+                    code: {
+                      '@_code': 'ASSERTION',
+                      '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
+                    },
+                    statusCode: {
+                      '@_code': 'completed',
+                    },
+                    effectiveTime: this.mapEffectivePeriod(
+                      allergy.onsetPeriod?.start ?? allergy.onsetDateTime,
+                      allergy.onsetPeriod?.end,
+                      true
+                    ),
+                    value: {
+                      '@_xsi:type': 'CD',
+                      '@_code': '419199007',
+                      '@_displayName': 'Allergy to substance',
+                      '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+                      '@_codeSystemName': 'SNOMED CT',
+                    },
+                    participant: [
+                      {
+                        '@_typeCode': 'CSM',
+                        participantRole: {
+                          '@_classCode': 'MANU',
+                          playingEntity: {
+                            '@_classCode': 'MMAT',
+                            code: {
+                              '@_nullFlavor': 'NA',
+                            },
+                          },
+                        },
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+    }
+
+    // Handle normal allergy case
     return {
       act: [
         {
@@ -1224,22 +1327,26 @@ class FhirToCcdaConverter {
     }
   }
 
-  private createPlanOfTreatmentCarePlanEntry(resource: CarePlan): CcdaEntry {
-    return {
-      act: [
-        {
-          '@_classCode': 'ACT',
-          '@_moodCode': 'INT',
-          id: this.mapIdentifiers(resource.id, resource.identifier),
-          code: mapCodeableConceptToCcdaValue(resource.category?.[0]) as CcdaCode,
-          templateId: [{ '@_root': OID_INSTRUCTIONS }],
-          statusCode: { '@_code': 'completed' },
-          text: resource.description
-            ? { '#text': resource.description }
-            : this.createTextFromExtensions(resource.extension),
-        },
-      ],
-    };
+  private createPlanOfTreatmentCarePlanEntry(resource: CarePlan): CcdaEntry | undefined {
+    if (resource.status === 'completed') {
+      return {
+        act: [
+          {
+            '@_classCode': 'ACT',
+            '@_moodCode': 'INT',
+            templateId: [{ '@_root': OID_INSTRUCTIONS }],
+            id: this.mapIdentifiers(resource.id, resource.identifier),
+            code: mapCodeableConceptToCcdaValue(resource.category?.[0]) as CcdaCode,
+            text: resource.description
+              ? { '#text': resource.description }
+              : this.createTextFromExtensions(resource.extension),
+            statusCode: { '@_code': resource.status },
+          },
+        ],
+      };
+    }
+
+    return undefined;
   }
 
   private createPlanOfTreatmentGoalEntry(resource: Goal): CcdaEntry {
@@ -1698,6 +1805,23 @@ class FhirToCcdaConverter {
           })) as CcdaOrganizerComponent[],
         },
       ],
+    };
+  }
+
+  /**
+   * Handles the ClinicalImpression special case.
+   * Unlike most other sections, the "Assessments" section can skip the `<entry>` elements and directly contain the `<text>` element.
+   * @param section - The Composition section to create the C-CDA section for.
+   * @param resource - The ClinicalImpression resource to create the C-CDA section for.
+   * @returns The C-CDA section for the ClinicalImpression resource.
+   */
+  private createClinicalImpressionSection(section: CompositionSection, resource: ClinicalImpression): CcdaSection {
+    return {
+      templateId: [{ '@_root': OID_ASSESSMENTS_SECTION }],
+      code: mapCodeableConceptToCcdaCode(section.code),
+      title: section.title,
+      text: resource.summary,
+      author: this.mapAuthor(resource.assessor, resource.date),
     };
   }
 

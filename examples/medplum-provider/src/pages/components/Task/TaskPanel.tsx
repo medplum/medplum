@@ -9,13 +9,12 @@ import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleOff } from '@tabler/icons-react';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { SAVE_TIMEOUT_MS } from '../../../config/constants';
 
 interface TaskPanelProps {
   task: Task;
   onUpdateTask: (task: Task) => void;
 }
-
-const SAVE_TIMEOUT_MS = 1500;
 
 export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const { task, onUpdateTask } = props;

@@ -1,6 +1,7 @@
 import { ContentType, LOINC, WithId, createReference, getReferenceString } from '@medplum/core';
 import {
   Bundle,
+  CarePlan,
   Composition,
   Condition,
   DiagnosticReport,
@@ -9,6 +10,7 @@ import {
   Patient,
   Practitioner,
   Resource,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -126,8 +128,8 @@ describe('Patient Summary Operation', () => {
     expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
     const composition = result.entry?.[0]?.resource as WithId<Composition>;
-    expectSectionToContain(composition, LOINC_VITAL_SIGNS_SECTION, getReferenceString(observation));
-    expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, getReferenceString(condition));
+    expectSectionToContain(composition, LOINC_VITAL_SIGNS_SECTION, 'Result', getReferenceString(observation));
+    expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Problem', getReferenceString(condition));
   });
 
   describe('PatientSummaryBuilder', () => {
@@ -139,6 +141,7 @@ describe('Patient Summary Operation', () => {
       const everything: WithId<Resource>[] = [
         { resourceType: 'AllergyIntolerance', id: 'allergy1', patient: patientRef },
         { resourceType: 'Condition', id: 'condition1', subject: patientRef },
+        { resourceType: 'ClinicalImpression', id: 'impression1', status: 'completed', subject: patientRef },
         {
           resourceType: 'DeviceUseStatement',
           id: 'device1',
@@ -170,7 +173,6 @@ describe('Patient Summary Operation', () => {
         { resourceType: 'MedicationRequest', id: 'med1', subject: patientRef, status: 'active', intent: 'plan' },
         { resourceType: 'Procedure', id: 'proc1', subject: patientRef, status: 'completed' },
         { resourceType: 'ServiceRequest', id: 'sr1', subject: patientRef, status: 'active', intent: 'plan' },
-        { resourceType: 'Task', id: 'task1', for: patientRef, status: 'completed', intent: 'order' },
       ];
 
       const builder = new PatientSummaryBuilder(author, patient, everything);
@@ -180,16 +182,15 @@ describe('Patient Summary Operation', () => {
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
       const composition = result.entry?.[0]?.resource as WithId<Composition>;
-      expectSectionToContain(composition, LOINC_ALLERGIES_SECTION, 'AllergyIntolerance/allergy1');
-      expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Condition/condition1');
-      expectSectionToContain(composition, LOINC_DEVICES_SECTION, 'DeviceUseStatement/device1');
-      expectSectionToContain(composition, LOINC_RESULTS_SECTION, 'DiagnosticReport/report1');
-      expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'Goal/goal1');
-      expectSectionToContain(composition, LOINC_IMMUNIZATIONS_SECTION, 'Immunization/imm1');
-      expectSectionToContain(composition, LOINC_MEDICATIONS_SECTION, 'MedicationRequest/med1');
-      expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Procedure/proc1');
-      expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'ServiceRequest/sr1');
-      expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Task/task1');
+      expectSectionToContain(composition, LOINC_ALLERGIES_SECTION, 'Substance', 'AllergyIntolerance/allergy1');
+      expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Problem', 'Condition/condition1');
+      expectSectionToContain(composition, LOINC_DEVICES_SECTION, 'Device', 'DeviceUseStatement/device1');
+      expectSectionToContain(composition, LOINC_RESULTS_SECTION, 'Result', 'DiagnosticReport/report1');
+      expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'Planned', 'Goal/goal1');
+      expectSectionToContain(composition, LOINC_IMMUNIZATIONS_SECTION, 'Vaccine', 'Immunization/imm1');
+      expectSectionToContain(composition, LOINC_MEDICATIONS_SECTION, 'Medication', 'MedicationRequest/med1');
+      expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Procedure', 'Procedure/proc1');
+      expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'Planned', 'ServiceRequest/sr1');
     });
 
     test('Observations', () => {
@@ -202,10 +203,6 @@ describe('Patient Summary Operation', () => {
         ['vital-signs', LOINC_VITAL_SIGNS_SECTION],
         ['imaging', LOINC_RESULTS_SECTION],
         ['laboratory', LOINC_RESULTS_SECTION],
-        ['procedure', LOINC_PROCEDURES_SECTION],
-        ['survey', LOINC_PLAN_OF_TREATMENT_SECTION],
-        ['exam', LOINC_PROCEDURES_SECTION],
-        ['therapy', LOINC_MEDICATIONS_SECTION],
         ['activity', LOINC_RESULTS_SECTION],
       ];
 
@@ -230,7 +227,7 @@ describe('Patient Summary Operation', () => {
       const composition = result.entry?.[0]?.resource as WithId<Composition>;
 
       for (let i = 0; i < categories.length; i++) {
-        expectSectionToContain(composition, categories[i][1], `Observation/obs${i}`);
+        expectSectionToContain(composition, categories[i][1], 'Result', `Observation/obs${i}`);
       }
     });
 
@@ -317,13 +314,59 @@ describe('Patient Summary Operation', () => {
       expect(section?.entry?.length).toBe(1);
       expect(section?.entry?.[0]?.reference).toBe(getReferenceString(parentReport));
     });
+
+    test('CarePlan containing ServiceRequest', () => {
+      // If an ServiceRequest is a member of a CarePlan,
+      // then it should not be referenced directly by the Composition entries list.
+
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
+      const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
+      const subject = createReference(patient);
+
+      const child: WithId<ServiceRequest> = {
+        resourceType: 'ServiceRequest',
+        id: `child`,
+        subject,
+        status: 'active',
+        intent: 'plan',
+        code: { text: 'test' },
+      };
+
+      const parent: WithId<CarePlan> = {
+        resourceType: 'CarePlan',
+        id: `parent`,
+        subject,
+        status: 'active',
+        intent: 'plan',
+        activity: [{ reference: createReference(child) }],
+      };
+
+      const everything = [parent, child];
+
+      const builder = new PatientSummaryBuilder(author, patient, everything);
+      const result = builder.build();
+      expect(result.entry?.length).toBe(3 + everything.length);
+      expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
+      expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
+
+      const composition = result.entry?.[0]?.resource as WithId<Composition>;
+
+      const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === LOINC_PLAN_OF_TREATMENT_SECTION);
+      expect(section).toBeDefined();
+      expect(section?.entry?.length).toBe(1);
+      expect(section?.entry?.[0]?.reference).toBe(getReferenceString(parent));
+    });
   });
 });
 
-function expectSectionToContain(composition: Composition, code: string, reference: string): void {
+function expectSectionToContain(composition: Composition, code: string, narrative: string, reference: string): void {
   const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === code);
   if (!section) {
     throw new Error(`Section not found: ${code}`);
+  }
+
+  if (!section.text?.div?.includes(narrative)) {
+    throw new Error(`Narrative not found in section ${code}: ${narrative} (${section.text?.div})`);
   }
 
   const entry = section?.entry?.find((e) => e.reference === reference);
