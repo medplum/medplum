@@ -1,6 +1,7 @@
 import { allOk, createReference, getReferenceString, ProfileResource } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
+  ActivityDefinition,
   Bot,
   ClientApplication,
   Encounter,
@@ -10,6 +11,7 @@ import {
   Reference,
   RequestGroup,
   RequestGroupAction,
+  ServiceRequest,
   Task,
   TaskInput,
 } from '@medplum/fhirtypes';
@@ -86,6 +88,8 @@ async function createAction(
 ): Promise<RequestGroupAction> {
   if (action.definitionCanonical?.startsWith('Questionnaire/')) {
     return createQuestionnaireTask(repo, requester, subject, action, encounter);
+  } else if (action.definitionCanonical?.startsWith('ActivityDefinition/')) {
+    return createActivityDefinitionTask(repo, requester, subject, action, encounter);
   }
   return createTask(repo, requester, subject, action, encounter);
 }
@@ -117,6 +121,44 @@ async function createQuestionnaireTask(
       },
     },
   ]);
+}
+
+async function createActivityDefinitionTask(
+  repo: Repository,
+  requester: Reference<Bot | ClientApplication | ProfileResource>,
+  subject: Reference<Patient>,
+  action: PlanDefinitionAction,
+  encounter: Reference<Encounter> | undefined
+): Promise<RequestGroupAction> {
+  const activityDefinition = await repo.readReference<ActivityDefinition>({ reference: action.definitionCanonical });
+  switch (activityDefinition.kind) {
+    case 'ServiceRequest': {
+      const serviceRequest = await repo.createResource({
+        resourceType: 'ServiceRequest',
+        status: 'draft',
+        intent: activityDefinition.intent as ServiceRequest['intent'],
+        subject: subject,
+        requester: requester as ServiceRequest['requester'],
+        encounter: encounter,
+        code: activityDefinition.code
+      });
+
+      return createTask(repo, requester, subject, action, encounter, [
+        {
+          type: {
+            text: 'ServiceRequest',
+          },
+          valueReference: {
+            display: action.title,
+            reference: getReferenceString(serviceRequest),
+          },
+        },
+      ]);
+    }
+
+    default:
+      return createTask(repo, requester, subject, action, encounter);
+  }
 }
 
 /**

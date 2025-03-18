@@ -21,7 +21,7 @@
     "migrate": "ts-node --transpileOnly src/migrations/migrate.ts",
     "circular": "npx madge --circular dist/index.js",
     "start": "node --require ./dist/otel/instrumentation.js dist/index.js",
-    "test": "jest",
+    "test": "jest --silent=false",
     "test:seed": "jest seed.test.ts --testTimeout=400000"
   },
   "dependencies": {
