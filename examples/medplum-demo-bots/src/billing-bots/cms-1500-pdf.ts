@@ -1,5 +1,5 @@
 import { BotEvent, formatAddress, formatDate, formatHumanName, getDateProperty, MedplumClient } from '@medplum/core';
-import { Claim, Coverage, Media, Patient, RelatedPerson } from '@medplum/fhirtypes';
+import { Address, Claim, Coverage, Media, Patient, RelatedPerson } from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 
 // Move this to a separate file and use it as a param to the bot
@@ -74,46 +74,15 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      ...getPatientAddressContent(patient),
+      ...getAddressContent(patient.address?.[0]),
       ...getPatientPhoneContent(patientPhone),
       ...getPatientRelationshipToInsuredContent(relationship),
-      {
-        text: 'X5',
-        absolutePosition: {
-          x: 374,
-          y: 156,
-        },
-        fontSize: 9,
-      },
+      ...getAddressContent(insured?.address?.[0], 374),
       {
         text: 'X6',
         absolutePosition: {
           x: 229,
           y: 179,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X7',
-        absolutePosition: {
-          x: 375,
-          y: 179,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X8',
-        absolutePosition: {
-          x: 545,
-          y: 179,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X9',
-        absolutePosition: {
-          x: 375,
-          y: 204,
         },
         fontSize: 9,
       },
@@ -2134,12 +2103,12 @@ export function getPatientPhoneContent(phone: string): Content[] {
   ];
 }
 
-export function getPatientAddressContent(patient: Patient, xAxisOffset: number = 22): Content[] {
-  if (!patient.address?.length) {
+export function getAddressContent(address: Address | undefined, xAxisOffset: number = 22): Content[] {
+  if (!address) {
     return [];
   }
 
-  const { line, city, postalCode, state } = patient.address[0];
+  const { line, city, postalCode, state } = address;
 
   return [
     {

@@ -1,9 +1,10 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Claim, Coverage, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { Address, Bundle, Claim, Coverage, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ContentText } from 'pdfmake/interfaces';
 import {
+  getAddressContent,
   getCoverageInfo,
   getPatientInfo,
   getPatientPhoneContent,
@@ -98,6 +99,47 @@ describe('CMS 1500 PDF Bot', async () => {
 
     const resultOther2 = getPatientRelationshipToInsuredContent('parent');
     expect(resultOther2).toStrictEqual([{ text: 'X', absolutePosition: { x: 353, y: 156 }, fontSize: 9 }]);
+  });
+
+  test('getAddressContent', () => {
+    const address: Address = {
+      line: ['742 Evergreen Terrace'],
+      city: 'Springfield',
+      state: 'IL',
+      postalCode: '62704',
+    };
+
+    const result1 = getAddressContent(address);
+    expect(result1).toStrictEqual([
+      {
+        text: ['742 Evergreen Terrace'],
+        absolutePosition: { x: 22, y: 156 },
+        fontSize: 9,
+      },
+      {
+        text: 'Springfield',
+        absolutePosition: { x: 22, y: 179 },
+        fontSize: 9,
+      },
+      { text: 'IL', absolutePosition: { x: 203, y: 179 }, fontSize: 9 },
+      { text: '62704', absolutePosition: { x: 22, y: 204 }, fontSize: 9 },
+    ]);
+
+    const result2 = getAddressContent(address, 100);
+    expect(result2).toStrictEqual([
+      {
+        text: ['742 Evergreen Terrace'],
+        absolutePosition: { x: 100, y: 156 },
+        fontSize: 9,
+      },
+      {
+        text: 'Springfield',
+        absolutePosition: { x: 100, y: 179 },
+        fontSize: 9,
+      },
+      { text: 'IL', absolutePosition: { x: 281, y: 179 }, fontSize: 9 },
+      { text: '62704', absolutePosition: { x: 100, y: 204 }, fontSize: 9 },
+    ]);
   });
 
   // test('Insurer is not an organization', async () => {
