@@ -2,11 +2,10 @@ import { ContentType, createReference, WithId } from '@medplum/core';
 import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
-import { MedplumServerConfig } from '../config/types';
 import { executeBot } from '../fhir/operations/execute';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
-import { findProjectMembership } from './utils';
+import { findProjectMembership, WorkerInitializer } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 const MAX_BOTS_PER_PAGE = 500;
@@ -27,13 +26,7 @@ const queueName = 'CronQueue';
 let queue: Queue<CronJobData> | undefined = undefined;
 let worker: Worker<CronJobData> | undefined = undefined;
 
-/**
- * Initializes the Cron worker.
- * Sets up the BullMQ job queue.
- * Sets up the BullMQ worker.
- * @param config - The Medplum server config to use.
- */
-export function initCronWorker(config: MedplumServerConfig): void {
+export const initCronWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
@@ -55,7 +48,9 @@ export function initCronWorker(config: MedplumServerConfig): void {
   });
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
-}
+
+  return { queue, name: queueName };
+};
 
 /**
  * Shuts down the Cron worker.

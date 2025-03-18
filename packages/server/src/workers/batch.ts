@@ -10,13 +10,13 @@ import {
 import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
 import { AsyncJob, Bundle, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import { MedplumServerConfig } from '../config/types';
 import { getAuthenticatedContext, tryRunInRequestContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
+import { WorkerInitializer } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,
@@ -38,13 +38,7 @@ const jobName = 'BatchJobData';
 let queue: Queue<BatchJobData> | undefined = undefined;
 let worker: Worker<BatchJobData> | undefined = undefined;
 
-/**
- * Initializes the batch worker.
- * Sets up the BullMQ job queue.
- * Sets up the BullMQ worker.
- * @param config - The Medplum server config to use.
- */
-export function initBatchWorker(config: MedplumServerConfig): void {
+export const initBatchWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
@@ -62,7 +56,9 @@ export function initBatchWorker(config: MedplumServerConfig): void {
       ...config.bullmq,
     }
   );
-}
+
+  return { queue, name: queueName };
+};
 
 /**
  * Shuts down the batch worker.

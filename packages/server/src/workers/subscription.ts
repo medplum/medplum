@@ -24,7 +24,6 @@ import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Sub
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch, { HeadersInit } from 'node-fetch';
 import { createHmac } from 'node:crypto';
-import { MedplumServerConfig } from '../config/types';
 import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
@@ -35,7 +34,7 @@ import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { WorkerInitializer, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -75,13 +74,7 @@ const jobName = 'SubscriptionJobData';
 let queue: Queue<SubscriptionJobData> | undefined = undefined;
 let worker: Worker<SubscriptionJobData> | undefined = undefined;
 
-/**
- * Initializes the subscription worker.
- * Sets up the BullMQ job queue.
- * Sets up the BullMQ worker.
- * @param config - The Medplum server config to use.
- */
-export function initSubscriptionWorker(config: MedplumServerConfig): void {
+export const initSubscriptionWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
@@ -107,7 +100,9 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
   );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
-}
+
+  return { queue, name: queueName };
+};
 
 /**
  * Shuts down the subscription worker.

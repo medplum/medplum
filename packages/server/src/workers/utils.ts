@@ -1,17 +1,21 @@
-import { createReference, getExtension, isResource, Operator } from '@medplum/core';
+import { createReference, getExtension, isResource, Operator, WithId } from '@medplum/core';
 import {
+  AsyncJob,
   AuditEvent,
   AuditEventEntity,
   Bot,
   Coding,
+  Parameters,
   Practitioner,
   ProjectMembership,
   Reference,
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
+import { Job, Queue } from 'bullmq';
+import { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
-import { getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 
@@ -195,3 +199,27 @@ export async function updateAsyncJobOutput(
     }
   );
 }
+
+export type WorkerInitializer = (config: MedplumServerConfig) => { queue: Queue; name: string };
+
+export class QueueRegistry {
+  private readonly queueMap: Record<string, Queue | undefined>;
+
+  constructor() {
+    this.queueMap = {};
+  }
+
+  addQueue(name: string, queue: Queue): void {
+    this.queueMap[name] = queue;
+  }
+
+  removeQueue(name: string): void {
+    delete this.queueMap[name];
+  }
+
+  getQueue(name: string): Queue | undefined {
+    return this.queueMap[name];
+  }
+}
+
+export const queueRegistry = new QueueRegistry();
