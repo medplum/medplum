@@ -6,7 +6,7 @@ export const fullAnswer: Bundle = {
   entry: [
     {
       fullUrl: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945',
-      request: { method: 'POST', url: 'Patient' },
+      request: { method: 'PUT', url: 'Patient?name=Homer%20Simpson' },
       resource: {
         resourceType: 'Patient',
         name: [
@@ -22,6 +22,7 @@ export const fullAnswer: Bundle = {
             line: ['742 Evergreen Terrace'],
             city: 'Springfield',
             state: 'IL',
+            postalCode: '62704',
           },
         ],
         telecom: [
@@ -35,25 +36,69 @@ export const fullAnswer: Bundle = {
     },
     {
       fullUrl: 'urn:uuid:7914fb49-05e1-45cc-bffc-a3fdff1b72e1',
-      request: { method: 'POST', url: 'RelatedPerson' },
+      request: { method: 'PUT', url: 'RelatedPerson?name=Marge%20Simpson' },
       resource: {
         resourceType: 'RelatedPerson',
         patient: { reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945' },
         name: [{ given: ['Marge'], family: 'Simpson' }],
+        birthDate: '1960-08-12',
+        gender: 'female',
         address: [
           {
             line: ['742 Evergreen Terrace'],
             city: 'Springfield',
             state: 'IL',
+            postalCode: '62704',
           },
         ],
-        birthDate: '1960-08-12',
-        gender: 'female',
+        telecom: [
+          {
+            system: 'phone',
+            use: 'mobile',
+            value: '555-555-6393',
+          },
+        ],
+      },
+    },
+    {
+      fullUrl: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c',
+      request: { method: 'PUT', url: 'Practitioner?identifier=2490433892' },
+      resource: {
+        resourceType: 'Practitioner',
+        identifier: [
+          {
+            system: 'http://example.org/practitioner-npi',
+            id: 'NPI',
+            value: '2490433892',
+          },
+        ],
+        name: [
+          {
+            given: ['Kevin'],
+            family: 'Smith',
+          },
+        ],
+        address: [
+          {
+            line: ['2904 Main Street'],
+            city: 'Elizabeth',
+            state: 'MD',
+            country: 'US',
+            postalCode: '21219',
+          },
+        ],
+        telecom: [
+          {
+            use: 'work',
+            system: 'phone',
+            value: '555-555-9391',
+          },
+        ],
       },
     },
     {
       fullUrl: 'urn:uuid:f1ed24bf-7efa-44a1-b5ea-cc46414a282d',
-      request: { method: 'POST', url: 'Organization' },
+      request: { method: 'PUT', url: 'Organization?identifier=example-npi-number' },
       resource: {
         resourceType: 'Organization',
         identifier: [
@@ -97,7 +142,7 @@ export const fullAnswer: Bundle = {
     },
     {
       fullUrl: 'urn:uuid:72ec6c80-6dab-41e0-adff-a8670a5b4363',
-      request: { method: 'POST', url: 'Coverage' },
+      request: { method: 'PUT', url: 'Coverage?identifier=89442808' },
       resource: {
         resourceType: 'Coverage',
         identifier: [
@@ -137,44 +182,10 @@ export const fullAnswer: Bundle = {
         },
       },
     },
-    {
-      fullUrl: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c',
-      request: { method: 'POST', url: 'Practitioner' },
-      resource: {
-        resourceType: 'Practitioner',
-        identifier: [
-          {
-            system: 'http://example.org/practitioner-npi',
-            id: 'NPI',
-            value: '2490433892',
-          },
-        ],
-        name: [
-          {
-            given: ['Kevin'],
-            family: 'Smith',
-          },
-        ],
-        address: [
-          {
-            line: ['2904 Main Street'],
-            city: 'Elizabeth',
-            state: 'MD',
-            country: 'US  ',
-          },
-        ],
-        telecom: [
-          {
-            use: 'work',
-            system: 'phone',
-            value: '555-555-9391',
-          },
-        ],
-      },
-    },
+
     {
       fullUrl: 'urn:uuid:6a86eda3-ce9e-472c-ba6b-1855e518d779',
-      request: { method: 'POST', url: 'Claim' },
+      request: { method: 'PUT', url: 'Claim?identifier=example-claim-cms1500' },
       resource: {
         resourceType: 'Claim',
         identifier: [

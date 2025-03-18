@@ -48,7 +48,7 @@ describe('CMS 1500 PDF Bot', async () => {
     expect(patientInfo.patientName).toStrictEqual('Homer Simpson');
     expect(patientInfo.patientSex).toStrictEqual('male');
     expect(patientInfo.patientDob).toStrictEqual('5/12/1956');
-    expect(patientInfo.patientAddress).toStrictEqual('742 Evergreen Terrace, Springfield, IL');
+    expect(patientInfo.patientAddress).toStrictEqual('742 Evergreen Terrace, Springfield, IL, 62704');
     expect(patientInfo.patientPhone).toStrictEqual('555-555-6392');
   });
 
