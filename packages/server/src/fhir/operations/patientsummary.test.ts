@@ -128,8 +128,8 @@ describe('Patient Summary Operation', () => {
     expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
     const composition = result.entry?.[0]?.resource as WithId<Composition>;
-    expectSectionToContain(composition, LOINC_VITAL_SIGNS_SECTION, getReferenceString(observation));
-    expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, getReferenceString(condition));
+    expectSectionToContain(composition, LOINC_VITAL_SIGNS_SECTION, 'Result', getReferenceString(observation));
+    expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Problem', getReferenceString(condition));
   });
 
   describe('PatientSummaryBuilder', () => {
@@ -182,15 +182,15 @@ describe('Patient Summary Operation', () => {
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
       const composition = result.entry?.[0]?.resource as WithId<Composition>;
-      expectSectionToContain(composition, LOINC_ALLERGIES_SECTION, 'AllergyIntolerance/allergy1');
-      expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Condition/condition1');
-      expectSectionToContain(composition, LOINC_DEVICES_SECTION, 'DeviceUseStatement/device1');
-      expectSectionToContain(composition, LOINC_RESULTS_SECTION, 'DiagnosticReport/report1');
-      expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'Goal/goal1');
-      expectSectionToContain(composition, LOINC_IMMUNIZATIONS_SECTION, 'Immunization/imm1');
-      expectSectionToContain(composition, LOINC_MEDICATIONS_SECTION, 'MedicationRequest/med1');
-      expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Procedure/proc1');
-      expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'ServiceRequest/sr1');
+      expectSectionToContain(composition, LOINC_ALLERGIES_SECTION, 'Substance', 'AllergyIntolerance/allergy1');
+      expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Problem', 'Condition/condition1');
+      expectSectionToContain(composition, LOINC_DEVICES_SECTION, 'Device', 'DeviceUseStatement/device1');
+      expectSectionToContain(composition, LOINC_RESULTS_SECTION, 'Result', 'DiagnosticReport/report1');
+      expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'Planned', 'Goal/goal1');
+      expectSectionToContain(composition, LOINC_IMMUNIZATIONS_SECTION, 'Vaccine', 'Immunization/imm1');
+      expectSectionToContain(composition, LOINC_MEDICATIONS_SECTION, 'Medication', 'MedicationRequest/med1');
+      expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Procedure', 'Procedure/proc1');
+      expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'Planned', 'ServiceRequest/sr1');
     });
 
     test('Observations', () => {
@@ -227,7 +227,7 @@ describe('Patient Summary Operation', () => {
       const composition = result.entry?.[0]?.resource as WithId<Composition>;
 
       for (let i = 0; i < categories.length; i++) {
-        expectSectionToContain(composition, categories[i][1], `Observation/obs${i}`);
+        expectSectionToContain(composition, categories[i][1], 'Result', `Observation/obs${i}`);
       }
     });
 
@@ -359,10 +359,14 @@ describe('Patient Summary Operation', () => {
   });
 });
 
-function expectSectionToContain(composition: Composition, code: string, reference: string): void {
+function expectSectionToContain(composition: Composition, code: string, narrative: string, reference: string): void {
   const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === code);
   if (!section) {
     throw new Error(`Section not found: ${code}`);
+  }
+
+  if (!section.text?.div?.includes(narrative)) {
+    throw new Error(`Narrative not found in section ${code}: ${narrative} (${section.text?.div})`);
   }
 
   const entry = section?.entry?.find((e) => e.reference === reference);
