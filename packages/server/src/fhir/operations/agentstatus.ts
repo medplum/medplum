@@ -37,6 +37,7 @@ export const operation: OperationDefinition = {
 export async function agentStatusHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
 
+  // Read the agent as the user to verify access
   const agent = await getAgentForRequest(req, repo);
   if (!agent) {
     return [badRequest('Must specify agent ID or identifier')];
