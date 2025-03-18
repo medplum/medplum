@@ -7,6 +7,11 @@ export async function main(argv: string[]): Promise<void> {
     const pidFilePath = createPidFile('medplum-agent-upgrader');
     registerAgentCleanup(pidFilePath);
     await upgraderMain(argv);
+  } else if (argv[2] === '--stopgap') {
+    // Use a different PID file for the stopgap agent
+    const pidFilePath = createPidFile('medplum-agent-stopgap');
+    registerAgentCleanup(pidFilePath);
+    await agentMain(argv);
   } else {
     const pidFilePath = createPidFile('medplum-agent');
     registerAgentCleanup(pidFilePath);
