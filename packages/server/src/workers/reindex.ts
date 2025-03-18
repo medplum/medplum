@@ -10,14 +10,13 @@ import {
 import { AsyncJob, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import * as semver from 'semver';
-import { MedplumServerConfig } from '../config/types';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
 import { getServerVersion } from '../util/version';
-import { QueueRegistry, shouldContinueJob, updateAsyncJobOutput } from './utils';
+import { shouldContinueJob, updateAsyncJobOutput, WorkerInitializer, queueRegistry } from './utils';
 
 /*
  * The reindex worker updates resource rows in the database,
@@ -52,7 +51,7 @@ let worker: Worker<ReindexJobData> | undefined = undefined;
 const defaultBatchSize = 500;
 const defaultProgressLogThreshold = 50_000;
 
-export function initReindexWorker(config: MedplumServerConfig, queueRegistry: QueueRegistry): void {
+export const initReindexWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
@@ -67,7 +66,6 @@ export function initReindexWorker(config: MedplumServerConfig, queueRegistry: Qu
       },
     },
   });
-  queueRegistry.addQueue(queueName, queue);
 
   worker = new Worker<ReindexJobData>(
     queueName,
@@ -87,7 +85,9 @@ export function initReindexWorker(config: MedplumServerConfig, queueRegistry: Qu
   );
   worker.on('failed', (job, err) => globalLogger.info(`Reindex worker failed job ${job?.id} with ${err}`));
   worker.on('completed', (job) => globalLogger.info(`Reindex worker completed job ${job?.id}`));
-}
+
+  return { queue, name: queueName };
+};
 
 /**
  * Shuts down the reindex worker.
