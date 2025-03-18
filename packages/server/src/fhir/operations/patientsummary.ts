@@ -153,6 +153,9 @@ export async function getPatientSummary(
   return builder.build();
 }
 
+export type ResultResourceType = DiagnosticReport | Observation;
+export type PlanResourceType = CarePlan | Goal | ServiceRequest;
+
 /**
  * Builder for the Patient Summary.
  *
@@ -165,12 +168,12 @@ export class PatientSummaryBuilder {
   private readonly allergies: AllergyIntolerance[] = [];
   private readonly medications: MedicationRequest[] = [];
   private readonly problemList: Condition[] = [];
-  private readonly results: (DiagnosticReport | Observation)[] = [];
+  private readonly results: ResultResourceType[] = [];
   private readonly socialHistory: Observation[] = [];
   private readonly vitalSigns: Observation[] = [];
   private readonly procedures: Procedure[] = [];
   private readonly assessments: ClinicalImpression[] = [];
-  private readonly planOfTreatment: (CarePlan | Goal | ServiceRequest)[] = [];
+  private readonly planOfTreatment: PlanResourceType[] = [];
   private readonly immunizations: Immunization[] = [];
   private readonly devices: DeviceUseStatement[] = [];
   private readonly nestedIds = new Set<string>();
@@ -510,7 +513,7 @@ export class PatientSummaryBuilder {
     );
   }
 
-  private buildResultTable(resources: (DiagnosticReport | Observation)[]): string {
+  private buildResultTable(resources: ResultResourceType[]): string {
     const rows: (string | undefined)[][] = [];
     for (const r of resources) {
       this.buildResultRows(rows, r);
@@ -518,38 +521,46 @@ export class PatientSummaryBuilder {
     return createTable(['Name', 'Result', 'Date'], rows);
   }
 
-  private buildResultRows(rows: (string | undefined)[][], resource: DiagnosticReport | Observation): void {
+  private buildResultRows(rows: (string | undefined)[][], resource: ResultResourceType): void {
     if (resource.resourceType === 'DiagnosticReport') {
-      rows.push([formatCodeableConcept(resource.code), undefined, formatDate(resource.effectiveDateTime)]);
-      if (resource.result) {
-        for (const result of resource.result) {
-          const r = this.getByReference(result);
-          if (r && r.resourceType === 'Observation') {
-            this.buildResultRows(rows, r);
-          }
-        }
-      }
+      this.buildDiagnosticReportRow(rows, resource);
     }
 
     if (resource.resourceType === 'Observation') {
-      rows.push([
-        formatCodeableConcept(resource.code),
-        formatObservationValue(resource),
-        formatDate(resource.effectiveDateTime),
-      ]);
+      this.buildObservationRow(rows, resource);
+    }
+  }
 
-      if (resource.hasMember) {
-        for (const member of resource.hasMember) {
-          const m = this.getByReference(member);
-          if (m && m.resourceType === 'Observation') {
-            this.buildResultRows(rows, m);
-          }
+  private buildDiagnosticReportRow(rows: (string | undefined)[][], resource: DiagnosticReport): void {
+    rows.push([formatCodeableConcept(resource.code), undefined, formatDate(resource.effectiveDateTime)]);
+    if (resource.result) {
+      for (const result of resource.result) {
+        const r = this.getByReference(result);
+        if (r && r.resourceType === 'Observation') {
+          this.buildResultRows(rows, r);
         }
       }
     }
   }
 
-  private buildPlanTable(resources: (CarePlan | Goal | ServiceRequest)[]): string {
+  private buildObservationRow(rows: (string | undefined)[][], resource: Observation): void {
+    rows.push([
+      formatCodeableConcept(resource.code),
+      formatObservationValue(resource),
+      formatDate(resource.effectiveDateTime),
+    ]);
+
+    if (resource.hasMember) {
+      for (const member of resource.hasMember) {
+        const m = this.getByReference(member);
+        if (m && m.resourceType === 'Observation') {
+          this.buildResultRows(rows, m);
+        }
+      }
+    }
+  }
+
+  private buildPlanTable(resources: PlanResourceType[]): string {
     const rows: (string | undefined)[][] = [];
     for (const r of resources) {
       this.buildPlanRows(rows, r);
@@ -557,7 +568,7 @@ export class PatientSummaryBuilder {
     return createTable(['Planned Care', 'Start Date'], rows);
   }
 
-  private buildPlanRows(rows: (string | undefined)[][], resource: CarePlan | Goal | ServiceRequest): void {
+  private buildPlanRows(rows: (string | undefined)[][], resource: PlanResourceType): void {
     if (resource.resourceType === 'CarePlan') {
       rows.push([formatCodeableConcept(resource.category?.[0]), formatDate(resource.period?.start)]);
       if (resource.activity) {
