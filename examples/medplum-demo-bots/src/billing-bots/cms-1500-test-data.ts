@@ -24,6 +24,13 @@ export const fullAnswer: Bundle = {
             state: 'IL',
           },
         ],
+        telecom: [
+          {
+            system: 'phone',
+            use: 'mobile',
+            value: '555-555-6392',
+          },
+        ],
       },
     },
     {
@@ -160,7 +167,7 @@ export const fullAnswer: Bundle = {
           {
             use: 'work',
             system: 'phone',
-            value: '3915559391',
+            value: '555-555-9391',
           },
         ],
       },
@@ -173,7 +180,7 @@ export const fullAnswer: Bundle = {
         identifier: [
           {
             system: 'http://example.org/claims',
-            value: 'example-claim',
+            value: 'example-claim-cms1500',
           },
         ],
         status: 'active',
