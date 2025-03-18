@@ -1,5 +1,5 @@
-<h1 align="center">Medplum Managed Service Organization (MSO) Demo</h1>
-<p align="center">A starter application for building a multi-tenant healthcare platform on Medplum.</p>
+<h1 align="center">Medplum Managed Service Organization (MSO) Demo App</h1>
+<p align="center">A starter application for building a MSO platform on Medplum. It shows how to control clinician access where clinicians and patients can be enrolled at multiple clinics.</p>
 <p align="center">
 <a href="https://github.com/medplum/medplum-mso-demo/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/badge/license-Apache-blue.svg" />
@@ -8,13 +8,14 @@
 
 ## Overview
 
-- Clinician and Patient management interface - see [src/components/ClinicianList.tsx](./src/components/ClinicianList.tsx) and [src/components/PatientList.tsx](./src/components/PatientList.tsx)
 - Operations to enroll and unenroll clinicians and patients across different clinics with automatic access policy updates - see [src/components/utils/enrollment.ts](./src/utils/enrollment.ts)
 - Fetching all patients and clinicians enrolled in a clinic - see [src/components/utils/enrollment.ts](./src/utils/enrollment.ts)
+- Clinician and Patient management interface - see [src/components/ClinicianList.tsx](./src/components/ClinicianList.tsx) and [src/components/PatientList.tsx](./src/components/PatientList.tsx)
+- MSO Access Policy - see [src/data/access-policy.ts](./src/data/access-policy.ts)
 
 ## Getting Started
 
-If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
+It is recommended that you create a new Medplum project to run this demo. Follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register).
 
 Clone the repo to your local machine.
 
@@ -30,7 +31,7 @@ Then, run the app
 npm run dev
 ```
 
-This app will run on `http://localhost:3000` and connect to a hosted Medplum project at `https://api.medplum.com/` by default.
+This app will run on `http://localhost:3000` and connect to a hosted Medplum project at `https://api.medplum.com/` by default. The server url can be changed in [main.tsx](./src/main.tsx)
 
 
 ## Background
@@ -43,9 +44,9 @@ A Managed Service Organization (MSO) is a healthcare organization that provides 
 For Managed Service Organizations (MSOs), complexity stems from practitioners potentially working across multiple tenants and patients potentially receiving care from multiple healthcare partners.
 
 This demo implements a solution where:
-- Tenants are separated as Organizations(clinics) within a single Medplum Project
-- AccessPolicy controls limit clinician access to resources only within shared clinics
+- Tenants are separated as Organizations (clinics) within a single Medplum Project
 - Patients and clinicians can each be enrolled in multiple clinics
+- AccessPolicy controls limit clinician access to resources only within shared clinics
 
 <img src="./public/how-it-works.png" alt="How it works" />
 

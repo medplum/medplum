@@ -62,8 +62,10 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
 
       const allPractitioners = searchResult.entry?.map((e) => e.resource as Practitioner) ?? [];
       const enrolledPractitioners = await getEnrolledPractitioners(medplum, organization);
+
+      // Filter out already enrolled practitioners and the current user
       const availablePractitioners = allPractitioners.filter(
-        (practitioner) => !enrolledPractitioners.some((p) => p.id === practitioner.id)
+        (practitioner) => !enrolledPractitioners.some((p) => p.id === practitioner.id) && practitioner.id !== medplum.getProfile()?.id
       );
 
       const options = availablePractitioners.map((practitioner) => ({
@@ -164,19 +166,28 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
         );
 
         const successCount = results.filter((result) => result.status === 'fulfilled').length;
+        const failedCount = results.filter((result) => result.status === 'rejected');
 
         showNotification({
           title: 'Success',
           message: `${successCount} clinician${successCount !== 1 ? 's' : ''} enrolled in ${organization.name}`,
           color: 'green',
         });
-      }
 
-      // Reset form, close modal, and refresh the list
-      setSelectedClinicians([]);
-      setSelectedClinicianIds([]);
-      setEnrollModalOpen(false);
-      loadClinicians().catch(console.error);
+        if (failedCount.length > 0) {
+          showNotification({
+            title: 'Error',
+            message: `${failedCount.map((result) => result.reason).join(', ')}`,
+            color: 'red',
+          });
+        }
+
+        // Reset form, close modal, and refresh the list
+        setSelectedClinicians([]);
+        setSelectedClinicianIds([]);
+        setEnrollModalOpen(false);
+        loadClinicians().catch(console.error);
+      }
     } catch (error) {
       showNotification({
         title: 'Error',

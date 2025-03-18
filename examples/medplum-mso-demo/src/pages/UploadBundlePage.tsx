@@ -6,8 +6,7 @@ import { useState } from 'react';
 import '@mantine/notifications/styles.css';
 import { IconCopy, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import { useAdminStatus } from '../utils/admin';
-import { PATIENTS_BUNDLE, createResourcesBundle } from '../data/core/sample-bundle';
-import { Patient } from '@medplum/fhirtypes';
+import { RESOURCES_BUNDLE } from '../data/core/sample-bundle';
 
 /**
  * This page allows you to upload sample FHIR resources including 3 patients (A, B, and C) along with their
@@ -28,22 +27,11 @@ export function UploadBundlePage(): JSX.Element {
     setLoading(true);
     try {
       // Step 1: Create the patients
-      const patientsResponse = await medplum.executeBatch(PATIENTS_BUNDLE);
-
-      // Extract the created patients
-      const patients = patientsResponse.entry?.map((entry) => entry.resource as Patient) || [];
-
-      if (patients.length !== 3) {
-        throw new Error('Failed to create all patients');
-      }
-
-      // Step 2: Create resources referencing the patients
-      const resourcesBundle = createResourcesBundle(patients);
-      const resourcesResponse = await medplum.executeBatch(resourcesBundle);
+      const resourcesResponse = await medplum.executeBatch(RESOURCES_BUNDLE);
 
       // Combine all created resources for display
       const allResources = [
-        ...patients.map((patient) => `Patient/${patient.id}`),
+          // ...patients.map((patient) => `Patient/${patient.id}`),
         ...(resourcesResponse.entry?.map((entry) => {
           const resource = entry.resource;
           if (resource) {
@@ -98,15 +86,6 @@ export function UploadBundlePage(): JSX.Element {
     );
   }
 
-  // Generate a sample resources bundle for display purposes
-  const samplePatients = [
-    { id: 'sample-id-1', resourceType: 'Patient' },
-    { id: 'sample-id-2', resourceType: 'Patient' },
-    { id: 'sample-id-3', resourceType: 'Patient' },
-  ] as Patient[];
-
-  const sampleResourcesBundle = createResourcesBundle(samplePatients);
-
   return (
     <Document>
       <Stack gap="lg">
@@ -141,32 +120,11 @@ export function UploadBundlePage(): JSX.Element {
           </Text>
 
           <Title order={4} mt="md">
-            Patients Bundle
+            Resources Bundle
           </Title>
           <Box pos="relative">
-            <Code block>{JSON.stringify(PATIENTS_BUNDLE, null, 2)}</Code>
-            <CopyButton value={JSON.stringify(PATIENTS_BUNDLE, null, 2)} timeout={2000}>
-              {({ copied, copy }) => (
-                <ActionIcon
-                  color={copied ? 'teal' : 'gray'}
-                  variant="subtle"
-                  onClick={copy}
-                  pos="absolute"
-                  top={8}
-                  right={8}
-                >
-                  {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                </ActionIcon>
-              )}
-            </CopyButton>
-          </Box>
-
-          <Title order={4} mt="md">
-            Resources Bundle (with dynamic patient references)
-          </Title>
-          <Box pos="relative">
-            <Code block>{JSON.stringify(sampleResourcesBundle, null, 2)}</Code>
-            <CopyButton value={JSON.stringify(sampleResourcesBundle, null, 2)} timeout={2000}>
+            <Code block>{JSON.stringify(RESOURCES_BUNDLE, null, 2)}</Code>
+            <CopyButton value={JSON.stringify(RESOURCES_BUNDLE, null, 2)} timeout={2000}>
               {({ copied, copy }) => (
                 <ActionIcon
                   color={copied ? 'teal' : 'gray'}

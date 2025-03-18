@@ -12,19 +12,8 @@ import { useEffect, useState } from 'react';
 export async function isUserAdmin(medplum: MedplumClient): Promise<boolean> {
   try {
     // Get the current user's profile
-    const profile = medplum.getProfile();
-    if (!profile) {
-      return false;
-    }
-
-    // Search for the user's ProjectMembership
-    const searchResult = await medplum.search('ProjectMembership', {
-      profile: `${profile.resourceType}/${profile.id}`,
-    });
-
-    // Check if any membership has admin=true
-    const membership = searchResult.entry?.[0]?.resource as ProjectMembership | undefined;
-    return !!membership?.admin;
+    const membership = medplum.getProjectMembership() as ProjectMembership | undefined;
+    return membership?.admin ?? false;
   } catch (error) {
     console.error('Error checking admin status:', normalizeErrorString(error));
     return false;
