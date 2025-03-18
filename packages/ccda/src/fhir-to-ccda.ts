@@ -834,6 +834,7 @@ class FhirToCcdaConverter {
    * Map the FHIR author to the C-CDA author.
    * @param author - The author to map.
    * @param time - The time to map.
+   * @param custodian - The represented Organization
    * @returns The C-CDA author.
    */
   private mapAuthor(
@@ -1514,7 +1515,7 @@ class FhirToCcdaConverter {
       ];
     }
 
-    if (code == '76689-9') {
+    if (code === '76689-9') {
       // Birth Sex
       return [{ '@_root': OID_BIRTH_SEX }, { '@_root': OID_BIRTH_SEX, '@_extension': '2016-06-01' }];
     }
