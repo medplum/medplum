@@ -11,12 +11,12 @@ import { createReference, MedplumClient, normalizeErrorString, getReferenceStrin
 
 /**
  * Enrolls a practitioner in an organization by adding the organization to the access array of the practitioner's project membership.
- * 
+ *
  *  1. Search for the practitioner's project membership, if there is no project membership, throw an error
  *  2. Check if the organization reference already exists in any access array
  *  3. If the organization reference does not exist, add the organization to the ProjectMembership.access array
  *  4. Update the ProjectMembership resource
- * 
+ *
  * @param medplum - The Medplum client.
  * @param practitioner - The practitioner to enroll.
  * @param organization - The organization to enroll the practitioner in.
@@ -70,18 +70,18 @@ export async function enrollPractitioner(
       throw new Error(normalizeErrorString(error));
     }
   }
-  throw new Error(`No project membership found for practitioner ${practitioner  .id}`);
+  throw new Error(`No project membership found for practitioner ${practitioner.id}`);
 }
 
 /**
  * Enrolls a patient in an organization. This is done by adding a reference to the organization the patient with the $set-accounts operation.
- * 
+ *
  *  1. Get the patient's pre-existing accounts
  *  2. Check if already enrolled, and if so, return
  *  3. Construct the Parameters resource with the existing accounts and the new organization
  *  4. Call the $set-accounts operation with the Parameters resource. It will update the patient resource and all other resources in the patient's compartment.
  *     See docs: https://www.medplum.com/docs/api/fhir/operations/patient-set-accounts
- * 
+ *
  * @param medplum - The Medplum client.
  * @param patient - The patient to enroll.
  * @param organization - The organization to enroll the patient in.
@@ -129,12 +129,12 @@ export async function enrollPatient(
 
 /**
  * Unenrolls a patient from an organization.
- * 
+ *
  *  1. Get the patient's pre-existing accounts
  *  2. Construct the Parameters resource with the existing accounts except the one to remove
  *  3. Call the $set-accounts operation with the Parameters resource. It will update the patient resource and all other resources in the patient's compartment.
  *     See docs: https://www.medplum.com/docs/api/fhir/operations/patient-set-accounts
- * 
+ *
  * @param medplum - The Medplum client.
  * @param patient - The patient to unenroll.
  * @param organization - The organization to unenroll the patient from.
@@ -171,11 +171,11 @@ export async function unEnrollPatient(
 
 /**
  * Unenrolls a practitioner from an organization.
- * 
+ *
  *  1. Search for the practitioner's project membership
  *  2. Remove the organization from the access array of the practitioner's project membership
  *  3. Update the ProjectMembership resource
- * 
+ *
  * @param medplum - The Medplum client.
  * @param practitioner - The practitioner to unenroll.
  * @param organization - The organization to unenroll the practitioner from.
@@ -210,12 +210,12 @@ export async function unEnrollPractitioner(
 
 /**
  * Gets practitioners enrolled in a specific organization.
- * 
+ *
  *  1. Search for all ProjectMembership resources
  *  2. Filter the memberships to only include those with access to the organization
  *  3. Search for the Practitioner resources that have ProjectMembership resources with access to this organization
  *  4. Return the Practitioners
- * 
+ *
  * @param medplum - The Medplum client.
  * @param organization - The organization to get enrolled practitioners for.
  * @returns Array of practitioners enrolled in the organization.
@@ -229,7 +229,7 @@ export async function getEnrolledPractitioners(
 
   // 2. Filter ProjectMembership resources to only the practitioners with access to this organization
   const practitionerRefs = memberships
-    .filter((membership) => 
+    .filter((membership) =>
       membership.access?.some((a) =>
         a.parameter?.some(
           (p) => p.name === 'organization' && p.valueReference?.reference === getReferenceString(organization)
@@ -255,11 +255,11 @@ export async function getEnrolledPractitioners(
 
 /**
  * Gets patients enrolled in a specific organization.
- * 
+ *
  *  1. Invalidate the Patient search cache first
  *  2. Search for all patients with this organization in their compartment
  *  3. Return the patients
- * 
+ *
  * @param medplum - The Medplum client.
  * @param organization - The organization to get enrolled patients for.
  * @returns Array of patients enrolled in the organization.

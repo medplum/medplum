@@ -65,7 +65,8 @@ export function ClinicianList({ organization }: ClinicianListProps): JSX.Element
 
       // Filter out already enrolled practitioners and the current user
       const availablePractitioners = allPractitioners.filter(
-        (practitioner) => !enrolledPractitioners.some((p) => p.id === practitioner.id) && practitioner.id !== medplum.getProfile()?.id
+        (practitioner) =>
+          !enrolledPractitioners.some((p) => p.id === practitioner.id) && practitioner.id !== medplum.getProfile()?.id
       );
 
       const options = availablePractitioners.map((practitioner) => ({

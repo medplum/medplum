@@ -31,7 +31,7 @@ export function UploadBundlePage(): JSX.Element {
 
       // Combine all created resources for display
       const allResources = [
-          // ...patients.map((patient) => `Patient/${patient.id}`),
+        // ...patients.map((patient) => `Patient/${patient.id}`),
         ...(resourcesResponse.entry?.map((entry) => {
           const resource = entry.resource;
           if (resource) {

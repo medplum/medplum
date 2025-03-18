@@ -2,14 +2,14 @@ import { Bundle } from '@medplum/fhirtypes';
 
 /**
  * This bundle demonstrates the FHIR upsert pattern using conditional PUT operations.
- * 
+ *
  * For Patients: Using family and given name as search parameters
  * For other resources: Using unique identifiers to ensure proper upsert behavior
- * 
+ *
  * The PUT method with search parameters allows the server to:
  * 1. Update the resource if it exists (matching the search criteria)
  * 2. Create a new resource if no match is found
- * 
+ *
  * This approach prevents duplicate resources when the bundle is uploaded multiple times.
  */
 
@@ -67,8 +67,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'observation-patient-a'
-          }
+            value: 'observation-patient-a',
+          },
         ],
         status: 'final',
         code: {
@@ -89,8 +89,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'observation-patient-b'
-          }
+            value: 'observation-patient-b',
+          },
         ],
         status: 'final',
         code: {
@@ -111,8 +111,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'observation-patient-c'
-          }
+            value: 'observation-patient-c',
+          },
         ],
         status: 'final',
         code: {
@@ -133,8 +133,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'diagnostic-report-patient-a'
-          }
+            value: 'diagnostic-report-patient-a',
+          },
         ],
         status: 'final',
         code: {
@@ -155,8 +155,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'diagnostic-report-patient-b'
-          }
+            value: 'diagnostic-report-patient-b',
+          },
         ],
         status: 'final',
         code: {
@@ -177,8 +177,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'diagnostic-report-patient-c'
-          }
+            value: 'diagnostic-report-patient-c',
+          },
         ],
         status: 'final',
         code: {
@@ -199,8 +199,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'encounter-patient-a'
-          }
+            value: 'encounter-patient-a',
+          },
         ],
         status: 'finished',
         class: {
@@ -223,8 +223,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'encounter-patient-b'
-          }
+            value: 'encounter-patient-b',
+          },
         ],
         status: 'finished',
         class: {
@@ -247,8 +247,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'encounter-patient-c'
-          }
+            value: 'encounter-patient-c',
+          },
         ],
         status: 'finished',
         class: {
@@ -271,8 +271,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'communication-patient-a'
-          }
+            value: 'communication-patient-a',
+          },
         ],
         status: 'completed',
         subject: { reference: `Patient?family=A` },
@@ -290,8 +290,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'communication-patient-b'
-          }
+            value: 'communication-patient-b',
+          },
         ],
         status: 'completed',
         subject: { reference: `Patient?family=B` },
@@ -309,8 +309,8 @@ export const RESOURCES_BUNDLE: Bundle = {
         identifier: [
           {
             system: 'https://example.org/identifiers',
-            value: 'communication-patient-c'
-          }
+            value: 'communication-patient-c',
+          },
         ],
         status: 'completed',
         subject: { reference: `Patient?family=C` },
