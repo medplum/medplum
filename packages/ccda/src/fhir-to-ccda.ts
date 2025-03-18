@@ -5,6 +5,7 @@ import {
   Bundle,
   CarePlan,
   CareTeam,
+  ClinicalImpression,
   CodeableConcept,
   Composition,
   CompositionEvent,
@@ -45,6 +46,7 @@ import {
   OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_ALLERGY_OBSERVATION,
   OID_ALLERGY_PROBLEM_ACT,
+  OID_ASSESSMENTS_SECTION,
   OID_AUTHOR_PARTICIPANT,
   OID_CARE_TEAM_ORGANIZER_ENTRY,
   OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
@@ -489,6 +491,12 @@ class FhirToCcdaConverter {
     }
 
     const resources = this.findResourcesByReferences(section.entry);
+
+    // Assessments section is special case, because it does not have any "entry" elements
+    // Instead, the entire clinical impression resource is included in the section
+    if (sectionCode === '51848-0' && resources.length === 1 && resources[0].resourceType === 'ClinicalImpression') {
+      return this.createClinicalImpressionSection(section, resources[0] as ClinicalImpression);
+    }
 
     return {
       templateId: templateId,
@@ -1319,22 +1327,26 @@ class FhirToCcdaConverter {
     }
   }
 
-  private createPlanOfTreatmentCarePlanEntry(resource: CarePlan): CcdaEntry {
-    return {
-      act: [
-        {
-          '@_classCode': 'ACT',
-          '@_moodCode': 'INT',
-          id: this.mapIdentifiers(resource.id, resource.identifier),
-          code: mapCodeableConceptToCcdaValue(resource.category?.[0]) as CcdaCode,
-          templateId: [{ '@_root': OID_INSTRUCTIONS }],
-          statusCode: { '@_code': 'completed' },
-          text: resource.description
-            ? { '#text': resource.description }
-            : this.createTextFromExtensions(resource.extension),
-        },
-      ],
-    };
+  private createPlanOfTreatmentCarePlanEntry(resource: CarePlan): CcdaEntry | undefined {
+    if (resource.status === 'completed') {
+      return {
+        act: [
+          {
+            '@_classCode': 'ACT',
+            '@_moodCode': 'INT',
+            templateId: [{ '@_root': OID_INSTRUCTIONS }],
+            id: this.mapIdentifiers(resource.id, resource.identifier),
+            code: mapCodeableConceptToCcdaValue(resource.category?.[0]) as CcdaCode,
+            text: resource.description
+              ? { '#text': resource.description }
+              : this.createTextFromExtensions(resource.extension),
+            statusCode: { '@_code': resource.status },
+          },
+        ],
+      };
+    }
+
+    return undefined;
   }
 
   private createPlanOfTreatmentGoalEntry(resource: Goal): CcdaEntry {
@@ -1793,6 +1805,23 @@ class FhirToCcdaConverter {
           })) as CcdaOrganizerComponent[],
         },
       ],
+    };
+  }
+
+  /**
+   * Handles the ClinicalImpression special case.
+   * Unlike most other sections, the "Assessments" section can skip the `<entry>` elements and directly contain the `<text>` element.
+   * @param section - The Composition section to create the C-CDA section for.
+   * @param resource - The ClinicalImpression resource to create the C-CDA section for.
+   * @returns The C-CDA section for the ClinicalImpression resource.
+   */
+  private createClinicalImpressionSection(section: CompositionSection, resource: ClinicalImpression): CcdaSection {
+    return {
+      templateId: [{ '@_root': OID_ASSESSMENTS_SECTION }],
+      code: mapCodeableConceptToCcdaCode(section.code),
+      title: section.title,
+      text: resource.summary,
+      author: this.mapAuthor(resource.assessor, resource.date),
     };
   }
 

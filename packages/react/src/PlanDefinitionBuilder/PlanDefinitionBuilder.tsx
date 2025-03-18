@@ -6,6 +6,7 @@ import {
   CloseButton,
   Flex,
   Group,
+  NativeSelect,
   Paper,
   Radio,
   Select,
@@ -23,8 +24,6 @@ import { SubmitButton } from '../Form/SubmitButton';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { killEvent } from '../utils/dom';
 import classes from './PlanDefinitionBuilder.module.css';
-import { CodeInput } from '../CodeInput/CodeInput';
-import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 
 export interface PlanDefinitionBuilderProps {
   readonly value: Partial<PlanDefinition> | Reference<PlanDefinition>;
@@ -241,10 +240,9 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
       {editing && (
         <Stack gap="xl" p="md">
           <Box>
-            <Text fw={600} mb="xs">
-              Task Description
-            </Text>
+     
             <TextInput
+            label="Task Description"
               placeholder="Enter task description"
               name={`actionDescription-${action.id}`}
               defaultValue={action.description}
@@ -253,14 +251,12 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
           </Box>
 
           <Box>
-            <Text fw={600} mb="xs">
-              Type
-            </Text>
-            <Radio.Group value={actionType} onChange={setActionType}>
-                <Select
+            <NativeSelect
+                label="Type of Action"
                 value={actionType}
-                onChange={(value) => {
-                  setActionType(value ?? undefined);
+                onChange={(e) => {
+                  const value = e.currentTarget.value === 'standard' ? undefined : e.currentTarget.value;
+                  setActionType(value);
                   props.onChange({ ...props.action, definitionCanonical: value === 'standard' ? undefined : props.action.definitionCanonical });
                 }}
                 data={[
@@ -269,12 +265,11 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   { value: 'activitydefinition', label: 'Task with Activity Definition' },
                 ]}
                 />
-            </Radio.Group>
           </Box>
 
           {actionType === 'questionnaire' && (
-            <Box>
-              <Group gap="xs" mb="xs">
+            <Stack gap={0}>
+              <Group gap={0} mb="xs">
                 <Text fw={600}>Select questionnaire</Text>
                 <Text c="red">*</Text>
               </Group>
@@ -285,51 +280,22 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                 </Anchor>
               </Text>
               <ActionResourceTypeBuilder resourceType="Questionnaire" action={action} onChange={props.onChange} />
-            </Box>
+            </Stack>
           )}
 
           {actionType === 'activitydefinition' && (
-            <Stack>
-              <Group gap="xs" mb="xs">
+            <Stack gap={0}>
+              <Group gap={0} mb="xs">
                 <Text fw={600}>Select activity definition</Text>
                 <Text c="red">*</Text>
               </Group>
               <Text size="sm" c="dimmed" mb="sm">
-                ActivityDefinition to be shown in the task in Encounter view. You can create new one from{' '}
+                ActivityDefinition.kind resource to be shown in the task in Encounter view. You can create new one from{' '}
                 <Anchor href="/ActivityDefinition" target="_blank" c="blue">
                   activity definitions list
                 </Anchor>
               </Text>
               <ActionResourceTypeBuilder resourceType="ActivityDefinition" action={action} onChange={props.onChange} />
-              
-              <CodeableConceptInput
-                name="cpt-code"
-                label="CPT Code"
-                binding="http://medplum.com/fhir/ValueSet/cpt-codes"
-                maxValues={1}
-                required={true}
-                onChange={(value) => {
-                  if (value) {
-                    console.log(value);
-                  }
-                } } 
-                path='ActivityDefinition.code'              
-                />
-
-              <CodeableConceptInput
-                name="procedure"
-                label="Procedure"
-                binding="http://hl7.org/fhir/ValueSet/procedure-code"
-                maxValues={1}
-                required={true}
-                onChange={(value) => {
-                  if (value) {
-                    console.log(value);
-                  }
-                } } 
-                path='ActivityDefinition.code'           
-                />
-                
             </Stack>
           )}
         </Stack>
