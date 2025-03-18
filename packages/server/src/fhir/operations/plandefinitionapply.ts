@@ -123,6 +123,15 @@ async function createQuestionnaireTask(
   ]);
 }
 
+/**
+ * Creates a Task and RequestGroup action to request a resource.
+ * @param repo - The repository configured for the current user.
+ * @param requester - The user who requested the plan definition.
+ * @param subject - The subject of the plan definition.
+ * @param action - The PlanDefinition action.
+ * @param encounter - Optional encounter reference.
+ * @returns The RequestGroup action.
+ */
 async function createActivityDefinitionTask(
   repo: Repository,
   requester: Reference<Bot | ClientApplication | ProfileResource>,
