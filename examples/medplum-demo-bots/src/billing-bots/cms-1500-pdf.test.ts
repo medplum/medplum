@@ -9,6 +9,7 @@ import {
   getPatientInfo,
   getPatientRelationshipToInsuredContent,
   getPhoneContent,
+  getSexContent,
   handler,
 } from './cms-1500-pdf';
 import { fullAnswer } from './cms-1500-test-data';
@@ -170,6 +171,14 @@ describe('CMS 1500 PDF Bot', async () => {
       { text: '05', absolutePosition: { x: 416, y: 253 }, fontSize: 9 },
       { text: '56', absolutePosition: { x: 437, y: 253 }, fontSize: 9 },
     ]);
+  });
+
+  test('getSexContent', () => {
+    const resultMale = getSexContent('male');
+    expect(resultMale).toStrictEqual([{ text: 'X', absolutePosition: { x: 316, y: 131 }, fontSize: 9 }]);
+
+    const resultFemale = getSexContent('female', 500, 51, 205);
+    expect(resultFemale).toStrictEqual([{ text: 'X', absolutePosition: { x: 551, y: 205 }, fontSize: 9 }]);
   });
 
   // test('Insurer is not an organization', async () => {

@@ -34,7 +34,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
   const { patientName, patientSex, patientPhone } = getPatientInfo(patient);
   const patientDOB = getDateProperty(patient.birthDate);
   const { insuranceType, insuredIdNumber, relationship } = getCoverageInfo(coverage);
-  const { insuredName, insuredPhone, insuredDob } = getInsuredInfo(insured);
+  const { insuredName, insuredPhone, insuredDob, insuredSex } = getInsuredInfo(insured);
   const insuredDOB = getDateProperty(insuredDob);
 
   // Think of a way to parametrize each field coordinates in the PDF so we can use it with other templates
@@ -66,7 +66,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       ...getDOBContent(patientDOB),
-      ...getPatientSexContent(patientSex),
+      ...getSexContent(patientSex),
       {
         text: insuredName,
         absolutePosition: {
@@ -128,22 +128,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      {
-        text: 'X17',
-        absolutePosition: {
-          x: 504,
-          y: 253,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X18',
-        absolutePosition: {
-          x: 555,
-          y: 253,
-        },
-        fontSize: 9,
-      },
+      ...getSexContent(insuredSex, 504, 51, 253),
       ...getDOBContent(insuredDOB, 395, 253),
       {
         text: 'X22',
@@ -2008,13 +1993,18 @@ export function getDOBContent(
   ];
 }
 
-export function getPatientSexContent(patientSex: string): Content[] {
+export function getSexContent(
+  patientSex: string,
+  xAxisOffset: number = 316,
+  xAxisDifference: number = 36,
+  yAxisOffset: number = 131
+): Content[] {
   const optionsMap: Record<string, number> = {
-    male: 316,
-    female: 352,
+    male: xAxisOffset,
+    female: xAxisOffset + xAxisDifference,
   };
 
-  if (!(patientSex in optionsMap)) {
+  if (!(patientSex.toLocaleLowerCase() in optionsMap)) {
     return [];
   }
 
@@ -2022,8 +2012,8 @@ export function getPatientSexContent(patientSex: string): Content[] {
     {
       text: 'X',
       absolutePosition: {
-        x: optionsMap[patientSex] ?? 338,
-        y: 131,
+        x: optionsMap[patientSex],
+        y: yAxisOffset,
       },
       fontSize: 9,
     },
