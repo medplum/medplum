@@ -2,13 +2,12 @@ import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@med
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Address, Bundle, Claim, Coverage, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { ContentText } from 'pdfmake/interfaces';
 import {
   getAddressContent,
   getCoverageInfo,
   getPatientInfo,
-  getPatientPhoneContent,
   getPatientRelationshipToInsuredContent,
+  getPhoneContent,
   handler,
 } from './cms-1500-pdf';
 import { fullAnswer } from './cms-1500-test-data';
@@ -59,18 +58,36 @@ describe('CMS 1500 PDF Bot', async () => {
     expect(patientInfo.patientPhone).toStrictEqual('555-555-6392');
   });
 
-  test('getPatientPhoneContent', () => {
-    const result = getPatientPhoneContent('555-325-1111');
-    expect((result[0] as ContentText).text).toStrictEqual('555');
-    expect((result[1] as ContentText).text).toStrictEqual('325-1111');
+  test('getPhoneContent', () => {
+    const result = getPhoneContent('555-325-1111');
+    expect(result).toStrictEqual([
+      { text: '555', absolutePosition: { x: 123, y: 204 }, fontSize: 9 },
+      {
+        text: '325-1111',
+        absolutePosition: { x: 150, y: 204 },
+        fontSize: 9,
+      },
+    ]);
 
-    const result2 = getPatientPhoneContent('(555) 325-2222');
-    expect((result2[0] as ContentText).text).toStrictEqual('555');
-    expect((result2[1] as ContentText).text).toStrictEqual('325-2222');
+    const result2 = getPhoneContent('(555) 325-2222');
+    expect(result2).toStrictEqual([
+      { text: '555', absolutePosition: { x: 123, y: 204 }, fontSize: 9 },
+      {
+        text: '325-2222',
+        absolutePosition: { x: 150, y: 204 },
+        fontSize: 9,
+      },
+    ]);
 
-    const result3 = getPatientPhoneContent('5553253333');
-    expect((result3[0] as ContentText).text).toStrictEqual('555');
-    expect((result3[1] as ContentText).text).toStrictEqual('325-3333');
+    const result3 = getPhoneContent('5553253333');
+    expect(result3).toStrictEqual([
+      { text: '555', absolutePosition: { x: 123, y: 204 }, fontSize: 9 },
+      {
+        text: '325-3333',
+        absolutePosition: { x: 150, y: 204 },
+        fontSize: 9,
+      },
+    ]);
   });
 
   test('getCoverageInfo', () => {

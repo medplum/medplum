@@ -34,7 +34,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
   const { patientName, patientSex, patientPhone } = getPatientInfo(patient);
   const patientDOB = getDateProperty(patient.birthDate);
   const { insuranceType, insuredIdNumber, relationship } = getCoverageInfo(coverage);
-  const { insuredName } = getInsuredInfo(insured);
+  const { insuredName, insuredPhone } = getInsuredInfo(insured);
 
   // Think of a way to parametrize each field coordinates in the PDF so we can use it with other templates
   const docDefinition = {
@@ -75,7 +75,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       ...getAddressContent(patient.address?.[0]),
-      ...getPatientPhoneContent(patientPhone),
+      ...getPhoneContent(patientPhone),
       ...getPatientRelationshipToInsuredContent(relationship),
       ...getAddressContent(insured?.address?.[0], 374),
       {
@@ -86,22 +86,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      {
-        text: 'X10',
-        absolutePosition: {
-          x: 482,
-          y: 204,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X11',
-        absolutePosition: {
-          x: 511,
-          y: 204,
-        },
-        fontSize: 9,
-      },
+      ...getPhoneContent(insuredPhone, 482),
       {
         text: 'X12',
         absolutePosition: {
@@ -2066,7 +2051,7 @@ export function getPatientSexContent(patientSex: string): Content[] {
   ];
 }
 
-export function getPatientPhoneContent(phone: string): Content[] {
+export function getPhoneContent(phone: string, xAxisOffset: number = 123): Content[] {
   if (!phone) {
     return [];
   }
@@ -2087,7 +2072,7 @@ export function getPatientPhoneContent(phone: string): Content[] {
     {
       text: areaCode,
       absolutePosition: {
-        x: 123,
+        x: xAxisOffset,
         y: 204,
       },
       fontSize: 9,
@@ -2095,7 +2080,7 @@ export function getPatientPhoneContent(phone: string): Content[] {
     {
       text: `${middle}-${last}`,
       absolutePosition: {
-        x: 150,
+        x: xAxisOffset + 27,
         y: 204,
       },
       fontSize: 9,
@@ -2215,11 +2200,13 @@ function getInsuredInfo(insured: Patient | RelatedPerson | undefined): Record<st
   const insuredAddress = insured.address ? formatAddress(insured.address?.[0]) : '';
   const insuredDob = formatDate(insured.birthDate);
   const insuredSex = insured.gender ?? '';
+  const insuredPhone = insured.telecom?.find((telecom) => telecom.system === 'phone')?.value ?? '';
 
   return {
     insuredName,
     insuredAddress,
     insuredDob,
     insuredSex,
+    insuredPhone,
   };
 }
