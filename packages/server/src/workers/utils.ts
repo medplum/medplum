@@ -157,3 +157,41 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
 function defaultStatusCheck(status: number): boolean {
   return status >= 200 && status < 400;
 }
+
+export const InProgressAsyncJobStatuses: AsyncJob['status'][] = ['accepted', 'active'];
+
+export function shouldContinueJob(asyncJob: WithId<AsyncJob>): boolean {
+  return InProgressAsyncJobStatuses.includes(asyncJob.status);
+}
+
+export async function checkAsyncJobStatus(
+  repo: Repository,
+  job: Job<{ asyncJob: WithId<AsyncJob> }>
+): Promise<boolean> {
+  const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', job.data.asyncJob.id);
+
+  if (!InProgressAsyncJobStatuses.includes(asyncJob.status)) {
+    return false;
+  }
+
+  job.data.asyncJob = asyncJob;
+  return true;
+}
+
+export async function updateAsyncJobOutput(
+  repo: Repository,
+  asyncJob: WithId<AsyncJob>,
+  output: Parameters
+): Promise<WithId<AsyncJob>> {
+  return repo.updateResource<AsyncJob>(
+    {
+      ...asyncJob,
+      output,
+    },
+    {
+      // Conditional update to ensure this update does not clobber another,
+      // which could result in e.g. continuing a job that was cancelled
+      ifMatch: asyncJob.meta?.versionId,
+    }
+  );
+}
