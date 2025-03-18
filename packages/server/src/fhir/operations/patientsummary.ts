@@ -1,6 +1,10 @@
 import {
   allOk,
   createReference,
+  escapeHtml,
+  formatCodeableConcept,
+  formatDate,
+  formatObservationValue,
   generateId,
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
@@ -10,18 +14,28 @@ import {
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
+  AllergyIntolerance,
   Bundle,
+  CarePlan,
+  ClinicalImpression,
   Composition,
   CompositionEvent,
   CompositionSection,
+  Condition,
+  DeviceUseStatement,
+  DiagnosticReport,
+  Goal,
+  Immunization,
+  MedicationRequest,
   Observation,
   OperationDefinition,
   OperationDefinitionParameter,
   Patient,
+  Procedure,
   Reference,
   Resource,
   ResourceType,
-  Task,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
@@ -139,6 +153,9 @@ export async function getPatientSummary(
   return builder.build();
 }
 
+export type ResultResourceType = DiagnosticReport | Observation;
+export type PlanResourceType = CarePlan | Goal | ServiceRequest;
+
 /**
  * Builder for the Patient Summary.
  *
@@ -148,17 +165,17 @@ export class PatientSummaryBuilder {
   private readonly author: ProfileResource;
   private readonly patient: Patient;
   private readonly everything: WithId<Resource>[];
-  private readonly allergies: Resource[] = [];
-  private readonly medications: Resource[] = [];
-  private readonly problemList: Resource[] = [];
-  private readonly results: Resource[] = [];
-  private readonly socialHistory: Resource[] = [];
-  private readonly vitalSigns: Resource[] = [];
-  private readonly procedures: Resource[] = [];
-  private readonly assessments: Resource[] = [];
-  private readonly planOfTreatment: Resource[] = [];
-  private readonly immunizations: Resource[] = [];
-  private readonly devices: Resource[] = [];
+  private readonly allergies: AllergyIntolerance[] = [];
+  private readonly medications: MedicationRequest[] = [];
+  private readonly problemList: Condition[] = [];
+  private readonly results: ResultResourceType[] = [];
+  private readonly socialHistory: Observation[] = [];
+  private readonly vitalSigns: Observation[] = [];
+  private readonly procedures: Procedure[] = [];
+  private readonly assessments: ClinicalImpression[] = [];
+  private readonly planOfTreatment: PlanResourceType[] = [];
+  private readonly immunizations: Immunization[] = [];
+  private readonly devices: DeviceUseStatement[] = [];
   private readonly nestedIds = new Set<string>();
 
   constructor(author: ProfileResource, patient: Patient, everything: WithId<Resource>[]) {
@@ -267,9 +284,6 @@ export class PatientSummaryBuilder {
       case 'Observation':
         this.chooseSectionForObservation(resource);
         break;
-      case 'Task':
-        this.chooseSectionForTask(resource);
-        break;
 
       default:
         getLogger().debug('Unsupported resource type in Patient Summary', { resourceType: resource.resourceType });
@@ -287,38 +301,9 @@ export class PatientSummaryBuilder {
       case 'vital-signs':
         this.vitalSigns.push(obs);
         break;
-      case 'imaging':
-        this.results.push(obs);
-        break;
-      case 'laboratory':
-        this.results.push(obs);
-        break;
-      case 'procedure':
-        this.procedures.push(obs);
-        break;
-      case 'survey':
-        this.planOfTreatment.push(obs);
-        break;
-      case 'exam':
-        this.procedures.push(obs);
-        break;
-      case 'therapy':
-        this.medications.push(obs);
-        break;
-      case 'activity':
-        this.results.push(obs);
-        break;
       default:
         this.results.push(obs);
         break;
-    }
-  }
-
-  private chooseSectionForTask(task: Task): void {
-    if (task.status === 'completed') {
-      this.procedures.push(task);
-    } else {
-      this.planOfTreatment.push(task);
     }
   }
 
@@ -342,17 +327,17 @@ export class PatientSummaryBuilder {
       custodian: this.patient.managingOrganization,
       event: this.buildEvent(),
       section: [
-        createSection(LOINC_ALLERGIES_SECTION, 'Allergies', this.allergies),
-        createSection(LOINC_IMMUNIZATIONS_SECTION, 'Immunizations', this.immunizations),
-        createSection(LOINC_MEDICATIONS_SECTION, 'Medications', this.medications),
-        createSection(LOINC_PROBLEMS_SECTION, 'Problem List', this.problemList),
-        createSection(LOINC_RESULTS_SECTION, 'Results', this.results),
-        createSection(LOINC_SOCIAL_HISTORY_SECTION, 'Social History', this.socialHistory),
-        createSection(LOINC_VITAL_SIGNS_SECTION, 'Vital Signs', this.vitalSigns),
-        createSection(LOINC_PROCEDURES_SECTION, 'Procedures', this.procedures),
-        createSection(LOINC_DEVICES_SECTION, 'Devices', this.devices),
-        createSection(LOINC_ASSESSMENTS_SECTION, 'Assessments', this.assessments),
-        createSection(LOINC_PLAN_OF_TREATMENT_SECTION, 'Plan of Treatment', this.planOfTreatment),
+        this.createAllergiesSection(),
+        this.createImmunizationsSection(),
+        this.createMedicationsSection(),
+        this.createProblemListSection(),
+        this.createResultsSection(),
+        this.createSocialHistorySection(),
+        this.createVitalSignsSection(),
+        this.createProceduresSection(),
+        this.createDevicesSection(),
+        this.createAssessmentsSection(),
+        this.createPlanOfTreatmentSection(),
       ],
     };
     return composition;
@@ -387,6 +372,222 @@ export class PatientSummaryBuilder {
     ];
   }
 
+  private createAllergiesSection(): CompositionSection {
+    return createSection(
+      LOINC_ALLERGIES_SECTION,
+      'Allergies',
+      createTable(
+        ['Substance', 'Reaction', 'Severity', 'Status'],
+        this.allergies.map((a) => [
+          formatCodeableConcept(a.code),
+          formatCodeableConcept(a.reaction?.[0]?.manifestation?.[0]),
+          a.reaction?.[0]?.severity,
+          formatCodeableConcept(a.clinicalStatus),
+        ])
+      ),
+      this.allergies
+    );
+  }
+
+  private createImmunizationsSection(): CompositionSection {
+    return createSection(
+      LOINC_IMMUNIZATIONS_SECTION,
+      'Immunizations',
+      createTable(
+        ['Vaccine', 'Date', 'Status'],
+        this.immunizations.map((i) => [
+          formatCodeableConcept(i.vaccineCode),
+          formatDate(i.occurrenceDateTime),
+          i.status,
+        ])
+      ),
+      this.immunizations
+    );
+  }
+
+  private createMedicationsSection(): CompositionSection {
+    return createSection(
+      LOINC_MEDICATIONS_SECTION,
+      'Medications',
+      createTable(
+        ['Medication', 'Directions', 'Start Date', 'End Date'],
+        this.medications.map((m) => [
+          formatCodeableConcept(m.medicationCodeableConcept),
+          m.dosageInstruction?.[0]?.text,
+          formatDate(m.dispenseRequest?.validityPeriod?.start),
+          formatDate(m.dispenseRequest?.validityPeriod?.end),
+        ])
+      ),
+      this.medications
+    );
+  }
+
+  private createProblemListSection(): CompositionSection {
+    return createSection(
+      LOINC_PROBLEMS_SECTION,
+      'Problem List',
+      createTable(
+        ['Problem', 'Start Date', 'Status'],
+        this.problemList.map((p) => [
+          formatCodeableConcept(p.code),
+          formatDate(p.onsetDateTime),
+          formatCodeableConcept(p.clinicalStatus),
+        ])
+      ),
+      this.problemList
+    );
+  }
+
+  private createResultsSection(): CompositionSection {
+    return createSection(LOINC_RESULTS_SECTION, 'Results', this.buildResultTable(this.results), this.results);
+  }
+
+  private createSocialHistorySection(): CompositionSection {
+    return createSection(
+      LOINC_SOCIAL_HISTORY_SECTION,
+      'Social History',
+      this.buildResultTable(this.socialHistory),
+      this.socialHistory
+    );
+  }
+
+  private createVitalSignsSection(): CompositionSection {
+    return createSection(
+      LOINC_VITAL_SIGNS_SECTION,
+      'Vital Signs',
+      this.buildResultTable(this.vitalSigns),
+      this.vitalSigns
+    );
+  }
+
+  private createProceduresSection(): CompositionSection {
+    return createSection(
+      LOINC_PROCEDURES_SECTION,
+      'Procedures',
+      createTable(
+        ['Procedure', 'Date', 'Target Site', 'Status'],
+        this.procedures.map((p) => [
+          formatCodeableConcept(p.code),
+          formatDate(p.performedDateTime),
+          formatCodeableConcept(p.bodySite?.[0]),
+          p.status,
+        ])
+      ),
+      this.procedures
+    );
+  }
+
+  private createDevicesSection(): CompositionSection {
+    return createSection(
+      LOINC_DEVICES_SECTION,
+      'Devices',
+      createTable(
+        ['Device', 'Status'],
+        this.devices.map((dus) => {
+          const device = this.getByReference(dus.device);
+          return [formatCodeableConcept(device?.type), dus.status];
+        })
+      ),
+      this.devices
+    );
+  }
+
+  private createAssessmentsSection(): CompositionSection {
+    return createSection(
+      LOINC_ASSESSMENTS_SECTION,
+      'Assessments',
+      createTable(
+        ['Summary', 'Date'],
+        this.assessments.map((a) => [a.summary, formatDate(a.date)])
+      ),
+      this.assessments
+    );
+  }
+
+  private createPlanOfTreatmentSection(): CompositionSection {
+    return createSection(
+      LOINC_PLAN_OF_TREATMENT_SECTION,
+      'Plan of Treatment',
+      this.buildPlanTable(this.planOfTreatment),
+      this.planOfTreatment
+    );
+  }
+
+  private buildResultTable(resources: ResultResourceType[]): string {
+    const rows: (string | undefined)[][] = [];
+    for (const r of resources) {
+      this.buildResultRows(rows, r);
+    }
+    return createTable(['Name', 'Result', 'Date'], rows);
+  }
+
+  private buildResultRows(rows: (string | undefined)[][], resource: ResultResourceType): void {
+    if (resource.resourceType === 'DiagnosticReport') {
+      this.buildDiagnosticReportRow(rows, resource);
+    }
+
+    if (resource.resourceType === 'Observation') {
+      this.buildObservationRow(rows, resource);
+    }
+  }
+
+  private buildDiagnosticReportRow(rows: (string | undefined)[][], resource: DiagnosticReport): void {
+    rows.push([formatCodeableConcept(resource.code), undefined, formatDate(resource.effectiveDateTime)]);
+    if (resource.result) {
+      for (const result of resource.result) {
+        const r = this.getByReference(result);
+        if (r && r.resourceType === 'Observation') {
+          this.buildResultRows(rows, r);
+        }
+      }
+    }
+  }
+
+  private buildObservationRow(rows: (string | undefined)[][], resource: Observation): void {
+    rows.push([
+      formatCodeableConcept(resource.code),
+      formatObservationValue(resource),
+      formatDate(resource.effectiveDateTime),
+    ]);
+
+    if (resource.hasMember) {
+      for (const member of resource.hasMember) {
+        const m = this.getByReference(member);
+        if (m && m.resourceType === 'Observation') {
+          this.buildResultRows(rows, m);
+        }
+      }
+    }
+  }
+
+  private buildPlanTable(resources: PlanResourceType[]): string {
+    const rows: (string | undefined)[][] = [];
+    for (const r of resources) {
+      this.buildPlanRows(rows, r);
+    }
+    return createTable(['Planned Care', 'Start Date'], rows);
+  }
+
+  private buildPlanRows(rows: (string | undefined)[][], resource: PlanResourceType): void {
+    if (resource.resourceType === 'CarePlan') {
+      rows.push([formatCodeableConcept(resource.category?.[0]), formatDate(resource.period?.start)]);
+      if (resource.activity) {
+        for (const activity of resource.activity) {
+          const a = this.getByReference(activity.reference);
+          if (a && a.resourceType === 'ServiceRequest') {
+            rows.push([formatCodeableConcept(a.code), formatDate(a.authoredOn)]);
+          }
+        }
+      }
+    }
+    if (resource.resourceType === 'Goal') {
+      rows.push([formatCodeableConcept(resource.description), formatDate(resource.target?.[0]?.dueDate)]);
+    }
+    if (resource.resourceType === 'ServiceRequest') {
+      rows.push([formatCodeableConcept(resource.code), formatDate(resource.authoredOn)]);
+    }
+  }
+
   private buildBundle(composition: Composition): Bundle {
     const allResources = [composition, this.patient, this.author, ...this.everything];
 
@@ -402,13 +603,43 @@ export class PatientSummaryBuilder {
 
     return bundle;
   }
+
+  private getByReference<T extends Resource>(ref: Reference<T> | undefined): T | undefined {
+    if (!ref?.reference) {
+      return undefined;
+    }
+    return this.everything.find((r) => r.id === resolveId(ref)) as T;
+  }
 }
 
-function createSection(code: string, title: string, entry: Resource[]): CompositionSection {
+function createTable(headings: string[], body: (string | undefined)[][]): string {
+  const html = ['<table><thead><tr>'];
+  for (const h of headings) {
+    html.push('<td>');
+    html.push(escapeHtml(h));
+    html.push('</td>');
+  }
+  html.push('</tr></thead><tbody>');
+  for (const row of body) {
+    html.push('<tr>');
+    for (const cell of row) {
+      html.push('<td>');
+      if (cell) {
+        html.push(escapeHtml(cell));
+      }
+      html.push('</td>');
+    }
+    html.push('</tr>');
+  }
+  html.push('</tbody></table>');
+  return html.join('');
+}
+
+function createSection(code: string, title: string, html: string, entry: Resource[]): CompositionSection {
   return {
     title,
     code: { coding: [{ system: LOINC, code }] },
-    text: { status: 'generated', div: `<div xmlns="http://www.w3.org/1999/xhtml">${title}</div>` },
+    text: { status: 'generated', div: `<div xmlns="http://www.w3.org/1999/xhtml">${html}</div>` },
     entry: entry.map(createReference),
   };
 }
