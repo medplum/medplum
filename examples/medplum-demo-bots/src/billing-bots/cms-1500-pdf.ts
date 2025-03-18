@@ -31,7 +31,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
   const coverage = await medplum.readReference(claim.insurance[0].coverage);
   const insured = coverage.subscriber ? await medplum.readReference(coverage.subscriber) : undefined;
 
-  const { patientName, patientSex } = getPatientInfo(patient);
+  const { patientName, patientSex, patientPhone } = getPatientInfo(patient);
   const patientDOB = getDateProperty(patient.birthDate);
   const { insuranceType, insuredIdNumber } = getCoverageInfo(coverage);
   const { insuredName } = getInsuredInfo(insured);
@@ -75,7 +75,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       ...getPatientAddressContent(patient),
-      ...getPatientPhoneContent(patient),
+      ...getPatientPhoneContent(patientPhone),
       {
         text: 'X1',
         absolutePosition: {
@@ -2128,16 +2128,26 @@ export function getPatientSexContent(patientSex: string): Content[] {
   ];
 }
 
-export function getPatientPhoneContent(patient: Patient): Content[] {
-  const phone = patient.telecom?.find((telecom) => telecom.system === 'phone');
-
+export function getPatientPhoneContent(phone: string): Content[] {
   if (!phone) {
     return [];
   }
 
+  // Validate phone format XXX-XXX-XXXX, (XXX) XXX-XXXX, or XXXXXXXXXX
+  const phoneRegex = /^(\(\d{3}\)|\d{3}-|\d{3})\s*\d{3}[-\s]?\d{4}$/;
+  if (!phoneRegex.test(phone)) {
+    return [];
+  }
+
+  // Extract digits only from the phone number
+  const digits = phone.replace(/\D/g, '');
+  const areaCode = digits.substring(0, 3);
+  const middle = digits.substring(3, 6);
+  const last = digits.substring(6);
+
   return [
     {
-      text: phone.value || '',
+      text: areaCode,
       absolutePosition: {
         x: 123,
         y: 204,
@@ -2145,7 +2155,7 @@ export function getPatientPhoneContent(patient: Patient): Content[] {
       fontSize: 9,
     },
     {
-      text: 'X',
+      text: `${middle}-${last}`,
       absolutePosition: {
         x: 150,
         y: 204,
@@ -2205,12 +2215,14 @@ export function getPatientInfo(patient: Patient): Record<string, string> {
   const patientDob = formatDate(patient.birthDate);
   const patientSex = patient.gender ?? '';
   const patientAddress = patient.address ? formatAddress(patient.address?.[0]) : '';
+  const patientPhone = patient.telecom?.find((telecom) => telecom.system === 'phone')?.value ?? '';
 
   return {
     patientName,
     patientDob,
     patientSex,
     patientAddress,
+    patientPhone,
   };
 }
 

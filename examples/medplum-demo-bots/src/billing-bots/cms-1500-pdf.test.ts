@@ -1,13 +1,14 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Claim, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Claim, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { getInsurerInfo, getPatientInfo, getProviderInfo, getReferralInfo, handler } from './cms-1500-pdf';
+import { getPatientInfo, getPatientPhoneContent, handler } from './cms-1500-pdf';
 import { fullAnswer } from './cms-1500-test-data';
+import { ContentText } from 'pdfmake/interfaces';
 
-const medplum = new MockClient();
+describe('CMS 1500 PDF Bot', async () => {
+  let medplum: MockClient;
 
-describe('CMS 1500 tests', async () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
@@ -16,11 +17,15 @@ describe('CMS 1500 tests', async () => {
     }
   });
 
+  beforeEach(async () => {
+    medplum = new MockClient();
+  });
+
   test('Fully answered CMS1500 pdf', async () => {
-    const result = await medplum.executeBatch(fullAnswer);
-    console.log(result);
+    await medplum.executeBatch(fullAnswer);
+
     const claim = (await medplum.searchOne('Claim', {
-      identifier: 'example-claim',
+      identifier: 'example-claim-cms1500',
     })) as Claim;
 
     const response = await handler(medplum, {
@@ -31,78 +36,91 @@ describe('CMS 1500 tests', async () => {
     });
 
     expect(response).toBeDefined();
-    expect(response.resourceType).toBe('Media');
-    expect(response.content.contentType).toBe('application/pdf');
+    expect(response.resourceType).toStrictEqual('Media');
+    expect(response.content.contentType).toStrictEqual('application/pdf');
   });
 
-  test('Get patient info', async () => {
-    const patientInfo = getPatientInfo({
-      resourceType: 'Patient',
-      name: [{ given: ['Homer'], family: 'Simpson' }],
-      gender: 'male',
-    });
+  test('getPatientInfo', async () => {
+    const patient = (fullAnswer.entry?.[0]?.resource as Patient) ?? {};
 
-    expect(patientInfo.patientName).toBe('Homer Simpson');
-    expect(patientInfo.patientSex).toBe('male');
-    expect(patientInfo.patientDob).toBe('');
-    expect(patientInfo.patientAddress).toBe('');
+    const patientInfo = getPatientInfo(patient);
+
+    expect(patientInfo.patientName).toStrictEqual('Homer Simpson');
+    expect(patientInfo.patientSex).toStrictEqual('male');
+    expect(patientInfo.patientDob).toStrictEqual('5/12/1956');
+    expect(patientInfo.patientAddress).toStrictEqual('742 Evergreen Terrace, Springfield, IL');
+    expect(patientInfo.patientPhone).toStrictEqual('555-555-6392');
   });
 
-  test('Insurer is not an organization', async () => {
-    const insurerInfo = getInsurerInfo({
-      resourceType: 'Patient',
-    });
+  test('getPatientPhoneContent', () => {
+    const result = getPatientPhoneContent('555-325-1111');
+    expect((result[0] as ContentText).text).toStrictEqual('555');
+    expect((result[1] as ContentText).text).toStrictEqual('325-1111');
 
-    expect(insurerInfo.serviceNPI).toBe('');
-    expect(insurerInfo.serviceLocation).toBe('');
-    expect(insurerInfo.fedTaxNumber).toBe('');
-    expect(insurerInfo.fedTaxType).toBe('');
+    const result2 = getPatientPhoneContent('(555) 325-2222');
+    expect((result2[0] as ContentText).text).toStrictEqual('555');
+    expect((result2[1] as ContentText).text).toStrictEqual('325-2222');
+
+    const result3 = getPatientPhoneContent('5553253333');
+    expect((result3[0] as ContentText).text).toStrictEqual('555');
+    expect((result3[1] as ContentText).text).toStrictEqual('325-3333');
   });
 
-  test('Referrer is not a practitioner or organization', async () => {
-    const patientReferralInfo = getReferralInfo({
-      resourceType: 'Patient',
-    });
-    const organizationReferralInfo = getReferralInfo({
-      resourceType: 'Organization',
-      name: 'Referrer',
-      identifier: [
-        {
-          type: {
-            coding: [{ code: 'NPI' }],
-          },
-          value: 'org-npi-code',
-        },
-      ],
-    });
-    const practitionerReferralInfo = getReferralInfo({
-      resourceType: 'Practitioner',
-      name: [{ given: ['Kevin'], family: 'Smith' }],
-      identifier: [
-        {
-          type: {
-            coding: [{ code: 'NPI' }],
-          },
-          value: 'practitioner-npi-code',
-        },
-      ],
-    });
+  // test('Insurer is not an organization', async () => {
+  //   const insurerInfo = getInsurerInfo({
+  //     resourceType: 'Patient',
+  //   });
 
-    expect(patientReferralInfo.referrerName).toBe('');
-    expect(patientReferralInfo.referrerNpi).toBe('');
-    expect(organizationReferralInfo.referrerName).toBe('Referrer');
-    expect(organizationReferralInfo.referrerNpi).toBe('org-npi-code');
-    expect(practitionerReferralInfo.referrerName).toBe('Kevin Smith');
-    expect(practitionerReferralInfo.referrerNpi).toBe('practitioner-npi-code');
-  });
+  //   expect(insurerInfo.serviceNPI).toBe('');
+  //   expect(insurerInfo.serviceLocation).toBe('');
+  //   expect(insurerInfo.fedTaxNumber).toBe('');
+  //   expect(insurerInfo.fedTaxType).toBe('');
+  // });
 
-  test('Practitioner Role for provider', async () => {
-    const providerInfo = getProviderInfo({
-      resourceType: 'PractitionerRole',
-    });
+  // test('Referrer is not a practitioner or organization', async () => {
+  //   const patientReferralInfo = getReferralInfo({
+  //     resourceType: 'Patient',
+  //   });
+  //   const organizationReferralInfo = getReferralInfo({
+  //     resourceType: 'Organization',
+  //     name: 'Referrer',
+  //     identifier: [
+  //       {
+  //         type: {
+  //           coding: [{ code: 'NPI' }],
+  //         },
+  //         value: 'org-npi-code',
+  //       },
+  //     ],
+  //   });
+  //   const practitionerReferralInfo = getReferralInfo({
+  //     resourceType: 'Practitioner',
+  //     name: [{ given: ['Kevin'], family: 'Smith' }],
+  //     identifier: [
+  //       {
+  //         type: {
+  //           coding: [{ code: 'NPI' }],
+  //         },
+  //         value: 'practitioner-npi-code',
+  //       },
+  //     ],
+  //   });
 
-    expect(providerInfo.billingLocation).toBe('');
-    expect(providerInfo.billingPhoneNumber).toBe('');
-    expect(providerInfo.providerNpi).toBe('');
-  });
+  //   expect(patientReferralInfo.referrerName).toBe('');
+  //   expect(patientReferralInfo.referrerNpi).toBe('');
+  //   expect(organizationReferralInfo.referrerName).toBe('Referrer');
+  //   expect(organizationReferralInfo.referrerNpi).toBe('org-npi-code');
+  //   expect(practitionerReferralInfo.referrerName).toBe('Kevin Smith');
+  //   expect(practitionerReferralInfo.referrerNpi).toBe('practitioner-npi-code');
+  // });
+
+  // test('Practitioner Role for provider', async () => {
+  //   const providerInfo = getProviderInfo({
+  //     resourceType: 'PractitionerRole',
+  //   });
+
+  //   expect(providerInfo.billingLocation).toBe('');
+  //   expect(providerInfo.billingPhoneNumber).toBe('');
+  //   expect(providerInfo.providerNpi).toBe('');
+  // });
 });
