@@ -34,7 +34,8 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
   const { patientName, patientSex, patientPhone } = getPatientInfo(patient);
   const patientDOB = getDateProperty(patient.birthDate);
   const { insuranceType, insuredIdNumber, relationship } = getCoverageInfo(coverage);
-  const { insuredName, insuredPhone } = getInsuredInfo(insured);
+  const { insuredName, insuredPhone, insuredDob } = getInsuredInfo(insured);
+  const insuredDOB = getDateProperty(insuredDob);
 
   // Think of a way to parametrize each field coordinates in the PDF so we can use it with other templates
   const docDefinition = {
@@ -64,7 +65,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      ...getPatientDOBContent(patientDOB),
+      ...getDOBContent(patientDOB),
       ...getPatientSexContent(patientSex),
       {
         text: insuredName,
@@ -143,30 +144,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      {
-        text: 'X19',
-        absolutePosition: {
-          x: 395,
-          y: 253,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X20',
-        absolutePosition: {
-          x: 418,
-          y: 253,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X21',
-        absolutePosition: {
-          x: 439,
-          y: 253,
-        },
-        fontSize: 9,
-      },
+      ...getDOBContent(insuredDOB, 395, 253),
       {
         text: 'X22',
         absolutePosition: {
@@ -1989,40 +1967,41 @@ export function getInsuranceProgramContent(insuranceType: string): Content[] {
   ];
 }
 
-// This may have reusable logic for other Date fields
-export function getPatientDOBContent(patientDOB: Date | undefined): Content[] {
+export function getDOBContent(
+  patientDOB: Date | undefined,
+  xAxisOffset: number = 236,
+  yAxisOffset: number = 131
+): Content[] {
   if (!patientDOB) {
     return [];
   }
 
-  const optionsMap: Record<string, number> = {
-    day: 236,
-    month: 257,
-    year: 278,
-  };
+  const day = String(patientDOB.getUTCDate()).padStart(2, '0');
+  const month = String(patientDOB.getUTCMonth() + 1).padStart(2, '0');
+  const year = String(patientDOB.getUTCFullYear()).substring(2);
 
   return [
     {
-      text: String(patientDOB.getUTCDate()).padStart(2, '0'),
+      text: day,
       absolutePosition: {
-        x: optionsMap['day'],
-        y: 131,
+        x: xAxisOffset,
+        y: yAxisOffset,
       },
       fontSize: 9,
     },
     {
-      text: String(patientDOB.getUTCMonth() + 1).padStart(2, '0'),
+      text: month,
       absolutePosition: {
-        x: optionsMap['month'],
-        y: 131,
+        x: xAxisOffset + 21,
+        y: yAxisOffset,
       },
       fontSize: 9,
     },
     {
-      text: String(patientDOB.getUTCFullYear()).substring(2),
+      text: year,
       absolutePosition: {
-        x: optionsMap['year'],
-        y: 131,
+        x: xAxisOffset + 42,
+        y: yAxisOffset,
       },
       fontSize: 9,
     },

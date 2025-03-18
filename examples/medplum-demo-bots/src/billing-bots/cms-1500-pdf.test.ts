@@ -5,6 +5,7 @@ import { MockClient } from '@medplum/mock';
 import {
   getAddressContent,
   getCoverageInfo,
+  getDOBContent,
   getPatientInfo,
   getPatientRelationshipToInsuredContent,
   getPhoneContent,
@@ -156,6 +157,18 @@ describe('CMS 1500 PDF Bot', async () => {
       },
       { text: 'IL', absolutePosition: { x: 281, y: 179 }, fontSize: 9 },
       { text: '62704', absolutePosition: { x: 100, y: 204 }, fontSize: 9 },
+    ]);
+  });
+
+  test('getDOBContent', () => {
+    const dob = new Date('1956-05-12');
+
+    const result = getDOBContent(dob, 395, 253);
+
+    expect(result).toStrictEqual([
+      { text: '12', absolutePosition: { x: 395, y: 253 }, fontSize: 9 },
+      { text: '05', absolutePosition: { x: 416, y: 253 }, fontSize: 9 },
+      { text: '56', absolutePosition: { x: 437, y: 253 }, fontSize: 9 },
     ]);
   });
 
