@@ -8,6 +8,7 @@ import {
   Group,
   Paper,
   Radio,
+  Select,
   Stack,
   Text,
   TextInput,
@@ -22,6 +23,8 @@ import { SubmitButton } from '../Form/SubmitButton';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { killEvent } from '../utils/dom';
 import classes from './PlanDefinitionBuilder.module.css';
+import { CodeInput } from '../CodeInput/CodeInput';
+import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 
 export interface PlanDefinitionBuilderProps {
   readonly value: Partial<PlanDefinition> | Reference<PlanDefinition>;
@@ -254,14 +257,18 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
               Type
             </Text>
             <Radio.Group value={actionType} onChange={setActionType}>
-              <Stack gap="sm">
-                <Radio
-                  value="standard"
-                  label="Standard task"
-                  onChange={() => props.onChange({ ...props.action, definitionCanonical: undefined })}
+                <Select
+                value={actionType}
+                onChange={(value) => {
+                  setActionType(value ?? undefined);
+                  props.onChange({ ...props.action, definitionCanonical: value === 'standard' ? undefined : props.action.definitionCanonical });
+                }}
+                data={[
+                  { value: 'standard', label: 'Standard task' },
+                  { value: 'questionnaire', label: 'Task with Questionnaire' },
+                  { value: 'activitydefinition', label: 'Task with Activity Definition' },
+                ]}
                 />
-                <Radio value="questionnaire" label="Task with Questionnaire" />
-              </Stack>
             </Radio.Group>
           </Box>
 
@@ -279,6 +286,51 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
               </Text>
               <ActionResourceTypeBuilder resourceType="Questionnaire" action={action} onChange={props.onChange} />
             </Box>
+          )}
+
+          {actionType === 'activitydefinition' && (
+            <Stack>
+              <Group gap="xs" mb="xs">
+                <Text fw={600}>Select activity definition</Text>
+                <Text c="red">*</Text>
+              </Group>
+              <Text size="sm" c="dimmed" mb="sm">
+                ActivityDefinition to be shown in the task in Encounter view. You can create new one from{' '}
+                <Anchor href="/ActivityDefinition" target="_blank" c="blue">
+                  activity definitions list
+                </Anchor>
+              </Text>
+              <ActionResourceTypeBuilder resourceType="ActivityDefinition" action={action} onChange={props.onChange} />
+              
+              <CodeableConceptInput
+                name="cpt-code"
+                label="CPT Code"
+                binding="http://medplum.com/fhir/ValueSet/cpt-codes"
+                maxValues={1}
+                required={true}
+                onChange={(value) => {
+                  if (value) {
+                    console.log(value);
+                  }
+                } } 
+                path='ActivityDefinition.code'              
+                />
+
+              <CodeableConceptInput
+                name="procedure"
+                label="Procedure"
+                binding="http://hl7.org/fhir/ValueSet/procedure-code"
+                maxValues={1}
+                required={true}
+                onChange={(value) => {
+                  if (value) {
+                    console.log(value);
+                  }
+                } } 
+                path='ActivityDefinition.code'           
+                />
+                
+            </Stack>
           )}
         </Stack>
       )}
@@ -316,6 +368,10 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
 function getInitialActionType(action: PlanDefinitionAction): string | undefined {
   if (action.definitionCanonical?.startsWith('Questionnaire')) {
     return 'questionnaire';
+  }
+
+  if (action.definitionCanonical?.startsWith('ActivityDefinition')) {
+    return 'activitydefinition';
   }
 
   return 'standard';
