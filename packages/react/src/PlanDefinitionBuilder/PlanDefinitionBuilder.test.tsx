@@ -176,7 +176,7 @@ describe('PlanDefinitionBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText("Type of Action"), {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
         target: { value: 'actibitydefinition' },
       });
     });
@@ -216,7 +216,7 @@ describe('PlanDefinitionBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText("Type of Action"), {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
         target: { value: 'questionnaire' },
       });
     });
@@ -256,11 +256,11 @@ describe('PlanDefinitionBuilder', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText("Type of Action"), {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
         target: { value: 'standard' },
       });
     });
-  
+
     expect(screen.getByText('Save')).toBeDefined();
 
     await act(async () => {
