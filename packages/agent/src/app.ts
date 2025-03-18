@@ -29,6 +29,7 @@ import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import { checkProcessExists, getPidFilePath, removePidFile } from './pid';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -46,6 +47,10 @@ async function execAsync(command: string, options: ExecOptions): Promise<{ stdou
 
 export const DEFAULT_PING_TIMEOUT = 3600;
 export const MAX_MISSED_HEARTBEATS = 1;
+
+interface ReloadConfigOptions {
+  skipCache?: boolean;
+}
 
 export class App {
   static instance: App;
@@ -79,6 +84,9 @@ export class App {
     this.log.info('Medplum service starting...');
 
     await this.startWebSocket();
+
+    // Prefetch the agent config so it's ready when we need it
+    // await this.medplum.readResource('Agent', this.agentId);
 
     // We do this after starting WebSockets so that we can send a message if we finished upgrading
     await this.maybeFinalizeUpgrade();
@@ -127,6 +135,31 @@ export class App {
 
       // Delete manifest
       rmSync(UPGRADE_MANIFEST_PATH);
+
+      // Check for stopgap agent and kill it
+      const stopgapPidFilePath = getPidFilePath('medplum-agent-stopgap');
+      if (existsSync(stopgapPidFilePath)) {
+        this.log.info('Found stopgap agent PID file, checking if process is running...');
+        try {
+          const stopgapPid = Number.parseInt(readFileSync(stopgapPidFilePath, 'utf8').trim(), 10);
+          if (checkProcessExists(stopgapPid)) {
+            this.log.info(`Found existing stopgap agent (PID ${stopgapPid}), stopping it...`);
+            try {
+              process.kill(stopgapPid);
+              // Wait a bit for the process to die
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+              this.log.info('Successfully stopped stopgap agent');
+            } catch (err) {
+              this.log.error(`Error stopping stopgap process: ${normalizeErrorString(err)}`);
+            }
+          } else {
+            this.log.info('Stopgap agent PID file exists but process is not running');
+          }
+          removePidFile(stopgapPidFilePath);
+        } catch (err) {
+          this.log.error(`Error cleaning up stopgap agent: ${normalizeErrorString(err)}`);
+        }
+      }
     }
   }
 
@@ -281,8 +314,12 @@ export class App {
     });
   }
 
-  private async reloadConfig(): Promise<void> {
-    const agent = await this.medplum.readResource('Agent', this.agentId);
+  private async reloadConfig(options: ReloadConfigOptions = { skipCache: true }): Promise<void> {
+    const agent = await this.medplum.readResource(
+      'Agent',
+      this.agentId,
+      options.skipCache ? { cache: 'no-cache' } : undefined
+    );
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
 
     if (!keepAlive && this.hl7Clients.size !== 0) {
@@ -415,6 +452,27 @@ export class App {
     if (channel) {
       await channel.reloadConfig(definition, endpoint);
       return;
+    }
+
+    // Only check PID files if we're not in the middle of an upgrade
+    if (!existsSync(UPGRADE_MANIFEST_PATH)) {
+      const pidFilePath = getPidFilePath(definition.name);
+      if (existsSync(pidFilePath)) {
+        const existingPid = Number.parseInt(readFileSync(pidFilePath, 'utf8').trim(), 10);
+        if (checkProcessExists(existingPid)) {
+          this.log.info(
+            `Found existing process with PID ${existingPid} for channel ${definition.name}, stopping it...`
+          );
+          try {
+            process.kill(existingPid);
+            // Wait a bit for the process to die
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+          } catch (err) {
+            this.log.error(`Error stopping existing process: ${normalizeErrorString(err)}`);
+          }
+        }
+        removePidFile(pidFilePath);
+      }
     }
 
     switch (getChannelType(endpoint)) {
