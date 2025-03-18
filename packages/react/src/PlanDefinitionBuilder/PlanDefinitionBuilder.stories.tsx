@@ -54,12 +54,12 @@ export const Covid19Eval = (): JSX.Element => {
 
   return (
     <Document>
-    <PlanDefinitionBuilder
-      value={Covid19CarePlanDefinition}
-      onSubmit={(formData: any) => {
-        console.log(JSON.stringify(formData, null, 2));
-      }}
-    />
+      <PlanDefinitionBuilder
+        value={Covid19CarePlanDefinition}
+        onSubmit={(formData: any) => {
+          console.log(JSON.stringify(formData, null, 2));
+        }}
+      />
     </Document>
   );
 };
@@ -85,12 +85,12 @@ export const Covid19PCRLabServiceStory = (): JSX.Element => {
 
   return (
     <Document>
-    <PlanDefinitionBuilder
-      value={Covid19PCRLabService}
-      onSubmit={(formData: any) => {
-        console.log(JSON.stringify(formData, null, 2));
-      }}
-    />
+      <PlanDefinitionBuilder
+        value={Covid19PCRLabService}
+        onSubmit={(formData: any) => {
+          console.log(JSON.stringify(formData, null, 2));
+        }}
+      />
     </Document>
   );
 };

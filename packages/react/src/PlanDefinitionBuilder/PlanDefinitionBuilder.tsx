@@ -257,18 +257,21 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
               Type
             </Text>
             <Radio.Group value={actionType} onChange={setActionType}>
-                <Select
+              <Select
                 value={actionType}
                 onChange={(value) => {
                   setActionType(value ?? undefined);
-                  props.onChange({ ...props.action, definitionCanonical: value === 'standard' ? undefined : props.action.definitionCanonical });
+                  props.onChange({
+                    ...props.action,
+                    definitionCanonical: value === 'standard' ? undefined : props.action.definitionCanonical,
+                  });
                 }}
                 data={[
                   { value: 'standard', label: 'Standard task' },
                   { value: 'questionnaire', label: 'Task with Questionnaire' },
                   { value: 'activitydefinition', label: 'Task with Activity Definition' },
                 ]}
-                />
+              />
             </Radio.Group>
           </Box>
 
@@ -301,7 +304,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                 </Anchor>
               </Text>
               <ActionResourceTypeBuilder resourceType="ActivityDefinition" action={action} onChange={props.onChange} />
-              
+
               <CodeableConceptInput
                 name="cpt-code"
                 label="CPT Code"
@@ -312,9 +315,9 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   if (value) {
                     console.log(value);
                   }
-                } } 
-                path='ActivityDefinition.code'              
-                />
+                }}
+                path="ActivityDefinition.code"
+              />
 
               <CodeableConceptInput
                 name="procedure"
@@ -326,10 +329,9 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   if (value) {
                     console.log(value);
                   }
-                } } 
-                path='ActivityDefinition.code'           
-                />
-                
+                }}
+                path="ActivityDefinition.code"
+              />
             </Stack>
           )}
         </Stack>

@@ -149,7 +149,7 @@ async function createActivityDefinitionTask(
         subject: subject,
         requester: requester as ServiceRequest['requester'],
         encounter: encounter,
-        code: activityDefinition.code
+        code: activityDefinition.code,
       });
 
       return createTask(repo, requester, subject, action, encounter, [
