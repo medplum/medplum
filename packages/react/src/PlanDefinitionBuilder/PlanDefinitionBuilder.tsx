@@ -238,9 +238,8 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
       {editing && (
         <Stack gap="xl" p="md">
           <Box>
-     
             <TextInput
-            label="Task Description"
+              label="Task Description"
               placeholder="Enter task description"
               name={`actionDescription-${action.id}`}
               defaultValue={action.description}
@@ -250,19 +249,22 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
 
           <Box>
             <NativeSelect
-                label="Type of Action"
-                value={actionType}
-                onChange={(e) => {
-                  const value = e.currentTarget.value === 'standard' ? undefined : e.currentTarget.value;
-                  setActionType(value);
-                  props.onChange({ ...props.action, definitionCanonical: value === 'standard' ? undefined : props.action.definitionCanonical });
-                }}
-                data={[
-                  { value: 'standard', label: 'Standard task' },
-                  { value: 'questionnaire', label: 'Task with Questionnaire' },
-                  { value: 'activitydefinition', label: 'Task with Activity Definition' },
-                ]}
-                />
+              label="Type of Action"
+              value={actionType}
+              onChange={(e) => {
+                const value = e.currentTarget.value === 'standard' ? undefined : e.currentTarget.value;
+                setActionType(value);
+                props.onChange({
+                  ...props.action,
+                  definitionCanonical: value === 'standard' ? undefined : props.action.definitionCanonical,
+                });
+              }}
+              data={[
+                { value: 'standard', label: 'Standard task' },
+                { value: 'questionnaire', label: 'Task with Questionnaire' },
+                { value: 'activitydefinition', label: 'Task with Activity Definition' },
+              ]}
+            />
           </Box>
 
           {actionType === 'questionnaire' && (
