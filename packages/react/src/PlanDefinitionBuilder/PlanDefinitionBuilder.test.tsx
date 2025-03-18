@@ -177,9 +177,11 @@ describe('PlanDefinitionBuilder', () => {
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Type of Action'), {
-        target: { value: 'actibitydefinition' },
+        target: { value: 'activitydefinition' },
       });
     });
+
+    expect(await screen.findByText('Select activity definition')).toBeInTheDocument();
 
     expect(screen.getByText('Save')).toBeDefined();
 
