@@ -34,9 +34,10 @@ export class GCPBlobStorage implements BinaryStorage {
     return new Promise((resolve, reject) => {
       const writeStream = file.createWriteStream({
         metadata: { contentType: contentType ?? 'application/octet-stream' },
-        resumable: false
+        resumable: false,
       });
-      stream.pipe(writeStream)
+      stream
+        .pipe(writeStream)
         .on('finish', () => resolve())
         .on('error', (err: any) => reject(err));
     });
