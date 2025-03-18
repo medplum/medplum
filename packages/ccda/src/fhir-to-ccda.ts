@@ -48,6 +48,7 @@ import {
   OID_ALLERGY_PROBLEM_ACT,
   OID_ASSESSMENTS_SECTION,
   OID_AUTHOR_PARTICIPANT,
+  OID_BIRTH_SEX,
   OID_CARE_TEAM_ORGANIZER_ENTRY,
   OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
   OID_ENCOUNTER_ACTIVITIES,
@@ -205,7 +206,7 @@ class FhirToCcdaConverter {
       // which SHALL be selected from ValueSet Language 2.16.840.1.113883.1.11.11526 DYNAMIC (CONF:5372, R2.1=CONF:1198-5372, DSTU:806)
       languageCode: { '@_code': this.composition.language ?? 'en-US' },
       recordTarget: this.createRecordTarget(),
-      author: this.mapAuthor(this.composition.author?.[0], this.composition.date),
+      author: this.mapAuthor(this.composition.author?.[0], this.composition.date, this.composition.custodian),
       custodian: this.mapCustodian(this.composition.custodian),
       documentationOf: this.mapDocumentationOf(this.composition.event),
       component:
@@ -835,7 +836,11 @@ class FhirToCcdaConverter {
    * @param time - The time to map.
    * @returns The C-CDA author.
    */
-  private mapAuthor(author: Reference | undefined, time?: string): CcdaAuthor[] | undefined {
+  private mapAuthor(
+    author: Reference | undefined,
+    time?: string,
+    custodian?: Reference<Organization>
+  ): CcdaAuthor[] | undefined {
     if (!author) {
       return undefined;
     }
@@ -843,6 +848,14 @@ class FhirToCcdaConverter {
     const practitioner = this.findResourceByReference(author);
     if (practitioner?.resourceType !== 'Practitioner') {
       return undefined;
+    }
+
+    let organization = undefined;
+    if (custodian) {
+      organization = this.findResourceByReference(custodian);
+      if (!organization) {
+        return undefined;
+      }
     }
 
     return [
@@ -861,6 +874,11 @@ class FhirToCcdaConverter {
           assignedPerson: {
             name: this.mapNames(practitioner.name),
           },
+          representedOrganization: organization
+            ? {
+                name: organization.name ? [organization.name] : undefined,
+              }
+            : undefined,
         },
       },
     ];
@@ -1060,7 +1078,7 @@ class FhirToCcdaConverter {
       return [{ '@_nullFlavor': 'UNK' }];
     }
     return contactPoints?.map((cp) => ({
-      '@_use': cp.use ? TELECOM_USE_MAPPER.mapFhirToCcda(cp.use as 'home' | 'work') : undefined,
+      '@_use': cp.use ? TELECOM_USE_MAPPER.mapFhirToCcda(cp.use as 'home' | 'work' | 'mobile') : undefined,
       '@_value': `${this.mapTelecomSystemToPrefix(cp.system)}${cp.value}`,
     }));
   }
@@ -1494,6 +1512,11 @@ class FhirToCcdaConverter {
         { '@_root': OID_TOBACCO_USE_OBSERVATION },
         { '@_root': OID_TOBACCO_USE_OBSERVATION, '@_extension': '2014-06-09' },
       ];
+    }
+
+    if (code == '76689-9') {
+      // Birth Sex
+      return [{ '@_root': OID_BIRTH_SEX }, { '@_root': OID_BIRTH_SEX, '@_extension': '2016-06-01' }];
     }
 
     if (category === 'exam') {
