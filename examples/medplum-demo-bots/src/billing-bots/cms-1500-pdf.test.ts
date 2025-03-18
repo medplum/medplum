@@ -1,10 +1,16 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Claim, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Claim, Coverage, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { getPatientInfo, getPatientPhoneContent, handler } from './cms-1500-pdf';
-import { fullAnswer } from './cms-1500-test-data';
 import { ContentText } from 'pdfmake/interfaces';
+import {
+  getCoverageInfo,
+  getPatientInfo,
+  getPatientPhoneContent,
+  getPatientRelationshipToInsuredContent,
+  handler,
+} from './cms-1500-pdf';
+import { fullAnswer } from './cms-1500-test-data';
 
 describe('CMS 1500 PDF Bot', async () => {
   let medplum: MockClient;
@@ -64,6 +70,34 @@ describe('CMS 1500 PDF Bot', async () => {
     const result3 = getPatientPhoneContent('5553253333');
     expect((result3[0] as ContentText).text).toStrictEqual('555');
     expect((result3[1] as ContentText).text).toStrictEqual('325-3333');
+  });
+
+  test('getCoverageInfo', () => {
+    const coverage = fullAnswer.entry?.[4]?.resource as Coverage;
+
+    const result = getCoverageInfo(coverage);
+
+    expect(result.insuranceType).toStrictEqual('health insurance plan policy');
+    expect(result.insuredIdNumber).toStrictEqual('89442808');
+    expect(result.relationship).toStrictEqual('Spouse');
+    expect(result.coverageName).toStrictEqual('Independence Blue Cross Blue Shield');
+  });
+
+  test('getPatientRelationshipToInsuredContent', () => {
+    const resultSelf = getPatientRelationshipToInsuredContent('self');
+    expect(resultSelf).toStrictEqual([{ text: 'X', absolutePosition: { x: 252, y: 156 }, fontSize: 9 }]);
+
+    const resultSpouse = getPatientRelationshipToInsuredContent('spouse');
+    expect(resultSpouse).toStrictEqual([{ text: 'X', absolutePosition: { x: 289, y: 156 }, fontSize: 9 }]);
+
+    const resultChild = getPatientRelationshipToInsuredContent('child');
+    expect(resultChild).toStrictEqual([{ text: 'X', absolutePosition: { x: 317, y: 156 }, fontSize: 9 }]);
+
+    const resultOther1 = getPatientRelationshipToInsuredContent('other');
+    expect(resultOther1).toStrictEqual([{ text: 'X', absolutePosition: { x: 353, y: 156 }, fontSize: 9 }]);
+
+    const resultOther2 = getPatientRelationshipToInsuredContent('parent');
+    expect(resultOther2).toStrictEqual([{ text: 'X', absolutePosition: { x: 353, y: 156 }, fontSize: 9 }]);
   });
 
   // test('Insurer is not an organization', async () => {

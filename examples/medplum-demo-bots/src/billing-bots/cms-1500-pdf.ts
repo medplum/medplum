@@ -33,7 +33,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
 
   const { patientName, patientSex, patientPhone } = getPatientInfo(patient);
   const patientDOB = getDateProperty(patient.birthDate);
-  const { insuranceType, insuredIdNumber } = getCoverageInfo(coverage);
+  const { insuranceType, insuredIdNumber, relationship } = getCoverageInfo(coverage);
   const { insuredName } = getInsuredInfo(insured);
 
   // Think of a way to parametrize each field coordinates in the PDF so we can use it with other templates
@@ -76,38 +76,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
       },
       ...getPatientAddressContent(patient),
       ...getPatientPhoneContent(patientPhone),
-      {
-        text: 'X1',
-        absolutePosition: {
-          x: 317,
-          y: 156,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X2',
-        absolutePosition: {
-          x: 252,
-          y: 156,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X3',
-        absolutePosition: {
-          x: 289,
-          y: 156,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X4',
-        absolutePosition: {
-          x: 353,
-          y: 156,
-        },
-        fontSize: 9,
-      },
+      ...getPatientRelationshipToInsuredContent(relationship),
       {
         text: 'X5',
         absolutePosition: {
@@ -2208,6 +2177,29 @@ export function getPatientAddressContent(patient: Patient, xAxisOffset: number =
   ];
 }
 
+export function getPatientRelationshipToInsuredContent(relationship: string): Content[] {
+  // Map of relationship codes to x-coordinates
+  const relationshipMap: Record<string, number> = {
+    self: 252,
+    spouse: 289,
+    child: 317,
+    other: 353,
+  };
+
+  const xCoord = relationshipMap[relationship.toLowerCase()] ?? relationshipMap['other'];
+
+  return [
+    {
+      text: 'X',
+      absolutePosition: {
+        x: xCoord,
+        y: 156,
+      },
+      fontSize: 9,
+    },
+  ];
+}
+
 /* Data retrieval helpers */
 
 export function getPatientInfo(patient: Patient): Record<string, string> {
@@ -2226,16 +2218,16 @@ export function getPatientInfo(patient: Patient): Record<string, string> {
   };
 }
 
-function getCoverageInfo(coverage: Coverage): Record<string, string> {
-  const insuranceType = coverage.type?.coding?.[0].display ?? '';
+export function getCoverageInfo(coverage: Coverage): Record<string, string> {
+  const insuranceType = coverage.type?.coding?.[0].display ?? coverage.type?.coding?.[0].code ?? '';
   const insuredIdNumber = coverage.identifier?.find((id) => id.use === 'official')?.value ?? '';
-  const relation = coverage.relationship?.coding?.[0].display ?? '';
+  const relationship = coverage.relationship?.coding?.[0].display ?? coverage.relationship?.coding?.[0].code ?? '';
   const coverageName = coverage.payor[0].display ?? '';
 
   return {
     insuranceType,
     insuredIdNumber,
-    relation,
+    relationship,
     coverageName,
   };
 }
