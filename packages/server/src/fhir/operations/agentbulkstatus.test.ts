@@ -240,7 +240,13 @@ describe('Agent/$bulk-status', () => {
     expect(bundle.entry).toHaveLength(1);
 
     expectBundleToContainOutcome(bundle, agents[1], {
-      issue: [expect.objectContaining({ severity: 'error', code: 'exception' })],
+      issue: [
+        expect.objectContaining({
+          severity: 'error',
+          code: 'invalid',
+          details: { text: expect.stringContaining('Invalid agent info: ') },
+        }),
+      ],
     });
 
     await getRedis().set(
@@ -260,13 +266,12 @@ describe('Agent/$bulk-status', () => {
       .get('/fhir/R4/Agent/$bulk-status')
       .query({ 'name:contains': 'Medplum', _count: MAX_AGENTS_PER_PAGE + 1 })
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(200);
 
-    expect(res.body).toMatchObject<OperationOutcome>({
-      resourceType: 'OperationOutcome',
-      issue: expect.arrayContaining<OperationOutcomeIssue>([
-        expect.objectContaining<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' }),
-      ]),
+    expectBundleToContainStatusEntry(res.body, connectedAgent, {
+      status: AgentConnectionState.CONNECTED,
+      version: '3.1.4',
+      lastUpdated: expect.any(String),
     });
   });
 });
