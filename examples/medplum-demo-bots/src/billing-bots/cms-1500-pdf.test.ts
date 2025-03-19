@@ -14,6 +14,7 @@ import { MockClient } from '@medplum/mock';
 import {
   formatHumanName,
   getAddressContent,
+  getClaimInfo,
   getCoverageInfo,
   getDOBContent,
   getPatientRelationshipToInsuredContent,
@@ -281,6 +282,141 @@ describe('getCoverageInfo', () => {
       coverageName: '',
       coveragePolicy: '',
       coveragePolicyName: '',
+    });
+  });
+});
+
+describe('getClaimInfo', () => {
+  const claim: Claim = {
+    resourceType: 'Claim',
+    status: 'active',
+    use: 'claim',
+    type: {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/claim-type',
+          code: 'professional',
+        },
+      ],
+    },
+    created: '2024-03-30',
+    provider: { reference: 'Practitioner/123' },
+    priority: {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/processpriority',
+          code: 'normal',
+        },
+      ],
+    },
+    insurance: [],
+    patient: { reference: 'Patient/123' },
+  };
+
+  test('returns complete claim info from full answer data', () => {
+    const claim = fullAnswer.entry?.[8]?.resource as Claim;
+    const result = getClaimInfo(claim);
+
+    expect(result).toEqual({
+      relatedToemployment: true,
+      relatedToAutoAccident: true,
+      accidentLocation: '39 Green Lane, Wichita, KS',
+      accidentLocationState: 'KS',
+      relatedToOtherAccident: false,
+    });
+  });
+
+  test('handles claim with no accident or employment info', () => {
+    const result = getClaimInfo(claim);
+
+    expect(result).toEqual({
+      relatedToemployment: false,
+      relatedToAutoAccident: false,
+      accidentLocation: '',
+      accidentLocationState: '',
+      relatedToOtherAccident: false,
+    });
+  });
+
+  test('identifies other accident when accident exists but is not MVA', () => {
+    const result = getClaimInfo({
+      ...claim,
+      accident: {
+        date: '2024-03-30',
+        type: {
+          coding: [
+            {
+              code: 'WORK',
+              system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+              display: 'Work accident',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      relatedToemployment: false,
+      relatedToAutoAccident: false,
+      accidentLocation: '',
+      accidentLocationState: '',
+      relatedToOtherAccident: true,
+    });
+  });
+
+  test('identifies employment-related claim', () => {
+    const result = getClaimInfo({
+      ...claim,
+      supportingInfo: [
+        {
+          category: {
+            coding: [
+              {
+                code: 'employmentimpacted',
+                system: 'http://terminology.hl7.org/CodeSystem/claiminformationcategory',
+              },
+            ],
+          },
+          sequence: 1,
+        },
+      ],
+    });
+
+    expect(result).toEqual({
+      relatedToemployment: true,
+      relatedToAutoAccident: false,
+      accidentLocation: '',
+      accidentLocationState: '',
+      relatedToOtherAccident: false,
+    });
+  });
+
+  test('handles partial accident location information', () => {
+    const result = getClaimInfo({
+      ...claim,
+      accident: {
+        date: '2024-03-30',
+        locationAddress: {
+          city: 'Wichita',
+          state: 'KS',
+        },
+        type: {
+          coding: [
+            {
+              code: 'MVA',
+              system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(result).toEqual({
+      relatedToemployment: false,
+      relatedToAutoAccident: true,
+      accidentLocation: 'Wichita, KS',
+      accidentLocationState: 'KS',
+      relatedToOtherAccident: false,
     });
   });
 });

@@ -131,22 +131,23 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      {
-        text: 'X15',
-        absolutePosition: {
-          x: 267,
-          y: 253,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X16',
-        absolutePosition: {
-          x: 310,
-          y: 253,
-        },
-        fontSize: 9,
-      },
+      // {
+      //   text: 'X15',
+      //   absolutePosition: {
+      //     x: 267,
+      //     y: 253,
+      //   },
+      //   fontSize: 9,
+      // },
+      // {
+      //   text: 'X16',
+      //   absolutePosition: {
+      //     x: 310,
+      //     y: 253,
+      //   },
+      //   fontSize: 9,
+      // },
+      ...getClaimContent(claim),
       ...getSexContent(insuredGender, 504, 51, 253),
       ...getDOBContent(insuredDOB, 395, 253),
       {
@@ -157,46 +158,46 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      {
-        text: 'X23',
-        absolutePosition: {
-          x: 267,
-          y: 277,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X24',
-        absolutePosition: {
-          x: 267,
-          y: 300,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X25',
-        absolutePosition: {
-          x: 310,
-          y: 277,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X26',
-        absolutePosition: {
-          x: 310,
-          y: 300,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X27',
-        absolutePosition: {
-          x: 343,
-          y: 277,
-        },
-        fontSize: 9,
-      },
+      // {
+      //   text: 'X23',
+      //   absolutePosition: {
+      //     x: 267,
+      //     y: 277,
+      //   },
+      //   fontSize: 9,
+      // },
+      // {
+      //   text: 'X24',
+      //   absolutePosition: {
+      //     x: 267,
+      //     y: 300,
+      //   },
+      //   fontSize: 9,
+      // },
+      // {
+      //   text: 'X25',
+      //   absolutePosition: {
+      //     x: 310,
+      //     y: 277,
+      //   },
+      //   fontSize: 9,
+      // },
+      // {
+      //   text: 'X26',
+      //   absolutePosition: {
+      //     x: 310,
+      //     y: 300,
+      //   },
+      //   fontSize: 9,
+      // },
+      // {
+      //   text: 'X27',
+      //   absolutePosition: {
+      //     x: 343,
+      //     y: 277,
+      //   },
+      //   fontSize: 9,
+      // },
       {
         text: 'X28',
         absolutePosition: {
@@ -1948,6 +1949,70 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
 
 /* PDF content helpers */
 
+export function getClaimContent(claim: Claim): Content[] {
+  const { relatedToemployment, relatedToAutoAccident, accidentLocationState, relatedToOtherAccident } =
+    getClaimInfo(claim);
+
+  return [
+    {
+      text: relatedToemployment ? 'X' : '',
+      absolutePosition: {
+        x: 267,
+        y: 253,
+      },
+      fontSize: 9,
+    },
+    {
+      text: !relatedToemployment ? 'X' : '',
+      absolutePosition: {
+        x: 310,
+        y: 253,
+      },
+      fontSize: 9,
+    },
+    {
+      text: relatedToAutoAccident ? 'X' : '',
+      absolutePosition: {
+        x: 267,
+        y: 277,
+      },
+      fontSize: 9,
+    },
+    {
+      text: !relatedToAutoAccident ? 'X' : '',
+      absolutePosition: {
+        x: 310,
+        y: 277,
+      },
+      fontSize: 9,
+    },
+    {
+      text: accidentLocationState as string,
+      absolutePosition: {
+        x: 343,
+        y: 277,
+      },
+      fontSize: 9,
+    },
+    {
+      text: relatedToOtherAccident ? 'X' : '',
+      absolutePosition: {
+        x: 267,
+        y: 300,
+      },
+      fontSize: 9,
+    },
+    {
+      text: !relatedToOtherAccident ? 'X' : '',
+      absolutePosition: {
+        x: 310,
+        y: 300,
+      },
+      fontSize: 9,
+    },
+  ];
+}
+
 export function getInsuranceProgramContent(insuranceType: string): Content[] {
   const optionsMap: Record<string, number> = {
     MEDICARE: 23,
@@ -2233,5 +2298,31 @@ export function getCoverageInfo(
     coverageName,
     coveragePolicy,
     coveragePolicyName,
+  };
+}
+
+export function getClaimInfo(
+  claim: Claim
+): Record<
+  | 'relatedToemployment'
+  | 'relatedToAutoAccident'
+  | 'accidentLocation'
+  | 'accidentLocationState'
+  | 'relatedToOtherAccident',
+  string | boolean
+> {
+  const relatedToemployment =
+    claim.supportingInfo?.some((info) => info.category.coding?.[0].code === 'employmentimpacted') ?? false;
+  const relatedToAutoAccident = claim.accident?.type?.coding?.some((code) => code.code === 'MVA') ?? false;
+  const accidentLocation = claim.accident?.locationAddress ? formatAddress(claim.accident.locationAddress) : '';
+  const accidentLocationState = claim.accident?.locationAddress?.state ?? '';
+  const relatedToOtherAccident = !relatedToAutoAccident && !!claim.accident;
+
+  return {
+    relatedToemployment,
+    relatedToAutoAccident,
+    accidentLocation,
+    accidentLocationState,
+    relatedToOtherAccident,
   };
 }
