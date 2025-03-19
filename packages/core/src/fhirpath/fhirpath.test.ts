@@ -1,12 +1,12 @@
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient } from '@medplum/fhirtypes';
-import { indexStructureDefinitionBundle } from '../typeschema/types';
-import { evalFhirPath, evalFhirPathTyped } from './parse';
+import { Bundle } from '@medplum/fhirtypes';
 import { LOINC, SNOMED, UCUM } from '../constants';
 import { PropertyType, TypedValue } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
+import { evalFhirPath, evalFhirPathTyped } from './parse';
 import { toTypedValue } from './utils';
 
-const observation: Observation = {
+const observation = {
   resourceType: 'Observation',
   id: 'example',
   text: {
@@ -64,7 +64,7 @@ const observation: Observation = {
   },
 };
 
-const patient: Patient = {
+const patient = {
   resourceType: 'Patient',
   id: 'example',
   text: {
@@ -955,7 +955,7 @@ describe('FHIRPath Test Suite', () => {
       ]);
     });
 
-    test.skip('testLiteralUnicode', () => {
+    test('testLiteralUnicode', () => {
       expect(evalFhirPath("Patient.name.given.first() = 'P\\u0065ter'", patient)).toStrictEqual([true]);
     });
 
@@ -1083,7 +1083,7 @@ describe('FHIRPath Test Suite', () => {
       expect(evalFhirPath('1.is(Integer)', patient)).toStrictEqual([true]);
     });
 
-    test.skip('testIntegerLiteralIsSystemInteger', () => {
+    test('testIntegerLiteralIsSystemInteger', () => {
       expect(evalFhirPath('1.is(System.Integer)', patient)).toStrictEqual([true]);
     });
 
@@ -3432,23 +3432,38 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testVariables', () => {
+  describe('testVariables', () => {
+    const typedPatient = [toTypedValue(patient)];
+    const typedTrue = [toTypedValue(true)];
+    const variables = {
+      '%sct': toTypedValue('http://snomed.info/sct'),
+      '%loinc': toTypedValue('http://loinc.org'),
+      '%ucum': toTypedValue('http://unitsofmeasure.org'),
+      '%`vs-administrative-gender`': toTypedValue('http://hl7.org/fhir/ValueSet/administrative-gender'),
+    };
+
     test('testVariables1', () => {
-      expect(evalFhirPath("%sct = 'http://snomed.info/sct'", patient)).toStrictEqual([true]);
+      expect(evalFhirPathTyped("%sct = 'http://snomed.info/sct'", typedPatient, variables)).toStrictEqual(typedTrue);
     });
 
     test('testVariables2', () => {
-      expect(evalFhirPath("%loinc = 'http://loinc.org'", patient)).toStrictEqual([true]);
+      expect(evalFhirPathTyped("%loinc = 'http://loinc.org'", typedPatient, variables)).toStrictEqual(typedTrue);
     });
 
     test('testVariables3', () => {
-      expect(evalFhirPath("%ucum = 'http://unitsofmeasure.org'", patient)).toStrictEqual([true]);
+      expect(evalFhirPathTyped("%ucum = 'http://unitsofmeasure.org'", typedPatient, variables)).toStrictEqual(
+        typedTrue
+      );
     });
 
     test('testVariables4', () => {
       expect(
-        evalFhirPath("%`vs-administrative-gender` = 'http://hl7.org/fhir/ValueSet/administrative-gender'", patient)
-      ).toStrictEqual([true]);
+        evalFhirPathTyped(
+          "%`vs-administrative-gender` = 'http://hl7.org/fhir/ValueSet/administrative-gender'",
+          typedPatient,
+          variables
+        )
+      ).toStrictEqual(typedTrue);
     });
   });
 
