@@ -8,13 +8,13 @@ import { getConfig } from './config/loader';
 import { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
 import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
-import { getPostDeployVersion, getPreDeployVersion, MigrationVersion } from './migration-sql';
+import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
   getPendingPostDeployMigration,
   getPreDeployMigration,
-  getPreDeployMigrationVersions,
   queuePostDeployMigration,
 } from './migrations/migration-utils';
+import { getPreDeployMigrationVersions, MigrationVersion } from './migrations/migration-versions';
 import { getServerVersion } from './util/version';
 
 export const DatabaseMode = {

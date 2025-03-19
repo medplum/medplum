@@ -4,15 +4,15 @@ import { loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { getSystemRepo, Repository } from './fhir/repo';
 import { SelectQuery } from './fhir/sql';
+import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
-  getLatestPostDeployMigrationVersion,
   getPendingPostDeployMigration,
   getPostDeployMigration,
   preparePostDeployMigrationAsyncJob,
 } from './migrations/migration-utils';
+import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import { seedDatabase } from './seed';
 import { withTestContext } from './test.setup';
-import { getPostDeployVersion, getPreDeployVersion, MigrationVersion } from './migration-sql';
 
 async function synchronouslyRunAllPendingPostDeployMigrations(): Promise<void> {
   const lastVersion = getLatestPostDeployMigrationVersion();

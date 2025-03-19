@@ -1,9 +1,9 @@
 import { Pool, PoolClient } from 'pg';
 import { loadTestConfig } from './config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from './database';
-import { markPostDeployMigrationCompleted, MigrationVersion } from './migration-sql';
+import { markPostDeployMigrationCompleted } from './migration-sql';
 import { CustomMigrationAction, CustomPostDeployMigration } from './migrations/data/types';
-import { getLatestPostDeployMigrationVersion } from './migrations/migration-utils';
+import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 
 jest.mock('./migrations/data/v1', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports

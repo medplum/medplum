@@ -10,22 +10,50 @@ import { AuthenticatedRequestContext } from './context';
 import { DatabaseMode, getDatabasePool, maybeStartPostDeployMigration } from './database';
 import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
-import { getPostDeployVersion, markPostDeployMigrationCompleted } from './migration-sql';
+import * as migrationSql from './migration-sql';
 import {
   CustomMigrationAction,
   CustomPostDeployMigration,
   CustomPostDeployMigrationJobData,
 } from './migrations/data/types';
-import { getLatestPostDeployMigrationVersion, getPendingPostDeployMigration } from './migrations/migration-utils';
+import { getPendingPostDeployMigration } from './migrations/migration-utils';
+import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
 import { generateAccessToken } from './oauth/keys';
 import { requestContextStore } from './request-context-store';
 import { createTestProject, withTestContext } from './test.setup';
 import { getPostDeployMigrationQueue, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
 import { getReindexQueue, prepareReindexJobData, ReindexJob } from './workers/reindex';
+import * as version from './util/version';
+
+const DEFAULT_SERVER_VERSION = '3.3.0';
+const DEFAULT_POST_DEPLOY_VERSION = 0;
+
+const mockValues = {
+  serverVersion: DEFAULT_SERVER_VERSION,
+  postDeployVersion: DEFAULT_POST_DEPLOY_VERSION,
+};
+
+const mockGetPostDeployVersion = jest
+  .fn<ReturnType<typeof migrationSql.getPostDeployVersion>, Parameters<typeof migrationSql.getPostDeployVersion>>()
+  .mockImplementation(async () => {
+    return mockValues.postDeployVersion;
+  });
+
+const mockMarkPostDeployMigrationCompleted = jest
+  .fn<
+    ReturnType<typeof migrationSql.markPostDeployMigrationCompleted>,
+    Parameters<typeof migrationSql.markPostDeployMigrationCompleted>
+  >()
+  .mockImplementation(async (_pool: Pool | PoolClient, dataVersion: number) => {
+    if (!Number.isInteger(dataVersion)) {
+      throw new Error('Invalid data version in mocked markPostDeployMigrationCompleted: ' + dataVersion);
+    }
+    return dataVersion;
+  });
 
 jest.mock('./migrations/data/v1', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { prepareCustomMigrationJobData, runCustomMigration } = require('./workers/post-deploy-migration');
+  const { prepareCustomMigrationJobData, runCustomMigration } = jest.requireActual('./workers/post-deploy-migration');
   const migration: CustomPostDeployMigration = {
     type: 'custom',
     prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
@@ -44,43 +72,6 @@ jest.mock('./migrations/data/v1', () => {
 jest.mock('./migrations/data/index', () => {
   return {
     v1: jest.requireMock('./migrations/data/v1'),
-  };
-});
-
-const DEFAULT_SERVER_VERSION = '3.3.0';
-const DEFAULT_POST_DEPLOY_VERSION = 0;
-
-const mockValues = {
-  serverVersion: DEFAULT_SERVER_VERSION,
-  postDeployVersion: DEFAULT_POST_DEPLOY_VERSION,
-};
-
-jest.mock('./util/version', () => {
-  return {
-    getServerVersion: jest.fn().mockImplementation(() => {
-      return mockValues.serverVersion;
-    }),
-  };
-});
-
-jest.mock('./migration-sql', () => {
-  const getPostDeployVersionMock = jest
-    .fn<ReturnType<typeof getPostDeployVersion>, Parameters<typeof getPostDeployVersion>>()
-    .mockImplementation(async () => {
-      return mockValues.postDeployVersion;
-    });
-  const markPostDeployMigrationCompletedMock = jest
-    .fn<ReturnType<typeof markPostDeployMigrationCompleted>, Parameters<typeof markPostDeployMigrationCompleted>>()
-    .mockImplementation(async (_pool: Pool | PoolClient, dataVersion: number) => {
-      if (!Number.isInteger(dataVersion)) {
-        throw new Error('Invalid data version in mocked markPostDeployMigrationCompleted: ' + dataVersion);
-      }
-      return dataVersion;
-    });
-  return {
-    ...jest.requireActual('./migration-sql'),
-    getPostDeployVersion: getPostDeployVersionMock,
-    markPostDeployMigrationCompleted: markPostDeployMigrationCompletedMock,
   };
 });
 
@@ -113,26 +104,30 @@ async function expungePostDeployMigrationAsyncJob(repo: Repository): Promise<voi
 describe('Database migrations', () => {
   beforeAll(async () => {
     console.log = jest.fn();
+
+    jest.spyOn(migrationSql, 'getPostDeployVersion').mockImplementation(mockGetPostDeployVersion);
+    jest
+      .spyOn(migrationSql, 'markPostDeployMigrationCompleted')
+      .mockImplementation(mockMarkPostDeployMigrationCompleted);
+    jest.spyOn(version, 'getServerVersion').mockImplementation(() => mockValues.serverVersion);
+
     await loadTestConfig();
+    // We want a clean history of post-deploy migration AsyncJob. init and shutdown the app
+    // to facilitate expunging all relevant AsyncJob
+    await initAppServices(getConfig());
+    await expungePostDeployMigrationAsyncJob(getSystemRepo());
+    await shutdownApp();
   });
 
   beforeEach(async () => {
+    jest.clearAllMocks();
+
     // By default, disable both pre-deploy and post-deploy migrations
     setMigrationsConfig(false, false);
 
     // Reset mocked return values as well
     mockValues.serverVersion = DEFAULT_SERVER_VERSION;
     mockValues.postDeployVersion = DEFAULT_POST_DEPLOY_VERSION;
-
-    // These were here, but don't seem to be necessary?
-    // jest.restoreAllMocks();
-    // jest.clearAllMocks();
-
-    // We want a clean history of post-deploy migration AsyncJob. init and shutdown the app
-    // to facilitate expunging all relevant AsyncJob
-    await initAppServices(getConfig());
-    await expungePostDeployMigrationAsyncJob(getSystemRepo());
-    await shutdownApp();
   });
 
   describe('Database startup check', () => {
@@ -142,6 +137,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
+      await expungePostDeployMigrationAsyncJob(getSystemRepo());
       await shutdownApp();
     });
 
@@ -153,7 +149,6 @@ describe('Database migrations', () => {
             'Unable to run this version of Medplum server. Pending post-deploy migration v1 requires server at version 3.3.0 <= version < 4.0.0, but current server version is 4.0.0'
           )
         );
-        await shutdownApp();
       }));
 
     test('Current version is less than required version', async () => {
@@ -166,7 +161,6 @@ describe('Database migrations', () => {
         version: expect.any(String),
       });
 
-      await shutdownApp();
       loggerInfoSpy.mockRestore();
     });
 
@@ -208,7 +202,6 @@ describe('Database migrations', () => {
             })
           );
 
-          await shutdownApp();
           loggerInfoSpy.mockRestore();
         })
     );
@@ -217,19 +210,10 @@ describe('Database migrations', () => {
   describe("maybeStartDataMigrations -- Schema migrations didn't run", () => {
     beforeEach(async () => {
       await initAppServices(getConfig());
-
-      // Delete all data migration jobs
-      const systemRepo = getSystemRepo();
-      const jobs = await systemRepo.searchResources<AsyncJob>(parseSearchRequest('AsyncJob?type=data-migration'));
-      if (jobs.length) {
-        await systemRepo.expungeResources(
-          'AsyncJob',
-          jobs.map((job) => job.id)
-        );
-      }
     });
 
     afterEach(async () => {
+      await expungePostDeployMigrationAsyncJob(getSystemRepo());
       await shutdownApp();
     });
 
@@ -241,7 +225,7 @@ describe('Database migrations', () => {
       }));
   });
 
-  describe('maybeStartDataMigration -- Schema migrations ran', () => {
+  describe('maybeStartPostDeployMigration -- pre-deploy migrations ran', () => {
     let queueAddSpy: jest.SpyInstance;
 
     beforeEach(async () => {
@@ -254,6 +238,7 @@ describe('Database migrations', () => {
     });
 
     afterEach(async () => {
+      await expungePostDeployMigrationAsyncJob(getSystemRepo());
       await shutdownApp();
     });
 
@@ -424,13 +409,10 @@ describe('Database migrations', () => {
       setMigrationsConfig(true, false);
 
       await initAppServices(getConfig());
-
-      // queueAddSpy = getQueueAddSpy();
-      // queueAddSpy.mockClear();
-      jest.clearAllMocks();
     });
 
     afterEach(async () => {
+      await expungePostDeployMigrationAsyncJob(getSystemRepo());
       await shutdownApp();
     });
 
@@ -484,6 +466,8 @@ describe('Database migrations', () => {
           minServerVersion: '3.3.0',
         });
 
+        expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(0);
+
         const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob.id);
         await new ReindexJob().execute(jobData);
 
@@ -501,8 +485,9 @@ describe('Database migrations', () => {
             },
           ],
         });
+
         // Make sure we call `markDataMigrationComplete` after the reindex job if it's a data migration
-        expect(markPostDeployMigrationCompleted).toHaveBeenCalledTimes(1);
+        expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(1);
 
         expect(getReindexQueueAddSpy()).not.toHaveBeenCalled();
         expect(getQueueAddSpy()).toHaveBeenCalledTimes(expectedQueueCalls);
@@ -523,6 +508,7 @@ describe('Super Admin routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
+    await expungePostDeployMigrationAsyncJob(getSystemRepo());
 
     requestContextStore.enterWith(AuthenticatedRequestContext.system());
     ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
@@ -565,9 +551,11 @@ describe('Super Admin routes', () => {
   });
 
   beforeEach(async () => {
-    await expungePostDeployMigrationAsyncJob(getSystemRepo());
-    jest.restoreAllMocks();
     jest.clearAllMocks();
+  });
+
+  afterEach(async () => {
+    await expungePostDeployMigrationAsyncJob(getSystemRepo());
   });
 
   afterAll(async () => {
@@ -649,6 +637,7 @@ describe('Super Admin routes', () => {
     });
 
     test('Set data version -- Valid dataVersion', async () => {
+      expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(0);
       const res1 = await request(app)
         .post('/admin/super/setdataversion')
         .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -657,7 +646,7 @@ describe('Super Admin routes', () => {
 
       expect(res1.status).toStrictEqual(200);
       expect(res1.body).toMatchObject(allOk);
-      expect(markPostDeployMigrationCompleted).toHaveBeenCalledTimes(1);
+      expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(1);
     });
 
     test.each([undefined, 'v1', '3.3.0'])('Set data version -- invalid dataVersion - %s', async (dataVersion) => {
