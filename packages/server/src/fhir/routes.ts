@@ -248,7 +248,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // PlanDefinition $apply operation
   router.add('POST', '/PlanDefinition/:id/$apply', planDefinitionApplyHandler);
-  
+
   // ChargeItemDefinition $apply operation
   router.add('POST', '/ChargeItemDefinition/:id/$apply', chargeItemDefinitionApplyHandler);
 
