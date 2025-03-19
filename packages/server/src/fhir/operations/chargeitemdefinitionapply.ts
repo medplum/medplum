@@ -3,12 +3,12 @@ import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { getAuthenticatedContext } from '../../context';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
-import { ChargeItem, ChargeItemDefinition } from '@medplum/fhirtypes';
+import { ChargeItem, ChargeItemDefinition, Reference } from '@medplum/fhirtypes';
 
 const operation = getOperationDefinition('ChargeItemDefinition', 'apply');
 
 interface ChargeItemDefinitionParameters {
-  readonly chargeItem: ChargeItem;
+  readonly chargeItem: Reference<ChargeItem>;
 }
 
 /**
@@ -25,15 +25,11 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
   const { id } = req.params;
   const chargeItemDefinition = await ctx.repo.readResource<ChargeItemDefinition>('ChargeItemDefinition', id);
   const params = parseInputParameters<ChargeItemDefinitionParameters>(operation, req);
-  const inputChargeItem = params.chargeItem;
-  
-  const chargeItem = {
+  const inputChargeItemRef = params.chargeItem;
+  const inputChargeItem = await ctx.repo.readReference<ChargeItem>(inputChargeItemRef);
+  const chargeItem: ChargeItem = {
     ...inputChargeItem,
-    definitionReference: [
-      {
-        reference: getReferenceString(chargeItemDefinition)
-      }
-    ]
+    definitionCanonical: [getReferenceString(chargeItemDefinition)]
   };
   
   if (chargeItemDefinition.propertyGroup) {
