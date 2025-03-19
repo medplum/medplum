@@ -1,0 +1,54 @@
+import { allOk, getReferenceString } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { getAuthenticatedContext } from '../../context';
+import { getOperationDefinition } from './definitions';
+import { parseInputParameters } from './utils/parameters';
+import { ChargeItem, ChargeItemDefinition } from '@medplum/fhirtypes';
+
+const operation = getOperationDefinition('ChargeItemDefinition', 'apply');
+
+interface ChargeItemDefinitionParameters {
+  readonly chargeItem: ChargeItem;
+}
+
+/**
+ * Handles a ChargeItemDefinition $apply operation.
+ * This operation applies a ChargeItemDefinition resource to a specific context,
+ * often including a patient, encounter, or other relevant resources.
+ *
+ * See: https://www.hl7.org/fhir/chargeitemdefinition-operation-apply.html
+ * @param req - The FHIR request.
+ * @returns The FHIR response.
+ */
+export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promise<FhirResponse> {
+  const ctx = getAuthenticatedContext();
+  const { id } = req.params;
+  const chargeItemDefinition = await ctx.repo.readResource<ChargeItemDefinition>('ChargeItemDefinition', id);
+  const params = parseInputParameters<ChargeItemDefinitionParameters>(operation, req);
+  const inputChargeItem = params.chargeItem;
+  
+  const chargeItem = {
+    ...inputChargeItem,
+    definitionReference: [
+      {
+        reference: getReferenceString(chargeItemDefinition)
+      }
+    ]
+  };
+  
+  if (chargeItemDefinition.propertyGroup) {
+    for (const group of chargeItemDefinition.propertyGroup) {
+      if (group.priceComponent && group.priceComponent.length > 0) {
+        const basePriceComp = group.priceComponent.find(pc => pc.type === 'base');
+        if (basePriceComp?.amount) {
+          chargeItem.priceOverride = basePriceComp.amount;
+          break; 
+        }
+      }
+    }
+  }
+  
+  
+  const result = await ctx.repo.createResource<ChargeItem>(chargeItem);
+  return [allOk, result];
+}
