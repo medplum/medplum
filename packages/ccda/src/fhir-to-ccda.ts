@@ -851,13 +851,7 @@ class FhirToCcdaConverter {
       return undefined;
     }
 
-    let organization = undefined;
-    if (custodian) {
-      organization = this.findResourceByReference(custodian);
-      if (!organization) {
-        return undefined;
-      }
-    }
+    const organization = this.findResourceByReference(custodian);
 
     return [
       {
@@ -875,11 +869,7 @@ class FhirToCcdaConverter {
           assignedPerson: {
             name: this.mapNames(practitioner.name),
           },
-          representedOrganization: organization
-            ? {
-                name: organization.name ? [organization.name] : undefined,
-              }
-            : undefined,
+          representedOrganization: organization?.name ? { name: [organization.name] } : undefined,
         },
       },
     ];
