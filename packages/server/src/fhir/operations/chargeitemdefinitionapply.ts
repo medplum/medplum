@@ -29,22 +29,21 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
   const inputChargeItem = await ctx.repo.readReference<ChargeItem>(inputChargeItemRef);
   const chargeItem: ChargeItem = {
     ...inputChargeItem,
-    definitionCanonical: [getReferenceString(chargeItemDefinition)]
+    definitionCanonical: [getReferenceString(chargeItemDefinition)],
   };
-  
+
   if (chargeItemDefinition.propertyGroup) {
     for (const group of chargeItemDefinition.propertyGroup) {
       if (group.priceComponent && group.priceComponent.length > 0) {
-        const basePriceComp = group.priceComponent.find(pc => pc.type === 'base');
+        const basePriceComp = group.priceComponent.find((pc) => pc.type === 'base');
         if (basePriceComp?.amount) {
           chargeItem.priceOverride = basePriceComp.amount;
-          break; 
+          break;
         }
       }
     }
   }
-  
-  
+
   const result = await ctx.repo.createResource<ChargeItem>(chargeItem);
   return [allOk, result];
 }
