@@ -2158,7 +2158,9 @@ export function getPersonInfo(
   };
 }
 
-export function getCoverageInfo(coverage: Coverage): Record<string, string> {
+export function getCoverageInfo(
+  coverage: Coverage
+): Record<'insuranceType' | 'insuredIdNumber' | 'relationship' | 'coverageName', string> {
   const insuranceType = coverage.type?.coding?.[0].display ?? coverage.type?.coding?.[0].code ?? '';
   const insuredIdNumber = coverage.identifier?.find((id) => id.use === 'official')?.value ?? '';
   const relationship = coverage.relationship?.coding?.[0].display ?? coverage.relationship?.coding?.[0].code ?? '';
