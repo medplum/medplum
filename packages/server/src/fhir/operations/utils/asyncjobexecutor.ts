@@ -1,12 +1,12 @@
 import { OperationOutcomeError, WithId, accepted } from '@medplum/core';
-import { UpdateResourceOptions } from '@medplum/fhir-router';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
-import { markPendingDataMigrationCompleted } from '../../../database';
+import { DatabaseMode, getDatabasePool, maybeRunPendingPostDeployMigration } from '../../../database';
 import { getLogger } from '../../../logger';
+import { markPostDeployMigrationCompleted } from '../../../migration-sql';
 import { sendOutcome } from '../../outcomes';
 import { Repository, getSystemRepo } from '../../repo';
 
@@ -29,12 +29,21 @@ export class AsyncJobExecutor {
     }
     return this.resource;
   }
-
   /**
    * Begins execution of the async job and coordinates resource updates and logging throughout the job lifecycle.
    * @param callback - The callback to execute.
    */
   start(callback: (job: AsyncJob) => Promise<any>): void {
+    // Rely on `startAsync` for error handling/logging
+    this.startAsync(callback).catch(() => {});
+  }
+
+  /**
+   * Executes the async job and coordinates resource updates and logging throughout the job lifecycle.
+   * @param callback - The callback to execute.
+   * @returns A promise that resolves when the job is completed or fails.
+   */
+  async startAsync(callback: (job: AsyncJob) => Promise<any>): Promise<AsyncJob | undefined> {
     const log = getLogger();
     if (!this.resource) {
       throw new Error('AsyncJob missing');
@@ -45,20 +54,25 @@ export class AsyncJobExecutor {
 
     const startTime = Date.now();
     const systemRepo = getSystemRepo();
-    log.info('Async job starting', { name: callback.name, asyncJobId: this.resource?.id });
+    log.info('AsyncJob execution starting', { name: callback.name, asyncJobId: this.resource?.id });
 
-    this.run(callback)
+    return this.run(callback)
       .then(async (output) => {
-        log.info('Async job completed', {
+        log.info('AsyncJob execution completed', {
           name: callback.name,
           asyncJobId: this.resource?.id,
           duration: `${Date.now() - startTime} ms`,
         });
-        await this.completeJob(systemRepo, output);
+        return this.completeJob(systemRepo, output);
       })
       .catch(async (err) => {
-        log.error('Async job failed', { name: callback.name, asyncJobId: this.resource?.id, error: err });
-        await this.failJob(systemRepo, err);
+        log.error('AsyncJob execution failed', {
+          name: callback.name,
+          asyncJobId: this.resource?.id,
+          error: err.toString(),
+          stack: err.stack,
+        });
+        return this.failJob(systemRepo, err);
       })
       .finally(() => {
         this.repo[Symbol.dispose]();
@@ -85,42 +99,29 @@ export class AsyncJobExecutor {
     return output ?? undefined;
   }
 
-  async completeJob(repo: Repository, output?: Parameters): Promise<AsyncJob | undefined> {
-    const job = this.resource;
-    if (!job) {
-      return undefined;
+  async completeJob(repo: Repository, output?: Parameters): Promise<AsyncJob> {
+    if (!this.resource) {
+      throw new Error('Cannot completeJob since AsyncJob is not specified');
     }
-    if (job.type === 'data-migration') {
-      await markPendingDataMigrationCompleted(job);
-    }
-    return repo.updateResource<AsyncJob>({
-      ...job,
+    let updatedJob: AsyncJob = {
+      ...this.resource,
       status: 'completed',
       transactionTime: new Date().toISOString(),
       output,
-    });
-  }
-
-  async updateJobProgress(
-    repo: Repository,
-    output: Parameters,
-    options?: UpdateResourceOptions
-  ): Promise<WithId<AsyncJob> | undefined> {
-    if (!this.resource) {
-      return undefined;
+    };
+    if (updatedJob.type === 'data-migration' && updatedJob.dataVersion) {
+      await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), updatedJob.dataVersion);
+      updatedJob = await repo.updateResource<AsyncJob>(updatedJob);
+      await maybeRunPendingPostDeployMigration();
+      return updatedJob;
+    } else {
+      return repo.updateResource<AsyncJob>(updatedJob);
     }
-    return repo.updateResource<AsyncJob>(
-      {
-        ...this.resource,
-        output,
-      },
-      options
-    );
   }
 
-  async failJob(repo: Repository, err?: Error): Promise<AsyncJob | undefined> {
+  async failJob(repo: Repository, err?: Error): Promise<AsyncJob> {
     if (!this.resource) {
-      return undefined;
+      throw new Error('Cannot failJob since AsyncJob is not specified');
     }
     const failedJob: AsyncJob = {
       ...this.resource,
@@ -130,11 +131,13 @@ export class AsyncJobExecutor {
     if (err) {
       failedJob.output = {
         resourceType: 'Parameters',
-        parameter: [
+        parameter:
           err instanceof OperationOutcomeError
-            ? { name: 'outcome', resource: err.outcome }
-            : { name: 'error', valueString: err.message },
-        ],
+            ? [{ name: 'outcome', resource: err.outcome }]
+            : [
+                { name: 'error', valueString: err.message },
+                { name: 'stack', valueString: err.stack },
+              ],
       };
     }
     return repo.updateResource<AsyncJob>(failedJob);

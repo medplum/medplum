@@ -28,3 +28,15 @@ export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJob
    */
   run(repo: Repository, data: T): Promise<PostDeployJobRunResult>;
 }
+
+// Custom Jobs
+
+export type CustomMigrationAction = { name: string; durationMs: number };
+export type CustomMigrationResult = { actions: CustomMigrationAction[] };
+export interface CustomPostDeployMigrationJobData extends PostDeployJobData {
+  readonly type: 'custom';
+}
+
+export interface CustomPostDeployMigration extends PostDeployMigration<CustomPostDeployMigrationJobData> {
+  type: 'custom';
+}
