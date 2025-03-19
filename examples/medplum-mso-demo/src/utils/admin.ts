@@ -1,5 +1,4 @@
 import { MedplumClient, normalizeErrorString } from '@medplum/core';
-import { ProjectMembership } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 
@@ -12,7 +11,7 @@ import { useEffect, useState } from 'react';
 export async function isUserAdmin(medplum: MedplumClient): Promise<boolean> {
   try {
     // Get the current user's profile
-    const membership = medplum.getProjectMembership() as ProjectMembership | undefined;
+    const membership = medplum.getProjectMembership();
     return membership?.admin ?? false;
   } catch (error) {
     console.error('Error checking admin status:', normalizeErrorString(error));
