@@ -76,5 +76,8 @@
     "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@1.4.15",
     "trim": "0.0.3",
     "whatwg-url": "14.0.0"
+  },
+  "dependencies": {
+    "@google-cloud/storage": "^7.15.2"
   }
 }
