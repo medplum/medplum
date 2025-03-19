@@ -61,6 +61,25 @@ export const fullAnswer: Bundle = {
       },
     },
     {
+      fullUrl: 'urn:uuid:e2523da4-9d6e-442c-99aa-fcfe3353c9e3',
+      request: { method: 'PUT', url: 'RelatedPerson?name=Abraham%20Simpson' },
+      resource: {
+        resourceType: 'RelatedPerson',
+        patient: { reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945' },
+        name: [{ given: ['Abraham'], family: 'Simpson' }],
+        birthDate: '1927-06-04',
+        gender: 'male',
+        address: [
+          {
+            line: ['Springfield Retirement Castle'],
+            city: 'Springfield',
+            state: 'IL',
+            postalCode: '62704',
+          },
+        ],
+      },
+    },
+    {
       fullUrl: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c',
       request: { method: 'PUT', url: 'Practitioner?identifier=2490433892' },
       resource: {
@@ -98,7 +117,7 @@ export const fullAnswer: Bundle = {
     },
     {
       fullUrl: 'urn:uuid:f1ed24bf-7efa-44a1-b5ea-cc46414a282d',
-      request: { method: 'PUT', url: 'Organization?identifier=example-npi-number' },
+      request: { method: 'PUT', url: 'Organization?identifier=7911621876' },
       resource: {
         resourceType: 'Organization',
         identifier: [
@@ -112,7 +131,7 @@ export const fullAnswer: Bundle = {
                 },
               ],
             },
-            value: 'example-npi-number',
+            value: '7911621876',
           },
           {
             use: 'official',
@@ -124,7 +143,7 @@ export const fullAnswer: Bundle = {
                 },
               ],
             },
-            value: 'example-tax-id',
+            value: '555-18-4468',
             system: 'http://example-systemt.org/tax',
           },
         ],
@@ -135,6 +154,50 @@ export const fullAnswer: Bundle = {
             city: 'Philadelphia',
             state: 'PA',
             postalCode: '19103',
+            type: 'both',
+          },
+        ],
+      },
+    },
+    {
+      fullUrl: 'urn:uuid:4bc72375-425d-4fb0-be6e-38bc6144d1e5',
+      request: { method: 'PUT', url: 'Organization?identifier=5746217289' },
+      resource: {
+        resourceType: 'Organization',
+        identifier: [
+          {
+            use: 'official',
+            type: {
+              coding: [
+                {
+                  system: 'http://example.org/org-id',
+                  code: 'NPI',
+                },
+              ],
+            },
+            value: '5746217289',
+          },
+          {
+            use: 'official',
+            type: {
+              coding: [
+                {
+                  system: 'http://example.org/org-id',
+                  code: 'TAX',
+                },
+              ],
+            },
+            value: '555-44-4734',
+            system: 'http://example-systemt.org/tax',
+          },
+        ],
+        name: 'Medicare Insurance',
+        address: [
+          {
+            line: ['2578 Elmwood Avenue'],
+            city: 'Chicago',
+            state: 'IL',
+            postalCode: '60610',
             type: 'both',
           },
         ],
@@ -152,7 +215,10 @@ export const fullAnswer: Bundle = {
           },
         ],
         status: 'active',
-        beneficiary: { reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945', display: 'Homer Simpson' },
+        beneficiary: {
+          reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945',
+          display: 'Homer Simpson',
+        },
         payor: [
           {
             reference: 'urn:uuid:f1ed24bf-7efa-44a1-b5ea-cc46414a282d',
@@ -179,10 +245,84 @@ export const fullAnswer: Bundle = {
         },
         subscriber: {
           reference: 'urn:uuid:7914fb49-05e1-45cc-bffc-a3fdff1b72e1',
+          display: 'Marge Simpson',
         },
+        class: [
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
+                  code: 'plan',
+                },
+              ],
+            },
+            value: 'B37FC',
+            name: 'Independence Blue Full Coverage',
+          },
+        ],
       },
     },
-
+    {
+      fullUrl: 'urn:uuid:10e49ae1-acf1-4288-93d3-5bbb504957aa',
+      request: { method: 'PUT', url: 'Coverage?identifier=21173018' },
+      resource: {
+        resourceType: 'Coverage',
+        identifier: [
+          {
+            use: 'official',
+            value: '21173018',
+          },
+        ],
+        status: 'active',
+        beneficiary: {
+          reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945',
+          display: 'Homer Simpson',
+        },
+        payor: [
+          {
+            reference: 'urn:uuid:4bc72375-425d-4fb0-be6e-38bc6144d1e5',
+            display: 'Medicare Insurance',
+          },
+        ],
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+              code: 'EHCPOL',
+              display: 'extended healthcare',
+            },
+          ],
+        },
+        relationship: {
+          coding: [
+            {
+              system: 'http://hl7.org/fhir/ValueSet/subscriber-relationship',
+              code: 'child',
+              display: 'Child',
+            },
+          ],
+        },
+        subscriber: {
+          reference: 'urn:uuid:e2523da4-9d6e-442c-99aa-fcfe3353c9e3',
+          display: 'Abraham Simpson',
+        },
+        class: [
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
+                  code: 'plan',
+                },
+              ],
+            },
+            value: '11461128',
+            name: 'Medicare Gold Plus',
+          },
+        ],
+      },
+    },
     {
       fullUrl: 'urn:uuid:6a86eda3-ce9e-472c-ba6b-1855e518d779',
       request: { method: 'PUT', url: 'Claim?identifier=example-claim-cms1500' },
@@ -224,6 +364,14 @@ export const fullAnswer: Bundle = {
             sequence: 1,
             focal: true,
             preAuthRef: ['0923092390'],
+          },
+          {
+            coverage: {
+              reference: 'urn:uuid:10e49ae1-acf1-4288-93d3-5bbb504957aa',
+              display: 'Abraham Simpson Extended Healthcare Plan',
+            },
+            sequence: 2,
+            focal: false,
           },
         ],
         provider: { reference: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c' },

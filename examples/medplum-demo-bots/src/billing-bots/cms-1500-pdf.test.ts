@@ -237,14 +237,18 @@ describe('getPersonInfo', () => {
 
 describe('getCoverageInfo', () => {
   test('returns complete coverage info when all Coverage fields are present', () => {
-    const coverage = fullAnswer.entry?.[4]?.resource as Coverage;
+    const coverage = fullAnswer.entry?.[6]?.resource as Coverage;
 
     const result = getCoverageInfo(coverage);
 
-    expect(result.insuranceType).toStrictEqual('health insurance plan policy');
-    expect(result.insuredIdNumber).toStrictEqual('89442808');
-    expect(result.relationship).toStrictEqual('Spouse');
-    expect(result.coverageName).toStrictEqual('Independence Blue Cross Blue Shield');
+    expect(result).toStrictEqual({
+      insuranceType: 'health insurance plan policy',
+      insuredIdNumber: '89442808',
+      relationship: 'Spouse',
+      coverageName: 'Independence Blue Cross Blue Shield',
+      coveragePolicy: 'plan',
+      coveragePolicyName: 'Independence Blue Full Coverage',
+    });
   });
 
   test('handles missing optional fields', () => {
@@ -262,6 +266,21 @@ describe('getCoverageInfo', () => {
       insuredIdNumber: '',
       relationship: '',
       coverageName: '',
+      coveragePolicy: '',
+      coveragePolicyName: '',
+    });
+  });
+
+  test('returns empty strings when coverage is undefined', () => {
+    const result = getCoverageInfo(undefined);
+
+    expect(result).toStrictEqual({
+      insuranceType: '',
+      insuredIdNumber: '',
+      relationship: '',
+      coverageName: '',
+      coveragePolicy: '',
+      coveragePolicyName: '',
     });
   });
 });

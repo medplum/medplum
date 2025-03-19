@@ -1,4 +1,11 @@
-import { BotEvent, formatAddress, formatDate, getDateProperty, MedplumClient } from '@medplum/core';
+import {
+  BotEvent,
+  formatAddress,
+  formatCodeableConcept,
+  formatDate,
+  getDateProperty,
+  MedplumClient,
+} from '@medplum/core';
 import { Address, Claim, Coverage, HumanName, Media, Patient, RelatedPerson } from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 
@@ -33,7 +40,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
 
   const { personName: patientName, personGender: patientGender, personPhone: patientPhone } = getPersonInfo(patient);
   const patientDOB = getDateProperty(patient.birthDate);
-  const { insuranceType, insuredIdNumber, relationship } = getCoverageInfo(coverage);
+  const { insuranceType, insuredIdNumber, relationship, coverageName, coveragePolicyName } = getCoverageInfo(coverage);
   const {
     personName: insuredName,
     personPhone: insuredPhone,
@@ -41,6 +48,13 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
     personGender: insuredGender,
   } = getPersonInfo(insured);
   const insuredDOB = getDateProperty(insuredDob);
+
+  const otherCoverage =
+    claim.insurance.length > 1 ? await medplum.readReference(claim.insurance[1].coverage) : undefined;
+  const { coverageName: otherCoverageName, coveragePolicyName: otherCoveragePolicyName } =
+    getCoverageInfo(otherCoverage);
+  const otherInsured = otherCoverage?.subscriber ? await medplum.readReference(otherCoverage.subscriber) : undefined;
+  const { personName: otherInsuredName } = getPersonInfo(otherInsured);
 
   // Think of a way to parametrize each field coordinates in the PDF so we can use it with other templates
   const docDefinition = {
@@ -94,7 +108,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
       },
       ...getPhoneContent(insuredPhone, 482),
       {
-        text: 'X12',
+        text: otherInsuredName,
         absolutePosition: {
           x: 22,
           y: 228,
@@ -102,7 +116,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X13',
+        text: coveragePolicyName,
         absolutePosition: {
           x: 375,
           y: 228,
@@ -110,7 +124,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X14',
+        text: otherCoveragePolicyName,
         absolutePosition: {
           x: 22,
           y: 251,
@@ -208,7 +222,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X31',
+        text: coverageName,
         absolutePosition: {
           x: 375,
           y: 298,
@@ -216,7 +230,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X32',
+        text: otherCoverageName,
         absolutePosition: {
           x: 22,
           y: 324,
@@ -2129,6 +2143,7 @@ export function getPatientRelationshipToInsuredContent(relationship: string): Co
 }
 
 /* Data retrieval helpers */
+
 export function formatHumanName(name: HumanName): string {
   const family = name.family ?? '';
   const given = name.given ?? [];
@@ -2184,17 +2199,39 @@ export function getPersonInfo(
 }
 
 export function getCoverageInfo(
-  coverage: Coverage
-): Record<'insuranceType' | 'insuredIdNumber' | 'relationship' | 'coverageName', string> {
+  coverage: Coverage | undefined
+): Record<
+  'insuranceType' | 'insuredIdNumber' | 'relationship' | 'coverageName' | 'coveragePolicy' | 'coveragePolicyName',
+  string
+> {
+  if (!coverage) {
+    return {
+      insuranceType: '',
+      insuredIdNumber: '',
+      relationship: '',
+      coverageName: '',
+      coveragePolicy: '',
+      coveragePolicyName: '',
+    };
+  }
+
   const insuranceType = coverage.type?.coding?.[0].display ?? coverage.type?.coding?.[0].code ?? '';
   const insuredIdNumber = coverage.identifier?.find((id) => id.use === 'official')?.value ?? '';
   const relationship = coverage.relationship?.coding?.[0].display ?? coverage.relationship?.coding?.[0].code ?? '';
   const coverageName = coverage.payor[0].display ?? '';
+  const coveragePlan = coverage.class?.find(
+    (classification) =>
+      classification.type.coding?.[0].code === 'plan' || classification.type.coding?.[0].code === 'group'
+  );
+  const coveragePolicy = formatCodeableConcept(coveragePlan?.type);
+  const coveragePolicyName = coveragePlan?.name ?? '';
 
   return {
     insuranceType,
     insuredIdNumber,
     relationship,
     coverageName,
+    coveragePolicy,
+    coveragePolicyName,
   };
 }
