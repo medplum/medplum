@@ -1,11 +1,12 @@
 import { readJson } from '@medplum/definitions';
-import { Bundle } from '@medplum/fhirtypes';
+import { Bundle, Observation, Patient } from '@medplum/fhirtypes';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
-import { evalFhirPath } from './parse';
+import { evalFhirPath, evalFhirPathTyped } from './parse';
 import { LOINC, SNOMED, UCUM } from '../constants';
 import { PropertyType, TypedValue } from '../types';
+import { toTypedValue } from './utils';
 
-const observation = {
+const observation: Observation = {
   resourceType: 'Observation',
   id: 'example',
   text: {
@@ -63,7 +64,7 @@ const observation = {
   },
 };
 
-const patient = {
+const patient: Patient = {
   resourceType: 'Patient',
   id: 'example',
   text: {
@@ -3589,30 +3590,39 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  // a more "real-world" test of using FHIRPath to evaluate a hypothetical constraint on AccessPolicy
-  describe('testAccessPolicyConstraints', () => {
-    const validResource: TypedValue = {
-      type: PropertyType.BackboneElement,
-      value: { resourceType: 'Patient', hiddenFields: ['name.use', 'name.given'], readonlyFields: ['name'] },
-    };
-
-    const invalidResource: TypedValue = {
-      type: PropertyType.BackboneElement,
-      value: {
-        resourceType: 'Observation',
-        hiddenFields: ['category', 'component.code'],
-        // readonlyFields: ['component'], // this would make it valid
-      },
-    };
-
+  // more "real-world" tests using FHIRPath to evaluate hypothetical constraints on AccessPolicy or Subscription resources
+  describe('testRealWorldConstraints', () => {
     const RESOURCE_CONSTRAINT = "hiddenFields.select(substring(0, indexOf('.'))).distinct().subsetOf(readonlyFields)";
 
     test('testAccessPolicyResourceConstraint positive', () => {
+      const validResource: TypedValue = {
+        type: PropertyType.BackboneElement,
+        value: { resourceType: 'Patient', hiddenFields: ['name.use', 'name.given'], readonlyFields: ['name'] },
+      };
       expect(evalFhirPath(RESOURCE_CONSTRAINT, validResource)).toStrictEqual([true]);
     });
 
     test('testAccessPolicyResourceConstraint negative', () => {
+      const invalidResource: TypedValue = {
+        type: PropertyType.BackboneElement,
+        value: {
+          resourceType: 'Observation',
+          hiddenFields: ['category', 'component.code'],
+          // readonlyFields: ['component'], // this would make it valid
+        },
+      };
       expect(evalFhirPath(RESOURCE_CONSTRAINT, invalidResource)).toStrictEqual([false]);
+    });
+
+    test.each<[unknown, unknown, boolean]>([
+      [undefined, patient, false],
+      [patient, patient, false],
+      [patient, { ...patient, name: [...patient.name, { text: 'The Patient' }] }, false],
+      [{ ...patient, name: [...patient.name, { text: 'The Patient' }] }, patient, true],
+    ])('comparison of array field elements %#', (previous, current, result) => {
+      const criteria = '%previous.name.where( ($this in %current.name).not() ).exists()';
+      const variables = { '%previous': toTypedValue(previous), '%current': toTypedValue(current) };
+      expect(evalFhirPathTyped(criteria, [], variables)).toStrictEqual([toTypedValue(result)]);
     });
   });
 });

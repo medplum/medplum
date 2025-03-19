@@ -7,6 +7,7 @@ import {
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,
   fhirPathArrayNotEquals,
+  fhirPathEquals,
   fhirPathIs,
   fhirPathNot,
   getTypedPropertyValue,
@@ -230,7 +231,7 @@ export class InAtom extends BooleanInfixOperatorAtom {
     if (!left) {
       return [];
     }
-    return booleanToTypedValue(right.some((e) => e.value === left.value));
+    return booleanToTypedValue(right.some((e) => fhirPathEquals(left, e)[0].value));
   }
 }
 
