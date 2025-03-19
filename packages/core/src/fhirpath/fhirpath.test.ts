@@ -3630,6 +3630,16 @@ describe('FHIRPath Test Suite', () => {
     });
 
     test.each<[unknown, unknown, boolean]>([
+      [undefined, observation, true],
+      [observation, observation, false],
+      [observation, { ...observation, status: 'amended' }, true],
+    ])('criteria including resource creation %#', (previous, current, result) => {
+      const criteria = '%previous.exists() implies %previous.status != %current.status';
+      const variables = { '%previous': toTypedValue(previous), '%current': toTypedValue(current) };
+      expect(evalFhirPathTyped(criteria, [], variables)).toStrictEqual([toTypedValue(result)]);
+    });
+
+    test.each<[unknown, unknown, boolean]>([
       [undefined, patient, false],
       [patient, patient, false],
       [patient, { ...patient, name: [...patient.name, { text: 'The Patient' }] }, false],

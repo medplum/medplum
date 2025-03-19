@@ -308,10 +308,9 @@ and functions — including `!=` — evaluate to be empty if any of their opera
 resource is created, the above expression will always be falsy, and the subscription will not fire.
 :::
 
-If resource creations containing the given field should also trigger the subscription, the FHIRPath expression must
-account for that case specifically: `%previous.status.exists() implies %previous.status != %current.status`. With
-this expression, if `%previous.status` is empty, the overall expression will still evaluate to `true` and trigger the
-subscription.
+If resource creations should also be included, the FHIRPath expression must account for that case
+specifically: `%previous.exists() implies %previous.status != %current.status`. With this expression,
+if `%previous` is empty, the overall expression will still evaluate to `true` and trigger the subscription.
 
 ### Handling array fields
 
