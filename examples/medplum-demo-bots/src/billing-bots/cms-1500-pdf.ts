@@ -31,10 +31,15 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
   const coverage = await medplum.readReference(claim.insurance[0].coverage);
   const insured = coverage.subscriber ? await medplum.readReference(coverage.subscriber) : undefined;
 
-  const { patientName, patientSex, patientPhone } = getPatientInfo(patient);
+  const { personName: patientName, personSex: patientSex, personPhone: patientPhone } = getPersonInfo(patient);
   const patientDOB = getDateProperty(patient.birthDate);
   const { insuranceType, insuredIdNumber, relationship } = getCoverageInfo(coverage);
-  const { insuredName, insuredPhone, insuredDob, insuredSex } = getInsuredInfo(insured);
+  const {
+    personName: insuredName,
+    personPhone: insuredPhone,
+    personDob: insuredDob,
+    personSex: insuredSex,
+  } = getPersonInfo(insured);
   const insuredDOB = getDateProperty(insuredDob);
 
   // Think of a way to parametrize each field coordinates in the PDF so we can use it with other templates
@@ -2124,20 +2129,31 @@ export function getPatientRelationshipToInsuredContent(relationship: string): Co
 }
 
 /* Data retrieval helpers */
+export function getPersonInfo(person: Patient | RelatedPerson | undefined): Record<string, string> {
+  if (!person) {
+    return {
+      personName: '',
+      personDob: '',
+      personSex: '',
+      personAddress: '',
+      personPhone: '',
+    };
+  }
 
-export function getPatientInfo(patient: Patient): Record<string, string> {
-  const patientName = patient.name?.[0] ? formatHumanName(patient.name?.[0]) : ''; //  needs to be formatted to First M. Last
-  const patientDob = formatDate(patient.birthDate);
-  const patientSex = patient.gender ?? '';
-  const patientAddress = patient.address ? formatAddress(patient.address?.[0]) : '';
-  const patientPhone = patient.telecom?.find((telecom) => telecom.system === 'phone')?.value ?? '';
+  //  TODO: Needs to be formatted to First M. Last
+  const personName = person.name?.[0] ? formatHumanName(person.name?.[0]) : '';
+  const personDob = formatDate(person.birthDate);
+  // TODO: Rename to personGender
+  const personSex = person.gender ?? '';
+  const personAddress = person.address ? formatAddress(person.address?.[0]) : '';
+  const personPhone = person.telecom?.find((telecom) => telecom.system === 'phone')?.value ?? '';
 
   return {
-    patientName,
-    patientDob,
-    patientSex,
-    patientAddress,
-    patientPhone,
+    personName,
+    personDob,
+    personSex,
+    personAddress,
+    personPhone,
   };
 }
 
@@ -2152,30 +2168,5 @@ export function getCoverageInfo(coverage: Coverage): Record<string, string> {
     insuredIdNumber,
     relationship,
     coverageName,
-  };
-}
-
-function getInsuredInfo(insured: Patient | RelatedPerson | undefined): Record<string, string> {
-  if (!insured) {
-    return {
-      insuredName: '',
-      insuredAddress: '',
-      insuredDob: '',
-      insuredSex: '',
-    };
-  }
-
-  const insuredName = insured.name ? formatHumanName(insured.name[0]) : '';
-  const insuredAddress = insured.address ? formatAddress(insured.address?.[0]) : '';
-  const insuredDob = formatDate(insured.birthDate);
-  const insuredSex = insured.gender ?? '';
-  const insuredPhone = insured.telecom?.find((telecom) => telecom.system === 'phone')?.value ?? '';
-
-  return {
-    insuredName,
-    insuredAddress,
-    insuredDob,
-    insuredSex,
-    insuredPhone,
   };
 }

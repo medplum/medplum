@@ -1,13 +1,13 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Address, Bundle, Claim, Coverage, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { Address, Bundle, Claim, Coverage, Patient, RelatedPerson, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   getAddressContent,
   getCoverageInfo,
   getDOBContent,
-  getPatientInfo,
   getPatientRelationshipToInsuredContent,
+  getPersonInfo,
   getPhoneContent,
   getSexContent,
   handler,
@@ -46,18 +46,6 @@ describe('CMS 1500 PDF Bot', async () => {
     expect(response).toBeDefined();
     expect(response.resourceType).toStrictEqual('Media');
     expect(response.content.contentType).toStrictEqual('application/pdf');
-  });
-
-  test('getPatientInfo', async () => {
-    const patient = (fullAnswer.entry?.[0]?.resource as Patient) ?? {};
-
-    const patientInfo = getPatientInfo(patient);
-
-    expect(patientInfo.patientName).toStrictEqual('Homer Simpson');
-    expect(patientInfo.patientSex).toStrictEqual('male');
-    expect(patientInfo.patientDob).toStrictEqual('5/12/1956');
-    expect(patientInfo.patientAddress).toStrictEqual('742 Evergreen Terrace, Springfield, IL, 62704');
-    expect(patientInfo.patientPhone).toStrictEqual('555-555-6392');
   });
 
   test('getPhoneContent', () => {
@@ -238,4 +226,69 @@ describe('CMS 1500 PDF Bot', async () => {
   //   expect(providerInfo.billingPhoneNumber).toBe('');
   //   expect(providerInfo.providerNpi).toBe('');
   // });
+});
+
+describe('getPersonInfo', () => {
+  test('returns complete person info when all Patient fields are present', () => {
+    const patient = (fullAnswer.entry?.[0]?.resource as Patient) ?? {};
+
+    const patientInfo = getPersonInfo(patient);
+
+    expect(patientInfo).toStrictEqual({
+      personName: 'Homer Simpson',
+      personSex: 'male',
+      personDob: '5/12/1956',
+      personAddress: '742 Evergreen Terrace, Springfield, IL, 62704',
+      personPhone: '555-555-6392',
+    });
+  });
+
+  test('returns complete person info when all RelatedPerson fields are present', () => {
+    const relatedPerson = (fullAnswer.entry?.[1]?.resource as RelatedPerson) ?? {};
+
+    const relatedPersonInfo = getPersonInfo(relatedPerson);
+
+    expect(relatedPersonInfo).toStrictEqual({
+      personName: 'Marge Simpson',
+      personSex: 'female',
+      personDob: '8/12/1960',
+      personAddress: '742 Evergreen Terrace, Springfield, IL, 62704',
+      personPhone: '555-555-6393',
+    });
+  });
+
+  test('returns empty strings when person is undefined', () => {
+    const patientInfo = getPersonInfo(undefined);
+
+    expect(patientInfo).toStrictEqual({
+      personName: '',
+      personDob: '',
+      personSex: '',
+      personAddress: '',
+      personPhone: '',
+    });
+  });
+
+  test('handles missing optional fields', () => {
+    const partialPatient: Patient = {
+      resourceType: 'Patient',
+      name: [
+        {
+          given: ['Homer'],
+          family: 'Simpson',
+        },
+      ],
+      gender: 'male',
+    };
+
+    const patientInfo = getPersonInfo(partialPatient);
+
+    expect(patientInfo).toStrictEqual({
+      personName: 'Homer Simpson',
+      personDob: '',
+      personSex: 'male',
+      personAddress: '',
+      personPhone: '',
+    });
+  });
 });
