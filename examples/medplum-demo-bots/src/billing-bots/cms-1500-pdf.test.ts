@@ -1,8 +1,18 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Address, Bundle, Claim, Coverage, Patient, RelatedPerson, SearchParameter } from '@medplum/fhirtypes';
+import {
+  Address,
+  Bundle,
+  Claim,
+  Coverage,
+  HumanName,
+  Patient,
+  RelatedPerson,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
+  formatHumanName,
   getAddressContent,
   getCoverageInfo,
   getDOBContent,
@@ -107,6 +117,59 @@ describe('CMS 1500 PDF Bot', async () => {
   // });
 });
 
+describe('formatHumanName', () => {
+  test('formats full name with middle name', () => {
+    const name: HumanName = {
+      family: 'Smith',
+      given: ['John', 'Michael'],
+    };
+    expect(formatHumanName(name)).toBe('Smith, John, Michael');
+  });
+
+  test('formats name without middle name', () => {
+    const name: HumanName = {
+      family: 'Smith',
+      given: ['John'],
+    };
+    expect(formatHumanName(name)).toBe('Smith, John');
+  });
+
+  test('formats multiple middle names', () => {
+    const name: HumanName = {
+      family: 'Smith',
+      given: ['John', 'Michael', 'Robert'],
+    };
+    expect(formatHumanName(name)).toBe('Smith, John, Michael Robert');
+  });
+
+  test('formats family name only', () => {
+    const name: HumanName = {
+      family: 'Smith',
+    };
+    expect(formatHumanName(name)).toBe('Smith');
+  });
+
+  test('formats given names only', () => {
+    const name: HumanName = {
+      given: ['John', 'Michael'],
+    };
+    expect(formatHumanName(name)).toBe('John, Michael');
+  });
+
+  test('handles empty name', () => {
+    const name: HumanName = {};
+    expect(formatHumanName(name)).toBe('');
+  });
+
+  test('handles undefined fields', () => {
+    const name: HumanName = {
+      family: undefined,
+      given: undefined,
+    };
+    expect(formatHumanName(name)).toBe('');
+  });
+});
+
 describe('getPersonInfo', () => {
   test('returns complete person info when all Patient fields are present', () => {
     const patient = (fullAnswer.entry?.[0]?.resource as Patient) ?? {};
@@ -114,8 +177,8 @@ describe('getPersonInfo', () => {
     const patientInfo = getPersonInfo(patient);
 
     expect(patientInfo).toStrictEqual({
-      personName: 'Homer Simpson',
-      personSex: 'male',
+      personName: 'Simpson, Homer',
+      personGender: 'male',
       personDob: '5/12/1956',
       personAddress: '742 Evergreen Terrace, Springfield, IL, 62704',
       personPhone: '555-555-6392',
@@ -128,8 +191,8 @@ describe('getPersonInfo', () => {
     const relatedPersonInfo = getPersonInfo(relatedPerson);
 
     expect(relatedPersonInfo).toStrictEqual({
-      personName: 'Marge Simpson',
-      personSex: 'female',
+      personName: 'Simpson, Marge',
+      personGender: 'female',
       personDob: '8/12/1960',
       personAddress: '742 Evergreen Terrace, Springfield, IL, 62704',
       personPhone: '555-555-6393',
@@ -142,7 +205,7 @@ describe('getPersonInfo', () => {
     expect(patientInfo).toStrictEqual({
       personName: '',
       personDob: '',
-      personSex: '',
+      personGender: '',
       personAddress: '',
       personPhone: '',
     });
@@ -163,9 +226,9 @@ describe('getPersonInfo', () => {
     const patientInfo = getPersonInfo(partialPatient);
 
     expect(patientInfo).toStrictEqual({
-      personName: 'Homer Simpson',
+      personName: 'Simpson, Homer',
       personDob: '',
-      personSex: 'male',
+      personGender: 'male',
       personAddress: '',
       personPhone: '',
     });

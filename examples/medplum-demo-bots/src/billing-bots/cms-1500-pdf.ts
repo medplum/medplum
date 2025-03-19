@@ -1,5 +1,5 @@
-import { BotEvent, formatAddress, formatDate, formatHumanName, getDateProperty, MedplumClient } from '@medplum/core';
-import { Address, Claim, Coverage, Media, Patient, RelatedPerson } from '@medplum/fhirtypes';
+import { BotEvent, formatAddress, formatDate, getDateProperty, MedplumClient } from '@medplum/core';
+import { Address, Claim, Coverage, HumanName, Media, Patient, RelatedPerson } from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 
 // Move this to a separate file and use it as a param to the bot
@@ -2129,6 +2129,32 @@ export function getPatientRelationshipToInsuredContent(relationship: string): Co
 }
 
 /* Data retrieval helpers */
+export function formatHumanName(name: HumanName): string {
+  const family = name.family ?? '';
+  const given = name.given ?? [];
+
+  if (!family && given.length === 0) {
+    return '';
+  }
+
+  const [firstName, ...rest] = given;
+  const middleName = rest.join(' ');
+
+  const parts = [];
+
+  if (family) {
+    parts.push(family);
+  }
+  if (firstName) {
+    parts.push(firstName);
+  }
+  if (middleName) {
+    parts.push(middleName);
+  }
+
+  return parts.join(', ');
+}
+
 export function getPersonInfo(
   person: Patient | RelatedPerson | undefined
 ): Record<'personName' | 'personDob' | 'personGender' | 'personAddress' | 'personPhone', string> {
@@ -2142,7 +2168,6 @@ export function getPersonInfo(
     };
   }
 
-  //  TODO: Needs to be formatted to First M. Last
   const personName = person.name?.[0] ? formatHumanName(person.name?.[0]) : '';
   const personDob = formatDate(person.birthDate);
   const personGender = person.gender ?? '';
