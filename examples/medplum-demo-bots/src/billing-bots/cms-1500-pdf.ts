@@ -31,14 +31,14 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
   const coverage = await medplum.readReference(claim.insurance[0].coverage);
   const insured = coverage.subscriber ? await medplum.readReference(coverage.subscriber) : undefined;
 
-  const { personName: patientName, personSex: patientSex, personPhone: patientPhone } = getPersonInfo(patient);
+  const { personName: patientName, personGender: patientGender, personPhone: patientPhone } = getPersonInfo(patient);
   const patientDOB = getDateProperty(patient.birthDate);
   const { insuranceType, insuredIdNumber, relationship } = getCoverageInfo(coverage);
   const {
     personName: insuredName,
     personPhone: insuredPhone,
     personDob: insuredDob,
-    personSex: insuredSex,
+    personGender: insuredGender,
   } = getPersonInfo(insured);
   const insuredDOB = getDateProperty(insuredDob);
 
@@ -71,7 +71,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       ...getDOBContent(patientDOB),
-      ...getSexContent(patientSex),
+      ...getSexContent(patientGender),
       {
         text: insuredName,
         absolutePosition: {
@@ -133,7 +133,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      ...getSexContent(insuredSex, 504, 51, 253),
+      ...getSexContent(insuredGender, 504, 51, 253),
       ...getDOBContent(insuredDOB, 395, 253),
       {
         text: 'X22',
@@ -1999,7 +1999,7 @@ export function getDOBContent(
 }
 
 export function getSexContent(
-  patientSex: string,
+  personGender: string,
   xAxisOffset: number = 316,
   xAxisDifference: number = 36,
   yAxisOffset: number = 131
@@ -2009,7 +2009,7 @@ export function getSexContent(
     female: xAxisOffset + xAxisDifference,
   };
 
-  if (!(patientSex.toLocaleLowerCase() in optionsMap)) {
+  if (!(personGender.toLocaleLowerCase() in optionsMap)) {
     return [];
   }
 
@@ -2017,7 +2017,7 @@ export function getSexContent(
     {
       text: 'X',
       absolutePosition: {
-        x: optionsMap[patientSex],
+        x: optionsMap[personGender],
         y: yAxisOffset,
       },
       fontSize: 9,
@@ -2129,12 +2129,14 @@ export function getPatientRelationshipToInsuredContent(relationship: string): Co
 }
 
 /* Data retrieval helpers */
-export function getPersonInfo(person: Patient | RelatedPerson | undefined): Record<string, string> {
+export function getPersonInfo(
+  person: Patient | RelatedPerson | undefined
+): Record<'personName' | 'personDob' | 'personGender' | 'personAddress' | 'personPhone', string> {
   if (!person) {
     return {
       personName: '',
       personDob: '',
-      personSex: '',
+      personGender: '',
       personAddress: '',
       personPhone: '',
     };
@@ -2143,15 +2145,14 @@ export function getPersonInfo(person: Patient | RelatedPerson | undefined): Reco
   //  TODO: Needs to be formatted to First M. Last
   const personName = person.name?.[0] ? formatHumanName(person.name?.[0]) : '';
   const personDob = formatDate(person.birthDate);
-  // TODO: Rename to personGender
-  const personSex = person.gender ?? '';
+  const personGender = person.gender ?? '';
   const personAddress = person.address ? formatAddress(person.address?.[0]) : '';
   const personPhone = person.telecom?.find((telecom) => telecom.system === 'phone')?.value ?? '';
 
   return {
     personName,
     personDob,
-    personSex,
+    personGender,
     personAddress,
     personPhone,
   };
