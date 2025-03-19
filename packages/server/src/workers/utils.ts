@@ -203,22 +203,22 @@ export async function updateAsyncJobOutput(
 export type WorkerInitializer = (config: MedplumServerConfig) => { queue: Queue; name: string };
 
 export class QueueRegistry {
-  private readonly queueMap: Record<string, Queue | undefined>;
+  private queueMap: Record<string, Queue | undefined>;
 
   constructor() {
-    this.queueMap = {};
+    this.queueMap = Object.create(null);
   }
 
   addQueue(name: string, queue: Queue): void {
     this.queueMap[name] = queue;
   }
 
-  removeQueue(name: string): void {
-    delete this.queueMap[name];
-  }
-
   getQueue(name: string): Queue | undefined {
     return this.queueMap[name];
+  }
+
+  clear(): void {
+    this.queueMap = Object.create(null);
   }
 }
 

@@ -39,6 +39,7 @@ export function initWorkers(config: MedplumServerConfig): void {
  * Shuts down all background workers.
  */
 export async function closeWorkers(): Promise<void> {
+  queueRegistry.clear();
   await closeSubscriptionWorker();
   await closeDownloadWorker();
   await closeCronWorker();
