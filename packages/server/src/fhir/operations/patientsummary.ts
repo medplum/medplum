@@ -613,6 +613,10 @@ export class PatientSummaryBuilder {
 }
 
 function createTable(headings: string[], body: (string | undefined)[][]): string {
+  if (body.length === 0) {
+    return '';
+  }
+
   const html = ['<table><thead><tr>'];
   for (const h of headings) {
     html.push('<td>');
