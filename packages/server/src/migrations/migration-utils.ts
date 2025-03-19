@@ -9,54 +9,9 @@ import * as postDeployMigrations from './data';
 import { PostDeployMigration } from './data/types';
 import * as preDeploymigrations from './schema';
 import { PreDeployMigration } from './schema/types';
-import { getPostDeployVersion, MigrationVersion } from '../migration-sql';
+import { getPostDeployVersion } from '../migration-sql';
 import { Pool, PoolClient } from 'pg';
-
-/**
- * Gets a sorted array of all migration versions for the passed in migration module.
- *
- * Can be used for either the schema or data migrations modules.
- *
- * @param migrationModule - The migration module to read all migrations for. Either the schemaMigrations or dataMigrations module.
- * @returns All the numeric migration versions from a given migration module, either the schema or data migrations.
- */
-function getMigrationVersions(migrationModule: Record<string, any>): number[] {
-  const prefixedVersions = Object.keys(migrationModule).filter((key) => key.startsWith('v'));
-  const migrationVersions = prefixedVersions.map((key) => Number.parseInt(key.slice(1), 10)).sort((a, b) => a - b);
-  return migrationVersions;
-}
-
-let preDeployVersions: number[] | undefined;
-let postDeployVersions: number[] | undefined;
-
-/**
- * Gets a sorted array of all pre-deploy migration versions.
- *
- * @returns Sorted array of pre-deploy migration versions.
- */
-export function getPreDeployMigrationVersions(): number[] {
-  if (!preDeployVersions) {
-    preDeployVersions = getMigrationVersions(preDeploymigrations);
-  }
-  return preDeployVersions;
-}
-
-/**
- * Gets a sorted array of all post-deploy migration versions.
- *
- * @returns Sorted array of post-deploy migration versions.
- */
-function getPostDeployMigrationVersions(): number[] {
-  if (!postDeployVersions) {
-    postDeployVersions = getMigrationVersions(postDeployMigrations);
-  }
-  return postDeployVersions;
-}
-
-export function getLatestPostDeployMigrationVersion(): number {
-  const versions = getPostDeployMigrationVersions();
-  return versions[versions.length - 1] ?? MigrationVersion.NONE;
-}
+import { getPostDeployMigrationVersions, MigrationVersion } from './migration-versions';
 
 /**
  * Gets the next post-deploy migration that needs to be run.
