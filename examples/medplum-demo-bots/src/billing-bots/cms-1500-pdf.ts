@@ -98,14 +98,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
       ...getPhoneContent(patientPhone),
       ...getPatientRelationshipToInsuredContent(relationship),
       ...getAddressContent(insured?.address?.[0], 374),
-      {
-        text: 'X6',
-        absolutePosition: {
-          x: 229,
-          y: 179,
-        },
-        fontSize: 9,
-      },
       ...getPhoneContent(insuredPhone, 482),
       {
         text: otherInsuredName,
@@ -135,38 +127,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
       ...getSexContent(insuredGender, 504, 51, 253),
       ...getDOBContent(insuredDOB, 395, 253),
       {
-        text: 'X22',
-        absolutePosition: {
-          x: 22,
-          y: 275,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X28',
-        absolutePosition: {
-          x: 375,
-          y: 277,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X29',
-        absolutePosition: {
-          x: 393,
-          y: 277,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X30',
-        absolutePosition: {
-          x: 22,
-          y: 298,
-        },
-        fontSize: 9,
-      },
-      {
         text: coverageName,
         absolutePosition: {
           x: 375,
@@ -182,38 +142,8 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      {
-        text: 'X33',
-        absolutePosition: {
-          x: 229,
-          y: 324,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X34',
-        absolutePosition: {
-          x: 59,
-          y: 370,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X35',
-        absolutePosition: {
-          x: 274,
-          y: 370,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X36',
-        absolutePosition: {
-          x: 415,
-          y: 370,
-        },
-        fontSize: 9,
-      },
+      ...getReservedNUCCContent(),
+      ...getSignatureContent(),
       {
         text: 'X37',
         absolutePosition: {
@@ -415,34 +345,10 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X62',
-        absolutePosition: {
-          x: 21,
-          y: 440,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X63',
-        absolutePosition: {
-          x: 386,
-          y: 324,
-        },
-        fontSize: 9,
-      },
-      {
         text: 'X64',
         absolutePosition: {
           x: 387,
           y: 444,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X65',
-        absolutePosition: {
-          x: 422,
-          y: 324,
         },
         fontSize: 9,
       },
@@ -1767,14 +1673,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X231',
-        absolutePosition: {
-          x: 19,
-          y: 726,
-        },
-        fontSize: 9,
-      },
-      {
         text: 'X232',
         absolutePosition: {
           x: 178,
@@ -1787,14 +1685,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         absolutePosition: {
           x: 372,
           y: 728,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X234',
-        absolutePosition: {
-          x: 113,
-          y: 738,
         },
         fontSize: 9,
       },
@@ -2145,6 +2035,128 @@ export function getPatientRelationshipToInsuredContent(relationship: string): Co
       absolutePosition: {
         x: xCoord,
         y: 156,
+      },
+      fontSize: 9,
+    },
+  ];
+}
+
+function getReservedNUCCContent(): Content[] {
+  return [
+    {
+      text: '',
+      absolutePosition: {
+        x: 229,
+        y: 179,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 22,
+        y: 275,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 375,
+        y: 277,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 393,
+        y: 277,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 22,
+        y: 298,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 229,
+        y: 324,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 386,
+        y: 324,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 422,
+        y: 324,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 21,
+        y: 440,
+      },
+      fontSize: 9,
+    },
+  ];
+}
+
+function getSignatureContent(): Content[] {
+  return [
+    {
+      text: '',
+      absolutePosition: {
+        x: 59,
+        y: 370,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 274,
+        y: 370,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 415,
+        y: 370,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 19,
+        y: 726,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 113,
+        y: 738,
       },
       fontSize: 9,
     },
