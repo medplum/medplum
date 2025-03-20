@@ -119,7 +119,7 @@ describe('Database migrations', () => {
     await shutdownApp();
   });
 
-  beforeEach(async () => {
+  beforeEach(() => {
     jest.clearAllMocks();
 
     // By default, disable both pre-deploy and post-deploy migrations
@@ -494,170 +494,174 @@ describe('Database migrations', () => {
       })
     );
   });
-});
 
-// Use a separate top-level describe since the other top-level
-// has a beforeEach that initializes and shuts down the app repeatedly.
-// Here, we want one long-running app
-describe('Super Admin routes', () => {
-  const app = express();
+  // Use a separate top-level describe since the other top-level
+  // has a beforeEach that initializes and shuts down the app repeatedly.
+  // Here, we want one long-running app
+  describe('Super Admin routes', () => {
+    const app = express();
 
-  let adminAccessToken: string;
-  let project: Project;
+    let adminAccessToken: string;
+    let project: Project;
 
-  beforeAll(async () => {
-    const config = await loadTestConfig();
-    await initApp(app, config);
-    await expungePostDeployMigrationAsyncJob(getSystemRepo());
+    beforeAll(async () => {
+      const config = await loadTestConfig();
+      await initApp(app, config);
+      await expungePostDeployMigrationAsyncJob(getSystemRepo());
 
-    requestContextStore.enterWith(AuthenticatedRequestContext.system());
-    ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
+      requestContextStore.enterWith(AuthenticatedRequestContext.system());
+      ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
 
-    const systemRepo = getSystemRepo();
+      const systemRepo = getSystemRepo();
 
-    const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 
-    const user1 = await systemRepo.createResource<User>({
-      resourceType: 'User',
-      firstName: 'Super',
-      lastName: 'Admin',
-      email: `super${randomUUID()}@example.com`,
-      passwordHash: 'abc',
+      const user1 = await systemRepo.createResource<User>({
+        resourceType: 'User',
+        firstName: 'Super',
+        lastName: 'Admin',
+        email: `super${randomUUID()}@example.com`,
+        passwordHash: 'abc',
+      });
+
+      const membership1 = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        project: createReference(project),
+        user: createReference(user1),
+        profile: createReference(practitioner1),
+      });
+
+      const login1 = await systemRepo.createResource<Login>({
+        resourceType: 'Login',
+        authMethod: 'client',
+        user: createReference(user1),
+        membership: createReference(membership1),
+        authTime: new Date().toISOString(),
+        scope: 'openid',
+      });
+
+      adminAccessToken = await generateAccessToken({
+        login_id: login1.id,
+        sub: user1.id,
+        username: user1.id,
+        profile: getReferenceString(practitioner1),
+        scope: 'openid',
+      });
     });
 
-    const membership1 = await systemRepo.createResource<ProjectMembership>({
-      resourceType: 'ProjectMembership',
-      project: createReference(project),
-      user: createReference(user1),
-      profile: createReference(practitioner1),
+    beforeEach(async () => {
+      jest.clearAllMocks();
     });
 
-    const login1 = await systemRepo.createResource<Login>({
-      resourceType: 'Login',
-      authMethod: 'client',
-      user: createReference(user1),
-      membership: createReference(membership1),
-      authTime: new Date().toISOString(),
-      scope: 'openid',
+    afterEach(async () => {
+      await expungePostDeployMigrationAsyncJob(getSystemRepo());
     });
 
-    adminAccessToken = await generateAccessToken({
-      login_id: login1.id,
-      sub: user1.id,
-      username: user1.id,
-      profile: getReferenceString(practitioner1),
-      scope: 'openid',
+    afterAll(async () => {
+      await shutdownApp();
     });
-  });
 
-  beforeEach(async () => {
-    jest.clearAllMocks();
-  });
+    describe('Manually run post-deploy migration', () => {
+      beforeEach(() => {
+        setMigrationsConfig(true, false);
+      });
 
-  afterEach(async () => {
-    await expungePostDeployMigrationAsyncJob(getSystemRepo());
-  });
+      test.each<[boolean, boolean, 'fail' | 'pass']>([
+        [false, false, 'fail'],
+        [false, true, 'fail'],
+        [true, false, 'pass'],
+        [true, true, 'pass'],
+      ])(
+        'Manually run post-deploy migration with pre-deploy[%s] and post-deploy[%s]',
+        async (preDeploy, postDeploy, expectedToFailOrPass) => {
+          setMigrationsConfig(preDeploy, postDeploy);
 
-  afterAll(async () => {
-    await shutdownApp();
-  });
-
-  describe('Manually run post-deploy migration', () => {
-    test.each<[boolean, boolean, 'fail' | 'pass']>([
-      [false, false, 'fail'],
-      [false, true, 'fail'],
-      [true, false, 'pass'],
-      [true, true, 'pass'],
-    ])(
-      'Manually run post-deploy migration with pre-deploy[%s] and post-deploy[%s]',
-      async (preDeploy, postDeploy, expectedToFailOrPass) => {
-        setMigrationsConfig(preDeploy, postDeploy);
-
-        const res2 = await request(app)
-          .post('/admin/super/migrate')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .set('Prefer', 'respond-async')
-          .type('json')
-          .send({});
-
-        const queueAdd = getQueueAddSpy();
-
-        if (expectedToFailOrPass === 'pass') {
-          expect(res2.status).toStrictEqual(202);
-          expect(res2.headers['content-location']).toBeDefined();
-
-          expect(queueAdd).toHaveBeenCalledTimes(1);
-        } else {
-          expect(res2.status).toStrictEqual(400);
+          const res2 = await request(app)
+            .post('/admin/super/migrate')
+            .set('Authorization', 'Bearer ' + adminAccessToken)
+            .set('Prefer', 'respond-async')
+            .type('json')
+            .send({});
 
           const queueAdd = getQueueAddSpy();
-          expect(queueAdd).not.toHaveBeenCalled();
-        }
-      }
-    );
 
-    test.each([true, 'true', 'false', false, 'v1', 'v2'])(
-      'with invalid dataVersion specified %s',
-      async (dataVersion) => {
+          if (expectedToFailOrPass === 'pass') {
+            expect(res2.status).toStrictEqual(202);
+            expect(res2.headers['content-location']).toBeDefined();
+
+            expect(queueAdd).toHaveBeenCalledTimes(1);
+          } else {
+            expect(res2.status).toStrictEqual(400);
+
+            const queueAdd = getQueueAddSpy();
+            expect(queueAdd).not.toHaveBeenCalled();
+          }
+        }
+      );
+
+      test.each([true, 'true', 'false', false, 'v1', 'v2'])(
+        'with invalid dataVersion specified %s',
+        async (dataVersion) => {
+          const res1 = await request(app)
+            .post('/admin/super/migrate')
+            .set('Authorization', 'Bearer ' + adminAccessToken)
+            .set('Prefer', 'respond-async')
+            .type('json')
+            .send({ dataVersion });
+
+          expect(res1.status).toStrictEqual(400);
+          expect(res1.headers['content-location']).not.toBeDefined();
+          expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
+        }
+      );
+
+      test('with dataVersion less than or equal to current version', async () => {
+        mockValues.postDeployVersion = 1;
+
         const res1 = await request(app)
           .post('/admin/super/migrate')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
+          .send({ dataVersion: 1 });
+
+        // Since the version is less than or equal to the current version,
+        // nothing to do, so no AsyncJob was created and no content-location header
+        // should be set
+        expect(res1.body).toMatchObject(allOk);
+        expect(res1.status).toStrictEqual(200);
+        expect(res1.headers['content-location']).not.toBeDefined();
+      });
+    });
+
+    describe('Set data version', () => {
+      beforeAll(async () => {
+        console.log = jest.fn();
+      });
+
+      test('Set data version -- Valid dataVersion', async () => {
+        expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(0);
+        const res1 = await request(app)
+          .post('/admin/super/setdataversion')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .type('json')
+          .send({ dataVersion: 1337 });
+
+        expect(res1.status).toStrictEqual(200);
+        expect(res1.body).toMatchObject(allOk);
+        expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(1);
+      });
+
+      test.each([undefined, 'v1', '3.3.0'])('Set data version -- invalid dataVersion - %s', async (dataVersion) => {
+        const res1 = await request(app)
+          .post('/admin/super/setdataversion')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .type('json')
           .send({ dataVersion });
 
         expect(res1.status).toStrictEqual(400);
-        expect(res1.headers['content-location']).not.toBeDefined();
         expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
-      }
-    );
-
-    test('with dataVersion less than or equal to current version', async () => {
-      mockValues.postDeployVersion = 1;
-
-      const res1 = await request(app)
-        .post('/admin/super/migrate')
-        .set('Authorization', 'Bearer ' + adminAccessToken)
-        .set('Prefer', 'respond-async')
-        .type('json')
-        .send({ dataVersion: 1 });
-
-      // Since the version is less than or equal to the current version,
-      // nothing to do, so no AsyncJob was created and no content-location header
-      // should be set
-      expect(res1.status).toStrictEqual(200);
-      expect(res1.headers['content-location']).not.toBeDefined();
-      expect(res1.body).toMatchObject(allOk);
-    });
-  });
-
-  describe('Set data version', () => {
-    beforeAll(async () => {
-      console.log = jest.fn();
-    });
-
-    test('Set data version -- Valid dataVersion', async () => {
-      expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(0);
-      const res1 = await request(app)
-        .post('/admin/super/setdataversion')
-        .set('Authorization', 'Bearer ' + adminAccessToken)
-        .type('json')
-        .send({ dataVersion: 1337 });
-
-      expect(res1.status).toStrictEqual(200);
-      expect(res1.body).toMatchObject(allOk);
-      expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(1);
-    });
-
-    test.each([undefined, 'v1', '3.3.0'])('Set data version -- invalid dataVersion - %s', async (dataVersion) => {
-      const res1 = await request(app)
-        .post('/admin/super/setdataversion')
-        .set('Authorization', 'Bearer ' + adminAccessToken)
-        .type('json')
-        .send({ dataVersion });
-
-      expect(res1.status).toStrictEqual(400);
-      expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
+      });
     });
   });
 });
