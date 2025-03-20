@@ -233,6 +233,39 @@ export const FHIR_CVX_URL = `${HTTP_HL7_ORG}/fhir/sid/cvx`;
 export const XSI_URL = `${HTTP}//www.w3.org/2001/XMLSchema-instance`;
 export const CCDA_NARRATIVE_REFERENCE_URL = 'https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference';
 
+/*
+ * Commonly used LOINC codes
+ */
+
+export const LOINC_ALLERGIES_SECTION = '48765-2';
+export const LOINC_IMMUNIZATIONS_SECTION = '11369-6';
+export const LOINC_MEDICATIONS_SECTION = '10160-0';
+export const LOINC_PROBLEMS_SECTION = '11450-4';
+export const LOINC_RESULTS_SECTION = '30954-2';
+export const LOINC_SOCIAL_HISTORY_SECTION = '29762-2';
+export const LOINC_VITAL_SIGNS_SECTION = '8716-3';
+export const LOINC_PROCEDURES_SECTION = '47519-4';
+export const LOINC_PLAN_OF_TREATMENT_SECTION = '18776-5';
+export const LOINC_ASSESSMENTS_SECTION = '51848-0';
+export const LOINC_DEVICES_SECTION = '46264-8';
+export const LOINC_GOALS_SECTION = '61146-7';
+export const LOINC_HEALTH_CONCERNS_SECTION = '75310-3';
+export const LOINC_ENCOUNTERS_SECTION = '46240-8';
+export const LOINC_REASON_FOR_REFERRAL_SECTION = '42349-1';
+export const LOINC_MENTAL_STATUS_SECTION = '10190-7';
+export const LOINC_CARE_TEAM_SECTION = '85847-2';
+export const LOINC_INSURANCE_SECTION = '48768-6';
+export const LOINC_NOTES_SECTION = '11488-4';
+export const LOINC_NOTE_DOCUMENT = '34109-9';
+export const LOINC_PATIENT_SUMMARY_DOCUMENT = '60591-5';
+export const LOINC_SUMMARY_OF_EPISODE_NOTE = '34133-9';
+export const LOINC_MEDICATION_INSTRUCTIONS = '76662-6';
+export const LOINC_CONDITION = '75323-6';
+export const LOINC_OVERALL_GOAL = '58144-7';
+export const LOINC_TOBACCO_SMOKING_STATUS = '72166-2';
+export const LOINC_HISTORY_OF_TOBACCO_USE = '11367-0';
+export const LOINC_BIRTH_SEX = '76689-9';
+
 export const SYSTEM_MAPPER = new EnumMapper<string, string>('System', '', '', [
   {
     ccdaValue: OID_PAN_CANADIAN_LOINC_OBSERVATION_CODE_SYSTEM,

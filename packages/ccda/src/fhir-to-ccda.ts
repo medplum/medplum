@@ -54,6 +54,8 @@ import {
   OID_ENCOUNTER_ACTIVITIES,
   OID_ENCOUNTER_LOCATION,
   OID_FDA_CODE_SYSTEM,
+  OID_GOAL_OBSERVATION,
+  OID_HEALTH_CONCERN_ACT,
   OID_HL7_REGISTERED_MODELS,
   OID_IMMUNIZATION_ACTIVITY,
   OID_IMMUNIZATION_MEDICATION_INFORMATION,
@@ -62,6 +64,7 @@ import {
   OID_MEDICATION_ACTIVITY,
   OID_MEDICATION_FREE_TEXT_SIG,
   OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL,
+  OID_NOTE_ACTIVITY,
   OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION,
   OID_PROBLEM_ACT,
   OID_PROBLEM_OBSERVATION,
@@ -89,6 +92,19 @@ import {
   GENDER_MAPPER,
   HUMAN_NAME_USE_MAPPER,
   IMMUNIZATION_STATUS_MAPPER,
+  LOINC_ASSESSMENTS_SECTION,
+  LOINC_BIRTH_SEX,
+  LOINC_CONDITION,
+  LOINC_GOALS_SECTION,
+  LOINC_HEALTH_CONCERNS_SECTION,
+  LOINC_HISTORY_OF_TOBACCO_USE,
+  LOINC_MEDICATION_INSTRUCTIONS,
+  LOINC_NOTES_SECTION,
+  LOINC_OVERALL_GOAL,
+  LOINC_PLAN_OF_TREATMENT_SECTION,
+  LOINC_PROBLEMS_SECTION,
+  LOINC_SUMMARY_OF_EPISODE_NOTE,
+  LOINC_TOBACCO_SMOKING_STATUS,
   mapCodeableConceptToCcdaCode,
   mapCodeableConceptToCcdaValue,
   mapFhirSystemToCcda,
@@ -192,7 +208,7 @@ class FhirToCcdaConverter {
       // Consol Continuity of Care Document (CCD) (V3) SHALL contain exactly one [1..1] code (CONF:1198-17180)
       // @code="34133-9" Summarization of Episode Note (CodeSystem: 2.16.840.1.113883.6.1 LOINC) (CONF:1198-17181, CONF:1198-32138)
       code: {
-        '@_code': '34133-9',
+        '@_code': LOINC_SUMMARY_OF_EPISODE_NOTE,
         '@_displayName': 'Summarization of Episode Note',
         '@_codeSystem': OID_LOINC_CODE_SYSTEM,
         '@_codeSystemName': 'LOINC',
@@ -495,7 +511,11 @@ class FhirToCcdaConverter {
 
     // Assessments section is special case, because it does not have any "entry" elements
     // Instead, the entire clinical impression resource is included in the section
-    if (sectionCode === '51848-0' && resources.length === 1 && resources[0].resourceType === 'ClinicalImpression') {
+    if (
+      sectionCode === LOINC_ASSESSMENTS_SECTION &&
+      resources.length === 1 &&
+      resources[0].resourceType === 'ClinicalImpression'
+    ) {
       return this.createClinicalImpressionSection(section, resources[0] as ClinicalImpression);
     }
 
@@ -517,8 +537,10 @@ class FhirToCcdaConverter {
         return this.createPlanOfTreatmentCarePlanEntry(resource);
       case 'CareTeam':
         return this.createCareTeamEntry(resource);
+      case 'ClinicalImpression':
+        return this.createClinicalImpressionEntry(resource);
       case 'Condition':
-        return this.createProblemEntry(resource);
+        return this.createConditionEntry(section, resource);
       case 'DeviceUseStatement':
         return this.createDeviceUseStatementEntry(resource);
       case 'DiagnosticReport':
@@ -526,7 +548,7 @@ class FhirToCcdaConverter {
       case 'Encounter':
         return this.createEncounterEntry(resource);
       case 'Goal':
-        return this.createPlanOfTreatmentGoalEntry(resource);
+        return this.createGoalEntry(section, resource);
       case 'Immunization':
         return this.createImmunizationEntry(resource as Immunization);
       case 'MedicationRequest':
@@ -538,7 +560,7 @@ class FhirToCcdaConverter {
       case 'ServiceRequest':
         return this.createPlanOfTreatmentServiceRequestEntry(resource as ServiceRequest);
       default:
-        throw new Error(`Unknown resource type: ${resource.resourceType}`);
+        return undefined;
     }
   }
 
@@ -1006,7 +1028,7 @@ class FhirToCcdaConverter {
                   '@_moodCode': 'EVN',
                   templateId: [{ '@_root': OID_MEDICATION_FREE_TEXT_SIG }],
                   code: {
-                    '@_code': '76662-6',
+                    '@_code': LOINC_MEDICATION_INSTRUCTIONS,
                     '@_codeSystem': OID_LOINC_CODE_SYSTEM,
                     '@_codeSystemName': 'LOINC',
                     '@_displayName': 'Medication Instructions',
@@ -1139,6 +1161,17 @@ class FhirToCcdaConverter {
     return ref ? { reference: ref } : undefined;
   }
 
+  private createConditionEntry(section: CompositionSection, condition: Condition): CcdaEntry | undefined {
+    const sectionCode = section.code?.coding?.[0]?.code;
+    if (sectionCode === LOINC_PROBLEMS_SECTION) {
+      return this.createProblemEntry(condition);
+    }
+    if (sectionCode === LOINC_HEALTH_CONCERNS_SECTION) {
+      return this.createHealthConcernEntry(condition);
+    }
+    return undefined;
+  }
+
   private createProblemEntry(problem: Condition): CcdaEntry {
     return {
       act: [
@@ -1184,7 +1217,7 @@ class FhirToCcdaConverter {
                     '@_displayName': 'Problem',
                     translation: [
                       {
-                        '@_code': '75323-6',
+                        '@_code': LOINC_CONDITION,
                         '@_codeSystem': OID_LOINC_CODE_SYSTEM,
                         '@_codeSystemName': 'LOINC',
                         '@_displayName': 'Condition',
@@ -1206,6 +1239,35 @@ class FhirToCcdaConverter {
               ],
             },
           ],
+        },
+      ],
+    };
+  }
+
+  private createHealthConcernEntry(problem: Condition): CcdaEntry {
+    return {
+      act: [
+        {
+          '@_classCode': 'ACT',
+          '@_moodCode': 'EVN',
+          templateId: [
+            { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2015-08-01' },
+            { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2022-06-01' },
+          ],
+          id: this.mapIdentifiers(problem.id, undefined),
+          code: {
+            '@_code': LOINC_HEALTH_CONCERNS_SECTION,
+            '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+            '@_codeSystemName': 'LOINC',
+            '@_displayName': 'Health Concern',
+          },
+          statusCode: {
+            '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(
+              problem.clinicalStatus?.coding?.[0]?.code,
+              'active'
+            ),
+          },
+          effectiveTime: this.mapEffectivePeriod(problem.recordedDate, undefined),
         },
       ],
     };
@@ -1358,17 +1420,43 @@ class FhirToCcdaConverter {
     return undefined;
   }
 
-  private createPlanOfTreatmentGoalEntry(resource: Goal): CcdaEntry {
-    const result: CcdaEntry = {
+  private createGoalEntry(section: CompositionSection, resource: Goal): CcdaEntry | undefined {
+    const sectionCode = section.code?.coding?.[0]?.code;
+
+    let templateId: CcdaTemplateId[];
+    if (sectionCode === LOINC_PLAN_OF_TREATMENT_SECTION) {
+      templateId = [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }];
+    } else if (sectionCode === LOINC_GOALS_SECTION) {
+      templateId = [{ '@_root': OID_GOAL_OBSERVATION }];
+    } else {
+      return undefined;
+    }
+
+    let code: CcdaCode | undefined;
+    if (sectionCode === LOINC_GOALS_SECTION) {
+      code = {
+        '@_code': LOINC_OVERALL_GOAL,
+        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+        '@_codeSystemName': 'LOINC',
+        '@_displayName': "Resident's overall goal established during assessment process",
+      };
+    } else if (resource.description) {
+      code = mapCodeableConceptToCcdaCode(resource.description);
+    } else {
+      return undefined;
+    }
+
+    return {
       observation: [
         {
           '@_classCode': 'OBS',
           '@_moodCode': 'GOL',
-          templateId: [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }],
+          templateId,
           id: this.mapIdentifiers(resource.id, resource.identifier),
-          code: mapCodeableConceptToCcdaCode(resource.description),
+          code,
           statusCode: { '@_code': this.mapPlanOfTreatmentStatus(resource.lifecycleStatus) },
           effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.startDate) }],
+          value: resource.description?.text ? { '@_xsi:type': 'ST', '#text': resource.description.text } : undefined,
           text: this.createTextFromExtensions(resource.extension),
           entryRelationship: resource.target?.map((target) => ({
             '@_typeCode': 'RSON',
@@ -1390,8 +1478,6 @@ class FhirToCcdaConverter {
         },
       ],
     };
-
-    return result;
   }
 
   private mapPlanOfTreatmentStatus(status: string | undefined): string {
@@ -1489,7 +1575,7 @@ class FhirToCcdaConverter {
     const code = observation.code?.coding?.[0]?.code;
     const category = observation.category?.[0]?.coding?.[0]?.code;
 
-    if (code === '72166-2') {
+    if (code === LOINC_TOBACCO_SMOKING_STATUS) {
       // Smoking status
       return [
         { '@_root': OID_SMOKING_STATUS_OBSERVATION },
@@ -1497,7 +1583,7 @@ class FhirToCcdaConverter {
       ];
     }
 
-    if (code === '11367-0') {
+    if (code === LOINC_HISTORY_OF_TOBACCO_USE) {
       // Tobacco use
       return [
         { '@_root': OID_TOBACCO_USE_OBSERVATION },
@@ -1505,7 +1591,7 @@ class FhirToCcdaConverter {
       ];
     }
 
-    if (code === '76689-9') {
+    if (code === LOINC_BIRTH_SEX) {
       // Birth Sex
       return [{ '@_root': OID_BIRTH_SEX }, { '@_root': OID_BIRTH_SEX, '@_extension': '2016-06-01' }];
     }
@@ -1953,6 +2039,28 @@ class FhirToCcdaConverter {
               },
             },
           ],
+        },
+      ],
+    };
+  }
+
+  private createClinicalImpressionEntry(resource: ClinicalImpression): CcdaEntry | undefined {
+    return {
+      act: [
+        {
+          '@_classCode': 'ACT',
+          '@_moodCode': 'EVN',
+          templateId: [{ '@_root': OID_NOTE_ACTIVITY }],
+          id: this.mapIdentifiers(resource.id, resource.identifier),
+          code: {
+            '@_code': LOINC_NOTES_SECTION,
+            '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+            '@_codeSystemName': 'LOINC',
+            '@_displayName': 'Note',
+          },
+          text: resource.summary ? { '#text': resource.summary } : this.createTextFromExtensions(resource.extension),
+          statusCode: { '@_code': 'completed' },
+          effectiveTime: [{ '@_value': mapFhirToCcdaDate(resource.date) }],
         },
       ],
     };
