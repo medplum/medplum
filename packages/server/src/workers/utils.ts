@@ -12,7 +12,7 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { Job, Queue } from 'bullmq';
+import { Queue } from 'bullmq';
 import { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -166,20 +166,6 @@ export const InProgressAsyncJobStatuses: AsyncJob['status'][] = ['accepted', 'ac
 
 export function shouldContinueJob(asyncJob: WithId<AsyncJob>): boolean {
   return InProgressAsyncJobStatuses.includes(asyncJob.status);
-}
-
-export async function checkAsyncJobStatus(
-  repo: Repository,
-  job: Job<{ asyncJob: WithId<AsyncJob> }>
-): Promise<boolean> {
-  const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', job.data.asyncJob.id);
-
-  if (!InProgressAsyncJobStatuses.includes(asyncJob.status)) {
-    return false;
-  }
-
-  job.data.asyncJob = asyncJob;
-  return true;
 }
 
 export async function updateAsyncJobOutput(
