@@ -434,13 +434,20 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
 
   try {
     const versionedResource = await systemRepo.readVersion(resourceType, id, versionId);
+    // We use the resource with rewritten attachments here since we want subscribers to get the resource with the same attachment URLs
+    // They would get if they did a search
+    const rewrittenResource = await rewriteAttachments(
+      RewriteMode.PRESIGNED_URL,
+      systemRepo,
+      deepClone(versionedResource)
+    );
     const channelType = subscription.channel?.type;
     switch (channelType) {
       case 'rest-hook':
         if (subscription.channel?.endpoint?.startsWith('Bot/')) {
-          await execBot(subscription, versionedResource, interaction, requestTime);
+          await execBot(subscription, rewrittenResource, interaction, requestTime);
         } else {
-          await sendRestHook(job, subscription, versionedResource, interaction, requestTime);
+          await sendRestHook(job, subscription, rewrittenResource, interaction, requestTime);
         }
         break;
       default:
