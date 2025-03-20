@@ -63,9 +63,9 @@ describe('ChargeItemDefinition Apply', () => {
         code: {
           coding: [
             {
-              system: "http://www.ama-assn.org/go/cpt",
-              code: "99213",
-              display: "Office/outpatient visit est"
+              system: 'http://www.ama-assn.org/go/cpt',
+              code: '99213',
+              display: 'Office/outpatient visit est',
             },
           ],
         },
@@ -106,9 +106,9 @@ describe('ChargeItemDefinition Apply', () => {
         code: {
           coding: [
             {
-              system: "http://www.ama-assn.org/go/cpt",
-              code: "99213",
-              display: "Office/outpatient visit est"
+              system: 'http://www.ama-assn.org/go/cpt',
+              code: '99213',
+              display: 'Office/outpatient visit est',
             },
           ],
         },
@@ -126,9 +126,9 @@ describe('ChargeItemDefinition Apply', () => {
           {
             name: 'chargeItem',
             valueReference: {
-              reference: `ChargeItem/${draftChargeItem.body.id}`
-            }
-          }
+              reference: `ChargeItem/${draftChargeItem.body.id}`,
+            },
+          },
         ],
       });
 
