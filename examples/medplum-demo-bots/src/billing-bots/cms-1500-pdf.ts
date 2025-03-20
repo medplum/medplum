@@ -131,22 +131,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      // {
-      //   text: 'X15',
-      //   absolutePosition: {
-      //     x: 267,
-      //     y: 253,
-      //   },
-      //   fontSize: 9,
-      // },
-      // {
-      //   text: 'X16',
-      //   absolutePosition: {
-      //     x: 310,
-      //     y: 253,
-      //   },
-      //   fontSize: 9,
-      // },
       ...getClaimContent(claim),
       ...getSexContent(insuredGender, 504, 51, 253),
       ...getDOBContent(insuredDOB, 395, 253),
@@ -158,46 +142,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      // {
-      //   text: 'X23',
-      //   absolutePosition: {
-      //     x: 267,
-      //     y: 277,
-      //   },
-      //   fontSize: 9,
-      // },
-      // {
-      //   text: 'X24',
-      //   absolutePosition: {
-      //     x: 267,
-      //     y: 300,
-      //   },
-      //   fontSize: 9,
-      // },
-      // {
-      //   text: 'X25',
-      //   absolutePosition: {
-      //     x: 310,
-      //     y: 277,
-      //   },
-      //   fontSize: 9,
-      // },
-      // {
-      //   text: 'X26',
-      //   absolutePosition: {
-      //     x: 310,
-      //     y: 300,
-      //   },
-      //   fontSize: 9,
-      // },
-      // {
-      //   text: 'X27',
-      //   absolutePosition: {
-      //     x: 343,
-      //     y: 277,
-      //   },
-      //   fontSize: 9,
-      // },
       {
         text: 'X28',
         absolutePosition: {
