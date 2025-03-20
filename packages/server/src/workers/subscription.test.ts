@@ -11,7 +11,9 @@ import {
 import {
   AccessPolicy,
   AuditEvent,
+  Binary,
   Bot,
+  DocumentReference,
   Observation,
   Patient,
   ProjectMembership,
@@ -1899,6 +1901,60 @@ describe('Subscription Worker', () => {
         expect(updatedPatient).toBeDefined();
 
         await assertPromise;
+      }));
+
+    test('WebSocket Subscription -- Attachments are Rewritten', () =>
+      withTestContext(async () => {
+        const { repo: wsSubRepo } = await createTestProject({
+          withClient: true,
+          withRepo: true,
+          project: {
+            name: 'WebSocket Attachments Rewritten Project',
+            features: ['websocket-subscriptions'],
+          },
+        });
+
+        const binary = await wsSubRepo.createResource<Binary>({
+          resourceType: 'Binary',
+          contentType: ContentType.TEXT,
+        });
+
+        const subscription = await wsSubRepo.createResource<Subscription>({
+          resourceType: 'Subscription',
+          reason: 'test',
+          status: 'active',
+          criteria: `DocumentReference?location=Binary/${binary.id}`,
+          channel: {
+            type: 'websocket',
+          },
+        });
+
+        expect(subscription).toBeDefined();
+        expect(subscription.id).toBeDefined();
+
+        const nextArgsPromise = waitForNextSubNotification<DocumentReference>();
+        const documentRef = await wsSubRepo.createResource<DocumentReference>({
+          resourceType: 'DocumentReference',
+          status: 'current',
+          content: [
+            {
+              attachment: {
+                url: `Binary/${binary.id}`,
+              },
+            },
+          ],
+        });
+        expect(documentRef).toBeDefined();
+
+        const notificationArgs = await nextArgsPromise;
+        expect(notificationArgs).toMatchObject<EventNotificationArgs<DocumentReference>>([
+          expect.objectContaining({
+            ...documentRef,
+            content: [{ attachment: { url: expect.stringContaining('?Expires=') } }],
+          }),
+          subscription.id,
+          { includeResource: true },
+        ]);
       }));
   });
 });
