@@ -432,6 +432,7 @@ export const ADDRESS_USE_MAPPER = new EnumMapper('AddressUse', '', ADDRESS_USE_V
 export const TELECOM_USE_MAPPER = new EnumMapper('TelecomUse', '', CONTACT_ENTITY_USE_VALUE_SET, [
   { ccdaValue: 'WP', fhirValue: 'work', displayName: 'Work' },
   { ccdaValue: 'HP', fhirValue: 'home', displayName: 'Home' },
+  { ccdaValue: 'MC', fhirValue: 'mobile', displayName: 'Mobile' },
 ]);
 
 export const ALLERGY_STATUS_MAPPER = new EnumMapper<string, string>(

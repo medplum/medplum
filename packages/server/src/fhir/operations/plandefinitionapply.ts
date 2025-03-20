@@ -1,6 +1,7 @@
 import { allOk, createReference, getReferenceString, ProfileResource } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
+  ActivityDefinition,
   Bot,
   ClientApplication,
   Encounter,
@@ -10,6 +11,7 @@ import {
   Reference,
   RequestGroup,
   RequestGroupAction,
+  ServiceRequest,
   Task,
   TaskInput,
 } from '@medplum/fhirtypes';
@@ -86,6 +88,8 @@ async function createAction(
 ): Promise<RequestGroupAction> {
   if (action.definitionCanonical?.startsWith('Questionnaire/')) {
     return createQuestionnaireTask(repo, requester, subject, action, encounter);
+  } else if (action.definitionCanonical?.startsWith('ActivityDefinition/')) {
+    return createActivityDefinitionTask(repo, requester, subject, action, encounter);
   }
   return createTask(repo, requester, subject, action, encounter);
 }
@@ -117,6 +121,53 @@ async function createQuestionnaireTask(
       },
     },
   ]);
+}
+
+/**
+ * Creates a Task and RequestGroup action to request a resource.
+ * @param repo - The repository configured for the current user.
+ * @param requester - The user who requested the plan definition.
+ * @param subject - The subject of the plan definition.
+ * @param action - The PlanDefinition action.
+ * @param encounter - Optional encounter reference.
+ * @returns The RequestGroup action.
+ */
+async function createActivityDefinitionTask(
+  repo: Repository,
+  requester: Reference<Bot | ClientApplication | ProfileResource>,
+  subject: Reference<Patient>,
+  action: PlanDefinitionAction,
+  encounter: Reference<Encounter> | undefined
+): Promise<RequestGroupAction> {
+  const activityDefinition = await repo.readReference<ActivityDefinition>({ reference: action.definitionCanonical });
+  switch (activityDefinition.kind) {
+    case 'ServiceRequest': {
+      const serviceRequest = await repo.createResource({
+        resourceType: 'ServiceRequest',
+        status: 'draft',
+        intent: activityDefinition.intent as ServiceRequest['intent'],
+        subject: subject,
+        requester: requester as ServiceRequest['requester'],
+        encounter: encounter,
+        code: activityDefinition.code,
+      });
+
+      return createTask(repo, requester, subject, action, encounter, [
+        {
+          type: {
+            text: 'ServiceRequest',
+          },
+          valueReference: {
+            display: action.title,
+            reference: getReferenceString(serviceRequest),
+          },
+        },
+      ]);
+    }
+
+    default:
+      return createTask(repo, requester, subject, action, encounter);
+  }
 }
 
 /**

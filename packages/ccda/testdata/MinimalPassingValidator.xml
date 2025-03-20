@@ -59,6 +59,9 @@
                     <given>Albert</given>
                 </name>
             </assignedPerson>
+            <representedOrganization>
+                <name>Neighborhood Physicians Practice</name>
+            </representedOrganization>
         </assignedAuthor>
     </author>
     <custodian>

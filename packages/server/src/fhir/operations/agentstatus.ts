@@ -1,13 +1,13 @@
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, isOperationOutcome, normalizeErrorString, WithId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition } from '@medplum/fhirtypes';
+import { Agent, OperationDefinition, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { AgentConnectionState, AgentInfo } from '../../agent/utils';
 import { getAuthenticatedContext } from '../../context';
 import { getRedis } from '../../redis';
 import { getAgentForRequest } from './utils/agentutils';
 import { buildOutputParameters } from './utils/parameters';
 
-const operation: OperationDefinition = {
+export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
   name: 'agent-status',
   status: 'active',
@@ -43,17 +43,49 @@ export async function agentStatusHandler(req: FhirRequest): Promise<FhirResponse
     return [badRequest('Must specify agent ID or identifier')];
   }
 
-  let output: AgentInfo;
+  const [statusOrOutcome] = await getStatusForAgents([agent]);
 
+  if (isOperationOutcome(statusOrOutcome)) {
+    return [statusOrOutcome];
+  }
+
+  return [allOk, statusOrOutcome];
+}
+
+/**
+ * Gets the status for a given list of Agents.
+ * @param agents - The agents to get the status of.
+ * @returns A Bundle containing Parameters containing agents with their corresponding status response.
+ */
+export async function getStatusForAgents(agents: WithId<Agent>[]): Promise<(Parameters | OperationOutcome)[]> {
   // Get the agent status details from Redis
   // This is set by the agent websocket connection
   // See: packages/server/src/agent/websockets.ts
-  const statusStr = await getRedis().get(`medplum:agent:${agent.id}:info`);
-  if (statusStr) {
-    output = JSON.parse(statusStr);
-  } else {
-    output = { status: AgentConnectionState.UNKNOWN, version: 'unknown' };
+  // Here we use MGET to get all the keys at once, which reduces this from O(n) Redis commands to O(1)
+  const statusStrs = await getRedis().mget(agents.map((agent) => `medplum:agent:${agent.id}:info`));
+
+  const statuses: (Parameters | OperationOutcome)[] = [];
+
+  for (let i = 0; i < agents.length; i++) {
+    const statusStr = statusStrs[i];
+    let output: Parameters | OperationOutcome | undefined;
+
+    if (statusStr) {
+      const info: AgentInfo = JSON.parse(statusStr);
+      try {
+        output = buildOutputParameters(operation, info);
+      } catch (err) {
+        // If we catch an error here, that means we have an invalid agent info entry
+        output = badRequest(`Invalid agent info: ${normalizeErrorString(err)}`);
+      }
+    }
+
+    if (output) {
+      statuses.push(output);
+    } else {
+      statuses.push(buildOutputParameters(operation, { status: AgentConnectionState.UNKNOWN, version: 'unknown' }));
+    }
   }
 
-  return [allOk, buildOutputParameters(operation, output)];
+  return statuses;
 }

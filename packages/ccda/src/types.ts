@@ -51,7 +51,7 @@ export interface CcdaPatient {
 }
 
 export interface CcdaTelecom {
-  '@_use'?: 'HP' | 'WP';
+  '@_use'?: 'HP' | 'WP' | 'MC';
   '@_value'?: string;
   '@_nullFlavor'?: 'UNK';
 }
@@ -82,7 +82,8 @@ export interface CcdaSection {
   code?: CcdaCode;
   title?: string;
   text?: CcdaNarrative | string;
-  entry: CcdaEntry[];
+  author?: CcdaAuthor[];
+  entry?: CcdaEntry[];
 }
 
 export interface CcdaTemplateId {
@@ -179,6 +180,7 @@ export interface CcdaAssignedAuthor {
   assignedPerson?: CcdaAssignedPerson;
   addr: CcdaAddr[];
   telecom: CcdaTelecom[];
+  representedOrganization?: CcdaRepresentedOrganization;
 }
 
 export interface CcdaAssignedPerson {

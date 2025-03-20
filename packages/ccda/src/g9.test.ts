@@ -723,11 +723,44 @@ describe('170.315(g)(9)', () => {
       expect(device?.playingDevice?.code?.['@_code']).toEqual('704708004');
     });
   });
+
+  describe('Assessments', () => {
+    test('should handle clinical impression', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Practitioner',
+          id: 'davis',
+          name: [{ family: 'Davis', given: ['Albert'] }],
+        },
+        {
+          resourceType: 'ClinicalImpression',
+          status: 'completed',
+          subject: {
+            reference: 'Patient/01953565-5b00-72a8-ac87-3c4b3de1ba88',
+            display: 'Alice Jones Newman',
+          },
+          date: '2015-06-22T07:00:00.000Z',
+          assessor: {
+            reference: 'Practitioner/davis',
+            display: 'Dr Albert Davis',
+          },
+          summary: 'Lorem ipsum',
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual('51848-0');
+      expect(section?.text).toEqual('Lorem ipsum');
+    });
+  });
 });
 
 function createCompositionBundle(patient: Patient, ...resources: Partial<Resource>[]): Bundle {
   const resourceTypeToCode = {
     AllergyIntolerance: '48765-2',
+    ClinicalImpression: '51848-0',
     Condition: '11450-4',
     DeviceUseStatement: '46264-8',
     DiagnosticReport: '30954-2',
