@@ -4,16 +4,11 @@ import { BinarySource, BinaryStorage, checkFileMetadata } from '../../fhir/stora
 import { Binary } from '@medplum/fhirtypes';
 import { splitN } from '@medplum/core';
 
-/**
- * La clase GCPBlobStorage almacena datos binarios en un bucket de Google Cloud Storage.
- * Los archivos se almacenan en el formato: binary/binary.id/binary.meta.versionId.
- */
 export class GCPBlobStorage implements BinaryStorage {
   private readonly storage: Storage;
   private readonly bucket;
 
   constructor(gcpStorage: string) {
-    // gcpStorage en formato "projectId:bucketName"
     const [projectId, bucketName] = splitN(gcpStorage, ':', 2);
     this.storage = new Storage({ projectId });
     this.bucket = this.storage.bucket(bucketName);
@@ -34,10 +29,9 @@ export class GCPBlobStorage implements BinaryStorage {
     return new Promise((resolve, reject) => {
       const writeStream = file.createWriteStream({
         metadata: { contentType: contentType ?? 'application/octet-stream' },
-        resumable: false,
+        resumable: false
       });
-      stream
-        .pipe(writeStream)
+      stream.pipe(writeStream)
         .on('finish', () => resolve())
         .on('error', (err: any) => reject(err));
     });
@@ -62,7 +56,7 @@ export class GCPBlobStorage implements BinaryStorage {
     const file = this.bucket.file(this.getKey(binary));
     const options = {
       action: 'read' as const,
-      expires: Date.now() + 3600 * 1000, // Válido por 1 hora
+      expires: Date.now() + 3600 * 1000,
     };
     const [url] = await file.getSignedUrl(options);
     return url;
