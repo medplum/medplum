@@ -138,7 +138,7 @@ describe('ChargeItemDefinition Apply', () => {
     expect(applyResult.status).toBe(200);
     const chargeItem = applyResult.body as ChargeItem;
     expect(chargeItem.resourceType).toBe('ChargeItem');
-    expect(chargeItem.status).toBe('draft');
+    expect(chargeItem.id).toBe(draftChargeItem.body.id);
 
     // 7. Verify price override was applied
     expect(chargeItem.priceOverride).toBeDefined();
