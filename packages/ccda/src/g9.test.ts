@@ -17,6 +17,16 @@ import {
   LANGUAGE_MODE_URL,
   LANGUAGE_PROFICIENCY_CODE_SYSTEM,
   LANGUAGE_PROFICIENCY_URL,
+  LOINC_ALLERGIES_SECTION,
+  LOINC_ASSESSMENTS_SECTION,
+  LOINC_DEVICES_SECTION,
+  LOINC_IMMUNIZATIONS_SECTION,
+  LOINC_MEDICATIONS_SECTION,
+  LOINC_PLAN_OF_TREATMENT_SECTION,
+  LOINC_PROBLEMS_SECTION,
+  LOINC_PROCEDURES_SECTION,
+  LOINC_RESULTS_SECTION,
+  LOINC_VITAL_SIGNS_SECTION,
   RACE_CODE_SYSTEM,
   US_CORE_ETHNICITY_URL,
   US_CORE_RACE_URL,
@@ -607,7 +617,7 @@ describe('170.315(g)(9)', () => {
       const output = convertFhirToCcda(input);
       const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
       expect(section).toBeDefined();
-      expect(section?.code?.['@_code']).toEqual('18776-5');
+      expect(section?.code?.['@_code']).toEqual(LOINC_PLAN_OF_TREATMENT_SECTION);
       const observation = section?.entry?.[0]?.observation?.[0];
       expect(observation).toBeDefined();
       expect(observation?.code?.['@_code']).toEqual('24357-6');
@@ -653,7 +663,7 @@ describe('170.315(g)(9)', () => {
       const output = convertFhirToCcda(input);
       const section = output.component?.structuredBody?.component?.[1]?.section?.[0];
       expect(section).toBeDefined();
-      expect(section?.code?.['@_code']).toEqual('30954-2');
+      expect(section?.code?.['@_code']).toEqual(LOINC_RESULTS_SECTION);
       const organizer = section?.entry?.[0]?.organizer?.[0];
       expect(organizer).toBeDefined();
       const components = organizer?.component;
@@ -675,7 +685,7 @@ describe('170.315(g)(9)', () => {
       const output = convertFhirToCcda(input);
       const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
       expect(section).toBeDefined();
-      expect(section?.code?.['@_code']).toEqual('46264-8');
+      expect(section?.code?.['@_code']).toEqual(LOINC_DEVICES_SECTION);
       expect(section?.entry).toHaveLength(0);
     });
 
@@ -712,7 +722,7 @@ describe('170.315(g)(9)', () => {
       const output = convertFhirToCcda(input);
       const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
       expect(section).toBeDefined();
-      expect(section?.code?.['@_code']).toEqual('46264-8');
+      expect(section?.code?.['@_code']).toEqual(LOINC_DEVICES_SECTION);
       const procedure = section?.entry?.[0]?.procedure?.[0];
       expect(procedure).toBeDefined();
       expect(procedure?.code?.['@_code']).toEqual('360030002');
@@ -751,7 +761,47 @@ describe('170.315(g)(9)', () => {
       const output = convertFhirToCcda(input);
       const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
       expect(section).toBeDefined();
-      expect(section?.code?.['@_code']).toEqual('51848-0');
+      expect(section?.code?.['@_code']).toEqual(LOINC_ASSESSMENTS_SECTION);
+      expect(section?.text).toEqual('Lorem ipsum');
+    });
+  });
+
+  describe('Goals', () => {
+    // todo
+  });
+
+  describe('Health Concerns', () => {
+    // todo
+  });
+
+  describe('Notes', () => {
+    test('should handle clinical impression', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Practitioner',
+          id: 'davis',
+          name: [{ family: 'Davis', given: ['Albert'] }],
+        },
+        {
+          resourceType: 'ClinicalImpression',
+          status: 'completed',
+          subject: {
+            reference: 'Patient/01953565-5b00-72a8-ac87-3c4b3de1ba88',
+            display: 'Alice Jones Newman',
+          },
+          date: '2015-06-22T07:00:00.000Z',
+          assessor: {
+            reference: 'Practitioner/davis',
+            display: 'Dr Albert Davis',
+          },
+          summary: 'Lorem ipsum',
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual(LOINC_ASSESSMENTS_SECTION);
       expect(section?.text).toEqual('Lorem ipsum');
     });
   });
@@ -759,16 +809,16 @@ describe('170.315(g)(9)', () => {
 
 function createCompositionBundle(patient: Patient, ...resources: Partial<Resource>[]): Bundle {
   const resourceTypeToCode = {
-    AllergyIntolerance: '48765-2',
-    ClinicalImpression: '51848-0',
-    Condition: '11450-4',
-    DeviceUseStatement: '46264-8',
-    DiagnosticReport: '30954-2',
-    Immunization: '11369-6',
-    MedicationRequest: '10160-0',
-    Observation: '8716-3',
-    Procedure: '47519-4',
-    ServiceRequest: '18776-5',
+    AllergyIntolerance: LOINC_ALLERGIES_SECTION,
+    ClinicalImpression: LOINC_ASSESSMENTS_SECTION,
+    Condition: LOINC_PROBLEMS_SECTION,
+    DeviceUseStatement: LOINC_DEVICES_SECTION,
+    DiagnosticReport: LOINC_RESULTS_SECTION,
+    Immunization: LOINC_IMMUNIZATIONS_SECTION,
+    MedicationRequest: LOINC_MEDICATIONS_SECTION,
+    Observation: LOINC_VITAL_SIGNS_SECTION,
+    Procedure: LOINC_PROCEDURES_SECTION,
+    ServiceRequest: LOINC_PLAN_OF_TREATMENT_SECTION,
   };
 
   const sections: CompositionSection[] = [];

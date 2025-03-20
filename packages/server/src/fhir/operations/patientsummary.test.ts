@@ -1,4 +1,21 @@
-import { ContentType, LOINC, WithId, createReference, getReferenceString } from '@medplum/core';
+import {
+  LOINC_ALLERGIES_SECTION,
+  LOINC_ASSESSMENTS_SECTION,
+  LOINC_DEVICES_SECTION,
+  LOINC_GOALS_SECTION,
+  LOINC_HEALTH_CONCERNS_SECTION,
+  LOINC_IMMUNIZATIONS_SECTION,
+  LOINC_MEDICATIONS_SECTION,
+  LOINC_NOTE_DOCUMENT,
+  LOINC_NOTES_SECTION,
+  LOINC_PLAN_OF_TREATMENT_SECTION,
+  LOINC_PROBLEMS_SECTION,
+  LOINC_PROCEDURES_SECTION,
+  LOINC_RESULTS_SECTION,
+  LOINC_SOCIAL_HISTORY_SECTION,
+  LOINC_VITAL_SIGNS_SECTION,
+} from '@medplum/ccda';
+import { ContentType, createReference, getReferenceString, LOINC, WithId } from '@medplum/core';
 import {
   Bundle,
   CarePlan,
@@ -18,24 +35,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
-import {
-  LOINC_ALLERGIES_SECTION,
-  LOINC_ASSESSMENTS_SECTION,
-  LOINC_DEVICES_SECTION,
-  LOINC_GOALS_SECTION,
-  LOINC_HEALTH_CONCERNS_SECTION,
-  LOINC_IMMUNIZATIONS_SECTION,
-  LOINC_MEDICATIONS_SECTION,
-  LOINC_NOTES_SECTION,
-  LOINC_PLAN_OF_TREATMENT_SECTION,
-  LOINC_PROBLEMS_SECTION,
-  LOINC_PROCEDURES_SECTION,
-  LOINC_RESULTS_SECTION,
-  LOINC_SOCIAL_HISTORY_SECTION,
-  LOINC_VITAL_SIGNS_SECTION,
-  OBSERVATION_CATEGORY_SYSTEM,
-  PatientSummaryBuilder,
-} from './patientsummary';
+import { OBSERVATION_CATEGORY_SYSTEM, PatientSummaryBuilder } from './patientsummary';
 
 const app = express();
 let accessToken: string;
@@ -214,7 +214,7 @@ describe('Patient Summary Operation', () => {
           resourceType: 'ClinicalImpression',
           id: 'note',
           status: 'completed',
-          code: { coding: [{ system: LOINC, code: '34109-9' }] },
+          code: { coding: [{ system: LOINC, code: LOINC_NOTE_DOCUMENT }] },
           subject,
           summary: 'test',
         },
@@ -239,7 +239,7 @@ describe('Patient Summary Operation', () => {
         {
           resourceType: 'Condition',
           id: 'concern',
-          category: [{ coding: [{ system: LOINC, code: '75310-3' }] }],
+          category: [{ coding: [{ system: LOINC, code: LOINC_HEALTH_CONCERNS_SECTION }] }],
           subject,
         },
         {
@@ -335,7 +335,7 @@ describe('Patient Summary Operation', () => {
 
       const composition = result.entry?.[0]?.resource as WithId<Composition>;
 
-      const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === '8716-3');
+      const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === LOINC_VITAL_SIGNS_SECTION);
       expect(section).toBeDefined();
       expect(section?.entry?.length).toBe(1);
       expect(section?.entry?.[0]?.reference).toBe(getReferenceString(parentObs));
@@ -376,7 +376,7 @@ describe('Patient Summary Operation', () => {
 
       const composition = result.entry?.[0]?.resource as WithId<Composition>;
 
-      const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === '30954-2');
+      const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === LOINC_RESULTS_SECTION);
       expect(section).toBeDefined();
       expect(section?.entry?.length).toBe(1);
       expect(section?.entry?.[0]?.reference).toBe(getReferenceString(parentReport));

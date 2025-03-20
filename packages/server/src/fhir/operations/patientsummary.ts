@@ -1,4 +1,22 @@
 import {
+  LOINC_ALLERGIES_SECTION,
+  LOINC_ASSESSMENTS_SECTION,
+  LOINC_DEVICES_SECTION,
+  LOINC_GOALS_SECTION,
+  LOINC_HEALTH_CONCERNS_SECTION,
+  LOINC_IMMUNIZATIONS_SECTION,
+  LOINC_MEDICATIONS_SECTION,
+  LOINC_NOTE_DOCUMENT,
+  LOINC_NOTES_SECTION,
+  LOINC_PATIENT_SUMMARY_DOCUMENT,
+  LOINC_PLAN_OF_TREATMENT_SECTION,
+  LOINC_PROBLEMS_SECTION,
+  LOINC_PROCEDURES_SECTION,
+  LOINC_RESULTS_SECTION,
+  LOINC_SOCIAL_HISTORY_SECTION,
+  LOINC_VITAL_SIGNS_SECTION,
+} from '@medplum/ccda';
+import {
   allOk,
   createReference,
   escapeHtml,
@@ -45,21 +63,6 @@ import { getPatientEverything, PatientEverythingParameters } from './patientever
 import { parseInputParameters } from './utils/parameters';
 
 export const OBSERVATION_CATEGORY_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/observation-category`;
-
-export const LOINC_ALLERGIES_SECTION = '48765-2';
-export const LOINC_IMMUNIZATIONS_SECTION = '11369-6';
-export const LOINC_MEDICATIONS_SECTION = '10160-0';
-export const LOINC_PROBLEMS_SECTION = '11450-4';
-export const LOINC_RESULTS_SECTION = '30954-2';
-export const LOINC_SOCIAL_HISTORY_SECTION = '29762-2';
-export const LOINC_VITAL_SIGNS_SECTION = '8716-3';
-export const LOINC_PROCEDURES_SECTION = '47519-4';
-export const LOINC_PLAN_OF_TREATMENT_SECTION = '18776-5';
-export const LOINC_ASSESSMENTS_SECTION = '51848-0';
-export const LOINC_DEVICES_SECTION = '46264-8';
-export const LOINC_GOALS_SECTION = '61146-7';
-export const LOINC_HEALTH_CONCERNS_SECTION = '75310-3';
-export const LOINC_NOTES_SECTION = '11488-4';
 
 // International Patient Summary Implementation Guide
 // https://build.fhir.org/ig/HL7/fhir-ips/index.html
@@ -298,7 +301,7 @@ export class PatientSummaryBuilder {
 
   private chooseSectionForClinicalImpression(clinicalImpression: ClinicalImpression): void {
     const code = clinicalImpression.code?.coding?.[0]?.code;
-    if (code === '34109-9') {
+    if (code === LOINC_NOTE_DOCUMENT) {
       this.notes.push(clinicalImpression);
     } else {
       this.assessments.push(clinicalImpression);
@@ -307,7 +310,7 @@ export class PatientSummaryBuilder {
 
   private chooseSectionForCondition(condition: Condition): void {
     const categoryCode = findCategoryBySystem(condition.category, LOINC);
-    if (categoryCode === '75310-3') {
+    if (categoryCode === LOINC_HEALTH_CONCERNS_SECTION) {
       this.healthConcerns.push(condition);
     } else {
       this.problemList.push(condition);
@@ -340,7 +343,7 @@ export class PatientSummaryBuilder {
       resourceType: 'Composition',
       id: generateId(),
       status: 'final',
-      type: { coding: [{ system: LOINC, code: '60591-5', display: 'Patient Summary' }] },
+      type: { coding: [{ system: LOINC, code: LOINC_PATIENT_SUMMARY_DOCUMENT, display: 'Patient Summary' }] },
       subject: createReference(this.patient),
       date: new Date().toISOString(),
       author: [createReference(this.author)],
