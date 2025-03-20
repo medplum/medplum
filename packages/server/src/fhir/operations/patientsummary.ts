@@ -18,6 +18,7 @@ import {
   Bundle,
   CarePlan,
   ClinicalImpression,
+  CodeableConcept,
   Composition,
   CompositionEvent,
   CompositionSection,
@@ -56,6 +57,9 @@ export const LOINC_PROCEDURES_SECTION = '47519-4';
 export const LOINC_PLAN_OF_TREATMENT_SECTION = '18776-5';
 export const LOINC_ASSESSMENTS_SECTION = '51848-0';
 export const LOINC_DEVICES_SECTION = '46264-8';
+export const LOINC_GOALS_SECTION = '61146-7';
+export const LOINC_HEALTH_CONCERNS_SECTION = '75310-3';
+export const LOINC_NOTES_SECTION = '11488-4';
 
 // International Patient Summary Implementation Guide
 // https://build.fhir.org/ig/HL7/fhir-ips/index.html
@@ -101,7 +105,6 @@ const resourceTypes: ResourceType[] = [
   'Observation',
   'Procedure',
   'ServiceRequest',
-  'Task',
 ];
 
 export interface PatientSummaryParameters extends PatientEverythingParameters {
@@ -176,6 +179,9 @@ export class PatientSummaryBuilder {
   private readonly planOfTreatment: PlanResourceType[] = [];
   private readonly immunizations: Immunization[] = [];
   private readonly devices: DeviceUseStatement[] = [];
+  private readonly goals: Goal[] = [];
+  private readonly healthConcerns: Condition[] = [];
+  private readonly notes: ClinicalImpression[] = [];
   private readonly nestedIds = new Set<string>();
 
   constructor(author: ProfileResource, patient: Patient, everything: WithId<Resource>[]) {
@@ -252,12 +258,6 @@ export class PatientSummaryBuilder {
       case 'CarePlan':
         this.planOfTreatment.push(resource);
         break;
-      case 'Condition':
-        this.problemList.push(resource);
-        break;
-      case 'ClinicalImpression':
-        this.assessments.push(resource);
-        break;
       case 'DeviceUseStatement':
         this.devices.push(resource);
         break;
@@ -265,7 +265,7 @@ export class PatientSummaryBuilder {
         this.results.push(resource);
         break;
       case 'Goal':
-        this.planOfTreatment.push(resource);
+        this.goals.push(resource);
         break;
       case 'Immunization':
         this.immunizations.push(resource);
@@ -281,6 +281,12 @@ export class PatientSummaryBuilder {
         break;
 
       // Complex resource types - choose section based on resource type
+      case 'ClinicalImpression':
+        this.chooseSectionForClinicalImpression(resource);
+        break;
+      case 'Condition':
+        this.chooseSectionForCondition(resource);
+        break;
       case 'Observation':
         this.chooseSectionForObservation(resource);
         break;
@@ -290,10 +296,26 @@ export class PatientSummaryBuilder {
     }
   }
 
+  private chooseSectionForCondition(condition: Condition): void {
+    const categoryCode = findCategoryBySystem(condition.category, LOINC);
+    if (categoryCode === '75310-3') {
+      this.healthConcerns.push(condition);
+    } else {
+      this.problemList.push(condition);
+    }
+  }
+
+  private chooseSectionForClinicalImpression(clinicalImpression: ClinicalImpression): void {
+    const code = clinicalImpression.code?.coding?.[0]?.code;
+    if (code === '34109-9') {
+      this.notes.push(clinicalImpression);
+    } else {
+      this.assessments.push(clinicalImpression);
+    }
+  }
+
   private chooseSectionForObservation(obs: Observation): void {
-    const categoryCode =
-      obs.category?.find((category) => category.coding?.[0]?.system === OBSERVATION_CATEGORY_SYSTEM)?.coding?.[0]
-        ?.code || '';
+    const categoryCode = findCategoryBySystem(obs.category, OBSERVATION_CATEGORY_SYSTEM);
     switch (categoryCode) {
       case 'social-history':
         this.socialHistory.push(obs);
@@ -338,7 +360,10 @@ export class PatientSummaryBuilder {
         this.createDevicesSection(),
         this.createAssessmentsSection(),
         this.createPlanOfTreatmentSection(),
-      ],
+        this.createGoalsSection(),
+        this.createHealthConcernsSection(),
+        this.createNotesSection(),
+      ].filter(Boolean) as CompositionSection[],
     };
     return composition;
   }
@@ -513,6 +538,58 @@ export class PatientSummaryBuilder {
     );
   }
 
+  private createGoalsSection(): CompositionSection | undefined {
+    if (this.goals.length === 0) {
+      return undefined;
+    }
+
+    return createSection(
+      LOINC_GOALS_SECTION,
+      'Goals',
+      createTable(
+        ['Goal', 'Date'],
+        this.goals.map((g) => [formatCodeableConcept(g.description), formatDate(g.startDate)])
+      ),
+      this.goals
+    );
+  }
+
+  private createHealthConcernsSection(): CompositionSection | undefined {
+    if (this.healthConcerns.length === 0) {
+      return undefined;
+    }
+
+    return createSection(
+      LOINC_HEALTH_CONCERNS_SECTION,
+      'Health Concerns',
+      createTable(
+        ['Concern', 'Start Date', 'Status'],
+        this.healthConcerns.map((p) => [
+          formatCodeableConcept(p.code),
+          formatDate(p.onsetDateTime),
+          formatCodeableConcept(p.clinicalStatus),
+        ])
+      ),
+      this.healthConcerns
+    );
+  }
+
+  private createNotesSection(): CompositionSection | undefined {
+    if (this.notes.length === 0) {
+      return undefined;
+    }
+
+    return createSection(
+      LOINC_NOTES_SECTION,
+      'Notes',
+      createTable(
+        ['Note', 'Date'],
+        this.notes.map((n) => [n.summary, formatDate(n.date)])
+      ),
+      this.notes
+    );
+  }
+
   private buildResultTable(resources: ResultResourceType[]): string {
     const rows: (string | undefined)[][] = [];
     for (const r of resources) {
@@ -617,11 +694,11 @@ function createTable(headings: string[], body: (string | undefined)[][]): string
     return '';
   }
 
-  const html = ['<table><thead><tr>'];
+  const html = ['<table border="1" width="100%"><thead><tr>'];
   for (const h of headings) {
-    html.push('<td>');
+    html.push('<th>');
     html.push(escapeHtml(h));
-    html.push('</td>');
+    html.push('</th>');
   }
   html.push('</tr></thead><tbody>');
   for (const row of body) {
@@ -646,4 +723,21 @@ function createSection(code: string, title: string, html: string, entry: Resourc
     text: { status: 'generated', div: `<div xmlns="http://www.w3.org/1999/xhtml">${html}</div>` },
     entry: entry.map(createReference),
   };
+}
+
+function findCategoryBySystem(categories: CodeableConcept[] | undefined, system: string): string | undefined {
+  if (!categories) {
+    return undefined;
+  }
+  for (const category of categories) {
+    if (!category.coding) {
+      continue;
+    }
+    for (const coding of category.coding) {
+      if (coding.system === system) {
+        return coding.code;
+      }
+    }
+  }
+  return undefined;
 }

@@ -85,6 +85,7 @@
                             <text>
                                 <reference value="#Goal1" />
                             </text>
+                            <value xsi:type="ST">Exercising to lose weight</value>
                             <statusCode code="active" />
                             <effectiveTime value="20120815" />
                             <entryRelationship typeCode="RSON" inversionInd="true">
@@ -125,6 +126,7 @@
                             <text>
                                 <reference value="#Goal2" />
                             </text>
+                            <value xsi:type="ST">Asthma management</value>
                             <statusCode code="active" />
                             <effectiveTime value="20120815" />
                             <entryRelationship typeCode="RSON" inversionInd="true">

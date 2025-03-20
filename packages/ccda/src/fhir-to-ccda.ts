@@ -54,6 +54,8 @@ import {
   OID_ENCOUNTER_ACTIVITIES,
   OID_ENCOUNTER_LOCATION,
   OID_FDA_CODE_SYSTEM,
+  OID_GOAL_OBSERVATION,
+  OID_HEALTH_CONCERN_ACT,
   OID_HL7_REGISTERED_MODELS,
   OID_IMMUNIZATION_ACTIVITY,
   OID_IMMUNIZATION_MEDICATION_INFORMATION,
@@ -62,6 +64,7 @@ import {
   OID_MEDICATION_ACTIVITY,
   OID_MEDICATION_FREE_TEXT_SIG,
   OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL,
+  OID_NOTE_ACTIVITY,
   OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION,
   OID_PROBLEM_ACT,
   OID_PROBLEM_OBSERVATION,
@@ -517,8 +520,10 @@ class FhirToCcdaConverter {
         return this.createPlanOfTreatmentCarePlanEntry(resource);
       case 'CareTeam':
         return this.createCareTeamEntry(resource);
+      case 'ClinicalImpression':
+        return this.createClinicalImpressionEntry(resource);
       case 'Condition':
-        return this.createProblemEntry(resource);
+        return this.createConditionEntry(section, resource);
       case 'DeviceUseStatement':
         return this.createDeviceUseStatementEntry(resource);
       case 'DiagnosticReport':
@@ -526,7 +531,7 @@ class FhirToCcdaConverter {
       case 'Encounter':
         return this.createEncounterEntry(resource);
       case 'Goal':
-        return this.createPlanOfTreatmentGoalEntry(resource);
+        return this.createGoalEntry(section, resource);
       case 'Immunization':
         return this.createImmunizationEntry(resource as Immunization);
       case 'MedicationRequest':
@@ -538,7 +543,7 @@ class FhirToCcdaConverter {
       case 'ServiceRequest':
         return this.createPlanOfTreatmentServiceRequestEntry(resource as ServiceRequest);
       default:
-        throw new Error(`Unknown resource type: ${resource.resourceType}`);
+        return undefined;
     }
   }
 
@@ -1139,6 +1144,17 @@ class FhirToCcdaConverter {
     return ref ? { reference: ref } : undefined;
   }
 
+  private createConditionEntry(section: CompositionSection, condition: Condition): CcdaEntry | undefined {
+    const sectionCode = section.code?.coding?.[0]?.code;
+    if (sectionCode === '11450-4') {
+      return this.createProblemEntry(condition);
+    }
+    if (sectionCode === '75310-3') {
+      return this.createHealthConcernEntry(condition);
+    }
+    return undefined;
+  }
+
   private createProblemEntry(problem: Condition): CcdaEntry {
     return {
       act: [
@@ -1206,6 +1222,35 @@ class FhirToCcdaConverter {
               ],
             },
           ],
+        },
+      ],
+    };
+  }
+
+  private createHealthConcernEntry(problem: Condition): CcdaEntry {
+    return {
+      act: [
+        {
+          '@_classCode': 'ACT',
+          '@_moodCode': 'EVN',
+          templateId: [
+            { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2015-08-01' },
+            { '@_root': OID_HEALTH_CONCERN_ACT, '@_extension': '2022-06-01' },
+          ],
+          id: this.mapIdentifiers(problem.id, undefined),
+          code: {
+            '@_code': '75310-3',
+            '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+            '@_codeSystemName': 'LOINC',
+            '@_displayName': 'Health Concern',
+          },
+          statusCode: {
+            '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(
+              problem.clinicalStatus?.coding?.[0]?.code,
+              'active'
+            ),
+          },
+          effectiveTime: this.mapEffectivePeriod(problem.recordedDate, undefined),
         },
       ],
     };
@@ -1358,17 +1403,43 @@ class FhirToCcdaConverter {
     return undefined;
   }
 
-  private createPlanOfTreatmentGoalEntry(resource: Goal): CcdaEntry {
-    const result: CcdaEntry = {
+  private createGoalEntry(section: CompositionSection, resource: Goal): CcdaEntry | undefined {
+    const sectionCode = section.code?.coding?.[0]?.code;
+
+    let templateId: CcdaTemplateId[];
+    if (sectionCode === '18776-5') {
+      templateId = [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }];
+    } else if (sectionCode === '61146-7') {
+      templateId = [{ '@_root': OID_GOAL_OBSERVATION }];
+    } else {
+      return undefined;
+    }
+
+    let code: CcdaCode | undefined;
+    if (sectionCode === '61146-7') {
+      code = {
+        '@_code': '58144-7',
+        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+        '@_codeSystemName': 'LOINC',
+        '@_displayName': "Resident's overall goal established during assessment process",
+      };
+    } else if (resource.description) {
+      code = mapCodeableConceptToCcdaCode(resource.description);
+    } else {
+      return undefined;
+    }
+
+    return {
       observation: [
         {
           '@_classCode': 'OBS',
           '@_moodCode': 'GOL',
-          templateId: [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }],
+          templateId,
           id: this.mapIdentifiers(resource.id, resource.identifier),
-          code: mapCodeableConceptToCcdaCode(resource.description),
+          code,
           statusCode: { '@_code': this.mapPlanOfTreatmentStatus(resource.lifecycleStatus) },
           effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.startDate) }],
+          value: resource.description?.text ? { '@_xsi:type': 'ST', '#text': resource.description.text } : undefined,
           text: this.createTextFromExtensions(resource.extension),
           entryRelationship: resource.target?.map((target) => ({
             '@_typeCode': 'RSON',
@@ -1390,8 +1461,6 @@ class FhirToCcdaConverter {
         },
       ],
     };
-
-    return result;
   }
 
   private mapPlanOfTreatmentStatus(status: string | undefined): string {
@@ -1953,6 +2022,28 @@ class FhirToCcdaConverter {
               },
             },
           ],
+        },
+      ],
+    };
+  }
+
+  private createClinicalImpressionEntry(resource: ClinicalImpression): CcdaEntry | undefined {
+    return {
+      act: [
+        {
+          '@_classCode': 'ACT',
+          '@_moodCode': 'EVN',
+          templateId: [{ '@_root': OID_NOTE_ACTIVITY }],
+          id: this.mapIdentifiers(resource.id, resource.identifier),
+          code: {
+            '@_code': '11488-4',
+            '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+            '@_codeSystemName': 'LOINC',
+            '@_displayName': 'Note',
+          },
+          text: resource.summary ? { '#text': resource.summary } : this.createTextFromExtensions(resource.extension),
+          statusCode: { '@_code': 'completed' },
+          effectiveTime: [{ '@_value': mapFhirToCcdaDate(resource.date) }],
         },
       ],
     };
