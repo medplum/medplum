@@ -9,14 +9,12 @@ import {
 } from '@medplum/core';
 import { AsyncJob, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import * as semver from 'semver';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
-import { getServerVersion } from '../util/version';
-import { shouldContinueJob, updateAsyncJobOutput, WorkerInitializer, queueRegistry } from './utils';
+import { isJobActive, isJobCompatible, queueRegistry, updateAsyncJobOutput, WorkerInitializer } from './utils';
 
 /*
  * The reindex worker updates resource rows in the database,
@@ -125,12 +123,11 @@ export class ReindexJob {
   async execute(inputJobData: ReindexJobData): Promise<'finished' | 'ineligible' | 'interrupted'> {
     let asyncJob = await this.refreshAsyncJob(this.systemRepo, inputJobData.asyncJobId);
 
-    if (asyncJob.minServerVersion && semver.lt(getServerVersion(), asyncJob.minServerVersion)) {
-      // Since we can't handle this ourselves, re-enqueue the job for another worker that can
+    if (!isJobCompatible(asyncJob)) {
       return 'ineligible';
     }
 
-    if (!shouldContinueJob(asyncJob)) {
+    if (!isJobActive(asyncJob)) {
       return 'interrupted';
     }
 
@@ -150,7 +147,7 @@ export class ReindexJob {
           if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
             // Conflict: AsyncJob was updated by another party between when the job started and now!
             asyncJob = await this.refreshAsyncJob(systemRepo, asyncJob);
-            if (!shouldContinueJob(asyncJob)) {
+            if (!isJobActive(asyncJob)) {
               return 'interrupted';
             }
 

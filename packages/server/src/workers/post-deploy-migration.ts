@@ -6,13 +6,13 @@ import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import {
-  CustomPostDeployMigrationJobData,
   CustomMigrationResult,
+  CustomPostDeployMigrationJobData,
   PostDeployJobData,
   PostDeployJobRunResult,
 } from '../migrations/data/types';
 import { getPostDeployMigration } from '../migrations/migration-utils';
-import { shouldContinueJob, QueueRegistry, WorkerInitializer, queueRegistry } from './utils';
+import { isJobActive, isJobCompatible, QueueRegistry, queueRegistry, WorkerInitializer } from './utils';
 
 const queueName = 'PostDeployMigrationQueue';
 const jobName = 'PostDeployMigrationJobData';
@@ -63,7 +63,7 @@ type JobProcessorContext = {
   queueRegistry: QueueRegistry;
 };
 
-async function jobProcessor(context: JobProcessorContext, job: Job<PostDeployJobData>): Promise<void> {
+export async function jobProcessor(context: JobProcessorContext, job: Job<PostDeployJobData>): Promise<void> {
   const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
 
   const migrationNumber = asyncJob.dataVersion;
@@ -71,8 +71,14 @@ async function jobProcessor(context: JobProcessorContext, job: Job<PostDeployJob
     throw new Error(`Post-deploy migration number (AsyncJob.dataVersion) not found in ${getReferenceString(asyncJob)}`);
   }
 
-  const canBegin = shouldContinueJob(asyncJob);
-  if (!canBegin) {
+  if (!isJobCompatible(asyncJob)) {
+    // re-queue the job for an eligible worker to pick up
+    const queue = context.queueRegistry.getQueue(job.queueName);
+    await queue?.add(job.name, job.data, job.opts);
+    return;
+  }
+
+  if (!isJobActive(asyncJob)) {
     globalLogger.info(`${queueName} processor skipping job since AsyncJob is not active`, {
       jobId: job.id,
       type: job.data.type,
@@ -139,9 +145,10 @@ export async function runCustomMigration(
   repo: Repository,
   jobData: CustomPostDeployMigrationJobData,
   callback: (jobData: CustomPostDeployMigrationJobData) => Promise<CustomMigrationResult>
-): Promise<'finished' | 'interrupted'> {
+): Promise<'finished' | 'ineligible' | 'interrupted'> {
   const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
-  if (!shouldContinueJob(asyncJob)) {
+
+  if (!isJobActive(asyncJob)) {
     return 'interrupted';
   }
 

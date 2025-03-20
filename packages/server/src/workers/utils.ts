@@ -13,11 +13,13 @@ import {
   Subscription,
 } from '@medplum/fhirtypes';
 import { Queue } from 'bullmq';
+import * as semver from 'semver';
 import { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
+import { getServerVersion } from '../util/version';
 
 export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
   const systemRepo = getSystemRepo();
@@ -164,8 +166,12 @@ function defaultStatusCheck(status: number): boolean {
 
 export const InProgressAsyncJobStatuses: AsyncJob['status'][] = ['accepted', 'active'];
 
-export function shouldContinueJob(asyncJob: WithId<AsyncJob>): boolean {
+export function isJobActive(asyncJob: WithId<AsyncJob>): boolean {
   return InProgressAsyncJobStatuses.includes(asyncJob.status);
+}
+
+export function isJobCompatible(asyncJob: WithId<AsyncJob>): boolean {
+  return !asyncJob.minServerVersion || semver.gte(getServerVersion(), asyncJob.minServerVersion);
 }
 
 export async function updateAsyncJobOutput(
@@ -188,7 +194,13 @@ export async function updateAsyncJobOutput(
 
 export type WorkerInitializer = (config: MedplumServerConfig) => { queue: Queue; name: string };
 
-export class QueueRegistry {
+export interface QueueRegistry {
+  addQueue(name: string, queue: Queue): void;
+  getQueue(name: string): Queue | undefined;
+  clear(): void;
+}
+
+class DefaultQueueRegistry implements QueueRegistry {
   private queueMap: Record<string, Queue | undefined>;
 
   constructor() {
@@ -208,4 +220,4 @@ export class QueueRegistry {
   }
 }
 
-export const queueRegistry = new QueueRegistry();
+export const queueRegistry = new DefaultQueueRegistry();
