@@ -3605,30 +3605,49 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  // a more "real-world" test of using FHIRPath to evaluate a hypothetical constraint on AccessPolicy
-  describe('testAccessPolicyConstraints', () => {
-    const validResource: TypedValue = {
-      type: PropertyType.BackboneElement,
-      value: { resourceType: 'Patient', hiddenFields: ['name.use', 'name.given'], readonlyFields: ['name'] },
-    };
-
-    const invalidResource: TypedValue = {
-      type: PropertyType.BackboneElement,
-      value: {
-        resourceType: 'Observation',
-        hiddenFields: ['category', 'component.code'],
-        // readonlyFields: ['component'], // this would make it valid
-      },
-    };
-
+  // more "real-world" tests using FHIRPath to evaluate hypothetical constraints on AccessPolicy or Subscription resources
+  describe('testRealWorldConstraints', () => {
     const RESOURCE_CONSTRAINT = "hiddenFields.select(substring(0, indexOf('.'))).distinct().subsetOf(readonlyFields)";
 
     test('testAccessPolicyResourceConstraint positive', () => {
+      const validResource: TypedValue = {
+        type: PropertyType.BackboneElement,
+        value: { resourceType: 'Patient', hiddenFields: ['name.use', 'name.given'], readonlyFields: ['name'] },
+      };
       expect(evalFhirPath(RESOURCE_CONSTRAINT, validResource)).toStrictEqual([true]);
     });
 
     test('testAccessPolicyResourceConstraint negative', () => {
+      const invalidResource: TypedValue = {
+        type: PropertyType.BackboneElement,
+        value: {
+          resourceType: 'Observation',
+          hiddenFields: ['category', 'component.code'],
+          // readonlyFields: ['component'], // this would make it valid
+        },
+      };
       expect(evalFhirPath(RESOURCE_CONSTRAINT, invalidResource)).toStrictEqual([false]);
+    });
+
+    test.each<[unknown, unknown, boolean]>([
+      [undefined, observation, true],
+      [observation, observation, false],
+      [observation, { ...observation, status: 'amended' }, true],
+    ])('criteria including resource creation %#', (previous, current, result) => {
+      const criteria = '%previous.exists() implies %previous.status != %current.status';
+      const variables = { '%previous': toTypedValue(previous), '%current': toTypedValue(current) };
+      expect(evalFhirPathTyped(criteria, [], variables)).toStrictEqual([toTypedValue(result)]);
+    });
+
+    test.each<[unknown, unknown, boolean]>([
+      [undefined, patient, false],
+      [patient, patient, false],
+      [patient, { ...patient, name: [...patient.name, { text: 'The Patient' }] }, false],
+      [{ ...patient, name: [...patient.name, { text: 'The Patient' }] }, patient, true],
+    ])('comparison of array field elements %#', (previous, current, result) => {
+      const criteria = '%previous.name.where( ($this in %current.name).not() ).exists()';
+      const variables = { '%previous': toTypedValue(previous), '%current': toTypedValue(current) };
+      expect(evalFhirPathTyped(criteria, [], variables)).toStrictEqual([toTypedValue(result)]);
     });
   });
 });
