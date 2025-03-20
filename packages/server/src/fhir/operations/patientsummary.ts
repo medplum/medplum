@@ -296,21 +296,21 @@ export class PatientSummaryBuilder {
     }
   }
 
-  private chooseSectionForCondition(condition: Condition): void {
-    const categoryCode = findCategoryBySystem(condition.category, LOINC);
-    if (categoryCode === '75310-3') {
-      this.healthConcerns.push(condition);
-    } else {
-      this.problemList.push(condition);
-    }
-  }
-
   private chooseSectionForClinicalImpression(clinicalImpression: ClinicalImpression): void {
     const code = clinicalImpression.code?.coding?.[0]?.code;
     if (code === '34109-9') {
       this.notes.push(clinicalImpression);
     } else {
       this.assessments.push(clinicalImpression);
+    }
+  }
+
+  private chooseSectionForCondition(condition: Condition): void {
+    const categoryCode = findCategoryBySystem(condition.category, LOINC);
+    if (categoryCode === '75310-3') {
+      this.healthConcerns.push(condition);
+    } else {
+      this.problemList.push(condition);
     }
   }
 

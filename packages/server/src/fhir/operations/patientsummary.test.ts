@@ -2,6 +2,7 @@ import { ContentType, LOINC, WithId, createReference, getReferenceString } from 
 import {
   Bundle,
   CarePlan,
+  ClinicalImpression,
   Composition,
   Condition,
   DiagnosticReport,
@@ -19,9 +20,13 @@ import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 import {
   LOINC_ALLERGIES_SECTION,
+  LOINC_ASSESSMENTS_SECTION,
   LOINC_DEVICES_SECTION,
+  LOINC_GOALS_SECTION,
+  LOINC_HEALTH_CONCERNS_SECTION,
   LOINC_IMMUNIZATIONS_SECTION,
   LOINC_MEDICATIONS_SECTION,
+  LOINC_NOTES_SECTION,
   LOINC_PLAN_OF_TREATMENT_SECTION,
   LOINC_PROBLEMS_SECTION,
   LOINC_PROCEDURES_SECTION,
@@ -186,11 +191,73 @@ describe('Patient Summary Operation', () => {
       expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Problem', 'Condition/condition1');
       expectSectionToContain(composition, LOINC_DEVICES_SECTION, 'Device', 'DeviceUseStatement/device1');
       expectSectionToContain(composition, LOINC_RESULTS_SECTION, 'Result', 'DiagnosticReport/report1');
-      expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'Planned', 'Goal/goal1');
+      expectSectionToContain(composition, LOINC_GOALS_SECTION, 'Goal', 'Goal/goal1');
       expectSectionToContain(composition, LOINC_IMMUNIZATIONS_SECTION, 'Vaccine', 'Immunization/imm1');
       expectSectionToContain(composition, LOINC_MEDICATIONS_SECTION, 'Medication', 'MedicationRequest/med1');
       expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Procedure', 'Procedure/proc1');
       expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'Planned', 'ServiceRequest/sr1');
+    });
+
+    test('ClinicalImpressions', () => {
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
+      const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
+      const subject = createReference(patient);
+      const everything: WithId<ClinicalImpression>[] = [
+        {
+          resourceType: 'ClinicalImpression',
+          id: 'assessment',
+          status: 'completed',
+          subject,
+          summary: 'test',
+        },
+        {
+          resourceType: 'ClinicalImpression',
+          id: 'note',
+          status: 'completed',
+          code: { coding: [{ system: LOINC, code: '34109-9' }] },
+          subject,
+          summary: 'test',
+        },
+      ];
+
+      const builder = new PatientSummaryBuilder(author, patient, everything);
+      const result = builder.build();
+      expect(result.entry?.length).toBe(3 + everything.length); // 1 for author, 1 for patient, 1 for composition
+      expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
+      expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
+
+      const composition = result.entry?.[0]?.resource as WithId<Composition>;
+      expectSectionToContain(composition, LOINC_ASSESSMENTS_SECTION, 'Summary', 'ClinicalImpression/assessment');
+      expectSectionToContain(composition, LOINC_NOTES_SECTION, 'Note', 'ClinicalImpression/note');
+    });
+
+    test('Conditions', () => {
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
+      const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
+      const subject = createReference(patient);
+      const everything: WithId<Condition>[] = [
+        {
+          resourceType: 'Condition',
+          id: 'concern',
+          category: [{ coding: [{ system: LOINC, code: '75310-3' }] }],
+          subject,
+        },
+        {
+          resourceType: 'Condition',
+          id: 'problem',
+          subject,
+        },
+      ];
+
+      const builder = new PatientSummaryBuilder(author, patient, everything);
+      const result = builder.build();
+      expect(result.entry?.length).toBe(3 + everything.length); // 1 for author, 1 for patient, 1 for composition
+      expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
+      expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
+
+      const composition = result.entry?.[0]?.resource as WithId<Composition>;
+      expectSectionToContain(composition, LOINC_HEALTH_CONCERNS_SECTION, 'Concern', 'Condition/concern');
+      expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Problem', 'Condition/problem');
     });
 
     test('Observations', () => {
