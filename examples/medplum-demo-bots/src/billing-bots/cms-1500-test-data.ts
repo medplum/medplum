@@ -432,6 +432,18 @@ export const fullAnswer: Bundle = {
               unit: 'USD',
             },
           },
+          {
+            category: {
+              coding: [
+                { system: 'http://terminology.hl7.org/CodeSystem/claiminformationcategory', code: 'outsidelab' },
+              ],
+            },
+            sequence: 6,
+            valueQuantity: {
+              value: 125,
+              unit: 'USD',
+            },
+          },
         ],
         total: {
           currency: 'USD',

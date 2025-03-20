@@ -329,6 +329,8 @@ describe('getClaimInfo', () => {
       hospitalizationEnd: '5/21/2024',
       hospitalizationStart: '3/30/2024',
       priorAuthRefNumber: '0923092390',
+      outsideLab: true,
+      outsideLabCharges: '125 USD',
     });
   });
 
@@ -347,6 +349,8 @@ describe('getClaimInfo', () => {
       hospitalizationEnd: '',
       hospitalizationStart: '',
       priorAuthRefNumber: '',
+      outsideLab: false,
+      outsideLabCharges: '',
     });
   });
 
@@ -379,6 +383,8 @@ describe('getClaimInfo', () => {
       hospitalizationEnd: '',
       hospitalizationStart: '',
       priorAuthRefNumber: '',
+      outsideLab: false,
+      outsideLabCharges: '',
     });
   });
 
@@ -412,6 +418,8 @@ describe('getClaimInfo', () => {
       hospitalizationEnd: '',
       hospitalizationStart: '',
       priorAuthRefNumber: '',
+      outsideLab: false,
+      outsideLabCharges: '',
     });
   });
 
@@ -447,6 +455,8 @@ describe('getClaimInfo', () => {
       hospitalizationEnd: '',
       hospitalizationStart: '',
       priorAuthRefNumber: '',
+      outsideLab: false,
+      outsideLabCharges: '',
     });
   });
 });

@@ -3,6 +3,7 @@ import {
   formatAddress,
   formatCodeableConcept,
   formatDate,
+  formatQuantity,
   getDateProperty,
   MedplumClient,
 } from '@medplum/core';
@@ -181,30 +182,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         absolutePosition: {
           x: 247,
           y: 420,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X64',
-        absolutePosition: {
-          x: 387,
-          y: 444,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X66',
-        absolutePosition: {
-          x: 423,
-          y: 444,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X67',
-        absolutePosition: {
-          x: 472,
-          y: 440,
         },
         fontSize: 9,
       },
@@ -1579,6 +1556,8 @@ export function getClaimContent(claim: Claim): Content[] {
     hospitalizationStart,
     hospitalizationEnd,
     priorAuthRefNumber,
+    outsideLab,
+    outsideLabCharges,
   } = getClaimInfo(claim);
 
   const dateOfCurrentIllnessAsDate = dateOfCurrentIllness ? getDateProperty(dateOfCurrentIllness) : undefined;
@@ -1586,8 +1565,6 @@ export function getClaimContent(claim: Claim): Content[] {
   const employmentImpactedEndAsDate = employmentImpactedEnd ? getDateProperty(employmentImpactedEnd) : undefined;
   const hospitalizationStartAsDate = hospitalizationStart ? getDateProperty(hospitalizationStart) : undefined;
   const hospitalizationEndAsDate = hospitalizationEnd ? getDateProperty(hospitalizationEnd) : undefined;
-
-  console.log(priorAuthRefNumber);
 
   return [
     {
@@ -1698,6 +1675,30 @@ export function getClaimContent(claim: Claim): Content[] {
       absolutePosition: {
         x: 374,
         y: 490,
+      },
+      fontSize: 9,
+    },
+    {
+      text: outsideLab ? 'X' : '',
+      absolutePosition: {
+        x: 388,
+        y: 444,
+      },
+      fontSize: 9,
+    },
+    {
+      text: !outsideLab ? 'X' : '',
+      absolutePosition: {
+        x: 423,
+        y: 444,
+      },
+      fontSize: 9,
+    },
+    {
+      text: outsideLabCharges,
+      absolutePosition: {
+        x: 465,
+        y: 444,
       },
       fontSize: 9,
     },
@@ -2100,6 +2101,8 @@ export function getClaimInfo(claim: Claim): {
   hospitalizationStart: string;
   hospitalizationEnd: string;
   priorAuthRefNumber: string;
+  outsideLab: boolean;
+  outsideLabCharges: string;
 } {
   const relatedToemployment =
     claim.supportingInfo?.some((info) => info.category.coding?.[0].code === 'employmentimpacted') ?? false;
@@ -2126,6 +2129,9 @@ export function getClaimInfo(claim: Claim): {
 
   const priorAuthRefNumber = claim.insurance[0]?.preAuthRef?.[0] ?? '';
 
+  const outsideLab = claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'outsidelab');
+  const outsideLabCharges = outsideLab ? formatQuantity(outsideLab.valueQuantity) : '';
+
   return {
     relatedToemployment,
     relatedToAutoAccident,
@@ -2138,6 +2144,8 @@ export function getClaimInfo(claim: Claim): {
     hospitalizationStart,
     hospitalizationEnd,
     priorAuthRefNumber,
+    outsideLab: !!outsideLab,
+    outsideLabCharges,
   };
 }
 
