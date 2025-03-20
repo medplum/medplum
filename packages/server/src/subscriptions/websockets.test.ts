@@ -1,7 +1,9 @@
-import { OperationOutcomeError, WithId, getReferenceString, sleep } from '@medplum/core';
+import { ContentType, OperationOutcomeError, WithId, getReferenceString, sleep } from '@medplum/core';
 import {
+  Binary,
   Bundle,
   BundleEntry,
+  DocumentReference,
   Parameters,
   Patient,
   Project,
@@ -385,6 +387,115 @@ describe('WebSockets Subscriptions', () => {
         .expectJson({ type: 'pong' })
         .close()
         .expectClosed();
+    }));
+
+  test('Attachments are rewritten', () =>
+    withTestContext(async () => {
+      const binary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: `DocumentReference?location=Binary/${binary.id}`,
+        channel: {
+          type: 'websocket',
+        },
+      });
+
+      expect(subscription).toBeDefined();
+      expect(subscription.id).toBeDefined();
+
+      // Call $get-ws-binding-token
+      const res = await request(server)
+        .get(`/fhir/R4/Subscription/${subscription.id}/$get-ws-binding-token`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      expect(res.body).toBeDefined();
+      const body = res.body as Parameters;
+      expect(body.resourceType).toStrictEqual('Parameters');
+      expect(body.parameter?.[0]).toBeDefined();
+      expect(body.parameter?.[0]?.name).toStrictEqual('token');
+      expect(body.parameter?.[0]?.valueString).toBeDefined();
+
+      const token = body.parameter?.[0]?.valueString as string;
+
+      expect(res.body).toBeDefined();
+
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            id: expect.any(String),
+            resourceType: 'Bundle',
+            type: 'history',
+            timestamp: expect.any(String),
+            entry: [
+              {
+                resource: {
+                  resourceType: 'SubscriptionStatus',
+                  type: 'handshake',
+                  subscription: { reference: `Subscription/${subscription.id}` },
+                },
+              },
+            ],
+          });
+        })
+        // Add a new document reference for this project
+        .exec(async () => {
+          const documentRef = await repo.createResource<DocumentReference>({
+            resourceType: 'DocumentReference',
+            status: 'current',
+            content: [
+              {
+                attachment: {
+                  url: `Binary/${binary.id}`,
+                },
+              },
+            ],
+          });
+          expect(documentRef).toBeDefined();
+          let subActive = false;
+          while (!subActive) {
+            await sleep(0);
+            subActive =
+              (
+                await getRedis().smismember(
+                  `medplum:subscriptions:r4:project:${project.id}:active`,
+                  `Subscription/${subscription.id}`
+                )
+              )[0] === 1;
+          }
+          expect(subActive).toStrictEqual(true);
+        })
+        .expectJson((msg: Bundle): boolean => {
+          if (!msg.entry?.[1]) {
+            return false;
+          }
+          const docRefEntry = msg.entry?.[1] as BundleEntry<DocumentReference>;
+          if (!docRefEntry.resource) {
+            return false;
+          }
+          const docRef = docRefEntry.resource;
+          if (docRef.resourceType !== 'DocumentReference') {
+            return false;
+          }
+          if (!docRef?.content?.[0]?.attachment?.url?.includes('?Expires=')) {
+            return false;
+          }
+          return true;
+        })
+        .close()
+        .expectClosed()
+        .exec(async () => {
+          // Without this, marking subscription cannot cleanup cannot run before the test scope ends and redis has already closed
+          // Since the websocket close listener executes on the next tick
+          await sleep(0);
+        });
     }));
 });
 
