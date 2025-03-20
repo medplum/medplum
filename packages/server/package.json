@@ -39,12 +39,22 @@
     "@aws-sdk/types": "3.734.0",
     "@azure/identity": "4.8.0",
     "@azure/keyvault-secrets": "4.9.0",
+<<<<<<< HEAD
     "@azure/storage-blob": "12.27.0",
     "@google-cloud/secret-manager": "6.0.1",
     "@medplum/ccda": "4.0.4",
     "@medplum/core": "4.0.4",
     "@medplum/definitions": "4.0.4",
     "@medplum/fhir-router": "4.0.4",
+=======
+    "@azure/storage-blob": "12.26.0",
+    "@google-cloud/secret-manager": "5.6.0",
+    "@google-cloud/storage": "^7.15.2",
+    "@medplum/ccda": "4.0.3",
+    "@medplum/core": "4.0.3",
+    "@medplum/definitions": "4.0.3",
+    "@medplum/fhir-router": "4.0.3",
+>>>>>>> c8d3568db (added google library)
     "@opentelemetry/exporter-metrics-otlp-proto": "0.57.2",
     "@opentelemetry/exporter-trace-otlp-proto": "0.57.2",
     "@opentelemetry/instrumentation-aws-lambda": "0.50.3",
