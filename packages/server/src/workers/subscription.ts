@@ -7,6 +7,7 @@ import {
   Operator,
   WithId,
   createReference,
+  deepClone,
   getExtension,
   getExtensionValue,
   getReferenceString,
@@ -24,10 +25,16 @@ import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch, { HeadersInit } from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import { MedplumServerConfig } from '../config/types';
-import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import {
+  AuthenticatedRequestContext,
+  getRequestContext,
+  tryGetRequestContext,
+  tryRunInRequestContext,
+} from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
 import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
+import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
 import { getLogger, globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
@@ -248,6 +255,11 @@ export async function addSubscriptionJobs(
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
+  const rewrittenResource = await rewriteAttachments(
+    RewriteMode.PRESIGNED_URL,
+    (ctx as AuthenticatedRequestContext)?.repo ?? systemRepo,
+    deepClone(resource)
+  );
 
   for (const subscription of subscriptions) {
     if (options?.subscription && options.subscription !== getReferenceString(subscription)) {
@@ -262,7 +274,9 @@ export async function addSubscriptionJobs(
         continue;
       }
       if (subscription.channel.type === 'websocket') {
-        wsEvents.push([resource, subscription.id, { includeResource: true }]);
+        // We use the resource with rewritten attachments here since we want subscribers to get the resource with the same attachment URLs
+        // They would get if they did a search
+        wsEvents.push([rewrittenResource, subscription.id, { includeResource: true }]);
         continue;
       }
       await addSubscriptionJobData({
