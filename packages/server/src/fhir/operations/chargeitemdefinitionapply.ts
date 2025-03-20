@@ -27,27 +27,27 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
   const params = parseInputParameters<ChargeItemDefinitionParameters>(operation, req);
   const inputChargeItemRef = params.chargeItem;
   const inputChargeItem = await ctx.repo.readReference<ChargeItem>(inputChargeItemRef);
-  
+
   const chargeItemDefinitionReference = getReferenceString(chargeItemDefinition);
   const updatedChargeItem: ChargeItem = {
     ...inputChargeItem,
     definitionCanonical: inputChargeItem.definitionCanonical?.includes(chargeItemDefinitionReference)
       ? inputChargeItem.definitionCanonical
-      : [...(inputChargeItem.definitionCanonical || []), chargeItemDefinitionReference]
+      : [...(inputChargeItem.definitionCanonical || []), chargeItemDefinitionReference],
   };
 
   if (chargeItemDefinition.propertyGroup) {
     for (const group of chargeItemDefinition.propertyGroup) {
       if (group.priceComponent && group.priceComponent.length > 0) {
-        const basePriceComp = group.priceComponent.find(pc => pc.type === 'base');
+        const basePriceComp = group.priceComponent.find((pc) => pc.type === 'base');
         if (basePriceComp?.amount) {
           updatedChargeItem.priceOverride = basePriceComp.amount;
-          break; 
+          break;
         }
       }
     }
   }
-  
+
   const result = await ctx.repo.updateResource<ChargeItem>(updatedChargeItem);
   return [allOk, result];
 }
