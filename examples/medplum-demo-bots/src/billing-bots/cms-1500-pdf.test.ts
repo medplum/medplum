@@ -328,6 +328,7 @@ describe('getClaimInfo', () => {
       employmentImpactedStart: '2024-04-02',
       hospitalizationEnd: '5/21/2024',
       hospitalizationStart: '3/30/2024',
+      priorAuthRefNumber: '0923092390',
     });
   });
 
@@ -345,6 +346,7 @@ describe('getClaimInfo', () => {
       employmentImpactedStart: '',
       hospitalizationEnd: '',
       hospitalizationStart: '',
+      priorAuthRefNumber: '',
     });
   });
 
@@ -376,6 +378,7 @@ describe('getClaimInfo', () => {
       employmentImpactedStart: '',
       hospitalizationEnd: '',
       hospitalizationStart: '',
+      priorAuthRefNumber: '',
     });
   });
 
@@ -408,6 +411,7 @@ describe('getClaimInfo', () => {
       employmentImpactedStart: '',
       hospitalizationEnd: '',
       hospitalizationStart: '',
+      priorAuthRefNumber: '',
     });
   });
 
@@ -442,6 +446,7 @@ describe('getClaimInfo', () => {
       employmentImpactedStart: '',
       hospitalizationEnd: '',
       hospitalizationStart: '',
+      priorAuthRefNumber: '',
     });
   });
 });

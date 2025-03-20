@@ -329,14 +329,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X83',
-        absolutePosition: {
-          x: 374,
-          y: 490,
-        },
-        fontSize: 9,
-      },
-      {
         text: 'X85',
         absolutePosition: {
           x: 478,
@@ -1586,24 +1578,16 @@ export function getClaimContent(claim: Claim): Content[] {
     employmentImpactedEnd,
     hospitalizationStart,
     hospitalizationEnd,
+    priorAuthRefNumber,
   } = getClaimInfo(claim);
 
-  const dateOfCurrentIllnessAsDate = dateOfCurrentIllness ? getDateProperty(dateOfCurrentIllness as string) : undefined;
-  const employmentImpactedStartAsDate = employmentImpactedStart
-    ? getDateProperty(employmentImpactedStart as string)
-    : undefined;
-  const employmentImpactedEndAsDate = employmentImpactedEnd
-    ? getDateProperty(employmentImpactedEnd as string)
-    : undefined;
-  const hospitalizationStartAsDate = hospitalizationStart ? getDateProperty(hospitalizationStart as string) : undefined;
-  const hospitalizationEndAsDate = hospitalizationEnd ? getDateProperty(hospitalizationEnd as string) : undefined;
+  const dateOfCurrentIllnessAsDate = dateOfCurrentIllness ? getDateProperty(dateOfCurrentIllness) : undefined;
+  const employmentImpactedStartAsDate = employmentImpactedStart ? getDateProperty(employmentImpactedStart) : undefined;
+  const employmentImpactedEndAsDate = employmentImpactedEnd ? getDateProperty(employmentImpactedEnd) : undefined;
+  const hospitalizationStartAsDate = hospitalizationStart ? getDateProperty(hospitalizationStart) : undefined;
+  const hospitalizationEndAsDate = hospitalizationEnd ? getDateProperty(hospitalizationEnd) : undefined;
 
-  console.log(
-    employmentImpactedStartAsDate,
-    employmentImpactedEndAsDate,
-    hospitalizationStartAsDate,
-    hospitalizationEndAsDate
-  );
+  console.log(priorAuthRefNumber);
 
   return [
     {
@@ -1639,7 +1623,7 @@ export function getClaimContent(claim: Claim): Content[] {
       fontSize: 9,
     },
     {
-      text: accidentLocationState as string,
+      text: accidentLocationState,
       absolutePosition: {
         x: 343,
         y: 277,
@@ -1706,6 +1690,14 @@ export function getClaimContent(claim: Claim): Content[] {
       absolutePosition: {
         x: 322,
         y: 396,
+      },
+      fontSize: 9,
+    },
+    {
+      text: priorAuthRefNumber,
+      absolutePosition: {
+        x: 374,
+        y: 490,
       },
       fontSize: 9,
     },
@@ -2096,21 +2088,19 @@ export function getCoverageInfo(
   };
 }
 
-export function getClaimInfo(
-  claim: Claim
-): Record<
-  | 'relatedToemployment'
-  | 'relatedToAutoAccident'
-  | 'accidentLocation'
-  | 'accidentLocationState'
-  | 'relatedToOtherAccident'
-  | 'dateOfCurrentIllness'
-  | 'employmentImpactedStart'
-  | 'employmentImpactedEnd'
-  | 'hospitalizationStart'
-  | 'hospitalizationEnd',
-  string | boolean
-> {
+export function getClaimInfo(claim: Claim): {
+  relatedToemployment: boolean;
+  relatedToAutoAccident: boolean;
+  accidentLocation: string;
+  accidentLocationState: string;
+  relatedToOtherAccident: boolean;
+  dateOfCurrentIllness: string;
+  employmentImpactedStart: string;
+  employmentImpactedEnd: string;
+  hospitalizationStart: string;
+  hospitalizationEnd: string;
+  priorAuthRefNumber: string;
+} {
   const relatedToemployment =
     claim.supportingInfo?.some((info) => info.category.coding?.[0].code === 'employmentimpacted') ?? false;
   const relatedToAutoAccident = claim.accident?.type?.coding?.some((code) => code.code === 'MVA') ?? false;
@@ -2134,6 +2124,8 @@ export function getClaimInfo(
     : '';
   const hospitalizationEnd = hospitalization?.timingPeriod?.end ? formatDate(hospitalization.timingPeriod.end) : '';
 
+  const priorAuthRefNumber = claim.insurance[0]?.preAuthRef?.[0] ?? '';
+
   return {
     relatedToemployment,
     relatedToAutoAccident,
@@ -2145,6 +2137,7 @@ export function getClaimInfo(
     employmentImpactedEnd,
     hospitalizationStart,
     hospitalizationEnd,
+    priorAuthRefNumber,
   };
 }
 
