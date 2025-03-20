@@ -331,6 +331,8 @@ describe('getClaimInfo', () => {
       priorAuthRefNumber: '0923092390',
       outsideLab: true,
       outsideLabCharges: '125 USD',
+      resubmissionCode: 'Prior Claim',
+      originalReference: '',
     });
   });
 
@@ -351,6 +353,8 @@ describe('getClaimInfo', () => {
       priorAuthRefNumber: '',
       outsideLab: false,
       outsideLabCharges: '',
+      resubmissionCode: '',
+      originalReference: '',
     });
   });
 
@@ -385,6 +389,8 @@ describe('getClaimInfo', () => {
       priorAuthRefNumber: '',
       outsideLab: false,
       outsideLabCharges: '',
+      resubmissionCode: '',
+      originalReference: '',
     });
   });
 
@@ -420,6 +426,8 @@ describe('getClaimInfo', () => {
       priorAuthRefNumber: '',
       outsideLab: false,
       outsideLabCharges: '',
+      resubmissionCode: '',
+      originalReference: '',
     });
   });
 
@@ -457,6 +465,8 @@ describe('getClaimInfo', () => {
       priorAuthRefNumber: '',
       outsideLab: false,
       outsideLabCharges: '',
+      resubmissionCode: '',
+      originalReference: '',
     });
   });
 });

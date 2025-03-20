@@ -226,22 +226,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X73',
-        absolutePosition: {
-          x: 401,
-          y: 469,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X74',
-        absolutePosition: {
-          x: 457,
-          y: 469,
-        },
-        fontSize: 9,
-      },
-      {
         text: 'X75',
         absolutePosition: {
           x: 33,
@@ -1558,6 +1542,8 @@ export function getClaimContent(claim: Claim): Content[] {
     priorAuthRefNumber,
     outsideLab,
     outsideLabCharges,
+    resubmissionCode,
+    originalReference,
   } = getClaimInfo(claim);
 
   const dateOfCurrentIllnessAsDate = dateOfCurrentIllness ? getDateProperty(dateOfCurrentIllness) : undefined;
@@ -1699,6 +1685,22 @@ export function getClaimContent(claim: Claim): Content[] {
       absolutePosition: {
         x: 465,
         y: 444,
+      },
+      fontSize: 9,
+    },
+    {
+      text: resubmissionCode,
+      absolutePosition: {
+        x: 374,
+        y: 469,
+      },
+      fontSize: 9,
+    },
+    {
+      text: originalReference,
+      absolutePosition: {
+        x: 456,
+        y: 469,
       },
       fontSize: 9,
     },
@@ -2103,6 +2105,8 @@ export function getClaimInfo(claim: Claim): {
   priorAuthRefNumber: string;
   outsideLab: boolean;
   outsideLabCharges: string;
+  resubmissionCode: string;
+  originalReference: string;
 } {
   const relatedToemployment =
     claim.supportingInfo?.some((info) => info.category.coding?.[0].code === 'employmentimpacted') ?? false;
@@ -2132,6 +2136,10 @@ export function getClaimInfo(claim: Claim): {
   const outsideLab = claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'outsidelab');
   const outsideLabCharges = outsideLab ? formatQuantity(outsideLab.valueQuantity) : '';
 
+  const resubmissionCode =
+    claim.related?.[0].relationship?.coding?.find((code) => code.code === 'prior')?.display ?? '';
+  const originalReference = claim.related?.[0].claim?.display ?? '';
+
   return {
     relatedToemployment,
     relatedToAutoAccident,
@@ -2146,6 +2154,8 @@ export function getClaimInfo(claim: Claim): {
     priorAuthRefNumber,
     outsideLab: !!outsideLab,
     outsideLabCharges,
+    resubmissionCode,
+    originalReference,
   };
 }
 
