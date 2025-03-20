@@ -333,6 +333,9 @@ describe('getClaimInfo', () => {
       outsideLabCharges: '125 USD',
       resubmissionCode: 'Prior Claim',
       originalReference: '',
+      patientAccountNumber: '429802409',
+      patientPaid: '320 USD',
+      totalCharge: '$1,000.00',
     });
   });
 
@@ -355,6 +358,9 @@ describe('getClaimInfo', () => {
       outsideLabCharges: '',
       resubmissionCode: '',
       originalReference: '',
+      patientAccountNumber: '',
+      patientPaid: '',
+      totalCharge: '',
     });
   });
 
@@ -391,6 +397,9 @@ describe('getClaimInfo', () => {
       outsideLabCharges: '',
       resubmissionCode: '',
       originalReference: '',
+      patientAccountNumber: '',
+      patientPaid: '',
+      totalCharge: '',
     });
   });
 
@@ -428,6 +437,9 @@ describe('getClaimInfo', () => {
       outsideLabCharges: '',
       resubmissionCode: '',
       originalReference: '',
+      patientAccountNumber: '',
+      patientPaid: '',
+      totalCharge: '',
     });
   });
 
@@ -467,6 +479,9 @@ describe('getClaimInfo', () => {
       outsideLabCharges: '',
       resubmissionCode: '',
       originalReference: '',
+      patientAccountNumber: '',
+      patientPaid: '',
+      totalCharge: '',
     });
   });
 });

@@ -422,13 +422,14 @@ export const fullAnswer: Bundle = {
           },
           {
             category: {
-              coding: [
-                { system: 'http://terminology.hl7.org/CodeSystem/claiminformationcategory', code: 'patientpaid' },
-              ],
+              coding: [{ code: 'info', system: 'http://terminology.hl7.org/CodeSystem/claiminformationcategory' }],
+            },
+            code: {
+              coding: [{ system: 'http://example.org/info-codes', code: 'patientpaid' }],
             },
             sequence: 5,
             valueQuantity: {
-              value: 100,
+              value: 320,
               unit: 'USD',
             },
           },

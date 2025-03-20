@@ -3,6 +3,7 @@ import {
   formatAddress,
   formatCodeableConcept,
   formatDate,
+  formatMoney,
   formatQuantity,
   getDateProperty,
   MedplumClient,
@@ -1314,14 +1315,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X218',
-        absolutePosition: {
-          x: 178,
-          y: 680,
-        },
-        fontSize: 9,
-      },
-      {
         text: 'X219',
         absolutePosition: {
           x: 136,
@@ -1350,22 +1343,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         absolutePosition: {
           x: 322,
           y: 684,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X223',
-        absolutePosition: {
-          x: 380,
-          y: 681,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X224',
-        absolutePosition: {
-          x: 463,
-          y: 681,
         },
         fontSize: 9,
       },
@@ -1544,6 +1521,9 @@ export function getClaimContent(claim: Claim): Content[] {
     outsideLabCharges,
     resubmissionCode,
     originalReference,
+    patientAccountNumber,
+    patientPaid,
+    totalCharge,
   } = getClaimInfo(claim);
 
   const dateOfCurrentIllnessAsDate = dateOfCurrentIllness ? getDateProperty(dateOfCurrentIllness) : undefined;
@@ -1701,6 +1681,30 @@ export function getClaimContent(claim: Claim): Content[] {
       absolutePosition: {
         x: 456,
         y: 469,
+      },
+      fontSize: 9,
+    },
+    {
+      text: patientAccountNumber,
+      absolutePosition: {
+        x: 178,
+        y: 684,
+      },
+      fontSize: 9,
+    },
+    {
+      text: totalCharge.replace('$', ''),
+      absolutePosition: {
+        x: 381,
+        y: 684,
+      },
+      fontSize: 9,
+    },
+    {
+      text: patientPaid.replace('USD', ''),
+      absolutePosition: {
+        x: 463,
+        y: 684,
       },
       fontSize: 9,
     },
@@ -2107,6 +2111,9 @@ export function getClaimInfo(claim: Claim): {
   outsideLabCharges: string;
   resubmissionCode: string;
   originalReference: string;
+  patientAccountNumber: string;
+  patientPaid: string;
+  totalCharge: string;
 } {
   const relatedToemployment =
     claim.supportingInfo?.some((info) => info.category.coding?.[0].code === 'employmentimpacted') ?? false;
@@ -2140,6 +2147,21 @@ export function getClaimInfo(claim: Claim): {
     claim.related?.[0].relationship?.coding?.find((code) => code.code === 'prior')?.display ?? '';
   const originalReference = claim.related?.[0].claim?.display ?? '';
 
+  const patientAccountNumber =
+    claim.supportingInfo?.find(
+      (info) =>
+        info.category?.coding?.find((code) => code.code === 'info') &&
+        info.code?.coding?.find((code) => code.code === 'patientaccount')
+    )?.valueString ?? '';
+  const patientPaid = formatQuantity(
+    claim.supportingInfo?.find(
+      (info) =>
+        info.category?.coding?.find((code) => code.code === 'info') &&
+        info.code?.coding?.find((code) => code.code === 'patientpaid')
+    )?.valueQuantity
+  );
+  const totalCharge = formatMoney(claim.total);
+
   return {
     relatedToemployment,
     relatedToAutoAccident,
@@ -2156,6 +2178,9 @@ export function getClaimInfo(claim: Claim): {
     outsideLabCharges,
     resubmissionCode,
     originalReference,
+    patientAccountNumber,
+    patientPaid,
+    totalCharge,
   };
 }
 
