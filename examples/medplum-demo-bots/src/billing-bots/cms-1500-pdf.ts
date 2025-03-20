@@ -84,7 +84,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      ...getDOBContent(patientDOB),
+      ...getDateContent(patientDOB),
       ...getSexContent(patientGender),
       {
         text: insuredName,
@@ -125,7 +125,7 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
       },
       ...getClaimContent(claim),
       ...getSexContent(insuredGender, 504, 51, 253),
-      ...getDOBContent(insuredDOB, 395, 253),
+      ...getDateContent(insuredDOB, 395, 253),
       {
         text: coverageName,
         absolutePosition: {
@@ -144,118 +144,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
       },
       ...getReservedNUCCContent(),
       ...getSignatureContent(),
-      {
-        text: 'X37',
-        absolutePosition: {
-          x: 26,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X38',
-        absolutePosition: {
-          x: 47,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X39',
-        absolutePosition: {
-          x: 68,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X40',
-        absolutePosition: {
-          x: 130,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X41',
-        absolutePosition: {
-          x: 234,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X42',
-        absolutePosition: {
-          x: 279,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X43',
-        absolutePosition: {
-          x: 300,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X44',
-        absolutePosition: {
-          x: 322,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X45',
-        absolutePosition: {
-          x: 398,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X46',
-        absolutePosition: {
-          x: 420,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X47',
-        absolutePosition: {
-          x: 444,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X48',
-        absolutePosition: {
-          x: 501,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X49',
-        absolutePosition: {
-          x: 523,
-          y: 396,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X50',
-        absolutePosition: {
-          x: 543,
-          y: 396,
-        },
-        fontSize: 9,
-      },
       {
         text: 'X51',
         absolutePosition: {
@@ -292,54 +180,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         text: 'X55',
         absolutePosition: {
           x: 247,
-          y: 420,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X56',
-        absolutePosition: {
-          x: 398,
-          y: 420,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X57',
-        absolutePosition: {
-          x: 420,
-          y: 420,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X58',
-        absolutePosition: {
-          x: 444,
-          y: 420,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X59',
-        absolutePosition: {
-          x: 501,
-          y: 420,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X60',
-        absolutePosition: {
-          x: 523,
-          y: 420,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X61',
-        absolutePosition: {
-          x: 543,
           y: 420,
         },
         fontSize: 9,
@@ -493,14 +333,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         absolutePosition: {
           x: 374,
           y: 490,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X84',
-        absolutePosition: {
-          x: 20,
-          y: 528,
         },
         fontSize: 9,
       },
@@ -673,14 +505,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X106',
-        absolutePosition: {
-          x: 20,
-          y: 552,
-        },
-        fontSize: 9,
-      },
-      {
         text: 'X107',
         absolutePosition: {
           x: 478,
@@ -845,14 +669,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         absolutePosition: {
           x: 504,
           y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X128',
-        absolutePosition: {
-          x: 20,
-          y: 577,
         },
         fontSize: 9,
       },
@@ -1025,14 +841,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X150',
-        absolutePosition: {
-          x: 20,
-          y: 601,
-        },
-        fontSize: 9,
-      },
-      {
         text: 'X151',
         absolutePosition: {
           x: 478,
@@ -1201,14 +1009,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X172',
-        absolutePosition: {
-          x: 20,
-          y: 624,
-        },
-        fontSize: 9,
-      },
-      {
         text: 'X173',
         absolutePosition: {
           x: 478,
@@ -1373,14 +1173,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         absolutePosition: {
           x: 504,
           y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X194',
-        absolutePosition: {
-          x: 20,
-          y: 648,
         },
         fontSize: 9,
       },
@@ -1784,8 +1576,34 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
 /* PDF content helpers */
 
 export function getClaimContent(claim: Claim): Content[] {
-  const { relatedToemployment, relatedToAutoAccident, accidentLocationState, relatedToOtherAccident } =
-    getClaimInfo(claim);
+  const {
+    relatedToemployment,
+    relatedToAutoAccident,
+    accidentLocationState,
+    relatedToOtherAccident,
+    dateOfCurrentIllness,
+    employmentImpactedStart,
+    employmentImpactedEnd,
+    hospitalizationStart,
+    hospitalizationEnd,
+  } = getClaimInfo(claim);
+
+  const dateOfCurrentIllnessAsDate = dateOfCurrentIllness ? getDateProperty(dateOfCurrentIllness as string) : undefined;
+  const employmentImpactedStartAsDate = employmentImpactedStart
+    ? getDateProperty(employmentImpactedStart as string)
+    : undefined;
+  const employmentImpactedEndAsDate = employmentImpactedEnd
+    ? getDateProperty(employmentImpactedEnd as string)
+    : undefined;
+  const hospitalizationStartAsDate = hospitalizationStart ? getDateProperty(hospitalizationStart as string) : undefined;
+  const hospitalizationEndAsDate = hospitalizationEnd ? getDateProperty(hospitalizationEnd as string) : undefined;
+
+  console.log(
+    employmentImpactedStartAsDate,
+    employmentImpactedEndAsDate,
+    hospitalizationStartAsDate,
+    hospitalizationEndAsDate
+  );
 
   return [
     {
@@ -1844,6 +1662,53 @@ export function getClaimContent(claim: Claim): Content[] {
       },
       fontSize: 9,
     },
+    ...getDateContent(dateOfCurrentIllnessAsDate, 26, 396),
+    // Date of current illness' qualifier (specific code to indicate the type of date, such as the onset of illness, date of accident, initial treatment date, etc.)
+    {
+      text: '',
+      absolutePosition: {
+        x: 130,
+        y: 396,
+      },
+      fontSize: 9,
+    },
+    ...getDateContent(employmentImpactedStartAsDate, 402, 396),
+    ...getDateContent(employmentImpactedEndAsDate, 503, 396),
+    ...getDateContent(hospitalizationStartAsDate, 402, 420),
+    ...getDateContent(hospitalizationEndAsDate, 503, 420),
+    // Other date
+    {
+      text: '',
+      absolutePosition: {
+        x: 234,
+        y: 396,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 279,
+        y: 396,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 300,
+        y: 396,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 322,
+        y: 396,
+      },
+      fontSize: 9,
+    },
   ];
 }
 
@@ -1870,7 +1735,7 @@ export function getInsuranceProgramContent(insuranceType: string): Content[] {
   ];
 }
 
-export function getDOBContent(
+export function getDateContent(
   patientDOB: Date | undefined,
   xAxisOffset: number = 236,
   yAxisOffset: number = 131
@@ -2165,32 +2030,6 @@ function getSignatureContent(): Content[] {
 
 /* Data retrieval helpers */
 
-export function formatHumanName(name: HumanName): string {
-  const family = name.family ?? '';
-  const given = name.given ?? [];
-
-  if (!family && given.length === 0) {
-    return '';
-  }
-
-  const [firstName, ...rest] = given;
-  const middleName = rest.join(' ');
-
-  const parts = [];
-
-  if (family) {
-    parts.push(family);
-  }
-  if (firstName) {
-    parts.push(firstName);
-  }
-  if (middleName) {
-    parts.push(middleName);
-  }
-
-  return parts.join(', ');
-}
-
 export function getPersonInfo(
   person: Patient | RelatedPerson | undefined
 ): Record<'personName' | 'personDob' | 'personGender' | 'personAddress' | 'personPhone', string> {
@@ -2264,7 +2103,12 @@ export function getClaimInfo(
   | 'relatedToAutoAccident'
   | 'accidentLocation'
   | 'accidentLocationState'
-  | 'relatedToOtherAccident',
+  | 'relatedToOtherAccident'
+  | 'dateOfCurrentIllness'
+  | 'employmentImpactedStart'
+  | 'employmentImpactedEnd'
+  | 'hospitalizationStart'
+  | 'hospitalizationEnd',
   string | boolean
 > {
   const relatedToemployment =
@@ -2274,11 +2118,60 @@ export function getClaimInfo(
   const accidentLocationState = claim.accident?.locationAddress?.state ?? '';
   const relatedToOtherAccident = !relatedToAutoAccident && !!claim.accident;
 
+  const dateOfCurrentIllness = formatDate(
+    claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'onset')?.timingDate
+  );
+
+  const employmentImpacted = claim.supportingInfo?.find(
+    (info) => info.category.coding?.[0].code === 'employmentimpacted'
+  );
+  const employmentImpactedStart = employmentImpacted?.timingPeriod?.start ?? '';
+  const employmentImpactedEnd = employmentImpacted?.timingPeriod?.end ?? '';
+
+  const hospitalization = claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'hospitalized');
+  const hospitalizationStart = hospitalization?.timingPeriod?.start
+    ? formatDate(hospitalization.timingPeriod.start)
+    : '';
+  const hospitalizationEnd = hospitalization?.timingPeriod?.end ? formatDate(hospitalization.timingPeriod.end) : '';
+
   return {
     relatedToemployment,
     relatedToAutoAccident,
     accidentLocation,
     accidentLocationState,
     relatedToOtherAccident,
+    dateOfCurrentIllness,
+    employmentImpactedStart,
+    employmentImpactedEnd,
+    hospitalizationStart,
+    hospitalizationEnd,
   };
+}
+
+/* General helpers */
+
+export function formatHumanName(name: HumanName): string {
+  const family = name.family ?? '';
+  const given = name.given ?? [];
+
+  if (!family && given.length === 0) {
+    return '';
+  }
+
+  const [firstName, ...rest] = given;
+  const middleName = rest.join(' ');
+
+  const parts = [];
+
+  if (family) {
+    parts.push(family);
+  }
+  if (firstName) {
+    parts.push(firstName);
+  }
+  if (middleName) {
+    parts.push(middleName);
+  }
+
+  return parts.join(', ');
 }

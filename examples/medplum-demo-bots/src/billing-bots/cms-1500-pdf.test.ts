@@ -16,7 +16,7 @@ import {
   getAddressContent,
   getClaimInfo,
   getCoverageInfo,
-  getDOBContent,
+  getDateContent,
   getPatientRelationshipToInsuredContent,
   getPersonInfo,
   getPhoneContent,
@@ -323,6 +323,11 @@ describe('getClaimInfo', () => {
       accidentLocation: '39 Green Lane, Wichita, KS',
       accidentLocationState: 'KS',
       relatedToOtherAccident: false,
+      dateOfCurrentIllness: '2/2/2024',
+      employmentImpactedEnd: '2024-04-20',
+      employmentImpactedStart: '2024-04-02',
+      hospitalizationEnd: '5/21/2024',
+      hospitalizationStart: '3/30/2024',
     });
   });
 
@@ -335,6 +340,11 @@ describe('getClaimInfo', () => {
       accidentLocation: '',
       accidentLocationState: '',
       relatedToOtherAccident: false,
+      dateOfCurrentIllness: '',
+      employmentImpactedEnd: '',
+      employmentImpactedStart: '',
+      hospitalizationEnd: '',
+      hospitalizationStart: '',
     });
   });
 
@@ -361,6 +371,11 @@ describe('getClaimInfo', () => {
       accidentLocation: '',
       accidentLocationState: '',
       relatedToOtherAccident: true,
+      dateOfCurrentIllness: '',
+      employmentImpactedEnd: '',
+      employmentImpactedStart: '',
+      hospitalizationEnd: '',
+      hospitalizationStart: '',
     });
   });
 
@@ -388,6 +403,11 @@ describe('getClaimInfo', () => {
       accidentLocation: '',
       accidentLocationState: '',
       relatedToOtherAccident: false,
+      dateOfCurrentIllness: '',
+      employmentImpactedEnd: '',
+      employmentImpactedStart: '',
+      hospitalizationEnd: '',
+      hospitalizationStart: '',
     });
   });
 
@@ -417,6 +437,11 @@ describe('getClaimInfo', () => {
       accidentLocation: 'Wichita, KS',
       accidentLocationState: 'KS',
       relatedToOtherAccident: false,
+      dateOfCurrentIllness: '',
+      employmentImpactedEnd: '',
+      employmentImpactedStart: '',
+      hospitalizationEnd: '',
+      hospitalizationStart: '',
     });
   });
 });
@@ -555,7 +580,7 @@ describe('getAddressContent', () => {
   });
 });
 
-describe('getDOBContent', () => {
+describe('getDateContent', () => {
   const expectedFontSize = 9;
 
   test('handles date with custom offsets', () => {
@@ -563,7 +588,7 @@ describe('getDOBContent', () => {
     const xOffset = 395;
     const yOffset = 253;
 
-    const result = getDOBContent(dob, xOffset, yOffset);
+    const result = getDateContent(dob, xOffset, yOffset);
 
     expect(result).toStrictEqual([
       {
@@ -589,7 +614,7 @@ describe('getDOBContent', () => {
     const defaultXOffset = 236;
     const defaultYOffset = 131;
 
-    const result = getDOBContent(dob);
+    const result = getDateContent(dob);
 
     expect(result).toStrictEqual([
       {
@@ -611,7 +636,7 @@ describe('getDOBContent', () => {
   });
 
   test('returns empty array for undefined date', () => {
-    const result = getDOBContent(undefined);
+    const result = getDateContent(undefined);
     expect(result).toStrictEqual([]);
   });
 });
