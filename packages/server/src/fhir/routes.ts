@@ -49,6 +49,7 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 
 export const fhirRouter = Router();
 
@@ -247,6 +248,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // PlanDefinition $apply operation
   router.add('POST', '/PlanDefinition/:id/$apply', planDefinitionApplyHandler);
+
+  // ChargeItemDefinition $apply operation
+  router.add('POST', '/ChargeItemDefinition/:id/$apply', chargeItemDefinitionApplyHandler);
 
   // Resource $graph operation
   router.add('GET', '/:resourceType/:id/$graph', resourceGraphHandler);
