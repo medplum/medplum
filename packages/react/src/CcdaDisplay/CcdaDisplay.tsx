@@ -22,9 +22,9 @@ interface ValidationResult {
       type: string;
       count: number;
     }[];
+    severityLevel: string;
+    totalConformanceErrorChecks: number;
   };
-  severityLevel: string;
-  totalConformanceErrorChecks: number;
 }
 
 export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
