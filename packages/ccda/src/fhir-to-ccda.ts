@@ -12,6 +12,7 @@ import {
   CompositionSection,
   Condition,
   ContactPoint,
+  Device,
   DeviceUseStatement,
   DiagnosticReport,
   DosageDoseAndRate,
@@ -33,8 +34,10 @@ import {
   Patient,
   Period,
   Practitioner,
+  PractitionerRole,
   Procedure,
   Reference,
+  RelatedPerson,
   Resource,
   ResourceType,
   ServiceRequest,
@@ -224,7 +227,7 @@ class FhirToCcdaConverter {
       // which SHALL be selected from ValueSet Language 2.16.840.1.113883.1.11.11526 DYNAMIC (CONF:5372, R2.1=CONF:1198-5372, DSTU:806)
       languageCode: { '@_code': this.composition.language ?? 'en-US' },
       recordTarget: this.createRecordTarget(),
-      author: this.mapAuthor(this.composition.author?.[0], this.composition.date, this.composition.custodian),
+      author: this.mapAuthor(this.composition.author?.[0], this.composition.date, true),
       custodian: this.mapCustodian(this.composition.custodian),
       documentationOf: this.mapDocumentationOf(this.composition.event),
       component:
@@ -858,24 +861,57 @@ class FhirToCcdaConverter {
    * Map the FHIR author to the C-CDA author.
    * @param author - The author to map.
    * @param time - The time to map.
-   * @param custodian - The represented Organization
+   * @param includeDevice - Whether to include device information.
    * @returns The C-CDA author.
    */
   private mapAuthor(
-    author: Reference | undefined,
+    author:
+      | Reference<CareTeam | Device | Organization | Patient | Practitioner | PractitionerRole | RelatedPerson>
+      | undefined,
     time?: string,
-    custodian?: Reference<Organization>
+    includeDevice?: boolean
   ): CcdaAuthor[] | undefined {
     if (!author) {
       return undefined;
     }
 
-    const practitioner = this.findResourceByReference(author);
-    if (practitioner?.resourceType !== 'Practitioner') {
+    let mainResource = this.findResourceByReference(author);
+    if (!mainResource) {
       return undefined;
     }
 
-    const organization = this.findResourceByReference(custodian);
+    let organization: Organization | undefined = undefined;
+
+    if (mainResource.resourceType === 'Organization') {
+      organization = mainResource;
+    } else if (mainResource.resourceType === 'PractitionerRole') {
+      organization = this.findResourceByReference(mainResource.organization);
+      mainResource = this.findResourceByReference(mainResource.practitioner);
+    }
+
+    if (!mainResource) {
+      return undefined;
+    }
+
+    let address: Address[] | undefined = undefined;
+    if ('address' in mainResource) {
+      address = (mainResource as Patient | RelatedPerson).address;
+    }
+
+    let telecom: ContactPoint[] | undefined = undefined;
+    if ('telecom' in mainResource) {
+      telecom = (mainResource as Patient | RelatedPerson).telecom;
+    }
+
+    let code: CodeableConcept | undefined = undefined;
+    if ('qualification' in mainResource) {
+      code = mainResource.qualification?.[0];
+    }
+
+    let humanName: HumanName[] | undefined = undefined;
+    if (['Patient', 'Practitioner', 'RelatedPerson'].includes(mainResource.resourceType)) {
+      humanName = (mainResource as Patient | Practitioner | RelatedPerson).name;
+    }
 
     return [
       {
@@ -886,13 +922,13 @@ class FhirToCcdaConverter {
         ],
         time: time ? { '@_value': mapFhirToCcdaDateTime(time) } : undefined,
         assignedAuthor: {
-          id: this.mapIdentifiers(practitioner.id, practitioner.identifier),
-          addr: this.mapFhirAddressArrayToCcdaAddressArray(practitioner.address),
-          telecom: this.mapTelecom(practitioner.telecom),
-          code: mapCodeableConceptToCcdaCode(practitioner.qualification?.[0]),
-          assignedPerson: {
-            name: this.mapNames(practitioner.name),
-          },
+          id: this.mapIdentifiers(mainResource.id, mainResource.identifier),
+          addr: this.mapFhirAddressArrayToCcdaAddressArray(address),
+          telecom: this.mapTelecom(telecom),
+          code: mapCodeableConceptToCcdaCode(code),
+          assignedPerson: humanName ? { name: this.mapNames(humanName) } : undefined,
+          assignedAuthoringDevice:
+            !humanName && includeDevice ? { manufacturerModelName: 'Medplum', softwareName: 'Medplum' } : undefined,
           representedOrganization: organization?.name ? { name: [organization.name] } : undefined,
         },
       },
