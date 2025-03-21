@@ -45,6 +45,10 @@ if [[ "$FILES_CHANGED" =~ packages/app ]]; then
   DEPLOY_APP=true
 fi
 
+if [[ "$FILES_CHANGED" =~ packages/ccda ]]; then
+  DEPLOY_SERVER=true
+fi
+
 if [[ "$FILES_CHANGED" =~ packages/core ]]; then
   DEPLOY_APP=true
   DEPLOY_SERVER=true
