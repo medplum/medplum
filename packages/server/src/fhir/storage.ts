@@ -21,7 +21,7 @@ export function initBinaryStorage(type?: string): void {
   } else if (type?.startsWith('file:')) {
     binaryStorage = new FileSystemStorage(type.replace('file:', ''));
   } else if (type?.startsWith('gs:')) {
-    binaryStorage = new GCPBlobStorage(type.replace('gcp:', ''));
+    binaryStorage = new GCPBlobStorage(type.replace('gs:', ''));
   } else {
     binaryStorage = undefined;
   }
