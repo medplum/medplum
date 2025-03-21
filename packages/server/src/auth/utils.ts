@@ -130,8 +130,8 @@ export function sendLoginCookie(res: Response, login: Login): void {
     res.cookie(cookieName, login.cookie as string, {
       maxAge: 3600 * 1000,
       sameSite: 'none',
-      // secure: true,
-      // httpOnly: true,
+      secure: true,
+      httpOnly: true,
     });
   }
 }
