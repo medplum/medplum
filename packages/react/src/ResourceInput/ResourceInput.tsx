@@ -84,7 +84,6 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly defaultValue?: T | Reference<T>;
   readonly searchCriteria?: Record<string, string>;
   readonly placeholder?: string;
-  readonly loadOnFocus?: boolean;
   readonly required?: boolean;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
   readonly onChange?: (value: T | undefined) => void;
@@ -95,7 +94,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
 
 function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
   return {
-    value: getReferenceString(resource),
+    value: getReferenceString(resource) ?? '',
     label: getDisplayString(resource),
     resource,
   };

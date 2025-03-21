@@ -12,6 +12,7 @@
         "resourceType": "Questionnaire",
         "status": "active",
         "title": "Patient Intake Questionnaire",
+        "url": "https://medplum.com/Questionnaire/patient-intake-questionnaire-example",
         "name": "patient-intake",
         "item": [
           {

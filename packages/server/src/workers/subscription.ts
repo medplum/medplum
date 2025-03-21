@@ -5,6 +5,7 @@ import {
   ContentType,
   OperationOutcomeError,
   Operator,
+  WithId,
   createReference,
   getExtension,
   getExtensionValue,
@@ -22,7 +23,7 @@ import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Sub
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch, { HeadersInit } from 'node-fetch';
 import { createHmac } from 'node:crypto';
-import { MedplumServerConfig } from '../config';
+import { MedplumServerConfig } from '../config/types';
 import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
@@ -147,7 +148,7 @@ export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
  */
 async function satisfiesAccessPolicy(
   resource: Resource,
-  project: Project,
+  project: WithId<Project>,
   subscription: Subscription
 ): Promise<boolean> {
   let satisfied = true;
@@ -155,7 +156,7 @@ async function satisfiesAccessPolicy(
     // We can assert author because any time a resource is updated, the author will be set to the previous author or if it doesn't exist
     // The current Repository author, which must exist for Repository to successfully construct
     const subAuthor = subscription.meta?.author as Reference;
-    const membership = await findProjectMembership(project.id as string, subAuthor);
+    const membership = await findProjectMembership(project.id, subAuthor);
     if (membership) {
       const accessPolicy = await buildAccessPolicy(membership);
       satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
@@ -210,7 +211,7 @@ async function satisfiesAccessPolicy(
  * @param options - The resend subscriptions options.
  */
 export async function addSubscriptionJobs(
-  resource: Resource,
+  resource: WithId<Resource>,
   previousVersion: Resource | undefined,
   context: BackgroundJobContext,
   options?: ResendSubscriptionsOptions
@@ -224,7 +225,7 @@ export async function addSubscriptionJobs(
   const logger = getLogger();
   const logFn = options?.verbose ? logger.info : logger.debug;
   const systemRepo = getSystemRepo();
-  let project: Project | undefined;
+  let project: WithId<Project> | undefined;
   try {
     const projectId = resource.meta?.project;
     if (projectId) {
@@ -261,14 +262,14 @@ export async function addSubscriptionJobs(
         continue;
       }
       if (subscription.channel.type === 'websocket') {
-        wsEvents.push([resource, subscription.id as string, { includeResource: true }]);
+        wsEvents.push([resource, subscription.id, { includeResource: true }]);
         continue;
       }
       await addSubscriptionJobData({
-        subscriptionId: subscription.id as string,
+        subscriptionId: subscription.id,
         resourceType: resource.resourceType,
         channelType: subscription.channel.type,
-        id: resource.id as string,
+        id: resource.id,
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
         requestTime,
@@ -325,8 +326,8 @@ async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
  * @param project - The project that contains this resource.
  * @returns The list of all subscriptions in this repository.
  */
-async function getSubscriptions(resource: Resource, project: Project): Promise<Subscription[]> {
-  const projectId = project.id as string;
+async function getSubscriptions(resource: Resource, project: WithId<Project>): Promise<WithId<Subscription>[]> {
+  const projectId = project.id;
   const systemRepo = getSystemRepo();
   const subscriptions = await systemRepo.searchResources<Subscription>({
     resourceType: 'Subscription',
@@ -366,12 +367,12 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
         await redis.srem(setKey, inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
-      const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
+      const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
       for (const { resource } of inMemorySubs) {
         subscriptions.push(resource);
       }
     } else {
-      globalLogger.warn(
+      globalLogger.debug(
         `[WebSocket Subscriptions]: subscription for resource '${getReferenceString(resource)}' might have been fired but WebSocket subscriptions are not enabled for project '${project.name ?? getReferenceString(project)}'`
       );
     }
@@ -440,7 +441,7 @@ async function tryGetSubscription(
   systemRepo: Repository,
   subscriptionId: string,
   channelType: SubscriptionJobData['channelType'] | undefined
-): Promise<Subscription | undefined> {
+): Promise<WithId<Subscription> | undefined> {
   try {
     return await systemRepo.readResource<Subscription>('Subscription', subscriptionId, {
       checkCacheOnly: channelType === 'websocket',
@@ -486,7 +487,7 @@ async function tryGetCurrentVersion<T extends Resource = Resource>(
  */
 async function sendRestHook(
   job: Job<SubscriptionJobData>,
-  subscription: Subscription,
+  subscription: WithId<Subscription>,
   resource: Resource,
   interaction: BackgroundJobInteraction,
   requestTime: string
@@ -547,13 +548,13 @@ async function sendRestHook(
  */
 function buildRestHookHeaders(
   job: Job<SubscriptionJobData>,
-  subscription: Subscription,
+  subscription: WithId<Subscription>,
   resource: Resource,
   interaction: BackgroundJobInteraction
 ): HeadersInit {
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': ContentType.FHIR_JSON,
-    'X-Medplum-Subscription': subscription.id as string,
+    'X-Medplum-Subscription': subscription.id,
     'X-Medplum-Interaction': interaction,
   };
 

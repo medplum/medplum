@@ -3,18 +3,20 @@
  * Do not edit manually.
  */
 
-import { getResourceTypes } from '@medplum/core';
+import { getResourceTypes, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { AsyncJobExecutor } from '../../fhir/operations/utils/asyncjobexecutor';
 import { Repository } from '../../fhir/repo';
 import { addReindexJob } from '../../workers/reindex';
 
-export async function run(repo: Repository, asyncJob: AsyncJob): Promise<void> {
+export async function run(repo: Repository, asyncJob: WithId<AsyncJob>): Promise<void> {
   const exec = new AsyncJobExecutor(repo, asyncJob);
   await exec.run(async (asyncJob) => {
     await addReindexJob(
       getResourceTypes().filter((rt) => rt !== 'Binary'),
-      asyncJob
+      asyncJob,
+      undefined,
+      0 // maxResourceVersion of zero makes the filter __version === NULL which is more precise
     );
   });
 }

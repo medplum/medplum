@@ -65,6 +65,10 @@ describe('Generator', () => {
           type: 'UUID',
         },
         {
+          name: '__version',
+          type: 'INTEGER',
+        },
+        {
           name: '_source',
           type: 'TEXT',
         },

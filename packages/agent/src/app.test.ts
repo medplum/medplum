@@ -84,7 +84,7 @@ describe('App', () => {
       status: 'active',
     });
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     app.heartbeatPeriod = 1000;
     await app.start();
 
@@ -145,7 +145,7 @@ describe('App', () => {
       status: 'active',
     });
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     app.heartbeatPeriod = 100;
     await app.start();
 
@@ -202,7 +202,7 @@ describe('App', () => {
       status: 'active',
     });
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
 
     app.heartbeatPeriod = 200;
     await app.start();
@@ -282,7 +282,7 @@ describe('App', () => {
       ],
     });
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await expect(app.start()).rejects.toThrow(new Error("Invalid empty endpoint address for channel 'test'"));
 
     await app.stop();
@@ -341,7 +341,7 @@ describe('App', () => {
       ],
     });
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
     await app.stop();
     await new Promise<void>((resolve) => {
@@ -471,7 +471,7 @@ describe('App', () => {
       ],
     });
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     app.heartbeatPeriod = 100;
     await app.start();
 
@@ -768,7 +768,7 @@ describe('App', () => {
       ],
     });
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
     // There should be no channels
@@ -1086,7 +1086,7 @@ describe('App', () => {
       ],
     });
 
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+    const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
     // There should be only the prod channel
@@ -1304,7 +1304,7 @@ describe('App', () => {
         status: 'active',
       });
 
-      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      const app = new App(medplum, agent.id, LogLevel.INFO);
       await app.start();
 
       // Wait for the WebSocket to reconnect
@@ -1408,7 +1408,7 @@ describe('App', () => {
         status: 'active',
       });
 
-      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      const app = new App(medplum, agent.id, LogLevel.INFO);
       await app.start();
 
       // Wait for the WebSocket to reconnect
@@ -1545,7 +1545,7 @@ describe('App', () => {
         status: 'active',
       });
 
-      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      const app = new App(medplum, agent.id, LogLevel.INFO);
       await app.start();
 
       // Wait for the WebSocket to reconnect
@@ -1669,7 +1669,7 @@ describe('App', () => {
         status: 'active',
       });
 
-      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      const app = new App(medplum, agent.id, LogLevel.INFO);
       await app.start();
 
       // Wait for the WebSocket to reconnect
@@ -1768,7 +1768,7 @@ describe('App', () => {
         status: 'active',
       });
 
-      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      const app = new App(medplum, agent.id, LogLevel.INFO);
       await app.start();
 
       // Wait for the WebSocket to reconnect
@@ -1869,7 +1869,7 @@ describe('App', () => {
         status: 'active',
       });
 
-      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      const app = new App(medplum, agent.id, LogLevel.INFO);
       await app.start();
 
       // Wait for the WebSocket to reconnect
@@ -1962,7 +1962,7 @@ describe('App', () => {
         status: 'active',
       });
 
-      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      const app = new App(medplum, agent.id, LogLevel.INFO);
       await app.start();
 
       // Wait for the WebSocket to reconnect

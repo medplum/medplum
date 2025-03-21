@@ -41,7 +41,7 @@ import {
 } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
-import { ProfileResource, createReference, sleep } from './utils';
+import { ProfileResource, WithId, createReference, sleep } from './utils';
 
 const EXAMPLE_XML = `
 <note>
@@ -1031,6 +1031,54 @@ describe('Client', () => {
     );
   });
 
+  test('startClientLogin send credentials in header with valid token.client_id', async () => {
+    const patientId = randomUUID();
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const accessToken = createFakeJwt({ cid: clientId });
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes(`Patient/${patientId}`)) {
+        return { resourceType: 'Patient', id: patientId };
+      }
+
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: accessToken,
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch, authCredentialsMethod: 'header' });
+    await client.startClientLogin(clientId, clientSecret);
+
+    const result2 = await client.readResource('Patient', patientId);
+    expect(result2).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledWith(
+      `https://api.medplum.com/fhir/R4/Patient/${patientId}`,
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Accept: DEFAULT_ACCEPT,
+          Authorization: `Bearer ${accessToken}`,
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      `https://api.medplum.com/oauth2/token`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Basic ' + encodeBase64(clientId + ':' + clientSecret),
+          'Content-Type': ContentType.FORM_URL_ENCODED,
+        },
+        body: 'grant_type=client_credentials',
+      })
+    );
+  });
+
   test('Basic auth and startClientLogin with fetched token mismatched client id ', async () => {
     const clientId = 'test-client-id';
     const clientSecret = 'test-client-secret';
@@ -1436,6 +1484,17 @@ describe('Client', () => {
     expect(result).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Patient/123/$everything',
+      expect.objectContaining({ method: 'GET' })
+    );
+  });
+
+  test('Read patient summary', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.readPatientSummary('123');
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient/123/$summary',
       expect.objectContaining({ method: 'GET' })
     );
   });
@@ -2030,7 +2089,7 @@ describe('Client', () => {
   test('Execute bot by ID', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const bot: Bot = {
+    const bot: WithId<Bot> = {
       resourceType: 'Bot',
       id: '123',
       name: 'Test Bot',
@@ -2038,7 +2097,7 @@ describe('Client', () => {
       code: 'export async function handler() {}',
     };
 
-    const result1 = await client.executeBot(bot.id as string, {});
+    const result1 = await client.executeBot(bot.id, {});
     expect(result1).toBeDefined();
     expect(fetch).toHaveBeenCalledWith('https://api.medplum.com/fhir/R4/Bot/123/$execute', expect.objectContaining({}));
   });
@@ -2425,18 +2484,6 @@ describe('Client', () => {
 
       expect(numPages).toBe(3);
     });
-  });
-
-  test('Search ValueSet', async () => {
-    const fetch = mockFetch(200, { resourceType: 'ValueSet' });
-    const client = new MedplumClient({ fetch });
-    const result = await client.searchValueSet('system', 'filter');
-    expect(result).toBeDefined();
-    expect(result.resourceType).toBe('ValueSet');
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('https://api.medplum.com/fhir/R4/ValueSet/$expand'),
-      expect.objectContaining({ method: 'GET' })
-    );
   });
 
   test('ValueSet $expand', async () => {

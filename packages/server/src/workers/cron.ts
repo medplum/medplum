@@ -1,8 +1,8 @@
-import { ContentType, createReference } from '@medplum/core';
+import { ContentType, createReference, WithId } from '@medplum/core';
 import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
-import { MedplumServerConfig } from '../config';
+import { MedplumServerConfig } from '../config/types';
 import { executeBot } from '../fhir/operations/execute';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
@@ -89,7 +89,7 @@ export function getCronQueue(): Queue<CronJobData> | undefined {
  * @param resource - The resource that was created or updated.
  * @param previousVersion - The previous version of the resource, if available.
  */
-export async function addCronJobs(resource: Resource, previousVersion: Resource | undefined): Promise<void> {
+export async function addCronJobs(resource: WithId<Resource>, previousVersion: Resource | undefined): Promise<void> {
   if (!queue) {
     // The queue is not available
     return;
@@ -123,20 +123,20 @@ export async function addCronJobs(resource: Resource, previousVersion: Resource 
   if (newCronStr) {
     logger.info('Upsert cron job for bot', { botId: bot.id });
     await queue.upsertJobScheduler(
-      bot.id as string,
+      bot.id,
       {
         pattern: newCronStr,
       },
       {
         data: {
           resourceType: bot.resourceType,
-          botId: bot.id as string,
+          botId: bot.id,
         },
       }
     );
   } else {
     logger.info('Removing cron job for bot', { botId: bot.id });
-    await queue.removeJobScheduler(bot.id as string);
+    await queue.removeJobScheduler(bot.id);
   }
 }
 
@@ -225,7 +225,7 @@ export async function reloadCronBots(): Promise<void> {
 
     await getSystemRepo().processAllResources<Bot>(
       { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },
-      async (bot: Bot) => {
+      async (bot) => {
         // If the bot has a cron, then add a scheduler for it
         if (bot.cronString || bot.cronTiming) {
           // We pass `undefined` as previous version to make sure that the latest cron string is used

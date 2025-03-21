@@ -59508,9 +59508,7 @@
               "email",
               "google-auth-required",
               "graphql-introspection",
-              "terminology",
               "websocket-subscriptions",
-              "reference-lookups",
               "transaction-bundles"
             ]
           },
@@ -59806,6 +59804,10 @@
         },
         "secret": {
           "description": "Client secret string used to verify the identity of a client.",
+          "$ref": "#/definitions/string"
+        },
+        "retiringSecret": {
+          "description": "Old version of the client secret that is being rotated out.  Instances of the client using this value should update to use the value in ClientApplication.secret",
           "$ref": "#/definitions/string"
         },
         "jwksUri": {

@@ -1,8 +1,8 @@
 import { formatAddress } from '@medplum/core';
 import { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
+import { Column, DeleteQuery } from '../sql';
 import { LookupTable } from './lookuptable';
-import { DeleteQuery, Column } from '../sql';
 
 /**
  * The AddressTable class is used to index and search Address properties.
@@ -102,7 +102,11 @@ export class AddressTable extends LookupTable {
    * @returns Promise on completion.
    */
   async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (!create && AddressTable.hasAddress(resource.resourceType)) {
+    if (!AddressTable.hasAddress(resource.resourceType)) {
+      return;
+    }
+
+    if (!create) {
       await this.deleteValuesForResource(client, resource);
     }
 
@@ -112,7 +116,7 @@ export class AddressTable extends LookupTable {
     }
 
     const resourceType = resource.resourceType;
-    const resourceId = resource.id as string;
+    const resourceId = resource.id;
     const values = addresses.map((address) => ({
       resourceId,
       address: formatAddress(address),
@@ -159,7 +163,7 @@ export class AddressTable extends LookupTable {
     }
 
     const tableName = this.getTableName();
-    const resourceId = resource.id as string;
+    const resourceId = resource.id;
     await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
   }
 

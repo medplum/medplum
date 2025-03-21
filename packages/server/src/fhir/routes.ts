@@ -4,7 +4,7 @@ import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { awsTextractHandler } from '../cloud/aws/textract';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
@@ -17,6 +17,8 @@ import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
+import { ccdaExportHandler } from './operations/ccdaexport';
+import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -32,11 +34,15 @@ import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
+import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
+import { patientSetAccountsHandler } from './operations/patientsetaccounts';
+import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { resourceGraphHandler } from './operations/resourcegraph';
+import { rotateSecretHandler } from './operations/rotatesecret';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
@@ -243,11 +249,25 @@ function initInternalFhirRouter(): FhirRouter {
   // PlanDefinition $apply operation
   router.add('POST', '/PlanDefinition/:id/$apply', planDefinitionApplyHandler);
 
+  // ChargeItemDefinition $apply operation
+  router.add('POST', '/ChargeItemDefinition/:id/$apply', chargeItemDefinitionApplyHandler);
+
   // Resource $graph operation
   router.add('GET', '/:resourceType/:id/$graph', resourceGraphHandler);
 
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
+
+  // Patient $summary operation
+  router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);
+  router.add('POST', '/Patient/:id/$summary', patientSummaryHandler);
+
+  // Patient $set-accounts operation
+  router.add('POST', '/Patient/:id/$set-accounts', patientSetAccountsHandler);
+
+  // Patient $ccda-export operation
+  router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
+  router.add('POST', '/Patient/:id/$ccda-export', ccdaExportHandler);
 
   // $expunge operation
   router.add('POST', '/:resourceType/:id/$expunge', expungeHandler);
@@ -257,6 +277,11 @@ function initInternalFhirRouter(): FhirRouter {
 
   // StructureDefinition $expand-profile operation
   router.add('POST', '/StructureDefinition/$expand-profile', structureDefinitionExpandProfileHandler);
+
+  // ClientApplication $launch
+  router.add('GET', '/ClientApplication/:id/$smart-launch', appLaunchHandler);
+  // Rotate client secret
+  router.add('POST', '/ClientApplication/:id/$rotate-secret', rotateSecretHandler);
 
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
@@ -326,7 +351,7 @@ protectedRoutes.use(
 
     const request: FhirRequest = {
       method: req.method as HttpMethod,
-      url: req.originalUrl.replace('/fhir/R4', ''),
+      url: stripPrefix(req.originalUrl, '/fhir/R4'),
       pathname: '',
       params: req.params,
       query: Object.create(null), // Defer query param parsing to router for consistency
@@ -354,3 +379,7 @@ protectedRoutes.use(
     await sendFhirResponse(req, res, result[0], result[1], result[2]);
   })
 );
+
+function stripPrefix(str: string, prefix: string): string {
+  return str.substring(str.indexOf(prefix) + prefix.length);
+}

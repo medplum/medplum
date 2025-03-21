@@ -1,4 +1,4 @@
-import { OperationOutcomeError, getReferenceString, sleep } from '@medplum/core';
+import { OperationOutcomeError, WithId, getReferenceString, sleep } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -13,7 +13,8 @@ import { randomUUID } from 'node:crypto';
 import { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
-import { MedplumServerConfig, loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { Repository } from '../fhir/repo';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
@@ -27,7 +28,7 @@ describe('WebSockets Subscriptions', () => {
   let project: Project;
   let repo: Repository;
   let accessToken: string;
-  let patientSubscription: Subscription;
+  let patientSubscription: WithId<Subscription>;
 
   beforeAll(async () => {
     console.log = jest.fn();
@@ -111,7 +112,7 @@ describe('WebSockets Subscriptions', () => {
                 resource: {
                   resourceType: 'SubscriptionStatus',
                   type: 'handshake',
-                  subscription: { reference: `Subscription/${patientSubscription.id as string}` },
+                  subscription: { reference: `Subscription/${patientSubscription.id}` },
                 },
               },
             ],
@@ -137,7 +138,7 @@ describe('WebSockets Subscriptions', () => {
               (
                 await getRedis().smismember(
                   `medplum:subscriptions:r4:project:${project.id}:active`,
-                  `Subscription/${patientSubscription?.id as string}`
+                  `Subscription/${patientSubscription?.id}`
                 )
               )[0] === 1;
           }
@@ -173,14 +174,14 @@ describe('WebSockets Subscriptions', () => {
           (
             await getRedis().smismember(
               `medplum:subscriptions:r4:project:${project.id}:active`,
-              `Subscription/${patientSubscription?.id as string}`
+              `Subscription/${patientSubscription?.id}`
             )
           )[0] === 1;
       }
       expect(subActive).toStrictEqual(false);
 
       // Check Patient subscription is NOT still in the cache
-      await expect(repo.readResource<Subscription>('Subscription', patientSubscription?.id as string)).rejects.toThrow(
+      await expect(repo.readResource<Subscription>('Subscription', patientSubscription?.id)).rejects.toThrow(
         OperationOutcomeError
       );
     }));
@@ -238,7 +239,7 @@ describe('WebSockets Subscriptions', () => {
                 resource: {
                   resourceType: 'SubscriptionStatus',
                   type: 'handshake',
-                  subscription: { reference: `Subscription/${patientSubscription.id as string}` },
+                  subscription: { reference: `Subscription/${patientSubscription.id}` },
                 },
               },
             ],
@@ -264,7 +265,7 @@ describe('WebSockets Subscriptions', () => {
               (
                 await getRedis().smismember(
                   `medplum:subscriptions:r4:project:${project.id}:active`,
-                  `Subscription/${patientSubscription?.id as string}`
+                  `Subscription/${patientSubscription?.id}`
                 )
               )[0] === 1;
           }
@@ -296,7 +297,7 @@ describe('WebSockets Subscriptions', () => {
               (
                 await getRedis().smismember(
                   `medplum:subscriptions:r4:project:${project.id}:active`,
-                  `Subscription/${patientSubscription?.id as string}`
+                  `Subscription/${patientSubscription?.id}`
                 )
               )[0] === 1;
           }
@@ -391,7 +392,7 @@ describe('Subscription Heartbeat', () => {
   let app: Express;
   let config: MedplumServerConfig;
   let server: Server;
-  let project: Project;
+  let project: WithId<Project>;
   let repo: Repository;
   let accessToken: string;
 
@@ -414,7 +415,7 @@ describe('Subscription Heartbeat', () => {
 
     repo = new Repository({
       extendedMode: true,
-      projects: [project.id as string],
+      projects: [project.id],
       author: {
         reference: 'ClientApplication/' + randomUUID(),
       },
@@ -469,7 +470,7 @@ describe('Subscription Heartbeat', () => {
                 resource: {
                   resourceType: 'SubscriptionStatus',
                   type: 'handshake',
-                  subscription: { reference: `Subscription/${subscription.id as string}` },
+                  subscription: { reference: `Subscription/${subscription.id}` },
                 },
               },
             ],

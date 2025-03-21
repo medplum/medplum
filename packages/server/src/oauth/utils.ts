@@ -13,6 +13,7 @@ import {
   resolveId,
   tooManyRequests,
   unauthorized,
+  WithId,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -133,7 +134,7 @@ export async function getClientApplication(clientId: string): Promise<ClientAppl
   return systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
 }
 
-export async function tryLogin(request: LoginRequest): Promise<Login> {
+export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   validateLoginRequest(request);
 
   let client: ClientApplication | undefined;
@@ -195,7 +196,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
   }
 
   if (memberships.length === 1) {
-    return setLoginMembership(login, memberships[0].id as string);
+    return setLoginMembership(login, memberships[0].id);
   } else {
     return login;
   }
@@ -313,7 +314,7 @@ export async function verifyMfaToken(login: Login, token: string): Promise<Login
  * @param login - The login resource.
  * @returns Array of profile resources that the user has access to.
  */
-export async function getMembershipsForLogin(login: Login): Promise<ProjectMembership[]> {
+export async function getMembershipsForLogin(login: Login): Promise<WithId<ProjectMembership>[]> {
   if (login.project?.reference === 'Project/new') {
     return [];
   }
@@ -358,7 +359,9 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
  * @param client - The client application.
  * @returns The project membership for the client application if found; otherwise undefined.
  */
-export function getClientApplicationMembership(client: ClientApplication): Promise<ProjectMembership | undefined> {
+export function getClientApplicationMembership(
+  client: WithId<ClientApplication>
+): Promise<WithId<ProjectMembership> | undefined> {
   const systemRepo = getSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
@@ -381,7 +384,7 @@ export function getClientApplicationMembership(client: ClientApplication): Promi
  * @param membershipId - The membership to set.
  * @returns The updated login.
  */
-export async function setLoginMembership(login: Login, membershipId: string): Promise<Login> {
+export async function setLoginMembership(login: Login, membershipId: string): Promise<WithId<Login>> {
   if (login.revoked) {
     throw new OperationOutcomeError(badRequest('Login revoked'));
   }
@@ -431,7 +434,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   const auditEvent = createAuditEvent(
     UserAuthenticationEvent,
     LoginEvent,
-    project.id as string,
+    project.id,
     membership.profile,
     login.remoteAddress,
     AuditEventOutcome.Success
@@ -532,8 +535,8 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
 }
 
 export async function getAuthTokens(
-  user: User | ClientApplication,
-  login: Login,
+  user: WithId<User | ClientApplication>,
+  login: WithId<Login>,
   profile: Reference<ProfileResource>,
   options?: {
     accessLifetime?: string;
@@ -558,7 +561,7 @@ export async function getAuthTokens(
 
   const idToken = await generateIdToken({
     client_id: clientId,
-    login_id: login.id as string,
+    login_id: login.id,
     fhirUser: profile.reference,
     email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
     aud: clientId,
@@ -570,9 +573,9 @@ export async function getAuthTokens(
   const accessToken = await generateAccessToken(
     {
       client_id: clientId,
-      login_id: login.id as string,
+      login_id: login.id,
       sub: user.id,
-      username: user.id as string,
+      username: user.id,
       scope: login.scope as string,
       profile: profile.reference as string,
     },
@@ -583,7 +586,7 @@ export async function getAuthTokens(
     ? await generateRefreshToken(
         {
           client_id: clientId,
-          login_id: login.id as string,
+          login_id: login.id,
           refresh_secret: login.refreshSecret,
         },
         options?.refreshLifetime
@@ -675,9 +678,9 @@ export async function getUserByEmail(email: string, projectId: string | undefine
  * @param projectId - The project ID.
  * @returns The user if found; otherwise, undefined.
  */
-export async function getUserByEmailInProject(email: string, projectId: string): Promise<User | undefined> {
+export async function getUserByEmailInProject(email: string, projectId: string): Promise<WithId<User> | undefined> {
   const systemRepo = getSystemRepo();
-  const bundle = await systemRepo.search({
+  const bundle = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
       {
@@ -692,7 +695,7 @@ export async function getUserByEmailInProject(email: string, projectId: string):
       },
     ],
   });
-  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
+  return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }
 
 /**
@@ -701,9 +704,9 @@ export async function getUserByEmailInProject(email: string, projectId: string):
  * @param email - The email string.
  * @returns The user if found; otherwise, undefined.
  */
-export async function getUserByEmailWithoutProject(email: string): Promise<User | undefined> {
+export async function getUserByEmailWithoutProject(email: string): Promise<WithId<User> | undefined> {
   const systemRepo = getSystemRepo();
-  const bundle = await systemRepo.search({
+  const bundle = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
       {
@@ -718,7 +721,7 @@ export async function getUserByEmailWithoutProject(email: string): Promise<User 
       },
     ],
   });
-  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
+  return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }
 
 /**
@@ -895,7 +898,7 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
   }
 
   const systemRepo = getSystemRepo();
-  let client: ClientApplication;
+  let client: WithId<ClientApplication>;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
   } catch (_err) {
@@ -919,7 +922,7 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
     authTime: new Date().toISOString(),
   };
 
-  const authState = { login, project, membership };
+  const authState: AuthState = { login, project, membership };
   await tryAddOnBehalfOf(req, authState);
   return authState;
 }
@@ -939,7 +942,7 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
     throw new OperationOutcomeError(unauthorized);
   }
 
-  let onBehalfOfMembership: ProjectMembership | undefined = undefined;
+  let onBehalfOfMembership: WithId<ProjectMembership> | undefined = undefined;
 
   const adminRepo = await getRepoForLogin(authState);
 

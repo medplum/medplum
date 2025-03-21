@@ -25,7 +25,7 @@ import {
   IconUser,
 } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router';
 import { LandingPage } from './pages/LandingPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SearchPage } from './pages/SearchPage';
@@ -102,8 +102,12 @@ export function App(): JSX.Element | null {
             <Route path="/" element={profile ? <Navigate to={ALL_TASKS_LINK.href} /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
-            <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
-            <Route path="/Task/:id/*" element={<TaskPage />} />
+            <Route path="/:resourceType/:id">
+              <Route path="*" element={<ResourcePage />} />
+            </Route>
+            <Route path="/Task/:id">
+              <Route path="*" element={<TaskPage />} />
+            </Route>
             <Route path="/Task" element={<SearchPage />} />
             <Route path="/upload/:dataType" element={<UploadDataPage />} />
           </Routes>

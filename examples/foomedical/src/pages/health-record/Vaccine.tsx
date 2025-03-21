@@ -1,7 +1,7 @@
 import { Box, Title } from '@mantine/core';
 import { Immunization } from '@medplum/fhirtypes';
 import { ResourceTable, useMedplum } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { InfoSection } from '../../components/InfoSection';
 
 export function Vaccine(): JSX.Element {

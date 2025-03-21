@@ -5,11 +5,12 @@ import {
   OperationOutcomeError,
   Operator,
   SearchRequest,
+  WithId,
 } from '@medplum/core';
 import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Operation } from 'rfc6902';
 import { inviteUser } from '../admin/invite';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { patchObject } from '../util/patch';
 import { ScimListResponse, ScimPatchRequest, ScimUser } from './types';
@@ -24,7 +25,7 @@ import { ScimListResponse, ScimPatchRequest, ScimUser } from './types';
  * @returns List of SCIM users in the project.
  */
 export async function searchScimUsers(
-  project: Project,
+  project: WithId<Project>,
   params: Record<string, string>
 ): Promise<ScimListResponse<ScimUser>> {
   const searchRequest = {
@@ -81,7 +82,7 @@ export async function searchScimUsers(
  */
 export async function createScimUser(
   invitedBy: Reference<User>,
-  project: Project,
+  project: WithId<Project>,
   scimUser: ScimUser
 ): Promise<ScimUser> {
   const resourceType = getScimUserResourceType(scimUser);

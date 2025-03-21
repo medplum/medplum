@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "3.2.31",
+  "version": "4.0.3",
   "description": "Medplum GraphiQL",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -26,23 +26,23 @@
   "devDependencies": {
     "@graphiql/react": "0.28.2",
     "@graphiql/toolkit": "0.11.1",
-    "@mantine/core": "7.16.3",
-    "@mantine/hooks": "7.16.3",
-    "@medplum/core": "3.2.31",
-    "@medplum/fhirtypes": "3.2.31",
-    "@medplum/react": "3.2.31",
-    "@types/react": "18.3.12",
-    "@types/react-dom": "18.3.1",
+    "@mantine/core": "7.17.2",
+    "@mantine/hooks": "7.17.2",
+    "@medplum/core": "4.0.3",
+    "@medplum/fhirtypes": "4.0.3",
+    "@medplum/react": "4.0.3",
+    "@types/react": "18.3.19",
+    "@types/react-dom": "18.3.5",
     "graphiql": "3.8.3",
     "graphql": "16.10.0",
-    "graphql-ws": "5.16.2",
-    "postcss": "8.5.1",
+    "graphql-ws": "6.0.4",
+    "postcss": "8.5.3",
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "vite": "6.1.0"
+    "vite": "6.2.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

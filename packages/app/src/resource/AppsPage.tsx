@@ -2,7 +2,7 @@ import { Text, Title } from '@mantine/core';
 import { createReference, getReferenceString } from '@medplum/core';
 import { Encounter, Patient, Reference, ResourceType } from '@medplum/fhirtypes';
 import { Document, Loading, MedplumLink, SmartAppLaunchLink, useResource, useSearchResources } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 
 export function AppsPage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };

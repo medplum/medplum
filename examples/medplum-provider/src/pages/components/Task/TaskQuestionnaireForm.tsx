@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { useMedplum, QuestionnaireForm, Loading } from '@medplum/react';
-import { Box, Stack, Text } from '@mantine/core';
+import { Box, Stack } from '@mantine/core';
+import { deepEquals } from '@medplum/core';
 
 interface TaskQuestionnaireFormProps {
   task: Task;
@@ -11,42 +12,64 @@ interface TaskQuestionnaireFormProps {
 export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionnaireFormProps): JSX.Element => {
   const medplum = useMedplum();
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>(undefined);
+  const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
+
+  const onChange = (response: QuestionnaireResponse): void => {
+    if (!questionnaireResponse) {
+      const updatedResponse: QuestionnaireResponse = { ...response, status: 'in-progress' };
+      setQuestionnaireResponse(updatedResponse);
+      onChangeResponse?.(updatedResponse);
+    } else {
+      const equals = deepEquals(response.item, questionnaireResponse?.item);
+      if (!equals) {
+        const updatedResponse: QuestionnaireResponse = {
+          ...questionnaireResponse,
+          item: response.item,
+          status: 'in-progress',
+        };
+        setQuestionnaireResponse(updatedResponse);
+        onChangeResponse?.(updatedResponse);
+      }
+    }
+  };
 
   useEffect(() => {
-    const fetchQuestionnaire = async (): Promise<void> => {
+    const fetchResources = async (): Promise<void> => {
       const questionnaireReference = task.input?.[0]?.valueReference as Reference<Questionnaire>;
-      if (!questionnaireReference) {
-        return;
+      const questionnaireResponseReference = task.output?.[0]?.valueReference as Reference<QuestionnaireResponse>;
+
+      if (questionnaireResponseReference) {
+        const response = await medplum.readReference(questionnaireResponseReference);
+        setQuestionnaireResponse(response as QuestionnaireResponse);
       }
 
-      const response = await medplum.readReference(questionnaireReference as Reference<Questionnaire>);
-      setQuestionnaire(response as Questionnaire);
+      if (questionnaireReference) {
+        const questionnaireResponse = await medplum.readReference(questionnaireReference);
+        setQuestionnaire(questionnaireResponse as Questionnaire);
+      }
     };
 
-    fetchQuestionnaire().catch(console.error);
+    fetchResources().catch(console.error);
   }, [medplum, task]);
 
-  if (!questionnaire) {
+  if (!questionnaire || (task.output?.[0]?.valueReference && !questionnaireResponse)) {
     return (
       <Box p="md">
-        <Text>
-          <Loading />
-        </Text>
+        <Loading />
       </Box>
     );
   }
 
   return (
     <Stack gap="xs">
-      {!task.output?.[0]?.valueReference ? (
-        <Box p="md">
-          <QuestionnaireForm questionnaire={questionnaire} excludeButtons={true} onChange={onChangeResponse} />
-        </Box>
-      ) : (
-        <Box p="md">
-          <Text>Responses submitted</Text>
-        </Box>
-      )}
+      <Box p="md">
+        <QuestionnaireForm
+          questionnaire={questionnaire}
+          questionnaireResponse={questionnaireResponse}
+          excludeButtons={true}
+          onChange={onChange}
+        />
+      </Box>
     </Stack>
   );
 };

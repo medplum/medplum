@@ -1,0 +1,28 @@
+.header {
+  font-weight: 400;
+  font-size: var(--mantine-font-size-sm);
+  margin-bottom: var(--mantine-spacing-xs);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-lg);
+  margin-bottom: var(--mantine-spacing-md);
+}
+
+.label {
+  font-weight: 500;
+  font-size: var(--mantine-font-size-sm);
+}
+
+.value {
+  font-weight: 600;
+  font-size: var(--mantine-font-size-md);
+}
+
+.badge {
+  background-color: var(--mantine-color-gray-5);
+  color: white;
+}

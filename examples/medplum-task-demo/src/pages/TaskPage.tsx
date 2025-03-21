@@ -10,7 +10,7 @@ import {
   useMedplumNavigate,
 } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { TaskActions } from '../components/actions/TaskActions';
 import { NotesPage } from './NotesPage';
 

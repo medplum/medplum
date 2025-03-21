@@ -60,6 +60,18 @@ describe('SMART on FHIR', () => {
     expect(parseSmartScopes('system/Encounter.cud')).toMatchObject([
       { permissionType: 'system', resourceType: 'Encounter', scope: 'cud' },
     ]);
+
+    // SMART v1 scope formats
+    // https://hl7.org/fhir/smart-app-launch/scopes-and-launch-context.html#scopes-for-requesting-fhir-resources
+    expect(parseSmartScopes('system/Observation.*')).toMatchObject([
+      { permissionType: 'system', resourceType: 'Observation', scope: 'cruds' },
+    ]);
+    expect(parseSmartScopes('system/*.read')).toMatchObject([
+      { permissionType: 'system', resourceType: '*', scope: 'rs' },
+    ]);
+    expect(parseSmartScopes('system/Encounter.write')).toMatchObject([
+      { permissionType: 'system', resourceType: 'Encounter', scope: 'cud' },
+    ]);
   });
 
   test('Do not change access policy', () => {

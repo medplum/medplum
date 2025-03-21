@@ -1,11 +1,11 @@
 import { ContentType } from '@medplum/core';
-import { Agent, Parameters } from '@medplum/fhirtypes';
+import { Agent, OperationOutcome, OperationOutcomeIssue, Parameters } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
-import { AgentConnectionState } from '../../agent/utils';
+import { AgentConnectionState, AgentInfo } from '../../agent/utils';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { getRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 
@@ -72,5 +72,63 @@ describe('Agent Status', () => {
     expect(parameters2.parameter?.find((p) => p.name === 'status')?.valueCode).toBe(AgentConnectionState.CONNECTED);
     expect(parameters2.parameter?.find((p) => p.name === 'version')?.valueString).toBe('3.1.4');
     expect(parameters2.parameter?.find((p) => p.name === 'lastUpdated')?.valueInstant).toBeTruthy();
+  });
+
+  test('Get agent status by ID -- invalid AgentInfo from Redis', async () => {
+    await getRedis().set(
+      `medplum:agent:${agent.id}:info`,
+      JSON.stringify({
+        version: '3.1.4',
+        lastUpdated: new Date().toISOString(),
+      }),
+      'EX',
+      60
+    );
+
+    const res = await request(app)
+      .get(`/fhir/R4/Agent/${agent.id}/$status`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: [
+        expect.objectContaining({
+          severity: 'error',
+          code: 'invalid',
+          details: { text: expect.stringContaining('Invalid agent info: ') },
+        }),
+      ],
+    });
+
+    await getRedis().set(
+      `medplum:agent:${agent.id}:info`,
+      JSON.stringify({
+        status: AgentConnectionState.UNKNOWN,
+        version: 'unknown',
+        lastUpdated: new Date().toISOString(),
+      } satisfies AgentInfo),
+      'EX',
+      60
+    );
+  });
+
+  test('Get agent statuses -- no ID or identifier', async () => {
+    const res = await request(app)
+      .get('/fhir/R4/Agent/$status')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(400);
+
+    expect(res.body).toMatchObject<OperationOutcome>({
+      resourceType: 'OperationOutcome',
+      issue: expect.arrayContaining<OperationOutcomeIssue>([
+        expect.objectContaining<OperationOutcomeIssue>({
+          severity: 'error',
+          code: 'invalid',
+          details: { text: 'Must specify agent ID or identifier' },
+        }),
+      ]),
+    });
   });
 });

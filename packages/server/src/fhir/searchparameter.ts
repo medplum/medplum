@@ -6,7 +6,6 @@ import { CodingTable } from './lookups/coding';
 import { LookupTable } from './lookups/lookuptable';
 import { ReferenceTable } from './lookups/reference';
 import { TokenTable } from './lookups/token';
-import { ValueSetElementTable } from './lookups/valuesetelement';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
@@ -97,7 +96,6 @@ export const lookupTables: LookupTable[] = [
   new AddressTable(),
   new HumanNameTable(),
   new TokenTable(),
-  new ValueSetElementTable(),
   new ReferenceTable(),
   new CodingTable(),
 ];

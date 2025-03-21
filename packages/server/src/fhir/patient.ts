@@ -1,4 +1,4 @@
-import { evalFhirPath, getReferenceString, getSearchParameter } from '@medplum/core';
+import { evalFhirPath, getReferenceString, getSearchParameter, WithId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
   CompartmentDefinition,
@@ -55,7 +55,7 @@ export function getPatientCompartmentParams(resourceType: string): string[] | un
 export function getPatients(resource: Resource): (Reference<Patient> & { reference: string })[] {
   const result = new Set<string>();
   if (resource.resourceType === 'Patient' && resource.id) {
-    result.add(getReferenceString(resource));
+    result.add(getReferenceString(resource as WithId<Patient>));
   }
   const params = getPatientCompartmentParams(resource.resourceType);
   if (params) {

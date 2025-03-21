@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="CDA.xsl"?>
+<ClinicalDocument
+    xmlns = "urn:hl7-org:v3"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:voc = "urn:hl7-org:v3/voc"
+    xmlns:sdtc = "urn:hl7-org:sdtc">
+    <realmCode code = "US"/>
+    <typeId extension = "POCD_HD000040" root = "2.16.840.1.113883.1.3"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1" extension = "2015-08-01"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.2" extension = "2015-08-01"/>
+    <templateId root="2.16.840.1.113883.10.20.22.1.2" />
+    <id root="3db70aff-83f5-4caf-91dc-d23fcc5e03bb" />
+    <code code="34133-9" displayName="Summarization of Episode Note"
+        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+    <title>Medical Summary</title>
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
+    <recordTarget>
+        <patientRole>
+            <id root="ce862cfe-6559-411e-92e9-e8d005b1c226" />
+            <id extension="111223333" root="2.16.840.1.113883.4.1" />
+            <telecom nullFlavor="UNK" />
+            <addr nullFlavor="UNK" />
+            <patient>
+                <name use="L">
+                    <given>Katherine</given>
+                    <family>Madison</family>
+                </name>
+                <raceCode nullFlavor="UNK"/>
+                <ethnicGroupCode nullFlavor="UNK"/>
+            </patient>
+        </patientRole>
+    </recordTarget>
+    <component>
+        <structuredBody>
+            <component>
+                <section>
+                    <templateId root="2.16.840.1.113883.10.20.22.2.5.1" extension="2015-08-01" />
+                    <templateId root="2.16.840.1.113883.10.20.22.2.5.1" />
+                    <code code="11450-4" displayName="Problem List" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"></code>
+                    <title>Problem List</title>
+                    <text>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Dates</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ID="Problem1">
+                                    <td>Community Acquired Pneumonia</td>
+                                    <td>
+                                        <content>Onset: February 27 2014</content>
+                                    </td>
+                                    <td>Active</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </text>
+                    <entry>
+                        <act classCode="ACT" moodCode="EVN">
+                            <templateId root="2.16.840.1.113883.10.20.22.4.3" />
+                            <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01" />
+                            <id root="102ca2e9-884c-4523-a2b4-1b6c3469c397" />
+                            <code code="CONC" codeSystem="2.16.840.1.113883.5.6" />
+                            <!-- Since this is an active problem, the concern status is active. -->
+                            <!-- While clinicians can track resolved problems, generally active
+                            problems will have active concern status and resolved concerns will be
+                            completed -->
+                            <statusCode code="active" />
+                            <!-- This equates to the time the concern was authored in the
+                            patient's chart. This may frequently be an EHR timestamp-->
+                            <effectiveTime>
+                                <low value="20140302124536-0500" />
+                            </effectiveTime>
+                            <entryRelationship typeCode="SUBJ">
+                                <observation classCode="OBS" moodCode="EVN">
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.4" />
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.4"
+                                        extension="2015-08-01" />
+                                    <id extension="10241104348"
+                                        root="1.3.6.1.4.1.22812.4.111.0.4.1.2.1" />
+                                    <code code="55607006" displayName="Problem"
+                                        codeSystem="2.16.840.1.113883.6.96"
+                                        codeSystemName="SNOMED CT">
+                                        <translation
+                                            code = "75323-6"
+                                            codeSystem = "2.16.840.1.113883.6.1"
+                                            codeSystemName = "LOINC"
+                                            displayName = "Condition"/>
+                                    </code>
+                                    <text>
+                                        <reference value="#Problem1" />
+                                    </text>
+                                    <statusCode code="completed" />
+                                    <effectiveTime>
+                                        <!-- This represents the date of biological onset. -->
+                                        <low value="20140227" />
+                                    </effectiveTime>
+                                    <!-- This is a SNOMED code as the primary vocabulary for problem
+                                    lists-->
+                                    <value xsi:type="CD" code="385093006"
+                                        codeSystem="2.16.840.1.113883.6.96"
+                                        codeSystemName="SNOMED CT"
+                                        displayName="Community acquired pneumonia" />
+                                    <author>
+                                        <templateId root="2.16.840.1.113883.10.20.22.4.119" />
+                                        <time value="20140302124536-0500" />
+                                        <assignedAuthor>
+                                            <id root="3dfd1be3-1806-48e9-86dd-7282b2cae74f" />
+                                            <id extension="66666" root="2.16.840.1.113883.4.6" />
+                                            <code code="207RC0000X"
+                                                codeSystem="2.16.840.1.113883.6.101"
+                                                codeSystemName="NUCC Health Care Provider Taxonomy"
+                                                displayName="Allopathic &amp; Osteopathic Physicians; Internal Medicine, Cardiovascular Disease" />
+                                            <addr>
+                                                <streetAddressLine>6666 StreetName St.</streetAddressLine>
+                                                <city>Silver Spring</city>
+                                                <state>MD</state>
+                                                <postalCode>20901</postalCode>
+                                                <country>US</country>
+                                            </addr>
+                                            <telecom value="tel:+1(301)666-6666" />
+                                            <assignedPerson>
+                                                <name>
+                                                    <given>Heartly</given>
+                                                    <family>Sixer</family>
+                                                    <suffix>MD</suffix>
+                                                </name>
+                                            </assignedPerson>
+                                        </assignedAuthor>
+                                    </author>
+                                </observation>
+                            </entryRelationship>
+                        </act>
+                    </entry>
+                </section>
+            </component>
+        </structuredBody>
+    </component>
+</ClinicalDocument>

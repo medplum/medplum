@@ -9,9 +9,10 @@ import {
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
-import { MedplumServerConfig, getConfig } from '../config';
-import { CloudWatchLogger } from './cloudwatch';
+import { getConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
+import { CloudWatchLogger } from './cloudwatch';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -121,15 +122,16 @@ export type AuditEventSubtype =
  * AuditEvent action code.
  * See: https://www.hl7.org/fhir/valueset-audit-event-action.html
  */
-export enum AuditEventAction {
-  Create = 'C',
-  Read = 'R',
-  Update = 'U',
-  Delete = 'D',
-  Execute = 'E',
-}
+export const AuditEventAction = {
+  Create: 'C',
+  Read: 'R',
+  Update: 'U',
+  Delete: 'D',
+  Execute: 'E',
+} as const;
+export type AuditEventAction = (typeof AuditEventAction)[keyof typeof AuditEventAction];
 
-const AuditEventActionLookup: Record<AuditEventSubtype['code'], 'C' | 'R' | 'U' | 'D' | 'E' | undefined> = {
+const AuditEventActionLookup: Record<AuditEventSubtype['code'], AuditEventAction | undefined> = {
   create: 'C',
   read: 'R',
   vread: 'R',
@@ -149,12 +151,13 @@ const AuditEventActionLookup: Record<AuditEventSubtype['code'], 'C' | 'R' | 'U' 
  * AuditEvent outcome code.
  * See: https://www.hl7.org/fhir/valueset-audit-event-outcome.html
  */
-export enum AuditEventOutcome {
-  Success = '0',
-  MinorFailure = '4',
-  SeriousFailure = '8',
-  MajorFailure = '12',
-}
+export const AuditEventOutcome = {
+  Success: '0',
+  MinorFailure: '4',
+  SeriousFailure: '8',
+  MajorFailure: '12',
+} as const;
+export type AuditEventOutcome = (typeof AuditEventOutcome)[keyof typeof AuditEventOutcome];
 
 export function createAuditEvent(
   type: AuditEventType,

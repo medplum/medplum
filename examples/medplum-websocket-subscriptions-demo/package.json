@@ -1,6 +1,6 @@
 {
   "name": "medplum-websocket-subscriptions-demo",
-  "version": "3.2.31",
+  "version": "4.0.3",
   "private": true,
   "type": "module",
   "scripts": {
@@ -21,24 +21,24 @@
   },
   "devDependencies": {
     "@emotion/react": "11.14.0",
-    "@mantine/core": "7.16.3",
-    "@mantine/hooks": "7.16.3",
-    "@mantine/notifications": "7.16.3",
-    "@medplum/core": "3.2.31",
-    "@medplum/eslint-config": "3.2.31",
-    "@medplum/fhir-router": "3.2.31",
-    "@medplum/fhirtypes": "3.2.31",
-    "@medplum/mock": "3.2.31",
-    "@medplum/react": "3.2.31",
+    "@mantine/core": "7.17.2",
+    "@mantine/hooks": "7.17.2",
+    "@mantine/notifications": "7.17.2",
+    "@medplum/core": "4.0.3",
+    "@medplum/eslint-config": "4.0.3",
+    "@medplum/fhir-router": "4.0.3",
+    "@medplum/fhirtypes": "4.0.3",
+    "@medplum/mock": "4.0.3",
+    "@medplum/react": "4.0.3",
     "@tabler/icons-react": "3.17.0",
-    "@types/node": "20.17.17",
-    "@types/react": "18.3.12",
-    "@types/react-dom": "18.3.1",
+    "@types/node": "20.17.25",
+    "@types/react": "18.3.19",
+    "@types/react-dom": "18.3.5",
     "@vitejs/plugin-react": "4.3.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.28.0",
-    "typescript": "5.7.3",
-    "vite": "6.1.0"
+    "react-router": "7.4.0",
+    "typescript": "5.8.2",
+    "vite": "6.2.2"
   }
 }

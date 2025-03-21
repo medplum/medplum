@@ -11,7 +11,7 @@ import { Request, Response, Router } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
 import assert from 'node:assert';
 import { asyncWrap } from '../async';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getLogger } from '../logger';
@@ -153,7 +153,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
   const topic = req.body['hub.topic'];
   let subscriptionEndpoint: string;
   try {
-    const topicEndpointKey = `medplum:fhircast:project:${ctx.project.id as string}:topic:${topic}:endpoint`;
+    const topicEndpointKey = `medplum:fhircast:project:${ctx.project.id}:topic:${topic}:endpoint`;
     const results = await getRedis()
       // Multi allows for multiple commands to be executed in a transaction
       .multi()
@@ -176,7 +176,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
     }
     subscriptionEndpoint = result as string;
     const endpointTopicKey = `medplum:fhircast:endpoint:${subscriptionEndpoint}:topic`;
-    await getRedis().setnx(endpointTopicKey, `${ctx.project.id as string}:${topic}`);
+    await getRedis().setnx(endpointTopicKey, `${ctx.project.id}:${topic}`);
   } catch (err) {
     sendOutcome(res, serverError(new Error('Failed to get endpoint for topic')));
     getLogger().error(`[FHIRcast]: Received error while retrieving endpoint for topic`, {
@@ -199,7 +199,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
       });
       getRedis()
         .publish(
-          `${ctx.project.id as string}:${topic}`,
+          `${ctx.project.id}:${topic}`,
           JSON.stringify({
             'hub.mode': 'denied',
             'hub.topic': topic,
@@ -221,7 +221,7 @@ async function handleContextChangeRequest(req: Request, res: Response): Promise<
   const ctx = getAuthenticatedContext();
   const { event } = req.body as FhircastMessagePayload;
   let stringifiedBody = JSON.stringify(req.body);
-  const topicContextKey = `medplum:fhircast:project:${ctx.project.id as string}:topic:${event['hub.topic']}:latest`;
+  const topicContextKey = `medplum:fhircast:project:${ctx.project.id}:topic:${event['hub.topic']}:latest`;
   // Check if this an open event
   if (event['hub.event'].endsWith('-open')) {
     // TODO: Support this as a param for event type: "versionable"?
@@ -252,7 +252,7 @@ protectedSTU2Routes.get(
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const latestEventStr = await getRedis().get(
-      `medplum:fhircast:project:${ctx.project.id as string}:topic:${req.params.topic}:latest`
+      `medplum:fhircast:project:${ctx.project.id}:topic:${req.params.topic}:latest`
     );
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
     if (!latestEventStr) {
@@ -268,7 +268,7 @@ protectedSTU3Routes.get(
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const latestEventStr = await getRedis().get(
-      `medplum:fhircast:project:${ctx.project.id as string}:topic:${req.params.topic}:latest`
+      `medplum:fhircast:project:${ctx.project.id}:topic:${req.params.topic}:latest`
     );
     if (!latestEventStr) {
       // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A

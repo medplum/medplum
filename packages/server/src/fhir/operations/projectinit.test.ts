@@ -1,4 +1,4 @@
-import { ContentType, createReference, isUUID } from '@medplum/core';
+import { ContentType, createReference, isUUID, WithId } from '@medplum/core';
 import { Practitioner, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -7,7 +7,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { createUser } from '../../auth/newuser';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 
@@ -65,9 +65,9 @@ describe('Project $init', () => {
       });
     expect(res.status).toBe(201);
 
-    const project = res.body as Project;
+    const project = res.body as WithId<Project>;
     expect(project.id).toBeDefined();
-    expect(isUUID(project.id as string)).toBe(true);
+    expect(isUUID(project.id)).toBe(true);
     expect(project.owner).toStrictEqual(createReference(owner));
   });
 

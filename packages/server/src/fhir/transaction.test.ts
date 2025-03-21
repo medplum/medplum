@@ -1,7 +1,7 @@
-import { OperationOutcomeError, Operator, conflict, notFound, parseSearchRequest, sleep } from '@medplum/core';
+import { OperationOutcomeError, Operator, WithId, conflict, notFound, parseSearchRequest, sleep } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import { Repository, getSystemRepo } from './repo';
 import { randomUUID } from 'node:crypto';
@@ -45,7 +45,7 @@ describe('FHIR Repo Transactions', () => {
 
   test('Transaction rollback', () =>
     withTestContext(async () => {
-      let patient: Patient | undefined;
+      let patient: WithId<Patient> | undefined;
 
       try {
         await repo.withTransaction(async () => {
@@ -56,14 +56,14 @@ describe('FHIR Repo Transactions', () => {
 
           // Read the patient by ID
           // This should succeed within the transaction
-          const readCheck1 = await repo.readResource('Patient', patient.id as string);
+          const readCheck1 = await repo.readResource('Patient', patient.id);
           expect(readCheck1).toBeDefined();
 
           // Search for patient by ID
           // This should succeed within the transaction
           const searchCheck1 = await repo.search<Patient>({
             resourceType: 'Patient',
-            filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id as string }],
+            filters: [{ code: '_id', operator: Operator.EQUALS, value: patient.id }],
           });
           expect(searchCheck1.entry).toHaveLength(1);
 
@@ -92,7 +92,7 @@ describe('FHIR Repo Transactions', () => {
       // Read the patient by ID
       // This should fail, because the transaction was rolled back
       try {
-        await repo.readResource('Patient', (patient as Patient).id as string);
+        await repo.readResource('Patient', patient?.id as string);
         throw new Error('Expected error');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
@@ -102,7 +102,7 @@ describe('FHIR Repo Transactions', () => {
       // This should return zero results because the transaction was rolled back
       const searchCheck2 = await repo.search<Patient>({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: (patient as Patient).id as string }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient?.id as string }],
       });
       expect(searchCheck2.entry).toHaveLength(0);
     }));
@@ -236,7 +236,7 @@ describe('FHIR Repo Transactions', () => {
         // Read the patient by ID
         // This should fail, because the transaction was rolled back
         try {
-          await repo.readResource('Patient', (patient2 as Patient).id as string);
+          await repo.readResource('Patient', patient2?.id as string);
           throw new Error('Expected error');
         } catch (err) {
           expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
@@ -246,7 +246,7 @@ describe('FHIR Repo Transactions', () => {
         // This should succeed within the transaction
         const searchCheck4 = await repo.search<Patient>({
           resourceType: 'Patient',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: (patient2 as Patient).id as string }],
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
         });
         expect(searchCheck4).toBeDefined();
         expect(searchCheck4.entry).toHaveLength(0);
@@ -321,7 +321,7 @@ describe('FHIR Repo Transactions', () => {
 
         // Read the patient by ID
         // This should fail, because the transaction was rolled back
-        await expect(repo.readResource('Patient', (patient2 as Patient).id as string)).rejects.toMatchObject({
+        await expect(repo.readResource('Patient', patient2?.id as string)).rejects.toMatchObject({
           outcome: notFound,
         });
 
@@ -329,7 +329,7 @@ describe('FHIR Repo Transactions', () => {
         // This should return no results, because the transaction was rolled back
         const searchCheck4 = await repo.search<Patient>({
           resourceType: 'Patient',
-          filters: [{ code: '_id', operator: Operator.EQUALS, value: (patient2 as Patient).id as string }],
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
         });
         expect(searchCheck4).toBeDefined();
         expect(searchCheck4.entry).toHaveLength(0);
@@ -348,7 +348,7 @@ describe('FHIR Repo Transactions', () => {
       // This should return no results, because the transaction was rolled back
       const searchCheck4 = await repo.search<Patient>({
         resourceType: 'Patient',
-        filters: [{ code: '_id', operator: Operator.EQUALS, value: (patient2 as Patient).id as string }],
+        filters: [{ code: '_id', operator: Operator.EQUALS, value: patient2?.id as string }],
       });
       expect(searchCheck4).toBeDefined();
       expect(searchCheck4.entry).toHaveLength(0);
@@ -506,7 +506,7 @@ describe('FHIR Repo Transactions', () => {
       const tx2 = systemRepo.updateResource({ ...existing, deceasedBoolean: false });
 
       const results = await Promise.allSettled([tx1, tx2]);
-      await expect(repo.readResource(existing.resourceType, existing.id as string)).resolves.toBeDefined();
+      await expect(repo.readResource(existing.resourceType, existing.id)).resolves.toBeDefined();
       expect(results.map((r) => r.status)).not.toContain('rejected');
     }));
 

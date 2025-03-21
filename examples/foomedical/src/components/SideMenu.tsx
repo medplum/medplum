@@ -1,7 +1,7 @@
 import { Title } from '@mantine/core';
 import cx from 'clsx';
 import { Fragment } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router';
 import classes from './SideMenu.module.css';
 
 export interface SubMenuProps {

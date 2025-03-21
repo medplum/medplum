@@ -24,6 +24,8 @@ tar \
   -czf medplum-server.tar.gz \
   package.json \
   package-lock.json \
+  packages/ccda/package.json \
+  packages/ccda/dist \
   packages/core/package.json \
   packages/core/dist \
   packages/definitions/package.json \
@@ -47,8 +49,9 @@ TAGS="--tag $DOCKERHUB_REPOSITORY:latest --tag $DOCKERHUB_REPOSITORY:$GITHUB_SHA
 # Release is specified with a "--release" argument
 for arg in "$@"; do
   if [[ "$arg" == "--release" ]]; then
-    VERSION=$(node -p "require('./package.json').version")
-    TAGS="$TAGS --tag $DOCKERHUB_REPOSITORY:$VERSION"
+    FULL_VERSION=$(node -p "require('./package.json').version")
+    MAJOR_DOT_MINOR=$(node -p "require('./package.json').version.split('.').slice(0, 2).join('.')")
+    TAGS="$TAGS --tag $DOCKERHUB_REPOSITORY:$FULL_VERSION --tag $DOCKERHUB_REPOSITORY:$MAJOR_DOT_MINOR"
     break
   fi
 done

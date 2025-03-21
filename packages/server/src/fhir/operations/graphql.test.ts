@@ -5,7 +5,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
@@ -40,7 +40,7 @@ describe('GraphQL', () => {
 
       const aliceRepo = new Repository({
         author: createReference(aliceRegistration.profile),
-        projects: [aliceRegistration.project.id as string],
+        projects: [aliceRegistration.project.id],
       });
 
       // Create a profile picture

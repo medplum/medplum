@@ -5,7 +5,8 @@ import express from 'express';
 import { Server } from 'http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig, MedplumServerConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import * as executeBotModule from '../fhir/operations/execute';
 import { getRedis } from '../redis';
 import { initTestAuth } from '../test.setup';
@@ -437,7 +438,7 @@ describe('Agent WebSockets', () => {
     let info: AgentInfo = { status: AgentConnectionState.UNKNOWN, version: 'unknown' };
     for (let i = 0; i < 5; i++) {
       await sleep(50);
-      const infoStr = (await getRedis().get(`medplum:agent:${agent.id as string}:info`)) as string;
+      const infoStr = (await getRedis().get(`medplum:agent:${agent.id}:info`)) as string;
       info = JSON.parse(infoStr) as AgentInfo;
       if (info.status === AgentConnectionState.DISCONNECTED) {
         break;

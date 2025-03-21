@@ -9,6 +9,7 @@ import {
   SearchParameterType,
   SearchRequest,
   TypedValue,
+  WithId,
   allOk,
   arrayify,
   badRequest,
@@ -31,6 +32,7 @@ import {
   isOk,
   isReference,
   isResource,
+  isResourceWithId,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
@@ -67,12 +69,12 @@ import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
 import { v7 } from 'uuid';
 import validator from 'validator';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
+import { r4ProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
-import { r4ProjectId } from '../seed';
 import {
   AuditEventOutcome,
   AuditEventSubtype,
@@ -96,7 +98,7 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
+import { SearchOptions, buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
@@ -264,7 +266,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.context.currentProject;
   }
 
-  async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<T> {
+  async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
     const resourceWithId = {
       ...resource,
       id: options?.assignedId && resource.id ? resource.id : this.generateId(),
@@ -293,7 +295,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     resourceType: T['resourceType'],
     id: string,
     options?: ReadResourceOptions
-  ): Promise<T> {
+  ): Promise<WithId<T>> {
     const startTime = Date.now();
     try {
       const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, options));
@@ -314,7 +316,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     resourceType: T['resourceType'],
     id: string,
     options?: ReadResourceOptions
-  ): Promise<T> {
+  ): Promise<WithId<T>> {
     if (!id || !validator.isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
@@ -364,7 +366,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(gone);
     }
 
-    const resource = JSON.parse(rows[0].content as string) as T;
+    const resource = JSON.parse(rows[0].content as string) as WithId<T>;
     await this.setCacheEntry(resource);
     return resource;
   }
@@ -382,9 +384,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return true;
   }
 
-  async readReferences(references: Reference[]): Promise<(Resource | Error)[]> {
+  async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(T | Error)[]> {
     const cacheEntries = await this.getCacheEntries(references);
-    const result: (Resource | Error)[] = new Array(references.length);
+    const result: (T | Error)[] = new Array(references.length);
 
     for (let i = 0; i < result.length; i++) {
       const startTime = Date.now();
@@ -403,7 +405,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         entryResult = this.removeHiddenFields(entryResult);
         this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: entryResult, durationMs });
       }
-      result[i] = entryResult;
+      result[i] = entryResult as T | Error;
     }
 
     return result;
@@ -430,13 +432,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return await this.readResourceFromDatabase(resourceType, id);
     } catch (err) {
       if (err instanceof OperationOutcomeError) {
-        return err;
+        if (isNotFound(err.outcome) || isGone(err.outcome)) {
+          // Only return "not found" or "gone" errors
+          return err;
+        }
+        // Other errors should be treated as database errors
+        throw err;
       }
-      return new OperationOutcomeError(normalizeOperationOutcome(err), err);
+      throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
     }
   }
 
-  async readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
+  async readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>> {
     let parts: [T['resourceType'], string];
     try {
       parts = parseReference(reference);
@@ -566,10 +573,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
+  async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
     const startTime = Date.now();
     try {
-      let result: T;
+      let result: WithId<T>;
       if (options?.ifMatch) {
         // Conditional update requires transaction
         result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options.ifMatch));
@@ -588,11 +595,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private async updateResourceImpl<T extends Resource>(resource: T, create: boolean, versionId?: string): Promise<T> {
-    const { resourceType, id } = resource;
-    if (!id) {
+  private async updateResourceImpl<T extends Resource>(
+    resource: T,
+    create: boolean,
+    versionId?: string
+  ): Promise<WithId<T>> {
+    if (!isResourceWithId(resource)) {
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
+    const { resourceType, id } = resource;
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
@@ -621,7 +632,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
-    let updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
+    let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, {
       ...this.restoreReadonlyFields(resource, existing),
     });
     updated = await replaceConditionalReferences(this, updated);
@@ -634,7 +645,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       onBehalfOf: this.context.onBehalfOf,
     };
 
-    const result: T = { ...updated, meta: resultMeta };
+    const result = { ...updated, meta: resultMeta };
 
     const project = this.getProjectId(existing, updated);
     if (project) {
@@ -724,7 +735,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource to store.
    * @param create - Whether the resource is being create, or updated in place.
    */
-  private async handleStorage(resource: Resource, create: boolean): Promise<void> {
+  private async handleStorage(resource: WithId<Resource>, create: boolean): Promise<void> {
     if (!this.isCacheOnly(resource)) {
       await this.writeToDatabase(resource, create);
     }
@@ -868,7 +879,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource to write to the database.
    * @param create - If true, then the resource is being created.
    */
-  private async writeToDatabase<T extends Resource>(resource: T, create: boolean): Promise<void> {
+  private async writeToDatabase<T extends WithId<Resource>>(resource: T, create: boolean): Promise<void> {
     await this.ensureInTransaction(async (client) => {
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
@@ -890,7 +901,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async checkExistingResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string
-  ): Promise<T | undefined> {
+  ): Promise<WithId<T> | undefined> {
     try {
       return await this.readResourceImpl<T>(resourceType, id);
     } catch (err) {
@@ -954,12 +965,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param conn - Database client to use for reindex operations.
    * @param resources - The resource(s) to reindex.
    */
-  async reindexResources<T extends Resource>(conn: PoolClient, resources: T[]): Promise<void> {
-    let resource: Resource;
+  async reindexResources<T extends Resource>(conn: PoolClient, resources: WithId<T>[]): Promise<void> {
     // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < resources.length; i++) {
-      resource = resources[i];
+      const resource = resources[i];
       const meta = resource.meta as Meta;
       meta.compartment = this.getCompartments(resource);
 
@@ -1008,7 +1018,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
     const startTime = Date.now();
-    let resource: Resource;
+    let resource: WithId<T>;
     try {
       resource = await this.readResourceImpl<T>(resourceType, id);
     } catch (err) {
@@ -1075,12 +1085,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  async patchResource<T extends Resource = Resource>(
+  async patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
     patch: Operation[],
     options?: UpdateResourceOptions
-  ): Promise<T> {
+  ): Promise<WithId<T>> {
     const startTime = Date.now();
     try {
       return await this.withTransaction(async () => {
@@ -1168,11 +1178,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
   }
 
-  async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
+  async search<T extends Resource>(
+    searchRequest: SearchRequest<T>,
+    options?: SearchOptions
+  ): Promise<Bundle<WithId<T>>> {
     const startTime = Date.now();
     try {
       // Resource type validation is performed in the searchImpl function
-      const result = await searchImpl(this, searchRequest);
+      const result = await searchImpl(this, searchRequest, options);
       const durationMs = Date.now() - startTime;
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
       return result;
@@ -1185,7 +1198,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async processAllResources<T extends Resource>(
     initialSearchRequest: SearchRequest<T>,
-    process: (resource: T) => Promise<void>,
+    process: (resource: WithId<T>) => Promise<void>,
     options?: ProcessAllResourcesOptions
   ): Promise<void> {
     let searchRequest: SearchRequest<T> | undefined = initialSearchRequest;
@@ -1196,7 +1209,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
       for (const entry of bundle.entry) {
         if (entry.resource?.id) {
-          await process(entry.resource);
+          await process(entry.resource as WithId<T>);
         }
       }
       const nextLink = bundle.link?.find((b) => b.relation === 'next');
@@ -1215,10 +1228,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchRequest: SearchRequest<T>,
     referenceField: string,
     references: string[]
-  ): Promise<Record<string, T[]>> {
+  ): Promise<Record<string, WithId<T>[]>> {
     const startTime = Date.now();
     try {
-      const result = await searchByReferenceImpl<T>(this, searchRequest, referenceField, references);
+      const result = await searchByReferenceImpl(this, searchRequest, referenceField, references);
       const durationMs = Date.now() - startTime;
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
       return result;
@@ -1320,6 +1333,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
+  /**
+   * The version to be set on resources when they are inserted/updated into the database.
+   * The value should be incremented each time there is a change in the schema (really just columns)
+   * of the resource tables or when there are code changes to `buildResourceRow`.
+   */
+  static readonly VERSION: number = 1;
+
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
@@ -1333,6 +1353,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       projectId: meta.project,
       compartments,
       content,
+      __version: Repository.VERSION,
     };
 
     const searchParams = getSearchParameters(resourceType);
@@ -1396,7 +1417,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource.
    * @returns The list of compartments for the resource.
    */
-  private getCompartments(resource: Resource): Reference[] {
+  private getCompartments(resource: WithId<Resource>): Reference[] {
     const compartments = new Set<string>();
 
     if (resource.meta?.project && validator.isUUID(resource.meta.project)) {
@@ -1431,20 +1452,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       const patientId = resolveId(patient);
       if (patientId && validator.isUUID(patientId)) {
         compartments.add(patient.reference);
-      }
-    }
-
-    // Carry forward anything added to the resource compartments array
-    if (resource.meta?.compartment?.length) {
-      for (const compartment of resource.meta.compartment) {
-        const id = resolveId(compartment);
-        if (
-          id &&
-          validator.isUUID(id) &&
-          (compartment.reference?.startsWith('Organization/') || compartment.reference?.startsWith('Location/'))
-        ) {
-          compartments.add(compartment.reference as string);
-        }
       }
     }
 
@@ -1721,8 +1728,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource to index.
    * @param create - If true, then the resource is being created.
    */
-  private async writeLookupTables(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    await Promise.all(lookupTables.map((lookupTable) => lookupTable.indexResource(client, resource, create)));
+  private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
+    for (const lookupTable of lookupTables) {
+      await lookupTable.indexResource(client, resource, create);
+    }
   }
 
   /**
@@ -1827,10 +1836,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param updated - The incoming updated resource.
    * @returns The account values.
    */
-  private async getAccounts(existing: Resource | undefined, updated: Resource): Promise<Reference[] | undefined> {
-    const updatedAccounts = this.extractAccountReferences(updated.meta);
-    if (updatedAccounts && this.canWriteAccount()) {
-      // If the user specifies an account, allow it if they have permission.
+  private async getAccounts(
+    existing: WithId<Resource> | undefined,
+    updated: WithId<Resource>
+  ): Promise<Reference[] | undefined> {
+    if (updated.meta && this.canWriteAccount()) {
+      // If the user specifies accounts, allow it if they have permission.
+      const updatedAccounts = this.extractAccountReferences(updated.meta);
       return updatedAccounts;
     }
 
@@ -1917,7 +1929,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private canWriteAccount(): boolean {
-    return this.isSuperAdmin() || this.isProjectAdmin();
+    return Boolean(this.context.extendedMode && (this.isSuperAdmin() || this.isProjectAdmin()));
   }
 
   /**
@@ -2409,13 +2421,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async getCacheEntry<T extends Resource>(
     resourceType: string,
     id: string
-  ): Promise<CacheEntry<T> | undefined> {
+  ): Promise<CacheEntry<WithId<T>> | undefined> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
       return undefined;
     }
     const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
-    return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
+    return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
   }
 
   /**
@@ -2442,7 +2454,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Writes a cache entry to Redis.
    * @param resource - The resource to cache.
    */
-  private async setCacheEntry(resource: Resource): Promise<void> {
+  private async setCacheEntry(resource: WithId<Resource>): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
       const cachedResource = deepClone(resource);
@@ -2454,7 +2466,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const projectId = resource.meta?.project;
     await getRedis().set(
-      getCacheKey(resource.resourceType, resource.id as string),
+      getCacheKey(resource.resourceType, resource.id),
       stringify({ resource, projectId }),
       'EX',
       REDIS_CACHE_EX_SECONDS

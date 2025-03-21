@@ -1,4 +1,4 @@
-import { SyntheticEvent } from 'react';
+import { MouseEvent, SyntheticEvent } from 'react';
 
 /**
  * Kills a browser event.
@@ -9,6 +9,15 @@ import { SyntheticEvent } from 'react';
 export function killEvent(e: Event | SyntheticEvent): void {
   e.preventDefault();
   e.stopPropagation();
+}
+
+/**
+ * Returns true if the event is an auxiliary click.
+ * @param e - The event.
+ * @returns True if the event is an auxiliary click.
+ */
+export function isAuxClick(e: MouseEvent): boolean {
+  return e.button === 1 || e.ctrlKey || e.metaKey;
 }
 
 /**

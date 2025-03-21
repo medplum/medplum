@@ -1,9 +1,4 @@
-import express from 'express';
-import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
-import { initTestAuth, waitForAsyncJob } from '../test.setup';
-import request from 'supertest';
-import { ContentType, createReference, getReferenceString } from '@medplum/core';
+import { ContentType, createReference, getReferenceString, WithId } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -18,9 +13,14 @@ import {
   RelatedPerson,
   Task,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
-import { BatchJobData, execBatchJob, getBatchQueue } from '../workers/batch';
 import { Job } from 'bullmq';
+import { randomUUID } from 'crypto';
+import express from 'express';
+import request from 'supertest';
+import { initApp, shutdownApp } from '../app';
+import { loadTestConfig } from '../config/loader';
+import { initTestAuth, waitForAsyncJob } from '../test.setup';
+import { BatchJobData, execBatchJob, getBatchQueue } from '../workers/batch';
 
 describe('Batch and Transaction processing', () => {
   const app = express();
@@ -48,7 +48,7 @@ describe('Batch and Transaction processing', () => {
       .send({ resourceType: 'Practitioner' });
     expect(res1.status).toStrictEqual(201);
     expect(res1.body.resourceType).toStrictEqual('Practitioner');
-    const practitioner = res1.body as Practitioner;
+    const practitioner = res1.body as WithId<Practitioner>;
 
     const res2 = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -57,7 +57,7 @@ describe('Batch and Transaction processing', () => {
       .send({ resourceType: 'Patient' });
     expect(res2.status).toStrictEqual(201);
     expect(res2.body.resourceType).toStrictEqual('Patient');
-    const toDelete = res2.body as Patient;
+    const toDelete = res2.body as WithId<Patient>;
 
     const batch: Bundle = {
       resourceType: 'Bundle',
@@ -170,7 +170,7 @@ describe('Batch and Transaction processing', () => {
       .send({ resourceType: 'Practitioner' });
     expect(res1.status).toStrictEqual(201);
     expect(res1.body.resourceType).toStrictEqual('Practitioner');
-    const practitioner = res1.body as Practitioner;
+    const practitioner = res1.body as WithId<Practitioner>;
 
     const res2 = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -179,7 +179,7 @@ describe('Batch and Transaction processing', () => {
       .send({ resourceType: 'Patient' });
     expect(res2.status).toStrictEqual(201);
     expect(res2.body.resourceType).toStrictEqual('Patient');
-    const toDelete = res2.body as Patient;
+    const toDelete = res2.body as WithId<Patient>;
 
     const res3 = await request(app)
       .post(`/fhir/R4/RelatedPerson`)
@@ -191,7 +191,7 @@ describe('Batch and Transaction processing', () => {
       });
     expect(res3.status).toStrictEqual(201);
     expect(res3.body.resourceType).toStrictEqual('RelatedPerson');
-    const relatedPerson = res3.body as RelatedPerson;
+    const relatedPerson = res3.body as WithId<RelatedPerson>;
 
     const createdPatientIdentity = 'urn:uuid:c5db5c3b-bd41-4c39-aa8e-2d2a9a038167';
     const transaction: Bundle = {
@@ -269,7 +269,7 @@ describe('Batch and Transaction processing', () => {
     expect(results.type).toStrictEqual('transaction-response');
 
     expect(results.entry?.[0]?.response?.status).toStrictEqual('201');
-    const createdPatient = results.entry?.[0]?.resource as Patient;
+    const createdPatient = results.entry?.[0]?.resource as WithId<Patient>;
     expect(createdPatient).toMatchObject<Patient>({
       resourceType: 'Patient',
       identifier: [{ system: idSystem, value: id1 }],
@@ -327,7 +327,7 @@ describe('Batch and Transaction processing', () => {
       .send({ resourceType: 'Practitioner' });
     expect(res1.status).toStrictEqual(201);
     expect(res1.body.resourceType).toStrictEqual('Practitioner');
-    const practitioner = res1.body as Practitioner;
+    const practitioner = res1.body as WithId<Practitioner>;
 
     const res2 = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -336,7 +336,7 @@ describe('Batch and Transaction processing', () => {
       .send({ resourceType: 'Patient' });
     expect(res2.status).toStrictEqual(201);
     expect(res2.body.resourceType).toStrictEqual('Patient');
-    const toDelete = res2.body as Patient;
+    const toDelete = res2.body as WithId<Patient>;
 
     const transaction: Bundle = {
       resourceType: 'Bundle',
@@ -864,7 +864,7 @@ describe('Batch and Transaction processing', () => {
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toStrictEqual('Bundle');
 
-    const patient = (res.body as Bundle).entry?.[0]?.resource as Patient;
+    const patient = (res.body as Bundle).entry?.[0]?.resource as WithId<Patient>;
     expect(patient.generalPractitioner?.[0].reference).toStrictEqual(getReferenceString(createdPractitioner.body));
   });
 

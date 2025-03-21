@@ -3,7 +3,7 @@ import { normalizeOperationOutcome } from '@medplum/core';
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
 import { UserConfigurationInput } from './UserConfigurationInput';

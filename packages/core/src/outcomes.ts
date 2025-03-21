@@ -5,6 +5,7 @@ const OK_ID = 'ok';
 const CREATED_ID = 'created';
 const GONE_ID = 'gone';
 const NOT_MODIFIED_ID = 'not-modified';
+const FOUND_ID = 'found';
 const NOT_FOUND_ID = 'not-found';
 const CONFLICT_ID = 'conflict';
 const UNAUTHORIZED_ID = 'unauthorized';
@@ -280,6 +281,24 @@ export function serverTimeout(msg?: string): OperationOutcome {
   };
 }
 
+export function redirect(url: URL): OperationOutcome {
+  const urlStr = url.toString();
+  return {
+    resourceType: 'OperationOutcome',
+    id: FOUND_ID,
+    issue: [
+      {
+        severity: 'information',
+        code: 'informational',
+        details: {
+          coding: [{ system: 'urn:ietf:rfc:3986', code: urlStr }],
+          text: 'Redirect to ' + urlStr,
+        },
+      },
+    ],
+  };
+}
+
 export function isOperationOutcome(value: unknown): value is OperationOutcome {
   return typeof value === 'object' && value !== null && (value as any).resourceType === 'OperationOutcome';
 }
@@ -296,6 +315,10 @@ export function isCreated(outcome: OperationOutcome): boolean {
 
 export function isAccepted(outcome: OperationOutcome): boolean {
   return outcome.id === ACCEPTED_ID;
+}
+
+export function isRedirect(outcome: OperationOutcome): boolean {
+  return outcome.id === FOUND_ID;
 }
 
 export function isNotFound(outcome: OperationOutcome): boolean {
@@ -322,6 +345,8 @@ export function getStatus(outcome: OperationOutcome): number {
       return 201;
     case ACCEPTED_ID:
       return 202;
+    case FOUND_ID:
+      return 302;
     case NOT_MODIFIED_ID:
       return 304;
     case UNAUTHORIZED_ID:

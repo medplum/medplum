@@ -24,7 +24,7 @@ import { Redis } from 'ioredis';
 import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedisSubscriber } from '../redis';
@@ -74,7 +74,7 @@ describe('Subscription Worker', () => {
     const botProjectDetails = await createTestProject({ withClient: true });
     botRepo = new Repository({
       extendedMode: true,
-      projects: [botProjectDetails.project.id as string],
+      projects: [botProjectDetails.project.id],
       author: createReference(botProjectDetails.client),
     });
 
@@ -148,7 +148,7 @@ describe('Subscription Worker', () => {
       queue.add.mockClear();
 
       // Delete the patient
-      await repo.deleteResource('Patient', patient.id as string);
+      await repo.deleteResource('Patient', patient.id);
 
       expect(queue.add).toHaveBeenCalled();
     }));
@@ -304,7 +304,7 @@ describe('Subscription Worker', () => {
       expect(queue.add).not.toHaveBeenCalled();
 
       // Delete the patient
-      await repo.deleteResource('Patient', patient.id as string);
+      await repo.deleteResource('Patient', patient.id);
 
       expect(queue.add).not.toHaveBeenCalled();
     }));
@@ -353,7 +353,7 @@ describe('Subscription Worker', () => {
         expect(queue.add).not.toHaveBeenCalled();
 
         // Delete the patient
-        await repo.deleteResource('Patient', patient.id as string);
+        await repo.deleteResource('Patient', patient.id);
 
         expect(queue.add).toHaveBeenCalled();
         const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
@@ -911,7 +911,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -977,7 +977,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1012,7 +1012,7 @@ describe('Subscription Worker', () => {
       // At this point the job should be in the queue
       // But let's change the subscription status to something else
       await repo.updateResource<Subscription>({
-        ...(subscription as Subscription),
+        ...subscription,
         status: 'off',
       });
 
@@ -1029,7 +1029,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1062,7 +1062,7 @@ describe('Subscription Worker', () => {
 
       // At this point the job should be in the queue
       // But let's delete the subscription
-      await repo.deleteResource('Subscription', subscription.id as string);
+      await repo.deleteResource('Subscription', subscription.id);
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       await execSubscriptionJob(job);
@@ -1077,7 +1077,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1110,7 +1110,7 @@ describe('Subscription Worker', () => {
 
       // At this point the job should be in the queue
       // But let's delete the resource
-      await repo.deleteResource('Patient', patient.id as string);
+      await repo.deleteResource('Patient', patient.id);
 
       const job = { id: 1, data: queue.add.mock.calls[0][1], attemptsMade: 2 } as unknown as Job;
       await execSubscriptionJob(job);
@@ -1125,7 +1125,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1134,7 +1134,7 @@ describe('Subscription Worker', () => {
 
   test('AuditEvent has Subscription account details', () =>
     withTestContext(async () => {
-      const project = (await createTestProject()).project.id as string;
+      const project = (await createTestProject()).project.id;
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
@@ -1180,7 +1180,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1195,7 +1195,7 @@ describe('Subscription Worker', () => {
 
   test('AuditEvent outcome from custom codes', () =>
     withTestContext(async () => {
-      const project = (await createTestProject()).project.id as string;
+      const project = (await createTestProject()).project.id;
       const account = {
         reference: 'Organization/' + randomUUID(),
       };
@@ -1247,7 +1247,7 @@ describe('Subscription Worker', () => {
           {
             code: 'entity',
             operator: Operator.EQUALS,
-            value: getReferenceString(subscription as Subscription),
+            value: getReferenceString(subscription),
           },
         ],
       });
@@ -1405,7 +1405,7 @@ describe('Subscription Worker', () => {
       const queue = getSubscriptionQueue() as any;
       queue.add.mockClear();
 
-      await systemRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
+      await systemRepo.deleteResource('AccessPolicy', accessPolicy.id);
 
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
@@ -1481,7 +1481,7 @@ describe('Subscription Worker', () => {
       const queue = getSubscriptionQueue() as any;
       queue.add.mockClear();
 
-      await systemRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
+      await systemRepo.deleteResource('AccessPolicy', accessPolicy.id);
 
       // Update the patient
       const patient2 = await apTestRepo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
@@ -1600,7 +1600,7 @@ describe('Subscription Worker', () => {
         let notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
           expect.objectContaining(patient),
-          subscription.id as string,
+          subscription.id,
           { includeResource: true },
         ]);
 
@@ -1615,25 +1615,25 @@ describe('Subscription Worker', () => {
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
           expect.objectContaining(updatedPatient),
-          subscription.id as string,
+          subscription.id,
           { includeResource: true },
         ]);
 
         // Delete the patient
         nextArgsPromise = waitForNextSubNotification<Patient>();
-        await wsSubRepo.deleteResource('Patient', updatedPatient.id as string);
+        await wsSubRepo.deleteResource('Patient', updatedPatient.id);
 
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
           expect.objectContaining(updatedPatient),
-          subscription.id as string,
+          subscription.id,
           { includeResource: true },
         ]);
       }));
 
     test('WebSocket Subscription -- Feature Flag Not Enabled', () =>
       withTestContext(async () => {
-        globalLogger.level = LogLevel.WARN;
+        globalLogger.level = LogLevel.DEBUG;
         const originalConsoleLog = console.log;
         console.log = jest.fn();
 
@@ -1765,7 +1765,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await superAdminRepo.deleteResource('ProjectMembership', membership.id as string);
+        await superAdminRepo.deleteResource('ProjectMembership', membership.id);
 
         const assertPromise = assertNoWsNotifications();
 
@@ -1822,7 +1822,7 @@ describe('Subscription Worker', () => {
         expect(subscription).toBeDefined();
         expect(subscription.id).toBeDefined();
 
-        await superAdminRepo.deleteResource('AccessPolicy', accessPolicy.id as string);
+        await superAdminRepo.deleteResource('AccessPolicy', accessPolicy.id);
 
         const assertPromise = assertNoWsNotifications();
 
@@ -1883,7 +1883,7 @@ describe('Subscription Worker', () => {
         const notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
           expect.objectContaining(patient),
-          subscription.id as string,
+          subscription.id,
           { includeResource: true },
         ]);
 

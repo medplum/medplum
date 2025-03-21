@@ -1,11 +1,11 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
-import { OperationOutcomeError } from '@medplum/core';
-import { Bot, Practitioner } from '@medplum/fhirtypes';
+import { getReferenceString, OperationOutcomeError } from '@medplum/core';
+import { Bot, Practitioner, Questionnaire, Subscription } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
 
@@ -156,14 +156,18 @@ describe('ResourcePage', () => {
     });
 
     // Bot subscription should now be listed
-    expect(screen.getByText('Criteria: QuestionnaireResponse?questionnaire=Questionnaire/123')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Criteria: QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire,Questionnaire/123'
+      )
+    ).toBeInTheDocument();
 
     // Should have created a subscription with the `subscription-supported-interaction` extension value of `create`
     expect(createResourceSpy).toHaveBeenLastCalledWith({
       resourceType: 'Subscription',
       status: 'active',
       reason: 'Connect bot Test Bot to questionnaire responses',
-      criteria: 'QuestionnaireResponse?questionnaire=Questionnaire/123',
+      criteria: 'QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire,Questionnaire/123',
       channel: {
         type: 'rest-hook',
         endpoint: 'Bot/123',
@@ -248,19 +252,59 @@ describe('ResourcePage', () => {
     });
 
     // Bot subscription should now be listed, #2 in the list
-    expect(screen.getByText('Criteria: QuestionnaireResponse?questionnaire=Questionnaire/123')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Criteria: QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire,Questionnaire/123'
+      )
+    ).toBeInTheDocument();
 
     // Should have created a subscription with the `subscription-supported-interaction` extension value of `create`
     expect(createResourceSpy).toHaveBeenLastCalledWith({
       resourceType: 'Subscription',
       status: 'active',
       reason: 'Connect bot Test Bot to questionnaire responses',
-      criteria: 'QuestionnaireResponse?questionnaire=Questionnaire/123',
+      criteria: 'QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire,Questionnaire/123',
       channel: {
         type: 'rest-hook',
         endpoint: 'Bot/123',
       },
     });
+  });
+
+  test('Questionnaire bots -- Subscription only has canonical URL and no reference', async () => {
+    const medplum = new MockClient();
+    const bot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+    });
+    expect(bot.id).toBeDefined();
+
+    const questionnaire = await medplum.createResource<Questionnaire>({
+      resourceType: 'Questionnaire',
+      url: 'https://example.com/another-example-questionnaire',
+      status: 'active',
+    });
+
+    const subscription = await medplum.createResource<Subscription>({
+      resourceType: 'Subscription',
+      status: 'active',
+      criteria: `QuestionnaireResponse?questionnaire=${questionnaire.url}`,
+      reason: 'Test Questionnaire subscription without Questionnaire reference in criteria',
+      channel: {
+        type: 'rest-hook',
+        endpoint: getReferenceString(bot),
+      },
+    });
+    expect(subscription).toBeDefined();
+
+    await setup(`/Questionnaire/${questionnaire.id}/bots`, medplum);
+
+    // Bot subscription should now be listed
+    expect(
+      screen.getByText(
+        'Criteria: QuestionnaireResponse?questionnaire=https://example.com/another-example-questionnaire'
+      )
+    ).toBeInTheDocument();
   });
 
   test('Bot editor', async () => {

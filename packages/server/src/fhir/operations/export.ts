@@ -9,7 +9,7 @@ import {
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Project, Resource, ResourceType } from '@medplum/fhirtypes';
-import { getConfig } from '../../config';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientResourceTypes } from '../patient';
 import { BulkExporter } from './utils/bulkexporter';
@@ -98,7 +98,7 @@ export async function exportResourceType<T extends Resource>(
     filters: since ? [{ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since }] : undefined,
     sortRules: [{ code: '_lastUpdated', descending: false }],
   };
-  await repo.processAllResources(searchRequest, async (resource: T) => {
+  await repo.processAllResources(searchRequest, async (resource) => {
     await exporter.writeResource(resource);
   });
 }

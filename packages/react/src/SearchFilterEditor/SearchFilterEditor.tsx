@@ -1,10 +1,11 @@
-import { ActionIcon, Button, Group, Modal, NativeSelect } from '@mantine/core';
+import { ActionIcon, Group, Modal, NativeSelect } from '@mantine/core';
 import { Filter, Operator, SearchRequest, deepClone, getSearchParameters } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import { IconX } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import {
   addFilter,
   buildFieldNameString,
@@ -90,7 +91,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
           <ArrayAddButton propertyDisplayName="Filter" onClick={() => onAddFilter({} as Filter)} />
         </div>
         <Group justify="flex-end" mt="xl">
-          <Button type="submit">OK</Button>
+          <SubmitButton>OK</SubmitButton>
         </Group>
       </Form>
     </Modal>

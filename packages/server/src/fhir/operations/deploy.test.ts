@@ -7,7 +7,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import * as awsDeploy from '../../cloud/aws/deploy';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth, withTestContext } from '../../test.setup';
 import * as streamUtils from '../../util/streams';
 import * as storage from '../storage';

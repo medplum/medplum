@@ -3,7 +3,7 @@ import { Login, Patient, Project, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { AuthState } from '../oauth/middleware';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
@@ -152,7 +152,7 @@ describe('Reference checks', () => {
       await systemRepo.updateResource(project1);
 
       const repo = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project: project1 });
-      let project = await repo.readResource<Project>('Project', project1.id as string);
+      let project = await repo.readResource<Project>('Project', project1.id);
 
       // Checking the name change is ancillary; mostly confirming that the update
       // doesn't throw due to reference validation failure
@@ -188,13 +188,41 @@ describe('Reference checks', () => {
 
   test('Check references with non-literal reference', () =>
     withTestContext(async () => {
-      const { repo } = await createTestProject({ project: { checkReferencesOnWrite: true }, withRepo: true });
+      const { repo } = await createTestProject({
+        project: { checkReferencesOnWrite: true },
+        withRepo: true,
+      });
       const patient: Patient = {
         resourceType: 'Patient',
         link: [
           {
             type: 'refer',
             other: { display: 'J. Smith' },
+          },
+        ],
+      };
+
+      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
+    }));
+
+  test('Check references with reference placeholder', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        project: { checkReferencesOnWrite: true },
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          compartment: { reference: '%patient' },
+          resource: [{ resourceType: '*' }],
+        },
+      });
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        link: [
+          {
+            type: 'refer',
+            other: { reference: '%patient' },
           },
         ],
       };

@@ -1,9 +1,18 @@
-import { arrayify, crawlResource, isGone, normalizeOperationOutcome, TypedValue } from '@medplum/core';
+import {
+  arrayify,
+  crawlTypedValue,
+  isGone,
+  normalizeOperationOutcome,
+  toTypedValue,
+  TypedValue,
+  WithId,
+} from '@medplum/core';
 import { Attachment, Binary, Meta, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
-import { getConfig, MedplumServerConfig } from '../config';
+import { getConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
@@ -108,13 +117,13 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * not to re-evaluate the download.
  * @param resource - The resource that was created or updated.
  */
-export async function addDownloadJobs(resource: Resource): Promise<void> {
+export async function addDownloadJobs(resource: WithId<Resource>): Promise<void> {
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
     if (isExternalUrl(attachment.url)) {
       await addDownloadJobData({
         resourceType: resource.resourceType,
-        id: resource.id as string,
+        id: resource.id,
         url: attachment.url,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
@@ -230,7 +239,7 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 
 function getAttachments(resource: Resource): Attachment[] {
   const attachments: Attachment[] = [];
-  crawlResource(resource, {
+  crawlTypedValue(toTypedValue(resource), {
     visitProperty: (_parent, _key, _path, propertyValues) => {
       for (const propertyValue of propertyValues) {
         if (propertyValue) {

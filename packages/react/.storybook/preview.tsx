@@ -1,7 +1,7 @@
 import '@mantine/core/styles.css';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router';
 import { createGlobalTimer } from '../src/stories/MockDateWrapper.utils';
 import { themes } from './themes';
 

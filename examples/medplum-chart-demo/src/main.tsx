@@ -5,7 +5,7 @@ import { MedplumProvider } from '@medplum/react';
 import '@medplum/react/styles.css';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from 'react-router';
 import { App } from './App';
 import '@mantine/notifications/styles.css';
 import { Notifications } from '@mantine/notifications';

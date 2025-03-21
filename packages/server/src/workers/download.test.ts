@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { closeDownloadWorker, execDownloadJob, getDownloadQueue } from './download';
@@ -169,7 +169,7 @@ describe('Download Worker', () => {
 
       // At this point the job should be in the queue
       // But let's delete the resource
-      await repo.deleteResource('Media', media.id as string);
+      await repo.deleteResource('Media', media.id);
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       await execDownloadJob(job);

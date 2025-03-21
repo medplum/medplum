@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="CDA.xsl"?>
+<ClinicalDocument
+    xmlns = "urn:hl7-org:v3"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:voc = "urn:hl7-org:v3/voc"
+    xmlns:sdtc = "urn:hl7-org:sdtc">
+    <realmCode code = "US"/>
+    <typeId extension = "POCD_HD000040" root = "2.16.840.1.113883.1.3"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1" extension = "2015-08-01"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.2" extension = "2015-08-01"/>
+    <templateId root="2.16.840.1.113883.10.20.22.1.2" />
+    <id root="3db70aff-83f5-4caf-91dc-d23fcc5e03bb" />
+    <code code="34133-9" displayName="Summarization of Episode Note"
+        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+    <title>Medical Summary</title>
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
+    <recordTarget>
+    <patientRole>
+      <id root="5adfedd2-3aaf-4a4f-aa35-5f6600b60c99" />
+      <id extension="111223333" root="2.16.840.1.113883.4.1" />
+      <telecom nullFlavor="UNK" />
+      <addr nullFlavor="UNK" />
+      <patient>
+        <name use="L">
+          <given>Katherine</given>
+          <family>Madison</family>
+        </name>
+        <raceCode nullFlavor="UNK"/>
+        <ethnicGroupCode nullFlavor="UNK"/>
+      </patient>
+    </patientRole>
+  </recordTarget>
+  <component>
+    <structuredBody>
+      <component>
+        <section>
+          <templateId root="2.16.840.1.113883.10.20.22.2.1.1" extension="2014-06-09" />
+          <!-- Medication Section (entries required) -->
+          <code code="10160-0" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"
+            displayName="History of Medication Use" />
+          <title>MEDICATIONS</title>
+          <text>
+            <table border="1" width="100%">
+              <thead>
+                <tr>
+                  <th>Medication</th>
+                  <th>Instructions</th>
+                  <th>Dosage</th>
+                  <th>Effective Dates (start - stop)</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr ID="Medication_6">
+                  <td>
+                    <content ID="MedicationName_6">3 ML Insulin Glargine 100 UNT/ML Pen Injector [Lantus]</content>
+                  </td>
+                  <td>
+                    <content ID="MedicationSig_6">Administer 40 units at bedtime</content>
+                  </td>
+                  <td>
+                    <content>40 units</content>
+                  </td>
+                  <td>Jan-09-2009 - </td>
+                  <td>Active</td>
+                </tr>
+              </tbody>
+            </table>
+          </text>
+          <entry>
+            <substanceAdministration classCode="SBADM" moodCode="EVN">
+              <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09" />
+              <templateId root="2.16.840.1.113883.10.20.22.4.16" />
+              <id root="1310a2d3-f888-4722-b4c4-a3c5911ac7f9" />
+              <text>
+                <!-- This reference refers to medication information in unstructured portion of
+                section-->
+                <reference value="#Medication_6" />
+              </text>
+              <statusCode code="active" />
+              <!-- This first effectiveTime shows that medication was added on January 9, 2009 (not
+              known to have stopped)-->
+              <effectiveTime xsi:type="IVL_TS">
+                <low value="20090109" />
+              </effectiveTime>
+              <!-- The second effectiveTime specifies dose frequency, which can be either a period
+              (PIVL_TS) or event (EIVL_TS). -->
+              <!-- This long-lasting insulin is administered once per day before bedtime (code =
+              "HS", hour of sleep), which is an event-->
+              <!--
+              <effectiveTime xsi:type="EIVL_TS" operator="A">
+                <event code="HS" />
+              </effectiveTime>
+              -->
+              <effectiveTime
+                  xsi:type = "PIVL_TS"
+                  institutionSpecified = "true"
+                  operator = "A">
+                  <period value = "12" unit = "h"/>
+              </effectiveTime>
+              <!-- This route uses the NCI (National Cancer Institute) Thesauraus code system, which
+              is constrained to the value set of 2.16.840.1.113883.3.88.12.3221.8.7 (FDA Medication
+              Route) -->
+              <routeCode code="C38299" codeSystem="2.16.840.1.113883.3.26.1.1"
+                displayName="Subcutaneous Route of Administration" codeSystemName="NCI Thesaurus" />
+              <!-- Since this dose is not pre-coordinated, specify both the amount with units in
+              UCUM. [IU] is international units -->
+              <!-- Note that this basal insulin is not administered on a sliding scale and a
+              specific dose is administered-->
+              <doseQuantity value="40" unit="[IU]" />
+              <consumable typeCode="CSM">
+                <manufacturedProduct classCode="MANU">
+                  <!-- ** Medication information ** -->
+                  <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09" />
+                  <templateId root="2.16.840.1.113883.10.20.22.4.23" />
+                  <manufacturedMaterial>
+                    <!-- Medications should be specified at a level corresponding to prescription
+                    when possible (branded medication below)-->
+                    <!-- Note the medication code specified in the test data is 261551, but that is
+                    not used since it's not an administered product (just brand name)-->
+                    <code code="847232" codeSystem="2.16.840.1.113883.6.88"
+                      displayName="3 ML insulin glargine 100 UNT/ML Pen Injector [Lantus]"
+                      codeSystemName="RxNorm">
+                      <originalText>
+                        <reference value="#MedicationName_6" />
+                      </originalText>
+                    </code>
+                  </manufacturedMaterial>
+                  <manufacturerOrganization>
+                    <name>SANOFI-AVENTIS</name>
+                  </manufacturerOrganization>
+                </manufacturedProduct>
+              </consumable>
+              <entryRelationship typeCode="COMP">
+                <substanceAdministration classCode="SBADM" moodCode="EVN">
+                  <templateId root="2.16.840.1.113883.10.20.22.4.147" />
+                  <code code="76662-6" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"
+                    displayName="Medication Instructions" />
+                  <text>
+                    <!-- Reference into the section.text to a tag that ONLY contains free text SIG -->
+                    <reference value="#MedicationSig_6" />
+                  </text>
+                  <consumable>
+                    <manufacturedProduct>
+                      <manufacturedLabeledDrug nullFlavor="NA" />
+                    </manufacturedProduct>
+                  </consumable>
+                </substanceAdministration>
+              </entryRelationship>
+            </substanceAdministration>
+          </entry>
+        </section>
+      </component>
+    </structuredBody>
+  </component>
+</ClinicalDocument>

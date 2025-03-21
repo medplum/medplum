@@ -1,5 +1,6 @@
 import {
   PropertyType,
+  WithId,
   evalFhirPathTyped,
   getSearchParameters,
   isResource,
@@ -34,7 +35,7 @@ export class ReferenceTable extends LookupTable {
     return false;
   }
 
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
+  async indexResource(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     if (!create) {
       await this.deleteValuesForResource(client, resource);
     }
@@ -81,7 +82,7 @@ interface ReferenceRow {
  * @param resource - The resource being indexed.
  * @returns An array of all references from the resource to be inserted into the database.
  */
-function getSearchReferences(resource: Resource): ReferenceRow[] {
+function getSearchReferences(resource: WithId<Resource>): ReferenceRow[] {
   const typedResource = [toTypedValue(resource)];
   const searchParams = getSearchParameters(resource.resourceType);
   if (!searchParams) {
@@ -119,12 +120,12 @@ function getSearchReferences(resource: Resource): ReferenceRow[] {
  */
 function addSearchReferenceResult(
   result: Map<string, ReferenceRow>,
-  resource: Resource,
+  resource: WithId<Resource>,
   searchParam: SearchParameter,
   targetId: string
 ): void {
   result.set(`${searchParam.code}|${targetId}`, {
-    resourceId: resource.id as string,
+    resourceId: resource.id,
     targetId: targetId,
     code: searchParam.code as string,
   });

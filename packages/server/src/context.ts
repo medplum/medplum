@@ -1,14 +1,14 @@
-import { Logger, ProfileResource, isUUID, parseLogLevel } from '@medplum/core';
-import { Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { Logger, ProfileResource, WithId, isUUID, parseLogLevel } from '@medplum/core';
+import { Bot, ClientApplication, Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
-import { getConfig } from './config';
+import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
+import { systemLogger } from './logger';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { IRequestContext, requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
-import { systemLogger } from './logger';
 
 export class RequestContext implements IRequestContext {
   readonly requestId: string;
@@ -33,34 +33,34 @@ export class RequestContext implements IRequestContext {
 }
 
 export class AuthenticatedRequestContext extends RequestContext {
-  constructor(
-    requestId: string,
-    traceId: string,
-    readonly authState: Readonly<AuthState>,
-    readonly repo: Repository,
-    logger?: Logger
-  ) {
+  readonly authState: Readonly<AuthState>;
+  readonly repo: Repository;
+
+  constructor(requestId: string, traceId: string, authState: Readonly<AuthState>, repo: Repository, logger?: Logger) {
     let loggerMetadata: Record<string, any> | undefined;
     if (repo.currentProject()?.id) {
       loggerMetadata = { projectId: repo.currentProject()?.id };
     }
     super(requestId, traceId, logger, loggerMetadata);
+
+    this.authState = authState;
+    this.repo = repo;
   }
 
-  get project(): Project {
+  get project(): WithId<Project> {
     return this.authState.project;
   }
 
-  get membership(): ProjectMembership {
-    return this.authState.membership;
+  get membership(): WithId<ProjectMembership> {
+    return this.authState.onBehalfOfMembership ?? this.authState.membership;
   }
 
   get login(): Login {
     return this.authState.login;
   }
 
-  get profile(): Reference<ProfileResource> {
-    return this.authState.membership.profile as Reference<ProfileResource>;
+  get profile(): Reference<ProfileResource | Bot | ClientApplication> {
+    return this.membership.profile;
   }
 
   [Symbol.dispose](): void {

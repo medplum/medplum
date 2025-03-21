@@ -1,16 +1,18 @@
-import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
+import { allOk, badRequest, createReference, getReferenceString, WithId } from '@medplum/core';
 import { AsyncJob, Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { Job, Queue } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
+import { Pool, PoolConfig } from 'pg';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { AuthenticatedRequestContext } from '../context';
 import * as database from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { requestContextStore } from '../request-context-store';
@@ -106,18 +108,18 @@ describe('Super Admin routes', () => {
     });
 
     adminAccessToken = await generateAccessToken({
-      login_id: login1.id as string,
-      sub: user1.id as string,
-      username: user1.id as string,
-      profile: getReferenceString(practitioner1 as Practitioner),
+      login_id: login1.id,
+      sub: user1.id,
+      username: user1.id,
+      profile: getReferenceString(practitioner1),
       scope: 'openid',
     });
 
     nonAdminAccessToken = await generateAccessToken({
-      login_id: login2.id as string,
-      sub: user2.id as string,
-      username: user2.id as string,
-      profile: getReferenceString(practitioner2 as Practitioner),
+      login_id: login2.id,
+      sub: user2.id,
+      username: user2.id,
+      profile: getReferenceString(practitioner2),
       scope: 'openid',
     });
   });
@@ -313,7 +315,11 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Reindex with respond-async', async () => {
+  test.each([
+    ['outdated', undefined, Repository.VERSION - 1],
+    ['specific', '0', 0],
+    ['all', undefined, undefined],
+  ])('Reindex with %s %s', async (reindexType, maxResourceVersion, expectedMaxResourceVersion) => {
     const queue = getReindexQueue() as any;
     queue.add.mockClear();
 
@@ -324,6 +330,8 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({
         resourceType: 'PaymentNotice',
+        reindexType,
+        maxResourceVersion,
       });
 
     expect(res.status).toStrictEqual(202);
@@ -334,8 +342,37 @@ describe('Super Admin routes', () => {
         resourceTypes: ['PaymentNotice'],
       })
     );
+    expect(queue.add.mock.calls[0][1].maxResourceVersion).toStrictEqual(expectedMaxResourceVersion);
     await withTestContext(() => new ReindexJob().execute({ data: queue.add.mock.calls[0][1] } as Job));
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
+  });
+
+  test.each([
+    ['foobar', undefined, 'reindexType must be "outdated", "all", or "specific"'],
+    ['outdated', '0', 'maxResourceVersion should only be specified when reindexType is "specific"'],
+    ['all', '0', 'maxResourceVersion should only be specified when reindexType is "specific"'],
+    ['specific', undefined, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+    ['specific', -1, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+    ['specific', Repository.VERSION, `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+    ['specific', '1.1', `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+    ['specific', '9999999', `maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`],
+  ])('Reindex with invalid args %s %s', async (reindexType, maxResourceVersion, expectedError) => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
+    const res = await request(app)
+      .post('/admin/super/reindex')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .set('Prefer', 'respond-async')
+      .type('json')
+      .send({
+        resourceType: 'PaymentNotice',
+        reindexType,
+        maxResourceVersion,
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe(expectedError);
   });
 
   test('Reindex with multiple resource types', async () => {
@@ -349,6 +386,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({
         resourceType: 'PaymentNotice,MedicinalProductManufactured,BiologicallyDerivedProduct',
+        reindexType: 'outdated',
       });
 
     expect(res.status).toStrictEqual(202);
@@ -563,7 +601,7 @@ describe('Super Admin routes', () => {
       expect(res1.status).toStrictEqual(201);
       expect(res1.body).toBeDefined();
 
-      const asyncJob: AsyncJob = res1.body;
+      const asyncJob = res1.body as WithId<AsyncJob>;
 
       const maybeStartDataMigrationSpy = jest
         .spyOn(database, 'maybeStartDataMigration')
@@ -622,6 +660,77 @@ describe('Super Admin routes', () => {
         expect(res1.status).toStrictEqual(200);
         expect(res1.headers['content-location']).not.toBeDefined();
         expect(res1.body).toMatchObject(allOk);
+      });
+    });
+
+    describe('Set data version', () => {
+      let noMigrationsConfig: MedplumServerConfig;
+      let poolConfig: PoolConfig;
+      let outOfBandPool: Pool;
+      let originalDataVersion: number;
+
+      beforeAll(async () => {
+        console.log = jest.fn();
+
+        noMigrationsConfig = await loadTestConfig();
+
+        poolConfig = {
+          host: noMigrationsConfig.database.host,
+          port: noMigrationsConfig.database.port,
+          database: noMigrationsConfig.database.dbname,
+          user: noMigrationsConfig.database.username,
+          password: noMigrationsConfig.database.password,
+          application_name: 'medplum-server',
+          ssl: noMigrationsConfig.database.ssl,
+          max: noMigrationsConfig.database.maxConnections ?? 100,
+        };
+
+        outOfBandPool = new Pool(poolConfig);
+        const results = await outOfBandPool.query<{ dataVersion: number }>(
+          'SELECT "dataVersion" FROM "DatabaseMigration";'
+        );
+        // We store the original version before our edits for this test suite
+        originalDataVersion = results.rows[0].dataVersion ?? -1;
+      });
+
+      beforeEach(async () => {
+        jest.restoreAllMocks();
+        // We set the dataVersion to 1 so that we can trigger the 'v1' migration to be pending after schema migrations run
+        await outOfBandPool.query('UPDATE "DatabaseMigration" SET "dataVersion" = 0;');
+      });
+
+      afterAll(async () => {
+        // We unset our version changes
+        await outOfBandPool.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1;', [originalDataVersion]);
+        await outOfBandPool.end();
+      });
+
+      test('Set data version -- Valid dataVersion', async () => {
+        const res1 = await request(app)
+          .post('/admin/super/setdataversion')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .type('json')
+          .send({ dataVersion: 1337 });
+
+        expect(res1.status).toStrictEqual(200);
+        expect(res1.body).toMatchObject(allOk);
+
+        // Check that data version actually gets set
+        const results = await database
+          .getDatabasePool(database.DatabaseMode.WRITER)
+          .query<{ dataVersion: number }>('SELECT "dataVersion" FROM "DatabaseMigration";');
+        expect(results.rows[0].dataVersion).toEqual(1337);
+      });
+
+      test.each([undefined, '3.3.0'])('Set data version -- invalid dataVersion - %s', async (dataVersion) => {
+        const res1 = await request(app)
+          .post('/admin/super/setdataversion')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .type('json')
+          .send({ dataVersion });
+
+        expect(res1.status).toStrictEqual(400);
+        expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
       });
     });
   });

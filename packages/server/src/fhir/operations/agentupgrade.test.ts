@@ -4,6 +4,7 @@ import {
   AgentUpgradeRequest,
   AgentUpgradeResponse,
   ContentType,
+  WithId,
   allOk,
   badRequest,
   serverError,
@@ -15,7 +16,7 @@ import { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
 import request, { Response } from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 import {
   MockAgentResponseHandle,
@@ -29,7 +30,7 @@ const NUM_DEFAULT_AGENTS = 2;
 
 describe('Agent/$upgrade', () => {
   const app = express();
-  const agents = [] as Agent[];
+  const agents = [] as WithId<Agent>[];
   let server: Server;
   let port: number;
   let accessToken: string;
@@ -167,7 +168,7 @@ describe('Agent/$upgrade', () => {
     );
 
     const res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$upgrade`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$upgrade`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(200);
@@ -242,7 +243,7 @@ describe('Agent/$upgrade', () => {
 
     // Agent by ID
     res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$upgrade`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$upgrade`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(400);
@@ -287,7 +288,7 @@ describe('Agent/$upgrade', () => {
 
     // Single agent by ID
     res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$upgrade`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$upgrade`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(500);

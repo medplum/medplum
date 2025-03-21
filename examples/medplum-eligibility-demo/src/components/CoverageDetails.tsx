@@ -2,7 +2,7 @@ import { Paper, ScrollArea, Tabs, Title } from '@mantine/core';
 import { getReferenceString, Operator, SearchRequest } from '@medplum/core';
 import { Coverage } from '@medplum/fhirtypes';
 import { ResourceHistoryTable, ResourceTable, SearchControl } from '@medplum/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 interface CoverageDetailsProps {
   readonly coverage: Coverage;
@@ -17,14 +17,18 @@ export function CoverageDetails(props: CoverageDetailsProps): JSX.Element {
   // A search request to show all CoverageEligibilityRequest resources that are related the current coverage's beneficiary
   const eligibilityRequestSearch: SearchRequest = {
     resourceType: 'CoverageEligibilityRequest',
-    filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(props.coverage.beneficiary) }],
+    filters: [
+      { code: 'patient', operator: Operator.EQUALS, value: getReferenceString(props.coverage.beneficiary) ?? '' },
+    ],
     fields: ['patient', 'purpose', 'item', 'insurance'],
   };
 
   // A search request to show all CoverageEligibilityResponse resources that are related the current coverage's beneficiary
   const eligibilityResponseSearch: SearchRequest = {
     resourceType: 'CoverageEligibilityResponse',
-    filters: [{ code: 'patient', operator: Operator.EQUALS, value: getReferenceString(props.coverage.beneficiary) }],
+    filters: [
+      { code: 'patient', operator: Operator.EQUALS, value: getReferenceString(props.coverage.beneficiary) ?? '' },
+    ],
     fields: ['patient', 'outcome', 'disposition', 'insurance'],
   };
 
@@ -50,7 +54,7 @@ export function CoverageDetails(props: CoverageDetailsProps): JSX.Element {
         <Tabs.Panel value="requests">
           <SearchControl
             search={eligibilityRequestSearch}
-            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
             hideFilters={true}
             hideToolbar={true}
           />
@@ -58,7 +62,7 @@ export function CoverageDetails(props: CoverageDetailsProps): JSX.Element {
         <Tabs.Panel value="responses">
           <SearchControl
             search={eligibilityResponseSearch}
-            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+            onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
             hideFilters={true}
             hideToolbar={true}
           />

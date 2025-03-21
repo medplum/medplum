@@ -3,7 +3,7 @@ import { getReferenceString, isOk } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
-import { Outlet, useLocation, useNavigate, Location } from 'react-router-dom';
+import { Location, Outlet, useLocation, useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
 import {
@@ -43,7 +43,7 @@ export function PatientPage(): JSX.Element {
       const tab = newTabName ? PatientPageTabs.find((t) => t.id === newTabName) : PatientPageTabs[0];
       if (tab) {
         setCurrentTab(tab.id);
-        navigate(formatPatientPageTabUrl(patient.id, tab));
+        navigate(formatPatientPageTabUrl(patient.id, tab))?.catch(console.error);
       }
     },
     [navigate, patient?.id]
@@ -85,6 +85,9 @@ export function PatientPage(): JSX.Element {
           patient={patient}
           appointmentsUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('appointments'))}
           encountersUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('encounter'))}
+          onClickResource={(resource) =>
+            navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
+          }
         />
       </div>
       <div className={classes.content}>

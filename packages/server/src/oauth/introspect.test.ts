@@ -1,6 +1,6 @@
 import express from 'express';
 import request from 'supertest';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { initApp, shutdownApp } from '../app';
 
 describe('OAuth2 UserInfo', () => {

@@ -6,10 +6,10 @@
 import { ContentType, deepClone, OAuthGrantType, OAuthTokenAuthMethod, splitN } from '@medplum/core';
 import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import qs from 'node:querystring';
 
-const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(\*|c?r?u?d?s?)$/;
+const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
 
 export interface SmartScope {
   readonly permissionType: 'patient' | 'user' | 'system';
@@ -128,7 +128,7 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
         result.push({
           permissionType: match[1] as 'patient' | 'user' | 'system',
           resourceType: match[2],
-          scope: match[3] === '*' ? 'cruds' : match[3],
+          scope: normalizeV2ScopeString(match[3]),
           criteria,
         });
       }
@@ -136,6 +136,19 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
   }
 
   return result;
+}
+
+function normalizeV2ScopeString(str: string): string {
+  switch (str) {
+    case '*':
+      return 'cruds';
+    case 'read':
+      return 'rs';
+    case 'write':
+      return 'cud';
+    default:
+      return str;
+  }
 }
 
 /**

@@ -1,11 +1,11 @@
-import { ContentType, getReferenceString } from '@medplum/core';
+import { ContentType, getReferenceString, WithId } from '@medplum/core';
 import { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
 import { DatabaseMode, getDatabasePool } from '../database';
 
@@ -13,7 +13,7 @@ const app = express();
 let accessToken: string;
 let legacyJsonResponseAccessToken: string;
 let searchOnReaderAccessToken: string;
-let testPatient: Patient;
+let testPatient: WithId<Patient>;
 let patientId: string;
 let patientVersionId: string;
 
@@ -45,8 +45,8 @@ describe('FHIR Routes', () => {
         });
       expect(res.status).toBe(201);
       if (token === accessToken) {
-        testPatient = res.body as Patient;
-        patientId = testPatient.id as string;
+        testPatient = res.body as WithId<Patient>;
+        patientId = testPatient.id;
         patientVersionId = (testPatient.meta as Meta).versionId as string;
       }
     }

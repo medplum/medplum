@@ -1,4 +1,4 @@
-import { getReferenceString, Operator, ProfileResource } from '@medplum/core';
+import { getReferenceString, Operator, ProfileResource, WithId } from '@medplum/core';
 import { Login, Project, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
@@ -29,7 +29,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   const profile = await systemRepo.readReference<ProfileResource>(profileRef);
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
-  let user: User | undefined = undefined;
+  let user: WithId<User> | undefined = undefined;
 
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {
@@ -122,7 +122,7 @@ async function getUserConfiguration(
   return result;
 }
 
-async function getSessions(systemRepo: Repository, user: User): Promise<UserSession[]> {
+async function getSessions(systemRepo: Repository, user: WithId<User>): Promise<UserSession[]> {
   const logins = await systemRepo.searchResources<Login>({
     resourceType: 'Login',
     filters: [
@@ -149,7 +149,7 @@ async function getSessions(systemRepo: Repository, user: User): Promise<UserSess
     const browser = login.userAgent ? Bowser.getParser(login.userAgent) : undefined;
 
     result.push({
-      id: login.id as string,
+      id: login.id,
       lastUpdated: login.meta?.lastUpdated as string,
       authMethod: login.authMethod as string,
       remoteAddress: login.remoteAddress as string,

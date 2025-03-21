@@ -82,7 +82,7 @@ export class HumanNameTable extends LookupTable {
     }
 
     const resourceType = resource.resourceType;
-    const resourceId = resource.id as string;
+    const resourceId = resource.id;
     const values = names.map((name) => ({
       resourceId,
       name: getNameString(name),
@@ -104,7 +104,7 @@ export class HumanNameTable extends LookupTable {
     }
 
     const tableName = this.getTableName();
-    const resourceId = resource.id as string;
+    const resourceId = resource.id;
     await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
   }
 

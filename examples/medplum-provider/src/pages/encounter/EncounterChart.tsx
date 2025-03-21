@@ -1,29 +1,34 @@
-import { Button, Text, Stack, Group, Box, Select } from '@mantine/core';
-import { Encounter, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
-import { CodeInput, ResourceInput, useMedplum } from '@medplum/react';
-import { Outlet, useLocation, useParams } from 'react-router-dom';
-import { useCallback, useEffect, useState } from 'react';
+import { Stack, Box, Card } from '@mantine/core';
+import { Practitioner, Task, ClinicalImpression, QuestionnaireResponse, Questionnaire } from '@medplum/fhirtypes';
+import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
+import { Outlet, useLocation, useParams } from 'react-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { deepEquals, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { IconCircleOff } from '@tabler/icons-react';
-import { AddPlanDefinition } from '../components/AddPlanDefinitions/AddPlanDefinition';
 import { TaskPanel } from '../components/Task/TaskPanel';
+import { EncounterHeader } from '../components/Encounter/EncounterHeader';
+import { usePatient } from '../../hooks/usePatient';
+import { useEncounter } from '../../hooks/useEncounter';
+import { SAVE_TIMEOUT_MS } from '../../config/constants';
 
 export const EncounterChart = (): JSX.Element => {
-  const { patientId, encounterId } = useParams();
+  const { encounterId } = useParams();
   const medplum = useMedplum();
-  const [encounter, setEncounter] = useState<Encounter | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [status, setStatus] = useState<Task['status'] | undefined>();
+  const patient = usePatient();
+  const encounter = useEncounter();
   const location = useLocation();
+  const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [clinicalImpression, setClinicalImpression] = useState<ClinicalImpression | undefined>();
+  const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>();
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   const fetchTasks = useCallback(async (): Promise<void> => {
-    const encounterResult = await medplum.readResource('Encounter', encounterId as string);
-    setEncounter(encounterResult);
-    console.log(encounterResult);
-    setStatus(encounterResult.status as typeof status);
-
-    const taskResult = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`, {
+    if (!encounter) {
+      return;
+    }
+    const taskResult = await medplum.searchResources('Task', `encounter=${getReferenceString(encounter)}`, {
       cache: 'no-cache',
     });
 
@@ -34,7 +39,25 @@ export const EncounterChart = (): JSX.Element => {
     });
 
     setTasks(taskResult);
-  }, [medplum, encounterId]);
+  }, [medplum, encounter]);
+
+  const fetchClinicalImpressions = useCallback(async (): Promise<void> => {
+    if (!encounter) {
+      return;
+    }
+    const clinicalImpressionResult = await medplum.searchResources(
+      'ClinicalImpression',
+      `encounter=${getReferenceString(encounter)}`
+    );
+
+    const result = clinicalImpressionResult?.[0];
+    setClinicalImpression(result);
+
+    if (result?.supportingInfo?.[0]?.reference) {
+      const response = await medplum.readReference({ reference: result.supportingInfo[0].reference });
+      setQuestionnaireResponse(response as QuestionnaireResponse);
+    }
+  }, [medplum, encounter]);
 
   useEffect(() => {
     fetchTasks().catch((err) => {
@@ -45,33 +68,57 @@ export const EncounterChart = (): JSX.Element => {
         message: normalizeErrorString(err),
       });
     });
-  }, [medplum, encounterId, fetchTasks, location.pathname]);
+    fetchClinicalImpressions().catch((err) => {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    });
+  }, [medplum, encounterId, fetchTasks, fetchClinicalImpressions, location.pathname]);
 
-  const updateTaskList = useCallback(
-    (updatedTask: Task): void => {
-      setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
-    },
-    [tasks]
-  );
+  useEffect(() => {
+    const fetchPractitioner = async (): Promise<void> => {
+      if (encounter?.participant?.[0]?.individual) {
+        const practitionerResult = await medplum.readReference(encounter.participant[0].individual);
+        setPractitioner(practitionerResult as Practitioner);
+      }
+    };
 
-  const handleSaveChanges = useCallback(
-    async (task: Task, questionnaireResponse: QuestionnaireResponse): Promise<void> => {
+    fetchPractitioner().catch((err) => {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    });
+  }, [encounter, medplum]);
+
+  const saveQuestionnaireResponse = async (response: QuestionnaireResponse): Promise<void> => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(async () => {
       try {
-        const response = await medplum.createResource<QuestionnaireResponse>(questionnaireResponse);
-        const updatedTask = await medplum.updateResource<Task>({
-          ...task,
-          output: [
-            {
-              type: {
-                text: 'QuestionnaireResponse',
-              },
-              valueReference: {
-                reference: getReferenceString(response),
-              },
-            },
-          ],
-        });
-        updateTaskList(updatedTask);
+        if (!response.id) {
+          const savedResponse = await medplum.createResource(response);
+          setQuestionnaireResponse(savedResponse);
+
+          if (clinicalImpression) {
+            const updatedClinicalImpression: ClinicalImpression = {
+              ...clinicalImpression,
+              supportingInfo: [{ reference: `QuestionnaireResponse/${savedResponse.id}` }],
+            };
+            await medplum.updateResource(updatedClinicalImpression);
+            setClinicalImpression(updatedClinicalImpression);
+          }
+        } else {
+          const updatedResponse = await medplum.updateResource(response);
+          setQuestionnaireResponse(updatedResponse);
+        }
       } catch (err) {
         showNotification({
           color: 'red',
@@ -80,79 +127,116 @@ export const EncounterChart = (): JSX.Element => {
           message: normalizeErrorString(err),
         });
       }
+    }, SAVE_TIMEOUT_MS);
+  };
+
+  const onChange = (response: QuestionnaireResponse): void => {
+    if (!questionnaireResponse) {
+      const updatedResponse: QuestionnaireResponse = { ...response, status: 'in-progress' };
+      saveQuestionnaireResponse(updatedResponse).catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
+    } else {
+      const equals = deepEquals(response.item, questionnaireResponse?.item);
+      if (!equals) {
+        const updatedResponse: QuestionnaireResponse = {
+          ...questionnaireResponse,
+          item: response.item,
+          status: 'in-progress',
+        };
+        saveQuestionnaireResponse(updatedResponse).catch((err) => {
+          showNotification({
+            color: 'red',
+            icon: <IconCircleOff />,
+            title: 'Error',
+            message: normalizeErrorString(err),
+          });
+        });
+      }
+    }
+  };
+
+  const updateTaskList = useCallback(
+    (updatedTask: Task): void => {
+      setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
     },
-    [medplum, updateTaskList]
+    [tasks]
   );
+
+  if (!patient || !encounter || (clinicalImpression?.supportingInfo?.[0]?.reference && !questionnaireResponse)) {
+    return <Loading />;
+  }
 
   return (
     <>
-      <Box p="md">
-        <Text size="lg" color="dimmed" mb="lg">
-          Encounter {encounter?.period?.start ?? ''}
-        </Text>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
+      <Stack justify="space-between" gap={0}>
+        <Box p="md">
+          <EncounterHeader encounter={encounter} practitioner={practitioner} />
+        </Box>
+        <Box p="md">
           <Stack gap="md">
-            <Stack gap="md">
-              {tasks?.map((task: Task) => (
-                <TaskPanel
-                  key={task.id}
-                  task={task}
-                  onSaveQuestionnaire={handleSaveChanges}
-                  onCompleteTask={updateTaskList}
+            {clinicalImpression && (
+              <Card withBorder shadow="sm">
+                <QuestionnaireForm
+                  questionnaire={questionnaire}
+                  questionnaireResponse={questionnaireResponse}
+                  excludeButtons={true}
+                  onChange={onChange}
                 />
-              ))}
-            </Stack>
-          </Stack>
-
-          <Stack gap="lg">
-            {encounterId && patientId && (
-              <AddPlanDefinition encounterId={encounterId} patientId={patientId} onApply={fetchTasks} />
+              </Card>
             )}
 
-            <Stack gap="md">
-              <div>
-                <CodeInput
-                  name="status"
-                  label="Status"
-                  binding="http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
-                  maxValues={1}
-                  defaultValue={status}
-                  onChange={(value) => {
-                    if (value) {
-                      setStatus(value as typeof status);
-                    }
-                  }}
-                />
-              </div>
-
-              <div>
-                <ResourceInput name="practitioner" resourceType="Practitioner" label="Assigned practitioner" />
-              </div>
-
-              <div>
-                <Text fw={500} mb="xs">
-                  Encounter Time
-                </Text>
-                <Select placeholder="1 hour" data={['30 minutes', '1 hour', '2 hours']} />
-              </div>
-
-              <Stack gap="md">
-                <Button fullWidth>Save changes</Button>
-
-                <Group gap="sm">
-                  <Button variant="light" color="gray" fullWidth>
-                    Mark as finished
-                  </Button>
-                </Group>
-
-                <Text size="sm">Complete all the tasks in encounter before finishing it</Text>
-              </Stack>
-            </Stack>
+            {tasks.map((task: Task) => (
+              <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
+            ))}
           </Stack>
-        </div>
-        <Outlet />
-      </Box>
+
+          <Outlet />
+        </Box>
+      </Stack>
     </>
   );
+};
+
+const questionnaire: Questionnaire = {
+  resourceType: 'Questionnaire',
+  identifier: [
+    {
+      value: 'SOAPNOTE',
+    },
+  ],
+  name: 'Fill chart note',
+  title: 'Fill chart note',
+  status: 'active',
+  item: [
+    {
+      id: 'id-1',
+      linkId: 'q1',
+      type: 'text',
+      text: 'Subjective evaluation',
+    },
+    {
+      id: 'id-2',
+      linkId: 'q2',
+      type: 'text',
+      text: 'Objective evaluation',
+    },
+    {
+      id: 'id-3',
+      linkId: 'q3',
+      type: 'text',
+      text: 'Assessment',
+    },
+    {
+      id: 'id-4',
+      linkId: 'q4',
+      type: 'text',
+      text: 'Treatment plan',
+    },
+  ],
 };

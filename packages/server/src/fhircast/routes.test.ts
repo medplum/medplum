@@ -13,7 +13,8 @@ import { randomUUID } from 'node:crypto';
 import { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
-import { MedplumServerConfig, loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 
@@ -73,7 +74,7 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get well known', async () => {
-    let res;
+    let res: any;
 
     res = await request(server).get(`${STU2_BASE_ROUTE}/.well-known/fhircast-configuration`);
 
@@ -564,7 +565,7 @@ describe('FHIRCast routes', () => {
 
   test('Get context', async () => {
     const topic = randomUUID();
-    let res;
+    let res: any;
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
     res = await request(server)
       .get(`${STU2_BASE_ROUTE}/${topic}`)
@@ -580,7 +581,7 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get context after *-open event', async () => {
-    let contextRes;
+    let contextRes: any;
 
     const topic = randomUUID();
     const payload = createFhircastMessagePayload(topic, 'DiagnosticReport-open', [
@@ -689,8 +690,8 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get context after *-close event', async () => {
-    let beforeContextRes;
-    let afterContextRes;
+    let beforeContextRes: any;
+    let afterContextRes: any;
 
     const topic = randomUUID();
 
@@ -706,10 +707,7 @@ describe('FHIRCast routes', () => {
     payload.event['context.versionId'] = generateId();
 
     // Setup the key as if we have already opened this resource
-    await getRedis().set(
-      `medplum:fhircast:project:${project.id as string}:topic:${topic}:latest`,
-      JSON.stringify(payload)
-    );
+    await getRedis().set(`medplum:fhircast:project:${project.id}:topic:${topic}:latest`, JSON.stringify(payload));
 
     beforeContextRes = await request(server)
       .get(`${STU2_BASE_ROUTE}/${topic}`)
@@ -769,7 +767,7 @@ describe('FHIRCast routes', () => {
     expect(publishRes.status).toBe(201);
 
     const latestEventStr = (await getRedis().get(
-      `medplum:fhircast:project:${project.id as string}:topic:${topic}:latest`
+      `medplum:fhircast:project:${project.id}:topic:${topic}:latest`
     )) as string;
     expect(latestEventStr).toBeTruthy();
     const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'DiagnosticReport-open'>;
@@ -785,9 +783,9 @@ describe('FHIRCast routes', () => {
     const context = [
       {
         key: 'report',
-        resource: { id: 'abc-123', resourceType: 'DiagnosticReport', status: 'final', code: { text: 'test' } },
+        reference: { reference: 'DiagnosticReport/123' },
       },
-      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle', type: 'searchset' } },
+      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle', type: 'transaction' } },
     ] satisfies FhircastEventContext<'DiagnosticReport-update'>[];
 
     const versionId = randomUUID();
@@ -801,7 +799,7 @@ describe('FHIRCast routes', () => {
     expect(publishRes.status).toBe(201);
 
     const latestEventStr = (await getRedis().get(
-      `medplum:fhircast:project:${project.id as string}:topic:${topic}:latest`
+      `medplum:fhircast:project:${project.id}:topic:${topic}:latest`
     )) as string;
     expect(latestEventStr).toBeTruthy();
     const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'DiagnosticReport-update'>;

@@ -1,13 +1,14 @@
 import {
   badRequest,
+  Event,
   getReferenceString,
   getStatus,
   isOk,
-  OperationOutcomeError,
-  parseSearchRequest,
-  Event,
   normalizeOperationOutcome,
   notFound,
+  OperationOutcomeError,
+  parseSearchRequest,
+  WithId,
 } from '@medplum/core';
 import {
   Bundle,
@@ -17,10 +18,10 @@ import {
   ParametersParameter,
   Resource,
 } from '@medplum/fhirtypes';
+import { IncomingHttpHeaders } from 'node:http';
 import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
 import { FhirRepository } from './repo';
 import { HttpMethod, RouteResult } from './urlrouter';
-import { IncomingHttpHeaders } from 'node:http';
 
 const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;
@@ -61,6 +62,10 @@ export async function processBatch(
  * In particular, it tracks rewritten IDs as necessary.
  */
 class BatchProcessor {
+  private readonly router: FhirRouter;
+  private readonly repo: FhirRepository;
+  private readonly bundle: Bundle;
+  private readonly req: FhirRequest;
   private readonly resolvedIdentities: Record<string, string>;
 
   /**
@@ -70,12 +75,11 @@ class BatchProcessor {
    * @param bundle - The input bundle.
    * @param req - The request for the batch.
    */
-  constructor(
-    private readonly router: FhirRouter,
-    private readonly repo: FhirRepository,
-    private readonly bundle: Bundle,
-    private readonly req: FhirRequest
-  ) {
+  constructor(router: FhirRouter, repo: FhirRepository, bundle: Bundle, req: FhirRequest) {
+    this.router = router;
+    this.repo = repo;
+    this.bundle = bundle;
+    this.req = req;
     this.resolvedIdentities = Object.create(null);
   }
 
@@ -280,7 +284,7 @@ class BatchProcessor {
     }
     if (entry.resource) {
       entry.resource.id = this.repo.generateId();
-      return { placeholder, reference: getReferenceString(entry.resource) };
+      return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
     }
     return undefined;
   }
@@ -317,7 +321,7 @@ class BatchProcessor {
               }
 
               entry.resource.id = this.repo.generateId();
-              return { placeholder, reference: getReferenceString(entry.resource) };
+              return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
             }
             return undefined;
           default:

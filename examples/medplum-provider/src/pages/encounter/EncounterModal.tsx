@@ -1,11 +1,11 @@
-import { useNavigate } from 'react-router-dom';
-import { Button, Modal, Text, Card, Grid, Box, Stack } from '@mantine/core';
-import { useState } from 'react';
-import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
+import { Box, Button, Card, Grid, Modal, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Coding, Encounter, PlanDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { ClinicalImpression, Coding, Encounter, PlanDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
+import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './EncounterModal.module.css';
 
@@ -14,13 +14,19 @@ export const EncounterModal = (): JSX.Element => {
   const medplum = useMedplum();
   const patient = usePatient();
   const [isOpen, setIsOpen] = useState(true);
-  const [types, setTypes] = useState<ValueSetExpansionContains[]>([]);
+  const [serviceType, setServiceType] = useState<ValueSetExpansionContains[]>([]);
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [status, setStatus] = useState<Encounter['status'] | undefined>();
 
   const handleCreateEncounter = async (): Promise<void> => {
-    if (!patient || !encounterClass || !planDefinitionData || !status) {
+    if (!patient || !encounterClass || !serviceType || !status) {
+      showNotification({
+        color: 'yellow',
+        icon: <IconAlertSquareRounded />,
+        title: 'Error',
+        message: 'Fill up mandatory fields.',
+      });
       return;
     }
 
@@ -30,44 +36,38 @@ export const EncounterModal = (): JSX.Element => {
       statusHistory: [],
       class: encounterClass,
       classHistory: [],
-      type: [
-        {
-          coding: types,
-        },
-      ],
+      serviceType: { coding: serviceType },
       subject: createReference(patient),
     };
 
     try {
       const encounter = await medplum.createResource(encounterData);
-      await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinitionData.id as string, '$apply'), {
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'subject',
-            valueString: getReferenceString(patient),
-          },
-          {
-            name: 'encounter',
-            valueString: getReferenceString(encounter),
-          },
-        ],
-      });
+      const clinicalImpressionData: ClinicalImpression = {
+        resourceType: 'ClinicalImpression',
+        status: 'completed',
+        description: 'Initial clinical impression',
+        subject: createReference(patient),
+        encounter: createReference(encounter),
+        date: new Date().toISOString(),
+      };
 
-      showNotification({
-        icon: <IconCircleCheck />,
-        title: 'Success',
-        message: 'Encounter created',
-      });
+      await medplum.createResource(clinicalImpressionData);
 
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`);
+      if (planDefinitionData) {
+        await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinitionData.id as string, '$apply'), {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'subject', valueString: getReferenceString(patient) },
+            { name: 'encounter', valueString: getReferenceString(encounter) },
+          ],
+        });
+      }
+
+      showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
+
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`)?.catch(console.error);
     } catch (err) {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
+      showNotification({ color: 'red', icon: <IconCircleOff />, title: 'Error', message: normalizeErrorString(err) });
     }
   };
 
@@ -75,42 +75,41 @@ export const EncounterModal = (): JSX.Element => {
     <Modal
       opened={isOpen}
       onClose={() => {
-        navigate(-1);
+        navigate(-1)?.catch(console.error);
         setIsOpen(false);
       }}
       size="60%"
       title="New encounter"
-      styles={{
-        title: {
-          fontSize: '1.125rem',
-          fontWeight: 600,
-        },
-        body: {
-          padding: 0,
-          height: '60vh',
-        },
-      }}
+      styles={{ title: { fontSize: '1.125rem', fontWeight: 600 }, body: { padding: 0, height: '60vh' } }}
     >
       <Stack h="100%" justify="space-between" gap={0}>
         <Box flex={1} miw={0}>
           <Grid p="md" h="100%">
             <Grid.Col span={6} pr="md">
               <Stack gap="md">
-                <ResourceInput resourceType="Patient" name="Patient-id" defaultValue={patient} disabled={true} />
+                <ResourceInput
+                  resourceType="Patient"
+                  name="Patient-id"
+                  defaultValue={patient}
+                  disabled={true}
+                  required={true}
+                />
 
                 <ValueSetAutocomplete
                   name="type"
-                  label="Type"
-                  binding="http://hl7.org/fhir/ValueSet/encounter-type"
+                  label="Service Type"
+                  binding="http://hl7.org/fhir/ValueSet/service-type"
                   withHelpText={true}
                   maxValues={1}
-                  onChange={(items: ValueSetExpansionContains[]) => setTypes(items)}
+                  required={true}
+                  onChange={(items: ValueSetExpansionContains[]) => setServiceType(items)}
                 />
 
                 <CodingInput
                   name="class"
                   label="Class"
                   binding="http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
+                  required={true}
                   onChange={setEncounterClass}
                   path="Encounter.type"
                 />
@@ -120,6 +119,7 @@ export const EncounterModal = (): JSX.Element => {
                   label="Status"
                   binding="http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
                   maxValues={1}
+                  required={true}
                   onChange={(value) => {
                     if (value) {
                       setStatus(value as typeof status);

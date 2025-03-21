@@ -147,3 +147,4 @@ Build a powerful dashboard that can track your workflow and get where you need t
 - Blog Post: The Pre-Product Startup and the FDA on [Y Combinator](https://www.ycombinator.com/blog/the-pre-product-startup-and-the-fda/) by Reshma Khilnani
 - Blog Post: FDA Orientation for Early Stage Startups on [Y Combinator](https://www.ycombinator.com/blog/fda-orientation-for-early-stage-startups/) by Reshma Khilnani
 - Blog Post: How to start a Biotech Company on a Budget on [Y Combinator](https://www.ycombinator.com/blog/how-to-start-a-biotech-company-on-a-budget/) by Reshma Khilnani
+- Blog Post: [Devtools for Life Sciences](/blog/life-sciences-devtools)

@@ -187,8 +187,11 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
 }
 
 export class LabOrderValidationError extends Error {
-  constructor(readonly errors: LabOrderInputErrors) {
+  readonly errors: LabOrderInputErrors;
+
+  constructor(errors: LabOrderInputErrors) {
     super(`Invalid lab order inputs: ${JSON.stringify(errors)}`);
+    this.errors = errors;
   }
 }
 
@@ -264,7 +267,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
       performer: [performerReference],
       category: [{ coding: [{ system: SNOMED, code: '103693007', display: 'Diagnostic procedure' }] }],
       code: { coding: [test] },
-      priority: metadata?.priority || 'routine',
+      priority: metadata?.priority ?? 'routine',
       note: metadata?.notes
         ? [{ authorReference: requesterReference, time: new Date().toISOString(), text: metadata.notes }]
         : undefined,

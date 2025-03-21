@@ -9,7 +9,7 @@ import nodemailer, { Transporter } from 'nodemailer';
 import Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
-import { getConfig, loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { withTestContext } from '../test.setup';

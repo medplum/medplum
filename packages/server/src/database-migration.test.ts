@@ -1,13 +1,14 @@
-import { deepClone, parseSearchRequest, sleep } from '@medplum/core';
+import { deepClone, parseSearchRequest, sleep, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Pool, PoolConfig } from 'pg';
 import { initAppServices, shutdownApp } from './app';
-import * as configModule from './config';
-import { loadTestConfig, MedplumServerConfig } from './config';
+import * as configLoaderModule from './config/loader';
+import { loadTestConfig } from './config/loader';
+import { MedplumServerConfig } from './config/types';
 import { getPendingDataMigration, markPendingDataMigrationCompleted, maybeStartDataMigration } from './database';
 import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
-import { withTestContext } from './test.setup';
+import { createTestProject, withTestContext } from './test.setup';
 import * as versionModule from './util/version';
 
 const MAX_POLL_TRIES = 5;
@@ -36,7 +37,7 @@ jest.mock('./migrations/data/index', () => {
 });
 
 jest.mock('./util/version', () => {
-  return { getServerVersion: jest.fn().mockImplementation(() => '3.2.31') };
+  return { getServerVersion: jest.fn().mockImplementation(() => '3.3.0') };
 });
 
 describe('Database migrations', () => {
@@ -94,7 +95,7 @@ describe('Database migrations', () => {
         jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '4.0.0');
         await expect(initAppServices(migrationsConfig)).rejects.toThrow(
           new Error(
-            'Unable to run data migration against the current server version. Migration requires server at version 3.2.31 <= version < 4.0.0, but current server version is 4.0.0'
+            'Unable to run data migration against the current server version. Migration requires server at version 3.3.0 <= version < 4.0.0, but current server version is 4.0.0'
           )
         );
         await shutdownApp();
@@ -113,7 +114,7 @@ describe('Database migrations', () => {
       loggerInfoSpy.mockRestore();
     });
 
-    test.each(['3.2.31', '3.3.1', '3.4.0'])(
+    test.each(['3.3.0', '3.3.1', '3.4.0'])(
       'Current version greater than or equal to required version and less than `requiredBefore` -- version %s',
       (serverVersion) =>
         withTestContext(async () => {
@@ -143,7 +144,7 @@ describe('Database migrations', () => {
       if (jobs.length) {
         await systemRepo.expungeResources(
           'AsyncJob',
-          jobs.map((job) => job.id as string)
+          jobs.map((job) => job.id)
         );
       }
     });
@@ -164,7 +165,7 @@ describe('Database migrations', () => {
     let getConfigSpy: jest.SpyInstance;
 
     beforeEach(async () => {
-      getConfigSpy = jest.spyOn(configModule, 'getConfig').mockImplementation(() => {
+      getConfigSpy = jest.spyOn(configLoaderModule, 'getConfig').mockImplementation(() => {
         return migrationsConfig;
       });
 
@@ -173,11 +174,9 @@ describe('Database migrations', () => {
       // Delete all data migration jobs
       const systemRepo = getSystemRepo();
       const jobs = await systemRepo.searchResources<AsyncJob>(parseSearchRequest('AsyncJob?type=data-migration'));
-      const promises = [] as Promise<void>[];
       for (const job of jobs) {
-        promises.push(systemRepo.deleteResource('AsyncJob', job.id as string));
+        await systemRepo.deleteResource('AsyncJob', job.id);
       }
-      await Promise.allSettled(promises);
     });
 
     afterEach(async () => {
@@ -187,7 +186,7 @@ describe('Database migrations', () => {
 
     test('No data migration in progress -- start migration job', () =>
       withTestContext(async () => {
-        jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '3.2.31');
+        jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '3.3.0');
 
         const asyncJob = await maybeStartDataMigration();
         expect(asyncJob).toMatchObject<AsyncJob>({
@@ -198,18 +197,17 @@ describe('Database migrations', () => {
           request: expect.any(String),
           requestTime: expect.any(String),
           dataVersion: 1,
-          minServerVersion: '3.2.31',
+          minServerVersion: '3.3.0',
         });
 
-        let updated: AsyncJob | undefined;
+        let updated: WithId<AsyncJob> | undefined;
         let tries = 0;
         while (updated?.status !== 'completed') {
           if (tries > MAX_POLL_TRIES) {
             throw new Error('Timed out while polling async job');
           }
           try {
-            updated = await getSystemRepo().readResource<AsyncJob>('AsyncJob', (asyncJob as AsyncJob).id as string);
-            console.log(updated);
+            updated = await getSystemRepo().readResource<AsyncJob>('AsyncJob', (asyncJob as WithId<AsyncJob>).id);
             expect(updated).toMatchObject<Partial<AsyncJob>>({
               resourceType: 'AsyncJob',
               status: 'completed',
@@ -230,7 +228,7 @@ describe('Database migrations', () => {
           request: 'mock-data-job',
           requestTime: new Date().toISOString(),
           dataVersion: 1,
-          minServerVersion: '3.2.31',
+          minServerVersion: '3.3.0',
         });
         await expect(maybeStartDataMigration()).resolves.toBeUndefined();
       }));
@@ -244,13 +242,64 @@ describe('Database migrations', () => {
           requestTime: new Date().toISOString(),
           request: 'mock-job',
           dataVersion: 1,
-          minServerVersion: '3.2.31',
+          minServerVersion: '3.3.0',
         });
         await expect(maybeStartDataMigration()).resolves.toMatchObject({
           id: asyncJob.id,
           type: 'data-migration',
           status: 'accepted',
         });
+      }));
+
+    test('Existing data migration job in a project', () =>
+      withTestContext(async () => {
+        const { repo } = await createTestProject({ withRepo: true });
+
+        // Not using system repo to create the job so that AsyncJob has a compartment
+        const asyncJob = await repo.createResource<AsyncJob>({
+          resourceType: 'AsyncJob',
+          type: 'data-migration',
+          status: 'accepted',
+          requestTime: new Date().toISOString(),
+          request: 'mock-job',
+          dataVersion: 1,
+          minServerVersion: '3.3.0',
+        });
+
+        expect(asyncJob.meta?.compartment).toBeDefined();
+
+        await expect(maybeStartDataMigration()).rejects.toThrow(
+          'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project'
+        );
+      }));
+
+    test('Multiple data migration jobs with accepted status', () =>
+      withTestContext(async () => {
+        const { repo } = await createTestProject({ withRepo: true });
+
+        await repo.createResource<AsyncJob>({
+          resourceType: 'AsyncJob',
+          type: 'data-migration',
+          status: 'accepted',
+          requestTime: new Date().toISOString(),
+          request: 'mock-job',
+          dataVersion: 1,
+          minServerVersion: '3.3.0',
+        });
+
+        await getSystemRepo().createResource<AsyncJob>({
+          resourceType: 'AsyncJob',
+          type: 'data-migration',
+          status: 'accepted',
+          requestTime: new Date().toISOString(),
+          request: 'mock-job',
+          dataVersion: 1,
+          minServerVersion: '3.3.0',
+        });
+
+        await expect(maybeStartDataMigration()).rejects.toThrow(
+          'Data migration unable to start due to more than one existing data-migration AsyncJob with accepted status'
+        );
       }));
 
     test('Asserted version is less than or equal to current version', () =>
@@ -262,7 +311,7 @@ describe('Database migrations', () => {
           request: 'mock-data-job',
           requestTime: new Date().toISOString(),
           dataVersion: 1,
-          minServerVersion: '3.2.31',
+          minServerVersion: '3.3.0',
         });
 
         await expect(maybeStartDataMigration(1)).resolves.toBeUndefined();
@@ -277,7 +326,7 @@ describe('Database migrations', () => {
           request: 'mock-data-job',
           requestTime: new Date().toISOString(),
           dataVersion: 1,
-          minServerVersion: '3.2.31',
+          minServerVersion: '3.3.0',
         });
 
         await expect(maybeStartDataMigration(2)).rejects.toThrow(

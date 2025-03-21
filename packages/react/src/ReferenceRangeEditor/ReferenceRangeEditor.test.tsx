@@ -3,7 +3,7 @@ import { ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { StrictMode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { HDLDefinition, TestosteroneDefinition } from '../stories/referenceLab';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ReferenceRangeEditor, ReferenceRangeEditorProps } from './ReferenceRangeEditor';

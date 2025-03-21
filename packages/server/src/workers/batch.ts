@@ -5,11 +5,12 @@ import {
   isOk,
   OperationOutcomeError,
   serverError,
+  WithId,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
 import { AsyncJob, Bundle, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import { MedplumServerConfig } from '../config';
+import { MedplumServerConfig } from '../config/types';
 import { getAuthenticatedContext, tryRunInRequestContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { uploadBinaryData } from '../fhir/binary';
@@ -23,11 +24,11 @@ import { getLogger } from '../logger';
  */
 
 export interface BatchJobData {
-  readonly asyncJob: AsyncJob;
+  readonly asyncJob: WithId<AsyncJob>;
   readonly bundle: Bundle;
   readonly login: Login;
-  readonly project: Project;
-  readonly membership: ProjectMembership;
+  readonly project: WithId<Project>;
+  readonly membership: WithId<ProjectMembership>;
   readonly requestId?: string;
   readonly traceId?: string;
 }
@@ -101,7 +102,7 @@ async function addBatchJobData(job: BatchJobData): Promise<Job<BatchJobData>> {
   return queue.add(jobName, job);
 }
 
-export async function queueBatchProcessing(batch: Bundle, asyncJob: AsyncJob): Promise<Job<BatchJobData>> {
+export async function queueBatchProcessing(batch: Bundle, asyncJob: WithId<AsyncJob>): Promise<Job<BatchJobData>> {
   const { requestId, traceId, login, project, membership } = getAuthenticatedContext();
   return addBatchJobData({
     bundle: batch,

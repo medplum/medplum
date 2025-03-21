@@ -1,7 +1,7 @@
 import { Title } from '@mantine/core';
 import { CodeChallengeMethod, normalizeErrorString } from '@medplum/core';
 import { Logo, SignInForm, useMedplum } from '@medplum/react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { getConfig } from './config';
 import { useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
@@ -15,6 +15,7 @@ export function OAuthPage(): JSX.Element | null {
   const [clientInfo, setClientInfo] = useState<ClientApplicationSignInForm>();
   const [loading, setLoading] = useState(true);
   const clientId = params.get('client_id');
+  const login = params.get('login');
 
   useEffect(() => {
     if (!clientId || clientId === 'medplum-cli') {
@@ -58,8 +59,8 @@ export function OAuthPage(): JSX.Element | null {
   return (
     <SignInForm
       onCode={onCode}
-      onForgotPassword={() => navigate('/resetpassword')}
-      onRegister={() => navigate('/register')}
+      onForgotPassword={() => navigate('/resetpassword')?.catch(console.error)}
+      onRegister={() => navigate('/register')?.catch(console.error)}
       googleClientId={getConfig().googleClientId}
       clientId={clientId || undefined}
       redirectUri={params.get('redirect_uri') || undefined}
@@ -69,6 +70,7 @@ export function OAuthPage(): JSX.Element | null {
       codeChallenge={params.get('code_challenge') || undefined}
       codeChallengeMethod={(params.get('code_challenge_method') as CodeChallengeMethod) || undefined}
       chooseScopes={scope !== 'openid'}
+      login={login || undefined}
     >
       {!loading && (
         <>

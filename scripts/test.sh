@@ -7,7 +7,7 @@ set -e
 set -x
 
 # Set node options
-export NODE_OPTIONS='--max-old-space-size=5120'
+export NODE_OPTIONS='--max-old-space-size=8192'
 
 # Clear old code coverage data
 rm -rf coverage

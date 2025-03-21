@@ -8,7 +8,8 @@ import {
   CapabilityStatementRestSecurity,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { getConfig, MedplumServerConfig } from '../config';
+import { getConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 
 /**
  * The base CapabilityStatement that seeds the server generated statement.

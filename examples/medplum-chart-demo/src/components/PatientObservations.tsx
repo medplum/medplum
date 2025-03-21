@@ -4,7 +4,7 @@ import { Coding, Patient } from '@medplum/fhirtypes';
 import { SearchControl } from '@medplum/react';
 import { IconMenu2 } from '@tabler/icons-react';
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { ObservationGraph } from './graphs/ObservationGraph';
 
 interface PatientObservationsProps {
@@ -75,9 +75,9 @@ export function PatientObservations(props: PatientObservationsProps): JSX.Elemen
             search={search}
             hideFilters={true}
             hideToolbar={true}
-            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)?.catch(console.error)}
             onChange={(e) => {
-              navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+              navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
             }}
           />
         </Tabs.Panel>
