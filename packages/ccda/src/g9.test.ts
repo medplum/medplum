@@ -1,19 +1,30 @@
-import { createReference, generateId, RXNORM, SNOMED, UCUM, WithId } from '@medplum/core';
+import { createReference, generateId, LOINC, RXNORM, SNOMED, UCUM, WithId } from '@medplum/core';
 import { AllergyIntolerance, Bundle, Composition, MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
 import { convertFhirToCcda } from './fhir-to-ccda';
-import { OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM } from './oids';
 import {
+  OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
+  OID_BIRTH_SEX,
+  OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
+  OID_SEX_OBSERVATION,
+  OID_SMOKING_STATUS_OBSERVATION,
+  OID_TOBACCO_USE_OBSERVATION,
+} from './oids';
+import {
+  ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   ALLERGY_CLINICAL_CODE_SYSTEM,
   CLINICAL_CONDITION_CODE_SYSTEM,
   LANGUAGE_MODE_CODE_SYSTEM,
   LANGUAGE_MODE_URL,
   LANGUAGE_PROFICIENCY_CODE_SYSTEM,
   LANGUAGE_PROFICIENCY_URL,
+  LOINC_ADMINISTRATIVE_SEX,
   LOINC_ALLERGIES_SECTION,
   LOINC_ASSESSMENTS_SECTION,
+  LOINC_BIRTH_SEX,
   LOINC_DEVICES_SECTION,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
+  LOINC_HISTORY_OF_TOBACCO_USE,
   LOINC_IMMUNIZATIONS_SECTION,
   LOINC_MEDICATIONS_SECTION,
   LOINC_NOTES_SECTION,
@@ -21,6 +32,8 @@ import {
   LOINC_PROBLEMS_SECTION,
   LOINC_PROCEDURES_SECTION,
   LOINC_RESULTS_SECTION,
+  LOINC_SOCIAL_HISTORY_SECTION,
+  LOINC_TOBACCO_SMOKING_STATUS,
   LOINC_VITAL_SIGNS_SECTION,
   RACE_CODE_SYSTEM,
   US_CORE_ETHNICITY_URL,
@@ -527,6 +540,65 @@ describe('170.315(g)(9)', () => {
       expect(components).toBeDefined();
       expect((components?.[0]?.observation?.[0]?.value as CcdaQuantity)['@_value']).toEqual('100');
       expect((components?.[1]?.observation?.[0]?.value as CcdaQuantity)['@_value']).toEqual('200');
+    });
+  });
+
+  describe('Social History', () => {
+    test('should handle tobacco smoking status', () => {
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_SOCIAL_HISTORY_SECTION, {
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: LOINC, code: LOINC_TOBACCO_SMOKING_STATUS }] },
+        valueCodeableConcept: { coding: [{ system: SNOMED, code: '449868002' }] },
+      });
+      const output = convertFhirToCcda(input);
+      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      expect(observation).toBeDefined();
+      expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_SMOKING_STATUS_OBSERVATION);
+      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('449868002');
+    });
+
+    test('should handle history of tobacco use', () => {
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_SOCIAL_HISTORY_SECTION, {
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: LOINC, code: LOINC_HISTORY_OF_TOBACCO_USE }] },
+        valueCodeableConcept: { coding: [{ system: SNOMED, code: '449868002' }] },
+      });
+      const output = convertFhirToCcda(input);
+      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      expect(observation).toBeDefined();
+      expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_TOBACCO_USE_OBSERVATION);
+      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('449868002');
+    });
+
+    test('should handle administrative gender', () => {
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_SOCIAL_HISTORY_SECTION, {
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: LOINC, code: LOINC_ADMINISTRATIVE_SEX }] },
+        valueCodeableConcept: { coding: [{ system: SNOMED, code: '248152002' }] },
+      });
+      const output = convertFhirToCcda(input);
+      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      expect(observation).toBeDefined();
+      expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_SEX_OBSERVATION);
+      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('248152002');
+    });
+
+    test('should handle birth sex', () => {
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_SOCIAL_HISTORY_SECTION, {
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: LOINC, code: LOINC_BIRTH_SEX }] },
+        valueCodeableConcept: { coding: [{ system: ADMINISTRATIVE_GENDER_CODE_SYSTEM, code: 'F' }] },
+      });
+      const output = convertFhirToCcda(input);
+      const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
+      expect(observation).toBeDefined();
+      expect(observation?.templateId?.[0]?.['@_root']).toEqual(OID_BIRTH_SEX);
+      expect((observation?.value as CcdaCode)?.['@_code']).toEqual('F');
+      expect((observation?.value as CcdaCode)?.['@_codeSystem']).toEqual(OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM);
     });
   });
 
