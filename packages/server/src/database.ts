@@ -160,17 +160,18 @@ async function migrate(client: PoolClient): Promise<void> {
   await client.query(`CREATE TABLE IF NOT EXISTS "DatabaseMigration" (
     "id" INTEGER NOT NULL PRIMARY KEY,
     "version" INTEGER NOT NULL,
-    "dataVersion" INTEGER NOT NULL
+    "dataVersion" INTEGER NOT NULL,
+    "firstBoot" BOOLEAN NOT NULL
   )`);
 
   let preDeployVersion = await getPreDeployVersion(client);
 
   // Initialize if this is the first time the server has been started up
   if (preDeployVersion === MigrationVersion.UNKNOWN) {
-    await client.query(`INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, $1, $2)`, [
-      MigrationVersion.NONE,
-      MigrationVersion.FIRST_BOOT,
-    ]);
+    await client.query(
+      `INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion", "firstBoot") VALUES (1, $1, $1, true)`,
+      [MigrationVersion.NONE]
+    );
     preDeployVersion = MigrationVersion.NONE;
   }
 
@@ -216,7 +217,7 @@ async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersi
       const start = Date.now();
       await migration.run(client);
       globalLogger.info('Database pre-deploy migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
-      await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [i]);
+      await client.query('UPDATE "DatabaseMigration" SET "version"=$1 WHERE "id" = 1', [i]);
     }
   }
 }
@@ -285,11 +286,11 @@ export async function maybeStartPostDeployMigration(
     }
 
     if (requestedDataVersion < pendingPostDeployMigration) {
-    // We have already applied this data version, there is no migration to run
+      // We have already applied this data version, there is no migration to run
       return undefined;
     } else if (requestedDataVersion > pendingPostDeployMigration) {
-    // The post-deploy version is higher than the version we expect to apply next, we cannot apply this migration
-    // This is also true when pending migration is NONE
+      // The post-deploy version is higher than the version we expect to apply next, we cannot apply this migration
+      // This is also true when pending migration is NONE
       const endOfMessage =
         pendingPostDeployMigration === MigrationVersion.NONE
           ? 'there are no pending post-deploy migrations'

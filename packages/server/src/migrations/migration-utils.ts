@@ -1,6 +1,6 @@
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
-import { getSystemRepo, Repository } from '../fhir/repo';
+import { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getServerVersion } from '../util/version';
 import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration';
@@ -24,23 +24,10 @@ import { getPostDeployMigrationVersions, MigrationVersion } from './migration-ve
  * cannot be assessed.
  */
 export async function getPendingPostDeployMigration(client: Pool | PoolClient): Promise<number> {
-  let postDeployVersion = await getPostDeployVersion(client);
+  const postDeployVersion = await getPostDeployVersion(client, { ignoreFirstBoot: true });
 
   if (postDeployVersion === MigrationVersion.UNKNOWN) {
     return postDeployVersion;
-  }
-
-  if (postDeployVersion === MigrationVersion.FIRST_BOOT) {
-    const systemRepo = getSystemRepo();
-    const completedJobs = await systemRepo.searchResources<AsyncJob>(
-      parseSearchRequest(`AsyncJob?status=completed&type=data-migration&_count=100&_project:missing=true`)
-    );
-    postDeployVersion = 0;
-    for (const job of completedJobs) {
-      if (job.dataVersion && job.dataVersion > postDeployVersion) {
-        postDeployVersion = job.dataVersion;
-      }
-    }
   }
 
   const allPostDeployVersions = getPostDeployMigrationVersions();
