@@ -285,10 +285,13 @@ export async function maybeStartPostDeployMigration(
       throw new OperationOutcomeError(badRequest('post-deploy migration number must be greater than zero.'));
     }
 
-    if (requestedDataVersion < pendingPostDeployMigration) {
-      // We have already applied this data version, there is no migration to run
+    const postDeployVersion = await getPostDeployVersion(pool, { ignoreFirstBoot: true });
+    // We have already applied this data version, there is no migration to run
+    if (requestedDataVersion <= postDeployVersion) {
       return undefined;
-    } else if (requestedDataVersion > pendingPostDeployMigration) {
+    }
+
+    if (requestedDataVersion > pendingPostDeployMigration) {
       // The post-deploy version is higher than the version we expect to apply next, we cannot apply this migration
       // This is also true when pending migration is NONE
       const endOfMessage =
