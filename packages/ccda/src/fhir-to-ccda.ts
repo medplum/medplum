@@ -76,6 +76,7 @@ import {
   OID_RESULT_OBSERVATION,
   OID_RESULT_ORGANIZER,
   OID_SEVERITY_OBSERVATION,
+  OID_SEX_OBSERVATION,
   OID_SMOKING_STATUS_OBSERVATION,
   OID_SNOMED_CT_CODE_SYSTEM,
   OID_TOBACCO_USE_OBSERVATION,
@@ -92,6 +93,7 @@ import {
   GENDER_MAPPER,
   HUMAN_NAME_USE_MAPPER,
   IMMUNIZATION_STATUS_MAPPER,
+  LOINC_ADMINISTRATIVE_SEX,
   LOINC_ASSESSMENTS_SECTION,
   LOINC_BIRTH_SEX,
   LOINC_CONDITION,
@@ -1576,7 +1578,6 @@ class FhirToCcdaConverter {
     const category = observation.category?.[0]?.coding?.[0]?.code;
 
     if (code === LOINC_TOBACCO_SMOKING_STATUS) {
-      // Smoking status
       return [
         { '@_root': OID_SMOKING_STATUS_OBSERVATION },
         { '@_root': OID_SMOKING_STATUS_OBSERVATION, '@_extension': '2014-06-09' },
@@ -1584,20 +1585,21 @@ class FhirToCcdaConverter {
     }
 
     if (code === LOINC_HISTORY_OF_TOBACCO_USE) {
-      // Tobacco use
       return [
         { '@_root': OID_TOBACCO_USE_OBSERVATION },
         { '@_root': OID_TOBACCO_USE_OBSERVATION, '@_extension': '2014-06-09' },
       ];
     }
 
+    if (code === LOINC_ADMINISTRATIVE_SEX) {
+      return [{ '@_root': OID_SEX_OBSERVATION, '@_extension': '2023-06-28' }];
+    }
+
     if (code === LOINC_BIRTH_SEX) {
-      // Birth Sex
       return [{ '@_root': OID_BIRTH_SEX }, { '@_root': OID_BIRTH_SEX, '@_extension': '2016-06-01' }];
     }
 
     if (category === 'exam') {
-      // Physical examination
       return [
         { '@_root': OID_PROCEDURE_ACTIVITY_OBSERVATION },
         { '@_root': OID_PROCEDURE_ACTIVITY_OBSERVATION, '@_extension': '2014-06-09' },
@@ -1605,7 +1607,6 @@ class FhirToCcdaConverter {
     }
 
     if (category === 'laboratory') {
-      // Laboratory observation
       return [{ '@_root': OID_RESULT_OBSERVATION }, { '@_root': OID_RESULT_OBSERVATION, '@_extension': '2015-08-01' }];
     }
 
