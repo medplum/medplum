@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
-import { DatabaseMode, getDatabasePool, maybeRunPendingPostDeployMigration } from '../../../database';
+import { DatabaseMode, getDatabasePool, maybeAutoRunPendingPostDeployMigration } from '../../../database';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
 import { sendOutcome } from '../../outcomes';
@@ -112,7 +112,7 @@ export class AsyncJobExecutor {
     if (updatedJob.type === 'data-migration' && updatedJob.dataVersion) {
       await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), updatedJob.dataVersion);
       updatedJob = await repo.updateResource<AsyncJob>(updatedJob);
-      await maybeRunPendingPostDeployMigration();
+      await maybeAutoRunPendingPostDeployMigration();
       return updatedJob;
     } else {
       return repo.updateResource<AsyncJob>(updatedJob);

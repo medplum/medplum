@@ -221,13 +221,12 @@ async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersi
   }
 }
 
-export async function maybeRunPendingPostDeployMigration(): Promise<void> {
+export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<AsyncJob> | undefined> {
   const config = getConfig();
-
   const isDisabled = config.database.runMigrations === false || config.database.disableRunPostDeployMigrations;
-
   const pendingPostDeployMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER));
-  if (pendingPostDeployMigration === MigrationVersion.UNKNOWN) {
+
+  if (!isDisabled && pendingPostDeployMigration === MigrationVersion.UNKNOWN) {
     //throwing here seems extreme since it stops the server from starting
     // if this somehow managed to trigger, but arriving here would mean something
     // is pretty wrong, so throwing is probably the correct behavior?
@@ -235,19 +234,19 @@ export async function maybeRunPendingPostDeployMigration(): Promise<void> {
   }
 
   if (pendingPostDeployMigration === MigrationVersion.NONE) {
-    return;
+    return undefined;
   }
 
   if (isDisabled) {
-    globalLogger.info('Not queueing pending post-deploy migration because auto-run is disabled', {
+    globalLogger.info('Not auto-queueing pending post-deploy migration because auto-run is disabled', {
       version: `v${pendingPostDeployMigration}`,
     });
-    return;
+    return undefined;
   }
 
   const systemRepo = getSystemRepo();
-  globalLogger.info('Running pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
-  await queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
+  globalLogger.info('Auto-queueing pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
+  return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }
 
 /**
@@ -265,7 +264,7 @@ export async function maybeStartPostDeployMigration(
   // If schema migrations didn't run, we should not attempt to run data migrations
   if (getConfig().database.runMigrations === false) {
     throw new OperationOutcomeError(
-      badRequest('Cannot run post-deploy migration since pre-deploy migrations did not run')
+      badRequest('Cannot run post-deploy migration since pre-deploy migrations are disabled')
     );
   }
 
@@ -285,30 +284,28 @@ export async function maybeStartPostDeployMigration(
       throw new OperationOutcomeError(badRequest('post-deploy migration number must be greater than zero.'));
     }
 
-    const postDeployVersion = await getPostDeployVersion(pool);
+    if (requestedDataVersion < pendingPostDeployMigration) {
     // We have already applied this data version, there is no migration to run
-    if (requestedDataVersion <= postDeployVersion) {
       return undefined;
-    }
+    } else if (requestedDataVersion > pendingPostDeployMigration) {
     // The post-deploy version is higher than the version we expect to apply next, we cannot apply this migration
     // This is also true when pending migration is NONE
-    if (requestedDataVersion > pendingPostDeployMigration) {
       const endOfMessage =
-        pendingPostDeployMigration > 0
-          ? `the pending post-deploy migration is v${pendingPostDeployMigration}`
-          : 'there are no pending post-deploy migrations';
+        pendingPostDeployMigration === MigrationVersion.NONE
+          ? 'there are no pending post-deploy migrations'
+          : `the pending post-deploy migration is v${pendingPostDeployMigration}`;
       throw new OperationOutcomeError(
         badRequest(
           `Post-deploy migration assertion failed. Requested migration v${requestedDataVersion}, but ${endOfMessage}.`
         )
       );
     }
-  } else if (pendingPostDeployMigration === MigrationVersion.NONE) {
-    // If there is no asserted version, and no pending migration to run, then we can no-op
+  }
+
+  if (pendingPostDeployMigration === MigrationVersion.NONE) {
     return undefined;
   }
 
   const systemRepo = getSystemRepo();
-  const asyncJob = await queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
-  return asyncJob;
+  return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }
