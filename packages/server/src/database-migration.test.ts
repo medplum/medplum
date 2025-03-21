@@ -220,7 +220,7 @@ describe('Database migrations', () => {
     test('Schema migrations did not run', () =>
       withTestContext(async () => {
         await expect(maybeStartPostDeployMigration()).rejects.toThrow(
-          'Cannot run post-deploy migration since pre-deploy migrations did not run'
+          'Cannot run post-deploy migration since pre-deploy migrations are disabled'
         );
       }));
   });
@@ -494,7 +494,7 @@ describe('Database migrations', () => {
       })
     );
 
-    test.only.each([
+    test.each([
       [true, 55],
       [false, 55],
       [true, undefined],
