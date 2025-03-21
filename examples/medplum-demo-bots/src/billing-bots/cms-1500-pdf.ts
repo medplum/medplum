@@ -8,7 +8,19 @@ import {
   getDateProperty,
   MedplumClient,
 } from '@medplum/core';
-import { Address, Claim, ClaimItem, Coverage, HumanName, Media, Patient, RelatedPerson } from '@medplum/fhirtypes';
+import {
+  Address,
+  Claim,
+  ClaimItem,
+  Coverage,
+  HumanName,
+  Media,
+  Organization,
+  Patient,
+  Practitioner,
+  PractitionerRole,
+  RelatedPerson,
+} from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 
 // Move this to a separate file and use it as a param to the bot
@@ -39,6 +51,8 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
   const patient = await medplum.readReference(claim.patient);
   const coverage = await medplum.readReference(claim.insurance[0].coverage);
   const insured = coverage.subscriber ? await medplum.readReference(coverage.subscriber) : undefined;
+  const insurer = await medplum.readReference(coverage.payor[0]);
+  const provider = await medplum.readReference(claim.provider);
 
   const { personName: patientName, personGender: patientGender, personPhone: patientPhone } = getPersonInfo(patient);
   const patientDOB = getDateProperty(patient.birthDate);
@@ -146,6 +160,8 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
       },
       ...getReservedNUCCContent(),
       ...getSignatureContent(),
+      ...getInsurerContent(insurer),
+      ...getProviderContent(provider),
       {
         text: 'X51',
         absolutePosition: {
@@ -287,126 +303,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         absolutePosition: {
           x: 315,
           y: 491,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X217',
-        absolutePosition: {
-          x: 20,
-          y: 680,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X219',
-        absolutePosition: {
-          x: 136,
-          y: 683,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X220',
-        absolutePosition: {
-          x: 150,
-          y: 684,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X225',
-        absolutePosition: {
-          x: 488,
-          y: 697,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X226',
-        absolutePosition: {
-          x: 516,
-          y: 696,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X227',
-        absolutePosition: {
-          x: 177,
-          y: 705,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X228',
-        absolutePosition: {
-          x: 372,
-          y: 706,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X229',
-        absolutePosition: {
-          x: 177,
-          y: 716,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X230',
-        absolutePosition: {
-          x: 372,
-          y: 716,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X232',
-        absolutePosition: {
-          x: 178,
-          y: 728,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X233',
-        absolutePosition: {
-          x: 372,
-          y: 728,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X235',
-        absolutePosition: {
-          x: 187,
-          y: 743,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X236',
-        absolutePosition: {
-          x: 272,
-          y: 743,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X237',
-        absolutePosition: {
-          x: 380,
-          y: 743,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X238',
-        absolutePosition: {
-          x: 464,
-          y: 743,
         },
         fontSize: 9,
       },
@@ -1033,6 +929,95 @@ function getSignatureContent(): Content[] {
   ];
 }
 
+export function getInsurerContent(insurer: Organization | Patient | RelatedPerson): Content[] {
+  const { serviceNPI, serviceName, serviceLocation, fedTaxNumber } = getInsurerInfo(insurer);
+
+  return [
+    {
+      text: fedTaxNumber,
+      absolutePosition: {
+        x: 20,
+        y: 684,
+      },
+      fontSize: 9,
+    },
+    // SSN (Social Security Number)
+    {
+      text: '',
+      absolutePosition: {
+        x: 136,
+        y: 683,
+      },
+      fontSize: 9,
+    },
+    // EIN (Employer Identification Number)
+    {
+      text: 'X',
+      absolutePosition: {
+        x: 150,
+        y: 684,
+      },
+      fontSize: 9,
+    },
+    {
+      text: serviceNPI,
+      absolutePosition: {
+        x: 187,
+        y: 743,
+      },
+      fontSize: 9,
+    },
+    {
+      text: serviceName,
+      absolutePosition: {
+        x: 177,
+        y: 705,
+      },
+      fontSize: 9,
+    },
+    {
+      text: serviceLocation,
+      absolutePosition: {
+        x: 177,
+        y: 716,
+      },
+      fontSize: 9,
+    },
+  ];
+}
+
+export function getProviderContent(provider: Practitioner | Organization | PractitionerRole): Content[] {
+  const { billingName, billingLocation, billingPhoneNumber, providerNpi } = getProviderInfo(provider);
+
+  return [
+    ...getPhoneContent(billingPhoneNumber, 488),
+    {
+      text: billingName,
+      absolutePosition: {
+        x: 372,
+        y: 706,
+      },
+      fontSize: 9,
+    },
+    {
+      text: billingLocation,
+      absolutePosition: {
+        x: 372,
+        y: 716,
+      },
+      fontSize: 9,
+    },
+    {
+      text: providerNpi,
+      absolutePosition: {
+        x: 380,
+        y: 743,
+      },
+      fontSize: 9,
+    },
+  ];
+}
+
 /* Data retrieval helpers */
 
 export function getPersonInfo(
@@ -1267,4 +1252,72 @@ export function formatHumanName(name: HumanName): string {
   }
 
   return parts.join(', ');
+}
+
+export function getInsurerInfo(insurer: Organization | Patient | RelatedPerson): {
+  serviceNPI: string;
+  serviceName: string;
+  serviceLocation: string;
+  fedTaxNumber: string;
+  fedTaxType: string;
+} {
+  if (insurer.resourceType === 'Patient' || insurer.resourceType === 'RelatedPerson') {
+    return {
+      serviceNPI: '',
+      serviceName: '',
+      serviceLocation: '',
+      fedTaxNumber: '',
+      fedTaxType: '',
+    };
+  }
+
+  const serviceNPI =
+    insurer.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'NPI'))?.value ?? '';
+  const serviceName = insurer.name ?? '';
+  const serviceLocation = insurer.address ? formatAddress(insurer.address[0]) : '';
+
+  const taxIdentifier = insurer.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'TAX'));
+  const fedTaxNumber = taxIdentifier?.value ?? '';
+  const fedTaxType = taxIdentifier?.system ?? '';
+
+  return {
+    serviceNPI,
+    serviceName,
+    serviceLocation,
+    fedTaxNumber,
+    fedTaxType,
+  };
+}
+
+export function getProviderInfo(provider: Practitioner | Organization | PractitionerRole): {
+  billingName: string;
+  billingLocation: string;
+  billingPhoneNumber: string;
+  providerNpi: string;
+} {
+  if (provider.resourceType === 'PractitionerRole') {
+    return {
+      billingName: '',
+      billingLocation: '',
+      billingPhoneNumber: '',
+      providerNpi: '',
+    };
+  }
+
+  let billingName = '';
+  if (provider.resourceType === 'Practitioner' && provider.name) {
+    billingName = formatHumanName(provider.name[0]);
+  } else if (provider.resourceType === 'Organization' && provider.name) {
+    billingName = provider.name;
+  }
+  const billingLocation = provider?.address?.[0] ? formatAddress(provider.address?.[0]) : '';
+  const phoneNumber = provider.telecom?.find((comm) => comm.system === 'phone');
+  const providerNpi = provider.identifier?.find((id) => id.id === 'NPI')?.value ?? '';
+
+  return {
+    billingName,
+    billingLocation,
+    billingPhoneNumber: phoneNumber?.value ?? '',
+    providerNpi,
+  };
 }
