@@ -1,7 +1,7 @@
 import { Pool, PoolClient } from 'pg';
 import { loadTestConfig } from './config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from './database';
-import { markPostDeployMigrationCompleted } from './migration-sql';
+import { getPostDeployVersion, markPostDeployMigrationCompleted } from './migration-sql';
 import { CustomMigrationAction, CustomPostDeployMigration } from './migrations/data/types';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 
@@ -32,14 +32,15 @@ jest.mock('./migrations/data/index', () => {
 });
 
 describe('markPostDeployMigrationCompleted', () => {
+  let client: Pool;
   let rowId: number;
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initDatabase(config);
 
-    const client = getDatabasePool(DatabaseMode.WRITER);
+    client = getDatabasePool(DatabaseMode.WRITER);
     const result = await client.query<{ id: number }>(
-      `INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (2, 0, $1)
+      `INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion", "firstBoot") VALUES (2, 0, $1, true)
         ON CONFLICT("id") DO UPDATE SET "id" = EXCLUDED."id", "version" = EXCLUDED."version", "dataVersion" = EXCLUDED."dataVersion"
         RETURNING *`,
       [MigrationVersion.FIRST_BOOT]
@@ -51,38 +52,44 @@ describe('markPostDeployMigrationCompleted', () => {
     await closeDatabase();
   });
 
-  async function setDataVersion(client: Pool | PoolClient, dataVersion: number): Promise<void> {
-    await client.query('UPDATE "DatabaseMigration" SET "dataVersion" = $1 WHERE "id" = $2', [dataVersion, rowId]);
+  async function setDataVersionState(
+    client: Pool | PoolClient,
+    dataVersion: number,
+    firstBoot: boolean
+  ): Promise<void> {
+    await client.query('UPDATE "DatabaseMigration" SET "dataVersion" = $1, "firstBoot" = $2 WHERE "id" = $3', [
+      dataVersion,
+      firstBoot,
+      rowId,
+    ]);
   }
 
   test('From dataVersion MigrationVersion.FIRST_BOOT', async () => {
-    const client = getDatabasePool(DatabaseMode.WRITER);
-    await setDataVersion(client, MigrationVersion.FIRST_BOOT);
+    await setDataVersionState(client, 0, true);
 
     const latestVersion = getLatestPostDeployMigrationVersion();
 
     // sanity check mocking
     expect(latestVersion).toEqual(3);
 
-    const newDataVersion = await markPostDeployMigrationCompleted(client, 1, { id: rowId });
-    expect(newDataVersion).toEqual(undefined);
+    await markPostDeployMigrationCompleted(client, 1, { rowId });
+    expect(await getPostDeployVersion(client, { rowId })).toEqual(MigrationVersion.FIRST_BOOT);
 
-    const newDataVersion2 = await markPostDeployMigrationCompleted(client, latestVersion, { id: rowId });
-    expect(newDataVersion2).toEqual(latestVersion);
+    await markPostDeployMigrationCompleted(client, latestVersion, { rowId });
+    expect(await getPostDeployVersion(client, { rowId })).toEqual(latestVersion);
   });
 
   test('From dataVersion 0', async () => {
-    const client = getDatabasePool(DatabaseMode.WRITER);
-    await setDataVersion(client, 0);
+    await setDataVersionState(client, 0, false);
 
     const latestVersion = getLatestPostDeployMigrationVersion();
     // sanity check mocking
     expect(latestVersion).toEqual(3);
 
-    const newDataVersion = await markPostDeployMigrationCompleted(client, 1, { id: rowId });
-    expect(newDataVersion).toEqual(1);
+    await markPostDeployMigrationCompleted(client, 1, { rowId });
+    expect(await getPostDeployVersion(client, { rowId })).toEqual(1);
 
-    const newDataVersion2 = await markPostDeployMigrationCompleted(client, latestVersion, { id: rowId });
-    expect(newDataVersion2).toEqual(latestVersion);
+    await markPostDeployMigrationCompleted(client, latestVersion, { rowId });
+    expect(await getPostDeployVersion(client, { rowId })).toEqual(latestVersion);
   });
 });
