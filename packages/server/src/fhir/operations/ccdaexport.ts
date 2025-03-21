@@ -41,5 +41,5 @@ export async function ccdaExportHandler(req: FhirRequest): Promise<FhirResponse>
     data: Buffer.from(xmlString).toString('base64'),
   };
 
-  return [allOk, xmlBinary];
+  return [allOk, xmlBinary, { forceRawBinaryResponse: true }];
 }

@@ -38,7 +38,10 @@ export async function sendFhirResponse(
 ): Promise<void> {
   sendResponseHeaders(req, res, outcome, body);
 
-  if (body.resourceType === 'Binary' && !req.get('Accept')?.startsWith(ContentType.FHIR_JSON)) {
+  if (
+    body.resourceType === 'Binary' &&
+    ((req.method === 'GET' && !req.get('Accept')?.startsWith(ContentType.FHIR_JSON)) || options?.forceRawBinaryResponse)
+  ) {
     // When the read request has some other type in the Accept header,
     // then the content should be returned with the content type stated in the resource in the Content-Type header.
     // E.g. if the content type in the resource is "application/pdf", then the content should be returned as a PDF directly.
