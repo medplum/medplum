@@ -26,7 +26,6 @@ import {
   generateId,
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
-  ProfileResource,
   resolveId,
   WithId,
 } from '@medplum/core';
@@ -49,16 +48,18 @@ import {
   Observation,
   OperationDefinition,
   OperationDefinitionParameter,
+  Organization,
   Patient,
+  Practitioner,
+  PractitionerRole,
   Procedure,
   Reference,
   Resource,
   ResourceType,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { getAuthenticatedContext } from '../../context';
+import { AuthenticatedRequestContext, getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
-import { Repository } from '../repo';
 import { getPatientEverything, PatientEverythingParameters } from './patienteverything';
 import { parseInputParameters } from './utils/parameters';
 
@@ -84,6 +85,8 @@ export const operation: OperationDefinition = {
   type: true,
   instance: true,
   parameter: [
+    ['author', 'in', 0, 1, 'Reference'],
+    ['authoredOn', 'in', 0, 1, 'instant'],
     ['start', 'in', 0, 1, 'date'],
     ['end', 'in', 0, 1, 'date'],
     ['_since', 'in', 0, 1, 'instant'],
@@ -110,9 +113,11 @@ const resourceTypes: ResourceType[] = [
   'ServiceRequest',
 ];
 
+export type CompositionAuthorResource = Practitioner | PractitionerRole | Organization;
+
 export interface PatientSummaryParameters extends PatientEverythingParameters {
-  identifier?: string;
-  profile?: string;
+  author?: Reference<CompositionAuthorResource>;
+  authoredOn?: string;
 }
 
 /**
@@ -125,37 +130,31 @@ export async function patientSummaryHandler(req: FhirRequest): Promise<FhirRespo
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
   const params = parseInputParameters<PatientSummaryParameters>(operation, req);
-
-  const author = await ctx.repo.readReference(ctx.profile as Reference<ProfileResource>);
-
-  // First read the patient to verify access
-  const patient = await ctx.repo.readResource<Patient>('Patient', id);
-
-  // Then read all of the patient data
-  const bundle = await getPatientSummary(ctx.repo, author, patient, params);
-
+  const bundle = await getPatientSummary(ctx, { reference: `Patient/${id}` }, params);
   return [allOk, bundle];
 }
 
 /**
  * Executes the Patient $summary operation.
  * Searches for all resources related to the patient.
- * @param repo - The repository.
- * @param author - The author of the summary.
- * @param patient - The root patient.
+ * @param ctx - The authenticated request context.
+ * @param patientRef - The patient reference.
  * @param params - The operation input parameters.
  * @returns The patient summary search result bundle.
  */
 export async function getPatientSummary(
-  repo: Repository,
-  author: ProfileResource,
-  patient: WithId<Patient>,
+  ctx: AuthenticatedRequestContext,
+  patientRef: Reference<Patient>,
   params: PatientSummaryParameters = {}
 ): Promise<Bundle> {
+  const repo = ctx.repo;
+  const authorRef = (params.author ? params.author : ctx.profile) as Reference<CompositionAuthorResource>;
+  const author = await repo.readReference(authorRef);
+  const patient = await repo.readReference(patientRef);
   params._type = resourceTypes;
   const everythingBundle = await getPatientEverything(repo, patient, params);
   const everything = (everythingBundle.entry?.map((e) => e.resource) ?? []) as WithId<Resource>[];
-  const builder = new PatientSummaryBuilder(author, patient, everything);
+  const builder = new PatientSummaryBuilder(author, patient, everything, params);
   return builder.build();
 }
 
@@ -168,9 +167,10 @@ export type PlanResourceType = CarePlan | Goal | ServiceRequest;
  * The main complexity is in the choice of which section to put each resource.
  */
 export class PatientSummaryBuilder {
-  private readonly author: ProfileResource;
+  private readonly author: CompositionAuthorResource;
   private readonly patient: Patient;
   private readonly everything: WithId<Resource>[];
+  private readonly params: PatientSummaryParameters;
   private readonly allergies: AllergyIntolerance[] = [];
   private readonly medications: MedicationRequest[] = [];
   private readonly problemList: Condition[] = [];
@@ -187,10 +187,16 @@ export class PatientSummaryBuilder {
   private readonly notes: ClinicalImpression[] = [];
   private readonly nestedIds = new Set<string>();
 
-  constructor(author: ProfileResource, patient: Patient, everything: WithId<Resource>[]) {
+  constructor(
+    author: CompositionAuthorResource,
+    patient: Patient,
+    everything: WithId<Resource>[],
+    params: PatientSummaryParameters = {}
+  ) {
     this.author = author;
     this.patient = patient;
     this.everything = everything;
+    this.params = params;
   }
 
   build(): Bundle {
@@ -345,7 +351,7 @@ export class PatientSummaryBuilder {
       status: 'final',
       type: { coding: [{ system: LOINC, code: LOINC_PATIENT_SUMMARY_DOCUMENT, display: 'Patient Summary' }] },
       subject: createReference(this.patient),
-      date: new Date().toISOString(),
+      date: this.params.authoredOn ?? new Date().toISOString(),
       author: [createReference(this.author)],
       title: 'Medical Summary',
       confidentiality: 'N',
