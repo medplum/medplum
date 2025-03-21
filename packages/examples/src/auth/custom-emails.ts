@@ -55,7 +55,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<UserSecuri
     });
   } else {
     // This UserSecurityRequest was created as part of a password reset flow.
-    // Send a Password Reset email to the user. 
+    // Send a Password Reset email to the user.
     await medplum.sendEmail({
       to: email,
       subject: 'Example Health Password Reset',
