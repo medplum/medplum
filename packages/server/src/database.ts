@@ -293,9 +293,13 @@ export async function maybeStartPostDeployMigration(
     // The post-deploy version is higher than the version we expect to apply next, we cannot apply this migration
     // This is also true when pending migration is NONE
     if (requestedDataVersion > pendingPostDeployMigration) {
+      const endOfMessage =
+        pendingPostDeployMigration > 0
+          ? `the pending post-deploy migration is v${pendingPostDeployMigration}`
+          : 'there are no pending post-deploy migrations';
       throw new OperationOutcomeError(
         badRequest(
-          `Post-deploy migration assertion failed. Expected pending migration to be migration ${requestedDataVersion}, server has ${pendingPostDeployMigration > 0 ? `current pending post-deploy migration ${pendingPostDeployMigration}` : 'no pending post-deploy migration'}`
+          `Post-deploy migration assertion failed. Requested migration v${requestedDataVersion}, but ${endOfMessage}.`
         )
       );
     }

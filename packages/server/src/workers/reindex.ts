@@ -139,35 +139,19 @@ export class ReindexJob {
       const resourceType = nextJobData.resourceTypes[0];
       nextJobData.results[resourceType] = result;
 
-      const output = this.getAsyncJobOutputFromResults(result, nextJobData);
-      if (output) {
-        try {
-          asyncJob = await updateAsyncJobOutput(systemRepo, asyncJob, output);
-        } catch (err) {
-          if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
-            // Conflict: AsyncJob was updated by another party between when the job started and now!
-            asyncJob = await this.refreshAsyncJob(systemRepo, asyncJob);
-            if (!isJobActive(asyncJob)) {
-              return 'interrupted';
-            }
-
-            // NOTE: at this point `output` was NOT updated in the AsyncJob on this iteration
-            // as expected. This isn't a big deal since `output` will eventually get persisted
-            // on a future iteration, but perhaps there should be a retry mechanism here?
-          }
-          throw err;
-        }
+      const output = this.getAsyncJobOutputFromIterationResults(result, nextJobData);
+      const processResult = await this.processIterationOutput(asyncJob, output);
+      if (typeof processResult === 'string') {
+        return processResult;
       }
+      asyncJob = processResult;
 
       const finishedOrNextIterationData = this.nextIterationData(result, nextJobData);
-      if (typeof finishedOrNextIterationData === 'boolean') {
-        const exec = new AsyncJobExecutor(systemRepo, asyncJob);
-        if (finishedOrNextIterationData) {
-          await exec.completeJob(systemRepo, output);
-        } else {
-          await exec.failJob(systemRepo);
-        }
-        nextJobData = undefined;
+      nextJobData = undefined;
+      if (finishedOrNextIterationData === true) {
+        await new AsyncJobExecutor(systemRepo, asyncJob).completeJob(systemRepo, output);
+      } else if (finishedOrNextIterationData === false) {
+        await new AsyncJobExecutor(systemRepo, asyncJob).failJob(systemRepo);
       } else {
         nextJobData = finishedOrNextIterationData;
       }
@@ -233,7 +217,7 @@ export class ReindexJob {
    * @param jobData - The current job data.
    * @returns The formatted output parameters.
    */
-  getAsyncJobOutputFromResults(result: ReindexResult, jobData: ReindexJobData): Parameters | undefined {
+  getAsyncJobOutputFromIterationResults(result: ReindexResult, jobData: ReindexJobData): Parameters | undefined {
     if (isResultInProgress(result)) {
       // Skip update for most in-progress results
       if (!shouldLogProgress(result, this.batchSize, this.progressLogThreshold)) {
@@ -257,6 +241,34 @@ export class ReindexJob {
         formatReindexResult(jobData.results[resourceType], resourceType)
       ),
     };
+  }
+
+  async processIterationOutput(
+    asyncJob: WithId<AsyncJob>,
+    output: Parameters | undefined
+  ): Promise<WithId<AsyncJob> | 'interrupted'> {
+    if (!output) {
+      return asyncJob;
+    }
+
+    let updatedAsyncJob: WithId<AsyncJob>;
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        updatedAsyncJob = await updateAsyncJobOutput(this.systemRepo, asyncJob, output);
+        return updatedAsyncJob;
+      } catch (err) {
+        lastError = err;
+        if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
+          // Conflict: AsyncJob was updated by another party between when the job started and now!
+          asyncJob = await this.refreshAsyncJob(this.systemRepo, asyncJob);
+          if (!isJobActive(asyncJob)) {
+            return 'interrupted';
+          }
+        }
+      }
+    }
+    throw lastError;
   }
 
   nextIterationData(result: ReindexResult, jobData: ReindexJobData): ReindexJobData | boolean {
