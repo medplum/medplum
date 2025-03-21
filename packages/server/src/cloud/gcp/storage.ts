@@ -1,8 +1,8 @@
 import { Storage } from '@google-cloud/storage';
 import { Readable } from 'stream';
+import { IncomingMessage } from 'http';
 import { BinarySource, BinaryStorage, checkFileMetadata } from '../../fhir/storage';
 import { Binary } from '@medplum/fhirtypes';
-import { splitN } from '@medplum/core';
 
 export class GCPBlobStorage implements BinaryStorage {
   private readonly storage: Storage;
@@ -30,7 +30,7 @@ export class GCPBlobStorage implements BinaryStorage {
         metadata: { contentType: contentType ?? 'application/octet-stream' },
         resumable: false
       });
-      stream.pipe(writeStream)
+      (stream as IncomingMessage).pipe(writeStream)
         .on('finish', () => resolve())
         .on('error', (err: any) => reject(err));
     });
