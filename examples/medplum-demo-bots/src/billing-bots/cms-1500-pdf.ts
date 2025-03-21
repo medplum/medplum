@@ -8,7 +8,7 @@ import {
   getDateProperty,
   MedplumClient,
 } from '@medplum/core';
-import { Address, Claim, Coverage, HumanName, Media, Patient, RelatedPerson } from '@medplum/fhirtypes';
+import { Address, Claim, ClaimItem, Coverage, HumanName, Media, Patient, RelatedPerson } from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 
 // Move this to a separate file and use it as a param to the bot
@@ -291,1022 +291,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         fontSize: 9,
       },
       {
-        text: 'X85',
-        absolutePosition: {
-          x: 478,
-          y: 529,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X86',
-        absolutePosition: {
-          x: 504,
-          y: 528,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X87',
-        absolutePosition: {
-          x: 20,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X88',
-        absolutePosition: {
-          x: 39,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X89',
-        absolutePosition: {
-          x: 61,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X90',
-        absolutePosition: {
-          x: 83,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X91',
-        absolutePosition: {
-          x: 104,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X92',
-        absolutePosition: {
-          x: 127,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X93',
-        absolutePosition: {
-          x: 148,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X94',
-        absolutePosition: {
-          x: 172,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X95',
-        absolutePosition: {
-          x: 194,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X96',
-        absolutePosition: {
-          x: 246,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X97',
-        absolutePosition: {
-          x: 271,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X98',
-        absolutePosition: {
-          x: 291,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X99',
-        absolutePosition: {
-          x: 313,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X100',
-        absolutePosition: {
-          x: 335,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X101',
-        absolutePosition: {
-          x: 373,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X102',
-        absolutePosition: {
-          x: 415,
-          y: 548,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X103',
-        absolutePosition: {
-          x: 437,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X104',
-        absolutePosition: {
-          x: 466,
-          y: 529,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X105',
-        absolutePosition: {
-          x: 504,
-          y: 540,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X107',
-        absolutePosition: {
-          x: 478,
-          y: 552,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X108',
-        absolutePosition: {
-          x: 504,
-          y: 552,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X109',
-        absolutePosition: {
-          x: 20,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X110',
-        absolutePosition: {
-          x: 39,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X111',
-        absolutePosition: {
-          x: 61,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X112',
-        absolutePosition: {
-          x: 83,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X113',
-        absolutePosition: {
-          x: 104,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X114',
-        absolutePosition: {
-          x: 127,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X115',
-        absolutePosition: {
-          x: 148,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X116',
-        absolutePosition: {
-          x: 172,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X117',
-        absolutePosition: {
-          x: 194,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X118',
-        absolutePosition: {
-          x: 246,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X119',
-        absolutePosition: {
-          x: 271,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X120',
-        absolutePosition: {
-          x: 291,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X121',
-        absolutePosition: {
-          x: 313,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X122',
-        absolutePosition: {
-          x: 335,
-          y: 566,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X123',
-        absolutePosition: {
-          x: 373,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X124',
-        absolutePosition: {
-          x: 415,
-          y: 572,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X125',
-        absolutePosition: {
-          x: 437,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X126',
-        absolutePosition: {
-          x: 466,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X127',
-        absolutePosition: {
-          x: 504,
-          y: 565,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X129',
-        absolutePosition: {
-          x: 478,
-          y: 577,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X130',
-        absolutePosition: {
-          x: 504,
-          y: 577,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X131',
-        absolutePosition: {
-          x: 20,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X132',
-        absolutePosition: {
-          x: 39,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X133',
-        absolutePosition: {
-          x: 61,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X134',
-        absolutePosition: {
-          x: 83,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X135',
-        absolutePosition: {
-          x: 104,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X136',
-        absolutePosition: {
-          x: 127,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X137',
-        absolutePosition: {
-          x: 148,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X138',
-        absolutePosition: {
-          x: 172,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X139',
-        absolutePosition: {
-          x: 194,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X140',
-        absolutePosition: {
-          x: 246,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X141',
-        absolutePosition: {
-          x: 271,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X142',
-        absolutePosition: {
-          x: 291,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X143',
-        absolutePosition: {
-          x: 313,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X144',
-        absolutePosition: {
-          x: 335,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X145',
-        absolutePosition: {
-          x: 373,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X146',
-        absolutePosition: {
-          x: 415,
-          y: 596,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X147',
-        absolutePosition: {
-          x: 437,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X148',
-        absolutePosition: {
-          x: 466,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X149',
-        absolutePosition: {
-          x: 504,
-          y: 588,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X151',
-        absolutePosition: {
-          x: 478,
-          y: 601,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X152',
-        absolutePosition: {
-          x: 504,
-          y: 601,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X153',
-        absolutePosition: {
-          x: 20,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X154',
-        absolutePosition: {
-          x: 39,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X155',
-        absolutePosition: {
-          x: 61,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X156',
-        absolutePosition: {
-          x: 83,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X157',
-        absolutePosition: {
-          x: 104,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X158',
-        absolutePosition: {
-          x: 127,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X159',
-        absolutePosition: {
-          x: 148,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X160',
-        absolutePosition: {
-          x: 172,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X161',
-        absolutePosition: {
-          x: 194,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X162',
-        absolutePosition: {
-          x: 246,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X163',
-        absolutePosition: {
-          x: 271,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X164',
-        absolutePosition: {
-          x: 291,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X165',
-        absolutePosition: {
-          x: 313,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X166',
-        absolutePosition: {
-          x: 335,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X167',
-        absolutePosition: {
-          x: 373,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X168',
-        absolutePosition: {
-          x: 415,
-          y: 620,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X169',
-        absolutePosition: {
-          x: 437,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X170',
-        absolutePosition: {
-          x: 466,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X171',
-        absolutePosition: {
-          x: 504,
-          y: 613,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X173',
-        absolutePosition: {
-          x: 478,
-          y: 625,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X174',
-        absolutePosition: {
-          x: 504,
-          y: 625,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X175',
-        absolutePosition: {
-          x: 20,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X176',
-        absolutePosition: {
-          x: 39,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X177',
-        absolutePosition: {
-          x: 61,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X178',
-        absolutePosition: {
-          x: 83,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X179',
-        absolutePosition: {
-          x: 104,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X180',
-        absolutePosition: {
-          x: 127,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X181',
-        absolutePosition: {
-          x: 148,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X182',
-        absolutePosition: {
-          x: 172,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X183',
-        absolutePosition: {
-          x: 194,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X184',
-        absolutePosition: {
-          x: 246,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X185',
-        absolutePosition: {
-          x: 271,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X186',
-        absolutePosition: {
-          x: 291,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X187',
-        absolutePosition: {
-          x: 313,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X188',
-        absolutePosition: {
-          x: 335,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X189',
-        absolutePosition: {
-          x: 373,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X190',
-        absolutePosition: {
-          x: 415,
-          y: 644,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X191',
-        absolutePosition: {
-          x: 437,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X192',
-        absolutePosition: {
-          x: 466,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X193',
-        absolutePosition: {
-          x: 504,
-          y: 637,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X195',
-        absolutePosition: {
-          x: 478,
-          y: 648,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X196',
-        absolutePosition: {
-          x: 504,
-          y: 648,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X197',
-        absolutePosition: {
-          x: 20,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X198',
-        absolutePosition: {
-          x: 39,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X199',
-        absolutePosition: {
-          x: 61,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X200',
-        absolutePosition: {
-          x: 83,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X201',
-        absolutePosition: {
-          x: 104,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X202',
-        absolutePosition: {
-          x: 127,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X203',
-        absolutePosition: {
-          x: 148,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X204',
-        absolutePosition: {
-          x: 172,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X205',
-        absolutePosition: {
-          x: 194,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X206',
-        absolutePosition: {
-          x: 246,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X207',
-        absolutePosition: {
-          x: 271,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X208',
-        absolutePosition: {
-          x: 291,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X209',
-        absolutePosition: {
-          x: 313,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X210',
-        absolutePosition: {
-          x: 335,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X211',
-        absolutePosition: {
-          x: 373,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X212',
-        absolutePosition: {
-          x: 416,
-          y: 668,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X213',
-        absolutePosition: {
-          x: 437,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X214',
-        absolutePosition: {
-          x: 466,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X215',
-        absolutePosition: {
-          x: 504,
-          y: 661,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X216',
-        absolutePosition: {
-          x: 441,
-          y: 671,
-        },
-        fontSize: 9,
-      },
-      {
         text: 'X217',
         absolutePosition: {
           x: 20,
@@ -1326,22 +310,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         text: 'X220',
         absolutePosition: {
           x: 150,
-          y: 684,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X221',
-        absolutePosition: {
-          x: 287,
-          y: 684,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X222',
-        absolutePosition: {
-          x: 322,
           y: 684,
         },
         fontSize: 9,
@@ -1442,62 +410,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      {
-        text: 'X239',
-        absolutePosition: {
-          x: 516,
-          y: 765,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X240',
-        absolutePosition: {
-          x: 466,
-          y: 541,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X241',
-        absolutePosition: {
-          x: 466,
-          y: 553,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X242',
-        absolutePosition: {
-          x: 466,
-          y: 576,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X243',
-        absolutePosition: {
-          x: 465,
-          y: 601,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X244',
-        absolutePosition: {
-          x: 466,
-          y: 648,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X245',
-        absolutePosition: {
-          x: 466,
-          y: 624,
-        },
-        fontSize: 9,
-      },
     ],
   };
   return docDefinition;
@@ -1524,6 +436,7 @@ export function getClaimContent(claim: Claim): Content[] {
     patientAccountNumber,
     patientPaid,
     totalCharge,
+    items,
   } = getClaimInfo(claim);
 
   const dateOfCurrentIllnessAsDate = dateOfCurrentIllness ? getDateProperty(dateOfCurrentIllness) : undefined;
@@ -1708,7 +621,100 @@ export function getClaimContent(claim: Claim): Content[] {
       },
       fontSize: 9,
     },
+    ...getClaimItemContent(items),
+    // Accept assignment
+    {
+      text: '',
+      absolutePosition: {
+        x: 287,
+        y: 684,
+      },
+      fontSize: 9,
+    },
+    {
+      text: '',
+      absolutePosition: {
+        x: 322,
+        y: 684,
+      },
+      fontSize: 9,
+    },
   ];
+}
+
+export function getClaimItemContent(items: ClaimItemInfo[]): Content[] {
+  const content: Content[] = [];
+
+  // Base coordinates for each row
+  const rowBaseCoordinates = [
+    { y: 540 }, // Row 1
+    { y: 565 }, // Row 2
+    { y: 588 }, // Row 3
+    { y: 613 }, // Row 4
+    { y: 637 }, // Row 5
+    { y: 661 }, // Row 6
+  ];
+
+  items.forEach((item, index) => {
+    // Only process up to 6 items
+    if (index >= 6) {
+      return;
+    }
+
+    const yPos = rowBaseCoordinates[index].y;
+
+    content.push(...getDateContent(getDateProperty(item.dateOfService), 21, yPos));
+
+    content.push({
+      text: item.placeOfServiceState,
+      absolutePosition: { x: 149, y: yPos },
+      fontSize: 9,
+    });
+
+    content.push({
+      text: item.emergency ? 'X' : '',
+      absolutePosition: { x: 172, y: yPos },
+      fontSize: 9,
+    });
+
+    content.push({
+      text: item.procedureCode,
+      absolutePosition: { x: 194, y: yPos },
+      fontSize: 9,
+    });
+
+    content.push({
+      text: item.modifiers,
+      absolutePosition: { x: 246, y: yPos },
+      fontSize: 9,
+    });
+
+    content.push({
+      text: item.diagnosisPointer,
+      absolutePosition: { x: 335, y: yPos },
+      fontSize: 9,
+    });
+
+    content.push({
+      text: item.charges,
+      absolutePosition: { x: 373, y: yPos },
+      fontSize: 9,
+    });
+
+    content.push({
+      text: item.daysOrUnits,
+      absolutePosition: { x: 437, y: yPos },
+      fontSize: 9,
+    });
+
+    content.push({
+      text: item.familyPlanIndicator,
+      absolutePosition: { x: 466, y: yPos },
+      fontSize: 9,
+    });
+  });
+
+  return content;
 }
 
 export function getInsuranceProgramContent(insuranceType: string): Content[] {
@@ -2114,6 +1120,7 @@ export function getClaimInfo(claim: Claim): {
   patientAccountNumber: string;
   patientPaid: string;
   totalCharge: string;
+  items: ClaimItemInfo[];
 } {
   const relatedToemployment =
     claim.supportingInfo?.some((info) => info.category.coding?.[0].code === 'employmentimpacted') ?? false;
@@ -2162,6 +1169,15 @@ export function getClaimInfo(claim: Claim): {
   );
   const totalCharge = formatMoney(claim.total);
 
+  // Handle multiple service items (up to 6)
+  const claimItems = claim.item || [];
+  const items = [];
+  for (let i = 0; i < Math.min(6, claimItems.length); i++) {
+    const item = claimItems[i];
+    const itemInfo = getClaimItemInfo(item);
+    items.push(itemInfo);
+  }
+
   return {
     relatedToemployment,
     relatedToAutoAccident,
@@ -2181,6 +1197,47 @@ export function getClaimInfo(claim: Claim): {
     patientAccountNumber,
     patientPaid,
     totalCharge,
+    items,
+  };
+}
+
+type ClaimItemInfo = ReturnType<typeof getClaimItemInfo>;
+
+export function getClaimItemInfo(item: ClaimItem): {
+  dateOfService: string;
+  placeOfService: string;
+  placeOfServiceState: string;
+  emergency: boolean;
+  procedureCode: string;
+  modifiers: string;
+  diagnosisPointer: string;
+  charges: string;
+  daysOrUnits: string;
+  familyPlanIndicator: string;
+} {
+  const dateOfService = formatDate(item.servicedDate);
+  const placeOfService = item.locationAddress ? formatAddress(item.locationAddress) : '';
+  const placeOfServiceState = item.locationAddress?.state ?? '';
+  const emergency = item.category?.coding?.[0].code === 'EMG';
+  const procedureCode = formatCodeableConcept(item.productOrService);
+  const modifiers = formatCodeableConcept(item.modifier?.[0]);
+  const diagnosisPointer = item.diagnosisSequence?.[0] + '';
+  const charges = formatMoney(item.net);
+  const daysOrUnits = formatQuantity(item.quantity);
+  const familyPlanIndicator =
+    item.programCode?.[0].coding?.[0].code === 'none' ? '' : formatCodeableConcept(item.programCode?.[0]);
+
+  return {
+    dateOfService,
+    placeOfService,
+    placeOfServiceState,
+    emergency,
+    procedureCode,
+    modifiers,
+    diagnosisPointer,
+    charges,
+    daysOrUnits,
+    familyPlanIndicator,
   };
 }
 

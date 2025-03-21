@@ -58,64 +58,6 @@ describe('CMS 1500 PDF Bot', async () => {
     expect(response.resourceType).toStrictEqual('Media');
     expect(response.content.contentType).toStrictEqual('application/pdf');
   });
-
-  // test('Insurer is not an organization', async () => {
-  //   const insurerInfo = getInsurerInfo({
-  //     resourceType: 'Patient',
-  //   });
-
-  //   expect(insurerInfo.serviceNPI).toBe('');
-  //   expect(insurerInfo.serviceLocation).toBe('');
-  //   expect(insurerInfo.fedTaxNumber).toBe('');
-  //   expect(insurerInfo.fedTaxType).toBe('');
-  // });
-
-  // test('Referrer is not a practitioner or organization', async () => {
-  //   const patientReferralInfo = getReferralInfo({
-  //     resourceType: 'Patient',
-  //   });
-  //   const organizationReferralInfo = getReferralInfo({
-  //     resourceType: 'Organization',
-  //     name: 'Referrer',
-  //     identifier: [
-  //       {
-  //         type: {
-  //           coding: [{ code: 'NPI' }],
-  //         },
-  //         value: 'org-npi-code',
-  //       },
-  //     ],
-  //   });
-  //   const practitionerReferralInfo = getReferralInfo({
-  //     resourceType: 'Practitioner',
-  //     name: [{ given: ['Kevin'], family: 'Smith' }],
-  //     identifier: [
-  //       {
-  //         type: {
-  //           coding: [{ code: 'NPI' }],
-  //         },
-  //         value: 'practitioner-npi-code',
-  //       },
-  //     ],
-  //   });
-
-  //   expect(patientReferralInfo.referrerName).toBe('');
-  //   expect(patientReferralInfo.referrerNpi).toBe('');
-  //   expect(organizationReferralInfo.referrerName).toBe('Referrer');
-  //   expect(organizationReferralInfo.referrerNpi).toBe('org-npi-code');
-  //   expect(practitionerReferralInfo.referrerName).toBe('Kevin Smith');
-  //   expect(practitionerReferralInfo.referrerNpi).toBe('practitioner-npi-code');
-  // });
-
-  // test('Practitioner Role for provider', async () => {
-  //   const providerInfo = getProviderInfo({
-  //     resourceType: 'PractitionerRole',
-  //   });
-
-  //   expect(providerInfo.billingLocation).toBe('');
-  //   expect(providerInfo.billingPhoneNumber).toBe('');
-  //   expect(providerInfo.providerNpi).toBe('');
-  // });
 });
 
 describe('formatHumanName', () => {
@@ -336,6 +278,20 @@ describe('getClaimInfo', () => {
       patientAccountNumber: '429802409',
       patientPaid: '320 USD',
       totalCharge: '$1,000.00',
+      items: [
+        {
+          charges: '$1,000.00',
+          dateOfService: '4/14/2024',
+          daysOrUnits: '20 days',
+          diagnosisPointer: '1',
+          emergency: true,
+          familyPlanIndicator: '',
+          modifiers: 'None',
+          placeOfService: '289 Johnson Street, Ames, IA',
+          placeOfServiceState: 'IA',
+          procedureCode: 'Exam, recall',
+        },
+      ],
     });
   });
 
@@ -361,6 +317,7 @@ describe('getClaimInfo', () => {
       patientAccountNumber: '',
       patientPaid: '',
       totalCharge: '',
+      items: [],
     });
   });
 
@@ -400,6 +357,7 @@ describe('getClaimInfo', () => {
       patientAccountNumber: '',
       patientPaid: '',
       totalCharge: '',
+      items: [],
     });
   });
 
@@ -440,6 +398,7 @@ describe('getClaimInfo', () => {
       patientAccountNumber: '',
       patientPaid: '',
       totalCharge: '',
+      items: [],
     });
   });
 
@@ -482,6 +441,7 @@ describe('getClaimInfo', () => {
       patientAccountNumber: '',
       patientPaid: '',
       totalCharge: '',
+      items: [],
     });
   });
 });
