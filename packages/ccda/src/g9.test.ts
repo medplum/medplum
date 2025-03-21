@@ -1,13 +1,5 @@
-import { createReference, generateId, RXNORM, SNOMED, UCUM } from '@medplum/core';
-import {
-  AllergyIntolerance,
-  Bundle,
-  Composition,
-  CompositionSection,
-  MedicationRequest,
-  Patient,
-  Resource,
-} from '@medplum/fhirtypes';
+import { createReference, generateId, RXNORM, SNOMED, UCUM, WithId } from '@medplum/core';
+import { AllergyIntolerance, Bundle, Composition, MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
 import { convertFhirToCcda } from './fhir-to-ccda';
 import { OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM } from './oids';
 import {
@@ -17,11 +9,24 @@ import {
   LANGUAGE_MODE_URL,
   LANGUAGE_PROFICIENCY_CODE_SYSTEM,
   LANGUAGE_PROFICIENCY_URL,
+  LOINC_ALLERGIES_SECTION,
+  LOINC_ASSESSMENTS_SECTION,
+  LOINC_DEVICES_SECTION,
+  LOINC_GOALS_SECTION,
+  LOINC_HEALTH_CONCERNS_SECTION,
+  LOINC_IMMUNIZATIONS_SECTION,
+  LOINC_MEDICATIONS_SECTION,
+  LOINC_NOTES_SECTION,
+  LOINC_PLAN_OF_TREATMENT_SECTION,
+  LOINC_PROBLEMS_SECTION,
+  LOINC_PROCEDURES_SECTION,
+  LOINC_RESULTS_SECTION,
+  LOINC_VITAL_SIGNS_SECTION,
   RACE_CODE_SYSTEM,
   US_CORE_ETHNICITY_URL,
   US_CORE_RACE_URL,
 } from './systems';
-import { CcdaCode, CcdaQuantity, CcdaText } from './types';
+import { CcdaCode, CcdaNarrative, CcdaQuantity, CcdaText } from './types';
 
 describe('170.315(g)(9)', () => {
   describe('Patient Demographics', () => {
@@ -65,7 +70,10 @@ describe('170.315(g)(9)', () => {
 
     // Suffix
     test('should export suffix', () => {
-      const input = createCompositionBundle({ resourceType: 'Patient', name: [{ given: ['John'], suffix: ['Jr.'] }] });
+      const input = createCompositionBundle({
+        resourceType: 'Patient',
+        name: [{ given: ['John'], suffix: ['Jr.'] }],
+      });
       const output = convertFhirToCcda(input);
       expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.suffix?.[0]).toEqual('Jr.');
     });
@@ -238,10 +246,10 @@ describe('170.315(g)(9)', () => {
   describe('Allergies', () => {
     // Must include reactions and severity
     test('should export reactions and severity', () => {
-      const input = createCompositionBundle(
-        { resourceType: 'Patient' },
-        { resourceType: 'AllergyIntolerance', reaction: [{ manifestation: [{ coding: [{ code: '123' }] }] }] }
-      );
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_ALLERGIES_SECTION, {
+        resourceType: 'AllergyIntolerance',
+        reaction: [{ manifestation: [{ coding: [{ code: '123' }] }] }],
+      });
 
       const output = convertFhirToCcda(input);
       const observation =
@@ -276,7 +284,7 @@ describe('170.315(g)(9)', () => {
         ],
       };
 
-      const input = createCompositionBundle({ resourceType: 'Patient' }, allergy);
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_ALLERGIES_SECTION, allergy);
 
       const output = convertFhirToCcda(input);
 
@@ -350,7 +358,7 @@ describe('170.315(g)(9)', () => {
         ],
       };
 
-      const input = createCompositionBundle({ resourceType: 'Patient' }, medication);
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_MEDICATIONS_SECTION, medication);
 
       const output = convertFhirToCcda(input);
 
@@ -382,31 +390,28 @@ describe('170.315(g)(9)', () => {
     test('should export problems', () => {
       // Include timing information
       // - Include concern status Reference: Section III.C in test data samples [2]
-      const input = createCompositionBundle(
-        { resourceType: 'Patient' },
-        {
-          resourceType: 'Condition',
-          clinicalStatus: {
-            coding: [
-              {
-                system: CLINICAL_CONDITION_CODE_SYSTEM,
-                code: 'active',
-              },
-            ],
-          },
-          recordedDate: '2024-01-01',
-          onsetDateTime: '2023-12-25',
-          code: {
-            coding: [
-              {
-                system: SNOMED,
-                code: '385093006',
-                display: 'Community acquired pneumonia',
-              },
-            ],
-          },
-        }
-      );
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_PROBLEMS_SECTION, {
+        resourceType: 'Condition',
+        clinicalStatus: {
+          coding: [
+            {
+              system: CLINICAL_CONDITION_CODE_SYSTEM,
+              code: 'active',
+            },
+          ],
+        },
+        recordedDate: '2024-01-01',
+        onsetDateTime: '2023-12-25',
+        code: {
+          coding: [
+            {
+              system: SNOMED,
+              code: '385093006',
+              display: 'Community acquired pneumonia',
+            },
+          ],
+        },
+      });
       const output = convertFhirToCcda(input);
 
       // Check act timing (when recorded)
@@ -431,7 +436,9 @@ describe('170.315(g)(9)', () => {
 
   describe('Immunizations', () => {
     test('should export immunizations', () => {
-      const input = createCompositionBundle({ resourceType: 'Patient' }, { resourceType: 'Immunization' });
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_IMMUNIZATIONS_SECTION, {
+        resourceType: 'Immunization',
+      });
       const output = convertFhirToCcda(input);
       expect(
         output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration
@@ -439,10 +446,11 @@ describe('170.315(g)(9)', () => {
     });
 
     test('should include status and dates', () => {
-      const input = createCompositionBundle(
-        { resourceType: 'Patient' },
-        { resourceType: 'Immunization', status: 'completed', occurrenceDateTime: '2010-08-15' }
-      );
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_IMMUNIZATIONS_SECTION, {
+        resourceType: 'Immunization',
+        status: 'completed',
+        occurrenceDateTime: '2010-08-15',
+      });
       const output = convertFhirToCcda(input);
       expect(
         output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
@@ -455,10 +463,11 @@ describe('170.315(g)(9)', () => {
     });
 
     test('should include lot number and manufacturer', () => {
-      const input = createCompositionBundle(
-        { resourceType: 'Patient' },
-        { resourceType: 'Immunization', lotNumber: '1', manufacturer: { display: 'Manufacturer' } }
-      );
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_IMMUNIZATIONS_SECTION, {
+        resourceType: 'Immunization',
+        lotNumber: '1',
+        manufacturer: { display: 'Manufacturer' },
+      });
       const output = convertFhirToCcda(input);
       expect(
         output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.substanceAdministration?.[0]
@@ -473,16 +482,18 @@ describe('170.315(g)(9)', () => {
 
   describe('Vital Signs', () => {
     test('should export vital signs', () => {
-      const input = createCompositionBundle({ resourceType: 'Patient' }, { resourceType: 'Observation' });
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_VITAL_SIGNS_SECTION, {
+        resourceType: 'Observation',
+      });
       const output = convertFhirToCcda(input);
       expect(output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation).toBeDefined();
     });
 
     test('should include values and units', () => {
-      const input = createCompositionBundle(
-        { resourceType: 'Patient' },
-        { resourceType: 'Observation', valueQuantity: { value: 100, unit: 'mg' } }
-      );
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_VITAL_SIGNS_SECTION, {
+        resourceType: 'Observation',
+        valueQuantity: { value: 100, unit: 'mg' },
+      });
       const output = convertFhirToCcda(input);
       const observation = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation?.[0];
       expect(observation).toBeDefined();
@@ -494,6 +505,7 @@ describe('170.315(g)(9)', () => {
     test('should handle observation components', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
+        LOINC_VITAL_SIGNS_SECTION,
         {
           resourceType: 'Observation',
           id: '123',
@@ -509,7 +521,7 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const organizer = output.component?.structuredBody?.component?.[1]?.section?.[0]?.entry?.[0]?.organizer?.[0];
+      const organizer = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[1]?.organizer?.[0];
       expect(organizer).toBeDefined();
       const components = organizer?.component;
       expect(components).toBeDefined();
@@ -520,14 +532,11 @@ describe('170.315(g)(9)', () => {
 
   describe('Procedures', () => {
     test('should handle missing location', () => {
-      const input = createCompositionBundle(
-        { resourceType: 'Patient' },
-        {
-          resourceType: 'Procedure',
-          id: '456',
-          location: { reference: 'Location/123' },
-        }
-      );
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_PROCEDURES_SECTION, {
+        resourceType: 'Procedure',
+        id: '456',
+        location: { reference: 'Location/123' },
+      });
       const output = convertFhirToCcda(input);
       const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
       expect(procedure).toBeDefined();
@@ -536,6 +545,7 @@ describe('170.315(g)(9)', () => {
     test('should handle empty location', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
+        LOINC_PROCEDURES_SECTION,
         {
           resourceType: 'Location',
           id: '123',
@@ -556,6 +566,7 @@ describe('170.315(g)(9)', () => {
     test('should create location participant', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
+        LOINC_PROCEDURES_SECTION,
         {
           resourceType: 'Location',
           id: '123',
@@ -585,29 +596,26 @@ describe('170.315(g)(9)', () => {
 
   describe('Labs', () => {
     test('should handle orders', () => {
-      const input = createCompositionBundle(
-        { resourceType: 'Patient' },
-        {
-          resourceType: 'ServiceRequest',
-          status: 'active',
-          intent: 'order',
-          code: {
-            coding: [
-              {
-                system: 'http://loinc.org',
-                code: '24357-6',
-                display: 'Urinanalysis macro (dipstick) panel',
-              },
-            ],
-          },
-          occurrenceDateTime: '2015-06-29T07:00:00.000Z',
-          authoredOn: '2025-02-27T01:32:00.000Z',
-        }
-      );
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_PLAN_OF_TREATMENT_SECTION, {
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        code: {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '24357-6',
+              display: 'Urinanalysis macro (dipstick) panel',
+            },
+          ],
+        },
+        occurrenceDateTime: '2015-06-29T07:00:00.000Z',
+        authoredOn: '2025-02-27T01:32:00.000Z',
+      });
       const output = convertFhirToCcda(input);
       const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
       expect(section).toBeDefined();
-      expect(section?.code?.['@_code']).toEqual('18776-5');
+      expect(section?.code?.['@_code']).toEqual(LOINC_PLAN_OF_TREATMENT_SECTION);
       const observation = section?.entry?.[0]?.observation?.[0];
       expect(observation).toBeDefined();
       expect(observation?.code?.['@_code']).toEqual('24357-6');
@@ -617,6 +625,7 @@ describe('170.315(g)(9)', () => {
     test('should handle reports', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
+        LOINC_RESULTS_SECTION,
         {
           resourceType: 'Observation',
           id: '123',
@@ -651,10 +660,10 @@ describe('170.315(g)(9)', () => {
         }
       );
       const output = convertFhirToCcda(input);
-      const section = output.component?.structuredBody?.component?.[1]?.section?.[0];
+      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
       expect(section).toBeDefined();
-      expect(section?.code?.['@_code']).toEqual('30954-2');
-      const organizer = section?.entry?.[0]?.organizer?.[0];
+      expect(section?.code?.['@_code']).toEqual(LOINC_RESULTS_SECTION);
+      const organizer = section?.entry?.[1]?.organizer?.[0];
       expect(organizer).toBeDefined();
       const components = organizer?.component;
       expect(components).toBeDefined();
@@ -664,24 +673,22 @@ describe('170.315(g)(9)', () => {
 
   describe('Devices', () => {
     test('should handle device not found', () => {
-      const input = createCompositionBundle(
-        { resourceType: 'Patient' },
-        {
-          resourceType: 'DeviceUseStatement',
-          status: 'active',
-          device: { reference: 'Device/123' },
-        }
-      );
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_DEVICES_SECTION, {
+        resourceType: 'DeviceUseStatement',
+        status: 'active',
+        device: { reference: 'Device/123' },
+      });
       const output = convertFhirToCcda(input);
       const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
       expect(section).toBeDefined();
-      expect(section?.code?.['@_code']).toEqual('46264-8');
+      expect(section?.code?.['@_code']).toEqual(LOINC_DEVICES_SECTION);
       expect(section?.entry).toHaveLength(0);
     });
 
     test('should handle device use statements', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
+        LOINC_DEVICES_SECTION,
         {
           resourceType: 'Device',
           id: '123',
@@ -712,7 +719,7 @@ describe('170.315(g)(9)', () => {
       const output = convertFhirToCcda(input);
       const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
       expect(section).toBeDefined();
-      expect(section?.code?.['@_code']).toEqual('46264-8');
+      expect(section?.code?.['@_code']).toEqual(LOINC_DEVICES_SECTION);
       const procedure = section?.entry?.[0]?.procedure?.[0];
       expect(procedure).toBeDefined();
       expect(procedure?.code?.['@_code']).toEqual('360030002');
@@ -728,6 +735,7 @@ describe('170.315(g)(9)', () => {
     test('should handle clinical impression', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
+        LOINC_ASSESSMENTS_SECTION,
         {
           resourceType: 'Practitioner',
           id: 'davis',
@@ -751,46 +759,108 @@ describe('170.315(g)(9)', () => {
       const output = convertFhirToCcda(input);
       const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
       expect(section).toBeDefined();
-      expect(section?.code?.['@_code']).toEqual('51848-0');
+      expect(section?.code?.['@_code']).toEqual(LOINC_ASSESSMENTS_SECTION);
       expect(section?.text).toEqual('Lorem ipsum');
+    });
+  });
+
+  describe('Goals', () => {
+    test('should handle goal', () => {
+      const input = createCompositionBundle({ resourceType: 'Patient', id: '123' }, LOINC_GOALS_SECTION, {
+        resourceType: 'Goal',
+        lifecycleStatus: 'active',
+        startDate: '2015-06-23',
+        description: {
+          text: 'Lorem ipsum',
+        },
+        subject: {
+          reference: 'Patient/123',
+          display: 'Alice Jones Newman',
+        },
+      });
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual(LOINC_GOALS_SECTION);
+
+      const observation = section?.entry?.[0]?.observation?.[0];
+      expect(observation).toBeDefined();
+      expect((observation?.value as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
+    });
+  });
+
+  describe('Health Concerns', () => {
+    test('should handle clinical impression', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        LOINC_HEALTH_CONCERNS_SECTION,
+        {
+          resourceType: 'Practitioner',
+          id: 'davis',
+          name: [{ family: 'Davis', given: ['Albert'] }],
+        },
+        {
+          resourceType: 'ClinicalImpression',
+          status: 'completed',
+          subject: {
+            reference: 'Patient/01953565-5b00-72a8-ac87-3c4b3de1ba88',
+            display: 'Alice Jones Newman',
+          },
+          date: '2015-06-22T07:00:00.000Z',
+          assessor: {
+            reference: 'Practitioner/davis',
+            display: 'Dr Albert Davis',
+          },
+          summary: 'Lorem ipsum',
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual(LOINC_HEALTH_CONCERNS_SECTION);
+      const act = section?.entry?.[0]?.act?.[0];
+      expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
+    });
+  });
+
+  describe('Notes', () => {
+    test('should handle clinical impression', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        LOINC_NOTES_SECTION,
+        {
+          resourceType: 'Practitioner',
+          id: 'davis',
+          name: [{ family: 'Davis', given: ['Albert'] }],
+        },
+        {
+          resourceType: 'ClinicalImpression',
+          status: 'completed',
+          subject: {
+            reference: 'Patient/01953565-5b00-72a8-ac87-3c4b3de1ba88',
+            display: 'Alice Jones Newman',
+          },
+          date: '2015-06-22T07:00:00.000Z',
+          assessor: {
+            reference: 'Practitioner/davis',
+            display: 'Dr Albert Davis',
+          },
+          summary: 'Lorem ipsum',
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+      expect(section).toBeDefined();
+      expect(section?.code?.['@_code']).toEqual(LOINC_NOTES_SECTION);
+      const act = section?.entry?.[0]?.act?.[0];
+      expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
     });
   });
 });
 
-function createCompositionBundle(patient: Patient, ...resources: Partial<Resource>[]): Bundle {
-  const resourceTypeToCode = {
-    AllergyIntolerance: '48765-2',
-    ClinicalImpression: '51848-0',
-    Condition: '11450-4',
-    DeviceUseStatement: '46264-8',
-    DiagnosticReport: '30954-2',
-    Immunization: '11369-6',
-    MedicationRequest: '10160-0',
-    Observation: '8716-3',
-    Procedure: '47519-4',
-    ServiceRequest: '18776-5',
-  };
-
-  const sections: CompositionSection[] = [];
-
+function createCompositionBundle(patient: Patient, code?: string, ...resources: Partial<Resource>[]): Bundle {
   for (const resource of resources) {
-    resource.id = resource.id || generateId();
-
-    const code = resourceTypeToCode[resource.resourceType as keyof typeof resourceTypeToCode];
-    if (code) {
-      sections.push({
-        title: resource.resourceType,
-        code: {
-          coding: [
-            {
-              code,
-              display: resource.resourceType,
-            },
-          ],
-        },
-        entry: [createReference(resource as Resource)],
-      });
-    }
+    resource.id = resource.id ?? generateId();
   }
 
   const composition: Composition = {
@@ -801,7 +871,23 @@ function createCompositionBundle(patient: Patient, ...resources: Partial<Resourc
     author: [{ display: 'test' }],
     title: 'test',
     subject: createReference(patient),
-    section: sections,
+    section: code
+      ? [
+          {
+            title: 'test',
+            code: {
+              coding: [
+                {
+                  code,
+                },
+              ],
+            },
+            entry: (resources as WithId<Resource>[])
+              .filter((r) => !['Device', 'Location', 'Practitioner'].includes(r.resourceType as string))
+              .map(createReference),
+          },
+        ]
+      : [],
   };
 
   return {

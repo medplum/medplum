@@ -1,7 +1,7 @@
 import { ExampleWorkflowPlanDefinition, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router';
-import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { PlanDefinitionBuilder, PlanDefinitionBuilderProps } from './PlanDefinitionBuilder';
 
 const medplum = new MockClient();
@@ -150,6 +150,48 @@ describe('PlanDefinitionBuilder', () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 
+  test('Add activity definition action', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      },
+      onSubmit,
+    });
+
+    expect(await screen.findByText('Add action')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add action'));
+    });
+
+    expect(await screen.getByPlaceholderText('Title')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Title'), {
+        target: { value: 'Example Activity Definition Action' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
+        target: { value: 'activitydefinition' },
+      });
+    });
+
+    expect(await screen.findByText('Select activity definition')).toBeInTheDocument();
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
   test('Add questionnaire action', async () => {
     const onSubmit = jest.fn();
 
@@ -175,10 +217,11 @@ describe('PlanDefinitionBuilder', () => {
       });
     });
 
-    const questionnaireRadio = screen.getByLabelText('Task with Questionnaire');
-    expect(questionnaireRadio).not.toBeChecked();
-    const user = userEvent.setup();
-    await user.click(questionnaireRadio);
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
+        target: { value: 'questionnaire' },
+      });
+    });
 
     expect(screen.getByText('Save')).toBeDefined();
 
@@ -214,8 +257,11 @@ describe('PlanDefinitionBuilder', () => {
       });
     });
 
-    const questionnaireRadio = screen.getByLabelText('Standard task');
-    expect(questionnaireRadio).toBeChecked();
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
+        target: { value: 'standard' },
+      });
+    });
 
     expect(screen.getByText('Save')).toBeDefined();
 
