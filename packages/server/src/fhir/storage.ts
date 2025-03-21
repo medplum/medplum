@@ -20,7 +20,7 @@ export function initBinaryStorage(type?: string): void {
     binaryStorage = new AzureBlobStorage(type.replace('azure:', ''));
   } else if (type?.startsWith('file:')) {
     binaryStorage = new FileSystemStorage(type.replace('file:', ''));
-  } else if (type?.startsWith('gcp:')) {
+  } else if (type?.startsWith('gs:')) {
     binaryStorage = new GCPBlobStorage(type.replace('gcp:', ''));
   } else {
     binaryStorage = undefined;

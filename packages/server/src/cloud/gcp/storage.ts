@@ -9,8 +9,8 @@ export class GCPBlobStorage implements BinaryStorage {
   private readonly bucket;
 
   constructor(gcpStorage: string) {
-    const [projectId, bucketName] = splitN(gcpStorage, ':', 2);
-    this.storage = new Storage({ projectId });
+    const [_, bucketName] = splitN(gcpStorage, ':', 2);
+    this.storage = new Storage();
     this.bucket = this.storage.bucket(bucketName);
   }
 
