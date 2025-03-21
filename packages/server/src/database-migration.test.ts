@@ -17,12 +17,12 @@ import {
   CustomPostDeployMigrationJobData,
 } from './migrations/data/types';
 import { getPendingPostDeployMigration } from './migrations/migration-utils';
-import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
+import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import { generateAccessToken } from './oauth/keys';
 import { requestContextStore } from './request-context-store';
 import { createTestProject, withTestContext } from './test.setup';
 import { getPostDeployMigrationQueue, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
-import { getReindexQueue, prepareReindexJobData, ReindexJob } from './workers/reindex';
+import { getReindexQueue, prepareReindexJobData, ReindexJob, ReindexJobData } from './workers/reindex';
 import * as version from './util/version';
 
 const DEFAULT_SERVER_VERSION = '3.3.0';
@@ -493,6 +493,56 @@ describe('Database migrations', () => {
         expect(getQueueAddSpy()).toHaveBeenCalledTimes(expectedQueueCalls);
       })
     );
+
+    test.only.each([
+      [true, 55],
+      [false, 55],
+      [true, undefined],
+      [false, undefined],
+    ])('Skips only if in firstBoot mode [%s] and has dataVersion [%s]', async (firstBootMode, dataVersion) => {
+      mockValues.postDeployVersion = firstBootMode ? MigrationVersion.FIRST_BOOT : MigrationVersion.NONE;
+      const systemRepo = getSystemRepo();
+
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        dataVersion,
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      let jobData: ReindexJobData = {} as unknown as ReindexJobData;
+      await withTestContext(async () => {
+        jobData = prepareReindexJobData(['ValueSet'], asyncJob.id);
+      });
+
+      const reindexJob = new ReindexJob(systemRepo);
+      const searchSpy = jest.spyOn(systemRepo, 'search').mockResolvedValueOnce({
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [],
+      });
+      await expect(reindexJob.execute(jobData)).resolves.toBe('finished');
+
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
+      if (firstBootMode && dataVersion) {
+        expect(asyncJob.status).toStrictEqual('completed');
+        expect(asyncJob.output?.parameter).toEqual([{ name: 'skipped', valueString: 'In firstBoot mode' }]);
+        expect(searchSpy).not.toHaveBeenCalled();
+      } else {
+        expect(asyncJob.status).toStrictEqual('completed');
+        expect(asyncJob.output?.parameter).toEqual([
+          {
+            name: 'result',
+            part: expect.arrayContaining([
+              expect.objectContaining({ name: 'resourceType', valueCode: 'ValueSet' }),
+              expect.objectContaining({ name: 'count', valueInteger: 0 }),
+            ]),
+          },
+        ]);
+        expect(searchSpy).toHaveBeenCalledTimes(1);
+      }
+    });
   });
 
   // Use a separate top-level describe since the other top-level
