@@ -30,7 +30,7 @@
     "node-fetch": "2.7.0",
     "pdfmake": "0.2.18",
     "ssh2": "1.16.0",
-    "ssh2-sftp-client": "11.0.0"
+    "ssh2-sftp-client": "12.0.0"
   },
   "devDependencies": {
     "@types/node-fetch": "2.6.12"
