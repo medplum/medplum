@@ -45,7 +45,9 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
   }, [url, shouldSend]);
 
   const validateCcda = async (): Promise<void> => {
-    if (!url) return;
+    if (!url) {
+      return;
+    }
 
     try {
       setValidating(true);
@@ -72,9 +74,9 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
       }
 
       const validationData = await validationResponse.json();
-      console.log('Validation response:', validationData);
       setValidationResult(validationData);
     } catch (error) {
+      setValidationResult(undefined);
       console.error('CCDA validation error:', error);
     } finally {
       setValidating(false);
@@ -82,7 +84,9 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
   };
 
   const downloadResults = (): void => {
-    if (!validationResult) return;
+    if (!validationResult) {
+      return;
+    }
 
     const resultsJson = JSON.stringify(validationResult, null, 2);
     const blob = new Blob([resultsJson], { type: 'application/json' });
@@ -99,18 +103,12 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
   };
 
   const getErrorCount = (): number => {
-    if (!validationResult) return 0;
-
-    // Check for resultMetaData array (where error counts are stored)
-    if (Array.isArray(validationResult.resultsMetaData?.resultMetaData)) {
-      return validationResult.resultsMetaData.resultMetaData
-        .filter((item) => item.type && item.type.includes('Error'))
-        .reduce((sum, item) => sum + (item.count || 0), 0);
+    if (!validationResult) {
+      return 0;
     }
-
-    console.log('Could not find expected error data structure in validation result', validationResult);
-
-    return 0;
+    return validationResult.resultsMetaData.resultMetaData
+      .filter((item) => item.type && item.type.includes('Error'))
+      .reduce((sum, item) => sum + (item.count || 0), 0);
   };
 
   if (!url) {
