@@ -36,7 +36,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<UserSecuri
   // Learn more: https://nodemailer.com/extras/mailcomposer/
 
   if (pcr.type === 'invite') {
-    // This PasswordChangeRequest was created as part of a new user invite flow.
+    // This UserSecurityRequest was created as part of a new user invite flow.
     // Send a Welcome email to the user.
     await medplum.sendEmail({
       to: email,
