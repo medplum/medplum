@@ -1,4 +1,5 @@
 import {
+  getReferenceString,
   getStatus,
   normalizeErrorString,
   OperationOutcomeError,
@@ -10,10 +11,13 @@ import {
 import { AsyncJob, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { getRequestContext, tryRunInRequestContext } from '../context';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
+import { getPostDeployVersion } from '../migration-sql';
 import { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
+import { MigrationVersion } from '../migrations/migration-versions';
 import { isJobActive, isJobCompatible, queueRegistry, updateAsyncJobOutput, WorkerInitializer } from './utils';
 
 /*
@@ -120,6 +124,22 @@ export class ReindexJob {
     return repo.readResource<AsyncJob>('AsyncJob', typeof asyncJobOrId === 'string' ? asyncJobOrId : asyncJobOrId.id);
   }
 
+  private async maybeSkipJob(asyncJob: WithId<AsyncJob>): Promise<boolean> {
+    const postDeployVersion = await getPostDeployVersion(getDatabasePool(DatabaseMode.WRITER));
+    if (Boolean(asyncJob.dataVersion) && postDeployVersion === MigrationVersion.FIRST_BOOT) {
+      globalLogger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
+        asyncJob: getReferenceString(asyncJob),
+        version: `v${asyncJob.dataVersion}`,
+      });
+      await new AsyncJobExecutor(this.systemRepo, asyncJob).completeJob(this.systemRepo, {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'skipped', valueString: 'In firstBoot mode' }],
+      });
+      return true;
+    }
+    return false;
+  }
+
   async execute(inputJobData: ReindexJobData): Promise<'finished' | 'ineligible' | 'interrupted'> {
     let asyncJob = await this.refreshAsyncJob(this.systemRepo, inputJobData.asyncJobId);
 
@@ -131,11 +151,14 @@ export class ReindexJob {
       return 'interrupted';
     }
 
-    const systemRepo = this.systemRepo;
+    const skipped = await this.maybeSkipJob(asyncJob);
+    if (skipped) {
+      return 'finished';
+    }
 
     let nextJobData: ReindexJobData | undefined = inputJobData;
     while (nextJobData) {
-      const result = await this.processIteration(systemRepo, nextJobData);
+      const result = await this.processIteration(this.systemRepo, nextJobData);
       const resourceType = nextJobData.resourceTypes[0];
       nextJobData.results[resourceType] = result;
 
@@ -149,9 +172,9 @@ export class ReindexJob {
       const finishedOrNextIterationData = this.nextIterationData(result, nextJobData);
       nextJobData = undefined;
       if (finishedOrNextIterationData === true) {
-        await new AsyncJobExecutor(systemRepo, asyncJob).completeJob(systemRepo, output);
+        await new AsyncJobExecutor(this.systemRepo, asyncJob).completeJob(this.systemRepo, output);
       } else if (finishedOrNextIterationData === false) {
-        await new AsyncJobExecutor(systemRepo, asyncJob).failJob(systemRepo);
+        await new AsyncJobExecutor(this.systemRepo, asyncJob).failJob(this.systemRepo);
       } else {
         nextJobData = finishedOrNextIterationData;
       }
