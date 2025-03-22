@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { sendCommand } from '../utils/dom';
 
 const CCDA_VIEWER_URL = 'https://ccda.medplum.com';
-const BASE_VALIDATION_URL = 'http://localhost:8080/';
+const BASE_VALIDATION_URL = 'https://ccda-validator.medplum.com/';
+// const BASE_VALIDATION_URL = 'http://localhost:8080/';
 
 export interface CcdaDisplayProps {
   readonly url?: string;
