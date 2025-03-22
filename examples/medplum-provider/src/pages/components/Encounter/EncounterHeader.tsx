@@ -32,7 +32,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
   };
 
   return (
-    <Paper shadow="sm" p={0} >
+    <Paper shadow="sm" p={0}>
       <Flex justify="space-between" align="center" p="lg">
         <Group gap="xs">
           <Text fw={600} size="lg">
@@ -41,24 +41,27 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
         </Group>
 
         <Group>
-          <ActionIcon 
-            variant={status === 'finished' ? 'filled' : 'subtle'} 
-            color={status === 'finished' ? 'blue' : 'gray'} 
+          <ActionIcon
+            variant={status === 'finished' ? 'filled' : 'subtle'}
+            color={status === 'finished' ? 'blue' : 'gray'}
             radius="xl"
           >
             {status === 'finished' ? <IconLock size={18} /> : <IconTrash size={18} />}
           </ActionIcon>
-  
+
           <Menu position="bottom-end" shadow="md">
             <Menu.Target>
-              <Button 
-                variant="light" 
+              <Button
+                variant="light"
                 color={getStatusColor(status)}
-                rightSection={<IconChevronDown size={16} />} 
-                radius="xl" 
+                rightSection={<IconChevronDown size={16} />}
+                radius="xl"
                 size="sm"
               >
-                {status.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                {status
+                  .split('-')
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(' ')}
               </Button>
             </Menu.Target>
 
