@@ -2087,9 +2087,9 @@ class FhirToCcdaConverter {
         {
           '@_classCode': 'ACT',
           '@_moodCode': 'EVN',
-          templateId: [{ '@_root': OID_NOTE_ACTIVITY }],
+          templateId: [{ '@_root': OID_NOTE_ACTIVITY, '@_extension': '2016-11-01' }],
           id: this.mapIdentifiers(resource.id, resource.identifier),
-          code: {
+          code: mapCodeableConceptToCcdaCode(resource.code) ?? {
             '@_code': LOINC_NOTES_SECTION,
             '@_codeSystem': OID_LOINC_CODE_SYSTEM,
             '@_codeSystemName': 'LOINC',
@@ -2098,6 +2098,7 @@ class FhirToCcdaConverter {
           text: resource.summary ? { '#text': resource.summary } : this.createTextFromExtensions(resource.extension),
           statusCode: { '@_code': 'completed' },
           effectiveTime: [{ '@_value': mapFhirToCcdaDate(resource.date) }],
+          author: this.mapAuthor(resource.assessor, resource.date),
         },
       ],
     };

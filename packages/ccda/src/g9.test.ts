@@ -928,6 +928,80 @@ describe('170.315(g)(9)', () => {
       expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
     });
   });
+
+  test('should handle practitioner role', () => {
+    const input = createCompositionBundle(
+      { resourceType: 'Patient' },
+      LOINC_NOTES_SECTION,
+      {
+        resourceType: 'Practitioner',
+        id: 'davis',
+        name: [{ family: 'Davis', given: ['Albert'] }],
+      },
+      {
+        resourceType: 'Organization',
+        id: 'hospital',
+        name: 'Hospital',
+      },
+      {
+        resourceType: 'PractitionerRole',
+        id: 'role',
+        practitioner: { reference: 'Practitioner/davis' },
+        organization: { reference: 'Organization/hospital' },
+      },
+      {
+        resourceType: 'ClinicalImpression',
+        status: 'completed',
+        subject: {
+          reference: 'Patient/01953565-5b00-72a8-ac87-3c4b3de1ba88',
+          display: 'Alice Jones Newman',
+        },
+        date: '2015-06-22T07:00:00.000Z',
+        assessor: {
+          reference: 'PractitionerRole/role',
+        },
+        summary: 'Lorem ipsum',
+      }
+    );
+    const output = convertFhirToCcda(input);
+    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    expect(section).toBeDefined();
+    expect(section?.code?.['@_code']).toEqual(LOINC_NOTES_SECTION);
+
+    const act = section?.entry?.[0]?.act?.[0];
+    expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
+
+    const author = act?.author?.[0];
+    expect(author).toBeDefined();
+    expect(author?.assignedAuthor?.assignedPerson?.name?.[0]?.family).toEqual('Davis');
+    expect(author?.assignedAuthor?.representedOrganization?.name?.[0]).toEqual('Hospital');
+  });
+
+  test('should handle missing author', () => {
+    const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_NOTES_SECTION, {
+      resourceType: 'ClinicalImpression',
+      status: 'completed',
+      subject: {
+        reference: 'Patient/01953565-5b00-72a8-ac87-3c4b3de1ba88',
+        display: 'Alice Jones Newman',
+      },
+      date: '2015-06-22T07:00:00.000Z',
+      assessor: {
+        reference: 'PractitionerRole/role',
+      },
+      summary: 'Lorem ipsum',
+    });
+    const output = convertFhirToCcda(input);
+    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    expect(section).toBeDefined();
+    expect(section?.code?.['@_code']).toEqual(LOINC_NOTES_SECTION);
+
+    const act = section?.entry?.[0]?.act?.[0];
+    expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
+
+    const author = act?.author?.[0];
+    expect(author).toBeUndefined();
+  });
 });
 
 function createCompositionBundle(patient: Patient, code?: string, ...resources: Partial<Resource>[]): Bundle {
