@@ -590,93 +590,6 @@ class FhirToCcdaConverter {
    */
   private createAllergyEntry(allergy: AllergyIntolerance): CcdaEntry {
     const reaction = allergy.reaction?.[0];
-
-    // Handle case where this represents "no known allergies"
-    if (allergy.clinicalStatus?.coding?.[0]?.code === 'active' && !allergy.code) {
-      return {
-        act: [
-          {
-            '@_classCode': 'ACT',
-            '@_moodCode': 'EVN',
-            templateId: [
-              {
-                '@_root': OID_ALLERGY_PROBLEM_ACT,
-                '@_extension': '2015-08-01',
-              },
-              {
-                '@_root': OID_ALLERGY_PROBLEM_ACT,
-              },
-            ],
-            id: this.mapIdentifiers(allergy.id, allergy.identifier),
-            code: {
-              '@_code': 'CONC',
-              '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
-            },
-            statusCode: {
-              '@_code': 'active',
-            },
-            effectiveTime: this.mapEffectivePeriod(allergy.recordedDate, undefined),
-            entryRelationship: [
-              {
-                '@_typeCode': 'SUBJ',
-                observation: [
-                  {
-                    '@_classCode': 'OBS',
-                    '@_moodCode': 'EVN',
-                    '@_negationInd': 'true',
-                    templateId: [
-                      {
-                        '@_root': OID_ALLERGY_OBSERVATION,
-                        '@_extension': '2014-06-09',
-                      },
-                      {
-                        '@_root': OID_ALLERGY_OBSERVATION,
-                      },
-                    ],
-                    id: this.mapIdentifiers(allergy.id, allergy.identifier),
-                    code: {
-                      '@_code': 'ASSERTION',
-                      '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
-                    },
-                    statusCode: {
-                      '@_code': 'completed',
-                    },
-                    effectiveTime: this.mapEffectivePeriod(
-                      allergy.onsetPeriod?.start ?? allergy.onsetDateTime,
-                      allergy.onsetPeriod?.end,
-                      true
-                    ),
-                    value: {
-                      '@_xsi:type': 'CD',
-                      '@_code': '419199007',
-                      '@_displayName': 'Allergy to substance',
-                      '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
-                      '@_codeSystemName': 'SNOMED CT',
-                    },
-                    participant: [
-                      {
-                        '@_typeCode': 'CSM',
-                        participantRole: {
-                          '@_classCode': 'MANU',
-                          playingEntity: {
-                            '@_classCode': 'MMAT',
-                            code: {
-                              '@_nullFlavor': 'NA',
-                            },
-                          },
-                        },
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      };
-    }
-
-    // Handle normal allergy case
     return {
       act: [
         {
@@ -744,14 +657,20 @@ class FhirToCcdaConverter {
                         '@_classCode': 'MANU',
                         playingEntity: {
                           '@_classCode': 'MMAT',
-                          code: {
-                            ...mapCodeableConceptToCcdaCode(allergy.code),
-                            originalText: allergy.code?.extension
-                              ? {
-                                  reference: this.getNarrativeReference(allergy.code?.extension),
-                                }
-                              : undefined,
-                          },
+                          code:
+                            // Handle special case for "No known allergies"
+                            // https://hl7.org/fhir/R4/allergyintolerance-nka.json.html
+                            // C-CDA-Examples/Allergies/No Known Allergies
+                            allergy.code?.coding?.[0]?.code === '716186003'
+                              ? { '@_nullFlavor': 'NA' }
+                              : {
+                                  ...mapCodeableConceptToCcdaCode(allergy.code),
+                                  originalText: allergy.code?.extension
+                                    ? {
+                                        reference: this.getNarrativeReference(allergy.code?.extension),
+                                      }
+                                    : undefined,
+                                },
                         },
                       },
                     },
@@ -844,14 +763,16 @@ class FhirToCcdaConverter {
    * @param category - The category to map.
    * @returns The C-CDA allergy category.
    */
-  private mapAllergyCategory(category: AllergyIntolerance['category']): CcdaValue | undefined {
-    if (!category || category.length === 0) {
-      return undefined;
-    }
-
-    const code = ALLERGY_CATEGORY_MAPPER.mapFhirToCcdaCode(category[0]);
+  private mapAllergyCategory(category: AllergyIntolerance['category']): CcdaValue {
+    let code = ALLERGY_CATEGORY_MAPPER.mapFhirToCcdaCode(category?.[0]);
     if (!code) {
-      return undefined;
+      // Default to generic allergy if no category is provided
+      code = {
+        '@_code': '419199007',
+        '@_displayName': 'Allergy to substance (disorder)',
+        '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+        '@_codeSystemName': 'SNOMED CT',
+      };
     }
 
     return { '@_xsi:type': 'CD', ...code };

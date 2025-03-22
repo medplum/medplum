@@ -284,6 +284,7 @@ describe('170.315(g)(9)', () => {
             },
           ],
         },
+        category: ['medication'],
         recordedDate: '2024-01-01',
         onsetDateTime: '2023-12-25',
         reaction: [
@@ -300,6 +301,14 @@ describe('170.315(g)(9)', () => {
       const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_ALLERGIES_SECTION, allergy);
 
       const output = convertFhirToCcda(input);
+
+      // Check that category="medication" converts to the correct code
+      expect(
+        (
+          output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+            ?.observation?.[0]?.value as CcdaCode
+        )?.['@_code']
+      ).toEqual('419511003');
 
       // Check act timing (when recorded)
       expect(
@@ -318,6 +327,50 @@ describe('170.315(g)(9)', () => {
       expect(
         output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.statusCode?.['@_code']
       ).toEqual('active');
+    });
+
+    test('should handle no known allergies', () => {
+      const allergy: Partial<AllergyIntolerance> = {
+        resourceType: 'AllergyIntolerance',
+        clinicalStatus: {
+          coding: [
+            {
+              system: ALLERGY_CLINICAL_CODE_SYSTEM,
+              code: 'active',
+            },
+          ],
+        },
+        code: {
+          coding: [
+            {
+              system: SNOMED,
+              code: '716186003',
+              display: 'No Known Allergy (situation)',
+            },
+          ],
+          text: 'NKA',
+        },
+        recordedDate: '2024-01-01',
+        onsetDateTime: '2023-12-25',
+      };
+
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_ALLERGIES_SECTION, allergy);
+
+      const output = convertFhirToCcda(input);
+
+      // Check that empty category converts to the default code
+      expect(
+        (
+          output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+            ?.observation?.[0]?.value as CcdaCode
+        )?.['@_code']
+      ).toEqual('419199007');
+
+      // Look for the special NKA code
+      expect(
+        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+          ?.observation?.[0]?.participant?.[0]?.participantRole?.playingEntity?.code?.['@_nullFlavor']
+      ).toEqual('NA');
     });
   });
 
