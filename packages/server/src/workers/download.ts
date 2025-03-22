@@ -12,12 +12,12 @@ import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { getConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { getLogger, globalLogger } from '../logger';
 import { parseTraceparent } from '../traceparent';
+import { WorkerInitializer } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -43,13 +43,7 @@ const jobName = 'DownloadJobData';
 let queue: Queue<DownloadJobData> | undefined = undefined;
 let worker: Worker<DownloadJobData> | undefined = undefined;
 
-/**
- * Initializes the download worker.
- * Sets up the BullMQ job queue.
- * Sets up the BullMQ worker.
- * @param config - The Medplum server config to use.
- */
-export function initDownloadWorker(config: MedplumServerConfig): void {
+export const initDownloadWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
@@ -75,7 +69,9 @@ export function initDownloadWorker(config: MedplumServerConfig): void {
   );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
-}
+
+  return { queue, name: queueName };
+};
 
 /**
  * Shuts down the download worker.

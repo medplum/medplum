@@ -1,19 +1,25 @@
-import { createReference, getExtension, isResource, Operator } from '@medplum/core';
+import { createReference, getExtension, isResource, Operator, WithId } from '@medplum/core';
 import {
+  AsyncJob,
   AuditEvent,
   AuditEventEntity,
   Bot,
   Coding,
+  Parameters,
   Practitioner,
   ProjectMembership,
   Reference,
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
+import { Queue } from 'bullmq';
+import * as semver from 'semver';
+import { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
-import { getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
+import { getServerVersion } from '../util/version';
 
 export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
   const systemRepo = getSystemRepo();
@@ -157,3 +163,61 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
 function defaultStatusCheck(status: number): boolean {
   return status >= 200 && status < 400;
 }
+
+export const InProgressAsyncJobStatuses: AsyncJob['status'][] = ['accepted', 'active'];
+
+export function isJobActive(asyncJob: WithId<AsyncJob>): boolean {
+  return InProgressAsyncJobStatuses.includes(asyncJob.status);
+}
+
+export function isJobCompatible(asyncJob: WithId<AsyncJob>): boolean {
+  return !asyncJob.minServerVersion || semver.gte(getServerVersion(), asyncJob.minServerVersion);
+}
+
+export async function updateAsyncJobOutput(
+  repo: Repository,
+  asyncJob: WithId<AsyncJob>,
+  output: Parameters
+): Promise<WithId<AsyncJob>> {
+  return repo.updateResource<AsyncJob>(
+    {
+      ...asyncJob,
+      output,
+    },
+    {
+      // Conditional update to ensure this update does not clobber another,
+      // which could result in e.g. continuing a job that was cancelled
+      ifMatch: asyncJob.meta?.versionId,
+    }
+  );
+}
+
+export type WorkerInitializer = (config: MedplumServerConfig) => { queue: Queue; name: string };
+
+export interface QueueRegistry {
+  addQueue(name: string, queue: Queue): void;
+  getQueue(name: string): Queue | undefined;
+  clear(): void;
+}
+
+class DefaultQueueRegistry implements QueueRegistry {
+  private queueMap: Record<string, Queue | undefined>;
+
+  constructor() {
+    this.queueMap = Object.create(null);
+  }
+
+  addQueue(name: string, queue: Queue): void {
+    this.queueMap[name] = queue;
+  }
+
+  getQueue(name: string): Queue | undefined {
+    return this.queueMap[name];
+  }
+
+  clear(): void {
+    this.queueMap = Object.create(null);
+  }
+}
+
+export const queueRegistry = new DefaultQueueRegistry();

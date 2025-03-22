@@ -1143,6 +1143,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
+    if (ids.length === 0) {
+      return;
+    }
     await this.withTransaction(async (client) => {
       for (const id of ids) {
         await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
