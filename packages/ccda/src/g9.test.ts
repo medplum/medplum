@@ -22,6 +22,7 @@ import {
   LOINC_ASSESSMENTS_SECTION,
   LOINC_BIRTH_SEX,
   LOINC_DEVICES_SECTION,
+  LOINC_ENCOUNTERS_SECTION,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
   LOINC_HISTORY_OF_TOBACCO_USE,
@@ -1054,6 +1055,48 @@ describe('170.315(g)(9)', () => {
 
     const author = act?.author?.[0];
     expect(author).toBeUndefined();
+  });
+});
+
+describe('Encounters', () => {
+  test('should handle diagnosis code', () => {
+    const input = createCompositionBundle(
+      { resourceType: 'Patient', id: '123' },
+      LOINC_ENCOUNTERS_SECTION,
+      {
+        resourceType: 'Practitioner',
+        id: 'davis',
+        name: [{ family: 'Davis', given: ['Albert'] }],
+      },
+      {
+        resourceType: 'Condition',
+        id: 'diagnosis',
+        clinicalStatus: { coding: [{ code: 'active' }] },
+        category: [{ coding: [{ code: 'encounter-diagnosis' }] }],
+        code: { coding: [{ code: '386661006' }] },
+        onsetDateTime: '2011-10-05T07:00:00.000Z',
+        recordedDate: '2025-02-24T20:51:00.000Z',
+        recorder: { reference: 'Practitioner/davis' },
+      },
+      {
+        resourceType: 'Encounter',
+        status: 'finished',
+        diagnosis: [{ condition: { reference: 'Condition/diagnosis' } }],
+        period: { start: '2015-06-22T20:00:00.000Z', end: '2015-06-22T21:00:00.000Z' },
+      }
+    );
+    const output = convertFhirToCcda(input);
+    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    expect(section).toBeDefined();
+    expect(section?.code?.['@_code']).toEqual(LOINC_ENCOUNTERS_SECTION);
+
+    const encounter = section?.entry?.[0]?.encounter?.[0];
+    expect(encounter).toBeDefined();
+
+    const observation = encounter?.entryRelationship?.[0]?.act?.[0]?.entryRelationship?.[0]?.observation;
+    expect(observation).toBeDefined();
+    expect(observation?.[0]?.code?.['@_code']).toEqual('282291009'); // Diagnostic interpretation
+    expect((observation?.[0]?.value as CcdaCode)['@_code']).toEqual('386661006');
   });
 });
 
