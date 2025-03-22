@@ -17,6 +17,7 @@ import {
   DiagnosticReport,
   DosageDoseAndRate,
   Encounter,
+  EncounterDiagnosis,
   Extension,
   ExtractResource,
   Goal,
@@ -129,6 +130,7 @@ import {
   CcdaDocumentationOf,
   CcdaEffectiveTime,
   CcdaEntry,
+  CcdaEntryRelationship,
   CcdaId,
   CcdaLanguageCommunication,
   CcdaName,
@@ -1824,7 +1826,7 @@ class FhirToCcdaConverter {
           code: mapCodeableConceptToCcdaCode(encounter.type?.[0]),
           text: this.createTextFromExtensions(encounter.extension),
           effectiveTime: this.mapEffectiveTime(undefined, encounter.period),
-          entryRelationship: encounter.participant?.map((participant) => ({
+          participant: encounter.participant?.map((participant) => ({
             '@_typeCode': 'LOC',
             participantRole: {
               '@_classCode': 'SDLOC',
@@ -1836,6 +1838,68 @@ class FhirToCcdaConverter {
               code: mapCodeableConceptToCcdaCode(participant.type?.[0]),
             },
           })),
+          entryRelationship: encounter.diagnosis?.map((d) => this.createEncounterDiagnosis(d)).filter(Boolean) as
+            | CcdaEntryRelationship[]
+            | undefined,
+        },
+      ],
+    };
+  }
+
+  private createEncounterDiagnosis(diagnosis: EncounterDiagnosis): CcdaEntryRelationship | undefined {
+    const condition = this.findResourceByReference(diagnosis.condition);
+    if (!condition || condition.resourceType !== 'Condition') {
+      return undefined;
+    }
+    return {
+      '@_typeCode': 'REFR',
+      act: [
+        {
+          '@_classCode': 'ACT',
+          '@_moodCode': 'EVN',
+          templateId: [
+            { '@_root': OID_ENCOUNTER_ACTIVITIES, '@_extension': '2015-08-01' },
+            { '@_root': OID_ENCOUNTER_ACTIVITIES },
+          ],
+          code: {
+            '@_code': '29308-4', // Diagnosis
+            '@_displayName': 'Diagnosis',
+            '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+            '@_codeSystemName': 'LOINC',
+          },
+          entryRelationship: [
+            {
+              '@_typeCode': 'SUBJ',
+              observation: [
+                {
+                  '@_classCode': 'OBS',
+                  '@_moodCode': 'EVN',
+                  templateId: [
+                    { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
+                    { '@_root': OID_PROBLEM_OBSERVATION },
+                  ],
+                  id: this.mapIdentifiers(condition.id, condition.identifier) as CcdaId[],
+                  code: {
+                    '@_code': '282291009', // Diagnosis interpretation
+                    '@_displayName': 'Diagnosis interpretation',
+                    '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+                    '@_codeSystemName': 'SNOMED CT',
+                    translation: [
+                      {
+                        '@_code': '29308-4', // Diagnosis
+                        '@_displayName': 'Diagnosis',
+                        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+                        '@_codeSystemName': 'LOINC',
+                      },
+                    ],
+                  },
+                  statusCode: { '@_code': 'completed' },
+                  effectiveTime: this.mapEffectivePeriod(condition.onsetDateTime, condition.abatementDateTime),
+                  value: mapCodeableConceptToCcdaValue(condition.code),
+                },
+              ],
+            },
+          ],
         },
       ],
     };

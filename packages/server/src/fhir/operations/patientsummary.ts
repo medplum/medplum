@@ -2,6 +2,7 @@ import {
   LOINC_ALLERGIES_SECTION,
   LOINC_ASSESSMENTS_SECTION,
   LOINC_DEVICES_SECTION,
+  LOINC_ENCOUNTERS_SECTION,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
   LOINC_IMMUNIZATIONS_SECTION,
@@ -42,6 +43,7 @@ import {
   Condition,
   DeviceUseStatement,
   DiagnosticReport,
+  Encounter,
   Goal,
   Immunization,
   MedicationRequest,
@@ -178,6 +180,7 @@ export class PatientSummaryBuilder {
   private readonly socialHistory: Observation[] = [];
   private readonly vitalSigns: Observation[] = [];
   private readonly procedures: Procedure[] = [];
+  private readonly encounters: Encounter[] = [];
   private readonly assessments: ClinicalImpression[] = [];
   private readonly planOfTreatment: PlanResourceType[] = [];
   private readonly immunizations: Immunization[] = [];
@@ -236,6 +239,14 @@ export class PatientSummaryBuilder {
           }
         }
       }
+
+      if (resource.resourceType === 'Encounter' && resource.diagnosis) {
+        for (const diagnosis of resource.diagnosis) {
+          if (diagnosis.condition?.reference) {
+            this.nestedIds.add(resolveId(diagnosis.condition) as string);
+          }
+        }
+      }
     }
   }
 
@@ -272,6 +283,9 @@ export class PatientSummaryBuilder {
         break;
       case 'DiagnosticReport':
         this.results.push(resource);
+        break;
+      case 'Encounter':
+        this.encounters.push(resource);
         break;
       case 'Goal':
         this.goals.push(resource);
@@ -366,6 +380,7 @@ export class PatientSummaryBuilder {
         this.createSocialHistorySection(),
         this.createVitalSignsSection(),
         this.createProceduresSection(),
+        this.createEncountersSection(),
         this.createDevicesSection(),
         this.createAssessmentsSection(),
         this.createPlanOfTreatmentSection(),
@@ -508,6 +523,23 @@ export class PatientSummaryBuilder {
         ])
       ),
       this.procedures
+    );
+  }
+
+  private createEncountersSection(): CompositionSection {
+    return createSection(
+      LOINC_ENCOUNTERS_SECTION,
+      'Encounters',
+      createTable(
+        ['Encounter', 'Date', 'Type', 'Status'],
+        this.encounters.map((e) => [
+          formatCodeableConcept(e.type?.[0]),
+          formatDate(e.period?.start),
+          formatCodeableConcept(e.reasonCode?.[0]),
+          e.status,
+        ])
+      ),
+      this.encounters
     );
   }
 

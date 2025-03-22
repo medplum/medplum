@@ -2,6 +2,7 @@ import {
   LOINC_ALLERGIES_SECTION,
   LOINC_ASSESSMENTS_SECTION,
   LOINC_DEVICES_SECTION,
+  LOINC_ENCOUNTERS_SECTION,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
   LOINC_IMMUNIZATIONS_SECTION,
@@ -23,6 +24,7 @@ import {
   Composition,
   Condition,
   DiagnosticReport,
+  Encounter,
   Observation,
   Organization,
   Patient,
@@ -162,6 +164,13 @@ describe('Patient Summary Operation', () => {
           code: { text: 'test' },
         },
         {
+          resourceType: 'Encounter',
+          id: 'encounter1',
+          class: { code: 'test' },
+          status: 'finished',
+          subject: patientRef,
+        },
+        {
           resourceType: 'Goal',
           id: 'goal1',
           subject: patientRef,
@@ -190,6 +199,7 @@ describe('Patient Summary Operation', () => {
       expectSectionToContain(composition, LOINC_ALLERGIES_SECTION, 'Substance', 'AllergyIntolerance/allergy1');
       expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Problem', 'Condition/condition1');
       expectSectionToContain(composition, LOINC_DEVICES_SECTION, 'Device', 'DeviceUseStatement/device1');
+      expectSectionToContain(composition, LOINC_ENCOUNTERS_SECTION, 'Encounter', 'Encounter/encounter1');
       expectSectionToContain(composition, LOINC_RESULTS_SECTION, 'Result', 'DiagnosticReport/report1');
       expectSectionToContain(composition, LOINC_GOALS_SECTION, 'Goal', 'Goal/goal1');
       expectSectionToContain(composition, LOINC_IMMUNIZATIONS_SECTION, 'Vaccine', 'Immunization/imm1');
@@ -419,6 +429,52 @@ describe('Patient Summary Operation', () => {
       const composition = result.entry?.[0]?.resource as WithId<Composition>;
 
       const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === LOINC_PLAN_OF_TREATMENT_SECTION);
+      expect(section).toBeDefined();
+      expect(section?.entry?.length).toBe(1);
+      expect(section?.entry?.[0]?.reference).toBe(getReferenceString(parent));
+    });
+
+    test('Encounter containing conditions', () => {
+      // If an Observation is a member of a DiagnosticReport,
+      // then it should not be referenced directly by the Composition entries list.
+
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
+      const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
+      const subject = createReference(patient);
+
+      const child: WithId<Condition> = {
+        resourceType: 'Condition',
+        id: 'diagnosis',
+        subject,
+        clinicalStatus: { coding: [{ code: 'active' }] },
+        category: [{ coding: [{ code: 'encounter-diagnosis' }] }],
+        code: { coding: [{ code: '386661006' }] },
+        onsetDateTime: '2011-10-05T07:00:00.000Z',
+        recordedDate: '2025-02-24T20:51:00.000Z',
+        recorder: { reference: 'Practitioner/davis' },
+      };
+
+      const parent: WithId<Encounter> = {
+        resourceType: 'Encounter',
+        id: 'encounter',
+        subject,
+        status: 'finished',
+        class: { code: 'test' },
+        diagnosis: [{ condition: createReference(child) }],
+        period: { start: '2015-06-22T20:00:00.000Z', end: '2015-06-22T21:00:00.000Z' },
+      };
+
+      const everything = [parent, child];
+
+      const builder = new PatientSummaryBuilder(author, patient, everything);
+      const result = builder.build();
+      expect(result.entry?.length).toBe(3 + everything.length);
+      expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
+      expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
+
+      const composition = result.entry?.[0]?.resource as WithId<Composition>;
+
+      const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === LOINC_ENCOUNTERS_SECTION);
       expect(section).toBeDefined();
       expect(section?.entry?.length).toBe(1);
       expect(section?.entry?.[0]?.reference).toBe(getReferenceString(parent));
