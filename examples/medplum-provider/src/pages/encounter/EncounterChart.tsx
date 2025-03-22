@@ -16,13 +16,19 @@ export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
   const medplum = useMedplum();
   const patient = usePatient();
-  const encounter = useEncounter();
+  const [encounter, setEncounter] = useState<Encounter | undefined>(useEncounter());
   const location = useLocation();
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [clinicalImpression, setClinicalImpression] = useState<ClinicalImpression | undefined>();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (encounterId) {
+      medplum.readResource('Encounter', encounterId).then(setEncounter).catch(console.error);
+    }
+  }, [encounterId, medplum]);
 
   const fetchTasks = useCallback(async (): Promise<void> => {
     if (!encounter) {
@@ -173,10 +179,24 @@ export const EncounterChart = (): JSX.Element => {
       return;
     }
     try {
-      await medplum.updateResource({
+      const updatedEncounter: Encounter = {
         ...encounter,
-        status: newStatus
-      });
+        status: newStatus,
+        ...(newStatus === 'in-progress' && !encounter.period?.start && {
+          period: {
+            ...encounter.period,
+            start: new Date().toISOString()
+          }
+        }),
+        ...(newStatus === 'finished' && !encounter.period?.end && {
+          period: {
+            ...encounter.period,
+            end: new Date().toISOString()
+          }
+        })
+      };
+      await medplum.updateResource(updatedEncounter);
+      setEncounter(updatedEncounter);
     } catch (err) {
       showNotification({
         color: 'red',
