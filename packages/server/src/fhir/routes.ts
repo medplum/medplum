@@ -257,6 +257,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
+  router.add('POST', '/Patient/:id/$everything', patientEverythingHandler);
 
   // Patient $summary operation
   router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);

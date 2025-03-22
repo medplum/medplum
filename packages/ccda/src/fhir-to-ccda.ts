@@ -639,17 +639,17 @@ class FhirToCcdaConverter {
                     '@_code': 'ASSERTION',
                     '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
                   },
+                  text: this.createTextFromExtensions(allergy.extension),
                   statusCode: {
                     '@_code': 'completed',
                   },
-                  author: this.mapAuthor(allergy.asserter, allergy.recordedDate),
                   effectiveTime: this.mapEffectivePeriod(
                     allergy.onsetPeriod?.start ?? allergy.onsetDateTime,
                     allergy.onsetPeriod?.end,
                     true
                   ),
                   value: this.mapAllergyCategory(allergy.category),
-                  text: this.createTextFromExtensions(allergy.extension),
+                  author: this.mapAuthor(allergy.asserter, allergy.recordedDate),
                   participant: [
                     {
                       '@_typeCode': 'CSM',
@@ -977,6 +977,7 @@ class FhirToCcdaConverter {
               },
             ],
           },
+          author: this.mapAuthor(med.requester, med.authoredOn),
           entryRelationship: med.dosageInstruction
             ?.filter((instr) => !!instr.extension)
             ?.map((instr) => ({
