@@ -39,7 +39,6 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             {encounter.serviceType?.coding?.[0]?.display || 'Visit'}
           </Text>
         </Group>
-
         <Group>
           <ActionIcon
             variant={status === 'finished' ? 'filled' : 'subtle'}
