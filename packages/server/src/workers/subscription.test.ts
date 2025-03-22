@@ -11,7 +11,9 @@ import {
 import {
   AccessPolicy,
   AuditEvent,
+  Binary,
   Bot,
+  DocumentReference,
   Observation,
   Patient,
   ProjectMembership,
@@ -1503,6 +1505,61 @@ describe('Subscription Worker', () => {
 
       globalLogger.level = LogLevel.NONE;
       console.log = originalConsoleLog;
+    }));
+
+  test('Rest Hook Subscription -- Attachments are Rewritten', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      const binary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+      });
+
+      const subscription = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: `DocumentReference?location=Binary/${binary.id}`,
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+      expect(subscription).toBeDefined();
+
+      const queue = getSubscriptionQueue() as any;
+      queue.add.mockClear();
+
+      const documentRef = await repo.createResource<DocumentReference>({
+        resourceType: 'DocumentReference',
+        status: 'current',
+        content: [
+          {
+            attachment: {
+              url: `Binary/${binary.id}`,
+            },
+          },
+        ],
+      });
+      expect(documentRef).toBeDefined();
+      expect(queue.add).toHaveBeenCalled();
+
+      (fetch as unknown as jest.Mock).mockImplementation(() => ({ status: 200 }));
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      await execSubscriptionJob(job);
+
+      expect(fetch).toHaveBeenCalledWith(
+        url,
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.stringContaining('?Expires='),
+        })
+      );
+
+      // Clear the queue
+      queue.add.mockClear();
     }));
 
   describe('WebSocket Subscriptions', () => {
