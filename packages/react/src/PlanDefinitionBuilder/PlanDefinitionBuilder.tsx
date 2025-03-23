@@ -1,5 +1,4 @@
 import {
-  ActionIcon,
   Anchor,
   Box,
   Button,
@@ -229,10 +228,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
           placeholder="Title"
           onChange={(e) => changeProperty('title', e.currentTarget.value)}
         />
-
-        <ActionIcon variant="subtle" color="gray" onClick={props.onRemove}>
-          <CloseButton data-testid="close-button" />
-        </ActionIcon>
+        <CloseButton data-testid="close-button" onClick={props.onRemove} />
       </Flex>
 
       {editing && (
