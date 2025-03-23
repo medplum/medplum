@@ -3483,18 +3483,20 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       this.setRequestHeader(options, 'Content-Type', ContentType.FHIR_JSON, true);
     }
 
-    if (this.accessToken) {
-      this.setRequestHeader(options, 'Authorization', 'Bearer ' + this.accessToken);
-    } else if (this.basicAuth) {
-      this.setRequestHeader(options, 'Authorization', 'Basic ' + this.basicAuth);
-    }
-
     if (!options.cache) {
       options.cache = 'no-cache';
     }
 
     if (!options.credentials) {
       options.credentials = 'include';
+    }
+
+    if (options.credentials !== 'omit') {
+      if (this.accessToken) {
+        this.setRequestHeader(options, 'Authorization', 'Bearer ' + this.accessToken);
+      } else if (this.basicAuth) {
+        this.setRequestHeader(options, 'Authorization', 'Basic ' + this.basicAuth);
+      }
     }
   }
 

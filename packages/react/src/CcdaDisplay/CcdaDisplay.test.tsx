@@ -1,4 +1,3 @@
-import { ContentType, ReadablePromise } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
@@ -6,14 +5,15 @@ import * as domUtils from '../utils/dom';
 import { CcdaDisplay } from './CcdaDisplay';
 
 const EXAMPLE_CCDA_URL = 'http://example.com/ccda';
-const VALIDATION_URL =
-  'https://ccda-validator.medplum.com/referenceccdaservice/?validationObjective=C-CDA_IG_Plus_Vocab&referenceFileName=No%20scenario%20File&curesUpdate=true&severityLevel=WARNING';
+const VALIDATION_URL_PATTERN = 'https://ccda-validator.medplum.com/referenceccdaservice/';
 
 describe('CcdaDisplay', () => {
   let medplum: MockClient;
-  let getSpy: jest.SpyInstance;
-  let postSpy: jest.SpyInstance;
+  let fetchSpy: jest.Mock;
   let exportJsonFileSpy: jest.SpyInstance;
+
+  // Keep original fetch
+  const originalFetch = global.fetch;
 
   beforeAll(() => {
     // Mock the exportJsonFile function
@@ -23,20 +23,21 @@ describe('CcdaDisplay', () => {
   beforeEach(() => {
     medplum = new MockClient();
 
-    // Mock medplum.get for retrieving CCDA content
-    getSpy = jest.spyOn(medplum, 'get').mockImplementation((url: string | URL) => {
-      if (url === EXAMPLE_CCDA_URL) {
-        return new ReadablePromise(Promise.resolve('<ClinicalDocument>Example CCDA Content</ClinicalDocument>'));
+    // Mock global fetch for both retrieving CCDA content and validation API
+    fetchSpy = jest.fn().mockImplementation((url: RequestInfo | URL, options?: RequestInit) => {
+      const urlString = url.toString();
+
+      // For CCDA content retrieval (GET request)
+      if (urlString === EXAMPLE_CCDA_URL && (!options || options.method === undefined || options.method === 'GET')) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve('<ClinicalDocument>Example CCDA Content</ClinicalDocument>'),
+        } as Response);
       }
-      return new ReadablePromise(Promise.reject(new Error('Invalid route')));
-    });
 
-    // Mock medplum.post for validation API
-    postSpy = jest.spyOn(medplum, 'post').mockImplementation((url: string | URL, body: any, contentType?: string) => {
-      if (url.toString().includes('ccda-validator.medplum.com')) {
-        expect(contentType).toBe(ContentType.MULTIPART_FORM_DATA);
-
-        // Mock validation response matching the actual interface structure
+      // For validation API (POST request)
+      if (urlString.includes(VALIDATION_URL_PATTERN) && options?.method === 'POST') {
         const mockResponse = {
           resultsMetaData: {
             ccdaDocumentType: 'Care Plan',
@@ -64,14 +65,28 @@ describe('CcdaDisplay', () => {
             totalConformanceErrorChecks: 4409,
           },
         };
-        return new ReadablePromise(Promise.resolve(mockResponse));
+
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve(mockResponse),
+        } as Response);
       }
-      return new ReadablePromise(Promise.reject(new Error('Invalid URL in test')));
+
+      // Default case for unhandled URLs
+      return Promise.reject(new Error(`Invalid URL or options in test: ${urlString}`));
     });
+
+    global.fetch = fetchSpy as unknown as typeof global.fetch;
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  afterAll(() => {
+    // Restore original fetch
+    global.fetch = originalFetch;
   });
 
   function setup(url: string | undefined): void {
@@ -83,7 +98,7 @@ describe('CcdaDisplay', () => {
   test('Does not open Iframe when no URL passed in', async () => {
     setup(undefined);
     expect(screen.queryByTestId('ccda-iframe')).not.toBeInTheDocument();
-    expect(getSpy).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   test('Renders C-CDA', async () => {
@@ -114,14 +129,19 @@ describe('CcdaDisplay', () => {
       fireEvent.click(validateButton);
     });
 
-    // Should get the CCDA content with medplum.get and submit to validation API via medplum.post
+    // Should make fetch calls for both content and validation
     await waitFor(() => {
-      expect(getSpy).toHaveBeenCalledWith(EXAMPLE_CCDA_URL);
-      expect(postSpy).toHaveBeenCalledWith(
-        expect.stringContaining('ccda-validator.medplum.com'),
-        expect.any(FormData),
-        ContentType.MULTIPART_FORM_DATA
+      // First call for CCDA content
+      expect(fetchSpy).toHaveBeenCalledWith(EXAMPLE_CCDA_URL);
+
+      // Second call for validation API
+      const calls = fetchSpy.mock.calls;
+      const validationCall = calls.find(
+        (call) => call[0].toString().includes(VALIDATION_URL_PATTERN) && call[1]?.method === 'POST'
       );
+      expect(validationCall).toBeTruthy();
+      expect(validationCall[1].credentials).toBe('omit');
+      expect(validationCall[1].body).toBeInstanceOf(FormData);
     });
 
     // Should display validation results with 9 errors (5 + 4)
@@ -162,22 +182,36 @@ describe('CcdaDisplay', () => {
   });
 
   test('Validation with service error returns appropriate message', async () => {
-    // Override post mock for this test to return a service error
-    postSpy.mockImplementationOnce((url: string | URL, body: any, contentType?: string) => {
-      if (url.toString().includes('ccda-validator.medplum.com')) {
-        expect(contentType).toBe(ContentType.MULTIPART_FORM_DATA);
-        return new ReadablePromise(
-          Promise.resolve({
-            resultsMetaData: {
-              serviceError: true,
-              serviceErrorMessage: 'Failed to validate CCDA document',
-              resultMetaData: [], // Empty array of results
-            },
-          })
-        );
+    // Override fetch mock for this test to return a validation service error
+    const originalFetchSpy = fetchSpy;
+    fetchSpy = jest.fn().mockImplementation((url: RequestInfo | URL, options?: RequestInit) => {
+      const urlString = url.toString();
+
+      // Still handle content retrieval normally
+      if (urlString === EXAMPLE_CCDA_URL && (!options || options.method === undefined || options.method === 'GET')) {
+        return originalFetchSpy(url, options);
       }
-      return new ReadablePromise(Promise.reject(new Error('Invalid URL in test')));
+
+      // For validation API, return service error
+      if (urlString.includes(VALIDATION_URL_PATTERN) && options?.method === 'POST') {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              resultsMetaData: {
+                serviceError: true,
+                serviceErrorMessage: 'Failed to validate CCDA document',
+                resultMetaData: [], // Empty array of results
+              },
+            }),
+        } as Response);
+      }
+
+      return Promise.reject(new Error(`Invalid URL or options in test: ${urlString}`));
     });
+
+    global.fetch = fetchSpy as unknown as typeof global.fetch;
 
     setup(EXAMPLE_CCDA_URL);
 

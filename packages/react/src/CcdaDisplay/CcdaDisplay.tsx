@@ -1,6 +1,4 @@
 import { Button } from '@mantine/core';
-import { ContentType } from '@medplum/core';
-import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useRef, useState } from 'react';
 import { exportJsonFile, sendCommand } from '../utils/dom';
 
@@ -31,7 +29,6 @@ interface ValidationResult {
 }
 
 export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
-  const medplum = useMedplum();
   const { url } = props;
   const [shouldSend, setShouldSend] = useState(false);
   const iframeRef = useRef(null);
@@ -56,22 +53,32 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
     try {
       setValidating(true);
 
-      // Download the CCDA from the URL using medplum.get
-      const ccdaContent = await medplum.get(url);
+      // Download the CCDA from the URL using plain fetch to avoid CORS issues
+      const response = await fetch(url);
+      const ccdaContent = await response.text();
 
       // Prepare form data for submission
       const formData = new FormData();
       formData.append('ccdaFile', new Blob([ccdaContent], { type: 'text/xml' }), 'ccda.xml');
 
-      // Submit to validation API
-      const validationResponse = await medplum.post(
-        `${BASE_VALIDATION_URL}referenceccdaservice/?validationObjective=C-CDA_IG_Plus_Vocab&referenceFileName=No%20scenario%20File&curesUpdate=true&severityLevel=WARNING`,
-        formData,
-        ContentType.MULTIPART_FORM_DATA
-      );
+      // Submit to validation API using direct fetch to avoid CORS issues
+      const validationUrl = `${BASE_VALIDATION_URL}referenceccdaservice/?validationObjective=C-CDA_IG_Plus_Vocab&referenceFileName=No%20scenario%20File&curesUpdate=true&severityLevel=WARNING`;
+      const validationResponse = await fetch(validationUrl, {
+        method: 'POST',
+        body: formData,
+        // Don't send credentials for cross-origin requests
+        credentials: 'omit',
+        // Don't follow redirects automatically
+        redirect: 'manual',
+      });
 
-      // Medplum client already returns the parsed JSON
-      setValidationResult(validationResponse as unknown as ValidationResult);
+      if (!validationResponse.ok) {
+        throw new Error(`Validation failed: ${validationResponse.status} ${validationResponse.statusText}`);
+      }
+
+      // Parse the JSON response
+      const validationResult = await validationResponse.json();
+      setValidationResult(validationResult as ValidationResult);
     } catch (error) {
       setValidationResult(undefined);
       console.error('CCDA validation error:', error);
