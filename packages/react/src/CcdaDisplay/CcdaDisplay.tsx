@@ -1,9 +1,11 @@
+import { Button } from '@mantine/core';
+import { ContentType } from '@medplum/core';
+import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useRef, useState } from 'react';
-import { sendCommand } from '../utils/dom';
+import { exportJsonFile, sendCommand } from '../utils/dom';
 
 const CCDA_VIEWER_URL = 'https://ccda.medplum.com';
 const BASE_VALIDATION_URL = 'https://ccda-validator.medplum.com/';
-// const BASE_VALIDATION_URL = 'http://localhost:8080/';
 
 export interface CcdaDisplayProps {
   readonly url?: string;
@@ -29,6 +31,7 @@ interface ValidationResult {
 }
 
 export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
+  const medplum = useMedplum();
   const { url } = props;
   const [shouldSend, setShouldSend] = useState(false);
   const iframeRef = useRef(null);
@@ -53,29 +56,22 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
     try {
       setValidating(true);
 
-      // Download the CCDA from the URL
-      const response = await fetch(url);
-      const ccdaContent = await response.text();
+      // Download the CCDA from the URL using medplum.get
+      const ccdaContent = await medplum.get(url);
 
       // Prepare form data for submission
       const formData = new FormData();
       formData.append('ccdaFile', new Blob([ccdaContent], { type: 'text/xml' }), 'ccda.xml');
 
       // Submit to validation API
-      const validationResponse = await fetch(
-        `${BASE_VALIDATION_URL}referenceccdaservice/?validationObjective=NegativeTesting_CarePlan&referenceFileName=No%20scenario%20File&curesUpdate=true&severityLevel=ERROR`,
-        {
-          method: 'POST',
-          body: formData,
-        }
+      const validationResponse = await medplum.post(
+        `${BASE_VALIDATION_URL}referenceccdaservice/?validationObjective=C-CDA_IG_Plus_Vocab&referenceFileName=No%20scenario%20File&curesUpdate=true&severityLevel=WARNING`,
+        formData,
+        ContentType.MULTIPART_FORM_DATA
       );
 
-      if (!validationResponse.ok) {
-        throw new Error(`Validation request failed: ${validationResponse.status}`);
-      }
-
-      const validationData = await validationResponse.json();
-      setValidationResult(validationData);
+      // Medplum client already returns the parsed JSON
+      setValidationResult(validationResponse as unknown as ValidationResult);
     } catch (error) {
       setValidationResult(undefined);
       console.error('CCDA validation error:', error);
@@ -90,17 +86,7 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
     }
 
     const resultsJson = JSON.stringify(validationResult, null, 2);
-    const blob = new Blob([resultsJson], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-
-    // TODO: Use the exportJsonFile function from utils.ts in app
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'ccda-validation-results.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    exportJsonFile(resultsJson, 'ccda-validation-results');
   };
 
   const getErrorCount = (): number => {
@@ -108,7 +94,7 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
       return 0;
     }
     return validationResult.resultsMetaData.resultMetaData
-      .filter((item) => item.type && item.type.includes('Error'))
+      .filter((item) => item?.type.includes('Error'))
       .reduce((sum, item) => sum + (item.count || 0), 0);
   };
 
@@ -132,21 +118,10 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
         />
       </div>
 
-      <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center' }}>
-        <button
-          onClick={validateCcda}
-          disabled={validating}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: '#0066cc',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: validating ? 'not-allowed' : 'pointer',
-          }}
-        >
+      <div style={{ marginTop: '10px', marginBottom: '10px', display: 'flex', alignItems: 'center' }}>
+        <Button type="button" onClick={validateCcda} disabled={validating}>
           {validating ? 'Validating...' : 'Validate'}
-        </button>
+        </Button>
 
         {validationResult && (
           <>
@@ -154,20 +129,16 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
               <strong>Validation Results:</strong> {getErrorCount()} errors found
             </div>
 
-            <button
+            <Button
+              type="button"
               onClick={downloadResults}
+              color="green"
               style={{
                 marginLeft: 'auto',
-                padding: '8px 16px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
               }}
             >
               Download Full Results
-            </button>
+            </Button>
           </>
         )}
       </div>
