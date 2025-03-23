@@ -23,7 +23,7 @@ As healthcare organizations evaluate their options, we believe Medplum offers a 
 
 Mirth's on-premise model required maintaining local servers with all business logic and integration channels running on-site. Medplum takes a different approach:
 
-* [Medplum Agent](/docs/agent): Our lightweight local component converts legacy protocols (HL7, ASTM, DICOM) into secure websockets, eliminating the need for VPNs while maintaining compatibility with local systems.
+* [Medplum Agent](/docs/agent): Our lightweight local component converts legacy protocols (HL7, DICOM, ASTM - coming soon!) into secure websockets, eliminating the need for VPNs while maintaining compatibility with local systems.
 * Cloud Processing: Complex transformation logic runs in the cloud using modern JavaScript/TypeScript through [Medplum Bots](/docs/bots/bot-basics), improving maintainability and scalability.
 
 <div className="responsive-iframe-wrapper">
