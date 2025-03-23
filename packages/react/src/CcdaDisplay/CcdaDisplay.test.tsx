@@ -24,11 +24,11 @@ describe('CcdaDisplay', () => {
     medplum = new MockClient();
 
     // Mock global fetch for both retrieving CCDA content and validation API
-    fetchSpy = jest.fn().mockImplementation((url: RequestInfo | URL, options?: RequestInit) => {
+    fetchSpy = jest.fn().mockImplementation((url: string | URL, options?: RequestInit) => {
       const urlString = url.toString();
 
       // For CCDA content retrieval (GET request)
-      if (urlString === EXAMPLE_CCDA_URL && (!options || options.method === undefined || options.method === 'GET')) {
+      if (urlString === EXAMPLE_CCDA_URL && (!options?.method || options.method === 'GET')) {
         return Promise.resolve({
           ok: true,
           status: 200,
@@ -184,11 +184,11 @@ describe('CcdaDisplay', () => {
   test('Validation with service error returns appropriate message', async () => {
     // Override fetch mock for this test to return a validation service error
     const originalFetchSpy = fetchSpy;
-    fetchSpy = jest.fn().mockImplementation((url: RequestInfo | URL, options?: RequestInit) => {
+    fetchSpy = jest.fn().mockImplementation((url: string | URL, options?: RequestInit) => {
       const urlString = url.toString();
 
       // Still handle content retrieval normally
-      if (urlString === EXAMPLE_CCDA_URL && (!options || options.method === undefined || options.method === 'GET')) {
+      if (urlString === EXAMPLE_CCDA_URL && (!options?.method || options.method === 'GET')) {
         return originalFetchSpy(url, options);
       }
 
