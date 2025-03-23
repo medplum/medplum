@@ -230,4 +230,60 @@ describe('CcdaDisplay', () => {
       expect(screen.getByText(/0 errors found/)).toBeInTheDocument();
     });
   });
+
+  test('Handles API validation failure correctly', async () => {
+    // Mock console.error to check if error is logged
+    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    // Override fetch mock for this test to return a failed validation response
+    const originalFetchSpy = fetchSpy;
+    fetchSpy = jest.fn().mockImplementation((url: string | URL, options?: RequestInit) => {
+      const urlString = url.toString();
+
+      // Still handle content retrieval normally
+      if (urlString === EXAMPLE_CCDA_URL && (!options?.method || options.method === 'GET')) {
+        return originalFetchSpy(url, options);
+      }
+
+      // For validation API, return a server error response
+      if (urlString.includes(VALIDATION_URL_PATTERN) && options?.method === 'POST') {
+        return Promise.resolve({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+        } as Response);
+      }
+
+      return Promise.reject(new Error(`Invalid URL or options in test: ${urlString}`));
+    });
+
+    global.fetch = fetchSpy as unknown as typeof global.fetch;
+
+    setup(EXAMPLE_CCDA_URL);
+
+    // Wait for the component to load
+    expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
+
+    // Click validate
+    const validateButton = screen.getByRole('button', { name: /Validate/i });
+    await act(async () => {
+      fireEvent.click(validateButton);
+    });
+
+    // Wait for validation process to complete
+    await waitFor(() => {
+      // Verify the validation button is no longer in "validating" state
+      expect(screen.getByRole('button', { name: /Validate/i })).toBeEnabled();
+    });
+
+    // Should not display any validation results
+    expect(screen.queryByText(/Validation Results:/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Download Full Results/i })).not.toBeInTheDocument();
+
+    // Should log the error
+    expect(consoleErrorSpy).toHaveBeenCalledWith('CCDA validation error:', expect.any(Error));
+
+    // Clean up
+    consoleErrorSpy.mockRestore();
+  });
 });
