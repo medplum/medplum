@@ -6,6 +6,7 @@ import {
   Claim,
   ClaimItem,
   Coverage,
+  Device,
   HumanName,
   Organization,
   Patient,
@@ -29,6 +30,7 @@ import {
   getPersonInfo,
   getPhoneContent,
   getProviderInfo,
+  getReferralInfo,
   getSexContent,
   handler,
 } from './cms-1500-pdf';
@@ -265,7 +267,7 @@ describe('getClaimInfo', () => {
   };
 
   test('returns complete claim info from full answer data', () => {
-    const claim = fullAnswer.entry?.[8]?.resource as Claim;
+    const claim = fullAnswer.entry?.[9]?.resource as Claim;
     const result = getClaimInfo(claim);
 
     expect(result).toEqual({
@@ -818,6 +820,141 @@ describe('getProviderInfo', () => {
       billingLocation: '',
       billingPhoneNumber: '',
       providerNpi: '',
+    });
+  });
+});
+
+describe('getReferralInfo', () => {
+  test('returns complete practitioner referral info', () => {
+    const practitioner = fullAnswer.entry?.[3]?.resource as Practitioner;
+
+    const result = getReferralInfo(practitioner);
+
+    expect(result).toEqual({
+      referrerName: 'Smith, Kevin',
+      referrerNpi: '2490433892',
+    });
+  });
+
+  test('returns complete organization referral info', () => {
+    const organization = fullAnswer.entry?.[4]?.resource as Organization;
+
+    const result = getReferralInfo(organization);
+
+    expect(result).toEqual({
+      referrerName: 'Independence Blue Cross Blue Shield',
+      referrerNpi: '7911621876',
+    });
+  });
+
+  test('handles undefined referrer', () => {
+    const result = getReferralInfo(undefined);
+
+    expect(result).toEqual({
+      referrerName: '',
+      referrerNpi: '',
+    });
+  });
+
+  test('handles unsupported resource types', () => {
+    const device: Device = {
+      resourceType: 'Device',
+      identifier: [
+        {
+          system: 'http://hl7.org/fhir/sid/us-npi',
+          value: '1111111111',
+        },
+      ],
+    };
+
+    const result = getReferralInfo(device);
+
+    expect(result).toEqual({
+      referrerName: '',
+      referrerNpi: '',
+    });
+  });
+
+  test('handles practitioner with missing name', () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      identifier: [
+        {
+          system: 'http://hl7.org/fhir/sid/us-npi',
+          value: '1234567890',
+        },
+      ],
+    };
+
+    const result = getReferralInfo(practitioner);
+
+    expect(result).toEqual({
+      referrerName: '',
+      referrerNpi: '1234567890',
+    });
+  });
+
+  test('handles organization with missing name', () => {
+    const organization: Organization = {
+      resourceType: 'Organization',
+      identifier: [
+        {
+          system: 'http://hl7.org/fhir/sid/us-npi',
+          value: '9876543210',
+        },
+      ],
+    };
+
+    const result = getReferralInfo(organization);
+
+    expect(result).toEqual({
+      referrerName: '',
+      referrerNpi: '9876543210',
+    });
+  });
+
+  test('handles missing NPI identifier', () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      name: [
+        {
+          family: 'Smith',
+          given: ['John'],
+        },
+      ],
+      identifier: [
+        {
+          system: 'other-system',
+          value: 'other-value',
+        },
+      ],
+    };
+
+    const result = getReferralInfo(practitioner);
+
+    expect(result).toEqual({
+      referrerName: 'Smith, John',
+      referrerNpi: '',
+    });
+  });
+
+  test('handles empty identifier array', () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      name: [
+        {
+          family: 'Smith',
+          given: ['John'],
+        },
+      ],
+      identifier: [],
+    };
+
+    const result = getReferralInfo(practitioner);
+
+    expect(result).toEqual({
+      referrerName: 'Smith, John',
+      referrerNpi: '',
     });
   });
 });

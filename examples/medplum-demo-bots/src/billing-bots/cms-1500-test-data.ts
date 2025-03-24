@@ -316,6 +316,30 @@ export const fullAnswer: Bundle = {
       },
     },
     {
+      fullUrl: 'urn:uuid:30192746-113d-4c78-af02-3090ce22996f',
+      request: { method: 'PUT', url: 'ServiceRequest?identifier=4839201756' },
+      resource: {
+        resourceType: 'ServiceRequest',
+        identifier: [
+          {
+            system: 'http://hl7.org/fhir/sid/us-npi',
+            value: '4839201756',
+          },
+        ],
+        status: 'active',
+        intent: 'order',
+        category: [
+          {
+            coding: [
+              { system: 'http://snomed.info/sct', code: '103696004', display: 'Patient referral to specialist' },
+            ],
+          },
+        ],
+        subject: { reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945', display: 'Homer Simpson' },
+        requester: { reference: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c', display: 'Kevin Smith' },
+      },
+    },
+    {
       fullUrl: 'urn:uuid:6a86eda3-ce9e-472c-ba6b-1855e518d779',
       request: { method: 'PUT', url: 'Claim?identifier=example-claim-cms1500' },
       resource: {
@@ -347,6 +371,7 @@ export const fullAnswer: Bundle = {
             },
           ],
         },
+        referral: { reference: 'urn:uuid:30192746-113d-4c78-af02-3090ce22996f' },
         insurance: [
           {
             coverage: {
@@ -366,7 +391,7 @@ export const fullAnswer: Bundle = {
             focal: false,
           },
         ],
-        provider: { reference: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c' },
+        provider: { reference: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c', display: 'Kevin Smith' },
         supportingInfo: [
           {
             category: {

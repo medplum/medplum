@@ -13,6 +13,7 @@ import {
   Claim,
   ClaimItem,
   Coverage,
+  Device,
   HumanName,
   Media,
   Organization,
@@ -53,6 +54,11 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
   const insured = coverage.subscriber ? await medplum.readReference(coverage.subscriber) : undefined;
   const insurer = await medplum.readReference(coverage.payor[0]);
   const provider = await medplum.readReference(claim.provider);
+  const otherCoverage =
+    claim.insurance.length > 1 ? await medplum.readReference(claim.insurance[1].coverage) : undefined;
+  const otherInsured = otherCoverage?.subscriber ? await medplum.readReference(otherCoverage.subscriber) : undefined;
+  const referralRequest = claim.referral ? await medplum.readReference(claim.referral) : undefined;
+  const referrer = referralRequest?.requester ? await medplum.readReference(referralRequest.requester) : undefined;
 
   const { personName: patientName, personGender: patientGender, personPhone: patientPhone } = getPersonInfo(patient);
   const patientDOB = getDateProperty(patient.birthDate);
@@ -65,12 +71,11 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
   } = getPersonInfo(insured);
   const insuredDOB = getDateProperty(insuredDob);
 
-  const otherCoverage =
-    claim.insurance.length > 1 ? await medplum.readReference(claim.insurance[1].coverage) : undefined;
   const { coverageName: otherCoverageName, coveragePolicyName: otherCoveragePolicyName } =
     getCoverageInfo(otherCoverage);
-  const otherInsured = otherCoverage?.subscriber ? await medplum.readReference(otherCoverage.subscriber) : undefined;
   const { personName: otherInsuredName } = getPersonInfo(otherInsured);
+
+  const { referrerName, referrerNpi } = getReferralInfo(referrer);
 
   // Think of a way to parametrize each field coordinates in the PDF so we can use it with other templates
   const docDefinition = {
@@ -163,39 +168,15 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
       ...getInsurerContent(insurer),
       ...getProviderContent(provider),
       {
-        text: 'X51',
-        absolutePosition: {
-          x: 225,
-          y: 409,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X52',
-        absolutePosition: {
-          x: 246,
-          y: 408,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X53',
-        absolutePosition: {
-          x: 21,
-          y: 417,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X54',
+        text: referrerName,
         absolutePosition: {
           x: 42,
-          y: 417,
+          y: 420,
         },
         fontSize: 9,
       },
       {
-        text: 'X55',
+        text: referrerNpi,
         absolutePosition: {
           x: 247,
           y: 420,
@@ -1223,6 +1204,36 @@ export function getProviderInfo(provider: Practitioner | Organization | Practiti
     billingLocation,
     billingPhoneNumber: phoneNumber?.value ?? '',
     providerNpi,
+  };
+}
+
+export function getReferralInfo(
+  referrer?: Practitioner | Organization | Device | Patient | RelatedPerson | PractitionerRole
+): Record<string, string> {
+  if (
+    !referrer ||
+    referrer.resourceType === 'Device' ||
+    referrer.resourceType === 'Patient' ||
+    referrer.resourceType === 'RelatedPerson' ||
+    referrer.resourceType === 'PractitionerRole'
+  ) {
+    return {
+      referrerName: '',
+      referrerNpi: '',
+    };
+  }
+
+  let referrerName = '';
+  if (referrer.resourceType === 'Organization') {
+    referrerName = referrer.name ?? '';
+  } else {
+    referrerName = referrer.name?.[0] ? formatHumanName(referrer.name[0]) : '';
+  }
+  const referrerNpi = referrer?.identifier?.find((id) => id.system === 'http://hl7.org/fhir/sid/us-npi')?.value ?? '';
+
+  return {
+    referrerName,
+    referrerNpi,
   };
 }
 
