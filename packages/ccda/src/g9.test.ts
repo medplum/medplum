@@ -22,6 +22,7 @@ import {
   LOINC_ASSESSMENTS_SECTION,
   LOINC_BIRTH_SEX,
   LOINC_DEVICES_SECTION,
+  LOINC_ENCOUNTERS_SECTION,
   LOINC_GOALS_SECTION,
   LOINC_HEALTH_CONCERNS_SECTION,
   LOINC_HISTORY_OF_TOBACCO_USE,
@@ -284,6 +285,7 @@ describe('170.315(g)(9)', () => {
             },
           ],
         },
+        category: ['medication'],
         recordedDate: '2024-01-01',
         onsetDateTime: '2023-12-25',
         reaction: [
@@ -300,6 +302,14 @@ describe('170.315(g)(9)', () => {
       const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_ALLERGIES_SECTION, allergy);
 
       const output = convertFhirToCcda(input);
+
+      // Check that category="medication" converts to the correct code
+      expect(
+        (
+          output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+            ?.observation?.[0]?.value as CcdaCode
+        )?.['@_code']
+      ).toEqual('419511003');
 
       // Check act timing (when recorded)
       expect(
@@ -318,6 +328,50 @@ describe('170.315(g)(9)', () => {
       expect(
         output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.statusCode?.['@_code']
       ).toEqual('active');
+    });
+
+    test('should handle no known allergies', () => {
+      const allergy: Partial<AllergyIntolerance> = {
+        resourceType: 'AllergyIntolerance',
+        clinicalStatus: {
+          coding: [
+            {
+              system: ALLERGY_CLINICAL_CODE_SYSTEM,
+              code: 'active',
+            },
+          ],
+        },
+        code: {
+          coding: [
+            {
+              system: SNOMED,
+              code: '716186003',
+              display: 'No Known Allergy (situation)',
+            },
+          ],
+          text: 'NKA',
+        },
+        recordedDate: '2024-01-01',
+        onsetDateTime: '2023-12-25',
+      };
+
+      const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_ALLERGIES_SECTION, allergy);
+
+      const output = convertFhirToCcda(input);
+
+      // Check that empty category converts to the default code
+      expect(
+        (
+          output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+            ?.observation?.[0]?.value as CcdaCode
+        )?.['@_code']
+      ).toEqual('419199007');
+
+      // Look for the special NKA code
+      expect(
+        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
+          ?.observation?.[0]?.participant?.[0]?.participantRole?.playingEntity?.code?.['@_nullFlavor']
+      ).toEqual('NA');
     });
   });
 
@@ -927,6 +981,122 @@ describe('170.315(g)(9)', () => {
       const act = section?.entry?.[0]?.act?.[0];
       expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
     });
+  });
+
+  test('should handle practitioner role', () => {
+    const input = createCompositionBundle(
+      { resourceType: 'Patient' },
+      LOINC_NOTES_SECTION,
+      {
+        resourceType: 'Practitioner',
+        id: 'davis',
+        name: [{ family: 'Davis', given: ['Albert'] }],
+      },
+      {
+        resourceType: 'Organization',
+        id: 'hospital',
+        name: 'Hospital',
+      },
+      {
+        resourceType: 'PractitionerRole',
+        id: 'role',
+        practitioner: { reference: 'Practitioner/davis' },
+        organization: { reference: 'Organization/hospital' },
+      },
+      {
+        resourceType: 'ClinicalImpression',
+        status: 'completed',
+        subject: {
+          reference: 'Patient/01953565-5b00-72a8-ac87-3c4b3de1ba88',
+          display: 'Alice Jones Newman',
+        },
+        date: '2015-06-22T07:00:00.000Z',
+        assessor: {
+          reference: 'PractitionerRole/role',
+        },
+        summary: 'Lorem ipsum',
+      }
+    );
+    const output = convertFhirToCcda(input);
+    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    expect(section).toBeDefined();
+    expect(section?.code?.['@_code']).toEqual(LOINC_NOTES_SECTION);
+
+    const act = section?.entry?.[0]?.act?.[0];
+    expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
+
+    const author = act?.author?.[0];
+    expect(author).toBeDefined();
+    expect(author?.assignedAuthor?.assignedPerson?.name?.[0]?.family).toEqual('Davis');
+    expect(author?.assignedAuthor?.representedOrganization?.name?.[0]).toEqual('Hospital');
+  });
+
+  test('should handle missing author', () => {
+    const input = createCompositionBundle({ resourceType: 'Patient' }, LOINC_NOTES_SECTION, {
+      resourceType: 'ClinicalImpression',
+      status: 'completed',
+      subject: {
+        reference: 'Patient/01953565-5b00-72a8-ac87-3c4b3de1ba88',
+        display: 'Alice Jones Newman',
+      },
+      date: '2015-06-22T07:00:00.000Z',
+      assessor: {
+        reference: 'PractitionerRole/role',
+      },
+      summary: 'Lorem ipsum',
+    });
+    const output = convertFhirToCcda(input);
+    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    expect(section).toBeDefined();
+    expect(section?.code?.['@_code']).toEqual(LOINC_NOTES_SECTION);
+
+    const act = section?.entry?.[0]?.act?.[0];
+    expect((act?.text as CcdaNarrative)['#text']).toEqual('Lorem ipsum');
+
+    const author = act?.author?.[0];
+    expect(author).toBeUndefined();
+  });
+});
+
+describe('Encounters', () => {
+  test('should handle diagnosis code', () => {
+    const input = createCompositionBundle(
+      { resourceType: 'Patient', id: '123' },
+      LOINC_ENCOUNTERS_SECTION,
+      {
+        resourceType: 'Practitioner',
+        id: 'davis',
+        name: [{ family: 'Davis', given: ['Albert'] }],
+      },
+      {
+        resourceType: 'Condition',
+        id: 'diagnosis',
+        clinicalStatus: { coding: [{ code: 'active' }] },
+        category: [{ coding: [{ code: 'encounter-diagnosis' }] }],
+        code: { coding: [{ code: '386661006' }] },
+        onsetDateTime: '2011-10-05T07:00:00.000Z',
+        recordedDate: '2025-02-24T20:51:00.000Z',
+        recorder: { reference: 'Practitioner/davis' },
+      },
+      {
+        resourceType: 'Encounter',
+        status: 'finished',
+        diagnosis: [{ condition: { reference: 'Condition/diagnosis' } }],
+        period: { start: '2015-06-22T20:00:00.000Z', end: '2015-06-22T21:00:00.000Z' },
+      }
+    );
+    const output = convertFhirToCcda(input);
+    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    expect(section).toBeDefined();
+    expect(section?.code?.['@_code']).toEqual(LOINC_ENCOUNTERS_SECTION);
+
+    const encounter = section?.entry?.[0]?.encounter?.[0];
+    expect(encounter).toBeDefined();
+
+    const observation = encounter?.entryRelationship?.[0]?.act?.[0]?.entryRelationship?.[0]?.observation;
+    expect(observation).toBeDefined();
+    expect(observation?.[0]?.code?.['@_code']).toEqual('282291009'); // Diagnostic interpretation
+    expect((observation?.[0]?.value as CcdaCode)['@_code']).toEqual('386661006');
   });
 });
 

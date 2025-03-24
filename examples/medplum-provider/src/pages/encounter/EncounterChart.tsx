@@ -1,5 +1,12 @@
 import { Stack, Box, Card } from '@mantine/core';
-import { Practitioner, Task, ClinicalImpression, QuestionnaireResponse, Questionnaire } from '@medplum/fhirtypes';
+import {
+  Task,
+  ClinicalImpression,
+  QuestionnaireResponse,
+  Questionnaire,
+  Practitioner,
+  Encounter,
+} from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { Outlet, useLocation, useParams } from 'react-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -16,13 +23,19 @@ export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
   const medplum = useMedplum();
   const patient = usePatient();
-  const encounter = useEncounter();
+  const [encounter, setEncounter] = useState<Encounter | undefined>(useEncounter());
   const location = useLocation();
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [clinicalImpression, setClinicalImpression] = useState<ClinicalImpression | undefined>();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (encounterId) {
+      medplum.readResource('Encounter', encounterId).then(setEncounter).catch(console.error);
+    }
+  }, [encounterId, medplum]);
 
   const fetchTasks = useCallback(async (): Promise<void> => {
     if (!encounter) {
@@ -168,6 +181,44 @@ export const EncounterChart = (): JSX.Element => {
     [tasks]
   );
 
+  const handleEncounterStatusChange = useCallback(
+    async (newStatus: Encounter['status']): Promise<void> => {
+      if (!encounter) {
+        return;
+      }
+      try {
+        const updatedEncounter: Encounter = {
+          ...encounter,
+          status: newStatus,
+          ...(newStatus === 'in-progress' &&
+            !encounter.period?.start && {
+              period: {
+                ...encounter.period,
+                start: new Date().toISOString(),
+              },
+            }),
+          ...(newStatus === 'finished' &&
+            !encounter.period?.end && {
+              period: {
+                ...encounter.period,
+                end: new Date().toISOString(),
+              },
+            }),
+        };
+        await medplum.updateResource(updatedEncounter);
+        setEncounter(updatedEncounter);
+      } catch (err) {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      }
+    },
+    [encounter, medplum]
+  );
+
   if (!patient || !encounter || (clinicalImpression?.supportingInfo?.[0]?.reference && !questionnaireResponse)) {
     return <Loading />;
   }
@@ -175,9 +226,12 @@ export const EncounterChart = (): JSX.Element => {
   return (
     <>
       <Stack justify="space-between" gap={0}>
-        <Box p="md">
-          <EncounterHeader encounter={encounter} practitioner={practitioner} />
-        </Box>
+        <EncounterHeader
+          encounter={encounter}
+          practitioner={practitioner}
+          onStatusChange={handleEncounterStatusChange}
+        />
+
         <Box p="md">
           <Stack gap="md">
             {clinicalImpression && (

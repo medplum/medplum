@@ -17,6 +17,7 @@ import {
   DiagnosticReport,
   DosageDoseAndRate,
   Encounter,
+  EncounterDiagnosis,
   Extension,
   ExtractResource,
   Goal,
@@ -129,6 +130,7 @@ import {
   CcdaDocumentationOf,
   CcdaEffectiveTime,
   CcdaEntry,
+  CcdaEntryRelationship,
   CcdaId,
   CcdaLanguageCommunication,
   CcdaName,
@@ -590,93 +592,6 @@ class FhirToCcdaConverter {
    */
   private createAllergyEntry(allergy: AllergyIntolerance): CcdaEntry {
     const reaction = allergy.reaction?.[0];
-
-    // Handle case where this represents "no known allergies"
-    if (allergy.clinicalStatus?.coding?.[0]?.code === 'active' && !allergy.code) {
-      return {
-        act: [
-          {
-            '@_classCode': 'ACT',
-            '@_moodCode': 'EVN',
-            templateId: [
-              {
-                '@_root': OID_ALLERGY_PROBLEM_ACT,
-                '@_extension': '2015-08-01',
-              },
-              {
-                '@_root': OID_ALLERGY_PROBLEM_ACT,
-              },
-            ],
-            id: this.mapIdentifiers(allergy.id, allergy.identifier),
-            code: {
-              '@_code': 'CONC',
-              '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
-            },
-            statusCode: {
-              '@_code': 'active',
-            },
-            effectiveTime: this.mapEffectivePeriod(allergy.recordedDate, undefined),
-            entryRelationship: [
-              {
-                '@_typeCode': 'SUBJ',
-                observation: [
-                  {
-                    '@_classCode': 'OBS',
-                    '@_moodCode': 'EVN',
-                    '@_negationInd': 'true',
-                    templateId: [
-                      {
-                        '@_root': OID_ALLERGY_OBSERVATION,
-                        '@_extension': '2014-06-09',
-                      },
-                      {
-                        '@_root': OID_ALLERGY_OBSERVATION,
-                      },
-                    ],
-                    id: this.mapIdentifiers(allergy.id, allergy.identifier),
-                    code: {
-                      '@_code': 'ASSERTION',
-                      '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
-                    },
-                    statusCode: {
-                      '@_code': 'completed',
-                    },
-                    effectiveTime: this.mapEffectivePeriod(
-                      allergy.onsetPeriod?.start ?? allergy.onsetDateTime,
-                      allergy.onsetPeriod?.end,
-                      true
-                    ),
-                    value: {
-                      '@_xsi:type': 'CD',
-                      '@_code': '419199007',
-                      '@_displayName': 'Allergy to substance',
-                      '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
-                      '@_codeSystemName': 'SNOMED CT',
-                    },
-                    participant: [
-                      {
-                        '@_typeCode': 'CSM',
-                        participantRole: {
-                          '@_classCode': 'MANU',
-                          playingEntity: {
-                            '@_classCode': 'MMAT',
-                            code: {
-                              '@_nullFlavor': 'NA',
-                            },
-                          },
-                        },
-                      },
-                    ],
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      };
-    }
-
-    // Handle normal allergy case
     return {
       act: [
         {
@@ -726,17 +641,17 @@ class FhirToCcdaConverter {
                     '@_code': 'ASSERTION',
                     '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
                   },
+                  text: this.createTextFromExtensions(allergy.extension),
                   statusCode: {
                     '@_code': 'completed',
                   },
-                  author: this.mapAuthor(allergy.asserter, allergy.recordedDate),
                   effectiveTime: this.mapEffectivePeriod(
                     allergy.onsetPeriod?.start ?? allergy.onsetDateTime,
                     allergy.onsetPeriod?.end,
                     true
                   ),
                   value: this.mapAllergyCategory(allergy.category),
-                  text: this.createTextFromExtensions(allergy.extension),
+                  author: this.mapAuthor(allergy.asserter, allergy.recordedDate),
                   participant: [
                     {
                       '@_typeCode': 'CSM',
@@ -744,14 +659,20 @@ class FhirToCcdaConverter {
                         '@_classCode': 'MANU',
                         playingEntity: {
                           '@_classCode': 'MMAT',
-                          code: {
-                            ...mapCodeableConceptToCcdaCode(allergy.code),
-                            originalText: allergy.code?.extension
-                              ? {
-                                  reference: this.getNarrativeReference(allergy.code?.extension),
-                                }
-                              : undefined,
-                          },
+                          code:
+                            // Handle special case for "No known allergies"
+                            // https://hl7.org/fhir/R4/allergyintolerance-nka.json.html
+                            // C-CDA-Examples/Allergies/No Known Allergies
+                            allergy.code?.coding?.[0]?.code === '716186003'
+                              ? { '@_nullFlavor': 'NA' }
+                              : {
+                                  ...mapCodeableConceptToCcdaCode(allergy.code),
+                                  originalText: allergy.code?.extension
+                                    ? {
+                                        reference: this.getNarrativeReference(allergy.code?.extension),
+                                      }
+                                    : undefined,
+                                },
                         },
                       },
                     },
@@ -844,14 +765,16 @@ class FhirToCcdaConverter {
    * @param category - The category to map.
    * @returns The C-CDA allergy category.
    */
-  private mapAllergyCategory(category: AllergyIntolerance['category']): CcdaValue | undefined {
-    if (!category || category.length === 0) {
-      return undefined;
-    }
-
-    const code = ALLERGY_CATEGORY_MAPPER.mapFhirToCcdaCode(category[0]);
+  private mapAllergyCategory(category: AllergyIntolerance['category']): CcdaValue {
+    let code = ALLERGY_CATEGORY_MAPPER.mapFhirToCcdaCode(category?.[0]);
     if (!code) {
-      return undefined;
+      // Default to generic allergy if no category is provided
+      code = {
+        '@_code': '419199007',
+        '@_displayName': 'Allergy to substance (disorder)',
+        '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+        '@_codeSystemName': 'SNOMED CT',
+      };
     }
 
     return { '@_xsi:type': 'CD', ...code };
@@ -1056,6 +979,7 @@ class FhirToCcdaConverter {
               },
             ],
           },
+          author: this.mapAuthor(med.requester, med.authoredOn),
           entryRelationship: med.dosageInstruction
             ?.filter((instr) => !!instr.extension)
             ?.map((instr) => ({
@@ -1902,7 +1826,7 @@ class FhirToCcdaConverter {
           code: mapCodeableConceptToCcdaCode(encounter.type?.[0]),
           text: this.createTextFromExtensions(encounter.extension),
           effectiveTime: this.mapEffectiveTime(undefined, encounter.period),
-          entryRelationship: encounter.participant?.map((participant) => ({
+          participant: encounter.participant?.map((participant) => ({
             '@_typeCode': 'LOC',
             participantRole: {
               '@_classCode': 'SDLOC',
@@ -1914,6 +1838,68 @@ class FhirToCcdaConverter {
               code: mapCodeableConceptToCcdaCode(participant.type?.[0]),
             },
           })),
+          entryRelationship: encounter.diagnosis?.map((d) => this.createEncounterDiagnosis(d)).filter(Boolean) as
+            | CcdaEntryRelationship[]
+            | undefined,
+        },
+      ],
+    };
+  }
+
+  private createEncounterDiagnosis(diagnosis: EncounterDiagnosis): CcdaEntryRelationship | undefined {
+    const condition = this.findResourceByReference(diagnosis.condition);
+    if (!condition || condition.resourceType !== 'Condition') {
+      return undefined;
+    }
+    return {
+      '@_typeCode': 'REFR',
+      act: [
+        {
+          '@_classCode': 'ACT',
+          '@_moodCode': 'EVN',
+          templateId: [
+            { '@_root': OID_ENCOUNTER_ACTIVITIES, '@_extension': '2015-08-01' },
+            { '@_root': OID_ENCOUNTER_ACTIVITIES },
+          ],
+          code: {
+            '@_code': '29308-4', // Diagnosis
+            '@_displayName': 'Diagnosis',
+            '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+            '@_codeSystemName': 'LOINC',
+          },
+          entryRelationship: [
+            {
+              '@_typeCode': 'SUBJ',
+              observation: [
+                {
+                  '@_classCode': 'OBS',
+                  '@_moodCode': 'EVN',
+                  templateId: [
+                    { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
+                    { '@_root': OID_PROBLEM_OBSERVATION },
+                  ],
+                  id: this.mapIdentifiers(condition.id, condition.identifier) as CcdaId[],
+                  code: {
+                    '@_code': '282291009', // Diagnosis interpretation
+                    '@_displayName': 'Diagnosis interpretation',
+                    '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+                    '@_codeSystemName': 'SNOMED CT',
+                    translation: [
+                      {
+                        '@_code': '29308-4', // Diagnosis
+                        '@_displayName': 'Diagnosis',
+                        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+                        '@_codeSystemName': 'LOINC',
+                      },
+                    ],
+                  },
+                  statusCode: { '@_code': 'completed' },
+                  effectiveTime: this.mapEffectivePeriod(condition.onsetDateTime, condition.abatementDateTime),
+                  value: mapCodeableConceptToCcdaValue(condition.code),
+                },
+              ],
+            },
+          ],
         },
       ],
     };
@@ -2087,9 +2073,9 @@ class FhirToCcdaConverter {
         {
           '@_classCode': 'ACT',
           '@_moodCode': 'EVN',
-          templateId: [{ '@_root': OID_NOTE_ACTIVITY }],
+          templateId: [{ '@_root': OID_NOTE_ACTIVITY, '@_extension': '2016-11-01' }],
           id: this.mapIdentifiers(resource.id, resource.identifier),
-          code: {
+          code: mapCodeableConceptToCcdaCode(resource.code) ?? {
             '@_code': LOINC_NOTES_SECTION,
             '@_codeSystem': OID_LOINC_CODE_SYSTEM,
             '@_codeSystemName': 'LOINC',
@@ -2098,6 +2084,7 @@ class FhirToCcdaConverter {
           text: resource.summary ? { '#text': resource.summary } : this.createTextFromExtensions(resource.extension),
           statusCode: { '@_code': 'completed' },
           effectiveTime: [{ '@_value': mapFhirToCcdaDate(resource.date) }],
+          author: this.mapAuthor(resource.assessor, resource.date),
         },
       ],
     };

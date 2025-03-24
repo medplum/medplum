@@ -1,3 +1,4 @@
+import { ContentType } from '@medplum/core';
 import { MouseEvent, SyntheticEvent } from 'react';
 
 /**
@@ -75,4 +76,26 @@ export async function sendCommand<T = string, R = unknown>(frame: HTMLIFrameElem
 
     frame.contentWindow?.postMessage(command, new URL(frame.src).origin, [channel.port2]);
   });
+}
+
+/**
+ * Creates a Blob object from the JSON object given and downloads the object.
+ * @param jsonString - The JSON string.
+ * @param fileName - Optional file name. Default is based on current timestamp.
+ */
+export function exportJsonFile(jsonString: string, fileName?: string): void {
+  const blobForExport = new Blob([jsonString], { type: ContentType.JSON });
+  const url = URL.createObjectURL(blobForExport);
+
+  const link = document.createElement('a');
+  link.href = url;
+
+  const linkName = fileName ?? new Date().toISOString().replace(/\D/g, '');
+  link.download = `${linkName}.json`;
+
+  document.body.appendChild(link);
+  link.click();
+
+  // Clean up the URL object
+  URL.revokeObjectURL(url);
 }

@@ -12,6 +12,7 @@ export const ContentType = {
   JAVASCRIPT: 'text/javascript',
   JSON: 'application/json',
   JSON_PATCH: 'application/json-patch+json',
+  MULTIPART_FORM_DATA: 'multipart/form-data',
   PNG: 'image/png',
   SCIM_JSON: 'application/scim+json',
   SVG: 'image/svg+xml',

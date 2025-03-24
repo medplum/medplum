@@ -58,6 +58,7 @@ export function smartConfigurationHandler(_req: Request, res: Response): void {
         'online_access',
       ],
       response_types_supported: ['code'],
+      introspection_endpoint: config.introspectUrl,
       capabilities: [
         'authorize-post',
         'permission-v1',

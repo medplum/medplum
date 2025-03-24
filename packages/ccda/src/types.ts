@@ -160,7 +160,7 @@ export interface CcdaAct {
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code: CcdaCode;
-  statusCode: CcdaCode;
+  statusCode?: CcdaCode;
   effectiveTime?: CcdaEffectiveTime[];
   entryRelationship?: CcdaEntryRelationship[];
   author?: CcdaAuthor[];

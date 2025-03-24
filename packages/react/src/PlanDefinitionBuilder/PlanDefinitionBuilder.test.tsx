@@ -35,8 +35,8 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit: jest.fn(),
     });
 
-    expect(screen.findByDisplayValue('Example Plan Definition')).toBeDefined();
-    expect(screen.findByDisplayValue('Patient Registration')).toBeDefined();
+    expect(await screen.findByDisplayValue('Example Plan Definition')).toBeDefined();
+    expect(await screen.findByDisplayValue('Patient Registration')).toBeDefined();
   });
 
   test('Hover on/off', async () => {
@@ -167,7 +167,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Add action'));
     });
 
-    expect(await screen.getByPlaceholderText('Title')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Title')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Title'), {
@@ -209,7 +209,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Add action'));
     });
 
-    expect(await screen.getByPlaceholderText('Title')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Title')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Title'), {
@@ -249,7 +249,7 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Add action'));
     });
 
-    expect(await screen.getByPlaceholderText('Title')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Title')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Title'), {
@@ -289,7 +289,7 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit,
     });
 
-    expect(await screen.getByTestId('close-button')).toBeInTheDocument();
+    expect(screen.getByTestId('close-button')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('close-button'));
