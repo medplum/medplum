@@ -22,6 +22,7 @@ import * as rewriteModule from '../fhir/rewrite';
 import { RewriteMode } from '../fhir/rewrite';
 import { globalLogger } from '../logger';
 import * as keysModule from '../oauth/keys';
+import * as oauthUtilsModule from '../oauth/utils';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 
@@ -702,10 +703,10 @@ describe('WebSocket Subscription', () => {
   test('Undefined authState returned', () =>
     withTestContext(async () => {
       // Import the module to mock
-      const originalGetLoginForAccessToken = jest.requireActual('../oauth/utils').getLoginForAccessToken;
+      const originalGetLoginForAccessToken = oauthUtilsModule.getLoginForAccessToken;
       let mockGetLoginForAccessToken = false;
       const getLoginForAccessTokenSpy = jest
-        .spyOn(require('../oauth/utils'), 'getLoginForAccessToken')
+        .spyOn(oauthUtilsModule, 'getLoginForAccessToken')
         .mockImplementation(async (...args) => {
           if (mockGetLoginForAccessToken) {
             return undefined; // Return undefined auth state
