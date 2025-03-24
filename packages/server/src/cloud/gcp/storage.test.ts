@@ -1,6 +1,6 @@
-import { GCPBlobStorage } from './storage';
 import { Binary } from '@medplum/fhirtypes';
 import { PassThrough } from 'stream';
+import { GCPBlobStorage } from './storage';
 
 describe('Integration Tests for GCPBlobStorage', () => {
   const testStorageString = 'your-project-id:your-test-bucket';

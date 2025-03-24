@@ -3,12 +3,26 @@ import { Binary } from '@medplum/fhirtypes';
 import { createSign } from 'crypto';
 import { copyFileSync, createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { resolve, sep } from 'path';
-import { Readable, pipeline } from 'stream';
+import { pipeline, Readable } from 'stream';
 import { S3Storage } from '../cloud/aws/storage';
 import { AzureBlobStorage } from '../cloud/azure/storage';
 import { GCPBlobStorage } from '../cloud/gcp/storage';
 import { getConfig } from '../config/loader';
 
+/**
+ * Binary input type.
+ *
+ * This represents a possible input to the writeBinary function.
+ *
+ * Node.js pipeline types:
+ * type PipelineSource<T> = Iterable<T> | AsyncIterable<T> | NodeJS.ReadableStream | PipelineSourceFunction<T>;
+ *
+ * S3 input types:
+ * export type NodeJsRuntimeStreamingBlobPayloadInputTypes = string | Uint8Array | Buffer | Readable;
+ *
+ * node-fetch body types:
+ * Note that while the Fetch Standard requires the property to always be a WHATWG ReadableStream, in node-fetch it is a Node.js Readable stream.
+ */
 export type BinarySource = Readable | string;
 
 let binaryStorage: BinaryStorage | undefined = undefined;
@@ -34,6 +48,9 @@ export function getBinaryStorage(): BinaryStorage {
   return binaryStorage;
 }
 
+/**
+ * The BinaryStorage interface represents a method of reading and writing binary blobs.
+ */
 export interface BinaryStorage {
   writeBinary(
     binary: Binary,
@@ -53,6 +70,10 @@ export interface BinaryStorage {
   getPresignedUrl(binary: Binary): Promise<string>;
 }
 
+/**
+ * The FileSystemStorage class stores binary blobs on the file system.
+ * Files are stored in <baseDir>/binary.id/binary.meta.versionId.
+ */
 class FileSystemStorage implements BinaryStorage {
   private readonly baseDir: string;
 
@@ -139,6 +160,11 @@ class FileSystemStorage implements BinaryStorage {
   }
 }
 
+/**
+ * List of blocked file extensions.
+ * Derived from "File types blocked in Gmail"
+ * https://support.google.com/mail/answer/6590?hl=en#zippy=%2Cmessages-that-have-attachments
+ */
 const BLOCKED_FILE_EXTENSIONS = [
   '.ade',
   '.adp',
@@ -188,6 +214,10 @@ const BLOCKED_FILE_EXTENSIONS = [
   '.wsh',
 ];
 
+/**
+ * List of blocked content types.
+ * Derived from: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+ */
 const BLOCKED_CONTENT_TYPES = [
   'application/java-archive',
   'application/x-msdownload',
@@ -196,6 +226,12 @@ const BLOCKED_CONTENT_TYPES = [
   'application/vnd.microsoft.portable-executable',
 ];
 
+/**
+ * Checks file metadata against blocked lists.
+ * Throws an execption if the file metadata is blocked.
+ * @param filename - The input filename.
+ * @param contentType - The input content type.
+ */
 export function checkFileMetadata(filename: string | undefined, contentType: string | undefined): void {
   if (checkFileExtension(filename)) {
     throw new OperationOutcomeError(badRequest('Invalid file extension'));
@@ -205,6 +241,11 @@ export function checkFileMetadata(filename: string | undefined, contentType: str
   }
 }
 
+/**
+ * Checks if the file extension is blocked.
+ * @param filename - The input filename.
+ * @returns True if the filename has a blocked file extension.
+ */
 function checkFileExtension(filename: string | undefined): boolean {
   if (filename) {
     const lower = filename.toLowerCase();
@@ -218,6 +259,11 @@ function checkFileExtension(filename: string | undefined): boolean {
   return false;
 }
 
+/**
+ * Checks if the content type is blocked.
+ * @param contentType - The input content type.
+ * @returns True if the content type is blocked.
+ */
 function checkContentType(contentType: string | undefined): boolean {
   if (contentType) {
     return BLOCKED_CONTENT_TYPES.includes(contentType.toLowerCase());
