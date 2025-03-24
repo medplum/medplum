@@ -56,6 +56,18 @@ export abstract class LookupTable {
   abstract indexResource(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void>;
 
   /**
+   * Indexes the resource in the lookup table.
+   * @param client - The database client.
+   * @param resources - The resources to index.
+   * @param create - True if the resource should be created (vs updated).
+   */
+  abstract batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void>;
+
+  /**
    * Builds a "where" condition for the select query builder.
    * @param _selectQuery - The select query builder.
    * @param resourceType - The FHIR resource type.
@@ -165,6 +177,12 @@ export abstract class LookupTable {
     const tableName = this.getTableName(resource.resourceType);
     const resourceId = resource.id;
     await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
+  }
+
+  async batchDeleteValuesForResources<T extends Resource>(client: Pool | PoolClient, resources: T[]): Promise<void> {
+    const tableName = this.getTableName(resources[0].resourceType);
+    const resourceIds = resources.map((r) => r.id);
+    await new DeleteQuery(tableName).where('resourceId', 'IN', resourceIds).execute(client);
   }
 
   /**

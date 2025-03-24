@@ -63,34 +63,51 @@ export class HumanNameTable extends LookupTable {
    * @returns Promise on completion.
    */
   async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
+    return this.batchIndexResources(client, [resource], create);
+  }
+
+  async batchIndexResources<T extends Resource>(client: PoolClient, resources: T[], create: boolean): Promise<void> {
+    if (resources.length === 0) {
+      return;
+    }
+
+    const resourceType = resources[0].resourceType;
     if (
-      resource.resourceType !== 'Patient' &&
-      resource.resourceType !== 'Person' &&
-      resource.resourceType !== 'Practitioner' &&
-      resource.resourceType !== 'RelatedPerson'
+      resourceType !== 'Patient' &&
+      resourceType !== 'Person' &&
+      resourceType !== 'Practitioner' &&
+      resourceType !== 'RelatedPerson'
     ) {
       return;
     }
 
     if (!create) {
-      await this.deleteValuesForResource(client, resource);
+      await this.batchDeleteValuesForResources(client, resources);
     }
 
-    const names: HumanName[] | undefined = resource.name;
-    if (!names || !Array.isArray(names)) {
-      return;
+    const resourceBatchSize = 1000;
+    for (let i = 0; i < resources.length; i += resourceBatchSize) {
+      const batch = resources.slice(i, i + resourceBatchSize);
+      const newHumanNameRows = batch.flatMap((resource) => {
+        if (resource.resourceType !== resourceType) {
+          throw new Error(`Resource type mismatch: ${resource.resourceType} vs ${resourceType}`);
+        }
+
+        const names: HumanName[] | undefined = resource.name;
+        if (!names || !Array.isArray(names)) {
+          return [];
+        }
+        const resourceId = resource.id;
+        return names.map((name) => ({
+          resourceId,
+          name: getNameString(name),
+          given: formatGivenName(name),
+          family: formatFamilyName(name),
+        }));
+      });
+
+      await this.insertValuesForResource(client, resourceType, newHumanNameRows);
     }
-
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id;
-    const values = names.map((name) => ({
-      resourceId,
-      name: getNameString(name),
-      given: formatGivenName(name),
-      family: formatFamilyName(name),
-    }));
-
-    await this.insertValuesForResource(client, resourceType, values);
   }
 
   /**

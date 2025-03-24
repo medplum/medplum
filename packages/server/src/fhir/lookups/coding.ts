@@ -45,6 +45,12 @@ export class CodingTable extends LookupTable {
     }
   }
 
+  async batchIndexResources<T extends Resource>(client: PoolClient, resources: T[], create: boolean): Promise<void> {
+    for (const resource of resources) {
+      await this.indexResource(client, resource, create);
+    }
+  }
+
   /**
    * Deletes the resource from the lookup table.
    * @param client - The database client.
