@@ -37,6 +37,7 @@ export function ConceptBadge<T extends Resource = Resource>(props: ConceptBadgeP
       key={resource.id}
       to={onClick ? undefined : resource}
       onClick={onClick ? () => onClick(resource) : undefined}
+      size="xs"
     >
       <Badge variant="light" maw="100%" rightSection={rightSection} style={{ cursor: 'pointer' }}>
         {display ?? getDisplayString(resource)}
