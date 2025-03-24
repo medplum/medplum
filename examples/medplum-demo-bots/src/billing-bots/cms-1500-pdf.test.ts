@@ -23,6 +23,7 @@ import {
   getClaimItemInfo,
   getCoverageInfo,
   getDateContent,
+  getDiagnosisContent,
   getInsurerInfo,
   getPatientRelationshipToInsuredContent,
   getPersonInfo,
@@ -281,6 +282,7 @@ describe('getClaimInfo', () => {
       priorAuthRefNumber: '0923092390',
       outsideLab: true,
       outsideLabCharges: '125 USD',
+      diagnosis: ['J20', 'G89.4'],
       resubmissionCode: 'Prior Claim',
       originalReference: '',
       patientAccountNumber: '429802409',
@@ -320,6 +322,7 @@ describe('getClaimInfo', () => {
       priorAuthRefNumber: '',
       outsideLab: false,
       outsideLabCharges: '',
+      diagnosis: [],
       resubmissionCode: '',
       originalReference: '',
       patientAccountNumber: '',
@@ -360,6 +363,7 @@ describe('getClaimInfo', () => {
       priorAuthRefNumber: '',
       outsideLab: false,
       outsideLabCharges: '',
+      diagnosis: [],
       resubmissionCode: '',
       originalReference: '',
       patientAccountNumber: '',
@@ -401,6 +405,7 @@ describe('getClaimInfo', () => {
       priorAuthRefNumber: '',
       outsideLab: false,
       outsideLabCharges: '',
+      diagnosis: [],
       resubmissionCode: '',
       originalReference: '',
       patientAccountNumber: '',
@@ -444,6 +449,7 @@ describe('getClaimInfo', () => {
       priorAuthRefNumber: '',
       outsideLab: false,
       outsideLabCharges: '',
+      diagnosis: [],
       resubmissionCode: '',
       originalReference: '',
       patientAccountNumber: '',
@@ -1255,6 +1261,48 @@ describe('getClaimItemContent', () => {
         absolutePosition: { x: 466, y: 565 },
         fontSize: 9,
       },
+    ]);
+  });
+});
+
+describe('getDiagnosisContent', () => {
+  test('returns correct diagnosis content', () => {
+    const diagnosis = [
+      // Row 1
+      'J20',
+      'G89.4',
+      'M54.5',
+      'E11.9',
+      // Row 2
+      'I10',
+      'J45.909',
+      'K21.9',
+      'N18.9',
+      // Row 3
+      'R51',
+      'M25.561',
+      'F41.1',
+      'Z79.899',
+    ];
+
+    const result = getDiagnosisContent(diagnosis);
+
+    expect(result).toStrictEqual([
+      // Row 1
+      { text: 'J20', absolutePosition: { x: 35, y: 470 }, fontSize: 9 },
+      { text: 'G89.4', absolutePosition: { x: 128, y: 470 }, fontSize: 9 },
+      { text: 'M54.5', absolutePosition: { x: 222, y: 470 }, fontSize: 9 },
+      { text: 'E11.9', absolutePosition: { x: 317, y: 470 }, fontSize: 9 },
+      // Row 2
+      { text: 'I10', absolutePosition: { x: 35, y: 482 }, fontSize: 9 },
+      { text: 'J45.909', absolutePosition: { x: 128, y: 482 }, fontSize: 9 },
+      { text: 'K21.9', absolutePosition: { x: 222, y: 482 }, fontSize: 9 },
+      { text: 'N18.9', absolutePosition: { x: 317, y: 482 }, fontSize: 9 },
+      // Row 3
+      { text: 'R51', absolutePosition: { x: 35, y: 493 }, fontSize: 9 },
+      { text: 'M25.561', absolutePosition: { x: 128, y: 493 }, fontSize: 9 },
+      { text: 'F41.1', absolutePosition: { x: 222, y: 493 }, fontSize: 9 },
+      { text: 'Z79.899', absolutePosition: { x: 317, y: 493 }, fontSize: 9 },
     ]);
   });
 });

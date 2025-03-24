@@ -449,6 +449,12 @@ export const fullAnswer: Bundle = {
               coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'J20', display: 'Acute bronchitis' }],
             },
           },
+          {
+            sequence: 2,
+            diagnosisCodeableConcept: {
+              coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'G89.4', display: 'Chronic pain syndrome' }],
+            },
+          },
         ],
         related: [
           {
@@ -499,7 +505,7 @@ export const fullAnswer: Bundle = {
             modifier: [
               { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/modifiers', code: 'x', display: 'None' }] },
             ],
-            diagnosisSequence: [1],
+            diagnosisSequence: [1, 2],
             net: {
               currency: 'USD',
               value: 1000,

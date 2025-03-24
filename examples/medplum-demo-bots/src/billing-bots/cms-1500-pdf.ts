@@ -202,110 +202,6 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
         },
         fontSize: 9,
       },
-      {
-        text: 'X68',
-        absolutePosition: {
-          x: 315,
-          y: 457,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X69',
-        absolutePosition: {
-          x: 33,
-          y: 467,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X70',
-        absolutePosition: {
-          x: 126,
-          y: 468,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X71',
-        absolutePosition: {
-          x: 221,
-          y: 467,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X72',
-        absolutePosition: {
-          x: 315,
-          y: 469,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X75',
-        absolutePosition: {
-          x: 33,
-          y: 479,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X76',
-        absolutePosition: {
-          x: 127,
-          y: 480,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X77',
-        absolutePosition: {
-          x: 221,
-          y: 479,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X78',
-        absolutePosition: {
-          x: 315,
-          y: 480,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X79',
-        absolutePosition: {
-          x: 33,
-          y: 491,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X80',
-        absolutePosition: {
-          x: 127,
-          y: 491,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X81',
-        absolutePosition: {
-          x: 221,
-          y: 491,
-        },
-        fontSize: 9,
-      },
-      {
-        text: 'X82',
-        absolutePosition: {
-          x: 315,
-          y: 491,
-        },
-        fontSize: 9,
-      },
     ],
   };
   return docDefinition;
@@ -333,6 +229,7 @@ export function getClaimContent(claim: Claim): Content[] {
     patientPaid,
     totalCharge,
     items,
+    diagnosis,
   } = getClaimInfo(claim);
 
   const dateOfCurrentIllnessAsDate = dateOfCurrentIllness ? getDateProperty(dateOfCurrentIllness) : undefined;
@@ -517,6 +414,7 @@ export function getClaimContent(claim: Claim): Content[] {
       },
       fontSize: 9,
     },
+    ...getDiagnosisContent(diagnosis),
     ...getClaimItemContent(items),
     // Accept assignment
     {
@@ -1018,6 +916,33 @@ export function getProviderContent(provider: Practitioner | Organization | Pract
   ];
 }
 
+export function getDiagnosisContent(diagnosis: string[]): Content[] {
+  // Up to 12 diagnosis codes
+  const diagnosisPositions = [
+    // Row 1
+    { x: 35, y: 470, index: 0 },
+    { x: 128, y: 470, index: 1 },
+    { x: 222, y: 470, index: 2 },
+    { x: 317, y: 470, index: 3 },
+    // Row 2
+    { x: 35, y: 482, index: 4 },
+    { x: 128, y: 482, index: 5 },
+    { x: 222, y: 482, index: 6 },
+    { x: 317, y: 482, index: 7 },
+    // Row 3
+    { x: 35, y: 493, index: 8 },
+    { x: 128, y: 493, index: 9 },
+    { x: 222, y: 493, index: 10 },
+    { x: 317, y: 493, index: 11 },
+  ];
+
+  return diagnosisPositions.map(({ x, y, index }) => ({
+    text: diagnosis?.[index] ?? '',
+    absolutePosition: { x, y },
+    fontSize: 9,
+  }));
+}
+
 /* Data retrieval helpers */
 
 export function getPersonInfo(
@@ -1100,6 +1025,7 @@ export function getClaimInfo(claim: Claim): {
   priorAuthRefNumber: string;
   outsideLab: boolean;
   outsideLabCharges: string;
+  diagnosis: string[];
   resubmissionCode: string;
   originalReference: string;
   patientAccountNumber: string;
@@ -1135,6 +1061,12 @@ export function getClaimInfo(claim: Claim): {
   const outsideLab = claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'outsidelab');
   const outsideLabCharges = outsideLab ? formatQuantity(outsideLab.valueQuantity) : '';
 
+  const diagnosis = (claim.diagnosis || [])
+    .map(
+      (d) =>
+        d.diagnosisCodeableConcept?.coding?.find((code) => code.system === 'http://hl7.org/fhir/sid/icd-10')?.code ?? ''
+    )
+    .filter((code) => code !== '');
   const resubmissionCode =
     claim.related?.[0].relationship?.coding?.find((code) => code.code === 'prior')?.display ?? '';
   const originalReference = claim.related?.[0].claim?.display ?? '';
@@ -1177,6 +1109,7 @@ export function getClaimInfo(claim: Claim): {
     priorAuthRefNumber,
     outsideLab: !!outsideLab,
     outsideLabCharges,
+    diagnosis,
     resubmissionCode,
     originalReference,
     patientAccountNumber,
