@@ -19,6 +19,7 @@ import {
   formatHumanName,
   getAddressContent,
   getClaimInfo,
+  getClaimItemContent,
   getClaimItemInfo,
   getCoverageInfo,
   getDateContent,
@@ -1104,6 +1105,155 @@ describe('getPatientRelationshipToInsuredContent', () => {
         text: expectedMark,
         absolutePosition: { x: 353, y: expectedY },
         fontSize: expectedFontSize,
+      },
+    ]);
+  });
+});
+
+describe('getClaimItemContent', () => {
+  test('formats multiple claim items correctly', () => {
+    const items = [
+      {
+        dateOfService: '2024-01-15',
+        placeOfService: '289 Hamilton Drive, Los Angeles, CA',
+        placeOfServiceState: 'CA',
+        emergency: true,
+        procedureCode: '99213',
+        modifiers: 'GP',
+        diagnosisPointer: '1',
+        charges: '75.00',
+        daysOrUnits: '1',
+        familyPlanIndicator: 'Y',
+      },
+      {
+        dateOfService: '2024-01-16',
+        placeOfService: '289 Madison Avenue, Albany, NY',
+        placeOfServiceState: 'NY',
+        emergency: false,
+        procedureCode: '97110',
+        modifiers: '59',
+        diagnosisPointer: '2',
+        charges: '50.00',
+        daysOrUnits: '2',
+        familyPlanIndicator: 'N',
+      },
+    ];
+
+    const result = getClaimItemContent(items);
+
+    expect(result).toStrictEqual([
+      // First item
+      {
+        text: '15',
+        absolutePosition: { x: 21, y: 540 },
+        fontSize: 9,
+      },
+      {
+        text: '01',
+        absolutePosition: { x: 42, y: 540 },
+        fontSize: 9,
+      },
+      {
+        text: '24',
+        absolutePosition: { x: 63, y: 540 },
+        fontSize: 9,
+      },
+      {
+        text: 'CA',
+        absolutePosition: { x: 149, y: 540 },
+        fontSize: 9,
+      },
+      {
+        text: 'X',
+        absolutePosition: { x: 172, y: 540 },
+        fontSize: 9,
+      },
+      {
+        text: '99213',
+        absolutePosition: { x: 194, y: 540 },
+        fontSize: 9,
+      },
+      {
+        text: 'GP',
+        absolutePosition: { x: 246, y: 540 },
+        fontSize: 9,
+      },
+      {
+        text: '1',
+        absolutePosition: { x: 335, y: 540 },
+        fontSize: 9,
+      },
+      {
+        text: '75.00',
+        absolutePosition: { x: 373, y: 540 },
+        fontSize: 9,
+      },
+      {
+        text: '1',
+        absolutePosition: { x: 437, y: 540 },
+        fontSize: 9,
+      },
+      {
+        text: 'Y',
+        absolutePosition: { x: 466, y: 540 },
+        fontSize: 9,
+      },
+
+      // Second item
+      {
+        text: '16',
+        absolutePosition: { x: 21, y: 565 },
+        fontSize: 9,
+      },
+      {
+        text: '01',
+        absolutePosition: { x: 42, y: 565 },
+        fontSize: 9,
+      },
+      {
+        text: '24',
+        absolutePosition: { x: 63, y: 565 },
+        fontSize: 9,
+      },
+      {
+        text: 'NY',
+        absolutePosition: { x: 149, y: 565 },
+        fontSize: 9,
+      },
+      {
+        text: '',
+        absolutePosition: { x: 172, y: 565 },
+        fontSize: 9,
+      },
+      {
+        text: '97110',
+        absolutePosition: { x: 194, y: 565 },
+        fontSize: 9,
+      },
+      {
+        text: '59',
+        absolutePosition: { x: 246, y: 565 },
+        fontSize: 9,
+      },
+      {
+        text: '2',
+        absolutePosition: { x: 335, y: 565 },
+        fontSize: 9,
+      },
+      {
+        text: '50.00',
+        absolutePosition: { x: 373, y: 565 },
+        fontSize: 9,
+      },
+      {
+        text: '2',
+        absolutePosition: { x: 437, y: 565 },
+        fontSize: 9,
+      },
+      {
+        text: 'N',
+        absolutePosition: { x: 466, y: 565 },
+        fontSize: 9,
       },
     ]);
   });
