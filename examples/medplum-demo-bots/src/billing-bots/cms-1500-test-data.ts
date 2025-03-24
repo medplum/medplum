@@ -86,8 +86,7 @@ export const fullAnswer: Bundle = {
         resourceType: 'Practitioner',
         identifier: [
           {
-            system: 'http://example.org/practitioner-npi',
-            id: 'NPI',
+            system: 'http://hl7.org/fhir/sid/us-npi',
             value: '2490433892',
           },
         ],
@@ -123,14 +122,7 @@ export const fullAnswer: Bundle = {
         identifier: [
           {
             use: 'official',
-            type: {
-              coding: [
-                {
-                  system: 'http://example.org/org-id',
-                  code: 'NPI',
-                },
-              ],
-            },
+            system: 'http://hl7.org/fhir/sid/us-npi',
             value: '7911621876',
           },
           {
@@ -174,14 +166,7 @@ export const fullAnswer: Bundle = {
         identifier: [
           {
             use: 'official',
-            type: {
-              coding: [
-                {
-                  system: 'http://example.org/org-id',
-                  code: 'NPI',
-                },
-              ],
-            },
+            system: 'http://hl7.org/fhir/sid/us-npi',
             value: '5746217289',
           },
           {

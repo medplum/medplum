@@ -1206,7 +1206,7 @@ export function getClaimItemInfo(item: ClaimItem): {
   const emergency = item.category?.coding?.[0].code === 'EMG';
   const procedureCode = formatCodeableConcept(item.productOrService);
   const modifiers = formatCodeableConcept(item.modifier?.[0]);
-  const diagnosisPointer = item.diagnosisSequence?.[0] + '';
+  const diagnosisPointer = item.diagnosisSequence?.[0]?.toString() ?? '';
   const charges = formatMoney(item.net);
   const daysOrUnits = formatQuantity(item.quantity);
   const familyPlanIndicator =
@@ -1226,34 +1226,6 @@ export function getClaimItemInfo(item: ClaimItem): {
   };
 }
 
-/* General helpers */
-
-export function formatHumanName(name: HumanName): string {
-  const family = name.family ?? '';
-  const given = name.given ?? [];
-
-  if (!family && given.length === 0) {
-    return '';
-  }
-
-  const [firstName, ...rest] = given;
-  const middleName = rest.join(' ');
-
-  const parts = [];
-
-  if (family) {
-    parts.push(family);
-  }
-  if (firstName) {
-    parts.push(firstName);
-  }
-  if (middleName) {
-    parts.push(middleName);
-  }
-
-  return parts.join(', ');
-}
-
 export function getInsurerInfo(insurer: Organization | Patient | RelatedPerson): {
   serviceNPI: string;
   serviceName: string;
@@ -1271,8 +1243,7 @@ export function getInsurerInfo(insurer: Organization | Patient | RelatedPerson):
     };
   }
 
-  const serviceNPI =
-    insurer.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'NPI'))?.value ?? '';
+  const serviceNPI = insurer.identifier?.find((id) => id.system === 'http://hl7.org/fhir/sid/us-npi')?.value ?? '';
   const serviceName = insurer.name ?? '';
   const serviceLocation = insurer.address ? formatAddress(insurer.address[0]) : '';
 
@@ -1305,14 +1276,14 @@ export function getProviderInfo(provider: Practitioner | Organization | Practiti
   }
 
   let billingName = '';
-  if (provider.resourceType === 'Practitioner' && provider.name) {
+  if (provider.resourceType === 'Practitioner' && provider.name?.[0]) {
     billingName = formatHumanName(provider.name[0]);
   } else if (provider.resourceType === 'Organization' && provider.name) {
     billingName = provider.name;
   }
   const billingLocation = provider?.address?.[0] ? formatAddress(provider.address?.[0]) : '';
   const phoneNumber = provider.telecom?.find((comm) => comm.system === 'phone');
-  const providerNpi = provider.identifier?.find((id) => id.id === 'NPI')?.value ?? '';
+  const providerNpi = provider.identifier?.find((id) => id.system === 'http://hl7.org/fhir/sid/us-npi')?.value ?? '';
 
   return {
     billingName,
@@ -1320,4 +1291,32 @@ export function getProviderInfo(provider: Practitioner | Organization | Practiti
     billingPhoneNumber: phoneNumber?.value ?? '',
     providerNpi,
   };
+}
+
+/* General helpers */
+
+export function formatHumanName(name: HumanName): string {
+  const family = name.family ?? '';
+  const given = name.given ?? [];
+
+  if (!family && given.length === 0) {
+    return '';
+  }
+
+  const [firstName, ...rest] = given;
+  const middleName = rest.join(' ');
+
+  const parts = [];
+
+  if (family) {
+    parts.push(family);
+  }
+  if (firstName) {
+    parts.push(firstName);
+  }
+  if (middleName) {
+    parts.push(middleName);
+  }
+
+  return parts.join(', ');
 }

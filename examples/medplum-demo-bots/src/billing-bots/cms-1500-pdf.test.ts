@@ -4,9 +4,13 @@ import {
   Address,
   Bundle,
   Claim,
+  ClaimItem,
   Coverage,
   HumanName,
+  Organization,
   Patient,
+  Practitioner,
+  PractitionerRole,
   RelatedPerson,
   SearchParameter,
 } from '@medplum/fhirtypes';
@@ -15,11 +19,14 @@ import {
   formatHumanName,
   getAddressContent,
   getClaimInfo,
+  getClaimItemInfo,
   getCoverageInfo,
   getDateContent,
+  getInsurerInfo,
   getPatientRelationshipToInsuredContent,
   getPersonInfo,
   getPhoneContent,
+  getProviderInfo,
   getSexContent,
   handler,
 } from './cms-1500-pdf';
@@ -115,7 +122,7 @@ describe('formatHumanName', () => {
 
 describe('getPersonInfo', () => {
   test('returns complete person info when all Patient fields are present', () => {
-    const patient = (fullAnswer.entry?.[0]?.resource as Patient) ?? {};
+    const patient = fullAnswer.entry?.[0]?.resource as Patient;
 
     const patientInfo = getPersonInfo(patient);
 
@@ -129,7 +136,7 @@ describe('getPersonInfo', () => {
   });
 
   test('returns complete person info when all RelatedPerson fields are present', () => {
-    const relatedPerson = (fullAnswer.entry?.[1]?.resource as RelatedPerson) ?? {};
+    const relatedPerson = fullAnswer.entry?.[1]?.resource as RelatedPerson;
 
     const relatedPersonInfo = getPersonInfo(relatedPerson);
 
@@ -442,6 +449,368 @@ describe('getClaimInfo', () => {
       patientPaid: '',
       totalCharge: '',
       items: [],
+    });
+  });
+});
+
+describe('getClaimItemInfo', () => {
+  test('returns complete claim item info when all fields are present', () => {
+    const item: ClaimItem = {
+      sequence: 1,
+      servicedDate: '2024-04-14',
+      locationAddress: {
+        line: ['289 Johnson Street'],
+        city: 'Ames',
+        state: 'IA',
+      },
+      category: {
+        coding: [
+          {
+            code: 'EMG',
+          },
+        ],
+      },
+      productOrService: {
+        text: 'Exam, recall',
+      },
+      modifier: [
+        {
+          text: 'None',
+        },
+      ],
+      diagnosisSequence: [1],
+      net: {
+        value: 1000,
+        currency: 'USD',
+      },
+      quantity: {
+        value: 20,
+        unit: 'days',
+      },
+      programCode: [
+        {
+          coding: [
+            {
+              code: 'none',
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = getClaimItemInfo(item);
+
+    expect(result).toEqual({
+      dateOfService: '4/14/2024',
+      placeOfService: '289 Johnson Street, Ames, IA',
+      placeOfServiceState: 'IA',
+      emergency: true,
+      procedureCode: 'Exam, recall',
+      modifiers: 'None',
+      diagnosisPointer: '1',
+      charges: '$1,000.00',
+      daysOrUnits: '20 days',
+      familyPlanIndicator: '',
+    });
+  });
+
+  test('handles missing optional fields', () => {
+    const item: ClaimItem = {
+      sequence: 1,
+      servicedDate: '2024-04-14',
+      productOrService: {
+        text: 'Basic exam',
+      },
+    };
+
+    const result = getClaimItemInfo(item);
+
+    expect(result).toEqual({
+      dateOfService: '4/14/2024',
+      placeOfService: '',
+      placeOfServiceState: '',
+      emergency: false,
+      procedureCode: 'Basic exam',
+      modifiers: '',
+      diagnosisPointer: '',
+      charges: '',
+      daysOrUnits: '',
+      familyPlanIndicator: '',
+    });
+  });
+
+  test('handles family planning indicator', () => {
+    const item: ClaimItem = {
+      sequence: 1,
+      servicedDate: '2024-04-14',
+      productOrService: {
+        text: 'Family planning',
+      },
+      programCode: [
+        {
+          coding: [
+            {
+              code: 'fp',
+            },
+          ],
+          text: 'Family Planning',
+        },
+      ],
+    };
+
+    const result = getClaimItemInfo(item);
+
+    expect(result).toEqual({
+      dateOfService: '4/14/2024',
+      placeOfService: '',
+      placeOfServiceState: '',
+      emergency: false,
+      procedureCode: 'Family planning',
+      modifiers: '',
+      diagnosisPointer: '',
+      charges: '',
+      daysOrUnits: '',
+      familyPlanIndicator: 'Family Planning',
+    });
+  });
+});
+
+describe('getInsurerInfo', () => {
+  test('returns complete Organization info when all fields are present', () => {
+    const organization = fullAnswer.entry?.[4]?.resource as Organization;
+
+    const result = getInsurerInfo(organization);
+
+    expect(result).toEqual({
+      fedTaxNumber: '5551844680',
+      fedTaxType: 'http://example-systemt.org/tax',
+      serviceLocation: '1901 Market Street, Philadelphia, PA, 19103',
+      serviceNPI: '7911621876',
+      serviceName: 'Independence Blue Cross Blue Shield',
+    });
+  });
+
+  test('handles Organization with missing optional fields', () => {
+    const organization: Organization = {
+      resourceType: 'Organization',
+      name: 'Test Insurance Co',
+    };
+
+    const result = getInsurerInfo(organization);
+
+    expect(result).toEqual({
+      serviceNPI: '',
+      serviceName: 'Test Insurance Co',
+      serviceLocation: '',
+      fedTaxNumber: '',
+      fedTaxType: '',
+    });
+  });
+
+  test('handles Organization with multiple identifiers but no matching types', () => {
+    const organization: Organization = {
+      resourceType: 'Organization',
+      name: 'Test Insurance Co',
+      identifier: [
+        {
+          type: {
+            coding: [
+              {
+                code: 'OTHER',
+              },
+            ],
+          },
+          value: 'OTHER-ID',
+        },
+      ],
+    };
+
+    const result = getInsurerInfo(organization);
+
+    expect(result).toEqual({
+      serviceNPI: '',
+      serviceName: 'Test Insurance Co',
+      serviceLocation: '',
+      fedTaxNumber: '',
+      fedTaxType: '',
+    });
+  });
+
+  test('returns empty fields for Patient resource', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      name: [
+        {
+          given: ['John'],
+          family: 'Doe',
+        },
+      ],
+    };
+
+    const result = getInsurerInfo(patient);
+
+    expect(result).toEqual({
+      serviceNPI: '',
+      serviceName: '',
+      serviceLocation: '',
+      fedTaxNumber: '',
+      fedTaxType: '',
+    });
+  });
+
+  test('returns empty fields for RelatedPerson resource', () => {
+    const relatedPerson: RelatedPerson = {
+      resourceType: 'RelatedPerson',
+      name: [
+        {
+          given: ['Jane'],
+          family: 'Doe',
+        },
+      ],
+      patient: { reference: 'Patient/123' },
+    };
+
+    const result = getInsurerInfo(relatedPerson);
+
+    expect(result).toEqual({
+      serviceNPI: '',
+      serviceName: '',
+      serviceLocation: '',
+      fedTaxNumber: '',
+      fedTaxType: '',
+    });
+  });
+});
+
+describe('getProviderInfo', () => {
+  test('returns complete practitioner info', () => {
+    const practitioner = fullAnswer.entry?.[3]?.resource as Practitioner;
+
+    const result = getProviderInfo(practitioner);
+
+    expect(result).toEqual({
+      billingLocation: '2904 Main Street, Elizabeth, MD, 21219',
+      billingName: 'Smith, Kevin',
+      billingPhoneNumber: '555-555-9391',
+      providerNpi: '2490433892',
+    });
+  });
+
+  test('returns complete organization info', () => {
+    const organization = fullAnswer.entry?.[4]?.resource as Organization;
+
+    const result = getProviderInfo(organization);
+
+    expect(result).toEqual({
+      billingLocation: '1901 Market Street, Philadelphia, PA, 19103',
+      billingName: 'Independence Blue Cross Blue Shield',
+      billingPhoneNumber: '555-555-4321',
+      providerNpi: '7911621876',
+    });
+  });
+
+  test('returns empty fields for PractitionerRole', () => {
+    const practitionerRole: PractitionerRole = {
+      resourceType: 'PractitionerRole',
+      practitioner: {
+        reference: 'Practitioner/123',
+      },
+      organization: {
+        reference: 'Organization/456',
+      },
+    };
+
+    const result = getProviderInfo(practitionerRole);
+
+    expect(result).toEqual({
+      billingName: '',
+      billingLocation: '',
+      billingPhoneNumber: '',
+      providerNpi: '',
+    });
+  });
+
+  test('handles practitioner with missing optional fields', () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      name: [
+        {
+          family: 'Smith',
+        },
+      ],
+    };
+
+    const result = getProviderInfo(practitioner);
+
+    expect(result).toEqual({
+      billingName: 'Smith',
+      billingLocation: '',
+      billingPhoneNumber: '',
+      providerNpi: '',
+    });
+  });
+
+  test('handles organization with missing optional fields', () => {
+    const organization: Organization = {
+      resourceType: 'Organization',
+      name: 'Medical Group',
+    };
+
+    const result = getProviderInfo(organization);
+
+    expect(result).toEqual({
+      billingName: 'Medical Group',
+      billingLocation: '',
+      billingPhoneNumber: '',
+      providerNpi: '',
+    });
+  });
+
+  test('handles multiple phone numbers and selects the correct one', () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      name: [
+        {
+          family: 'Smith',
+        },
+      ],
+      telecom: [
+        {
+          system: 'email',
+          value: 'smith@example.com',
+        },
+        {
+          system: 'phone',
+          value: '555-123-4567',
+        },
+        {
+          system: 'fax',
+          value: '555-999-8888',
+        },
+      ],
+    };
+
+    const result = getProviderInfo(practitioner);
+
+    expect(result.billingPhoneNumber).toBe('555-123-4567');
+  });
+
+  test('handles empty arrays', () => {
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      name: [],
+      address: [],
+      telecom: [],
+      identifier: [],
+    };
+
+    const result = getProviderInfo(practitioner);
+
+    expect(result).toEqual({
+      billingName: '',
+      billingLocation: '',
+      billingPhoneNumber: '',
+      providerNpi: '',
     });
   });
 });
