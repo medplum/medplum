@@ -72,12 +72,7 @@ export class HumanNameTable extends LookupTable {
     }
 
     const resourceType = resources[0].resourceType;
-    if (
-      resourceType !== 'Patient' &&
-      resourceType !== 'Person' &&
-      resourceType !== 'Practitioner' &&
-      resourceType !== 'RelatedPerson'
-    ) {
+    if (!HumanNameTable.hasHumanName(resourceType)) {
       return;
     }
 
