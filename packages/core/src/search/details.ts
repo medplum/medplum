@@ -254,6 +254,14 @@ export function getExpressionsForResourceType(resourceType: string, expression: 
   return result;
 }
 
+export function getExpressionForResourceType(resourceType: string, expression: string): string | undefined {
+  const atoms = getExpressionsForResourceType(resourceType, expression);
+  if (atoms.length === 0) {
+    return undefined;
+  }
+  return atoms.map((atom) => atom.toString()).join(' | ');
+}
+
 export function getParsedExpressionForResourceType(resourceType: string, expression: string): FhirPathAtom {
   const atoms: Atom[] = [];
   const fhirPathExpression = parseFhirPath(expression);
