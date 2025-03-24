@@ -263,8 +263,6 @@ export async function addSubscriptionJobs(
         continue;
       }
       if (subscription.channel.type === 'websocket') {
-        // We use the resource with rewritten attachments here since we want subscribers to get the resource with the same attachment URLs
-        // They would get if they did a search
         wsEvents.push([resource, subscription.id, { includeResource: true }]);
         continue;
       }

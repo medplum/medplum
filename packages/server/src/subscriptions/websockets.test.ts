@@ -818,8 +818,8 @@ describe('WebSocket Subscription', () => {
 
 describe('Subscription Heartbeat', () => {
   let app: Express;
-  let config: any;
-  let server: any;
+  let config: MedplumServerConfig;
+  let server: Server;
   let project: WithId<Project>;
   let repo: Repository;
   let accessToken: string;
