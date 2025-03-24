@@ -500,6 +500,10 @@ export function formatSearchQuery(definition: SearchRequest): string {
     params.push('_total=' + definition.total);
   }
 
+  if (definition.types && definition.types.length > 0) {
+    params.push('_type=' + definition.types.join(','));
+  }
+
   if (definition.include) {
     definition.include.forEach((target) => params.push(formatIncludeTarget('_include', target)));
   }

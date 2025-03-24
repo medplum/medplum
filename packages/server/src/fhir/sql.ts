@@ -448,7 +448,7 @@ export class SqlBuilder {
       }
 
       return { rowCount: result.rowCount ?? 0, rows: result.rows };
-    } catch (err: any) {
+    } catch (err) {
       throw normalizeDatabaseError(err);
     }
   }
@@ -466,21 +466,21 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
     case '23505': // unique_violation
       // Duplicate key error -> 409 Conflict
       // @see https://github.com/brianc/node-postgres/issues/1602
-      return new OperationOutcomeError(conflict(err.detail));
+      return new OperationOutcomeError(conflict(err.detail), err);
     case '40001': // serialization_failure
       // Transaction rollback due to serialization error -> 409 Conflict
-      return new OperationOutcomeError(conflict(err.message, err.code));
+      return new OperationOutcomeError(conflict(err.message, err.code), err);
     case '57014': // query_canceled
       // Statement timeout -> 504 Gateway Timeout
       getLogger().warn('Database statement timeout', { error: err.message, stack: err.stack, code: err.code });
-      return new OperationOutcomeError(serverTimeout(err.message));
+      return new OperationOutcomeError(serverTimeout(err.message), err);
     case '25P02': // in_failed_sql_transaction
       getLogger().warn('Statement in failed transaction', { stack: err.stack });
-      return new OperationOutcomeError(normalizeOperationOutcome(err));
+      return new OperationOutcomeError(normalizeOperationOutcome(err), err);
   }
 
   getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
-  return new OperationOutcomeError(normalizeOperationOutcome(err));
+  return new OperationOutcomeError(normalizeOperationOutcome(err), err);
 }
 
 export abstract class BaseQuery {
