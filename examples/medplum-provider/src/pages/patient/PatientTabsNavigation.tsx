@@ -10,18 +10,17 @@ export function PatientTabsNavigation({ currentTab, onTabChange }: PatientTabsNa
   return (
     <Paper style={{ width: '100%' }}>
       <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
-        <Tabs.List style={{ 
-          display: 'flex', 
-          width: '100%', 
-          overflowX: 'auto', 
-          overflowY: 'hidden',
-          flexWrap: 'nowrap'
-        }}>
+        <Tabs.List
+          style={{
+            display: 'flex',
+            width: '100%',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            flexWrap: 'nowrap',
+          }}
+        >
           {PatientPageTabs.map((t) => (
-            <Tabs.Tab
-              key={t.id}
-              value={t.id}
-            >
+            <Tabs.Tab key={t.id} value={t.id}>
               {t.label}
             </Tabs.Tab>
           ))}

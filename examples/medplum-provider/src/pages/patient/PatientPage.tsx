@@ -94,8 +94,8 @@ export function PatientPage(): JSX.Element {
       </div>
 
       <ScrollArea className={classes.content}>
-          <PatientTabsNavigation currentTab={currentTab} onTabChange={onTabChange} />
-          <Outlet />
+        <PatientTabsNavigation currentTab={currentTab} onTabChange={onTabChange} />
+        <Outlet />
       </ScrollArea>
     </div>
   );
