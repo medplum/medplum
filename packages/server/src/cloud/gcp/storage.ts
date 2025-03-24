@@ -1,8 +1,8 @@
 import { Storage } from '@google-cloud/storage';
-import { Readable } from 'stream';
-import { IncomingMessage } from 'http';
-import { BinarySource, BinaryStorage, checkFileMetadata } from '../../fhir/storage';
 import { Binary } from '@medplum/fhirtypes';
+import { IncomingMessage } from 'http';
+import { Readable } from 'stream';
+import { BinarySource, BinaryStorage, checkFileMetadata } from '../../fhir/storage';
 
 export class GCPBlobStorage implements BinaryStorage {
   private readonly storage: Storage;
@@ -28,9 +28,10 @@ export class GCPBlobStorage implements BinaryStorage {
     return new Promise((resolve, reject) => {
       const writeStream = file.createWriteStream({
         metadata: { contentType: contentType ?? 'application/octet-stream' },
-        resumable: false
+        resumable: false,
       });
-      (stream as IncomingMessage).pipe(writeStream)
+      (stream as IncomingMessage)
+        .pipe(writeStream)
         .on('finish', () => resolve())
         .on('error', (err: any) => reject(err));
     });

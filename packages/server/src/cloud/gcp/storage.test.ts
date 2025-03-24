@@ -12,7 +12,7 @@ describe('Integration Tests for GCPBlobStorage', () => {
     contentType: 'text/plain', // Added contentType
   };
 
-  it('should write and then read a binary file', async () => {
+  test('should write and then read a binary file', async () => {
     const content = 'Hello, world!';
     const contentStream = new PassThrough();
     contentStream.end(content);
@@ -27,7 +27,7 @@ describe('Integration Tests for GCPBlobStorage', () => {
     expect(data).toEqual(content);
   });
 
-  it('should generate a valid signed URL', async () => {
+  test('should generate a valid signed URL', async () => {
     const url = await storage.getPresignedUrl(testBinary);
     expect(url).toContain('https://');
   });
