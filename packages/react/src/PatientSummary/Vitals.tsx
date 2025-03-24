@@ -176,7 +176,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
           + Add
         </Anchor>
       </Group>
-      <Grid>
+      <Grid align="center">
         {LOINC_CODES.map((meta) => {
           const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
           return (
@@ -188,17 +188,15 @@ export function Vitals(props: VitalsProps): JSX.Element {
                   </Text>
                 </Tooltip>
               </Grid.Col>
-              <Grid.Col span={4}>
-                <Text size="xs">
-                  {obs && (
-                    <ConceptBadge<Observation>
-                      key={meta.name}
-                      resource={obs}
-                      display={formatQuantity(getObservationValue(obs, meta.component))}
-                      onClick={props.onClickResource}
-                    />
-                  )}
-                </Text>
+              <Grid.Col span={4} p={1}>
+                {obs && (
+                  <ConceptBadge<Observation>
+                    key={meta.name}
+                    resource={obs}
+                    display={formatQuantity(getObservationValue(obs, meta.component))}
+                    onClick={props.onClickResource}
+                  />
+                )}
               </Grid.Col>
             </Fragment>
           );

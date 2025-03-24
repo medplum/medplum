@@ -50,7 +50,7 @@
   "devDependencies": {
     "@medplum/core": "4.0.4",
     "@types/base-64": "1.0.2",
-    "@types/react": "18.3.19",
+    "@types/react": "18.3.20",
     "@types/text-encoding": "0.0.40",
     "babel-preset-expo": "12.0.9",
     "esbuild": "0.25.1",
@@ -62,7 +62,7 @@
     "jest-expo": "52.0.6",
     "jest-websocket-mock": "2.5.0",
     "react-native": "0.75.4",
-    "ts-jest": "29.2.6"
+    "ts-jest": "29.3.0"
   },
   "peerDependencies": {
     "@medplum/core": "4.0.4",
