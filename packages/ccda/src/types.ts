@@ -160,7 +160,7 @@ export interface CcdaAct {
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code: CcdaCode;
-  statusCode: CcdaCode;
+  statusCode?: CcdaCode;
   effectiveTime?: CcdaEffectiveTime[];
   entryRelationship?: CcdaEntryRelationship[];
   author?: CcdaAuthor[];
@@ -180,12 +180,19 @@ export interface CcdaAssignedAuthor {
   assignedPerson?: CcdaAssignedPerson;
   addr: CcdaAddr[];
   telecom: CcdaTelecom[];
+  assignedAuthoringDevice?: CcdaAssignedAuthoringDevice;
   representedOrganization?: CcdaRepresentedOrganization;
 }
 
 export interface CcdaAssignedPerson {
   id?: CcdaId[];
   name?: CcdaName[];
+}
+
+export interface CcdaAssignedAuthoringDevice {
+  id?: CcdaId[];
+  manufacturerModelName?: string;
+  softwareName?: string;
 }
 
 export interface CcdaObservation {

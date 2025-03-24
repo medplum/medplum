@@ -54,7 +54,7 @@ describe('PatientExportForm', () => {
   test('Submit', async () => {
     // Mock the patient everything endpoint
     const medplum = new MockClient();
-    medplum.router.add('GET', '/Patient/:id/$everything', async () => [
+    medplum.router.add('POST', '/Patient/:id/$everything', async () => [
       allOk,
       { resourceType: 'Bundle', type: 'document' },
     ]);
@@ -78,7 +78,7 @@ describe('PatientExportForm', () => {
   test('Submit with start and end', async () => {
     // Mock the patient everything endpoint
     const medplum = new MockClient();
-    medplum.router.add('GET', '/Patient/:id/$everything', async () => [
+    medplum.router.add('POST', '/Patient/:id/$everything', async () => [
       allOk,
       { resourceType: 'Bundle', type: 'document' },
     ]);

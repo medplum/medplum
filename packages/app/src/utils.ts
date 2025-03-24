@@ -1,4 +1,4 @@
-import { ContentType, MedplumClient, resolveId } from '@medplum/core';
+import { MedplumClient, resolveId } from '@medplum/core';
 import { Patient, Reference, Resource, Specimen } from '@medplum/fhirtypes';
 
 /**
@@ -46,28 +46,6 @@ export function getSpecimen(resource: Resource): Specimen | Reference<Specimen> 
  */
 export function getProjectId(medplum: MedplumClient): string {
   return resolveId(medplum.getActiveLogin()?.project) as string;
-}
-
-/**
- * Creates a Blob object from the JSON object given and downloads the object.
- * @param jsonString - The JSON string.
- * @param fileName - Optional file name. Default is based on current timestamp.
- */
-export function exportJsonFile(jsonString: string, fileName?: string): void {
-  const blobForExport = new Blob([jsonString], { type: ContentType.JSON });
-  const url = URL.createObjectURL(blobForExport);
-
-  const link = document.createElement('a');
-  link.href = url;
-
-  const linkName = fileName ?? new Date().toISOString().replace(/\D/g, '');
-  link.download = `${linkName}.json`;
-
-  document.body.appendChild(link);
-  link.click();
-
-  // Clean up the URL object
-  URL.revokeObjectURL(url);
 }
 
 /**

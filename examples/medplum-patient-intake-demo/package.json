@@ -1,6 +1,6 @@
 {
   "name": "medplum-patient-intake-demo",
-  "version": "4.0.3",
+  "version": "4.0.4",
   "private": true,
   "type": "module",
   "scripts": {
@@ -28,16 +28,16 @@
     "@mantine/core": "7.17.2",
     "@mantine/hooks": "7.17.2",
     "@mantine/notifications": "7.17.2",
-    "@medplum/bot-layer": "4.0.3",
-    "@medplum/core": "4.0.3",
-    "@medplum/definitions": "4.0.3",
-    "@medplum/eslint-config": "4.0.3",
-    "@medplum/fhirtypes": "4.0.3",
-    "@medplum/mock": "4.0.3",
-    "@medplum/react": "4.0.3",
+    "@medplum/bot-layer": "4.0.4",
+    "@medplum/core": "4.0.4",
+    "@medplum/definitions": "4.0.4",
+    "@medplum/eslint-config": "4.0.4",
+    "@medplum/fhirtypes": "4.0.4",
+    "@medplum/mock": "4.0.4",
+    "@medplum/react": "4.0.4",
     "@tabler/icons-react": "3.17.0",
-    "@types/node": "20.17.24",
-    "@types/react": "18.3.18",
+    "@types/node": "20.17.25",
+    "@types/react": "18.3.19",
     "@types/react-dom": "18.3.5",
     "@vitejs/plugin-react": "4.3.4",
     "chart.js": "4.4.8",
@@ -47,11 +47,11 @@
     "react": "18.2.0",
     "react-chartjs-2": "5.3.0",
     "react-dom": "18.2.0",
-    "react-router": "7.3.0",
+    "react-router": "7.4.0",
     "rimraf": "6.0.1",
     "ts-node": "10.9.2",
     "typescript": "5.8.2",
     "vite": "6.2.2",
-    "vitest": "3.0.8"
+    "vitest": "3.0.9"
   }
 }

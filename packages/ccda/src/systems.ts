@@ -1,6 +1,7 @@
 import { CPT, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, NDC, RXNORM, SNOMED } from '@medplum/core';
 import { CodeableConcept, Coding, Immunization, MedicationRequest } from '@medplum/fhirtypes';
 import {
+  OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_ASSESSMENT_SCALE_OBSERVATION,
   OID_ASSESSMENT_SCALE_SUPPORTING_OBSERVATION,
   OID_AVERAGE_BLOOD_PRESSURE_ORGANIZER,
@@ -172,6 +173,7 @@ export const HTTP = 'http:';
  * FHIR Code Systems
  */
 
+export const ADMINISTRATIVE_GENDER_CODE_SYSTEM = `${HTTP_HL7_ORG}/fhir/administrative-gender`;
 export const CLINICAL_CONDITION_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/condition-clinical`;
 export const CONDITION_VERIFICATION_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/condition-verification`;
 export const LANGUAGE_MODE_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-LanguageAbilityMode`;
@@ -264,6 +266,7 @@ export const LOINC_CONDITION = '75323-6';
 export const LOINC_OVERALL_GOAL = '58144-7';
 export const LOINC_TOBACCO_SMOKING_STATUS = '72166-2';
 export const LOINC_HISTORY_OF_TOBACCO_USE = '11367-0';
+export const LOINC_ADMINISTRATIVE_SEX = '46098-0';
 export const LOINC_BIRTH_SEX = '76689-9';
 
 export const SYSTEM_MAPPER = new EnumMapper<string, string>('System', '', '', [
@@ -327,6 +330,11 @@ export const SYSTEM_MAPPER = new EnumMapper<string, string>('System', '', '', [
     ccdaValue: OID_CONFIDENTIALITY_VALUE_SET,
     fhirValue: 'Confidentiality',
     displayName: 'Confidentiality',
+  },
+  {
+    ccdaValue: OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
+    fhirValue: ADMINISTRATIVE_GENDER_CODE_SYSTEM,
+    displayName: 'Administrative Sex',
   },
 
   // Alternate FHIR System:

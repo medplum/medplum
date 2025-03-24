@@ -18,6 +18,7 @@ import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
+import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -49,7 +50,6 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 
 export const fhirRouter = Router();
 
@@ -257,6 +257,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
+  router.add('POST', '/Patient/:id/$everything', patientEverythingHandler);
 
   // Patient $summary operation
   router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);
@@ -267,6 +268,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Patient $ccda-export operation
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
+  router.add('POST', '/Patient/:id/$ccda-export', ccdaExportHandler);
 
   // $expunge operation
   router.add('POST', '/:resourceType/:id/$expunge', expungeHandler);

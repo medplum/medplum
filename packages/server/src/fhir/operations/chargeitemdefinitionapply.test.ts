@@ -3,8 +3,8 @@ import { ChargeItem } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { initTestAuth } from '../../test.setup';
 import { loadTestConfig } from '../../config/loader';
+import { initTestAuth } from '../../test.setup';
 
 const app = express();
 let accessToken: string;
@@ -131,8 +131,6 @@ describe('ChargeItemDefinition Apply', () => {
           },
         ],
       });
-
-    console.log(JSON.stringify(applyResult.body, null, 2));
 
     // 6. Verify the result
     expect(applyResult.status).toBe(200);

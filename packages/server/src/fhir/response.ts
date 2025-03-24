@@ -1,11 +1,11 @@
 import { ContentType, concatUrls, getStatus, isCreated } from '@medplum/core';
+import { FhirResponseOptions } from '@medplum/fhir-router';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { getBinaryStorage } from './storage';
-import { FhirResponseOptions } from '@medplum/fhir-router';
 
 export function isFhirJsonContentType(req: Request): boolean {
   return !!(req.is(ContentType.JSON) || req.is(ContentType.FHIR_JSON));
@@ -38,7 +38,10 @@ export async function sendFhirResponse(
 ): Promise<void> {
   sendResponseHeaders(req, res, outcome, body);
 
-  if (body.resourceType === 'Binary' && req.method === 'GET' && !req.get('Accept')?.startsWith(ContentType.FHIR_JSON)) {
+  if (
+    body.resourceType === 'Binary' &&
+    ((req.method === 'GET' && !req.get('Accept')?.startsWith(ContentType.FHIR_JSON)) || options?.forceRawBinaryResponse)
+  ) {
     // When the read request has some other type in the Accept header,
     // then the content should be returned with the content type stated in the resource in the Content-Type header.
     // E.g. if the content type in the resource is "application/pdf", then the content should be returned as a PDF directly.
