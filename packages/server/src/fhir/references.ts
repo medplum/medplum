@@ -1,5 +1,6 @@
 import {
   badRequest,
+  crawlTypedValue,
   crawlTypedValueAsync,
   createReference,
   createStructureIssue,
@@ -60,10 +61,10 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
   const references: Record<string, Reference> = Object.create(null);
   const systemReferences: Record<string, Reference> = Object.create(null);
 
-  await crawlTypedValueAsync(
+  crawlTypedValue(
     toTypedValue(resource),
     {
-      async visitPropertyAsync(parent, _key, path, propertyValue, _schema) {
+      async visitProperty(parent, _key, path, propertyValue, _schema) {
         if (!isCheckableReference(propertyValue) || parent.type === PropertyType.Meta) {
           return;
         }
