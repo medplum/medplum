@@ -1484,7 +1484,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    const values = evalFhirPath(searchParam.expression as string, resource);
+    const values = evalFhirPath(impl.parsedExpression, resource);
     let columnValue = null;
 
     if (values.length > 0) {

@@ -333,7 +333,8 @@ function getTokens(resource: Resource): Token[] {
  * @param searchParam - The search parameter.
  */
 function buildTokensForSearchParameter(result: Token[], resource: Resource, searchParam: SearchParameter): void {
-  const typedValues = evalFhirPathTyped(searchParam.expression as string, [toTypedValue(resource)]);
+  const details = getSearchParameterDetails(resource.resourceType, searchParam);
+  const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
   for (const typedValue of typedValues) {
     buildTokens(result, searchParam, resource, typedValue);
   }

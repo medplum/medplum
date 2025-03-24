@@ -4,6 +4,7 @@ import {
   AsAtom,
   BooleanInfixOperatorAtom,
   DotAtom,
+  FhirPathAtom,
   FunctionAtom,
   IndexerAtom,
   IsAtom,
@@ -31,6 +32,7 @@ export type SearchParameterType = (typeof SearchParameterType)[keyof typeof Sear
 export interface SearchParameterDetails {
   readonly type: SearchParameterType;
   readonly elementDefinitions?: InternalSchemaElement[];
+  readonly parsedExpression: FhirPathAtom;
   readonly array?: boolean;
 }
 
@@ -121,6 +123,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
   const result: SearchParameterDetails = {
     type: getSearchParameterType(searchParam, builder.propertyTypes),
     elementDefinitions: builder.elementDefinitions,
+    parsedExpression: getParsedExpressionForResourceType(resourceType, searchParam.expression as string),
     array: builder.array,
   };
   setSearchParameterDetails(resourceType, code, result);
@@ -251,12 +254,20 @@ export function getExpressionsForResourceType(resourceType: string, expression: 
   return result;
 }
 
-export function getExpressionForResourceType(resourceType: string, expression: string): string | undefined {
-  const atoms = getExpressionsForResourceType(resourceType, expression);
+export function getParsedExpressionForResourceType(resourceType: string, expression: string): FhirPathAtom {
+  const atoms: Atom[] = [];
+  const fhirPathExpression = parseFhirPath(expression);
+  buildExpressionsForResourceType(resourceType, fhirPathExpression.child, atoms);
+
   if (atoms.length === 0) {
-    return undefined;
+    return fhirPathExpression;
   }
-  return atoms.map((atom) => atom.toString()).join(' | ');
+
+  let result: Atom = atoms[0];
+  for (let i = 1; i < atoms.length; i++) {
+    result = new UnionAtom(result, atoms[i]);
+  }
+  return new FhirPathAtom('<original-not-available>', result);
 }
 
 function buildExpressionsForResourceType(resourceType: string, atom: Atom, result: Atom[]): void {

@@ -233,11 +233,11 @@ export function parseFhirPath(input: string): FhirPathAtom {
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param expression - The FHIRPath expression to parse.
+ * @param expression - The FHIRPath expression to evaluate.
  * @param input - The resource or object to evaluate the expression against.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
-export function evalFhirPath(expression: string, input: unknown): unknown[] {
+export function evalFhirPath(expression: string | FhirPathAtom, input: unknown): unknown[] {
   // eval requires a TypedValue array
   // As a convenience, we can accept array or non-array, and TypedValue or unknown value
   const array = Array.isArray(input) ? input : [input];
@@ -252,17 +252,17 @@ export function evalFhirPath(expression: string, input: unknown): unknown[] {
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param expression - The FHIRPath expression to parse.
+ * @param expression - The FHIRPath expression to evaluate.
  * @param input - The resource or object to evaluate the expression against.
  * @param variables - A map of variables for eval input.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPathTyped(
-  expression: string,
+  expression: string | FhirPathAtom,
   input: TypedValue[],
   variables: Record<string, TypedValue> = {}
 ): TypedValue[] {
-  const ast = parseFhirPath(expression);
+  const ast = typeof expression === 'string' ? parseFhirPath(expression) : expression;
   return ast.eval({ variables }, input).map((v) => ({
     type: v.type,
     value: v.value?.valueOf(),
