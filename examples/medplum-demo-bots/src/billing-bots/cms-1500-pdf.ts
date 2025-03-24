@@ -704,7 +704,7 @@ export function getSexContent(
   ];
 }
 
-export function getPhoneContent(phone: string, xAxisOffset: number = 123): Content[] {
+export function getPhoneContent(phone: string, xAxisOffset: number = 123, yAxisOffset: number = 204): Content[] {
   if (!phone) {
     return [];
   }
@@ -726,7 +726,7 @@ export function getPhoneContent(phone: string, xAxisOffset: number = 123): Conte
       text: areaCode,
       absolutePosition: {
         x: xAxisOffset,
-        y: 204,
+        y: yAxisOffset,
       },
       fontSize: 9,
     },
@@ -734,7 +734,7 @@ export function getPhoneContent(phone: string, xAxisOffset: number = 123): Conte
       text: `${middle}-${last}`,
       absolutePosition: {
         x: xAxisOffset + 27,
-        y: 204,
+        y: yAxisOffset,
       },
       fontSize: 9,
     },
@@ -954,7 +954,7 @@ export function getInsurerContent(insurer: Organization | Patient | RelatedPerso
     {
       text: 'X',
       absolutePosition: {
-        x: 150,
+        x: 152,
         y: 684,
       },
       fontSize: 9,
@@ -990,7 +990,7 @@ export function getProviderContent(provider: Practitioner | Organization | Pract
   const { billingName, billingLocation, billingPhoneNumber, providerNpi } = getProviderInfo(provider);
 
   return [
-    ...getPhoneContent(billingPhoneNumber, 488),
+    ...getPhoneContent(billingPhoneNumber, 489, 698),
     {
       text: billingName,
       absolutePosition: {

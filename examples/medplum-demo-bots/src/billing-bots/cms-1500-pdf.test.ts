@@ -845,11 +845,11 @@ describe('getPhoneContent', () => {
     ]);
   });
 
-  test('uses custom xAxisOffset', () => {
-    const result = getPhoneContent('5553253333', 100);
+  test('uses custom xAxisOffset and yAxisOffset', () => {
+    const result = getPhoneContent('5553253333', 100, 230);
     expect(result).toStrictEqual([
-      { text: '555', absolutePosition: { x: 100, y: 204 }, fontSize: expectedFontSize },
-      { text: '325-3333', absolutePosition: { x: 127, y: 204 }, fontSize: expectedFontSize },
+      { text: '555', absolutePosition: { x: 100, y: 230 }, fontSize: expectedFontSize },
+      { text: '325-3333', absolutePosition: { x: 127, y: 230 }, fontSize: expectedFontSize },
     ]);
   });
 });
