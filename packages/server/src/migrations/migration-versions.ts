@@ -5,13 +5,13 @@ export const MigrationVersion = {
   /**
    * MigrationVersion.FIRST_BOOT
    *
-   * When first running server, the post-deploy version (i.e. "DatabaseMigration"."dataVersion")
-   * is initialized to MigrationVersion.FIRST_BOOT to facilitate
+   * When first running server, "DatabaseMigration"."firstBoot" is initialized to true. The value
+   * is used in `getPostDeployVersion` to potentially mask the actual post-deploy version to facilitate
    * more graceful handling of interruptions to the process of running post-deploy migrations
-   * and the fatal version checks that can potentially halt the server if the first boot
-   * doesn't make it to the steadystate of having run all post-deploy migrations.
+   * and the fatal version checks that can potentially halt the server if startup process
+   * doesn't make it to the steady-state of having run all pre-deploy and post-deploy migrations.
    *
-   * While dataVersion is FIRST_BOOT, there are a couple differences in behavior:
+   * While "firstBoot" is true, there are a couple differences in behavior:
    *
    * 1. The `requiredVersion` checks from the post-deploy manifest file are skipped. This is
    *    because the server (specifically in dev mode) is sensitive to restarts while still in the
@@ -20,11 +20,10 @@ export const MigrationVersion = {
    *    post-deploy migration. Normally that causes server to refuse to start up, but not so in
    *    FIRST_BOOT mode.
    *
-   * 2. The "DatabaseMigration"."dataVersion" column is not updated as each post-deploy
-   *    migration is run until the last/latest post-deploy migration completes successfully.
-   *    This is what keeps the server in FIRST_BOOT mode until all post-deploy
-   *    migrations have completed successfully. See {@link markPostDeployMigrationCompleted}
-   *    for more details.
+   * The "firstBoot" column is not updated to `false` until every post-deploy migration
+   * completes successfully. Once the value is `false`, it is never set back to `true`.
+   * See {@link markPostDeployMigrationCompleted} for more details.
+   *
    */
   FIRST_BOOT: -2,
   UNKNOWN: -1,
