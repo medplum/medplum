@@ -19,7 +19,14 @@ export interface PatientExportFormProps {
 const NOTIFICATION_ID = 'patient-export';
 const NOTIFICATION_TITLE = 'Patient Export';
 
-const formats = {
+interface FormatDefinition {
+  operation: string;
+  type?: string;
+  extension: string;
+  contentType: string;
+}
+
+const formats: Record<string, FormatDefinition> = {
   everything: {
     operation: '$everything',
     extension: 'json',
@@ -35,6 +42,12 @@ const formats = {
     extension: 'xml',
     contentType: ContentType.CDA_XML,
   },
+  ccdaReferral: {
+    operation: '$ccda-export',
+    type: 'referral',
+    extension: 'xml',
+    contentType: ContentType.CDA_XML,
+  },
 };
 
 export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
@@ -45,9 +58,13 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
     async (data: Record<string, string>) => {
       const patientId = resolveId(patient) as string;
       const format = data.format as keyof typeof formats;
-      const { operation, contentType, extension } = formats[format];
+      const { operation, type, contentType, extension } = formats[format];
       const url = medplum.fhirUrl('Patient', patientId, operation);
       const params = {} as Record<string, unknown>;
+
+      if (type) {
+        params.type = type;
+      }
 
       if (data.author) {
         params.author = { reference: data.author };
@@ -120,6 +137,7 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
               { label: 'FHIR Everything', value: 'everything' },
               { label: 'Patient Summary', value: 'summary' },
               { label: 'C-CDA', value: 'ccda' },
+              { label: 'C-CDA Referral', value: 'ccdaReferral' },
             ]}
             fullWidth
           />
