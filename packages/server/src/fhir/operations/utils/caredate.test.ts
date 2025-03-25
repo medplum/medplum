@@ -17,7 +17,7 @@ describe('Care Date Utils', () => {
       { resourceType: 'AllergyIntolerance', patient, recordedDate: dateTime },
       { resourceType: 'CarePlan', subject, status, intent, created: dateTime },
       { resourceType: 'ClinicalImpression', status, subject, date: dateTime },
-      { resourceType: 'Condition', subject, onsetDateTime: dateTime },
+      { resourceType: 'Condition', subject, recordedDate: dateTime },
       { resourceType: 'DeviceUseStatement', status, subject, device, recordedOn: dateTime },
       { resourceType: 'DiagnosticReport', status: 'final', code, issued: dateTime },
       { resourceType: 'Encounter', class: code, status: 'finished', period: { start: dateTime } },

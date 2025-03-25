@@ -8,7 +8,7 @@ const careDateExpressions: Record<string, string> = {
   AllergyIntolerance: 'recordedDate',
   CarePlan: 'created',
   ClinicalImpression: 'date',
-  Condition: 'onsetDateTime',
+  Condition: 'recordedDate',
   DeviceUseStatement: 'recordedOn',
   DiagnosticReport: 'issued',
   Encounter: 'period.start',
