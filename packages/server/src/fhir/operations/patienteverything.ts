@@ -23,6 +23,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
+import { filterByCareDate } from './utils/caredate';
 import { parseInputParameters } from './utils/parameters';
 
 const operation = getOperationDefinition('Patient', 'everything');
@@ -88,14 +89,6 @@ export async function getPatientEverything(
     },
   ];
 
-  if (params?.start) {
-    filters.push({ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: params.start });
-  }
-
-  if (params?.end) {
-    filters.push({ code: '_lastUpdated', operator: Operator.LESS_THAN_OR_EQUALS, value: params.end });
-  }
-
   if (params?._since) {
     filters.push({ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: params._since });
   }
@@ -108,6 +101,9 @@ export async function getPatientEverything(
     count: params?._count ?? defaultMaxResults,
     offset: params?._offset,
   });
+
+  // Filter by requested date range
+  filterByCareDate(bundle, params?.start, params?.end);
 
   // Recursively resolve references
   await addResolvedReferences(repo, bundle.entry);
