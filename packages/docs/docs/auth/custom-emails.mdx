@@ -84,6 +84,12 @@ If you are new to Medplum Bots, you may want to read the [Bots](/docs/bots) docu
 
 This Bot will use `ProjectMembership` and `UserSecurityRequest` resources, so the Bot must be a "Project Admin" to access these resources.
 
+:::note
+
+You will also need the `email` project feature flag turned on to allow Bots to send emails. See [project feature flags](/docsdocs/self-hosting/project-settings#project-feature-flags).
+
+:::
+
 Here is a full example of a Bot that sends a custom email message:
 
 <MedplumCodeBlock language="ts" selectBlocks="customEmails" showLineNumbers>
