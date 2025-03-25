@@ -89,6 +89,12 @@
       "id": "",
       "source": "./src/slack-bots/demo-slack-bot.ts",
       "dist": "./dist/slack-bots/demo-slack-bot.js"
+    },
+    {
+      "name": "cms-1500-pdf",
+      "id": "",
+      "source": "src/billing-bots/cms-1500-pdf.ts",
+      "dist": "dist/billing-bots/cms-1500-pdf.js"
     }
   ]
 }
