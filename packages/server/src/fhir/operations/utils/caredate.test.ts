@@ -36,15 +36,15 @@ describe('Care Date Utils', () => {
     } satisfies Bundle<WithId<Resource>>;
 
     const bundle1 = deepClone(bundle);
-    filterByCareDate(bundle1, '2010-01-01', '2015-06-22');
+    filterByCareDate(bundle1, '2010-01-01T00:00:00Z', '2015-06-22T00:00:00Z');
     expect(bundle1.entry).toHaveLength(0);
 
     const bundle2 = deepClone(bundle);
-    filterByCareDate(bundle2, '2015-06-21', '2015-06-23');
+    filterByCareDate(bundle2, '2015-06-22T00:00:00Z', '2015-06-22T23:59:59Z');
     expect(bundle2.entry).toHaveLength(resources.length);
 
     const bundle3 = deepClone(bundle);
-    filterByCareDate(bundle3, '2015-06-23', '2025-03-25');
+    filterByCareDate(bundle3, '2015-06-22T23:59:59Z', '2025-03-25T23:59:59Z');
     expect(bundle3.entry).toHaveLength(0);
 
     const bundle4 = deepClone(bundle);
