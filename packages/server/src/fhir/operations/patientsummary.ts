@@ -13,6 +13,7 @@ import {
   LOINC_PLAN_OF_TREATMENT_SECTION,
   LOINC_PROBLEMS_SECTION,
   LOINC_PROCEDURES_SECTION,
+  LOINC_REASON_FOR_REFERRAL_SECTION,
   LOINC_RESULTS_SECTION,
   LOINC_SOCIAL_HISTORY_SECTION,
   LOINC_VITAL_SIGNS_SECTION,
@@ -73,7 +74,7 @@ export const OBSERVATION_CATEGORY_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSyst
 // Patient summary operation
 // https://build.fhir.org/ig/HL7/fhir-ips/OperationDefinition-summary.html
 
-export const operation: OperationDefinition = {
+export const operation = {
   resourceType: 'OperationDefinition',
   id: 'summary',
   name: 'IpsSummary',
@@ -96,14 +97,13 @@ export const operation: OperationDefinition = {
     ['profile', 'in', 0, 1, 'canonical'],
     ['return', 'out', 0, 1, 'Bundle'],
   ].map(([name, use, min, max, type]) => ({ name, use, min, max, type }) as OperationDefinitionParameter),
-};
+} satisfies OperationDefinition;
 
 const resourceTypes: ResourceType[] = [
   'AllergyIntolerance',
   'CarePlan',
   'ClinicalImpression',
   'Condition',
-  'Device',
   'DeviceUseStatement',
   'DiagnosticReport',
   'Encounter',
@@ -188,6 +188,7 @@ export class PatientSummaryBuilder {
   private readonly goals: Goal[] = [];
   private readonly healthConcerns: Condition[] = [];
   private readonly notes: ClinicalImpression[] = [];
+  private readonly reasonForReferral: ServiceRequest[] = [];
   private readonly nestedIds = new Set<string>();
 
   constructor(
@@ -299,9 +300,6 @@ export class PatientSummaryBuilder {
       case 'Procedure':
         this.procedures.push(resource);
         break;
-      case 'ServiceRequest':
-        this.planOfTreatment.push(resource);
-        break;
 
       // Complex resource types - choose section based on resource type
       case 'ClinicalImpression':
@@ -313,6 +311,9 @@ export class PatientSummaryBuilder {
       case 'Observation':
         this.chooseSectionForObservation(resource);
         break;
+      case 'ServiceRequest':
+        this.chooseSectionForServiceRequest(resource);
+        break;
 
       default:
         getLogger().debug('Unsupported resource type in Patient Summary', { resourceType: resource.resourceType });
@@ -321,10 +322,12 @@ export class PatientSummaryBuilder {
 
   private chooseSectionForClinicalImpression(clinicalImpression: ClinicalImpression): void {
     const code = clinicalImpression.code?.coding?.[0]?.code;
-    if (code === LOINC_NOTE_DOCUMENT) {
-      this.notes.push(clinicalImpression);
-    } else {
-      this.assessments.push(clinicalImpression);
+    switch (code) {
+      case LOINC_NOTE_DOCUMENT:
+        this.notes.push(clinicalImpression);
+        break;
+      default:
+        this.assessments.push(clinicalImpression);
     }
   }
 
@@ -349,6 +352,21 @@ export class PatientSummaryBuilder {
       default:
         this.results.push(obs);
         break;
+    }
+  }
+
+  private chooseSectionForServiceRequest(serviceRequest: ServiceRequest): void {
+    const code = serviceRequest.code?.coding?.[0]?.code;
+    if (code === '310449005') {
+      // Note from Chart Lux Consulting:
+      // USCDI v3 comment - the value set for this referral code is over 1000 entries and code is required - simple approach could be to offer a few options
+      // for user to choose from; here are 3 common ones (referral to hospital is in 315.b.1 test data)
+      // 310449005 - Referral to hospital
+      // 44383000 - Patient referral for consultation
+      // 103696004 - Patient referral to specialist
+      this.reasonForReferral.push(serviceRequest);
+    } else {
+      this.planOfTreatment.push(serviceRequest);
     }
   }
 
@@ -387,6 +405,7 @@ export class PatientSummaryBuilder {
         this.createGoalsSection(),
         this.createHealthConcernsSection(),
         this.createNotesSection(),
+        this.createReasonForReferralSection(),
       ].filter(Boolean) as CompositionSection[],
     };
     return composition;
@@ -628,6 +647,19 @@ export class PatientSummaryBuilder {
         this.notes.map((n) => [n.summary, formatDate(n.date)])
       ),
       this.notes
+    );
+  }
+
+  private createReasonForReferralSection(): CompositionSection | undefined {
+    if (this.reasonForReferral.length === 0) {
+      return undefined;
+    }
+
+    return createSection(
+      LOINC_REASON_FOR_REFERRAL_SECTION,
+      'Reason for Referral',
+      this.buildPlanTable(this.reasonForReferral),
+      this.reasonForReferral
     );
   }
 
