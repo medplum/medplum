@@ -17,6 +17,7 @@ import {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
+  createPositionedText,
   formatHumanName,
   getAddressContent,
   getClaimInfo,
@@ -271,7 +272,7 @@ describe('getClaimInfo', () => {
     const result = getClaimInfo(claim);
 
     expect(result).toEqual({
-      relatedToemployment: true,
+      relatedToEmployment: true,
       relatedToAutoAccident: true,
       accidentLocation: '39 Green Lane, Wichita, KS',
       accidentLocationState: 'KS',
@@ -311,7 +312,7 @@ describe('getClaimInfo', () => {
     const result = getClaimInfo(claim);
 
     expect(result).toEqual({
-      relatedToemployment: false,
+      relatedToEmployment: false,
       relatedToAutoAccident: false,
       accidentLocation: '',
       accidentLocationState: '',
@@ -352,7 +353,7 @@ describe('getClaimInfo', () => {
     });
 
     expect(result).toEqual({
-      relatedToemployment: false,
+      relatedToEmployment: false,
       relatedToAutoAccident: false,
       accidentLocation: '',
       accidentLocationState: '',
@@ -394,7 +395,7 @@ describe('getClaimInfo', () => {
     });
 
     expect(result).toEqual({
-      relatedToemployment: true,
+      relatedToEmployment: true,
       relatedToAutoAccident: false,
       accidentLocation: '',
       accidentLocationState: '',
@@ -438,7 +439,7 @@ describe('getClaimInfo', () => {
     });
 
     expect(result).toEqual({
-      relatedToemployment: false,
+      relatedToEmployment: false,
       relatedToAutoAccident: true,
       accidentLocation: 'Wichita, KS',
       accidentLocationState: 'KS',
@@ -959,6 +960,26 @@ describe('getReferralInfo', () => {
   });
 });
 
+describe('createPositionedText', () => {
+  test('returns a positioned text object', () => {
+    const result = createPositionedText('test', 100, 200);
+    expect(result).toEqual({
+      text: 'test',
+      absolutePosition: { x: 100, y: 200 },
+      fontSize: 9,
+    });
+  });
+
+  test('returns a positioned text object with a custom font size', () => {
+    const result = createPositionedText('test', 100, 200, 12);
+    expect(result).toEqual({
+      text: 'test',
+      absolutePosition: { x: 100, y: 200 },
+      fontSize: 12,
+    });
+  });
+});
+
 describe('getPhoneContent', () => {
   const expectedPosition = { x: 123, y: 204 };
   const expectedSecondPosition = { x: 150, y: 204 };
@@ -1013,7 +1034,7 @@ describe('getAddressContent', () => {
     const result = getAddressContent(sampleAddress);
     expect(result).toStrictEqual([
       {
-        text: ['742 Evergreen Terrace'],
+        text: '742 Evergreen Terrace',
         absolutePosition: { x: defaultXOffset, y: 156 },
         fontSize: expectedFontSize,
       },
@@ -1070,7 +1091,7 @@ describe('getAddressContent', () => {
     const result = getAddressContent(sampleAddress, customXOffset);
     expect(result).toStrictEqual([
       {
-        text: ['742 Evergreen Terrace'],
+        text: '742 Evergreen Terrace',
         absolutePosition: { x: customXOffset, y: 156 },
         fontSize: expectedFontSize,
       },
