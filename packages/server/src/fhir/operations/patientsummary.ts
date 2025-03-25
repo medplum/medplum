@@ -322,12 +322,10 @@ export class PatientSummaryBuilder {
 
   private chooseSectionForClinicalImpression(clinicalImpression: ClinicalImpression): void {
     const code = clinicalImpression.code?.coding?.[0]?.code;
-    switch (code) {
-      case LOINC_NOTE_DOCUMENT:
-        this.notes.push(clinicalImpression);
-        break;
-      default:
-        this.assessments.push(clinicalImpression);
+    if (code === LOINC_NOTE_DOCUMENT) {
+      this.notes.push(clinicalImpression);
+    } else {
+      this.assessments.push(clinicalImpression);
     }
   }
 
