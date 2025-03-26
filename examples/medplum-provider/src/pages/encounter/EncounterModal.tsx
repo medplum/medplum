@@ -216,14 +216,6 @@ export const EncounterModal = (): JSX.Element => {
                   }}
                 />
 
-                <CodingInput
-                  name="modifiers"
-                  label="modifiers"
-                  binding="http://hl7.org/fhir/ValueSet/claim-modifiers"
-                  required={true}
-                  // onChange={setEncounterClass}
-                  path="Encounter.modifiers"
-                />
               </Stack>
             </Grid.Col>
 
