@@ -111,7 +111,6 @@ export const EncounterChart = (): JSX.Element => {
     });
   }, [medplum, encounterId, fetchTasks, fetchClinicalImpressions, fetchChargeItems, location.pathname]);
 
-
   useEffect(() => {
     const fetchPractitioner = async (): Promise<void> => {
       if (encounter?.participant?.[0]?.individual) {
@@ -272,7 +271,9 @@ export const EncounterChart = (): JSX.Element => {
 
             {chargeItems.length > 0 && (
               <Stack gap="md" pt="lg">
-                <Text size="lg" fw={500}>Charge Items</Text>
+                <Text size="lg" fw={500}>
+                  Charge Items
+                </Text>
                 {chargeItems.map((chargeItem: ChargeItem) => (
                   <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} />
                 ))}
