@@ -597,7 +597,16 @@ export function getClaimItemInfo(item: ClaimItem): {
   const emergency = item.category?.coding?.[0].code === 'EMG';
   const procedureCode = formatCodeableConcept(item.productOrService);
   const modifiers = formatCodeableConcept(item.modifier?.[0]);
-  const diagnosisPointer = item.diagnosisSequence?.[0]?.toString() ?? '';
+  const diagnosisPointer = (item.diagnosisSequence || [])
+    .map((num) => {
+      // Convert numbers 1-12 to letters A-L
+      if (num >= 1 && num <= 12) {
+        return String.fromCharCode(64 + num); // 65 is ASCII for 'A'
+      }
+      return '';
+    })
+    .filter((letter) => letter)
+    .join('');
   const charges = formatMoney(item.net);
   const daysOrUnits = formatQuantity(item.quantity);
   const familyPlanIndicator =
