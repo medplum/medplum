@@ -1,0 +1,14 @@
+{{- if eq .Values.certManager.enabled true }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ .Values.certManager.certificate.name }}
+  namespace: {{ include "medplum.namespace" . }}
+spec:
+  secretName: {{ .Values.certManager.clusterIssuer.tlsSecretName }}  # The secret that will store the TLS certificate
+  issuerRef:
+    name: {{ .Values.certManager.clusterIssuer.name }}   # Reference the ClusterIssuer 
+    kind: ClusterIssuer
+  dnsNames:
+  - {{ .Values.ingress.domain }}
+{{- end }}

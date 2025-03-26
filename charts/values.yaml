@@ -2,8 +2,8 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-global:
-  cloudProvider: gcp # Supported values: gcp, azure
+global: 
+  cloudProvider: "" # cloud providers options: "", gcp, azure 
   configSource:
     # Examples:
     # type: "env"
@@ -11,11 +11,6 @@ global:
     # type: "gcp:projectId:secretId"
     # type: "azure:keyVaultURL:secretName"
     type: "env"  # Default to env
- 
-serviceAccount: 
-  annotations:
-    iam.gke.io/gcp-service-account: [MY_GCP_SERVICE_ACCOUNT] # Your Google Cloud Platform service account e.i: medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com
-    # azure.workload.identity/client-id: "7f644391-4b27-4f76-8427-17bae90d7ee8" # Azure Managed Identity Client ID
 
 namespace: medplum
 
@@ -34,11 +29,30 @@ deployment:
       memory: "2Gi"
   autoscaling:
     enabled: true
+    targetCPUUtilizationPercentage: 80
 
 service: {}
+
+serviceAccount: {} 
 
 ingress:
   deploy: true
   domain: [MY_DOMAIN] # Your domain name
-  tlsSecretName: [TLS_SECRET_NAME] # Azure only
+
+#subchart dependencies
+gcp:
+  enabled: false
   
+azure:
+  enabled: true
+
+certManager:
+  enabled: false
+  namespace: cert-manager
+  clusterIssuer:
+    name: "letsencrypt-test"
+    tlsSecretName: "medplum-tls"
+  certificate:
+    name: "medplum-cert"
+  ingress:
+    hosts: "- api.azure.medplum.dev"

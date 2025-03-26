@@ -12,6 +12,21 @@ version: 0.1.0
 # Medplum application version
 appVersion: '3.2.27'
 
+# dependencies for cloud providers
+
+
+# Optional dependencies would go here
+dependencies:
+  - name: medplumGcp
+    version: "1.0.0"
+    repository: "file://charts/medplum-gcp"
+    condition: gcp.enabled
+  - name: medplumAzure
+    version: "1.0.0"
+    repository: "file://charts/medplum-azure"
+    condition: azure.enabled
+
+
 # Keywords help users find your chart
 keywords:
   - healthcare
@@ -25,22 +40,13 @@ keywords:
 home: https://www.medplum.com
 sources:
   - https://github.com/medplum/medplum
-documentation: https://docs.medplum.com
+#documentation: https://docs.medplum.com
 icon: https://www.medplum.com/img/logo.svg
 
 maintainers:
   - name: Medplum Team
     url: https://www.medplum.com
     email: support@medplum.com
-
-# Optional dependencies would go here
-# dependencies:
-#   - name: cert-manager
-#     version: "^1.0.0"
-#     repository: https://charts.jetstack.io
-#     condition: certificates.useCertManager
-#     tags:
-#       - optional
 
 annotations:
   artifacthub.io/license: Apache-2.0

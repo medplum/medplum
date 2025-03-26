@@ -1,4 +1,4 @@
-{{- if and (eq .Values.global.cloudProvider "gcp") (eq .Values.ingress.deploy true) }}
+{{- if and (eq .Values.global.cloudProvider "gcp") (eq .Values.ingress.deploy true) (eq (toString .Values.certManager.enabled) "false") }}
 apiVersion: networking.gke.io/v1
 kind: ManagedCertificate
 metadata:

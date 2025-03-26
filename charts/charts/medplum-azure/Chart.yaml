@@ -1,0 +1,6 @@
+apiVersion: v2
+name: medplumAzure
+description: A Helm subchart for deploying Medplum on Azure
+type: application
+version: 1.0.0
+appVersion: "latest"

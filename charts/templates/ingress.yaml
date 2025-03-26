@@ -1,4 +1,4 @@
-{{- if and (eq .Values.global.cloudProvider "gcp") (eq .Values.ingress.deploy true) }}
+{{- if eq .Values.ingress.deploy true }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -7,11 +7,17 @@ metadata:
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
   annotations:
+    {{- else if eq .Values.global.cloudProvider "gcp" }}
     ingressClassName: "gce"
     kubernetes.io/ingress.global-static-ip-name: medplum-external-ip
     networking.gke.io/managed-certificates: {{ include "medplum.fullname" . }}
     networking.gke.io/v1beta1.FrontendConfig: {{ include "medplum.fullname" . }}
+    {{- end }}
 spec:
+  {{- if eq .Values.global.cloudProvider "nginx" }}
+  ingressClassName: "nginx"
+  {{- else if eq .Values.global.cloudProvider "azure" }}
+  ingressClassName: "azure-application-gateway"
   rules:
     - host: {{ .Values.ingress.domain }}
       http:
@@ -23,32 +29,10 @@ spec:
                 name: {{ include "medplum.fullname" . }}-service
                 port:
                   number: {{ .Values.service.port | default 80 }}
-{{- end }}
-
-{{- if and (eq .Values.global.cloudProvider "azure") (eq .Values.ingress.deploy true) }}
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ include "medplum.fullname" . }}
-  namespace: {{ include "medplum.namespace" . }}
-  labels:
-    {{- include "medplum.labels" . | nindent 4 }}
-spec:
+  {{- if eq .Values.certManager.enabled true }}               
   tls:
     - hosts:
-      - {{ .Values.ingress.domain }}
-      secretName: {{ .Values.ingress.tlsSecretName }}
-  ingressClassName: azure-application-gateway
-  rules:
-  - host: {{ .Values.ingress.domain }}
-    http:
-      paths:
-      - pathType: Prefix
-        path: /
-        backend:
-          service:
-            name: {{ include "medplum.fullname" . }}-service
-            port:
-              number: {{ .Values.service.port | default 80 }}
-
+        {{ .Values.certManager.ingress.hosts }}    
+      secretName: {{ .Values.certManager.clusterIssuer.tlsSecretName }}
+  {{- end }}
 {{- end }}

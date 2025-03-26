@@ -1,0 +1,9 @@
+global:
+  cloudProvider: gcp
+
+ingress:
+  deploy: true
+  domain: medplum.example.com
+
+certManager:
+  enabled: true
