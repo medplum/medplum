@@ -83,22 +83,34 @@ export const EncounterModal = (): JSX.Element => {
 
   const handleChargeItemsFromTasks = async (encounter: Encounter): Promise<void> => {
     try {
+
       const tasks = await medplum.search('Task', {
         encounter: getReferenceString(encounter),
       });
-      if (tasks.entry && tasks.entry.length > 0) {
-        for (const entry of tasks.entry) {
-          const task = entry.resource as Task;
-          if (task.focus?.reference?.startsWith('ServiceRequest/')) {
-            try {
-              const serviceRequest: ServiceRequest = await medplum.readReference({ reference: task.focus.reference });
-              await createChargeItemFromServiceRequest(serviceRequest);
-            } catch (err) {
-              console.error('Error fetching ServiceRequest:', err);
-            }
-          }
-        }
+
+      if (!tasks.entry?.length) {
+        return;
       }
+
+      await Promise.all(
+        tasks.entry.map(async (entry) => {
+          const task = entry.resource as Task;
+          const serviceRequestRef = task.focus?.reference;
+
+          if (!serviceRequestRef?.startsWith('ServiceRequest/')) {
+            return;
+          }
+
+          try {
+            const serviceRequest: ServiceRequest = await medplum.readReference({
+              reference: serviceRequestRef,
+            });
+            await createChargeItemFromServiceRequest(serviceRequest);
+          } catch (err) {
+            console.error(`Error processing ServiceRequest ${serviceRequestRef}:`, err);
+          }
+        })
+      );
     } catch (error) {
       showNotification({
         color: 'red',
