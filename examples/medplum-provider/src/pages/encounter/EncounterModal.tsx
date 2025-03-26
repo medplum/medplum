@@ -1,7 +1,16 @@
 import { Box, Button, Card, Grid, Modal, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { ClinicalImpression, Coding, Encounter, PlanDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import {
+  ChargeItem,
+  ClinicalImpression,
+  Coding,
+  Encounter,
+  PlanDefinition,
+  ServiceRequest,
+  Task,
+  ValueSetExpansionContains,
+} from '@medplum/fhirtypes';
 import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
 import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useState } from 'react';
@@ -63,13 +72,81 @@ export const EncounterModal = (): JSX.Element => {
         });
       }
 
-      showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
+      await handleChargeItemsFromTasks(encounter);
 
+      showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
       navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`)?.catch(console.error);
     } catch (err) {
       showNotification({ color: 'red', icon: <IconCircleOff />, title: 'Error', message: normalizeErrorString(err) });
     }
   };
+
+  const handleChargeItemsFromTasks = async (encounter: Encounter): Promise<void> => {
+    try {
+      const tasks = await medplum.search('Task', {
+        encounter: getReferenceString(encounter),
+      });
+      if (tasks.entry && tasks.entry.length > 0) {
+        for (const entry of tasks.entry) {
+          const task = entry.resource as Task;
+          if (task.focus?.reference?.startsWith('ServiceRequest/')) {
+            try {
+              const serviceRequest: ServiceRequest = await medplum.readReference({ reference: task.focus.reference });
+              await createChargeItemFromServiceRequest(serviceRequest);
+            } catch (err) {
+              console.error('Error fetching ServiceRequest:', err);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(error),
+      });
+    }
+  };
+
+  async function createChargeItemFromServiceRequest(serviceRequest: ServiceRequest): Promise<void> {
+    if (!patient) {
+      showNotification({
+        color: 'yellow',
+        icon: <IconAlertSquareRounded />,
+        title: 'Error',
+        message: 'Patient not found.',
+      });
+      return;
+    }
+    const chargeItem: ChargeItem = {
+      resourceType: 'ChargeItem',
+      status: 'planned',
+      supportingInformation: [
+        {
+          reference: `ServiceRequest/${serviceRequest.id}`,
+        },
+      ],
+      subject: createReference(patient),
+      context: serviceRequest.encounter,
+      occurrenceDateTime: serviceRequest.occurrenceDateTime || new Date().toISOString(),
+      code: serviceRequest.code || { coding: [] },
+      quantity: {
+        value: 1,
+      },
+    };
+
+    try {
+      await medplum.createResource(chargeItem);
+    } catch (error) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(error),
+      });
+    }
+  }
 
   return (
     <Modal
@@ -125,6 +202,15 @@ export const EncounterModal = (): JSX.Element => {
                       setStatus(value as typeof status);
                     }
                   }}
+                />
+
+                <CodingInput
+                  name="modifiers"
+                  label="modifiers"
+                  binding="http://hl7.org/fhir/ValueSet/claim-modifiers"
+                  required={true}
+                  // onChange={setEncounterClass}
+                  path="Encounter.modifiers"
                 />
               </Stack>
             </Grid.Col>

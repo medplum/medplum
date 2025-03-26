@@ -1,4 +1,4 @@
-import { Stack, Box, Card } from '@mantine/core';
+import { Stack, Box, Card, Text } from '@mantine/core';
 import {
   Task,
   ClinicalImpression,
@@ -6,6 +6,7 @@ import {
   Questionnaire,
   Practitioner,
   Encounter,
+  ChargeItem,
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { Outlet, useLocation, useParams } from 'react-router';
@@ -18,6 +19,7 @@ import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { usePatient } from '../../hooks/usePatient';
 import { useEncounter } from '../../hooks/useEncounter';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import ChageItemPanel from '../components/ChargeItem/ChageItemPanel';
 
 export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
@@ -29,6 +31,7 @@ export const EncounterChart = (): JSX.Element => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [clinicalImpression, setClinicalImpression] = useState<ClinicalImpression | undefined>();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>();
+  const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
@@ -51,6 +54,7 @@ export const EncounterChart = (): JSX.Element => {
       return dateA - dateB;
     });
 
+    console.log(JSON.stringify(taskResult, null, 2));
     setTasks(taskResult);
   }, [medplum, encounter]);
 
@@ -72,6 +76,14 @@ export const EncounterChart = (): JSX.Element => {
     }
   }, [medplum, encounter]);
 
+  const fetchChargeItems = useCallback(async (): Promise<void> => {
+    if (!encounter) {
+      return;
+    }
+    const chargeItems = await medplum.searchResources('ChargeItem', `context=${getReferenceString(encounter)}`);
+    setChargeItems(chargeItems);
+  }, [medplum, encounter]);
+
   useEffect(() => {
     fetchTasks().catch((err) => {
       showNotification({
@@ -89,7 +101,17 @@ export const EncounterChart = (): JSX.Element => {
         message: normalizeErrorString(err),
       });
     });
-  }, [medplum, encounterId, fetchTasks, fetchClinicalImpressions, location.pathname]);
+
+    fetchChargeItems().catch((err) => {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    });
+  }, [medplum, encounterId, fetchTasks, fetchClinicalImpressions, fetchChargeItems, location.pathname]);
+
 
   useEffect(() => {
     const fetchPractitioner = async (): Promise<void> => {
@@ -248,6 +270,15 @@ export const EncounterChart = (): JSX.Element => {
             {tasks.map((task: Task) => (
               <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
             ))}
+
+            {chargeItems.length > 0 && (
+              <Stack gap="md" pt="lg">
+                <Text size="lg" fw={500}>Charge Items</Text>
+                {chargeItems.map((chargeItem: ChargeItem) => (
+                  <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} />
+                ))}
+              </Stack>
+            )}
           </Stack>
 
           <Outlet />
