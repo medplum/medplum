@@ -26,13 +26,7 @@ export default function ChageItemPanel(props: ChargeItemPanelProps): JSX.Element
               </Text>
               {chargeItem?.code?.coding?.map((coding) => {
                 if (coding.system === 'http://www.ama-assn.org/go/cpt') {
-                  return (
-                    <TextInput
-                      key={coding.code}
-                      defaultValue={`${coding.code}: ${coding.display}`}
-                      readOnly
-                    />
-                  );
+                  return <TextInput key={coding.code} defaultValue={`${coding.code}: ${coding.display}`} readOnly />;
                 }
                 return null;
               })}
@@ -51,7 +45,6 @@ export default function ChageItemPanel(props: ChargeItemPanelProps): JSX.Element
               />
             </Grid.Col>
           </Grid>
-
         </Stack>
       </Stack>
     </Card>
