@@ -54,7 +54,6 @@ export const EncounterChart = (): JSX.Element => {
       return dateA - dateB;
     });
 
-    console.log(JSON.stringify(taskResult, null, 2));
     setTasks(taskResult);
   }, [medplum, encounter]);
 
