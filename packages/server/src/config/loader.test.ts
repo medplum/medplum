@@ -26,6 +26,7 @@ describe('Config', () => {
     process.env.MEDPLUM_REDIS_TLS = '{}';
     process.env.MEDPLUM_DATABASE_SSL = '{"require":true}';
     process.env.MEDPLUM_SMTP_HOST = 'smtp.example.com';
+    process.env.MEDPLUM_DATABASE_SSL_REJECT_UNAUTHORIZED = 'true';
 
     const config = await loadConfig('env');
     expect(config).toBeDefined();
@@ -35,6 +36,7 @@ describe('Config', () => {
     expect(config.redis.tls).toStrictEqual({});
     expect(config.database.ssl).toStrictEqual({ require: true });
     expect(config.smtp?.host).toStrictEqual('smtp.example.com');
+    expect(config.database.ssl?.rejectUnauthorized).toEqual(true);
     expect(getConfig()).toBe(config);
   });
 });
