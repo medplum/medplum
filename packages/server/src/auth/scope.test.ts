@@ -150,6 +150,24 @@ describe('Scope', () => {
     expect(res2.body.issue[0].details.text).toBe('Invalid scope');
   });
 
+  test('Allow selection of restricted scopes', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid profile patient/Condition.crs',
+      email,
+      password,
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.login).toBeDefined();
+    expect(res1.body.code).toBeDefined();
+
+    const res2 = await request(app).post('/auth/scope').type('json').send({
+      login: res1.body.login,
+      scope: 'openid profile patient/Condition.read', // V1 scope is equivalent to `rs`, a subset of the one above
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.code).toBeDefined();
+  });
+
   test('Allow selection of more granular scope', async () => {
     const res1 = await request(app).post('/auth/login').type('json').send({
       scope: 'openid profile patient/Condition.rs',
