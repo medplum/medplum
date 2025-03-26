@@ -83,7 +83,6 @@ export const EncounterModal = (): JSX.Element => {
 
   const handleChargeItemsFromTasks = async (encounter: Encounter): Promise<void> => {
     try {
-
       const tasks = await medplum.search('Task', {
         encounter: getReferenceString(encounter),
       });
