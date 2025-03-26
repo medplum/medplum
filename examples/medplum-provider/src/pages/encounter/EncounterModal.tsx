@@ -215,7 +215,6 @@ export const EncounterModal = (): JSX.Element => {
                     }
                   }}
                 />
-
               </Stack>
             </Grid.Col>
 
