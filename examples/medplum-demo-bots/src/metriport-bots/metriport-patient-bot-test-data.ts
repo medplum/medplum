@@ -1,6 +1,6 @@
 import { QuestionnaireResponse } from '@medplum/fhirtypes';
 
-export const existingPatientQuestionnaireResponse: QuestionnaireResponse = {
+export const JaneSmithQuestionnaireResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   status: 'completed',
   item: [
@@ -53,9 +53,14 @@ export const existingPatientQuestionnaireResponse: QuestionnaireResponse = {
       answer: [{ valueString: '85300' }],
     },
     {
-      linkId: 'ssn',
-      text: 'SSN',
-      answer: [{ valueString: '123456789' }],
+      linkId: 'driverLicenseNumber',
+      text: 'Driver License Number',
+      answer: [{ valueString: 'A98765432' }],
+    },
+    {
+      linkId: 'driverLicenseState',
+      text: 'Driver License State',
+      answer: [{ valueCoding: { system: 'http://hl7.org/fhir/v3/State', code: 'AZ', display: 'Arizona' } }],
     },
     {
       linkId: 'phone',
@@ -68,4 +73,26 @@ export const existingPatientQuestionnaireResponse: QuestionnaireResponse = {
       answer: [{ valueString: 'jane.smith@example.com' }],
     },
   ],
+};
+
+export const JaneSmithMetriportPatient = {
+  id: '0195d965-bfbc-7825-8a8a-b48baf403559',
+  facilityIds: ['0195d964-d166-7226-8912-76934c23c140'],
+  externalId: '',
+  dateCreated: '2025-03-27T20:57:58.974Z',
+  firstName: 'Jane',
+  lastName: 'Smith',
+  dob: '1996-02-10',
+  genderAtBirth: 'F',
+  personalIdentifiers: [],
+  address: [
+    {
+      zip: '85300',
+      city: 'Phoenix',
+      state: 'AZ',
+      country: 'USA',
+      addressLine1: '123 Arsenal St',
+    },
+  ],
+  contact: [],
 };

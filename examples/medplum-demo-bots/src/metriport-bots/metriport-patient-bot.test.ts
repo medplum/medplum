@@ -1,11 +1,98 @@
-import { validateQuestionnaireAnswers } from './metriport-patient-bot';
-import { getQuestionnaireAnswers } from '@medplum/core';
-import { existingPatientQuestionnaireResponse } from './metriport-patient-bot-test-data';
+import { getQuestionnaireAnswers, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { handler, validateQuestionnaireAnswers, ValidQuestionnaireResponseLinkId } from './metriport-patient-bot';
+import { JaneSmithQuestionnaireResponse, JaneSmithMetriportPatient } from './metriport-patient-bot-test-data';
+import { MetriportMedicalApi } from '@metriport/api-sdk';
+
+vi.mock('@metriport/api-sdk', () => ({
+  MetriportMedicalApi: vi.fn(),
+  USState: {
+    AZ: 'AZ',
+    CA: 'CA',
+  },
+}));
+
+describe('Metriport Patient Bot', () => {
+  const bot = { reference: 'Bot/123' };
+  const contentType = 'application/fhir+json';
+  const secrets = { METRIPORT_API_KEY: { name: 'METRIPORT_API_KEY', valueString: 'test-metriport-api-key' } };
+
+  let medplum: MockClient;
+
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
+  });
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    medplum = new MockClient();
+  });
+
+  test('throws error when missing METRIPORT_API_KEY', async () => {
+    await expect(
+      handler(medplum, { bot, input: JaneSmithQuestionnaireResponse, contentType, secrets: {} })
+    ).rejects.toThrow('Missing METRIPORT_API_KEY');
+  });
+
+  test('throws error if Metriport.matchPatient fails', async () => {
+    const error = new Error('Network Error');
+
+    vi.mocked(MetriportMedicalApi).mockImplementation(
+      () =>
+        ({
+          matchPatient: vi.fn().mockRejectedValue(error),
+        }) as Partial<MetriportMedicalApi> as MetriportMedicalApi
+    );
+
+    await expect(
+      handler(medplum, { bot, input: JaneSmithQuestionnaireResponse, contentType, secrets })
+    ).rejects.toThrow(
+      new Error(`Error matching patient in Metriport: Network Error`, {
+        cause: error,
+      })
+    );
+  });
+
+  test('creates patient in Medplum', async () => {
+    vi.mocked(MetriportMedicalApi).mockImplementation(
+      () =>
+        ({
+          matchPatient: vi.fn().mockResolvedValue(JaneSmithMetriportPatient),
+        }) as Partial<MetriportMedicalApi> as MetriportMedicalApi
+    );
+
+    const patient = await handler(medplum, { bot, input: JaneSmithQuestionnaireResponse, contentType, secrets });
+    expect(patient).toBeDefined();
+  });
+});
 
 describe('validateQuestionnaireAnswers', () => {
-  const requiredFields = ['firstName', 'lastName', 'dob', 'genderAtBirth', 'addressLine1', 'city', 'state', 'zip'];
+  const requiredFields: ValidQuestionnaireResponseLinkId[] = [
+    'firstName',
+    'lastName',
+    'dob',
+    'genderAtBirth',
+    'addressLine1',
+    'city',
+    'state',
+    'zip',
+  ];
 
-  const getErrorMessage = (field: string): string => {
+  const optionalFields: ValidQuestionnaireResponseLinkId[] = [
+    'driverLicenseNumber',
+    'driverLicenseState',
+    'phone',
+    'email',
+  ];
+
+  const getErrorMessage = (field: ValidQuestionnaireResponseLinkId): string => {
     if (field === 'dob') {
       return 'Missing date of birth';
     }
@@ -21,8 +108,8 @@ describe('validateQuestionnaireAnswers', () => {
   };
 
   requiredFields.forEach((field) => {
-    it(`should throw error when ${field} is missing`, () => {
-      const invalidResponse = { ...existingPatientQuestionnaireResponse };
+    test(`should throw error when ${field} is missing`, () => {
+      const invalidResponse = { ...JaneSmithQuestionnaireResponse };
       invalidResponse.item = invalidResponse.item?.filter((item) => item.linkId !== field);
 
       const rawAnswers = getQuestionnaireAnswers(invalidResponse);
@@ -31,8 +118,19 @@ describe('validateQuestionnaireAnswers', () => {
     });
   });
 
-  it('should validate questionnaire with all fields present', () => {
-    const rawAnswers = getQuestionnaireAnswers(existingPatientQuestionnaireResponse);
+  ['driverLicenseNumber', 'driverLicenseState'].forEach((field) => {
+    test(`throws error when ${field} is missing and the other is present`, () => {
+      const invalidResponse = { ...JaneSmithQuestionnaireResponse };
+      invalidResponse.item = invalidResponse.item?.filter((item) => item.linkId !== field);
+
+      const rawAnswers = getQuestionnaireAnswers(invalidResponse);
+
+      expect(() => validateQuestionnaireAnswers(rawAnswers)).toThrow('Missing driver license state or number');
+    });
+  });
+
+  test('validates questionnaire with all fields present', () => {
+    const rawAnswers = getQuestionnaireAnswers(JaneSmithQuestionnaireResponse);
     const answers = validateQuestionnaireAnswers(rawAnswers);
 
     expect(answers).toEqual({
@@ -44,17 +142,17 @@ describe('validateQuestionnaireAnswers', () => {
       city: 'Phoenix',
       state: 'AZ',
       zip: '85300',
-      ssn: '123456789',
+      driverLicenseNumber: 'A98765432',
       phone: '555-555-5555',
       email: 'jane.smith@example.com',
     });
   });
 
-  it('should validate questionnaire with only required fields', () => {
+  test('validates questionnaire with only required fields', () => {
     const minimalResponse = {
-      ...existingPatientQuestionnaireResponse,
-      item: existingPatientQuestionnaireResponse.item?.filter(
-        (item) => !['ssn', 'phone', 'email'].includes(item.linkId)
+      ...JaneSmithQuestionnaireResponse,
+      item: JaneSmithQuestionnaireResponse.item?.filter(
+        (item) => !optionalFields.includes(item.linkId as ValidQuestionnaireResponseLinkId)
       ),
     };
 
@@ -70,22 +168,22 @@ describe('validateQuestionnaireAnswers', () => {
       city: 'Phoenix',
       state: 'AZ',
       zip: '85300',
-      ssn: undefined,
+      driverLicenseNumber: undefined,
       phone: undefined,
       email: undefined,
     });
   });
 
-  it('should handle empty optional fields', () => {
-    const responseWithEmptyOptionals = { ...existingPatientQuestionnaireResponse };
+  test('handles empty optional fields', () => {
+    const responseWithEmptyOptionals = { ...JaneSmithQuestionnaireResponse };
     responseWithEmptyOptionals.item = responseWithEmptyOptionals.item?.filter(
-      (item) => !['ssn', 'phone', 'email'].includes(item.linkId)
+      (item) => !optionalFields.includes(item.linkId as ValidQuestionnaireResponseLinkId)
     );
 
     const rawAnswers = getQuestionnaireAnswers(responseWithEmptyOptionals);
     const answers = validateQuestionnaireAnswers(rawAnswers);
 
-    expect(answers.ssn).toBeUndefined();
+    expect(answers.driverLicenseNumber).toBeUndefined();
     expect(answers.phone).toBeUndefined();
     expect(answers.email).toBeUndefined();
   });
