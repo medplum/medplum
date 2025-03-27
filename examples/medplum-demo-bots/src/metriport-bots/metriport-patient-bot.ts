@@ -3,7 +3,6 @@ import { Patient, QuestionnaireResponse, QuestionnaireResponseItemAnswer } from 
 import { MetriportMedicalApi, PatientDTO, USState } from '@metriport/api-sdk';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<Patient> {
-  // Initialize the Metriport API client
   const metriportApiKey = event.secrets['METRIPORT_API_KEY']?.valueString;
   if (!metriportApiKey) {
     throw new Error('Missing METRIPORT_API_KEY');
@@ -15,94 +14,23 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   );
 
   const rawAnswers = getQuestionnaireAnswers(event.input);
-  const {
-    firstName,
-    lastName,
-    dob,
-    genderAtBirth,
-    addressLine1,
-    city,
-    state,
-    zip,
-    driverLicenseNumber,
-    driverLicenseState,
-    phone,
-    email,
-  } = validateQuestionnaireAnswers(rawAnswers);
+  const validatedData = validateQuestionnaireAnswers(rawAnswers);
 
   // Create the patient in Medplum
-  const medplumPatient = await createMedplumPatient(medplum, {
-    firstName,
-    lastName,
-    dob,
-    genderAtBirth,
-    addressLine1,
-    city,
-    state,
-    zip,
-    driverLicenseNumber,
-    phone,
-    email,
-  });
+  const medplumPatient = await createMedplumPatient(medplum, validatedData);
 
   // Find a matching patient on Metriport
-  let metriportPatient: PatientDTO | undefined;
-  try {
-    metriportPatient = await metriport.matchPatient({
-      firstName: firstName,
-      lastName: lastName,
-      dob: dob,
-      genderAtBirth: MEDPLUM_GENDER_TO_METRIPORT_GENDER_MAP[genderAtBirth],
-      personalIdentifiers:
-        driverLicenseNumber && driverLicenseState
-          ? [
-              {
-                type: 'driversLicense',
-                state: USState[driverLicenseState as keyof typeof USState],
-                value: driverLicenseNumber,
-              },
-            ]
-          : undefined,
-      address: [
-        {
-          addressLine1: addressLine1,
-          city: city,
-          state: USState[state as keyof typeof USState],
-          zip: zip,
-          country: 'USA',
-        },
-      ],
-      contact: [
-        {
-          phone: phone,
-          email: email,
-        },
-      ],
-    });
-    console.log('Found the patient in Metriport:\n', JSON.stringify(metriportPatient, null, 2));
-  } catch (error) {
-    throw new Error(`Error matching patient in Metriport: ${normalizeErrorString(error)}`, {
-      cause: error,
-    });
-  }
+  const metriportPatient = await findMatchingMetriportPatient(metriport, validatedData);
 
   if (!metriportPatient) {
     // TODO: Create a new patient in Metriport, if they don't exist
   }
 
   // TODO: Get the patient's records from Metriport
-
   // TODO: Create FHIR resources in Medplum
 
   return medplumPatient;
 }
-
-const MEDPLUM_GENDER_TO_METRIPORT_GENDER_MAP: Record<string, 'M' | 'F' | 'O' | 'U'> = {
-  male: 'M',
-  female: 'F',
-  other: 'O',
-  unknown: 'U',
-};
 
 export type ValidQuestionnaireResponseLinkId =
   | 'firstName'
@@ -195,22 +123,10 @@ export async function createMedplumPatient(medplum: MedplumClient, patient: Vali
 
   const medplumPatient = await medplum.createResource<Patient>({
     resourceType: 'Patient',
-    name: [
-      {
-        given: [firstName],
-        family: lastName,
-      },
-    ],
+    name: [{ given: [firstName], family: lastName }],
     birthDate: dob,
     gender: genderAtBirth as Patient['gender'],
-    address: [
-      {
-        line: [addressLine1],
-        city,
-        state,
-        postalCode: zip,
-      },
-    ],
+    address: [{ line: [addressLine1], city, state, postalCode: zip }],
     identifier: driverLicenseNumber
       ? [
           {
@@ -239,4 +155,63 @@ export async function createMedplumPatient(medplum: MedplumClient, patient: Vali
   });
 
   return medplumPatient;
+}
+
+export async function findMatchingMetriportPatient(
+  metriport: MetriportMedicalApi,
+  patient: ValidatedPatientData
+): Promise<PatientDTO | undefined> {
+  const medplumGenderToMetriportGenderMap: Record<string, 'M' | 'F' | 'O' | 'U'> = {
+    male: 'M',
+    female: 'F',
+    other: 'O',
+    unknown: 'U',
+  };
+
+  const {
+    firstName,
+    lastName,
+    dob,
+    genderAtBirth,
+    addressLine1,
+    city,
+    state,
+    zip,
+    driverLicenseNumber,
+    driverLicenseState,
+    phone,
+    email,
+  } = patient;
+
+  try {
+    const matchedPatient = await metriport.matchPatient({
+      firstName,
+      lastName,
+      dob,
+      genderAtBirth: medplumGenderToMetriportGenderMap[genderAtBirth],
+      personalIdentifiers:
+        driverLicenseNumber && driverLicenseState
+          ? [
+              {
+                type: 'driversLicense',
+                state: USState[driverLicenseState as keyof typeof USState],
+                value: driverLicenseNumber,
+              },
+            ]
+          : undefined,
+      address: [{ addressLine1, city, state: USState[state as keyof typeof USState], zip, country: 'USA' }],
+      contact: [
+        {
+          phone,
+          email,
+        },
+      ],
+    });
+    console.log('Found the patient in Metriport:\n', JSON.stringify(matchedPatient, null, 2));
+    return matchedPatient;
+  } catch (error) {
+    throw new Error(`Error matching patient in Metriport: ${normalizeErrorString(error)}`, {
+      cause: error,
+    });
+  }
 }
