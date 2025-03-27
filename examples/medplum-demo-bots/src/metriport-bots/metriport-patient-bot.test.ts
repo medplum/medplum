@@ -5,6 +5,7 @@ import { MockClient } from '@medplum/mock';
 import { MetriportMedicalApi } from '@metriport/api-sdk';
 import {
   createMedplumPatient,
+  findMatchingMetriportPatient,
   handler,
   ValidatedPatientData,
   validateQuestionnaireAnswers,
@@ -256,5 +257,67 @@ describe('createMedplumPatient', () => {
     expect(patient.address?.[0].postalCode).toBe('85300');
     expect(patient.identifier).toBeUndefined();
     expect(patient.telecom).toBeUndefined();
+  });
+});
+
+describe('findMatchingMetriportPatient', () => {
+  let mockMetriport: MetriportMedicalApi;
+
+  const patientData: ValidatedPatientData = {
+    firstName: 'Jane',
+    lastName: 'Smith',
+    dob: '1996-02-10',
+    genderAtBirth: 'female',
+    addressLine1: '123 Arsenal St',
+    city: 'Phoenix',
+    state: 'AZ',
+    zip: '85300',
+    driverLicenseNumber: 'A98765432',
+    driverLicenseState: 'AZ',
+    phone: '555-555-5555',
+    email: 'jane.smith@example.com',
+  };
+  const matchPatientCalledWith = {
+    firstName: 'Jane',
+    lastName: 'Smith',
+    dob: '1996-02-10',
+    genderAtBirth: 'F',
+    personalIdentifiers: [{ type: 'driversLicense', state: 'AZ', value: 'A98765432' }],
+    address: [{ addressLine1: '123 Arsenal St', city: 'Phoenix', state: 'AZ', zip: '85300', country: 'USA' }],
+    contact: [{ phone: '555-555-5555', email: 'jane.smith@example.com' }],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockMetriport = {
+      matchPatient: vi.fn().mockImplementation(() => Promise.resolve()),
+    } as unknown as MetriportMedicalApi;
+  });
+
+  test('successfully matches patient', async () => {
+    mockMetriport.matchPatient = vi.fn().mockResolvedValueOnce(JaneSmithMetriportPatient);
+
+    const result = await findMatchingMetriportPatient(mockMetriport, patientData);
+
+    expect(result).toEqual(JaneSmithMetriportPatient);
+    expect(mockMetriport.matchPatient).toHaveBeenCalledWith(matchPatientCalledWith);
+  });
+
+  test('handles no match', async () => {
+    mockMetriport.matchPatient = vi.fn().mockResolvedValueOnce(undefined);
+
+    const result = await findMatchingMetriportPatient(mockMetriport, patientData);
+
+    expect(result).toBeUndefined();
+    expect(mockMetriport.matchPatient).toHaveBeenCalledWith(matchPatientCalledWith);
+  });
+
+  test('handles Metriport API error', async () => {
+    const error = new Error('API Error');
+    mockMetriport.matchPatient = vi.fn().mockRejectedValueOnce(error);
+
+    await expect(findMatchingMetriportPatient(mockMetriport, patientData)).rejects.toThrow(
+      'Error matching patient in Metriport: API Error'
+    );
   });
 });
