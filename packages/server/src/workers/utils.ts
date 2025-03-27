@@ -12,7 +12,7 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { Queue } from 'bullmq';
+import { Queue, Worker } from 'bullmq';
 import * as semver from 'semver';
 import { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
@@ -192,32 +192,65 @@ export async function updateAsyncJobOutput(
   );
 }
 
-export type WorkerInitializer = (config: MedplumServerConfig) => { queue: Queue; name: string };
+export type WorkerInitializer = (config: MedplumServerConfig) => { queue: Queue; worker: Worker; name: string };
 
 export interface QueueRegistry {
-  addQueue(name: string, queue: Queue): void;
-  getQueue(name: string): Queue | undefined;
-  clear(): void;
+  add(name: string, queue: Queue, worker: Worker): void;
+  get<T>(name: string): Queue<T> | undefined;
+  isClosing(name: string): boolean | undefined;
+  closeAll(): Promise<void>[];
 }
 
+type QueueEntry = { queue: Queue | undefined; worker: Worker | undefined; isClosing: boolean };
+
 class DefaultQueueRegistry implements QueueRegistry {
-  private queueMap: Record<string, Queue | undefined>;
+  private queueMap: Record<string, QueueEntry | undefined>;
 
   constructor() {
     this.queueMap = Object.create(null);
   }
 
-  addQueue(name: string, queue: Queue): void {
-    this.queueMap[name] = queue;
+  add(name: string, queue: Queue, worker: Worker): void {
+    this.queueMap[name] = { queue, worker, isClosing: false };
+
+    worker.on('closing', () => {
+      if (this.queueMap[name]) {
+        this.queueMap[name].isClosing = true;
+        // await this.close(name);
+      }
+    });
   }
 
-  getQueue(name: string): Queue | undefined {
-    return this.queueMap[name];
+  get<T>(name: string): Queue<T> | undefined {
+    return this.queueMap[name]?.queue as Queue<T> | undefined;
   }
 
-  clear(): void {
-    this.queueMap = Object.create(null);
+  private async close(name: string): Promise<void> {
+    const entry = this.queueMap[name];
+    // Close worker first, so any jobs that need to finish can enqueue the next job before exiting
+    if (entry?.worker) {
+      await entry.worker.close();
+      entry.worker = undefined;
+    }
+
+    if (entry?.queue) {
+      await entry.queue.close();
+      entry.queue = undefined;
+    }
+
+    delete this.queueMap[name];
+  }
+
+  closeAll(): Promise<void>[] {
+    const promises = Object.keys(this.queueMap).map(async (name) => {
+      return this.close(name);
+    });
+    return promises;
+  }
+
+  isClosing(name: string): boolean | undefined {
+    return this.queueMap[name]?.isClosing;
   }
 }
 
-export const queueRegistry = new DefaultQueueRegistry();
+export const queueRegistry: QueueRegistry = new DefaultQueueRegistry();

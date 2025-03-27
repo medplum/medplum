@@ -34,7 +34,7 @@ import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { WorkerInitializer, createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { WorkerInitializer, createAuditEvent, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -71,15 +71,13 @@ export interface SubscriptionJobData {
 
 const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
-let queue: Queue<SubscriptionJobData> | undefined = undefined;
-let worker: Worker<SubscriptionJobData> | undefined = undefined;
 
 export const initSubscriptionWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<SubscriptionJobData>(queueName, {
+  const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: MAX_JOB_ATTEMPTS, // 1 second * 2^18 = 73 hours
@@ -90,7 +88,7 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
     },
   });
 
-  worker = new Worker<SubscriptionJobData>(
+  const worker = new Worker<SubscriptionJobData>(
     queueName,
     (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
     {
@@ -101,25 +99,8 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 
-  return { queue, name: queueName };
+  return { queue, worker, name: queueName };
 };
-
-/**
- * Shuts down the subscription worker.
- * Closes the BullMQ job queue.
- * Clsoes the BullMQ worker.
- */
-export async function closeSubscriptionWorker(): Promise<void> {
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-}
 
 /**
  * Returns the subscription queue instance.
@@ -127,7 +108,7 @@ export async function closeSubscriptionWorker(): Promise<void> {
  * @returns The subscription queue (if available).
  */
 export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 /**
@@ -311,6 +292,7 @@ async function matchesCriteria(
  * @param job - The subscription job details.
  */
 async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
+  const queue = queueRegistry.get(queueName);
   if (queue) {
     await queue.add(jobName, job);
   }

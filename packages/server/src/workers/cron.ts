@@ -5,7 +5,7 @@ import { isValidCron } from 'cron-validator';
 import { executeBot } from '../fhir/operations/execute';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
-import { findProjectMembership, WorkerInitializer } from './utils';
+import { findProjectMembership, queueRegistry, WorkerInitializer } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 const MAX_BOTS_PER_PAGE = 500;
@@ -23,15 +23,12 @@ export interface CronJobData {
 
 const queueName = 'CronQueue';
 
-let queue: Queue<CronJobData> | undefined = undefined;
-let worker: Worker<CronJobData> | undefined = undefined;
-
 export const initCronWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<CronJobData>(queueName, {
+  const queue = new Queue<CronJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: 3,
@@ -42,32 +39,15 @@ export const initCronWorker: WorkerInitializer = (config) => {
     },
   });
 
-  worker = new Worker<CronJobData>(queueName, execBot, {
+  const worker = new Worker<CronJobData>(queueName, execBot, {
     ...defaultOptions,
     ...config.bullmq,
   });
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 
-  return { queue, name: queueName };
+  return { queue, worker, name: queueName };
 };
-
-/**
- * Shuts down the Cron worker.
- * Closes the BullMQ job queue.
- * Closes the BullMQ worker.
- */
-export async function closeCronWorker(): Promise<void> {
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-}
 
 /**
  * Returns the Cron queue instance.
@@ -75,7 +55,7 @@ export async function closeCronWorker(): Promise<void> {
  * @returns The Cron queue (if available).
  */
 export function getCronQueue(): Queue<CronJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 /**
@@ -85,6 +65,7 @@ export function getCronQueue(): Queue<CronJobData> | undefined {
  * @param previousVersion - The previous version of the resource, if available.
  */
 export async function addCronJobs(resource: WithId<Resource>, previousVersion: Resource | undefined): Promise<void> {
+  const queue = queueRegistry.get(queueName);
   if (!queue) {
     // The queue is not available
     return;
@@ -208,12 +189,14 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
 }
 
 export async function removeBullMQJobByKey(botId: string): Promise<void> {
+  const queue = queueRegistry.get(queueName);
   if (queue) {
     await queue.removeJobScheduler(botId);
   }
 }
 
 export async function reloadCronBots(): Promise<void> {
+  const queue = queueRegistry.get(queueName);
   if (queue) {
     // Clears all jobs from the cron queue, including active ones
     await queue.obliterate({ force: true });

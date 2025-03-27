@@ -47,8 +47,6 @@ export interface ReindexPostDeployMigration extends PostDeployMigration<ReindexJ
 
 const queueName = 'ReindexQueue';
 const jobName = 'ReindexJobData';
-let queue: Queue<ReindexJobData> | undefined = undefined;
-let worker: Worker<ReindexJobData> | undefined = undefined;
 
 const defaultBatchSize = 500;
 const defaultProgressLogThreshold = 50_000;
@@ -58,7 +56,7 @@ export const initReindexWorker: WorkerInitializer = (config) => {
     connection: config.redis,
   };
 
-  queue = new Queue<ReindexJobData>(queueName, {
+  const queue = new Queue<ReindexJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: 1,
@@ -69,14 +67,14 @@ export const initReindexWorker: WorkerInitializer = (config) => {
     },
   });
 
-  worker = new Worker<ReindexJobData>(
+  const worker = new Worker<ReindexJobData>(
     queueName,
     (job) =>
       tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => {
         const result = await new ReindexJob().execute(job.data);
         if (result === 'ineligible') {
           // Since we can't handle this ourselves, re-enqueue the job for another worker that can
-          const queue = queueRegistry.getQueue(job.queueName);
+          const queue = queueRegistry.get(job.queueName);
           await queue?.add(job.name, job.data, job.opts);
         }
       }),
@@ -88,26 +86,8 @@ export const initReindexWorker: WorkerInitializer = (config) => {
   worker.on('failed', (job, err) => globalLogger.info(`Reindex worker failed job ${job?.id} with ${err}`));
   worker.on('completed', (job) => globalLogger.info(`Reindex worker completed job ${job?.id}`));
 
-  return { queue, name: queueName };
+  return { queue, worker, name: queueName };
 };
-
-/**
- * Shuts down the reindex worker.
- * Closes the BullMQ job queue.
- * Closes the BullMQ worker.
- */
-export async function closeReindexWorker(): Promise<void> {
-  // Close worker first, so any jobs that need to finish can enqueue the next job before exiting
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-}
 
 export class ReindexJob {
   private readonly systemRepo: Repository;
@@ -400,10 +380,11 @@ function formatReindexResult(result: ReindexResult, resourceType: string): Param
  * @returns The reindex queue (if available).
  */
 export function getReindexQueue(): Queue<ReindexJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 async function addReindexJobData(job: ReindexJobData): Promise<Job<ReindexJobData>> {
+  const queue = getReindexQueue();
   if (!queue) {
     throw new Error(`Job queue ${queueName} not available`);
   }

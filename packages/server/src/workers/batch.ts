@@ -16,7 +16,7 @@ import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
-import { WorkerInitializer } from './utils';
+import { queueRegistry, WorkerInitializer } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,
@@ -35,20 +35,18 @@ export interface BatchJobData {
 
 const queueName = 'BatchQueue';
 const jobName = 'BatchJobData';
-let queue: Queue<BatchJobData> | undefined = undefined;
-let worker: Worker<BatchJobData> | undefined = undefined;
 
 export const initBatchWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<BatchJobData>(queueName, {
+  const queue = new Queue<BatchJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: { attempts: 1 },
   });
 
-  worker = new Worker<BatchJobData>(
+  const worker = new Worker<BatchJobData>(
     queueName,
     (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execBatchJob(job)),
     {
@@ -57,25 +55,8 @@ export const initBatchWorker: WorkerInitializer = (config) => {
     }
   );
 
-  return { queue, name: queueName };
+  return { queue, worker, name: queueName };
 };
-
-/**
- * Shuts down the batch worker.
- * Closes the BullMQ job queue.
- * Closes the BullMQ worker.
- */
-export async function closeBatchWorker(): Promise<void> {
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-}
 
 /**
  * Returns the batch queue instance.
@@ -83,7 +64,7 @@ export async function closeBatchWorker(): Promise<void> {
  * @returns The batch queue (if available).
  */
 export function getBatchQueue(): Queue<BatchJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 /**
@@ -92,8 +73,9 @@ export function getBatchQueue(): Queue<BatchJobData> | undefined {
  * @returns The enqueued job.
  */
 async function addBatchJobData(job: BatchJobData): Promise<Job<BatchJobData>> {
+  const queue = queueRegistry.get<BatchJobData>(queueName);
   if (!queue) {
-    throw new Error('Job queue not available');
+    throw new Error(`Job queue ${queueName} not available`);
   }
   return queue.add(jobName, job);
 }

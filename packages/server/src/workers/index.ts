@@ -2,12 +2,12 @@ import { BackgroundJobContext, WithId } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
-import { closeBatchWorker, initBatchWorker } from './batch';
-import { addCronJobs, closeCronWorker, initCronWorker } from './cron';
-import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
-import { closePostDeployMigrationWorker, initPostDeployMigrationWorker } from './post-deploy-migration';
-import { closeReindexWorker, initReindexWorker } from './reindex';
-import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
+import { initBatchWorker } from './batch';
+import { addCronJobs, initCronWorker } from './cron';
+import { addDownloadJobs, initDownloadWorker } from './download';
+import { initPostDeployMigrationWorker } from './post-deploy-migration';
+import { initReindexWorker } from './reindex';
+import { addSubscriptionJobs, initSubscriptionWorker } from './subscription';
 import { queueRegistry, WorkerInitializer } from './utils';
 
 /**
@@ -26,11 +26,11 @@ export function initWorkers(config: MedplumServerConfig): void {
   ];
 
   for (const initializer of initializers) {
-    const { queue, name } = initializer(config);
-    if (queueRegistry.getQueue(name)) {
+    const { name, queue, worker } = initializer(config);
+    if (queueRegistry.get(name)) {
       throw new Error(`Queue ${name} already registered`);
     }
-    queueRegistry.addQueue(name, queue);
+    queueRegistry.add(name, queue, worker);
   }
   globalLogger.debug('Workers initialized');
 }
@@ -39,13 +39,7 @@ export function initWorkers(config: MedplumServerConfig): void {
  * Shuts down all background workers.
  */
 export async function closeWorkers(): Promise<void> {
-  queueRegistry.clear();
-  await closeSubscriptionWorker();
-  await closeDownloadWorker();
-  await closeCronWorker();
-  await closeReindexWorker();
-  await closeBatchWorker();
-  await closePostDeployMigrationWorker();
+  await Promise.all(queueRegistry.closeAll());
 }
 
 /**

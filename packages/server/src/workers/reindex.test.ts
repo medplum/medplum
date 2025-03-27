@@ -16,14 +16,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
 import { createTestProject, withTestContext } from '../test.setup';
-import {
-  addReindexJob,
-  closeReindexWorker,
-  getReindexQueue,
-  prepareReindexJobData,
-  ReindexJob,
-  ReindexJobData,
-} from './reindex';
+import { addReindexJob, getReindexQueue, prepareReindexJobData, ReindexJob, ReindexJobData } from './reindex';
 
 describe('Reindex Worker', () => {
   let repo: Repository;
@@ -41,7 +34,6 @@ describe('Reindex Worker', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    await closeReindexWorker(); // Double close to ensure quiet ignore
   });
 
   test('Reindex resource type with empty page', () =>
@@ -542,7 +534,6 @@ describe('Job cancellation', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    await closeReindexWorker(); // Double close to ensure quiet ignore
   });
 
   test('Detect cancelled AsyncJob when iteration begins', () =>

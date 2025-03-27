@@ -17,7 +17,7 @@ import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { getLogger, globalLogger } from '../logger';
 import { parseTraceparent } from '../traceparent';
-import { WorkerInitializer } from './utils';
+import { queueRegistry, WorkerInitializer } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -40,15 +40,13 @@ export interface DownloadJobData {
 
 const queueName = 'DownloadQueue';
 const jobName = 'DownloadJobData';
-let queue: Queue<DownloadJobData> | undefined = undefined;
-let worker: Worker<DownloadJobData> | undefined = undefined;
 
 export const initDownloadWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<DownloadJobData>(queueName, {
+  const queue = new Queue<DownloadJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: 3,
@@ -59,7 +57,7 @@ export const initDownloadWorker: WorkerInitializer = (config) => {
     },
   });
 
-  worker = new Worker<DownloadJobData>(
+  const worker = new Worker<DownloadJobData>(
     queueName,
     (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job)),
     {
@@ -70,25 +68,8 @@ export const initDownloadWorker: WorkerInitializer = (config) => {
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 
-  return { queue, name: queueName };
+  return { queue, worker, name: queueName };
 };
-
-/**
- * Shuts down the download worker.
- * Closes the BullMQ job queue.
- * Closes the BullMQ worker.
- */
-export async function closeDownloadWorker(): Promise<void> {
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-}
 
 /**
  * Returns the download queue instance.
@@ -96,7 +77,7 @@ export async function closeDownloadWorker(): Promise<void> {
  * @returns The download queue (if available).
  */
 export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 /**
@@ -152,6 +133,7 @@ function isExternalUrl(url: string | undefined): url is string {
  * @param job - The download job details.
  */
 async function addDownloadJobData(job: DownloadJobData): Promise<void> {
+  const queue = getDownloadQueue();
   if (queue) {
     await queue.add(jobName, job);
   }
