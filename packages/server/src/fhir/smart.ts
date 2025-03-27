@@ -115,28 +115,37 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
 
   if (scope) {
     for (const scopeTerm of scope.split(' ')) {
-      const [baseScope, query] = splitN(scopeTerm, '?', 2);
-      const match = smartScopeFormat.exec(baseScope);
-
-      let criteria: string | undefined;
-      if (query) {
-        // Parse and normalize query parameters, without affecting string encoding, for safety
-        const parsed = qs.parse(query, '&', '=', { decodeURIComponent: (s) => s });
-        criteria = qs.stringify(parsed, '&', '=', { encodeURIComponent: (s) => s });
-      }
-
-      if (match) {
-        result.push({
-          permissionType: match[1] as 'patient' | 'user' | 'system',
-          resourceType: match[2],
-          scope: normalizeV2ScopeString(match[3]),
-          criteria,
-        });
+      const parsed = parseSmartScopeString(scopeTerm);
+      if (parsed) {
+        result.push(parsed);
       }
     }
   }
 
   return result;
+}
+
+export function parseSmartScopeString(scope: string): SmartScope | undefined {
+  const [baseScope, query] = splitN(scope, '?', 2);
+  const match = smartScopeFormat.exec(baseScope);
+
+  if (!match) {
+    return undefined;
+  }
+
+  let criteria: string | undefined;
+  if (query) {
+    // Parse and normalize query parameters, without affecting string encoding, for safety
+    const parsed = qs.parse(query, '&', '=', { decodeURIComponent: (s) => s });
+    criteria = qs.stringify(parsed, '&', '=', { encodeURIComponent: (s) => s });
+  }
+
+  return {
+    permissionType: match[1] as 'patient' | 'user' | 'system',
+    resourceType: match[2],
+    scope: normalizeV2ScopeString(match[3]),
+    criteria,
+  };
 }
 
 function normalizeV2ScopeString(str: string): string {

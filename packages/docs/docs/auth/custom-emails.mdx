@@ -24,8 +24,8 @@ In short, here are the key steps:
 1. Setup reCAPTCHA (required for password reset emails, optional for welcome emails)
 2. Create a "Reset Password" page in your application (required for password reset emails, optional for welcome emails)
 3. Create a "Set Password" page in your application
-4. Create a Medplum Bot that processes new `PasswordChangeRequest` resources
-5. Create a FHIR Subscription that connects `PasswordChangeRequest` resources to the bot
+4. Create a Medplum Bot that processes new `UserSecurityRequest` resources
+5. Create a FHIR Subscription that connects `UserSecurityRequest` resources to the bot
 
 ## Setup reCAPTCHA
 
@@ -74,7 +74,7 @@ Key functions of the page:
 
 ## Password Change Request Bot
 
-Create a Medplum Bot to handle new `PasswordChangeRequest` resources. The bot will send a custom email message to the user.
+Create a Medplum Bot to handle new `UserSecurityRequest` resources. The bot will send a custom email message to the user.
 
 :::tip
 
@@ -82,7 +82,13 @@ If you are new to Medplum Bots, you may want to read the [Bots](/docs/bots) docu
 
 :::
 
-This Bot will use `ProjectMembership` and `PasswordChangeRequest` resources, so the Bot must be a "Project Admin" to access these resources.
+This Bot will use `ProjectMembership` and `UserSecurityRequest` resources, so the Bot must be a "Project Admin" to access these resources.
+
+:::note
+
+You will also need the `email` project feature flag turned on to allow Bots to send emails. See [project feature flags](/docs/self-hosting/project-settings#project-feature-flags).
+
+:::
 
 Here is a full example of a Bot that sends a custom email message:
 
@@ -94,7 +100,7 @@ Create, save, and deploy your bot. Make note of the Bot ID.
 
 ## FHIR Subscription
 
-Create a FHIR Subscription that connects `PasswordChangeRequest` resources to the bot. The subscription will trigger the bot when a new `ProjectMembership` resource is created.
+Create a FHIR Subscription that connects `UserSecurityRequest` resources to the bot. The subscription will trigger the bot when a new `ProjectMembership` resource is created.
 
 Go to [Subscriptions](https://app.medplum.com/Subscription) and click "New...".
 
@@ -102,7 +108,7 @@ Enter the following values:
 
 - Status = `active`
 - Reason = `New Password Change Request`
-- Criteria = `PasswordChangeRequest`
+- Criteria = `UserSecurityRequest`
 - Channel Type = `rest-hook`
 - Channel Endpoint = `Bot/YOUR_BOT_ID`
 

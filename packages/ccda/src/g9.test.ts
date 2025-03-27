@@ -32,6 +32,8 @@ import {
   LOINC_PLAN_OF_TREATMENT_SECTION,
   LOINC_PROBLEMS_SECTION,
   LOINC_PROCEDURES_SECTION,
+  LOINC_REASON_FOR_REFERRAL_SECTION,
+  LOINC_REFERRAL_NOTE,
   LOINC_RESULTS_SECTION,
   LOINC_SOCIAL_HISTORY_SECTION,
   LOINC_TOBACCO_SMOKING_STATUS,
@@ -1097,6 +1099,43 @@ describe('Encounters', () => {
     expect(observation).toBeDefined();
     expect(observation?.[0]?.code?.['@_code']).toEqual('282291009'); // Diagnostic interpretation
     expect((observation?.[0]?.value as CcdaCode)['@_code']).toEqual('386661006');
+  });
+});
+
+describe('Reason for Referral', () => {
+  test('should handle referral service request', () => {
+    const input = createCompositionBundle(
+      { resourceType: 'Patient', id: '123' },
+      LOINC_REASON_FOR_REFERRAL_SECTION,
+      {
+        resourceType: 'Practitioner',
+        id: 'davis',
+        name: [{ family: 'Davis', given: ['Albert'] }],
+      },
+      {
+        resourceType: 'ServiceRequest',
+        id: 'referral',
+        status: 'active',
+        intent: 'order',
+        code: { coding: [{ code: '123' }] },
+        authoredOn: '2025-02-24T20:51:00.000Z',
+        requester: { reference: 'Practitioner/davis' },
+        performer: [{ reference: 'Practitioner/davis' }],
+        note: [{ text: 'Lorem ipsum' }],
+      }
+    );
+
+    const output = convertFhirToCcda(input, { type: 'referral' });
+    expect(output).toBeDefined();
+    expect(output.code?.['@_code']).toEqual(LOINC_REFERRAL_NOTE);
+
+    const section = output.component?.structuredBody?.component?.[0]?.section?.[0];
+    expect(section).toBeDefined();
+    expect(section?.text).toEqual('Lorem ipsum');
+    expect(section?.code?.['@_code']).toEqual(LOINC_REASON_FOR_REFERRAL_SECTION);
+
+    const act = section?.entry?.[0]?.act?.[0];
+    expect(act).toBeDefined();
   });
 });
 
