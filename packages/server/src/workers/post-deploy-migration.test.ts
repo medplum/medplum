@@ -1,11 +1,10 @@
-import { getReferenceString, Logger } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Job, Queue } from 'bullmq';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
-import * as logger from '../logger';
 import {
   CustomMigrationAction,
   CustomPostDeployMigration,
@@ -16,32 +15,29 @@ import * as migrationUtils from '../migrations/migration-utils';
 import { withTestContext } from '../test.setup';
 import {
   addPostDeployMigrationJobData,
-  closePostDeployMigrationWorker,
-  getPostDeployMigrationQueue,
-  initPostDeployMigrationWorker,
   jobProcessor,
+  PostDeployMigrationQueueName,
   prepareCustomMigrationJobData,
   runCustomMigration,
 } from './post-deploy-migration';
-import { QueueRegistry } from './utils';
+import { closeWorkers, initWorkers } from '.';
+import { queueRegistry } from './utils';
 
 describe('Post-Deploy Migration Worker', () => {
-  const mockQueueRegistry: jest.Mocked<QueueRegistry> = {
-    getQueue: jest.fn(),
-    addQueue: jest.fn(),
-    clear: jest.fn(),
-  };
-
   let config: MedplumServerConfig;
 
   beforeAll(async () => {
     jest.spyOn(migrationUtils, 'getPostDeployMigration');
 
     config = await loadTestConfig();
+
+    // initialize everything but workers
     await initAppServices(config);
+    await closeWorkers();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await closeWorkers();
     jest.clearAllMocks();
   });
 
@@ -49,27 +45,29 @@ describe('Post-Deploy Migration Worker', () => {
     await shutdownApp();
   });
 
-  test('Initialize and close worker and get queue', async () => {
-    const result = initPostDeployMigrationWorker(config);
+  test('Initialize and close worker', async () => {
+    let queue = queueRegistry.get(PostDeployMigrationQueueName);
+    expect(queue).toBeUndefined();
 
-    expect(result).toBeDefined();
-    expect(result.name).toBe('PostDeployMigrationQueue');
-    expect(result.queue).toBeInstanceOf(Queue);
+    await initWorkers(config);
 
-    const queue = getPostDeployMigrationQueue();
-    expect(queue).toBe(result.queue);
-
-    await closePostDeployMigrationWorker();
+    queue = queueRegistry.get(PostDeployMigrationQueueName);
+    expect(queue).toBeDefined();
+    expect(queue).toBeInstanceOf(Queue);
   });
 
-  test('getPostDeployMigrationQueue throws if not initialized', async () => {
-    expect(() => getPostDeployMigrationQueue()).toThrow(
-      'Post-deploy migration queue PostDeployMigrationQueue not available'
-    );
-  });
+  function getQueueFromRegistryOrThrow(): Queue<PostDeployJobData> {
+    const queue = queueRegistry.get<PostDeployJobData>(PostDeployMigrationQueueName);
+    if (!queue) {
+      throw new Error(`Job queue ${PostDeployMigrationQueueName} not available`);
+    }
+    return queue;
+  }
 
   test('prepareCustomMigrationJobData and addPostDeployMigrationJobData', async () => {
-    const queue = initPostDeployMigrationWorker(config).queue;
+    await initWorkers(config);
+
+    const queue = getQueueFromRegistryOrThrow();
     const addSpy = jest.mocked(queue.add).mockImplementation(async (jobName, jobData, options) => {
       return {
         id: '123',
@@ -101,34 +99,6 @@ describe('Post-Deploy Migration Worker', () => {
         deduplication: { id: expect.any(String) },
       });
     });
-
-    await closePostDeployMigrationWorker();
-  });
-
-  test('Skip adding post-deploy migration job if already exists', async () => {
-    const queue = initPostDeployMigrationWorker(config).queue;
-    const addSpy = jest.mocked(queue.add);
-    const getDeduplicationJobIdSpy = jest.mocked(queue.getDeduplicationJobId).mockResolvedValue('some-other-job-id');
-
-    const asyncJob = await getSystemRepo().createResource<AsyncJob>({
-      resourceType: 'AsyncJob',
-      status: 'accepted',
-      dataVersion: 123,
-      requestTime: new Date().toISOString(),
-      request: '/admin/super/migrate',
-    });
-
-    await withTestContext(async () => {
-      const jobData = prepareCustomMigrationJobData(asyncJob);
-
-      const result = await addPostDeployMigrationJobData(jobData);
-
-      expect(result).toBeUndefined();
-      expect(addSpy).not.toHaveBeenCalled();
-      expect(getDeduplicationJobIdSpy).toHaveBeenCalledTimes(1);
-    });
-
-    await closePostDeployMigrationWorker();
   });
 
   test.each<[string, Partial<AsyncJob>, boolean]>([
@@ -159,11 +129,11 @@ describe('Post-Deploy Migration Worker', () => {
     expect(job.data).toBeDefined();
 
     if (shouldThrow) {
-      await expect(jobProcessor({ queueRegistry: mockQueueRegistry }, job)).rejects.toThrow(
+      await expect(jobProcessor(job)).rejects.toThrow(
         `Post-deploy migration number (AsyncJob.dataVersion) not found in ${getReferenceString(mockAsyncJob)}`
       );
     } else {
-      await jobProcessor({ queueRegistry: mockQueueRegistry }, job);
+      await jobProcessor(job);
     }
 
     // getting the post-deploy migration is a reasonable proxy for running the job
@@ -211,10 +181,10 @@ describe('Post-Deploy Migration Worker', () => {
     });
     expect(job.data).toBeDefined();
 
-    await jobProcessor({ queueRegistry: mockQueueRegistry }, job);
+    await jobProcessor(job);
 
     expect(getPostDeployMigrationSpy).toHaveBeenCalledWith(456);
-    expect(mockCustomMigration.run).toHaveBeenCalledWith(expect.any(Object), job.data);
+    expect(mockCustomMigration.run).toHaveBeenCalledWith(expect.any(Object), job.data, job);
 
     const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
     expect(updatedAsyncJob.status).toBe('completed');
@@ -225,9 +195,10 @@ describe('Post-Deploy Migration Worker', () => {
   });
 
   test('Job processor re-queues ineligible jobs', async () => {
-    const queue = initPostDeployMigrationWorker(config).queue;
+    await initWorkers(config);
+
+    const queue = getQueueFromRegistryOrThrow();
     const addSpy = jest.mocked(queue.add);
-    mockQueueRegistry.getQueue.mockReturnValue(queue);
 
     const mockAsyncJob = await getSystemRepo().createResource<AsyncJob>({
       resourceType: 'AsyncJob',
@@ -269,13 +240,12 @@ describe('Post-Deploy Migration Worker', () => {
     });
     expect(job.opts.attempts).toEqual(55);
 
-    await jobProcessor({ queueRegistry: mockQueueRegistry }, job);
+    await jobProcessor(job);
 
     expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
     expect(mockCustomMigration.run).not.toHaveBeenCalled();
 
     // Verify the job was re-queued
-    expect(mockQueueRegistry.getQueue).toHaveBeenCalledWith('PostDeployMigrationQueue');
     expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', job.data, { attempts: 55 });
   });
 
@@ -361,31 +331,10 @@ describe('Post-Deploy Migration Worker', () => {
       throw new Error('Some random error');
     });
 
-    // Create a mock logger with spy methods
-    const mockLogger = {
-      error: jest.fn(),
-      info: jest.fn(),
-      debug: jest.fn(),
-      warn: jest.fn(),
-    };
-
-    const getLoggerSpy = jest.spyOn(logger, 'getLogger').mockReturnValue(mockLogger as unknown as Logger);
-
     const result = await runCustomMigration(systemRepo, jobData, mockCallback);
     expect(result).toBe('finished');
 
     const updatedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
     expect(updatedJob.status).toBe('error');
-
-    expect(mockLogger.error).toHaveBeenCalledTimes(1);
-    expect(mockLogger.error).toHaveBeenCalledWith(
-      'AsyncJob execution failed',
-      expect.objectContaining({
-        asyncJobId: asyncJob.id,
-        error: expect.stringContaining('Some random error'),
-      })
-    );
-
-    getLoggerSpy.mockRestore();
   });
 });

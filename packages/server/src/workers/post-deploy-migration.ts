@@ -1,6 +1,6 @@
 import { getReferenceString, WithId } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
-import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { DelayedError, Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -12,58 +12,87 @@ import {
   PostDeployJobRunResult,
 } from '../migrations/data/types';
 import { getPostDeployMigration } from '../migrations/migration-utils';
-import { isJobActive, isJobCompatible, QueueRegistry, queueRegistry, WorkerInitializer } from './utils';
+import {
+  isJobActive,
+  isJobCompatible,
+  QueueClosing,
+  queueRegistry,
+  waitForQueueClosing,
+  WorkerInitializer,
+} from './utils';
 
-const queueName = 'PostDeployMigrationQueue';
-const jobName = 'PostDeployMigrationJobData';
-let queue: Queue<PostDeployJobData> | undefined = undefined;
-let worker: Worker<PostDeployJobData> | undefined = undefined;
+export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
 export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<PostDeployJobData>(queueName, {
+  const queue = new Queue<PostDeployJobData>(PostDeployMigrationQueueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: 1, // No retries
     },
   });
 
-  worker = new Worker<PostDeployJobData>(
-    queueName,
-    async (job) =>
-      tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor({ queueRegistry }, job)),
+  const worker = new Worker<PostDeployJobData>(
+    PostDeployMigrationQueueName,
+    async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
     {
       ...config.bullmq,
       ...defaultOptions,
     }
   );
-  worker.on('failed', (job, err) =>
-    globalLogger.info(`${queueName} worker failed job`, {
+  worker.on('active', (job, prev) => {
+    globalLogger.info(`${PostDeployMigrationQueueName} worker: active`, {
       jobId: job?.id,
-      jobData: JSON.stringify(job?.data ?? null),
-      error: err instanceof Error ? err.message : String(err),
-      stack: err instanceof Error ? err.stack : undefined,
-    })
-  );
-  worker.on('completed', async (job) => {
-    globalLogger.info(`${queueName} worker completed job`, {
+      jobAsyncJob: job?.data?.asyncJobId && 'AsyncJob/' + job?.data?.asyncJobId,
+      prev,
+    });
+  });
+  worker.on('closing', async (message) => {
+    globalLogger.info(`${PostDeployMigrationQueueName} worker: closing`, { message });
+  });
+  worker.on('completed', async (job, result, prev) => {
+    globalLogger.info(`${PostDeployMigrationQueueName} worker: completed`, {
       jobId: job?.id,
       asyncJobId: job?.data?.asyncJobId,
       type: job?.data?.type,
+      result,
+      prev,
     });
   });
+  worker.on('error', (failedReason) =>
+    globalLogger.info(`${PostDeployMigrationQueueName} worker: error`, {
+      error: failedReason instanceof Error ? failedReason.message : String(failedReason),
+      stack: failedReason instanceof Error ? failedReason.stack : undefined,
+    })
+  );
+  worker.on('failed', (job, error, prev) =>
+    globalLogger.info(`${PostDeployMigrationQueueName} worker: failed`, {
+      jobId: job?.id,
+      asyncJobId: job?.data?.asyncJobId,
+      type: job?.data?.type,
+      prev,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+  );
+  worker.on('stalled', (jobId, prev) => {
+    globalLogger.info(`${PostDeployMigrationQueueName} worker: stalled`, { jobId, prev });
+  });
 
-  return { queue, name: queueName };
+  return { queue, worker, name: PostDeployMigrationQueueName };
 };
 
-type JobProcessorContext = {
-  queueRegistry: QueueRegistry;
-};
+/*
+  This could be a useful approach to automatically delay/requeue jobs
+  when the worker/queue is closing but in the short term, it is left up
+  to each job to detect if the worker is closing and handle it independently
+*/
+const ENABLE_AUTO_DELAY = false;
 
-export async function jobProcessor(context: JobProcessorContext, job: Job<PostDeployJobData>): Promise<void> {
+export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
 
   const migrationNumber = asyncJob.dataVersion;
@@ -73,13 +102,13 @@ export async function jobProcessor(context: JobProcessorContext, job: Job<PostDe
 
   if (!isJobCompatible(asyncJob)) {
     // re-queue the job for an eligible worker to pick up
-    const queue = context.queueRegistry.getQueue(job.queueName);
+    const queue = queueRegistry.get(job.queueName);
     await queue?.add(job.name, job.data, job.opts);
     return;
   }
 
   if (!isJobActive(asyncJob)) {
-    globalLogger.info(`${queueName} processor skipping job since AsyncJob is not active`, {
+    globalLogger.info(`${PostDeployMigrationQueueName} processor skipping job since AsyncJob is not active`, {
       jobId: job.id,
       type: job.data.type,
       asyncJob: getReferenceString(asyncJob),
@@ -89,7 +118,7 @@ export async function jobProcessor(context: JobProcessorContext, job: Job<PostDe
     return;
   }
 
-  globalLogger.info(`${queueName} processor`, {
+  globalLogger.info(`${PostDeployMigrationQueueName} processor`, {
     jobId: job.id,
     asyncJobId: job?.data?.asyncJobId,
     type: job?.data?.type,
@@ -101,43 +130,42 @@ export async function jobProcessor(context: JobProcessorContext, job: Job<PostDe
     throw new Error(`Post-deploy migration ${migrationNumber} is not a ${job.data.type} migration`);
   }
 
-  let result: PostDeployJobRunResult;
-  try {
-    result = await migration.run(getSystemRepo(), job.data);
-  } catch (err) {
-    const systemRepo = getSystemRepo();
-    const exec = new AsyncJobExecutor(systemRepo, asyncJob);
-    await exec.failJob(systemRepo, err instanceof Error ? err : new Error(String(err)));
-    throw err;
+  const promises: Promise<PostDeployJobRunResult | typeof QueueClosing>[] = [
+    migration.run(getSystemRepo(), job.data, job),
+  ];
+
+  if (ENABLE_AUTO_DELAY && job.token) {
+    promises.push(waitForQueueClosing(job.queueName));
   }
 
+  const resultOrClosing = await Promise.race(promises);
+
+  if (resultOrClosing === QueueClosing) {
+    globalLogger.info(`${PostDeployMigrationQueueName} processor detected closing event, shutting down`, {
+      jobId: job.id,
+      asyncJobId: job.data?.asyncJobId,
+    });
+    await job.moveToDelayed(Date.now() + 60_000, job.token);
+    throw new DelayedError('Migration gracefully shutdown by closing event');
+  }
+
+  const result: PostDeployJobRunResult = resultOrClosing;
+
   switch (result) {
-    case 'finished':
-      break;
     case 'ineligible': {
-      // re-queue the job for an eligible worker to pick up
-      const queue = context.queueRegistry.getQueue(job.queueName);
+      // Since we can't handle this ourselves, re-enqueue the job for another worker that can
+      // Prefer job.queueName over PostDeployMigrationQueueName to ensure the job is re-queued
+      // on the same queue it came from.
+      const queue = queueRegistry.get(job.queueName);
       await queue?.add(job.name, job.data, job.opts);
       break;
     }
+    case 'finished':
     case 'interrupted':
       break;
     default:
       result satisfies never;
       throw new Error(`Unexpected PostDeployMigration.run(${migrationNumber}) result: ${result}`);
-  }
-}
-
-export async function closePostDeployMigrationWorker(): Promise<void> {
-  // Close worker first, so any jobs that need to finish can enqueue the next job before exiting
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-
-  if (queue) {
-    await queue.close();
-    queue = undefined;
   }
 }
 
@@ -153,11 +181,13 @@ export async function runCustomMigration(
   }
 
   const exec = new AsyncJobExecutor(repo, asyncJob);
-  await exec.startAsync(async () => {
+  try {
     const result = await callback(jobData);
     const output = getAsyncJobOutputFromCustomMigrationResults(result);
-    return output;
-  });
+    await exec.completeJob(repo, output);
+  } catch (err: any) {
+    await exec.failJob(repo, err);
+  }
   return 'finished';
 }
 
@@ -188,17 +218,6 @@ export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): Custo
   };
 }
 
-/**
- * Returns the post-deploy migration queue instance or throws if it hasn't been initialized.
- * @returns The post-deploy migration queue
- */
-export function getPostDeployMigrationQueue(): NonNullable<typeof queue> {
-  if (!queue) {
-    throw new Error(`Post-deploy migration queue ${queueName} not available`);
-  }
-  return queue;
-}
-
 export async function addPostDeployMigrationJobData<T extends PostDeployJobData>(
   jobData: T,
   options?: JobsOptions
@@ -206,35 +225,26 @@ export async function addPostDeployMigrationJobData<T extends PostDeployJobData>
   const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
   const deduplicationId = `v${asyncJob.dataVersion}`;
 
-  const queue = getPostDeployMigrationQueue();
-  const existingJobId = await queue.getDeduplicationJobId(deduplicationId);
-  if (existingJobId) {
-    globalLogger.info('Not queueing post-deploy migration job since an existing job is already in progress', {
-      version: asyncJob.dataVersion,
-      deduplicationId,
-      existingJobId,
-    });
-    return undefined;
+  const queue = queueRegistry.get<PostDeployJobData>(PostDeployMigrationQueueName);
+  if (!queue) {
+    throw new Error(`Job queue ${PostDeployMigrationQueueName} not available`);
   }
 
-  // NOTE: There exists a gap between the call to .getDeduplicationJobId() and .add() where an in-flight
-  // post-deploy migration job finishes and we'd technically be allowed to queue the new job, but that
-  // doesn't really seem worth worrying about here since there are other checks in place to prevent duplicate jobs
-
-  globalLogger.debug('Queueing post-deploy migration', {
+  globalLogger.debug('Adding post-deploy migration job', {
     version: `v${asyncJob.dataVersion}`,
-    asyncJob: getReferenceString(asyncJob),
+    asyncJobId: asyncJob.id,
   });
 
-  const bullJob = await queue.add(jobName, jobData, { ...options, deduplication: { id: deduplicationId } });
+  const job = await queue.add('PostDeployMigrationJobData', jobData, {
+    ...options,
+    deduplication: { id: deduplicationId },
+  });
 
-  if (!bullJob) {
-    globalLogger.info('queue.add() did not return a job', {
-      version: asyncJob.dataVersion,
-      deduplicationId,
-    });
-    return undefined;
-  }
+  globalLogger.info('Added post-deploy migration job', {
+    jobId: job.id,
+    jobType: job.data.type,
+    asyncJobId: job.data.asyncJobId,
+  });
 
-  return bullJob as Job<T>;
+  return job as Job<T>;
 }

@@ -1,5 +1,6 @@
 import { OperationOutcomeError, WithId, accepted } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
+import { DelayedError } from 'bullmq';
 import { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
@@ -69,8 +70,8 @@ export class AsyncJobExecutor {
         log.error('AsyncJob execution failed', {
           name: callback.name,
           asyncJobId: this.resource?.id,
-          error: err.toString(),
-          stack: err.stack,
+          error: err instanceof Error ? err.message : err.toString(),
+          stack: err instanceof Error ? err.stack : undefined,
         });
         return this.failJob(systemRepo, err);
       })
@@ -123,6 +124,14 @@ export class AsyncJobExecutor {
     if (!this.resource) {
       throw new Error('Cannot failJob since AsyncJob is not specified');
     }
+
+    // A job throwing `DelayedError` means the job has been delayed/re-queued,
+    // so the job should not fail. Instead re-throw the error for BullMQ
+    // to handle.
+    if (err instanceof DelayedError) {
+      throw err;
+    }
+
     const failedJob: AsyncJob = {
       ...this.resource,
       status: 'error',

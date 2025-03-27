@@ -1,5 +1,6 @@
 import { allOk, badRequest, createReference, getReferenceString, parseSearchRequest, WithId } from '@medplum/core';
 import { AsyncJob, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { Pool, PoolClient } from 'pg';
@@ -15,15 +16,17 @@ import {
   CustomMigrationAction,
   CustomPostDeployMigration,
   CustomPostDeployMigrationJobData,
+  PostDeployJobData,
 } from './migrations/data/types';
 import { getPendingPostDeployMigration } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import { generateAccessToken } from './oauth/keys';
 import { requestContextStore } from './request-context-store';
 import { createTestProject, withTestContext } from './test.setup';
-import { getPostDeployMigrationQueue, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
-import { getReindexQueue, prepareReindexJobData, ReindexJob, ReindexJobData } from './workers/reindex';
 import * as version from './util/version';
+import { PostDeployMigrationQueueName, prepareCustomMigrationJobData } from './workers/post-deploy-migration';
+import { getReindexQueue, prepareReindexJobData, ReindexJob, ReindexJobData } from './workers/reindex';
+import { queueRegistry } from './workers/utils';
 
 const DEFAULT_SERVER_VERSION = '3.3.0';
 const DEFAULT_POST_DEPLOY_VERSION = 0;
@@ -75,16 +78,20 @@ jest.mock('./migrations/data/index', () => {
   };
 });
 
-function getQueueAddSpy(): jest.SpyInstance {
-  const queue = getPostDeployMigrationQueue();
-  const queueAddSpy = queue.add as any as jest.SpyInstance;
-  return queueAddSpy;
+function getQueueAddSpy(): jest.MockedFunctionDeep<Queue<PostDeployJobData>['add']> {
+  const queue = queueRegistry.get<PostDeployJobData>(PostDeployMigrationQueueName);
+  if (!queue) {
+    throw new Error(`Job queue ${PostDeployMigrationQueueName} not available`);
+  }
+  return jest.mocked(queue.add);
 }
 
-function getReindexQueueAddSpy(): jest.SpyInstance {
-  const queue = getReindexQueue() as any;
-  const queueAddSpy = queue.add as any as jest.SpyInstance;
-  return queueAddSpy;
+function getReindexQueueAddSpy(): jest.MockedFunctionDeep<Queue<ReindexJobData>['add']> {
+  const queue = getReindexQueue();
+  if (!queue) {
+    throw new Error(`Reindex job queue not available`);
+  }
+  return jest.mocked(queue.add);
 }
 
 function setMigrationsConfig(preDeploy: boolean, postDeploy: boolean): void {
@@ -151,20 +158,10 @@ describe('Database migrations', () => {
         );
       }));
 
-    test('Current version is less than required version', async () => {
-      const loggerInfoSpy = jest.spyOn(globalLogger, 'info');
-
-      mockValues.serverVersion = '3.2.0';
-
-      await expect(initAppServices(getConfig())).resolves.toBeUndefined();
-      expect(loggerInfoSpy).not.toHaveBeenCalledWith('Next pending post-deploy migration', {
-        version: expect.any(String),
-      });
-
-      loggerInfoSpy.mockRestore();
-    });
-
-    test.each(['3.3.0', '3.3.1', '3.4.0'])(
+    // 3.2.0 is less than the v1.serverVersion in the post-deploy migration manifest file,
+    // but it should be effectively treated the same as other versions that are less than
+    // v1.requiredBefore.
+    test.each(['3.2.0', '3.3.0', '3.3.1', '3.4.0'])(
       'Current version greater than or equal to required version and less than `requiredBefore` -- version %s',
       async (serverVersion) =>
         withTestContext(async () => {
@@ -181,7 +178,7 @@ describe('Database migrations', () => {
 
           const queueAddSpy = getQueueAddSpy();
           expect(queueAddSpy).toHaveBeenCalledTimes(1);
-          const jobData = queueAddSpy.mock.lastCall[1];
+          const jobData = queueAddSpy.mock.calls[0][1];
 
           const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
 

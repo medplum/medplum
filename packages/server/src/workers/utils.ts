@@ -254,3 +254,27 @@ class DefaultQueueRegistry implements QueueRegistry {
 }
 
 export const queueRegistry: QueueRegistry = new DefaultQueueRegistry();
+
+export const QueueClosing = Symbol('QueueClosing');
+
+/**
+ * Returns a promise that resolves when `getIsWorkerClosing()` is true which is polled every second
+ * Optionally, the promise resolves `delay` milliseconds after `getIsWorkerClosing()` first returns true.
+ * @param name - The name of the queue to wait for.
+ * @param delay - Optional delay in milliseconds before resolving. Default 10,000 (10 seconds).
+ * @returns Promise that resolves when `getIsWorkerClosing()` is true
+ */
+export async function waitForQueueClosing(name: string, delay: number = 10_000): Promise<typeof QueueClosing> {
+  return new Promise<typeof QueueClosing>((resolve) => {
+    const interval = setInterval(() => {
+      if (queueRegistry.isClosing(name)) {
+        clearInterval(interval);
+        if (delay > 0) {
+          setTimeout(() => resolve(QueueClosing), delay);
+        } else {
+          resolve(QueueClosing);
+        }
+      }
+    }, 1000);
+  });
+}

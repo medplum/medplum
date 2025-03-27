@@ -1,6 +1,7 @@
 import { WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Repository } from '../../fhir/repo';
+import { Job } from 'bullmq';
 
 export interface PostDeployJobData {
   readonly type: 'reindex' | 'custom';
@@ -20,13 +21,14 @@ export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJob
    *
    * @param repo - A repository instance
    * @param data - The job data to use while running the migration logic
+   * @param job - The full BullMQ job instance if the job was run through BullMQ, otherwise undefined
    * @returns - Returns one of:
    * 'finished' if the job either succeeded or failed,
    * 'interrupted' if the job detected that the AsyncJob was cancelled, paused, etc. out of band,
    * 'ineligible' if the processor decided it was not capable of running the job, typically
    *            due to being an outdated version of Medplum.
    */
-  run(repo: Repository, data: T): Promise<PostDeployJobRunResult>;
+  run(repo: Repository, data: T, job?: Job<T>): Promise<PostDeployJobRunResult>;
 }
 
 // Custom Jobs

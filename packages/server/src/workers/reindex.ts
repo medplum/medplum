@@ -9,7 +9,7 @@ import {
   WithId,
 } from '@medplum/core';
 import { AsyncJob, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { DelayedError, Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -120,7 +120,10 @@ export class ReindexJob {
     return false;
   }
 
-  async execute(inputJobData: ReindexJobData): Promise<'finished' | 'ineligible' | 'interrupted'> {
+  async execute(
+    inputJobData: ReindexJobData,
+    job?: Job<ReindexJobData>
+  ): Promise<'finished' | 'ineligible' | 'interrupted'> {
     let asyncJob = await this.refreshAsyncJob(this.systemRepo, inputJobData.asyncJobId);
 
     if (!isJobCompatible(asyncJob)) {
@@ -138,6 +141,11 @@ export class ReindexJob {
 
     let nextJobData: ReindexJobData | undefined = inputJobData;
     while (nextJobData) {
+      if (job?.queueName && job.token && queueRegistry.isClosing(job.queueName)) {
+        await job.updateData(nextJobData);
+        await job.moveToDelayed(Date.now() + 60_000, job.token);
+        throw new DelayedError('Reindex job delayed since queue is closing');
+      }
       const result = await this.processIteration(this.systemRepo, nextJobData);
       const resourceType = nextJobData.resourceTypes[0];
       nextJobData.results[resourceType] = result;
