@@ -31,49 +31,18 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   } = validateQuestionnaireAnswers(rawAnswers);
 
   // Create the patient in Medplum
-  const medplumPatient = await medplum.createResource<Patient>({
-    resourceType: 'Patient',
-    name: [
-      {
-        given: [firstName],
-        family: lastName,
-      },
-    ],
-    birthDate: dob,
-    gender: genderAtBirth as Patient['gender'],
-    address: [
-      {
-        line: [addressLine1],
-        city,
-        state,
-        postalCode: zip,
-      },
-    ],
-    identifier: driverLicenseNumber
-      ? [
-          {
-            type: {
-              coding: [
-                {
-                  system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                  code: 'DL',
-                  display: "Driver's License",
-                },
-              ],
-              text: "Driver's License",
-            },
-            system: 'urn:oid:2.16.840.1.113883.4.3.25',
-            value: driverLicenseNumber,
-          },
-        ]
-      : undefined,
-    telecom:
-      phone || email
-        ? [
-            ...(phone ? [{ system: 'phone' as const, value: phone }] : []),
-            ...(email ? [{ system: 'email' as const, value: email }] : []),
-          ]
-        : undefined,
+  const medplumPatient = await createMedplumPatient(medplum, {
+    firstName,
+    lastName,
+    dob,
+    genderAtBirth,
+    addressLine1,
+    city,
+    state,
+    zip,
+    driverLicenseNumber,
+    phone,
+    email,
   });
 
   // Find a matching patient on Metriport
@@ -149,7 +118,7 @@ export type ValidQuestionnaireResponseLinkId =
   | 'phone'
   | 'email';
 
-interface PatientAnswers {
+export interface ValidatedPatientData {
   firstName: string;
   lastName: string;
   dob: string;
@@ -166,7 +135,7 @@ interface PatientAnswers {
 
 export function validateQuestionnaireAnswers(
   answers: Record<ValidQuestionnaireResponseLinkId, QuestionnaireResponseItemAnswer>
-): PatientAnswers {
+): ValidatedPatientData {
   // Required fields
   const firstName = answers['firstName']?.valueString;
   if (!firstName) {
@@ -218,4 +187,56 @@ export function validateQuestionnaireAnswers(
     phone,
     email,
   };
+}
+
+export async function createMedplumPatient(medplum: MedplumClient, patient: ValidatedPatientData): Promise<Patient> {
+  const { firstName, lastName, dob, genderAtBirth, addressLine1, city, state, zip, driverLicenseNumber, phone, email } =
+    patient;
+
+  const medplumPatient = await medplum.createResource<Patient>({
+    resourceType: 'Patient',
+    name: [
+      {
+        given: [firstName],
+        family: lastName,
+      },
+    ],
+    birthDate: dob,
+    gender: genderAtBirth as Patient['gender'],
+    address: [
+      {
+        line: [addressLine1],
+        city,
+        state,
+        postalCode: zip,
+      },
+    ],
+    identifier: driverLicenseNumber
+      ? [
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                  code: 'DL',
+                  display: "Driver's License",
+                },
+              ],
+              text: "Driver's License",
+            },
+            system: 'urn:oid:2.16.840.1.113883.4.3.25',
+            value: driverLicenseNumber,
+          },
+        ]
+      : undefined,
+    telecom:
+      phone || email
+        ? [
+            ...(phone ? [{ system: 'phone' as const, value: phone }] : []),
+            ...(email ? [{ system: 'email' as const, value: email }] : []),
+          ]
+        : undefined,
+  });
+
+  return medplumPatient;
 }

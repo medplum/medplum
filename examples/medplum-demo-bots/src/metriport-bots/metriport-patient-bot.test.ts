@@ -2,9 +2,15 @@ import { getQuestionnaireAnswers, indexSearchParameterBundle, indexStructureDefi
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { handler, validateQuestionnaireAnswers, ValidQuestionnaireResponseLinkId } from './metriport-patient-bot';
-import { JaneSmithQuestionnaireResponse, JaneSmithMetriportPatient } from './metriport-patient-bot-test-data';
 import { MetriportMedicalApi } from '@metriport/api-sdk';
+import {
+  createMedplumPatient,
+  handler,
+  ValidatedPatientData,
+  validateQuestionnaireAnswers,
+  ValidQuestionnaireResponseLinkId,
+} from './metriport-patient-bot';
+import { JaneSmithQuestionnaireResponse, JaneSmithMetriportPatient } from './metriport-patient-bot-test-data';
 
 vi.mock('@metriport/api-sdk', () => ({
   MetriportMedicalApi: vi.fn(),
@@ -186,5 +192,69 @@ describe('validateQuestionnaireAnswers', () => {
     expect(answers.driverLicenseNumber).toBeUndefined();
     expect(answers.phone).toBeUndefined();
     expect(answers.email).toBeUndefined();
+  });
+});
+
+describe('createMedplumPatient', () => {
+  let medplum: MockClient;
+
+  beforeEach(() => {
+    medplum = new MockClient();
+  });
+
+  test('creates patient with all fields', async () => {
+    const patientData: ValidatedPatientData = {
+      firstName: 'Jane',
+      lastName: 'Smith',
+      dob: '1996-02-10',
+      genderAtBirth: 'female',
+      addressLine1: '123 Arsenal St',
+      city: 'Phoenix',
+      state: 'AZ',
+      zip: '85300',
+      driverLicenseNumber: 'A98765432',
+      phone: '555-555-5555',
+      email: 'jane.smith@example.com',
+    };
+
+    const patient = await createMedplumPatient(medplum, patientData);
+
+    expect(patient.name?.[0].given?.[0]).toBe('Jane');
+    expect(patient.name?.[0].family).toBe('Smith');
+    expect(patient.birthDate).toBe('1996-02-10');
+    expect(patient.gender).toBe('female');
+    expect(patient.address?.[0].line?.[0]).toBe('123 Arsenal St');
+    expect(patient.address?.[0].city).toBe('Phoenix');
+    expect(patient.address?.[0].state).toBe('AZ');
+    expect(patient.address?.[0].postalCode).toBe('85300');
+    expect(patient.identifier?.[0].value).toBe('A98765432');
+    expect(patient.telecom?.find((t) => t.system === 'phone')?.value).toBe('555-555-5555');
+    expect(patient.telecom?.find((t) => t.system === 'email')?.value).toBe('jane.smith@example.com');
+  });
+
+  test('creates patient with only required fields', async () => {
+    const patientData: ValidatedPatientData = {
+      firstName: 'Jane',
+      lastName: 'Smith',
+      dob: '1996-02-10',
+      genderAtBirth: 'female',
+      addressLine1: '123 Arsenal St',
+      city: 'Phoenix',
+      state: 'AZ',
+      zip: '85300',
+    };
+
+    const patient = await createMedplumPatient(medplum, patientData);
+
+    expect(patient.name?.[0].given?.[0]).toBe('Jane');
+    expect(patient.name?.[0].family).toBe('Smith');
+    expect(patient.birthDate).toBe('1996-02-10');
+    expect(patient.gender).toBe('female');
+    expect(patient.address?.[0].line?.[0]).toBe('123 Arsenal St');
+    expect(patient.address?.[0].city).toBe('Phoenix');
+    expect(patient.address?.[0].state).toBe('AZ');
+    expect(patient.address?.[0].postalCode).toBe('85300');
+    expect(patient.identifier).toBeUndefined();
+    expect(patient.telecom).toBeUndefined();
   });
 });
