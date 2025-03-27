@@ -36,6 +36,7 @@
     "@medplum/eslint-config": "4.1.3",
     "@medplum/fhirtypes": "4.1.3",
     "@medplum/mock": "4.1.3",
+    "@metriport/api-sdk": "14.12.0",
     "@types/node": "20.17.30",
     "@types/node-fetch": "2.6.12",
     "@types/ssh2-sftp-client": "9.0.4",
