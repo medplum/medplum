@@ -7,7 +7,7 @@ import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration'
 import { InProgressAsyncJobStatuses } from '../workers/utils';
 import * as postDeployMigrations from './data';
 import { PostDeployMigration } from './data/types';
-import * as preDeploymigrations from './schema';
+import * as preDeployMigrations from './schema';
 import { PreDeployMigration } from './schema/types';
 import { getPostDeployVersion } from '../migration-sql';
 import { Pool, PoolClient } from 'pg';
@@ -40,7 +40,7 @@ export async function getPendingPostDeployMigration(client: Pool | PoolClient): 
 
 export function getPreDeployMigration(migrationNumber: number): PreDeployMigration {
   // Get the pre-deploy migration from the pre-deploy migrations module
-  const migration = (preDeploymigrations as Record<string, PreDeployMigration>)['v' + migrationNumber];
+  const migration = (preDeployMigrations as Record<string, PreDeployMigration>)['v' + migrationNumber];
   if (!migration) {
     throw new Error(`Pre-deploy migration definition not found for v${migrationNumber}`);
   }

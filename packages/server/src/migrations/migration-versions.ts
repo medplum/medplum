@@ -1,5 +1,5 @@
 import * as postDeployMigrations from './data';
-import * as preDeploymigrations from './schema';
+import * as preDeployMigrations from './schema';
 
 export const MigrationVersion = {
   /**
@@ -54,7 +54,7 @@ let postDeployVersions: number[] | undefined;
  */
 export function getPreDeployMigrationVersions(): number[] {
   if (!preDeployVersions) {
-    preDeployVersions = getMigrationVersions(preDeploymigrations);
+    preDeployVersions = getMigrationVersions(preDeployMigrations);
   }
   return preDeployVersions;
 }
