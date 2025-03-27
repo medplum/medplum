@@ -36,12 +36,41 @@ export class ReferenceTable extends LookupTable {
   }
 
   async indexResource(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
-    if (!create) {
-      await this.deleteValuesForResource(client, resource);
+    return this.batchIndexResources(client, [resource], create);
+  }
+
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    if (resources.length === 0) {
+      return;
     }
 
-    const values = getSearchReferences(resource);
-    await this.insertValuesForResource(client, resource.resourceType, values);
+    if (!create) {
+      await this.batchDeleteValuesForResources(client, resources);
+    }
+
+    const resourceType = resources[0].resourceType;
+    const resourceBatchSize = 500;
+    for (let i = 0; i < resources.length; i += resourceBatchSize) {
+      const batch = resources.slice(i, i + resourceBatchSize);
+      const newReferenceRows = batch.flatMap((resource) => {
+        if (resource.resourceType !== resourceType) {
+          throw new Error(`Resource type mismatch: ${resource.resourceType} vs ${resourceType}`);
+        }
+
+        const resourceId = resource.id;
+        return getSearchReferences(resource).map((reference) => ({
+          resourceId,
+          targetId: reference.targetId,
+          code: reference.code,
+        }));
+      });
+
+      await this.insertValuesForResource(client, resourceType, newReferenceRows);
+    }
   }
 
   /**

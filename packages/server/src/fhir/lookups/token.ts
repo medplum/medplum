@@ -12,6 +12,7 @@ import {
   splitSearchOnComma,
   toTypedValue,
   TypedValue,
+  WithId,
 } from '@medplum/core';
 import {
   CodeableConcept,
@@ -94,23 +95,45 @@ export class TokenTable extends LookupTable {
    * @param create - True if the resource should be created (vs updated).
    * @returns Promise on completion.
    */
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (!create) {
-      await this.deleteValuesForResource(client, resource);
+  async indexResource<T extends Resource>(client: PoolClient, resource: WithId<T>, create: boolean): Promise<void> {
+    return this.batchIndexResources(client, [resource], create);
+  }
+
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    if (resources.length === 0) {
+      return;
     }
 
-    const tokens = getTokens(resource);
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id;
-    const values = tokens.map((token) => ({
-      resourceId,
-      code: token.code,
-      // logical OR coalesce to ensure that empty strings are inserted as NULL
-      system: token.system?.trim?.() || undefined,
-      value: token.value?.trim?.() || undefined,
-    }));
+    if (!create) {
+      await this.batchDeleteValuesForResources(client, resources);
+    }
 
-    await this.insertValuesForResource(client, resourceType, values);
+    const resourceType = resources[0].resourceType;
+
+    const resourceBatchSize = 500;
+    for (let i = 0; i < resources.length; i += resourceBatchSize) {
+      const batch = resources.slice(i, i + resourceBatchSize);
+      const newTokenRows = batch.flatMap((resource) => {
+        if (resource.resourceType !== resourceType) {
+          throw new Error(`Resource type mismatch: ${resource.resourceType} vs ${resourceType}`);
+        }
+
+        const resourceId = resource.id;
+        return getTokens(resource).map((token) => ({
+          resourceId,
+          code: token.code,
+          // logical OR coalesce to ensure that empty strings are inserted as NULL
+          system: token.system?.trim?.() || undefined,
+          value: token.value?.trim?.() || undefined,
+        }));
+      });
+
+      await this.insertValuesForResource(client, resourceType, newTokenRows);
+    }
   }
 
   /**
