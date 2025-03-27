@@ -201,27 +201,29 @@ export const EncounterChart = (): JSX.Element => {
     [tasks]
   );
 
-  const saveChargeItem = useCallback(async (chargeItem: ChargeItem): Promise<ChargeItem> => {
-    try {
-      return await medplum.updateResource(chargeItem);
-    } catch (err) {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-      return chargeItem;
-    }
-  }, [medplum]);
+  const saveChargeItem = useCallback(
+    async (chargeItem: ChargeItem): Promise<ChargeItem> => {
+      try {
+        return await medplum.updateResource(chargeItem);
+      } catch (err) {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+        return chargeItem;
+      }
+    },
+    [medplum]
+  );
 
   const updateChargeItemList = useCallback(
-    (updatedChargeItem: ChargeItem): void => {      
-      
+    (updatedChargeItem: ChargeItem): void => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      
+
       saveTimeoutRef.current = setTimeout(async () => {
         const savedChargeItem = await saveChargeItem(updatedChargeItem);
         setChargeItems(chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item)));
@@ -306,11 +308,7 @@ export const EncounterChart = (): JSX.Element => {
                   Charge Items
                 </Text>
                 {chargeItems.map((chargeItem: ChargeItem) => (
-                  <ChageItemPanel 
-                    key={chargeItem.id} 
-                    chargeItem={chargeItem} 
-                    onChange={updateChargeItemList}
-                  />
+                  <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} onChange={updateChargeItemList} />
                 ))}
               </Stack>
             )}
