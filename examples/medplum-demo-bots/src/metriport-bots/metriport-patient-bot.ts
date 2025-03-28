@@ -1,6 +1,6 @@
 import { BotEvent, getQuestionnaireAnswers, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Patient, QuestionnaireResponse, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
-import { MetriportMedicalApi, PatientDTO, USState } from '@metriport/api-sdk';
+import { MetriportMedicalApi, PatientDTO, USState, Demographics, PatientCreate } from '@metriport/api-sdk';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<Patient> {
   const metriportApiKey = event.secrets['METRIPORT_API_KEY']?.valueString;
@@ -17,13 +17,17 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const validatedData = validateQuestionnaireAnswers(rawAnswers);
 
   // Create the patient in Medplum
+  // TODO: Refactor to upsert the patient
   const medplumPatient = await createMedplumPatient(medplum, validatedData);
 
   // Find a matching patient on Metriport
-  const metriportPatient = await findMatchingMetriportPatient(metriport, validatedData);
+  let metriportPatient = await findMatchingMetriportPatient(metriport, validatedData);
 
+  // Create a new patient in Metriport, if they don't exist
   if (!metriportPatient) {
-    // TODO: Create a new patient in Metriport, if they don't exist
+    // FIXME: This is a hardcoded facility ID. Should we get this from the QuestionnaireResponse? It can link to a Organization resource.
+    const facilityId = '0195d964-d166-7226-8912-76934c23c140';
+    metriportPatient = await createMetriportPatient(metriport, validatedData, facilityId, medplumPatient.id as string);
   }
 
   // TODO: Get the patient's records from Metriport
@@ -157,10 +161,13 @@ export async function createMedplumPatient(medplum: MedplumClient, patient: Vali
   return medplumPatient;
 }
 
-export async function findMatchingMetriportPatient(
-  metriport: MetriportMedicalApi,
-  patient: ValidatedPatientData
-): Promise<PatientDTO | undefined> {
+// Function overloads to ensure type safety
+export function buildMetriportPatientPayload(patient: ValidatedPatientData): Demographics;
+export function buildMetriportPatientPayload(patient: ValidatedPatientData, medplumPatientId: string): PatientCreate;
+export function buildMetriportPatientPayload(
+  patient: ValidatedPatientData,
+  medplumPatientId?: string
+): Demographics | PatientCreate {
   const medplumGenderToMetriportGenderMap: Record<string, 'M' | 'F' | 'O' | 'U'> = {
     male: 'M',
     female: 'F',
@@ -183,34 +190,55 @@ export async function findMatchingMetriportPatient(
     email,
   } = patient;
 
+  const payload = {
+    firstName,
+    lastName,
+    dob,
+    genderAtBirth: medplumGenderToMetriportGenderMap[genderAtBirth],
+    address: [{ addressLine1, city, state: USState[state as keyof typeof USState], zip, country: 'USA' }],
+    personalIdentifiers:
+      driverLicenseNumber && driverLicenseState
+        ? [
+            {
+              type: 'driversLicense' as const,
+              state: USState[driverLicenseState as keyof typeof USState],
+              value: driverLicenseNumber,
+            },
+          ]
+        : undefined,
+    contact: [{ phone, email }],
+  };
+
+  if (medplumPatientId) {
+    return { ...payload, externalId: medplumPatientId } as PatientCreate;
+  }
+
+  return payload as Demographics;
+}
+
+export async function findMatchingMetriportPatient(
+  metriport: MetriportMedicalApi,
+  patient: ValidatedPatientData
+): Promise<PatientDTO | undefined> {
   try {
-    const matchedPatient = await metriport.matchPatient({
-      firstName,
-      lastName,
-      dob,
-      genderAtBirth: medplumGenderToMetriportGenderMap[genderAtBirth],
-      personalIdentifiers:
-        driverLicenseNumber && driverLicenseState
-          ? [
-              {
-                type: 'driversLicense',
-                state: USState[driverLicenseState as keyof typeof USState],
-                value: driverLicenseNumber,
-              },
-            ]
-          : undefined,
-      address: [{ addressLine1, city, state: USState[state as keyof typeof USState], zip, country: 'USA' }],
-      contact: [
-        {
-          phone,
-          email,
-        },
-      ],
-    });
-    console.log('Found the patient in Metriport:\n', JSON.stringify(matchedPatient, null, 2));
-    return matchedPatient;
+    return await metriport.matchPatient(buildMetriportPatientPayload(patient));
   } catch (error) {
     throw new Error(`Error matching patient in Metriport: ${normalizeErrorString(error)}`, {
+      cause: error,
+    });
+  }
+}
+
+export async function createMetriportPatient(
+  metriport: MetriportMedicalApi,
+  patient: ValidatedPatientData,
+  facilityId: string,
+  medplumPatientId: string
+): Promise<PatientDTO> {
+  try {
+    return await metriport.createPatient(buildMetriportPatientPayload(patient, medplumPatientId), facilityId);
+  } catch (error) {
+    throw new Error(`Error creating patient in Metriport: ${normalizeErrorString(error)}`, {
       cause: error,
     });
   }
