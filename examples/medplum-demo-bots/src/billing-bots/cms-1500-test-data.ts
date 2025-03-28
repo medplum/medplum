@@ -6,7 +6,7 @@ export const fullAnswer: Bundle = {
   entry: [
     {
       fullUrl: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945',
-      request: { method: 'POST', url: 'Patient' },
+      request: { method: 'PUT', url: 'Patient?name=Homer%20Simpson' },
       resource: {
         resourceType: 'Patient',
         name: [
@@ -22,45 +22,108 @@ export const fullAnswer: Bundle = {
             line: ['742 Evergreen Terrace'],
             city: 'Springfield',
             state: 'IL',
+            postalCode: '62704',
+          },
+        ],
+        telecom: [
+          {
+            system: 'phone',
+            use: 'mobile',
+            value: '555-555-6392',
           },
         ],
       },
     },
     {
       fullUrl: 'urn:uuid:7914fb49-05e1-45cc-bffc-a3fdff1b72e1',
-      request: { method: 'POST', url: 'RelatedPerson' },
+      request: { method: 'PUT', url: 'RelatedPerson?name=Marge%20Simpson' },
       resource: {
         resourceType: 'RelatedPerson',
         patient: { reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945' },
         name: [{ given: ['Marge'], family: 'Simpson' }],
+        birthDate: '1960-08-12',
+        gender: 'female',
         address: [
           {
             line: ['742 Evergreen Terrace'],
             city: 'Springfield',
             state: 'IL',
+            postalCode: '62704',
           },
         ],
-        birthDate: '1960-08-12',
-        gender: 'female',
+        telecom: [
+          {
+            system: 'phone',
+            use: 'mobile',
+            value: '555-555-6393',
+          },
+        ],
+      },
+    },
+    {
+      fullUrl: 'urn:uuid:e2523da4-9d6e-442c-99aa-fcfe3353c9e3',
+      request: { method: 'PUT', url: 'RelatedPerson?name=Abraham%20Simpson' },
+      resource: {
+        resourceType: 'RelatedPerson',
+        patient: { reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945' },
+        name: [{ given: ['Abraham'], family: 'Simpson' }],
+        birthDate: '1927-06-04',
+        gender: 'male',
+        address: [
+          {
+            line: ['Springfield Retirement Castle'],
+            city: 'Springfield',
+            state: 'IL',
+            postalCode: '62704',
+          },
+        ],
+      },
+    },
+    {
+      fullUrl: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c',
+      request: { method: 'PUT', url: 'Practitioner?identifier=2490433892' },
+      resource: {
+        resourceType: 'Practitioner',
+        identifier: [
+          {
+            system: 'http://hl7.org/fhir/sid/us-npi',
+            value: '2490433892',
+          },
+        ],
+        name: [
+          {
+            given: ['Kevin'],
+            family: 'Smith',
+          },
+        ],
+        address: [
+          {
+            line: ['2904 Main Street'],
+            city: 'Elizabeth',
+            state: 'MD',
+            country: 'US',
+            postalCode: '21219',
+          },
+        ],
+        telecom: [
+          {
+            use: 'work',
+            system: 'phone',
+            value: '555-555-9391',
+          },
+        ],
       },
     },
     {
       fullUrl: 'urn:uuid:f1ed24bf-7efa-44a1-b5ea-cc46414a282d',
-      request: { method: 'POST', url: 'Organization' },
+      request: { method: 'PUT', url: 'Organization?identifier=7911621876' },
       resource: {
         resourceType: 'Organization',
         identifier: [
           {
             use: 'official',
-            type: {
-              coding: [
-                {
-                  system: 'http://example.org/org-id',
-                  code: 'NPI',
-                },
-              ],
-            },
-            value: 'example-npi-number',
+            system: 'http://hl7.org/fhir/sid/us-npi',
+            value: '7911621876',
           },
           {
             use: 'official',
@@ -72,7 +135,7 @@ export const fullAnswer: Bundle = {
                 },
               ],
             },
-            value: 'example-tax-id',
+            value: '5551844680',
             system: 'http://example-systemt.org/tax',
           },
         ],
@@ -86,11 +149,55 @@ export const fullAnswer: Bundle = {
             type: 'both',
           },
         ],
+        telecom: [
+          {
+            system: 'phone',
+            use: 'work',
+            value: '555-555-4321',
+          },
+        ],
+      },
+    },
+    {
+      fullUrl: 'urn:uuid:4bc72375-425d-4fb0-be6e-38bc6144d1e5',
+      request: { method: 'PUT', url: 'Organization?identifier=5746217289' },
+      resource: {
+        resourceType: 'Organization',
+        identifier: [
+          {
+            use: 'official',
+            system: 'http://hl7.org/fhir/sid/us-npi',
+            value: '5746217289',
+          },
+          {
+            use: 'official',
+            type: {
+              coding: [
+                {
+                  system: 'http://example.org/org-id',
+                  code: 'TAX',
+                },
+              ],
+            },
+            value: '5554404734',
+            system: 'http://example-systemt.org/tax',
+          },
+        ],
+        name: 'Medicare Insurance',
+        address: [
+          {
+            line: ['2578 Elmwood Avenue'],
+            city: 'Chicago',
+            state: 'IL',
+            postalCode: '60610',
+            type: 'both',
+          },
+        ],
       },
     },
     {
       fullUrl: 'urn:uuid:72ec6c80-6dab-41e0-adff-a8670a5b4363',
-      request: { method: 'POST', url: 'Coverage' },
+      request: { method: 'PUT', url: 'Coverage?identifier=89442808' },
       resource: {
         resourceType: 'Coverage',
         identifier: [
@@ -100,7 +207,10 @@ export const fullAnswer: Bundle = {
           },
         ],
         status: 'active',
-        beneficiary: { reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945', display: 'Homer Simpson' },
+        beneficiary: {
+          reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945',
+          display: 'Homer Simpson',
+        },
         payor: [
           {
             reference: 'urn:uuid:f1ed24bf-7efa-44a1-b5ea-cc46414a282d',
@@ -127,53 +237,117 @@ export const fullAnswer: Bundle = {
         },
         subscriber: {
           reference: 'urn:uuid:7914fb49-05e1-45cc-bffc-a3fdff1b72e1',
+          display: 'Marge Simpson',
         },
+        class: [
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
+                  code: 'plan',
+                },
+              ],
+            },
+            value: 'B37FC',
+            name: 'Independence Blue Full Coverage',
+          },
+        ],
       },
     },
     {
-      fullUrl: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c',
-      request: { method: 'POST', url: 'Practitioner' },
+      fullUrl: 'urn:uuid:10e49ae1-acf1-4288-93d3-5bbb504957aa',
+      request: { method: 'PUT', url: 'Coverage?identifier=21173018' },
       resource: {
-        resourceType: 'Practitioner',
+        resourceType: 'Coverage',
         identifier: [
           {
-            system: 'http://example.org/practitioner-npi',
-            id: 'NPI',
-            value: '2490433892',
+            use: 'official',
+            value: '21173018',
           },
         ],
-        name: [
+        status: 'active',
+        beneficiary: {
+          reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945',
+          display: 'Homer Simpson',
+        },
+        payor: [
           {
-            given: ['Kevin'],
-            family: 'Smith',
+            reference: 'urn:uuid:4bc72375-425d-4fb0-be6e-38bc6144d1e5',
+            display: 'Medicare Insurance',
           },
         ],
-        address: [
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+              code: 'EHCPOL',
+              display: 'extended healthcare',
+            },
+          ],
+        },
+        relationship: {
+          coding: [
+            {
+              system: 'http://hl7.org/fhir/ValueSet/subscriber-relationship',
+              code: 'child',
+              display: 'Child',
+            },
+          ],
+        },
+        subscriber: {
+          reference: 'urn:uuid:e2523da4-9d6e-442c-99aa-fcfe3353c9e3',
+          display: 'Abraham Simpson',
+        },
+        class: [
           {
-            line: ['2904 Main Street'],
-            city: 'Elizabeth',
-            state: 'MD',
-            country: 'US  ',
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
+                  code: 'plan',
+                },
+              ],
+            },
+            value: '11461128',
+            name: 'Medicare Gold Plus',
           },
         ],
-        telecom: [
+      },
+    },
+    {
+      fullUrl: 'urn:uuid:30192746-113d-4c78-af02-3090ce22996f',
+      request: { method: 'PUT', url: 'ServiceRequest?identifier=4839201756' },
+      resource: {
+        resourceType: 'ServiceRequest',
+        identifier: [
           {
-            use: 'work',
-            system: 'phone',
-            value: '3915559391',
+            system: 'http://hl7.org/fhir/sid/us-npi',
+            value: '4839201756',
           },
         ],
+        status: 'active',
+        intent: 'order',
+        category: [
+          {
+            coding: [
+              { system: 'http://snomed.info/sct', code: '103696004', display: 'Patient referral to specialist' },
+            ],
+          },
+        ],
+        subject: { reference: 'urn:uuid:8796eac7-4ee2-4b9a-84f7-68691173e945', display: 'Homer Simpson' },
+        requester: { reference: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c', display: 'Kevin Smith' },
       },
     },
     {
       fullUrl: 'urn:uuid:6a86eda3-ce9e-472c-ba6b-1855e518d779',
-      request: { method: 'POST', url: 'Claim' },
+      request: { method: 'PUT', url: 'Claim?identifier=example-claim-cms1500' },
       resource: {
         resourceType: 'Claim',
         identifier: [
           {
             system: 'http://example.org/claims',
-            value: 'example-claim',
+            value: 'example-claim-cms1500',
           },
         ],
         status: 'active',
@@ -197,6 +371,7 @@ export const fullAnswer: Bundle = {
             },
           ],
         },
+        referral: { reference: 'urn:uuid:30192746-113d-4c78-af02-3090ce22996f' },
         insurance: [
           {
             coverage: {
@@ -207,8 +382,16 @@ export const fullAnswer: Bundle = {
             focal: true,
             preAuthRef: ['0923092390'],
           },
+          {
+            coverage: {
+              reference: 'urn:uuid:10e49ae1-acf1-4288-93d3-5bbb504957aa',
+              display: 'Abraham Simpson Extended Healthcare Plan',
+            },
+            sequence: 2,
+            focal: false,
+          },
         ],
-        provider: { reference: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c' },
+        provider: { reference: 'urn:uuid:706245c5-5f9d-45eb-bf90-cee2fac3f52c', display: 'Kevin Smith' },
         supportingInfo: [
           {
             category: {
@@ -256,13 +439,26 @@ export const fullAnswer: Bundle = {
           },
           {
             category: {
-              coding: [
-                { system: 'http://terminology.hl7.org/CodeSystem/claiminformationcategory', code: 'patientpaid' },
-              ],
+              coding: [{ code: 'info', system: 'http://terminology.hl7.org/CodeSystem/claiminformationcategory' }],
+            },
+            code: {
+              coding: [{ system: 'http://example.org/info-codes', code: 'patientpaid' }],
             },
             sequence: 5,
             valueQuantity: {
-              value: 100,
+              value: 320,
+              unit: 'USD',
+            },
+          },
+          {
+            category: {
+              coding: [
+                { system: 'http://terminology.hl7.org/CodeSystem/claiminformationcategory', code: 'outsidelab' },
+              ],
+            },
+            sequence: 6,
+            valueQuantity: {
+              value: 125,
               unit: 'USD',
             },
           },
@@ -276,6 +472,12 @@ export const fullAnswer: Bundle = {
             sequence: 1,
             diagnosisCodeableConcept: {
               coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'J20', display: 'Acute bronchitis' }],
+            },
+          },
+          {
+            sequence: 2,
+            diagnosisCodeableConcept: {
+              coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'G89.4', display: 'Chronic pain syndrome' }],
             },
           },
         ],
@@ -328,7 +530,7 @@ export const fullAnswer: Bundle = {
             modifier: [
               { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/modifiers', code: 'x', display: 'None' }] },
             ],
-            diagnosisSequence: [1],
+            diagnosisSequence: [1, 2],
             net: {
               currency: 'USD',
               value: 1000,
