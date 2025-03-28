@@ -215,7 +215,8 @@ Function UpgradeApp
     # Get a list of services, pipe to findstr to find MedplumAgent services
     # Use net stop to gracefully stop each service, then delete it
     # We use net stop specifically because it waits for the service to gracefully stop before returning
-    ExecWait 'cmd.exe /c "for /f "tokens=2 delims=: " %s in (''sc query state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent"'') do (if not "%s"=="${SERVICE_NAME}" (echo Stopping and deleting service: %s & net stop %s && sc delete %s))"'
+    ; ExecWait 'cmd.exe /c "for /f "tokens=2 delims=: " %s in (''sc query state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent"'') do (if not "%s"=="${SERVICE_NAME}" (echo Stopping and deleting service: %s & net stop %s && sc delete %s))"'
+    ExecWait "cmd.exe /c \"for /f \\\"tokens=2 delims=: \\\" %s in ('sc query state^= all ^| findstr /i \\\"SERVICE_NAME.*MedplumAgent\\\"') do (if not \\\"%s\\\"==\\\"${SERVICE_NAME}\\\" (echo Stopping and deleting service: %s & net stop %s && sc delete %s))\""
     DetailPrint "Exit code $1"
 
 FunctionEnd
