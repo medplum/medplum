@@ -221,7 +221,10 @@ Function UpgradeApp
     ; DetailPrint "Exit code $1"
     DetailPrint "Stopping old Medplum Agent service..."
     Sleep 2000
-    ExecWait "net stop MedplumAgent && sc delete MedplumAgent" $1
+    ExecWait "net stop MedplumAgent" $1
+    DetailPrint "Exit code $1"
+    DetailPrint "Deleting old Medplum Agent service..."
+    ExecWait "sc delete MedplumAgent" $1
     DetailPrint "Exit code $1"
 
 FunctionEnd
