@@ -1,8 +1,8 @@
-import { BotEvent, getQuestionnaireAnswers, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Patient, QuestionnaireResponse, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
+import { BotEvent, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
 import { MetriportMedicalApi, PatientDTO, USState, Demographics, PatientCreate } from '@metriport/api-sdk';
 
-export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<Patient> {
+export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<void> {
   const metriportApiKey = event.secrets['METRIPORT_API_KEY']?.valueString;
   if (!metriportApiKey) {
     throw new Error('Missing METRIPORT_API_KEY');
@@ -13,12 +13,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     { sandbox: true }
   );
 
-  const rawAnswers = getQuestionnaireAnswers(event.input);
-  const validatedData = validateQuestionnaireAnswers(rawAnswers);
+  const medplumPatient = event.input;
 
-  // Create the patient in Medplum
-  // TODO: Refactor to upsert the patient
-  const medplumPatient = await createMedplumPatient(medplum, validatedData);
+  const validatedData = validatePatientResource(medplumPatient);
 
   // Find a matching patient on Metriport
   let metriportPatient = await findMatchingMetriportPatient(metriport, validatedData);
@@ -32,23 +29,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   // TODO: Get the patient's records from Metriport
   // TODO: Create FHIR resources in Medplum
-
-  return medplumPatient;
 }
-
-export type ValidQuestionnaireResponseLinkId =
-  | 'firstName'
-  | 'lastName'
-  | 'dob'
-  | 'genderAtBirth'
-  | 'addressLine1'
-  | 'city'
-  | 'state'
-  | 'zip'
-  | 'driverLicenseNumber'
-  | 'driverLicenseState'
-  | 'phone'
-  | 'email';
 
 export interface ValidatedPatientData {
   firstName: string;
@@ -59,52 +40,44 @@ export interface ValidatedPatientData {
   city: string;
   state: string;
   zip: string;
-  driverLicenseNumber?: string;
-  driverLicenseState?: string;
   phone?: string;
   email?: string;
 }
 
-export function validateQuestionnaireAnswers(
-  answers: Record<ValidQuestionnaireResponseLinkId, QuestionnaireResponseItemAnswer>
-): ValidatedPatientData {
+export function validatePatientResource(patient: Patient): ValidatedPatientData {
   // Required fields
-  const firstName = answers['firstName']?.valueString;
+  const firstName = patient.name?.[0]?.given?.[0];
   if (!firstName) {
     throw new Error('Missing first name');
   }
 
-  const lastName = answers['lastName']?.valueString;
+  const lastName = patient.name?.[0]?.family;
   if (!lastName) {
     throw new Error('Missing last name');
   }
 
-  const dob = answers['dob']?.valueDate;
+  const dob = patient.birthDate;
   if (!dob) {
     throw new Error('Missing date of birth');
   }
 
-  const genderAtBirth = answers['genderAtBirth']?.valueCoding?.code;
+  const genderAtBirth = patient.gender;
   if (!genderAtBirth) {
-    throw new Error('Missing gender at birth');
+    throw new Error('Missing gender');
   }
 
-  const addressLine1 = answers['addressLine1']?.valueString;
-  const city = answers['city']?.valueString;
-  const state = answers['state']?.valueCoding?.code;
-  const zip = answers['zip']?.valueString;
+  const address = patient.address?.[0];
+  const addressLine1 = address?.line?.[0];
+  const city = address?.city;
+  const state = address?.state;
+  const zip = address?.postalCode;
   if (!addressLine1 || !city || !state || !zip) {
     throw new Error('Missing address information');
   }
 
   // Optional fields
-  const driverLicenseNumber = answers['driverLicenseNumber']?.valueString;
-  const driverLicenseState = answers['driverLicenseState']?.valueCoding?.code;
-  if (Boolean(driverLicenseNumber) !== Boolean(driverLicenseState)) {
-    throw new Error('Missing driver license state or number');
-  }
-  const phone = answers['phone']?.valueString;
-  const email = answers['email']?.valueString;
+  const phone = patient.telecom?.find((t) => t.system === 'phone')?.value;
+  const email = patient.telecom?.find((t) => t.system === 'email')?.value;
 
   return {
     firstName,
@@ -115,50 +88,9 @@ export function validateQuestionnaireAnswers(
     city,
     state,
     zip,
-    driverLicenseNumber,
     phone,
     email,
   };
-}
-
-export async function createMedplumPatient(medplum: MedplumClient, patient: ValidatedPatientData): Promise<Patient> {
-  const { firstName, lastName, dob, genderAtBirth, addressLine1, city, state, zip, driverLicenseNumber, phone, email } =
-    patient;
-
-  const medplumPatient = await medplum.createResource<Patient>({
-    resourceType: 'Patient',
-    name: [{ given: [firstName], family: lastName }],
-    birthDate: dob,
-    gender: genderAtBirth as Patient['gender'],
-    address: [{ line: [addressLine1], city, state, postalCode: zip }],
-    identifier: driverLicenseNumber
-      ? [
-          {
-            type: {
-              coding: [
-                {
-                  system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
-                  code: 'DL',
-                  display: "Driver's License",
-                },
-              ],
-              text: "Driver's License",
-            },
-            system: 'urn:oid:2.16.840.1.113883.4.3.25',
-            value: driverLicenseNumber,
-          },
-        ]
-      : undefined,
-    telecom:
-      phone || email
-        ? [
-            ...(phone ? [{ system: 'phone' as const, value: phone }] : []),
-            ...(email ? [{ system: 'email' as const, value: email }] : []),
-          ]
-        : undefined,
-  });
-
-  return medplumPatient;
 }
 
 // Function overloads to ensure type safety
@@ -175,20 +107,7 @@ export function buildMetriportPatientPayload(
     unknown: 'U',
   };
 
-  const {
-    firstName,
-    lastName,
-    dob,
-    genderAtBirth,
-    addressLine1,
-    city,
-    state,
-    zip,
-    driverLicenseNumber,
-    driverLicenseState,
-    phone,
-    email,
-  } = patient;
+  const { firstName, lastName, dob, genderAtBirth, addressLine1, city, state, zip, phone, email } = patient;
 
   const payload = {
     firstName,
@@ -196,16 +115,6 @@ export function buildMetriportPatientPayload(
     dob,
     genderAtBirth: medplumGenderToMetriportGenderMap[genderAtBirth],
     address: [{ addressLine1, city, state: USState[state as keyof typeof USState], zip, country: 'USA' }],
-    personalIdentifiers:
-      driverLicenseNumber && driverLicenseState
-        ? [
-            {
-              type: 'driversLicense' as const,
-              state: USState[driverLicenseState as keyof typeof USState],
-              value: driverLicenseNumber,
-            },
-          ]
-        : undefined,
     contact: [{ phone, email }],
   };
 
@@ -221,7 +130,9 @@ export async function findMatchingMetriportPatient(
   patient: ValidatedPatientData
 ): Promise<PatientDTO | undefined> {
   try {
-    return await metriport.matchPatient(buildMetriportPatientPayload(patient));
+    const matchedPatient = await metriport.matchPatient(buildMetriportPatientPayload(patient));
+    console.log('Found matching patient in Metriport:', JSON.stringify(matchedPatient, null, 2));
+    return matchedPatient;
   } catch (error) {
     throw new Error(`Error matching patient in Metriport: ${normalizeErrorString(error)}`, {
       cause: error,
@@ -236,7 +147,12 @@ export async function createMetriportPatient(
   medplumPatientId: string
 ): Promise<PatientDTO> {
   try {
-    return await metriport.createPatient(buildMetriportPatientPayload(patient, medplumPatientId), facilityId);
+    const createdPatient = await metriport.createPatient(
+      buildMetriportPatientPayload(patient, medplumPatientId),
+      facilityId
+    );
+    console.log('Created patient in Metriport:', JSON.stringify(createdPatient, null, 2));
+    return createdPatient;
   } catch (error) {
     throw new Error(`Error creating patient in Metriport: ${normalizeErrorString(error)}`, {
       cause: error,

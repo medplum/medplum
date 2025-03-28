@@ -1,77 +1,21 @@
-import { QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Patient } from '@medplum/fhirtypes';
 
-export const JaneSmithQuestionnaireResponse: QuestionnaireResponse = {
-  resourceType: 'QuestionnaireResponse',
-  status: 'completed',
-  item: [
+export const JaneSmithMedplumPatient: Patient = {
+  resourceType: 'Patient',
+  name: [{ given: ['Jane'], family: 'Smith' }],
+  birthDate: '1996-02-10',
+  gender: 'female',
+  address: [
     {
-      linkId: 'firstName',
-      text: 'First Name',
-      answer: [{ valueString: 'Jane' }],
+      line: ['123 Arsenal St'],
+      city: 'Phoenix',
+      state: 'AZ',
+      postalCode: '85300',
     },
-    {
-      linkId: 'lastName',
-      text: 'Last Name',
-      answer: [{ valueString: 'Smith' }],
-    },
-    {
-      linkId: 'dob',
-      text: 'Date of Birth',
-      answer: [{ valueDate: '1996-02-10' }],
-    },
-    {
-      linkId: 'genderAtBirth',
-      text: 'Gender at Birth',
-      answer: [
-        {
-          valueCoding: {
-            system: 'http://hl7.org/fhir/administrative-gender',
-            code: 'female',
-            display: 'Female',
-          },
-        },
-      ],
-    },
-    {
-      linkId: 'addressLine1',
-      text: 'Address Line 1',
-      answer: [{ valueString: '123 Arsenal St' }],
-    },
-    {
-      linkId: 'city',
-      text: 'City',
-      answer: [{ valueString: 'Phoenix' }],
-    },
-    {
-      linkId: 'state',
-      text: 'State',
-      answer: [{ valueCoding: { system: 'https://www.usps.com/', code: 'AZ', display: 'Arizona' } }],
-    },
-    {
-      linkId: 'zip',
-      text: 'Zip',
-      answer: [{ valueString: '85300' }],
-    },
-    {
-      linkId: 'driverLicenseNumber',
-      text: 'Driver License Number',
-      answer: [{ valueString: 'A98765432' }],
-    },
-    {
-      linkId: 'driverLicenseState',
-      text: 'Driver License State',
-      answer: [{ valueCoding: { system: 'http://hl7.org/fhir/v3/State', code: 'AZ', display: 'Arizona' } }],
-    },
-    {
-      linkId: 'phone',
-      text: 'Phone',
-      answer: [{ valueString: '555-555-5555' }],
-    },
-    {
-      linkId: 'email',
-      text: 'Email',
-      answer: [{ valueString: 'jane.smith@example.com' }],
-    },
+  ],
+  telecom: [
+    { system: 'phone', value: '555-555-5555' },
+    { system: 'email', value: 'jane.smith@example.com' },
   ],
 };
 
