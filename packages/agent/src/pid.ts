@@ -4,7 +4,11 @@ import { platform, tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 
+const EXIT_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
+
 export const pidLogger = new Logger((msg) => `[PID]: ${msg}`);
+const pidFilePaths = new Set<string>();
+let agentCleanupSetup = false;
 
 /**
  * Get the appropriate PID file location based on OS
@@ -38,6 +42,7 @@ export function removePidFile(pidFilePath: string): void {
       pidLogger.error(`Error removing PID file: ${pidFilePath}`, err as Error);
     }
   }
+  pidFilePaths.delete(pidFilePath);
 }
 
 /**
@@ -98,6 +103,8 @@ export function createPidFile(appName: string): string {
 
   pidLogger.info(`PID file created at: ${pidFilePath}`);
 
+  pidFilePaths.add(pidFilePath);
+
   return pidFilePath;
 }
 
@@ -115,25 +122,39 @@ export function ensureDirectoryExists(directoryPath: string): void {
 }
 
 /**
- * Cleans up the PID file in the event of any process exit scenario.
- * @param pidFilePath - The PID file for this application.
+ * Cleans up all PID files and removes them from the list of PID files to cleanup when the process ends.
  */
-export function registerAgentCleanup(pidFilePath: string): void {
-  // Handle normal exit
-  process.on('exit', () => removePidFile(pidFilePath));
-
-  // Handle various signals
-  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
-    process.on(signal, () => {
-      removePidFile(pidFilePath);
-      process.exit(0);
-    });
-  }
-
-  // Handle uncaught exceptions
-  process.on('uncaughtException', (err) => {
-    pidLogger.error('Uncaught exception:', err);
+export function removeAllPidFiles(): void {
+  for (const pidFilePath of pidFilePaths) {
     removePidFile(pidFilePath);
-    process.exit(1);
-  });
+  }
+}
+
+/**
+ * Cleans up the PID file in the event of any process exit scenario.
+ */
+export function registerAgentCleanup(): void {
+  if (!agentCleanupSetup) {
+    // Handle normal exit
+    process.on('exit', () => {
+      removeAllPidFiles();
+    });
+
+    // Handle various signals
+    for (const signal of EXIT_SIGNALS) {
+      process.on(signal, () => {
+        removeAllPidFiles();
+        process.exit(0);
+      });
+    }
+
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (err) => {
+      pidLogger.error('Uncaught exception:', err);
+      removeAllPidFiles();
+      process.exit(1);
+    });
+
+    agentCleanupSetup = true;
+  }
 }

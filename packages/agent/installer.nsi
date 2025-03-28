@@ -4,7 +4,8 @@
 
 !define COMPANY_NAME             "Medplum"
 !define APP_NAME                 "Medplum Agent"
-!define SERVICE_NAME             "MedplumAgent"
+!define BASE_SERVICE_NAME        "MedplumAgent"
+!define SERVICE_NAME             "${BASE_SERVICE_NAME}_$%MEDPLUM_VERSION%"
 !define SERVICE_DESCRIPTION      "Securely connects local devices to ${COMPANY_NAME} cloud"
 !define SERVICE_FILE_NAME        "medplum-agent-$%MEDPLUM_VERSION%-win64.exe"
 !define INSTALLER_FILE_NAME      "medplum-agent-installer-$%MEDPLUM_VERSION%.exe"
@@ -45,7 +46,7 @@ Var agentId
 # The onInit handler is called when the installer is nearly finished initializing.
 # See: https://nsis.sourceforge.io/Reference/.onInit
 Function .onInit
-    ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Services\${SERVICE_NAME}" "ImagePath"
+    ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Services\${BASE_SERVICE_NAME}" "ImagePath"
     ${If} $0 != ""
         StrCpy $alreadyInstalled 1
     ${Else}
@@ -153,22 +154,6 @@ SectionEnd
 # This only copies files, and restarts the Windows Service.
 # It does not modify the existing configuration settings.
 Function UpgradeApp
-
-    # Stop the service
-    DetailPrint "Stopping service..."
-    ExecWait "sc.exe stop ${SERVICE_NAME}" $1
-    DetailPrint "Exit code $1"
-
-    # Sleep for 3 seconds to let the service fully stop
-    # We cannot write the new version of the exe while the process is running
-    DetailPrint "Sleeping..."
-    Sleep 3000
-
-    # Deleting the service
-    DetailPrint "Deleting service..."
-    ExecWait "sc.exe delete ${SERVICE_NAME}" $1
-    DetailPrint "Exit code $1"
-
     # Copy the new files to the installation directory
     File dist\shawl-v1.5.0-legal.txt
     File dist\shawl-v1.5.0-win64.exe
@@ -195,9 +180,42 @@ Function UpgradeApp
     ExecWait "sc.exe config $\"${SERVICE_NAME}$\" start= auto" $1
     DetailPrint "Exit code $1"
 
+    # Check if there is an upgrade manifest already, if not, add one without a callback
+    # This is to activate the "maybeFinalizeUpgrade" path in the agent, which will make sure we delete the upgrade manifest
+    # Which we use as a signal to continue after the agent has either bound or started its loop to attempt to bind to all the server ports
+    ${If} ${FileExists} "$INSTDIR\upgrade.json"
+        DetailPrint "upgrade.json already exists, skipping creation"
+    ${Else}
+        DetailPrint "Creating upgrade.json file"
+        # Create the file with JSON content
+        FileOpen $1 "$INSTDIR\upgrade.json" w
+        FileWrite $1 '{ "previousVersion": null, "version": "$%MEDPLUM_VERSION%" }'
+        FileClose $1
+    ${EndIf}
+
     # Start the service
     DetailPrint "Starting service..."
     ExecWait "sc.exe start $\"${SERVICE_NAME}$\"" $1
+    DetailPrint "Exit code $1"
+
+    # Check if service attempting to bind to ports
+    # The agent should be attempting to bind to the ports, or already bound to ports if old service not running
+    ${Do}
+        ${If} ${FileExists} "$INSTDIR\upgrade.json"
+            DetailPrint "Waiting for upgrade.json to be removed..."
+            Sleep 500
+        ${Else}
+            DetailPrint "upgrade.json removed, continuing..."
+            ${Break}
+        ${EndIf}
+    ${Loop}
+
+    # Stop all running MedplumAgent services that are not the new service and delete them
+    DetailPrint "Stopping and deleting all old MedplumAgent services..."
+    # Get a list of services, pipe to findstr to find MedplumAgent services
+    # Use net stop to gracefully stop each service, then delete it
+    # We use net stop specifically because it waits for the service to gracefully stop before returning
+    ExecWait 'cmd.exe /c "for /f "tokens=2 delims=: " %s in (''sc query state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent"'') do (net stop %s && sc delete %s)"'
     DetailPrint "Exit code $1"
 
 FunctionEnd
@@ -269,9 +287,9 @@ Function InstallApp
 
     # Register the uninstaller
     DetailPrint "Registering the uninstaller..."
-    WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${SERVICE_NAME}" "DisplayName" "${APP_NAME}"
-    WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${SERVICE_NAME}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
-    WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${SERVICE_NAME}" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
+    WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}" "DisplayName" "${APP_NAME}"
+    WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}" "UninstallString" "$\"$INSTDIR\uninstall.exe$\""
+    WriteRegStr HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}" "QuietUninstallString" "$\"$INSTDIR\uninstall.exe$\" /S"
     DetailPrint "Uninstaller complete"
 
     # Create Start menu shortcuts
@@ -309,8 +327,8 @@ Section Uninstall
     RMDir /r /REBOOTOK "$INSTDIR"
 
     # Unregister the program
-    DeleteRegKey HKLM "SYSTEM\CurrentControlSet\Services\${SERVICE_NAME}"
-    DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${SERVICE_NAME}"
+    DeleteRegKey HKLM "SYSTEM\CurrentControlSet\Services\${BASE_SERVICE_NAME}"
+    DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}"
 
 SectionEnd
 
