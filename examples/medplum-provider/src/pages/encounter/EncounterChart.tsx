@@ -237,8 +237,6 @@ export const EncounterChart = (): JSX.Element => {
         const savedChargeItem = await saveChargeItem(updatedChargeItem);
         setChargeItems(chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item)));
       }, SAVE_TIMEOUT_MS);
-
-      setChargeItems(chargeItems.map((item) => (item.id === updatedChargeItem.id ? updatedChargeItem : item)));
     },
     [chargeItems, saveChargeItem]
   );
