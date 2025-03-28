@@ -15,7 +15,6 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
   const { chargeItem, onChange } = props;
 
   const updateModifierExtension = (value: CodeableConcept | undefined): void => {
-    console.log('updateModifierExtension', value);
     if (!value) {
       const updatedChargeItem = { ...chargeItem };
       updatedChargeItem.extension = undefined;
