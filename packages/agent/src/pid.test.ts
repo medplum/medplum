@@ -212,7 +212,7 @@ describe('PID File Manager', () => {
 
     test('registers handlers for SIGTERM, SIGINT, and uncaughtException', () => {
       const addListenerSpy = jest.spyOn(process, 'on');
-      registerAgentCleanup(TEST_PID_PATH);
+      registerAgentCleanup();
 
       expect(addListenerSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
       expect(addListenerSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
@@ -220,7 +220,7 @@ describe('PID File Manager', () => {
     });
 
     test('removes PID file and exits on SIGTERM', () => {
-      registerAgentCleanup(TEST_PID_PATH);
+      registerAgentCleanup();
       process.emit('SIGTERM');
 
       expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -229,7 +229,7 @@ describe('PID File Manager', () => {
     });
 
     test('removes PID file and exits on SIGINT', () => {
-      registerAgentCleanup(TEST_PID_PATH);
+      registerAgentCleanup();
       process.emit('SIGINT');
 
       expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -238,7 +238,7 @@ describe('PID File Manager', () => {
     });
 
     test('removes PID file and exits on uncaughtException', () => {
-      registerAgentCleanup(TEST_PID_PATH);
+      registerAgentCleanup();
       process.emit('uncaughtException', new Error('Test error'));
 
       expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -248,7 +248,7 @@ describe('PID File Manager', () => {
 
     test('handles non-existent PID file during cleanup and still exits', () => {
       mockedFs.existsSync.mockReturnValue(false);
-      registerAgentCleanup(TEST_PID_PATH);
+      registerAgentCleanup();
 
       process.emit('SIGTERM');
 
@@ -263,7 +263,7 @@ describe('PID File Manager', () => {
         throw new Error('Permission denied');
       });
 
-      registerAgentCleanup(TEST_PID_PATH);
+      registerAgentCleanup();
       process.emit('SIGTERM');
 
       expect(pidLoggerErrorSpy).toHaveBeenCalledWith(
