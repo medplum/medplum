@@ -12,7 +12,7 @@ export const migration: ReindexPostDeployMigration = {
       0 // maxResourceVersion of zero makes the filter __version === NULL which is more precise
     );
   },
-  run: async (repo, jobData) => {
-    return new ReindexJob(repo).execute(jobData);
+  run: async (repo, jobData, job) => {
+    return new ReindexJob(repo).execute(jobData, job);
   },
 };

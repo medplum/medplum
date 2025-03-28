@@ -71,7 +71,7 @@ export const initReindexWorker: WorkerInitializer = (config) => {
     queueName,
     (job) =>
       tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => {
-        const result = await new ReindexJob().execute(job.data);
+        const result = await new ReindexJob().execute(job.data, job);
         if (result === 'ineligible') {
           // Since we can't handle this ourselves, re-enqueue the job for another worker that can
           const queue = queueRegistry.get(job.queueName);
@@ -122,7 +122,7 @@ export class ReindexJob {
 
   async execute(
     inputJobData: ReindexJobData,
-    job?: Job<ReindexJobData>
+    job: Job<ReindexJobData> | undefined
   ): Promise<'finished' | 'ineligible' | 'interrupted'> {
     let asyncJob = await this.refreshAsyncJob(this.systemRepo, inputJobData.asyncJobId);
 

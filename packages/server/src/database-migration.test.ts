@@ -433,7 +433,7 @@ describe('Database migrations', () => {
         });
 
         const jobData = prepareReindexJobData(['ImmunizationEvaluation'], asyncJob.id);
-        const result = await new ReindexJob().execute(jobData);
+        const result = await new ReindexJob().execute(jobData, undefined);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('accepted');
@@ -466,7 +466,7 @@ describe('Database migrations', () => {
         expect(mockMarkPostDeployMigrationCompleted).toHaveBeenCalledTimes(0);
 
         const jobData = prepareReindexJobData(['MedicinalProductContraindication'], asyncJob.id);
-        await new ReindexJob().execute(jobData);
+        await new ReindexJob().execute(jobData, undefined);
 
         asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
         expect(asyncJob.status).toStrictEqual('completed');
@@ -519,7 +519,7 @@ describe('Database migrations', () => {
         type: 'searchset',
         entry: [],
       });
-      await expect(reindexJob.execute(jobData)).resolves.toBe('finished');
+      await expect(reindexJob.execute(jobData, undefined)).resolves.toBe('finished');
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id);
       if (firstBootMode && dataVersion) {

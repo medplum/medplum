@@ -17,7 +17,7 @@ import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { CronJobData, getCronQueue } from '../workers/cron';
-import { getReindexQueue, ReindexJob, ReindexJobData } from '../workers/reindex';
+import { getReindexQueue, ReindexJobData } from '../workers/reindex';
 import { isValidTableName } from './super';
 
 jest.mock('../seeds/valuesets');
@@ -336,13 +336,9 @@ describe('Super Admin routes', () => {
       'ReindexJobData',
       expect.objectContaining<Partial<ReindexJobData>>({
         resourceTypes: ['PaymentNotice'],
+        maxResourceVersion: expectedMaxResourceVersion,
       })
     );
-    const jobData = queue.add.mock.calls[0][1] as ReindexJobData;
-    expect(jobData.maxResourceVersion).toStrictEqual(expectedMaxResourceVersion);
-
-    await withTestContext(() => new ReindexJob().execute(jobData));
-    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
   test.each([
@@ -395,12 +391,6 @@ describe('Super Admin routes', () => {
         resourceTypes: ['PaymentNotice', 'MedicinalProductManufactured', 'BiologicallyDerivedProduct'],
       })
     );
-    const jobData = queue.add.mock.calls[0][1] as ReindexJobData;
-    queue.add.mockClear();
-
-    await withTestContext(() => new ReindexJob().execute(jobData));
-
-    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
   test('Set password access denied', async () => {

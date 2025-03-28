@@ -28,7 +28,7 @@ export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJob
    * 'ineligible' if the processor decided it was not capable of running the job, typically
    *            due to being an outdated version of Medplum.
    */
-  run(repo: Repository, data: T, job?: Job<T>): Promise<PostDeployJobRunResult>;
+  run(repo: Repository, data: T, job: Job<T> | undefined): Promise<PostDeployJobRunResult>;
 }
 
 // Custom Jobs

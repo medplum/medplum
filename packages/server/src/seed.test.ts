@@ -40,7 +40,7 @@ async function synchronouslyRunPostDeployMigration(systemRepo: Repository, versi
   const asyncJob = await preparePostDeployMigrationAsyncJob(systemRepo, version);
   const jobData = migration.prepareJobData(asyncJob);
   console.log(`${new Date().toISOString()} - Starting post-deploy migration v${version}`);
-  const result = await migration.run(systemRepo, jobData);
+  const result = await migration.run(systemRepo, jobData, undefined);
   console.log(`${new Date().toISOString()} - Post-deploy migration v${version} result: ${result}`);
 }
 
