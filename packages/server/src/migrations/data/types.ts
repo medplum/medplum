@@ -20,15 +20,15 @@ export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJob
    * generally through usage `AsyncJobExecutor`
    *
    * @param repo - A repository instance
+   * @param job - The full BullMQ job instance if the migration is running through BullMQ, otherwise undefined
    * @param data - The job data to use while running the migration logic
-   * @param job - The full BullMQ job instance if the job was run through BullMQ, otherwise undefined
    * @returns - Returns one of:
    * 'finished' if the job either succeeded or failed,
    * 'interrupted' if the job detected that the AsyncJob was cancelled, paused, etc. out of band,
    * 'ineligible' if the processor decided it was not capable of running the job, typically
    *            due to being an outdated version of Medplum.
    */
-  run(repo: Repository, data: T, job: Job<T> | undefined): Promise<PostDeployJobRunResult>;
+  run(repo: Repository, job: Job<T> | undefined, data: T): Promise<PostDeployJobRunResult>;
 }
 
 // Custom Jobs

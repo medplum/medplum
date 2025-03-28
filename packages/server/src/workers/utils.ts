@@ -203,7 +203,8 @@ export interface QueueRegistry {
 
 type QueueEntry = { queue: Queue | undefined; worker: Worker | undefined; isClosing: boolean };
 
-class DefaultQueueRegistry implements QueueRegistry {
+// exported for testing only, use `queueRegistry` for non-test code
+export class DefaultQueueRegistry implements QueueRegistry {
   private queueMap: Record<string, QueueEntry | undefined>;
 
   constructor() {
@@ -211,12 +212,15 @@ class DefaultQueueRegistry implements QueueRegistry {
   }
 
   add(name: string, queue: Queue, worker: Worker): void {
+    if (this.queueMap[name]) {
+      throw new Error(`Queue ${name} already registered`);
+    }
+
     this.queueMap[name] = { queue, worker, isClosing: false };
 
     worker.on('closing', () => {
       if (this.queueMap[name]) {
         this.queueMap[name].isClosing = true;
-        // await this.close(name);
       }
     });
   }
@@ -227,13 +231,17 @@ class DefaultQueueRegistry implements QueueRegistry {
 
   private async close(name: string): Promise<void> {
     const entry = this.queueMap[name];
+    if (!entry) {
+      return;
+    }
+
     // Close worker first, so any jobs that need to finish can enqueue the next job before exiting
-    if (entry?.worker) {
+    if (entry.worker) {
       await entry.worker.close();
       entry.worker = undefined;
     }
 
-    if (entry?.queue) {
+    if (entry.queue) {
       await entry.queue.close();
       entry.queue = undefined;
     }
@@ -255,31 +263,7 @@ class DefaultQueueRegistry implements QueueRegistry {
 
 export const queueRegistry: QueueRegistry = new DefaultQueueRegistry();
 
-export const QueueClosing = Symbol('QueueClosing');
-
-/**
- * Returns a promise that resolves when `getIsWorkerClosing()` is true which is polled every second
- * Optionally, the promise resolves `delay` milliseconds after `getIsWorkerClosing()` first returns true.
- * @param name - The name of the queue to wait for.
- * @param delay - Optional delay in milliseconds before resolving. Default 10,000 (10 seconds).
- * @returns Promise that resolves when `getIsWorkerClosing()` is true
- */
-export async function waitForQueueClosing(name: string, delay: number = 10_000): Promise<typeof QueueClosing> {
-  return new Promise<typeof QueueClosing>((resolve) => {
-    const interval = setInterval(() => {
-      if (queueRegistry.isClosing(name)) {
-        clearInterval(interval);
-        if (delay > 0) {
-          setTimeout(() => resolve(QueueClosing), delay);
-        } else {
-          resolve(QueueClosing);
-        }
-      }
-    }, 1000);
-  });
-}
-
-export function addLogging(queue: Queue, worker: Worker): void {
+export function addVerboseQueueLogging(queue: Queue, worker: Worker): void {
   worker.on('active', (job, prev) => {
     globalLogger.info(`${queue.name} worker: active`, {
       jobId: job?.id,

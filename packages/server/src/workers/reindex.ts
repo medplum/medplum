@@ -19,7 +19,7 @@ import { getPostDeployVersion } from '../migration-sql';
 import { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
 import { MigrationVersion } from '../migrations/migration-versions';
 import {
-  addLogging,
+  addVerboseQueueLogging,
   isJobActive,
   isJobCompatible,
   queueRegistry,
@@ -52,8 +52,7 @@ export interface ReindexPostDeployMigration extends PostDeployMigration<ReindexJ
   type: 'reindex';
 }
 
-const queueName = 'ReindexQueue';
-const jobName = 'ReindexJobData';
+const ReindexQueueName = 'ReindexQueue';
 
 const defaultBatchSize = 500;
 const defaultProgressLogThreshold = 50_000;
@@ -63,7 +62,7 @@ export const initReindexWorker: WorkerInitializer = (config) => {
     connection: config.redis,
   };
 
-  const queue = new Queue<ReindexJobData>(queueName, {
+  const queue = new Queue<ReindexJobData>(ReindexQueueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: 1,
@@ -75,10 +74,10 @@ export const initReindexWorker: WorkerInitializer = (config) => {
   });
 
   const worker = new Worker<ReindexJobData>(
-    queueName,
+    ReindexQueueName,
     (job) =>
       tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => {
-        const result = await new ReindexJob(undefined, 500, 5_000).execute(job.data, job);
+        const result = await new ReindexJob(undefined, 500, 5_000).execute(job, job.data);
         if (result === 'ineligible') {
           // Since we can't handle this ourselves, re-enqueue the job for another worker that can
           const queue = queueRegistry.get(job.queueName);
@@ -90,9 +89,9 @@ export const initReindexWorker: WorkerInitializer = (config) => {
       ...config.bullmq,
     }
   );
-  addLogging(queue, worker);
+  addVerboseQueueLogging(queue, worker);
 
-  return { queue, worker, name: queueName };
+  return { queue, worker, name: ReindexQueueName };
 };
 
 export class ReindexJob {
@@ -127,8 +126,8 @@ export class ReindexJob {
   }
 
   async execute(
-    inputJobData: ReindexJobData,
-    job: Job<ReindexJobData> | undefined
+    job: Job<ReindexJobData> | undefined,
+    inputJobData: ReindexJobData
   ): Promise<'finished' | 'ineligible' | 'interrupted'> {
     let asyncJob = await this.refreshAsyncJob(this.systemRepo, inputJobData.asyncJobId);
 
@@ -412,15 +411,15 @@ function formatReindexResult(result: ReindexResult, resourceType: string): Param
  * @returns The reindex queue (if available).
  */
 export function getReindexQueue(): Queue<ReindexJobData> | undefined {
-  return queueRegistry.get(queueName);
+  return queueRegistry.get(ReindexQueueName);
 }
 
 async function addReindexJobData(job: ReindexJobData): Promise<Job<ReindexJobData>> {
   const queue = getReindexQueue();
   if (!queue) {
-    throw new Error(`Job queue ${queueName} not available`);
+    throw new Error(`Job queue ${ReindexQueueName} not available`);
   }
-  return queue.add(jobName, job);
+  return queue.add('ReindexJobData', job);
 }
 
 export async function addReindexJob(

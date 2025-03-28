@@ -1,6 +1,6 @@
 import { getReferenceString, WithId } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
-import { DelayedError, Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -12,15 +12,7 @@ import {
   PostDeployJobRunResult,
 } from '../migrations/data/types';
 import { getPostDeployMigration } from '../migrations/migration-utils';
-import {
-  addLogging,
-  isJobActive,
-  isJobCompatible,
-  QueueClosing,
-  queueRegistry,
-  waitForQueueClosing,
-  WorkerInitializer,
-} from './utils';
+import { addVerboseQueueLogging, isJobActive, isJobCompatible, queueRegistry, WorkerInitializer } from './utils';
 
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
@@ -44,16 +36,9 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
       ...defaultOptions,
     }
   );
-  addLogging(queue, worker);
+  addVerboseQueueLogging(queue, worker);
   return { queue, worker, name: PostDeployMigrationQueueName };
 };
-
-/*
-  This could be a useful approach to automatically delay/requeue jobs
-  when the worker/queue is closing but in the short term, it is left up
-  to each job to detect if the worker is closing and handle it independently
-*/
-const ENABLE_AUTO_DELAY = false;
 
 export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
@@ -93,26 +78,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
     throw new Error(`Post-deploy migration ${migrationNumber} is not a ${job.data.type} migration`);
   }
 
-  const promises: Promise<PostDeployJobRunResult | typeof QueueClosing>[] = [
-    migration.run(getSystemRepo(), job.data, job),
-  ];
-
-  if (ENABLE_AUTO_DELAY && job.token) {
-    promises.push(waitForQueueClosing(job.queueName));
-  }
-
-  const resultOrClosing = await Promise.race(promises);
-
-  if (resultOrClosing === QueueClosing) {
-    globalLogger.info(`${PostDeployMigrationQueueName} processor detected closing event, shutting down`, {
-      jobId: job.id,
-      asyncJobId: job.data?.asyncJobId,
-    });
-    await job.moveToDelayed(Date.now() + 60_000, job.token);
-    throw new DelayedError('Migration gracefully shutdown by closing event');
-  }
-
-  const result: PostDeployJobRunResult = resultOrClosing;
+  const result: PostDeployJobRunResult = await migration.run(getSystemRepo(), job, job.data);
 
   switch (result) {
     case 'ineligible': {
@@ -134,8 +100,12 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
 
 export async function runCustomMigration(
   repo: Repository,
+  job: Job<CustomPostDeployMigrationJobData> | undefined,
   jobData: CustomPostDeployMigrationJobData,
-  callback: (jobData: CustomPostDeployMigrationJobData) => Promise<CustomMigrationResult>
+  callback: (
+    job: Job<CustomPostDeployMigrationJobData> | undefined,
+    jobData: CustomPostDeployMigrationJobData
+  ) => Promise<CustomMigrationResult>
 ): Promise<'finished' | 'ineligible' | 'interrupted'> {
   const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
 
@@ -145,7 +115,7 @@ export async function runCustomMigration(
 
   const exec = new AsyncJobExecutor(repo, asyncJob);
   try {
-    const result = await callback(jobData);
+    const result = await callback(job, jobData);
     const output = getAsyncJobOutputFromCustomMigrationResults(result);
     await exec.completeJob(repo, output);
   } catch (err: any) {

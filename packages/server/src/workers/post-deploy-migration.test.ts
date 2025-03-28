@@ -145,8 +145,8 @@ describe('Post-Deploy Migration Worker', () => {
     const mockCustomMigration: CustomPostDeployMigration = {
       type: 'custom',
       prepareJobData: jest.fn(),
-      run: jest.fn().mockImplementation(async (repo, jobData) => {
-        return runCustomMigration(repo, jobData, async () => {
+      run: jest.fn().mockImplementation(async (repo, job, jobData) => {
+        return runCustomMigration(repo, job, jobData, async () => {
           const actions: CustomMigrationAction[] = [
             { name: 'first', durationMs: 111 },
             { name: 'second', durationMs: 222 },
@@ -184,7 +184,7 @@ describe('Post-Deploy Migration Worker', () => {
     await jobProcessor(job);
 
     expect(getPostDeployMigrationSpy).toHaveBeenCalledWith(456);
-    expect(mockCustomMigration.run).toHaveBeenCalledWith(expect.any(Object), job.data, job);
+    expect(mockCustomMigration.run).toHaveBeenCalledWith(expect.any(Object), job, job.data);
 
     const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
     expect(updatedAsyncJob.status).toBe('completed');
@@ -212,8 +212,8 @@ describe('Post-Deploy Migration Worker', () => {
     const mockCustomMigration: CustomPostDeployMigration = {
       type: 'custom',
       prepareJobData: jest.fn(),
-      run: jest.fn().mockImplementation(async (repo, jobData) => {
-        return runCustomMigration(repo, jobData, async () => {
+      run: jest.fn().mockImplementation(async (repo, job, jobData) => {
+        return runCustomMigration(repo, job, jobData, async () => {
           const actions: CustomMigrationAction[] = [
             { name: 'first', durationMs: 111 },
             { name: 'second', durationMs: 222 },
@@ -269,10 +269,10 @@ describe('Post-Deploy Migration Worker', () => {
       requestId: '123',
       traceId: '456',
     };
-    const result = await runCustomMigration(systemRepo, jobData, mockCallback);
+    const result = await runCustomMigration(systemRepo, undefined, jobData, mockCallback);
 
     expect(result).toBe('finished');
-    expect(mockCallback).toHaveBeenCalledWith(jobData);
+    expect(mockCallback).toHaveBeenCalledWith(undefined, jobData);
 
     const updatedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);
     expect(updatedJob.status).toBe('completed');
@@ -305,7 +305,7 @@ describe('Post-Deploy Migration Worker', () => {
     };
     const mockCallback = jest.fn();
 
-    const result = await runCustomMigration(systemRepo, jobData, mockCallback);
+    const result = await runCustomMigration(systemRepo, undefined, jobData, mockCallback);
 
     expect(result).toBe('interrupted');
     expect(mockCallback).not.toHaveBeenCalled();
@@ -331,7 +331,7 @@ describe('Post-Deploy Migration Worker', () => {
       throw new Error('Some random error');
     });
 
-    const result = await runCustomMigration(systemRepo, jobData, mockCallback);
+    const result = await runCustomMigration(systemRepo, undefined, jobData, mockCallback);
     expect(result).toBe('finished');
 
     const updatedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', asyncJob.id);

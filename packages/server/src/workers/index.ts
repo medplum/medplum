@@ -27,9 +27,6 @@ export function initWorkers(config: MedplumServerConfig): void {
 
   for (const initializer of initializers) {
     const { name, queue, worker } = initializer(config);
-    if (queueRegistry.get(name)) {
-      throw new Error(`Queue ${name} already registered`);
-    }
     queueRegistry.add(name, queue, worker);
   }
   globalLogger.debug('Workers initialized');
