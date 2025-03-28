@@ -1,5 +1,5 @@
 import { fetchLatestVersionString, isValidMedplumSemver, Logger, normalizeErrorString } from '@medplum/core';
-import { execSync, spawn, spawnSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { platform } from 'node:os';
 import process from 'node:process';
@@ -49,23 +49,6 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   const disconnectTimeout = setTimeout(rejectOnTimeout, 5000);
   await disconnectedPromise;
   clearTimeout(disconnectTimeout);
-
-  try {
-    // Stop service
-    globalLogger.info('Stopping running agent service...');
-    execSync('net stop "Medplum Agent"');
-    globalLogger.info('Agent service stopped succesfully');
-  } catch (_err: unknown) {
-    globalLogger.info('Agent service not running, skipping stopping the service');
-  }
-
-  // Launch stopgap agent to maintain service during upgrade
-  globalLogger.info('Launching stopgap agent...');
-  const stopgapAgent = spawn(process.execPath, [process.argv[1], '--stopgap', ...argv.slice(3)], {
-    stdio: 'inherit',
-    detached: true,
-  });
-  stopgapAgent.unref();
 
   try {
     // Run installer

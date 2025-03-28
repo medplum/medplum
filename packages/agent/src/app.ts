@@ -17,6 +17,7 @@ import {
   fetchLatestVersionString,
   isValidHostname,
   normalizeErrorString,
+  sleep,
 } from '@medplum/core';
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
@@ -29,7 +30,7 @@ import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import { checkProcessExists, getPidFilePath, removePidFile } from './pid';
+import { checkProcessExists, createPidFile, getPidFilePath, removePidFile } from './pid';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -47,10 +48,6 @@ async function execAsync(command: string, options: ExecOptions): Promise<{ stdou
 
 export const DEFAULT_PING_TIMEOUT = 3600;
 export const MAX_MISSED_HEARTBEATS = 1;
-
-interface ReloadConfigOptions {
-  skipCache?: boolean;
-}
 
 export class App {
   static instance: App;
@@ -85,13 +82,11 @@ export class App {
 
     await this.startWebSocket();
 
-    // Prefetch the agent config so it's ready when we need it
-    // await this.medplum.readResource('Agent', this.agentId);
+    await this.reloadConfig();
 
     // We do this after starting WebSockets so that we can send a message if we finished upgrading
+    // We also do it after reloading the config, to make sure that we have bound to the ports before releasing the upgrading agent PID file
     await this.maybeFinalizeUpgrade();
-
-    await this.reloadConfig();
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
@@ -135,30 +130,26 @@ export class App {
 
       // Delete manifest
       rmSync(UPGRADE_MANIFEST_PATH);
+      removePidFile('medplum-upgrading-agent');
+      await this.tryToCreateAgentPidFile();
+    }
+  }
 
-      // Check for stopgap agent and kill it
-      const stopgapPidFilePath = getPidFilePath('medplum-agent-stopgap');
-      if (existsSync(stopgapPidFilePath)) {
-        this.log.info('Found stopgap agent PID file, checking if process is running...');
-        try {
-          const stopgapPid = Number.parseInt(readFileSync(stopgapPidFilePath, 'utf8').trim(), 10);
-          if (checkProcessExists(stopgapPid)) {
-            this.log.info(`Found existing stopgap agent (PID ${stopgapPid}), stopping it...`);
-            try {
-              process.kill(stopgapPid);
-              // Wait a bit for the process to die
-              await new Promise((resolve) => setTimeout(resolve, 1000));
-              this.log.info('Successfully stopped stopgap agent');
-            } catch (err) {
-              this.log.error(`Error stopping stopgap process: ${normalizeErrorString(err)}`);
-            }
-          } else {
-            this.log.info('Stopgap agent PID file exists but process is not running');
-          }
-          removePidFile(stopgapPidFilePath);
-        } catch (err) {
-          this.log.error(`Error cleaning up stopgap agent: ${normalizeErrorString(err)}`);
+  private async tryToCreateAgentPidFile(): Promise<void> {
+    const maxAttempts = 15;
+    let attempt = 0;
+    let success = false;
+    while (!success) {
+      try {
+        createPidFile('medplum-agent');
+        success = true;
+      } catch (_err) {
+        this.log.info('Unable to create agent PID file, trying again...');
+        attempt++;
+        if (attempt === maxAttempts) {
+          throw new Error('Too many unsuccessful attempts to create agent PID file');
         }
+        await sleep(50);
       }
     }
   }
@@ -314,12 +305,8 @@ export class App {
     });
   }
 
-  private async reloadConfig(options: ReloadConfigOptions = { skipCache: true }): Promise<void> {
-    const agent = await this.medplum.readResource(
-      'Agent',
-      this.agentId,
-      options.skipCache ? { cache: 'no-cache' } : undefined
-    );
+  private async reloadConfig(): Promise<void> {
+    const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
 
     if (!keepAlive && this.hl7Clients.size !== 0) {
@@ -352,7 +339,9 @@ export class App {
 
     const endpointPromises = [] as Promise<Endpoint>[];
     for (const definition of channels) {
-      endpointPromises.push(this.medplum.readReference(definition.endpoint as Reference<Endpoint>));
+      endpointPromises.push(
+        this.medplum.readReference(definition.endpoint as Reference<Endpoint>, { cache: 'no-cache' })
+      );
     }
 
     const endpoints = await Promise.all(endpointPromises);
@@ -466,7 +455,7 @@ export class App {
           try {
             process.kill(existingPid);
             // Wait a bit for the process to die
-            await new Promise((resolve) => setTimeout(resolve, 1000));
+            await sleep(1000);
           } catch (err) {
             this.log.error(`Error stopping existing process: ${normalizeErrorString(err)}`);
           }
