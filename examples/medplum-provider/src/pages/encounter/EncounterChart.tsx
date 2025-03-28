@@ -1,4 +1,4 @@
-import { Stack, Box, Card, Text, Group, Flex } from '@mantine/core';
+import { Stack, Box, Card, Text, Group } from '@mantine/core';
 import {
   Task,
   ClinicalImpression,
@@ -7,16 +7,8 @@ import {
   Practitioner,
   Encounter,
   ChargeItem,
-  CodeableConcept,
 } from '@medplum/fhirtypes';
-import {
-  CodeableConceptInput,
-  DateTimeInput,
-  Loading,
-  QuestionnaireForm,
-  ResourceInput,
-  useMedplum,
-} from '@medplum/react';
+import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { Outlet, useLocation, useParams } from 'react-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
@@ -28,6 +20,7 @@ import { usePatient } from '../../hooks/usePatient';
 import { useEncounter } from '../../hooks/useEncounter';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import ChageItemPanel from '../components/ChargeItem/ChageItemPanel';
+import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
 
 export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
@@ -283,67 +276,28 @@ export const EncounterChart = (): JSX.Element => {
     setActiveTab(tab);
   };
 
-  const handlePractitionerChange = async (practitioner: Practitioner | undefined): Promise<void> => {
-    if (!encounter || !practitioner) {
+  const handleEncounterChange = (updatedEncounter: Encounter): void => {
+    if (!updatedEncounter) {
       return;
     }
 
-    const updatedEncounter = {
-      ...encounter,
-      participant: [
-        {
-          individual: {
-            reference: getReferenceString(practitioner),
-          },
-        },
-      ],
-    };
-
-    try {
-      setPractitioner(practitioner);
-      await medplum.updateResource(updatedEncounter);
-      setEncounter(updatedEncounter);
-      showNotification({
-        color: 'green',
-        title: 'Success',
-        message: 'Practitioner assigned to encounter successfully',
-      });
-    } catch (err) {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-    }
-  };
-
-  const handleServiceTypeChange = async (serviceType: CodeableConcept | undefined): Promise<void> => {
-    if (!encounter || !serviceType) {
-      return;
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
 
-    const updatedEncounter = {
-      ...encounter,
-      serviceType: serviceType,
-    };
-
-    try {
-      await medplum.updateResource(updatedEncounter);
-      setEncounter(updatedEncounter);
-      showNotification({
-        color: 'green',
-        title: 'Success',
-        message: 'Service type updated successfully',
-      });
-    } catch (err) {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-    }
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const savedEncounter = await medplum.updateResource(updatedEncounter);
+        setEncounter(savedEncounter);
+      } catch (err) {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      }
+    }, SAVE_TIMEOUT_MS);
   };
 
   if (!patient || !encounter || (clinicalImpression?.supportingInfo?.[0]?.reference && !questionnaireResponse)) {
@@ -385,48 +339,11 @@ export const EncounterChart = (): JSX.Element => {
               </Card>
             </Stack>
 
-            <Stack gap={0}>
-              <Text fw={600} size="lg" mb="md">
-                Visit Details
-              </Text>
-              <Card withBorder shadow="sm" p="md">
-                <Stack gap="xs">
-                  <ResourceInput
-                    resourceType="Practitioner"
-                    name="Patient-id"
-                    label="Assigned Practitioner"
-                    defaultValue={practitioner}
-                    required={true}
-                    onChange={handlePractitionerChange}
-                  />
-
-                  <DateTimeInput
-                    name="checkin"
-                    label="Check in"
-                    defaultValue={encounter.period?.start}
-                    // onChange={setCheckin}
-                  />
-
-                  <DateTimeInput
-                    name="checkout"
-                    label="Check out"
-                    defaultValue={encounter.period?.end}
-                    // onChange={setCheckout}
-                  />
-
-                  <CodeableConceptInput
-                    name="servicetype"
-                    label="Service Type"
-                    binding="http://hl7.org/fhir/ValueSet/service-type"
-                    required={true}
-                    defaultValue={encounter?.serviceType}
-                    onChange={handleServiceTypeChange}
-                    maxValues={1}
-                    path="Encounter.serviceType"
-                  />
-                </Stack>
-              </Card>
-            </Stack>
+            <VisitDetailsPanel
+              practitioner={practitioner}
+              encounter={encounter}
+              onEncounterChange={handleEncounterChange}
+            />
           </Group>
 
           <Stack gap={0}>
