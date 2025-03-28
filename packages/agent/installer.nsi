@@ -46,7 +46,7 @@ Var agentId
 # The onInit handler is called when the installer is nearly finished initializing.
 # See: https://nsis.sourceforge.io/Reference/.onInit
 Function .onInit
-    ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Services\${BASE_SERVICE_NAME}" "ImagePath"
+    ReadRegStr $0 HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}" "DisplayName"
     ${If} $0 != ""
         StrCpy $alreadyInstalled 1
     ${Else}
