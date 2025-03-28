@@ -1,4 +1,4 @@
-import { Stack, Box, Card, Text } from '@mantine/core';
+import { Stack, Box, Card, Text, Group, Flex } from '@mantine/core';
 import {
   Task,
   ClinicalImpression,
@@ -7,8 +7,16 @@ import {
   Practitioner,
   Encounter,
   ChargeItem,
+  CodeableConcept,
 } from '@medplum/fhirtypes';
-import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
+import {
+  CodeableConceptInput,
+  DateTimeInput,
+  Loading,
+  QuestionnaireForm,
+  ResourceInput,
+  useMedplum,
+} from '@medplum/react';
 import { Outlet, useLocation, useParams } from 'react-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
@@ -33,6 +41,7 @@ export const EncounterChart = (): JSX.Element => {
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>();
   const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const [activeTab, setActiveTab] = useState<'notes' | 'details'>('notes');
 
   useEffect(() => {
     if (encounterId) {
@@ -201,27 +210,29 @@ export const EncounterChart = (): JSX.Element => {
     [tasks]
   );
 
-  const saveChargeItem = useCallback(async (chargeItem: ChargeItem): Promise<ChargeItem> => {
-    try {
-      return await medplum.updateResource(chargeItem);
-    } catch (err) {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-      return chargeItem;
-    }
-  }, [medplum]);
+  const saveChargeItem = useCallback(
+    async (chargeItem: ChargeItem): Promise<ChargeItem> => {
+      try {
+        return await medplum.updateResource(chargeItem);
+      } catch (err) {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+        return chargeItem;
+      }
+    },
+    [medplum]
+  );
 
   const updateChargeItemList = useCallback(
-    (updatedChargeItem: ChargeItem): void => {      
-      
+    (updatedChargeItem: ChargeItem): void => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      
+
       saveTimeoutRef.current = setTimeout(async () => {
         const savedChargeItem = await saveChargeItem(updatedChargeItem);
         setChargeItems(chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item)));
@@ -270,9 +281,174 @@ export const EncounterChart = (): JSX.Element => {
     [encounter, medplum]
   );
 
+  const handleTabChange = (tab: 'notes' | 'details'): void => {
+    setActiveTab(tab);
+  };
+
+  const handlePractitionerChange = async (practitioner: Practitioner | undefined): Promise<void> => {
+    if (!encounter || !practitioner) {
+      return;
+    }
+
+    const updatedEncounter = {
+      ...encounter,
+      participant: [
+        {
+          individual: {
+            reference: getReferenceString(practitioner),
+          },
+        },
+      ],
+    };
+
+    try {
+      setPractitioner(practitioner);
+      await medplum.updateResource(updatedEncounter);
+      setEncounter(updatedEncounter);
+      showNotification({
+        color: 'green',
+        title: 'Success',
+        message: 'Practitioner assigned to encounter successfully',
+      });
+    } catch (err) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
+  };
+
+  const handleServiceTypeChange = async (serviceType: CodeableConcept | undefined): Promise<void> => {
+    if (!encounter || !serviceType) {
+      return;
+    }
+
+    const updatedEncounter = {
+      ...encounter,
+      serviceType: serviceType,
+    };
+
+    try {
+      await medplum.updateResource(updatedEncounter);
+      setEncounter(updatedEncounter);
+      showNotification({
+        color: 'green',
+        title: 'Success',
+        message: 'Service type updated successfully',
+      });
+    } catch (err) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
+  };
+
   if (!patient || !encounter || (clinicalImpression?.supportingInfo?.[0]?.reference && !questionnaireResponse)) {
     return <Loading />;
   }
+
+  const renderTabContent = (): JSX.Element => {
+    if (activeTab === 'notes') {
+      return (
+        <Stack gap="md">
+          {clinicalImpression && (
+            <Card withBorder shadow="sm">
+              <QuestionnaireForm
+                questionnaire={questionnaire}
+                questionnaireResponse={questionnaireResponse}
+                excludeButtons={true}
+                onChange={onChange}
+              />
+            </Card>
+          )}
+
+          {tasks.map((task: Task) => (
+            <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
+          ))}
+        </Stack>
+      );
+    } else {
+      return (
+        <Stack gap="md">
+          <Group grow align="flex-start">
+            <Stack gap={0}>
+              <Text fw={600} size="lg" mb="md">
+                Insurance Overview
+              </Text>
+              <Card withBorder shadow="sm" p="md">
+                <Stack gap="xs">
+                  <Text>Primary Insurance: {patient?.contact?.[0]?.name?.text || 'Not available'}</Text>
+                </Stack>
+              </Card>
+            </Stack>
+
+            <Stack gap={0}>
+              <Text fw={600} size="lg" mb="md">
+                Visit Details
+              </Text>
+              <Card withBorder shadow="sm" p="md">
+                <Stack gap="xs">
+                  <ResourceInput
+                    resourceType="Practitioner"
+                    name="Patient-id"
+                    label="Assigned Practitioner"
+                    defaultValue={practitioner}
+                    required={true}
+                    onChange={handlePractitionerChange}
+                  />
+
+                  <DateTimeInput
+                    name="checkin"
+                    label="Check in"
+                    defaultValue={encounter.period?.start}
+                    // onChange={setCheckin}
+                  />
+
+                  <DateTimeInput
+                    name="checkout"
+                    label="Check out"
+                    defaultValue={encounter.period?.end}
+                    // onChange={setCheckout}
+                  />
+
+                  <CodeableConceptInput
+                    name="servicetype"
+                    label="Service Type"
+                    binding="http://hl7.org/fhir/ValueSet/service-type"
+                    required={true}
+                    defaultValue={encounter?.serviceType}
+                    onChange={handleServiceTypeChange}
+                    maxValues={1}
+                    path="Encounter.serviceType"
+                  />
+                </Stack>
+              </Card>
+            </Stack>
+          </Group>
+
+          <Stack gap={0}>
+            <Text fw={600} size="lg" mb="md">
+              Charge Items
+            </Text>
+            {chargeItems.length > 0 ? (
+              <Stack gap="md">
+                {chargeItems.map((chargeItem: ChargeItem) => (
+                  <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} onChange={updateChargeItemList} />
+                ))}
+              </Stack>
+            ) : (
+              <Text c="dimmed">No charge items available</Text>
+            )}
+          </Stack>
+        </Stack>
+      );
+    }
+  };
 
   return (
     <>
@@ -281,41 +457,11 @@ export const EncounterChart = (): JSX.Element => {
           encounter={encounter}
           practitioner={practitioner}
           onStatusChange={handleEncounterStatusChange}
+          onTabChange={handleTabChange}
         />
 
         <Box p="md">
-          <Stack gap="md">
-            {clinicalImpression && (
-              <Card withBorder shadow="sm">
-                <QuestionnaireForm
-                  questionnaire={questionnaire}
-                  questionnaireResponse={questionnaireResponse}
-                  excludeButtons={true}
-                  onChange={onChange}
-                />
-              </Card>
-            )}
-
-            {tasks.map((task: Task) => (
-              <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
-            ))}
-
-            {chargeItems.length > 0 && (
-              <Stack gap="md" pt="lg">
-                <Text size="lg" fw={500}>
-                  Charge Items
-                </Text>
-                {chargeItems.map((chargeItem: ChargeItem) => (
-                  <ChageItemPanel 
-                    key={chargeItem.id} 
-                    chargeItem={chargeItem} 
-                    onChange={updateChargeItemList}
-                  />
-                ))}
-              </Stack>
-            )}
-          </Stack>
-
+          {renderTabContent()}
           <Outlet />
         </Box>
       </Stack>

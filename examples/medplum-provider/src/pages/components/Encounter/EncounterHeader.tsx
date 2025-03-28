@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Text, Group, Paper, Flex, ActionIcon, Button, Menu } from '@mantine/core';
+import { Text, Group, Paper, Flex, ActionIcon, Button, Menu, Box, SegmentedControl } from '@mantine/core';
 import { Encounter, Practitioner } from '@medplum/fhirtypes';
 import { IconTrash, IconChevronDown, IconLock } from '@tabler/icons-react';
 
@@ -7,28 +7,33 @@ interface EncounterHeaderProps {
   encounter: Encounter;
   practitioner?: Practitioner | undefined;
   onStatusChange?: (status: Encounter['status']) => void;
+  onTabChange?: (tab: 'notes' | 'details') => void;
 }
 
 export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
-  const { encounter, onStatusChange } = props;
+  const { encounter, onStatusChange, onTabChange } = props;
   const [status, setStatus] = useState<Encounter['status']>(encounter.status);
+  const [activeTab, setActiveTab] = useState<'notes' | 'details'>('notes');
 
   const handleStatusChange = (newStatus: Encounter['status']): void => {
     setStatus(newStatus);
     onStatusChange?.(newStatus);
   };
 
+  const handleTabChange = (tab: 'notes' | 'details'): void => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  };
+
   const getStatusColor = (status: Encounter['status']): string => {
-    if (status === 'in-progress') {
-      return 'blue';
-    }
     if (status === 'finished') {
       return 'green';
     }
     if (status === 'cancelled') {
       return 'red';
     }
-    return 'gray';
+    return 'blue';
+
   };
 
   return (
@@ -73,6 +78,39 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
           </Menu>
         </Group>
       </Flex>
+
+      <Box px="md" pb="md">
+          <SegmentedControl
+            value={activeTab}
+            onChange={handleTabChange}
+            data={[
+              { label: 'Note & Tasks', value: 'notes' },
+              { label: 'Details & Billing', value: 'details' },
+            ]}
+            fullWidth
+            radius="md"
+            color="gray"
+            size="md"
+            styles={(theme) => ({
+              root: {
+                backgroundColor: theme.colors.gray[1],
+                borderRadius: theme.radius.md,
+              },
+              indicator: {
+                backgroundColor: theme.white,
+              },
+              label: {
+                fontWeight: 500,
+                color: theme.colors.dark[9],
+                '&[data-active]': {
+                  color: theme.colors.dark[9],
+                },
+                padding: `${theme.spacing.xs} ${theme.spacing.md}`,
+              },
+            })}
+          />
+        </Box>
+
     </Paper>
   );
 };
