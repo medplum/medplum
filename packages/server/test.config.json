@@ -29,7 +29,8 @@
     "port": 5432,
     "dbname": "medplum",
     "username": "medplum",
-    "password": "medplum"
+    "password": "medplum",
+    "disableRunPostDeployMigrations": true
   },
   "redis": {
     "host": "localhost",

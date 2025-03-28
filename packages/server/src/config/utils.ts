@@ -46,6 +46,8 @@ const booleanKeys = [
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
   'database.disableConnectionConfiguration',
+  'database.disableRunPostDeployMigrations',
+  'database.runMigrations',
   'readonlyDatabase.ssl.rejectUnauthorized',
   'readonlyDatabase.ssl.require',
   'readonlyDatabase.disableConnectionConfiguration',

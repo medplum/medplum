@@ -8,7 +8,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
-import { closeDownloadWorker, execDownloadJob, getDownloadQueue } from './download';
+import { execDownloadJob, getDownloadQueue } from './download';
 
 jest.mock('node-fetch');
 
@@ -24,7 +24,6 @@ describe('Download Worker', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    await closeDownloadWorker(); // Double close to ensure quite ignore
   });
 
   beforeEach(async () => {

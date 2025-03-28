@@ -102,6 +102,11 @@ export interface MedplumDatabaseConfig {
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
   runMigrations?: boolean;
+  /**
+   * Prevent post-deploy migrations from being automatically run after server startup.
+   * Setting this to `true` is not recommended except for advanced use cases.
+   */
+  disableRunPostDeployMigrations?: boolean;
   maxConnections?: number;
   disableConnectionConfiguration?: boolean;
 }

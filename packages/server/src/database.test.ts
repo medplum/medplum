@@ -13,12 +13,18 @@ import {
   initDatabase,
   releaseAdvisoryLock,
 } from './database';
+import { GetVersionSql, GetDataVersionSql } from './migration-sql';
 
 describe('Database config', () => {
   let poolSpy: jest.SpyInstance<pg.Pool, [config?: pg.PoolConfig | undefined]>;
   let advisoryLockResponse = true;
 
   beforeAll(() => {
+    // to appease jest, the name must start with "mock"
+    const mockQueries = {
+      GetVersionSql,
+      GetDataVersionSql,
+    };
     jest.useFakeTimers();
     jest.mock('pg');
     poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig) => {
@@ -35,6 +41,9 @@ describe('Database config', () => {
           };
           if (sql === 'SELECT pg_try_advisory_lock($1)') {
             result.rows = [{ pg_try_advisory_lock: advisoryLockResponse } as unknown as R];
+          }
+          if (sql === mockQueries.GetDataVersionSql) {
+            result.rows = [{ dataVersion: 1 } as unknown as R];
           }
 
           return result;
