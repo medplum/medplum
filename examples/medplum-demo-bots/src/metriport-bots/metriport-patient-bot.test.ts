@@ -4,7 +4,9 @@ import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MetriportMedicalApi } from '@metriport/api-sdk';
 import {
+  buildMetriportPatientPayload,
   createMedplumPatient,
+  createMetriportPatient,
   findMatchingMetriportPatient,
   handler,
   ValidatedPatientData,
@@ -260,6 +262,82 @@ describe('createMedplumPatient', () => {
   });
 });
 
+describe('buildMetriportPatientPayload', () => {
+  const patientData: ValidatedPatientData = {
+    firstName: 'Jane',
+    lastName: 'Smith',
+    dob: '1996-02-10',
+    genderAtBirth: 'female',
+    addressLine1: '123 Arsenal St',
+    city: 'Phoenix',
+    state: 'AZ',
+    zip: '85300',
+    driverLicenseNumber: 'A98765432',
+    driverLicenseState: 'AZ',
+    phone: '555-555-5555',
+    email: 'jane.smith@example.com',
+  };
+
+  const expectedBasePayload = {
+    firstName: 'Jane',
+    lastName: 'Smith',
+    dob: '1996-02-10',
+    genderAtBirth: 'F',
+    personalIdentifiers: [{ type: 'driversLicense', state: 'AZ', value: 'A98765432' }],
+    address: [{ addressLine1: '123 Arsenal St', city: 'Phoenix', state: 'AZ', zip: '85300', country: 'USA' }],
+    contact: [{ phone: '555-555-5555', email: 'jane.smith@example.com' }],
+  };
+
+  test('returns Demographics when called without medplumPatientId', () => {
+    const result = buildMetriportPatientPayload(patientData);
+    expect(result).toStrictEqual(expectedBasePayload);
+  });
+
+  test('returns PatientCreate when called with medplumPatientId', () => {
+    const medplumPatientId = '123';
+    const result = buildMetriportPatientPayload(patientData, medplumPatientId);
+    expect(result).toStrictEqual({
+      ...expectedBasePayload,
+      externalId: medplumPatientId,
+    });
+  });
+
+  test('handles missing optional fields', () => {
+    const minimalPatientData: ValidatedPatientData = {
+      firstName: 'Jane',
+      lastName: 'Smith',
+      dob: '1996-02-10',
+      genderAtBirth: 'female',
+      addressLine1: '123 Arsenal St',
+      city: 'Phoenix',
+      state: 'AZ',
+      zip: '85300',
+    };
+
+    const result = buildMetriportPatientPayload(minimalPatientData);
+    expect(result).toStrictEqual({
+      ...expectedBasePayload,
+      personalIdentifiers: undefined,
+      contact: [{ phone: undefined, email: undefined }],
+    });
+  });
+
+  test('maps gender correctly', () => {
+    const genderMappings = [
+      { input: 'male', expected: 'M' },
+      { input: 'female', expected: 'F' },
+      { input: 'other', expected: 'O' },
+      { input: 'unknown', expected: 'U' },
+    ];
+
+    genderMappings.forEach(({ input, expected }) => {
+      const testData = { ...patientData, genderAtBirth: input };
+      const result = buildMetriportPatientPayload(testData);
+      expect(result.genderAtBirth).toStrictEqual(expected);
+    });
+  });
+});
+
 describe('findMatchingMetriportPatient', () => {
   let mockMetriport: MetriportMedicalApi;
 
@@ -319,5 +397,95 @@ describe('findMatchingMetriportPatient', () => {
     await expect(findMatchingMetriportPatient(mockMetriport, patientData)).rejects.toThrow(
       'Error matching patient in Metriport: API Error'
     );
+  });
+});
+
+describe('createMetriportPatient', () => {
+  let mockMetriport: MetriportMedicalApi;
+
+  const patientData: ValidatedPatientData = {
+    firstName: 'Jane',
+    lastName: 'Smith',
+    dob: '1996-02-10',
+    genderAtBirth: 'female',
+    addressLine1: '123 Arsenal St',
+    city: 'Phoenix',
+    state: 'AZ',
+    zip: '85300',
+    driverLicenseNumber: 'A98765432',
+    driverLicenseState: 'AZ',
+    phone: '555-555-5555',
+    email: 'jane.smith@example.com',
+  };
+
+  const facilityId = '0195d964-d166-7226-8912-76934c23c140';
+  const medplumPatientId = 'Patient/123';
+
+  const expectedCreatePayload = {
+    firstName: 'Jane',
+    lastName: 'Smith',
+    dob: '1996-02-10',
+    genderAtBirth: 'F',
+    personalIdentifiers: [{ type: 'driversLicense', state: 'AZ', value: 'A98765432' }],
+    address: [{ addressLine1: '123 Arsenal St', city: 'Phoenix', state: 'AZ', zip: '85300', country: 'USA' }],
+    contact: [{ phone: '555-555-5555', email: 'jane.smith@example.com' }],
+    externalId: medplumPatientId,
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockMetriport = {
+      createPatient: vi.fn().mockImplementation(() => Promise.resolve()),
+    } as unknown as MetriportMedicalApi;
+  });
+
+  test('successfully creates patient', async () => {
+    mockMetriport.createPatient = vi.fn().mockResolvedValueOnce(JaneSmithMetriportPatient);
+
+    const result = await createMetriportPatient(mockMetriport, patientData, facilityId, medplumPatientId);
+
+    expect(result).toStrictEqual(JaneSmithMetriportPatient);
+    expect(mockMetriport.createPatient).toHaveBeenCalledWith(expectedCreatePayload, facilityId);
+  });
+
+  test('handles Metriport API error', async () => {
+    const error = new Error('API Error');
+    mockMetriport.createPatient = vi.fn().mockRejectedValueOnce(error);
+
+    await expect(createMetriportPatient(mockMetriport, patientData, facilityId, medplumPatientId)).rejects.toThrow(
+      'Error creating patient in Metriport: API Error'
+    );
+
+    expect(mockMetriport.createPatient).toHaveBeenCalledWith(expectedCreatePayload, facilityId);
+  });
+
+  test('creates patient with minimal data', async () => {
+    const minimalPatientData: ValidatedPatientData = {
+      firstName: 'Jane',
+      lastName: 'Smith',
+      dob: '1996-02-10',
+      genderAtBirth: 'female',
+      addressLine1: '123 Arsenal St',
+      city: 'Phoenix',
+      state: 'AZ',
+      zip: '85300',
+    };
+
+    const expectedMinimalPayload = {
+      firstName: 'Jane',
+      lastName: 'Smith',
+      dob: '1996-02-10',
+      genderAtBirth: 'F',
+      address: [{ addressLine1: '123 Arsenal St', city: 'Phoenix', state: 'AZ', zip: '85300', country: 'USA' }],
+      contact: [{ phone: undefined, email: undefined }],
+      externalId: medplumPatientId,
+    };
+
+    mockMetriport.createPatient = vi.fn().mockResolvedValueOnce(JaneSmithMetriportPatient);
+
+    const result = await createMetriportPatient(mockMetriport, minimalPatientData, facilityId, medplumPatientId);
+
+    expect(result).toStrictEqual(JaneSmithMetriportPatient);
+    expect(mockMetriport.createPatient).toHaveBeenCalledWith(expectedMinimalPayload, facilityId);
   });
 });
