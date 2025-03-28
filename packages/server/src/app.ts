@@ -251,7 +251,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
   const ctx = getRequestContext();
   const start = Date.now();
 
-  res.on('finish', () => {
+  res.on('close', () => {
     const duration = Date.now() - start;
 
     let userProfile: string | undefined;
