@@ -13,6 +13,7 @@ import {
 } from '../migrations/data/types';
 import { getPostDeployMigration } from '../migrations/migration-utils';
 import {
+  addLogging,
   isJobActive,
   isJobCompatible,
   QueueClosing,
@@ -43,45 +44,7 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
       ...defaultOptions,
     }
   );
-  worker.on('active', (job, prev) => {
-    globalLogger.info(`${PostDeployMigrationQueueName} worker: active`, {
-      jobId: job?.id,
-      jobAsyncJob: job?.data?.asyncJobId && 'AsyncJob/' + job?.data?.asyncJobId,
-      prev,
-    });
-  });
-  worker.on('closing', async (message) => {
-    globalLogger.info(`${PostDeployMigrationQueueName} worker: closing`, { message });
-  });
-  worker.on('completed', async (job, result, prev) => {
-    globalLogger.info(`${PostDeployMigrationQueueName} worker: completed`, {
-      jobId: job?.id,
-      asyncJobId: job?.data?.asyncJobId,
-      type: job?.data?.type,
-      result,
-      prev,
-    });
-  });
-  worker.on('error', (failedReason) =>
-    globalLogger.info(`${PostDeployMigrationQueueName} worker: error`, {
-      error: failedReason instanceof Error ? failedReason.message : String(failedReason),
-      stack: failedReason instanceof Error ? failedReason.stack : undefined,
-    })
-  );
-  worker.on('failed', (job, error, prev) =>
-    globalLogger.info(`${PostDeployMigrationQueueName} worker: failed`, {
-      jobId: job?.id,
-      asyncJobId: job?.data?.asyncJobId,
-      type: job?.data?.type,
-      prev,
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    })
-  );
-  worker.on('stalled', (jobId, prev) => {
-    globalLogger.info(`${PostDeployMigrationQueueName} worker: stalled`, { jobId, prev });
-  });
-
+  addLogging(queue, worker);
   return { queue, worker, name: PostDeployMigrationQueueName };
 };
 

@@ -17,7 +17,7 @@ import * as semver from 'semver';
 import { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
 import { getSystemRepo, Repository } from '../fhir/repo';
-import { getLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 import { getServerVersion } from '../util/version';
 
@@ -276,5 +276,49 @@ export async function waitForQueueClosing(name: string, delay: number = 10_000):
         }
       }
     }, 1000);
+  });
+}
+
+export function addLogging(queue: Queue, worker: Worker): void {
+  worker.on('active', (job, prev) => {
+    globalLogger.info(`${queue.name} worker: active`, {
+      jobId: job?.id,
+      jobAsyncJob: job?.data?.asyncJobId && 'AsyncJob/' + job?.data?.asyncJobId,
+      prev,
+    });
+  });
+  worker.on('closing', async (message) => {
+    globalLogger.info(`${queue.name} worker: closing`, { message });
+  });
+  worker.on('closed', async () => {
+    globalLogger.info(`${queue.name} worker: closed`);
+  });
+  worker.on('completed', async (job, result, prev) => {
+    globalLogger.info(`${queue.name} worker: completed`, {
+      jobId: job?.id,
+      asyncJobId: job?.data?.asyncJobId,
+      type: job?.data?.type,
+      result,
+      prev,
+    });
+  });
+  worker.on('error', (failedReason) =>
+    globalLogger.info(`${queue.name} worker: error`, {
+      error: failedReason instanceof Error ? failedReason.message : String(failedReason),
+      stack: failedReason instanceof Error ? failedReason.stack : undefined,
+    })
+  );
+  worker.on('failed', (job, error, prev) =>
+    globalLogger.info(`${queue.name} worker: failed`, {
+      jobId: job?.id,
+      asyncJobId: job?.data?.asyncJobId,
+      type: job?.data?.type,
+      prev,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+  );
+  worker.on('stalled', (jobId, prev) => {
+    globalLogger.info(`${queue.name} worker: stalled`, { jobId, prev });
   });
 }

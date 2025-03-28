@@ -18,7 +18,14 @@ import { getLogger, globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
 import { MigrationVersion } from '../migrations/migration-versions';
-import { isJobActive, isJobCompatible, queueRegistry, updateAsyncJobOutput, WorkerInitializer } from './utils';
+import {
+  addLogging,
+  isJobActive,
+  isJobCompatible,
+  queueRegistry,
+  updateAsyncJobOutput,
+  WorkerInitializer,
+} from './utils';
 
 /*
  * The reindex worker updates resource rows in the database,
@@ -71,7 +78,7 @@ export const initReindexWorker: WorkerInitializer = (config) => {
     queueName,
     (job) =>
       tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => {
-        const result = await new ReindexJob().execute(job.data, job);
+        const result = await new ReindexJob(undefined, 500, 5_000).execute(job.data, job);
         if (result === 'ineligible') {
           // Since we can't handle this ourselves, re-enqueue the job for another worker that can
           const queue = queueRegistry.get(job.queueName);
@@ -83,8 +90,7 @@ export const initReindexWorker: WorkerInitializer = (config) => {
       ...config.bullmq,
     }
   );
-  worker.on('failed', (job, err) => globalLogger.info(`Reindex worker failed job ${job?.id} with ${err}`));
-  worker.on('completed', (job) => globalLogger.info(`Reindex worker completed job ${job?.id}`));
+  addLogging(queue, worker);
 
   return { queue, worker, name: queueName };
 };
@@ -141,10 +147,28 @@ export class ReindexJob {
 
     let nextJobData: ReindexJobData | undefined = inputJobData;
     while (nextJobData) {
-      if (job?.queueName && job.token && queueRegistry.isClosing(job.queueName)) {
-        await job.updateData(nextJobData);
-        await job.moveToDelayed(Date.now() + 60_000, job.token);
-        throw new DelayedError('Reindex job delayed since queue is closing');
+      if (queueRegistry.isClosing(job?.queueName ?? '')) {
+        getLogger().info('Reindex job detected queue is closing', {
+          queueName: job?.queueName,
+          token: job?.token,
+          asyncJob: getReferenceString(asyncJob),
+        });
+        if (job?.token) {
+          getLogger().info('Reindex job delaying self', {
+            queueName: job.queueName,
+            token: job.token,
+            asyncJob: getReferenceString(asyncJob),
+            jobData: JSON.stringify(nextJobData),
+          });
+          await job.updateData(nextJobData);
+          await job.moveToDelayed(Date.now() + 60_000, job.token);
+          getLogger().info('Reindex job delayed', {
+            queueName: job.queueName,
+            token: job.token,
+            asyncJob: getReferenceString(asyncJob),
+          });
+          throw new DelayedError('Reindex job delayed since queue is closing');
+        }
       }
       const result = await this.processIteration(this.systemRepo, nextJobData);
       const resourceType = nextJobData.resourceTypes[0];
