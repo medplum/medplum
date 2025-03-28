@@ -189,7 +189,7 @@ Function UpgradeApp
         DetailPrint "Creating upgrade.json file"
         # Create the file with JSON content
         FileOpen $1 "$INSTDIR\upgrade.json" w
-        FileWrite $1 '{ "previousVersion": null, "version": "$%MEDPLUM_VERSION%" }'
+        FileWrite $1 '{ "previousVersion": "UNKNOWN", "targetVersion": "$%MEDPLUM_VERSION%", "callback": null }'
         FileClose $1
     ${EndIf}
 
