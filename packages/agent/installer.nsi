@@ -210,6 +210,8 @@ Function UpgradeApp
         ${EndIf}
     ${Loop}
 
+    Sleep 2000
+
     ; # TODO: Stop all running MedplumAgent services that are not the new service and delete them
     ; DetailPrint "Stopping and deleting all old MedplumAgent services..."
     ; # Get a list of services, pipe to findstr to find MedplumAgent services
@@ -218,6 +220,7 @@ Function UpgradeApp
     ; ; ExecWait 'cmd.exe /c "for /f "tokens=2 delims=: " %s in (''sc query state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent"'') do (if not "%s"=="${SERVICE_NAME}" (echo Stopping and deleting service: %s & net stop %s && sc delete %s))"' $1
     ; DetailPrint "Exit code $1"
     DetailPrint "Stopping old Medplum Agent service..."
+    Sleep 2000
     ExecWait "net stop MedplumAgent && sc delete MedplumAgent" $1
     DetailPrint "Exit code $1"
 
