@@ -276,17 +276,6 @@ We encourage healthcare organizations and developers to embrace TEFCA and contri
 | **QHIN Query** | The act of a QHIN Querying information from one or more other QHINs[^25]. |
 | **QHIN Technical Framework (QTF)** | The most recent effective version of the document that outlines the technical specifications and other technical requirements necessary for QHINs to exchange information[^25]. |
 
-## **References**
-
-[^1]: [^21]: TEFCA: A Framework for Public Health Interoperability \- Version 2.1 Published. NACCHO. (n.d.). Retrieved February 16, 2025, from [https://www.naccho.org/blog/articles/tefca-ver-2.1-published](https://www.naccho.org/blog/articles/tefca-ver-2.1-published)
-
-[^22]: Updated TEFCA SOPs for Health Care Operations. NCQA. (n.d.). Retrieved February 16, 2025, from [https://www.ncqa.org/blog/updated-tefca-sops-for-health-care-operations/](https://www.ncqa.org/blog/updated-tefca-sops-for-health-care-operations/)
-
-[^23]: The Impact of TEFCA & HITRUST on Patient Privacy and Security. A-LIGN. (n.d.). Retrieved February 16, 2025, from [https://www.a-lign.com/articles/the-impact-of-tefca-hitrust-on-patient-privacy-and-security](https://www.a-lign.com/articles/the-impact-of-tefca-hitrust-on-patient-privacy-and-security)
-
-[^24]: TEFCA Glossary. The Sequoia Project. (2024, July). Retrieved February 16, 2025, from [https://rce.sequoiaproject.org/wp-content/uploads/2024/07/TEFCA-Glossary\_508-1.pdf](https://rce.sequoiaproject.org/wp-content/uploads/2024/07/TEFCA-Glossary_508-1.pdf)
-
-[^25]: QHIN Technical Framework (QTF) Version 2.0. The Sequoia Project. (2024, July). Retrieved February 16, 2025, from [https://rce.sequoiaproject.org/wp-content/uploads/2024/07/QTF-v2.0\_508.pdf](https://www.google.com/search?q=https://rce.sequoiaproject.org/wp-content/uploads/2024/07/QTF-v2.0_508.pdf)
 
 #### **Works cited**
 
@@ -315,6 +304,8 @@ We encourage healthcare organizations and developers to embrace TEFCA and contri
 23\. ASTP Final Rule Codifies Requirements for TEFCA-Qualified Health Information Networks, accessed February 16, 2025, [https://www.mwe.com/insights/astp-final-rule-codifies-requirements-for-tefca-qualified-health-information-networks/](https://www.mwe.com/insights/astp-final-rule-codifies-requirements-for-tefca-qualified-health-information-networks/)  
 24\. TEFCA Glossary, accessed February 16, 2025, [https://rce.sequoiaproject.org/wp-content/uploads/2024/01/Draft-TEFCA-Glossary-508-Compliant.pdf](https://rce.sequoiaproject.org/wp-content/uploads/2024/01/Draft-TEFCA-Glossary-508-Compliant.pdf)  
 25\. TEFCA Glossary, accessed February 16, 2025, [https://rce.sequoiaproject.org/wp-content/uploads/2024/07/TEFCA-Glossary\_508-1.pdf](https://rce.sequoiaproject.org/wp-content/uploads/2024/07/TEFCA-Glossary_508-1.pdf)
+
+## Footnotes
 
 [^1]: Framework for Public Health Interoperability \- Version 2.1 Published. NACCHO. (n.d.). Retrieved February 16, 2025, from [https://www.naccho.org/blog/articles/tefca-ver-2.1-published](https://www.naccho.org/blog/articles/tefca-ver-2.1-published)
 
