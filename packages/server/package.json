@@ -41,6 +41,7 @@
     "@azure/keyvault-secrets": "4.9.0",
     "@azure/storage-blob": "12.27.0",
     "@google-cloud/secret-manager": "6.0.1",
+    "@google-cloud/storage": "7.15.2",
     "@medplum/ccda": "4.0.4",
     "@medplum/core": "4.0.4",
     "@medplum/definitions": "4.0.4",

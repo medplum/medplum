@@ -3,9 +3,10 @@ import { Binary } from '@medplum/fhirtypes';
 import { createSign } from 'crypto';
 import { copyFileSync, createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { resolve, sep } from 'path';
-import { Readable, pipeline } from 'stream';
+import { pipeline, Readable } from 'stream';
 import { S3Storage } from '../cloud/aws/storage';
 import { AzureBlobStorage } from '../cloud/azure/storage';
+import { GCPBlobStorage } from '../cloud/gcp/storage';
 import { getConfig } from '../config/loader';
 
 /**
@@ -33,6 +34,8 @@ export function initBinaryStorage(type?: string): void {
     binaryStorage = new AzureBlobStorage(type.replace('azure:', ''));
   } else if (type?.startsWith('file:')) {
     binaryStorage = new FileSystemStorage(type.replace('file:', ''));
+  } else if (type?.startsWith('gs:')) {
+    binaryStorage = new GCPBlobStorage(type.replace('gs:', ''));
   } else {
     binaryStorage = undefined;
   }
