@@ -7,20 +7,20 @@ interface EncounterHeaderProps {
   encounter: Encounter;
   practitioner?: Practitioner | undefined;
   onStatusChange?: (status: Encounter['status']) => void;
-  onTabChange?: (tab: 'notes' | 'details') => void;
+  onTabChange?: (tab:string) => void;
 }
 
 export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
   const { encounter, onStatusChange, onTabChange } = props;
   const [status, setStatus] = useState<Encounter['status']>(encounter.status);
-  const [activeTab, setActiveTab] = useState<'notes' | 'details'>('notes');
+  const [activeTab, setActiveTab] = useState<string>('notes');
 
   const handleStatusChange = (newStatus: Encounter['status']): void => {
     setStatus(newStatus);
     onStatusChange?.(newStatus);
   };
 
-  const handleTabChange = (tab: 'notes' | 'details'): void => {
+  const handleTabChange = (tab: string): void => {
     setActiveTab(tab);
     onTabChange?.(tab);
   };
@@ -82,7 +82,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       <Box px="md" pb="md">
           <SegmentedControl
             value={activeTab}
-            onChange={handleTabChange}
+            onChange={(value: string) => handleTabChange(value)}
             data={[
               { label: 'Note & Tasks', value: 'notes' },
               { label: 'Details & Billing', value: 'details' },
