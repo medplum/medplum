@@ -7,7 +7,7 @@ interface EncounterHeaderProps {
   encounter: Encounter;
   practitioner?: Practitioner | undefined;
   onStatusChange?: (status: Encounter['status']) => void;
-  onTabChange?: (tab:string) => void;
+  onTabChange?: (tab: string) => void;
 }
 
 export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
@@ -33,7 +33,6 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       return 'red';
     }
     return 'blue';
-
   };
 
   return (
@@ -80,37 +79,36 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       </Flex>
 
       <Box px="md" pb="md">
-          <SegmentedControl
-            value={activeTab}
-            onChange={(value: string) => handleTabChange(value)}
-            data={[
-              { label: 'Note & Tasks', value: 'notes' },
-              { label: 'Details & Billing', value: 'details' },
-            ]}
-            fullWidth
-            radius="md"
-            color="gray"
-            size="md"
-            styles={(theme) => ({
-              root: {
-                backgroundColor: theme.colors.gray[1],
-                borderRadius: theme.radius.md,
-              },
-              indicator: {
-                backgroundColor: theme.white,
-              },
-              label: {
-                fontWeight: 500,
+        <SegmentedControl
+          value={activeTab}
+          onChange={(value: string) => handleTabChange(value)}
+          data={[
+            { label: 'Note & Tasks', value: 'notes' },
+            { label: 'Details & Billing', value: 'details' },
+          ]}
+          fullWidth
+          radius="md"
+          color="gray"
+          size="md"
+          styles={(theme) => ({
+            root: {
+              backgroundColor: theme.colors.gray[1],
+              borderRadius: theme.radius.md,
+            },
+            indicator: {
+              backgroundColor: theme.white,
+            },
+            label: {
+              fontWeight: 500,
+              color: theme.colors.dark[9],
+              '&[data-active]': {
                 color: theme.colors.dark[9],
-                '&[data-active]': {
-                  color: theme.colors.dark[9],
-                },
-                padding: `${theme.spacing.xs} ${theme.spacing.md}`,
               },
-            })}
-          />
-        </Box>
-
+              padding: `${theme.spacing.xs} ${theme.spacing.md}`,
+            },
+          })}
+        />
+      </Box>
     </Paper>
   );
 };
