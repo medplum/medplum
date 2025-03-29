@@ -376,7 +376,38 @@ export const EncounterChart = (): JSX.Element => {
         />
 
         <Box p="md">
+<<<<<<< HEAD
           {renderTabContent()}
+=======
+          <Stack gap="md">
+            {clinicalImpression && (
+              <Card withBorder shadow="sm">
+                <QuestionnaireForm
+                  questionnaire={questionnaire}
+                  questionnaireResponse={questionnaireResponse}
+                  excludeButtons={true}
+                  onChange={onChange}
+                />
+              </Card>
+            )}
+
+            {tasks.map((task: Task) => (
+              <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
+            ))}
+
+            {chargeItems.length > 0 && (
+              <Stack gap="md" pt="lg">
+                <Text size="lg" fw={500}>
+                  Charge Items
+                </Text>
+                {chargeItems.map((chargeItem: ChargeItem) => (
+                  <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} onChange={updateChargeItemList} />
+                ))}
+              </Stack>
+            )}
+          </Stack>
+
+>>>>>>> 11daeaa582efb3b9ddf87e72db6a4fe438578acb
           <Outlet />
         </Box>
       </Stack>
