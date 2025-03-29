@@ -34,7 +34,7 @@ export const EncounterChart = (): JSX.Element => {
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>();
   const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
-  const [activeTab, setActiveTab] = useState<'notes' | 'details'>('notes');
+  const [activeTab, setActiveTab] = useState<string>('notes');
 
   useEffect(() => {
     if (encounterId) {
@@ -272,7 +272,7 @@ export const EncounterChart = (): JSX.Element => {
     [encounter, medplum]
   );
 
-  const handleTabChange = (tab: 'notes' | 'details'): void => {
+  const handleTabChange = (tab: string): void => {
     setActiveTab(tab);
   };
 
@@ -376,38 +376,7 @@ export const EncounterChart = (): JSX.Element => {
         />
 
         <Box p="md">
-<<<<<<< HEAD
           {renderTabContent()}
-=======
-          <Stack gap="md">
-            {clinicalImpression && (
-              <Card withBorder shadow="sm">
-                <QuestionnaireForm
-                  questionnaire={questionnaire}
-                  questionnaireResponse={questionnaireResponse}
-                  excludeButtons={true}
-                  onChange={onChange}
-                />
-              </Card>
-            )}
-
-            {tasks.map((task: Task) => (
-              <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
-            ))}
-
-            {chargeItems.length > 0 && (
-              <Stack gap="md" pt="lg">
-                <Text size="lg" fw={500}>
-                  Charge Items
-                </Text>
-                {chargeItems.map((chargeItem: ChargeItem) => (
-                  <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} onChange={updateChargeItemList} />
-                ))}
-              </Stack>
-            )}
-          </Stack>
-
->>>>>>> 11daeaa582efb3b9ddf87e72db6a4fe438578acb
           <Outlet />
         </Box>
       </Stack>
