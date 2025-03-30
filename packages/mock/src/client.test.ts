@@ -283,10 +283,12 @@ describe('MockClient', () => {
   });
 
   test('Debug mode', async () => {
+    const originalConsoleLog = console.log;
     console.log = jest.fn();
     const client = new MockClient({ debug: true });
     await client.get('not-found');
     expect(console.log).toHaveBeenCalled();
+    console.log = originalConsoleLog;
   });
 
   test('mockFetchOverride -- Missing one of router, repo, or client throws', () => {
@@ -896,6 +898,16 @@ describe('MockClient', () => {
     medplum.unsubscribeFromCriteria('Communication');
     medplum.unsubscribeFromCriteria('Communication');
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toStrictEqual(0);
+  });
+
+  test('createAttachment', async () => {
+    const medplum = new MockClient();
+    const attachment = await medplum.createAttachment({
+      contentType: ContentType.TEXT,
+      data: 'Hello World',
+    });
+    expect(attachment).toBeDefined();
+    expect(attachment.url).toBeDefined();
   });
 });
 
