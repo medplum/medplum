@@ -183,6 +183,12 @@ export class TokenTable extends LookupTable {
  * @returns True if the search parameter is an "token" parameter.
  */
 function getTokenIndexType(searchParam: SearchParameter, resourceType: string): TokenIndexType | undefined {
+  if (legacyTokenColumnSearchParamIds.has(searchParam.id as string)) {
+    // This is a legacy search parameter that should be indexed as a column
+    // instead of a lookup table.
+    return undefined;
+  }
+
   if (searchParam.type !== 'token') {
     return undefined;
   }
@@ -660,3 +666,56 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
 function isCaseSensitiveSearchParameter(param: SearchParameter, resourceType: ResourceType): boolean {
   return getTokenIndexType(param, resourceType) === TokenIndexTypes.CASE_SENSITIVE;
 }
+
+/**
+ * The following search parameters are affected by a change in FHIRpath's toString() method.
+ *
+ * Background:
+ *
+ * PR #6266 fixed parentheses in infix operators' toString() methods. This revealed that
+ * Atom.toString() is used in getSearchParameterDetails() when finding ElementDefinitions,
+ * causing repo.ts to use different search strategies.
+ *
+ * These parameters previously used the "column" strategy but should use the "lookup-table" strategy.
+ * To maintain backward compatibility during migration:
+ * 1. We've added special case handling for these parameters (current state)
+ * 2. We'll implement double-writing to both strategies (see GitHub issue https://github.com/medplum/medplum/issues/6271)
+ * 3. We'll complete the transition during the token-table cleanup project
+ *
+ * Critical parameters to watch:
+ * - MedicationRequest-code
+ * - Observation-value-concept
+ *
+ * Most others are rarely-used "usageContext" parameters.
+ *
+ * DO NOT MODIFY THIS LIST without coordinating with the team responsible for search parameter
+ * implementation. Any changes may require database reindexing.
+ *
+ * See follow-up issue: https://github.com/medplum/medplum/issues/6271
+ */
+export const legacyTokenColumnSearchParamIds = new Set([
+  'ActivityDefinition-context',
+  'ChargeItemDefinition-context',
+  'clinical-code',
+  'Composition-related-id',
+  'conformance-context',
+  'EffectEvidenceSynthesis-context',
+  'EventDefinition-context',
+  'Evidence-context',
+  'EvidenceVariable-context',
+  'ExampleScenario-context',
+  'Group-value',
+  'Library-context',
+  'Measure-context',
+  'Medication-ingredient-code',
+  'MedicationKnowledge-ingredient-code',
+  'Observation-combo-value-concept',
+  'Observation-component-value-concept',
+  'Observation-value-concept',
+  'PlanDefinition-context',
+  'Questionnaire-context',
+  'ResearchDefinition-context',
+  'ResearchElementDefinition-context',
+  'RiskEvidenceSynthesis-context',
+  'TestScript-context',
+]);

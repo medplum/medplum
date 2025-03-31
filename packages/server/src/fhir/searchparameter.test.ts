@@ -230,6 +230,13 @@ describe('SearchParameterImplementation', () => {
     expect(impl.lookupTable instanceof TokenTable).toBeTruthy();
   });
 
+  test('MedicationRequest-code legacy behavior', () => {
+    const searchParam = indexedSearchParams.find((e) => e.id === 'clinical-code') as SearchParameter;
+    const impl = getSearchParameterImplementation('MedicationRequest', searchParam);
+    assertColumnImplementation(impl);
+    expect(impl.columnName).toStrictEqual('code');
+  });
+
   test.each([
     ['Patient-identifier', TokenTable],
     ['individual-address-country', AddressTable],
