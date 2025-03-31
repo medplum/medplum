@@ -1,16 +1,15 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
+import { globalSchema, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { AddressTable } from './lookups/address';
+import { HumanNameTable } from './lookups/humanname';
+import { TokenTable } from './lookups/token';
 import {
   ColumnSearchParameterImplementation,
   getSearchParameterImplementation,
-  globalSearchParameterRegistry,
   LookupTableSearchParameterImplementation,
   SearchParameterImplementation,
 } from './searchparameter';
-import { TokenTable } from './lookups/token';
-import { AddressTable } from './lookups/address';
-import { HumanNameTable } from './lookups/humanname';
 
 describe('SearchParameterImplementation', () => {
   const indexedSearchParams: SearchParameter[] = [];
@@ -246,7 +245,7 @@ describe('SearchParameterImplementation', () => {
 
   test('Everything', () => {
     // Make sure that getSearchParameterImplementation returns successfully for all known parameters.
-    for (const resourceType of Object.keys(globalSearchParameterRegistry.types)) {
+    for (const resourceType of Object.keys(globalSchema.types)) {
       for (const searchParam of indexedSearchParams) {
         if (searchParam.base?.includes(resourceType as ResourceType)) {
           const impl = getSearchParameterImplementation(resourceType, searchParam);

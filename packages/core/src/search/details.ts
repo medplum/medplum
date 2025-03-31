@@ -158,8 +158,18 @@ function crawlSearchParameterDetails(
     nextIndex++;
   }
 
+  const nextAtom = atoms[nextIndex];
+
   if (elementDefinition.isArray && !hasArrayIndex) {
     details.array = true;
+  }
+
+  if (nextIndex === atoms.length - 1 && nextAtom instanceof AsAtom) {
+    // This is the 2nd to last atom in the expression
+    // And the last atom is an "as" expression
+    details.elementDefinitions.push(elementDefinition);
+    details.propertyTypes.add(nextAtom.right.toString());
+    return;
   }
 
   if (nextIndex >= atoms.length) {
@@ -265,7 +275,7 @@ function buildExpressionsForResourceType(resourceType: string, atom: Atom, resul
     buildExpressionsForResourceType(resourceType, atom.right, result);
   } else {
     const str = atom.toString();
-    if (str.startsWith(resourceType + '.')) {
+    if (str.includes(resourceType + '.')) {
       result.push(atom);
     }
   }
