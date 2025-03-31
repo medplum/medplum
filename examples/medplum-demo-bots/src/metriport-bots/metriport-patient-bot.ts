@@ -22,13 +22,22 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
 
   // Create a new patient in Metriport, if they don't exist
   if (!metriportPatient) {
-    // FIXME: This is a hardcoded facility ID. Should we get this from the QuestionnaireResponse? It can link to a Organization resource.
+    // FIXME: This is a hardcoded facility ID. We should get this from elsewhere.
     const facilityId = '0195d964-d166-7226-8912-76934c23c140';
     metriportPatient = await createMetriportPatient(metriport, validatedData, facilityId, medplumPatient.id as string);
   }
 
-  // TODO: Get the patient's records from Metriport
-  // TODO: Create FHIR resources in Medplum
+  // Trigger an asynchronous query to retrieve the patient's consolidated data in FHIR JSON format.
+  // The results are sent through Webhook (see https://docs.metriport.com/medical-api/more-info/webhooks).
+  // See the consolidated-data-webhook.ts file for the webhook handler.
+  const consolidatedData = await metriport.startConsolidatedQuery(
+    metriportPatient.id,
+    undefined, // A comma separated, case sensitive list of resources to be returned. If none are provided all resources will be included
+    undefined, // No start date
+    undefined, // No end date
+    'json' // FHIR JSON format
+  );
+  console.log('Consolidated data:', JSON.stringify(consolidatedData, null, 2));
 }
 
 export interface ValidatedPatientData {
