@@ -742,7 +742,7 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
       { name: 'id', type: 'INTEGER', notNull: true, primaryKey: true },
       { name: 'version', type: 'INTEGER', notNull: true },
       { name: 'dataVersion', type: 'INTEGER', notNull: true },
-      { name: 'firstBoot', type: 'BOOLEAN' },
+      { name: 'firstBoot', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
     ],
     indexes: [{ columns: ['id'], indexType: 'btree', unique: true }],
   });

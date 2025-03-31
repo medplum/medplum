@@ -161,7 +161,7 @@ async function migrate(client: PoolClient): Promise<void> {
     "id" INTEGER NOT NULL PRIMARY KEY,
     "version" INTEGER NOT NULL,
     "dataVersion" INTEGER NOT NULL,
-    "firstBoot" BOOLEAN NOT NULL
+    "firstBoot" BOOLEAN NOT NULL DEFAULT false
   )`);
 
   let preDeployVersion = await getPreDeployVersion(client);
