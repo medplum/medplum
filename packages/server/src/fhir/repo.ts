@@ -415,6 +415,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     reference: Reference,
     cacheEntry: CacheEntry | undefined
   ): Promise<Resource | Error> {
+    if (!reference.reference?.match(/^[A-Z][a-zA-Z]+\//)) {
+      // Non-local references cannot be resolved
+      return new OperationOutcomeError(notFound);
+    }
+
     try {
       const [resourceType, id] = parseReference(reference);
       validateResourceType(resourceType);
