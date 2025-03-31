@@ -813,15 +813,12 @@ function writeMigrations(
   options: BuildMigrationOptions
 ): void {
   b.append("import { PoolClient } from 'pg';");
-  b.newLine();
-  b.append('async function query(client: PoolClient, queryStr: string): Promise<void> {');
-  b.append('  console.log((new Date()).toISOString(), queryStr);');
-  b.append('  await client.query(queryStr);');
-  b.append('}');
+  b.append("import * as fns from '../migrate-functions';");
   b.newLine();
   b.append('// prettier-ignore'); // To prevent prettier from reformatting the SQL statements
   b.append('export async function run(client: PoolClient): Promise<void> {');
   b.indentCount++;
+  b.append('const actions: { name: string; durationMs: number }[] = []');
 
   for (const targetFunction of targetDefinition.functions) {
     const startFunction = startDefinition.functions.find((f) => f.name === targetFunction.name);
@@ -854,13 +851,13 @@ function migrateTable(
 }
 
 function writeCreateFunction(b: FileBuilder, functionDefinition: SqlFunctionDefinition): void {
-  b.appendNoWrap(`await query(client, \`${escapeUnicode(functionDefinition.createQuery)}\`);`);
+  b.appendNoWrap(`await fns.query(client, actions, \`${escapeUnicode(functionDefinition.createQuery)}\`);`);
   b.newLine();
 }
 
 function writeCreateTable(b: FileBuilder, tableDefinition: TableDefinition): void {
   b.newLine();
-  b.appendNoWrap(`await query(client, \`CREATE TABLE IF NOT EXISTS "${tableDefinition.name}" (`);
+  b.appendNoWrap(`await fns.query(client, actions, \`CREATE TABLE IF NOT EXISTS "${tableDefinition.name}" (`);
   b.indentCount++;
   for (let i = 0; i < tableDefinition.columns.length; i++) {
     b.append(
@@ -877,7 +874,7 @@ function writeCreateTable(b: FileBuilder, tableDefinition: TableDefinition): voi
   }
 
   for (const indexDefinition of tableDefinition.indexes) {
-    b.appendNoWrap(`await query(client, '${buildIndexSql(tableDefinition.name, indexDefinition)}');`);
+    writeAddIndex(b, tableDefinition, indexDefinition);
   }
   b.newLine();
 }
@@ -905,7 +902,7 @@ function normalizeColumnType(colType: string): string {
 function writeAddColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
   const { name, type, notNull, primaryKey, defaultValue } = columnDefinition;
   b.appendNoWrap(
-    `await query(client, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ADD COLUMN IF NOT EXISTS "${name}" ${type}${notNull ? ' NOT NULL' : ''}${primaryKey ? ' PRIMARY KEY' : ''}${defaultValue ? ' DEFAULT ' + defaultValue : ''}');`
+    `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ADD COLUMN IF NOT EXISTS "${name}" ${type}${notNull ? ' NOT NULL' : ''}${primaryKey ? ' PRIMARY KEY' : ''}${defaultValue ? ' DEFAULT ' + defaultValue : ''}');`
   );
 }
 
@@ -919,11 +916,11 @@ function writeUpdateColumn(
     postDeployAction(() => {
       if (targetDef.defaultValue) {
         b.appendNoWrap(
-          `await query(client, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" SET DEFAULT ${targetDef.defaultValue}');`
+          `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" SET DEFAULT ${targetDef.defaultValue}');`
         );
       } else {
         b.appendNoWrap(
-          `await query(client, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" DROP DEFAULT');`
+          `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" DROP DEFAULT');`
         );
       }
     }, `Change default value of ${tableDefinition.name}.${targetDef.name}`);
@@ -932,7 +929,7 @@ function writeUpdateColumn(
   if (startDef.notNull !== targetDef.notNull) {
     postDeployAction(() => {
       b.appendNoWrap(
-        `await query(client, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" ${targetDef.notNull ? 'SET' : 'DROP'} NOT NULL');`
+        `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" ${targetDef.notNull ? 'SET' : 'DROP'} NOT NULL');`
       );
     }, `Change NOT NULL of ${tableDefinition.name}.${targetDef.name}`);
   }
@@ -940,7 +937,7 @@ function writeUpdateColumn(
   if (startDef.type !== targetDef.type) {
     postDeployAction(() => {
       b.appendNoWrap(
-        `await query(client, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" TYPE ${targetDef.type}');`
+        `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" TYPE ${targetDef.type}');`
       );
     }, `Change type of ${tableDefinition.name}.${targetDef.name}`);
   }
@@ -948,7 +945,7 @@ function writeUpdateColumn(
 
 function writeDropColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
   b.appendNoWrap(
-    `await query(client, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" DROP COLUMN IF EXISTS "${columnDefinition.name}"');`
+    `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" DROP COLUMN IF EXISTS "${columnDefinition.name}"');`
   );
 }
 
@@ -956,7 +953,7 @@ function writeAddPrimaryKey(b: FileBuilder, tableDefinition: TableDefinition, pr
   postDeployAction(
     () => {
       b.appendNoWrap(
-        `await query(client, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ADD PRIMARY KEY (${primaryKeyColumns.map((c) => `"${c}"`).join(', ')})');`
+        `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ADD PRIMARY KEY (${primaryKeyColumns.map((c) => `"${c}"`).join(', ')})');`
       );
     },
     `ADD PRIMARY KEY ${tableDefinition.name} (${primaryKeyColumns.join(', ')})`
@@ -999,7 +996,9 @@ function migrateIndexes(
 function writeAddIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDefinition: IndexDefinition): void {
   postDeployAction(
     () => {
-      b.appendNoWrap(`await query(client, '${buildIndexSql(tableDefinition.name, indexDefinition)}');`);
+      const indexName = getIndexName(tableDefinition.name, indexDefinition);
+      const createIndexSql = buildIndexSql(tableDefinition.name, indexName, indexDefinition);
+      b.appendNoWrap(`await fns.idempotentCreateIndex(client, actions, '${indexName}', '${createIndexSql}');`);
     },
     `CREATE INDEX ${tableDefinition.name} (${indexDefinition.columns.map((c) =>
       typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)
@@ -1008,10 +1007,10 @@ function writeAddIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDe
 }
 
 function writeDropIndex(b: FileBuilder, indexName: string): void {
-  b.appendNoWrap(`await query(client, 'DROP INDEX CONCURRENTLY IF EXISTS "${indexName}"');`);
+  b.appendNoWrap(`await fns.query(client, actions, 'DROP INDEX CONCURRENTLY IF EXISTS "${indexName}"');`);
 }
 
-function buildIndexSql(tableName: string, index: IndexDefinition): string {
+function getIndexName(tableName: string, index: IndexDefinition): string {
   let indexName = applyAbbreviations(tableName, TableAbbrieviations) + '_';
   indexName += index.columns
     .map((c) => (typeof c === 'string' ? c : c.name))
@@ -1023,6 +1022,10 @@ function buildIndexSql(tableName: string, index: IndexDefinition): string {
     throw new Error('Index name too long: ' + indexName);
   }
 
+  return indexName;
+}
+
+function buildIndexSql(tableName: string, indexName: string, index: IndexDefinition): string {
   let result = 'CREATE ';
 
   if (index.unique) {
