@@ -1,4 +1,4 @@
-import { Box, Stack, Text } from '@mantine/core';
+import { Box, Button, Stack, Text } from '@mantine/core';
 import { Task } from '@medplum/fhirtypes';
 
 interface SimpleTaskProps {
@@ -15,6 +15,11 @@ export const SimpleTask = ({ task }: SimpleTaskProps): JSX.Element => {
           </Text>
         )}
         <Text>{task.description}</Text>
+        {task.focus?.reference?.startsWith('ServiceRequest/') && (
+          <Button component="a" href={`/${task.focus.reference}`} target="_blank">
+            View Service Request
+          </Button>
+        )}
       </Stack>
     </Box>
   );

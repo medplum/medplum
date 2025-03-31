@@ -1,3 +1,4 @@
+import { User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -139,6 +140,31 @@ describe('Google Auth', () => {
         googleClientId: getConfig().googleClientId,
         googleCredential: createCredential('Test', 'Test', email),
         createUser: true,
+      });
+    expect(res.status).toBe(200);
+    expect(res.body.login).toBeDefined();
+    expect(res.body.code).toBeUndefined();
+
+    const user = await getUserByEmail(email, undefined);
+    expect(user).toBeDefined();
+  });
+
+  test('Existing user for new project', async () => {
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    await getSystemRepo().createResource<User>({
+      resourceType: 'User',
+      firstName: 'Google',
+      lastName: 'Google',
+      email,
+    });
+
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        projectId: 'new',
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
       });
     expect(res.status).toBe(200);
     expect(res.body.login).toBeDefined();

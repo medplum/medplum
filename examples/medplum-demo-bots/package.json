@@ -12,7 +12,8 @@
     "prettier": "prettier --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest watch"
   },
   "prettier": {
     "printWidth": 120,

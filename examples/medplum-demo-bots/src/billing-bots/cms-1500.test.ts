@@ -20,7 +20,7 @@ describe('CMS 1500 tests', async () => {
     const result = await medplum.executeBatch(fullAnswer);
     console.log(result);
     const claim = (await medplum.searchOne('Claim', {
-      identifier: 'example-claim',
+      identifier: 'example-claim-cms1500',
     })) as Claim;
 
     const response = await handler(medplum, {

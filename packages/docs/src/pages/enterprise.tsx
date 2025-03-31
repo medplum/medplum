@@ -211,7 +211,7 @@ export default function EnterprisePage(): JSX.Element {
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>Onboarding Workshop</h1>
             <p className={styles.heroText}>
-              Medplum Enterprise includes a two week workship with team training, integrations planning, documentation
+              Medplum Enterprise includes a two week workshop with team training, integrations planning, documentation
               and setup. The materials are customized to the specific needs of your implementation.
             </p>
             <a href="https://cal.com/medplum/demo" className={styles.getStartedButton}>

@@ -115,8 +115,8 @@
     "@mantine/notifications": "^7.0.0",
     "@medplum/core": "4.0.4",
     "@medplum/react-hooks": "4.0.4",
-    "react": "^17.0.2 || ^18.0.0",
-    "react-dom": "^17.0.2 || ^18.0.0",
+    "react": "^17.0.2 || ^18.0.0 || ^19.0.0",
+    "react-dom": "^17.0.2 || ^18.0.0 || ^19.0.0",
     "rfc6902": "^5.0.1"
   },
   "peerDependenciesMeta": {
