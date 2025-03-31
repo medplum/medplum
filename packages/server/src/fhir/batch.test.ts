@@ -1193,7 +1193,6 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send();
 
-    console.log(JSON.stringify(query.body, null, 2));
     expect(query.status).toBe(200);
     expect(query.body.entry).toHaveLength(1);
   });
