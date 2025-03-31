@@ -274,7 +274,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
       profile: userProfile,
       projectId,
       receivedAt: start,
-      status: res.statusCode,
+      status: res.writableFinished ? res.statusCode : 504,
       ua: req.get('User-Agent'),
       mode: ctx instanceof AuthenticatedRequestContext ? ctx.repo.mode : undefined,
     });
