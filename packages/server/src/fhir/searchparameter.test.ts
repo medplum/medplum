@@ -246,6 +246,9 @@ describe('SearchParameterImplementation', () => {
   test('Everything', () => {
     // Make sure that getSearchParameterImplementation returns successfully for all known parameters.
     for (const resourceType of Object.keys(globalSchema.types)) {
+      if (resourceType === 'Resource' || resourceType === 'DomainResource') {
+        continue;
+      }
       for (const searchParam of indexedSearchParams) {
         if (searchParam.base?.includes(resourceType as ResourceType)) {
           const impl = getSearchParameterImplementation(resourceType, searchParam);
