@@ -36,6 +36,7 @@ export function HomePage(): JSX.Element {
 }`);
   const [currentValueSet, setCurrentValueSet] = useState<ValueSet>();
   const [selectedValueSet, setSelectedValueSet] = useState('');
+  const [selectedCode, setSelectedCode] = useState<any>();
   const [error, setError] = useState<string>();
   const [successMessage, setSuccessMessage] = useState<string>();
 
@@ -163,7 +164,28 @@ export function HomePage(): JSX.Element {
 
           {selectedValueSet && (
             <Box mt="md">
-              <CodingInput name="code" path="code" binding={selectedValueSet} required />
+              <CodingInput
+                name="code"
+                path="code"
+                binding={selectedValueSet}
+                required
+                onChange={(value) => setSelectedCode(value)}
+              />
+              {selectedCode && (
+                <Box mt="md">
+                  <p>Selected Code:</p>
+                  <pre style={{
+                    fontSize: '0.875rem',
+                    backgroundColor: '#f8f9fa',
+                    padding: '1rem',
+                    borderRadius: '4px',
+                    margin: 0,
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    maxWidth: '100%'
+                  }}>{JSON.stringify(selectedCode, null, 2)}</pre>
+                </Box>
+              )}
             </Box>
           )}
         </Grid.Col>
