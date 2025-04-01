@@ -117,11 +117,13 @@ export function HomePage(): JSX.Element {
                 placeholder="Start typing to search for ValueSets..."
                 onChange={handleValueSetChange}
                 searchParams={{ _count: 10 }}
-                stringify={(valueSet) =>
-                  valueSet?.title || valueSet?.name || valueSet?.url || 'Unnamed ValueSet'
-                }
+                stringify={(valueSet) => valueSet?.title || valueSet?.name || valueSet?.url || 'Unnamed ValueSet'}
               />
-              {error && <Alert color="red" mt="md">{error}</Alert>}
+              {error && (
+                <Alert color="red" mt="md">
+                  {error}
+                </Alert>
+              )}
               {currentValueSet && (
                 <Box mt="md">
                   <p>
@@ -144,7 +146,9 @@ export function HomePage(): JSX.Element {
 
           {selectedValueSet && (
             <Box mt="md">
-              <Title order={3} mb="md">Select code from ValueSet</Title>
+              <Title order={3} mb="md">
+                Select code from ValueSet
+              </Title>
               <CodingInput
                 name="code"
                 path="code"
