@@ -83,7 +83,7 @@ describe('ChargeItemDefinition Apply', () => {
           },
         ],
       });
-      
+
     console.log(JSON.stringify(chargeItemDefinition.body, null, 2));
     expect(chargeItemDefinition.status).toBe(201);
 
@@ -162,7 +162,7 @@ describe('ChargeItemDefinition Apply', () => {
         name: [{ given: ['Service'], family: 'CodeTest' }],
       });
     expect(patient.status).toBe(201);
-  
+
     // 2. Create an encounter
     const encounter = await request(app)
       .post(`/fhir/R4/Encounter`)
@@ -181,7 +181,7 @@ describe('ChargeItemDefinition Apply', () => {
         },
       });
     expect(encounter.status).toBe(201);
-  
+
     // 3. Create a ChargeItemDefinition with code-specific surcharge
     const chargeItemDefinitionBody: ChargeItemDefinition = {
       resourceType: 'ChargeItemDefinition',
@@ -203,7 +203,7 @@ describe('ChargeItemDefinition Apply', () => {
             {
               type: 'base',
               code: {
-                text: 'Standard Service Fee'
+                text: 'Standard Service Fee',
               },
               amount: {
                 value: 120,
@@ -216,14 +216,15 @@ describe('ChargeItemDefinition Apply', () => {
           applicability: [
             {
               description: 'Complex case surcharge for 99214',
-              expression: "%resource.code.coding.where(system='http://www.ama-assn.org/go/cpt' and code='99214').exists()"
-            }
+              expression:
+                "%resource.code.coding.where(system='http://www.ama-assn.org/go/cpt' and code='99214').exists()",
+            },
           ],
           priceComponent: [
             {
               type: 'surcharge',
               code: {
-                text: 'Higher Complexity Case (99214)'
+                text: 'Higher Complexity Case (99214)',
               },
               amount: {
                 value: 35,
@@ -236,28 +237,28 @@ describe('ChargeItemDefinition Apply', () => {
           applicability: [
             {
               description: 'Medical decision making surcharge',
-              expression: 'true' // Always applies for test
-            }
+              expression: 'true', // Always applies for test
+            },
           ],
           priceComponent: [
             {
               type: 'surcharge',
               code: {
-                text: 'Medical Decision Making'
+                text: 'Medical Decision Making',
               },
               factor: 0.15, // 15% surcharge
             },
           ],
-        }
+        },
       ],
-    }
+    };
     const chargeItemDefinition = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(chargeItemDefinitionBody);
     expect(chargeItemDefinition.status).toBe(201);
-  
+
     // 4. Create a draft ChargeItem with 99214 code
     const draftChargeItem = await request(app)
       .post(`/fhir/R4/ChargeItem`)
@@ -287,7 +288,7 @@ describe('ChargeItemDefinition Apply', () => {
         },
       });
     expect(draftChargeItem.status).toBe(201);
-  
+
     // 5. Apply the ChargeItemDefinition to the draft ChargeItem
     const applyResult = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
@@ -304,14 +305,14 @@ describe('ChargeItemDefinition Apply', () => {
           },
         ],
       });
-  
+
     // 6. Verify the result
     console.log(JSON.stringify(applyResult.body, null, 2));
     expect(applyResult.status).toBe(200);
     const chargeItem = applyResult.body as ChargeItem;
     expect(chargeItem.resourceType).toBe('ChargeItem');
     expect(chargeItem.id).toBe(draftChargeItem.body.id);
-  
+
     // 7. Verify price calculation
     // Base price: $120
     // 99214-specific surcharge: $35 (fixed amount)
@@ -333,7 +334,7 @@ describe('ChargeItemDefinition Apply', () => {
         name: [{ given: ['Discount'], family: 'TestCase' }],
       });
     expect(patient.status).toBe(201);
-  
+
     // 2. Create an encounter
     const encounter = await request(app)
       .post(`/fhir/R4/Encounter`)
@@ -352,7 +353,7 @@ describe('ChargeItemDefinition Apply', () => {
         },
       });
     expect(encounter.status).toBe(201);
-  
+
     // 3. Create a ChargeItemDefinition with various discount types
     const chargeItemDefinitionBody: ChargeItemDefinition = {
       resourceType: 'ChargeItemDefinition',
@@ -374,7 +375,7 @@ describe('ChargeItemDefinition Apply', () => {
             {
               type: 'base',
               code: {
-                text: 'Standard Service Fee'
+                text: 'Standard Service Fee',
               },
               amount: {
                 value: 200,
@@ -387,16 +388,16 @@ describe('ChargeItemDefinition Apply', () => {
           applicability: [
             {
               description: 'Insurance contract discount',
-              expression: "true"
-            }
+              expression: 'true',
+            },
           ],
           priceComponent: [
             {
               type: 'discount',
               code: {
-                text: 'Insurance Contract Rate'
+                text: 'Insurance Contract Rate',
               },
-              factor: 0.2, 
+              factor: 0.2,
             },
           ],
         },
@@ -404,14 +405,14 @@ describe('ChargeItemDefinition Apply', () => {
           applicability: [
             {
               description: 'Senior citizen discount',
-              expression: "true" 
-            }
+              expression: 'true',
+            },
           ],
           priceComponent: [
             {
               type: 'discount',
               code: {
-                text: 'Senior Discount'
+                text: 'Senior Discount',
               },
               amount: {
                 value: 25,
@@ -424,29 +425,30 @@ describe('ChargeItemDefinition Apply', () => {
           applicability: [
             {
               description: 'Preventive care discount',
-              expression: "%resource.code.coding.where(system='http://www.ama-assn.org/go/cpt' and code='99213').exists()"
-            }
+              expression:
+                "%resource.code.coding.where(system='http://www.ama-assn.org/go/cpt' and code='99213').exists()",
+            },
           ],
           priceComponent: [
             {
               type: 'discount',
               code: {
-                text: 'Preventive Care Discount'
+                text: 'Preventive Care Discount',
               },
               factor: 0.05,
             },
           ],
-        }
+        },
       ],
     };
-    
+
     const chargeItemDefinition = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(chargeItemDefinitionBody);
     expect(chargeItemDefinition.status).toBe(201);
-  
+
     // 4. Create a draft ChargeItem
     const draftChargeItem = await request(app)
       .post(`/fhir/R4/ChargeItem`)
@@ -476,7 +478,7 @@ describe('ChargeItemDefinition Apply', () => {
         },
       });
     expect(draftChargeItem.status).toBe(201);
-  
+
     // 5. Apply the ChargeItemDefinition to the draft ChargeItem
     const applyResult = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
@@ -493,13 +495,13 @@ describe('ChargeItemDefinition Apply', () => {
           },
         ],
       });
-  
+
     // 6. Verify the result
     expect(applyResult.status).toBe(200);
     const chargeItem = applyResult.body as ChargeItem;
     expect(chargeItem.resourceType).toBe('ChargeItem');
     expect(chargeItem.id).toBe(draftChargeItem.body.id);
-  
+
     // 7. Verify price calculation
     // Base price: $200
     // Insurance contract discount: $40 (20% of base)
@@ -509,7 +511,5 @@ describe('ChargeItemDefinition Apply', () => {
     expect(chargeItem.priceOverride).toBeDefined();
     expect(chargeItem.priceOverride?.value).toBe(125);
     expect(chargeItem.priceOverride?.currency).toBe('USD');
-  
   });
-
 });

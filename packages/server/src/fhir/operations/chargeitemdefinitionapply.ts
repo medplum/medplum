@@ -23,7 +23,10 @@ interface ChargeItemDefinitionParameters {
 export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
-  const chargeItemDefinition: ChargeItemDefinition = await ctx.repo.readResource<ChargeItemDefinition>('ChargeItemDefinition', id);
+  const chargeItemDefinition: ChargeItemDefinition = await ctx.repo.readResource<ChargeItemDefinition>(
+    'ChargeItemDefinition',
+    id
+  );
   const params = parseInputParameters<ChargeItemDefinitionParameters>(operation, req);
   const inputChargeItemRef = params.chargeItem;
   const inputChargeItem = await ctx.repo.readReference<ChargeItem>(inputChargeItemRef);
