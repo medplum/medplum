@@ -16,6 +16,13 @@ import { addVerboseQueueLogging, isJobActive, isJobCompatible, queueRegistry, Wo
 
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
+function getJobDataLoggingFields(job: Job<PostDeployJobData>): Record<string, string> {
+  return {
+    asyncJob: 'AsyncJob/' + job.data.asyncJobId,
+    jobType: job.data.type,
+  };
+}
+
 export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
@@ -36,7 +43,7 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
       ...defaultOptions,
     }
   );
-  addVerboseQueueLogging(queue, worker);
+  addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
   return { queue, worker, name: PostDeployMigrationQueueName };
 };
 
@@ -58,8 +65,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   if (!isJobActive(asyncJob)) {
     globalLogger.info(`${PostDeployMigrationQueueName} processor skipping job since AsyncJob is not active`, {
       jobId: job.id,
-      type: job.data.type,
-      asyncJob: getReferenceString(asyncJob),
+      ...getJobDataLoggingFields(job),
       asyncJobStatus: asyncJob.status,
       version: migrationNumber,
     });
@@ -68,8 +74,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
 
   globalLogger.info(`${PostDeployMigrationQueueName} processor`, {
     jobId: job.id,
-    asyncJobId: job?.data?.asyncJobId,
-    type: job?.data?.type,
+    ...getJobDataLoggingFields(job),
     version: migrationNumber,
   });
 
@@ -175,8 +180,7 @@ export async function addPostDeployMigrationJobData<T extends PostDeployJobData>
 
   globalLogger.info('Added post-deploy migration job', {
     jobId: job.id,
-    jobType: job.data.type,
-    asyncJobId: job.data.asyncJobId,
+    ...getJobDataLoggingFields(job),
   });
 
   return job as Job<T>;

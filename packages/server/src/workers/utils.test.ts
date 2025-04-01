@@ -220,40 +220,61 @@ describe('worker utils', () => {
 
       const loggerInfoSpy = jest.spyOn(globalLogger, 'info').mockImplementation();
 
-      addVerboseQueueLogging(queue, worker);
+      addVerboseQueueLogging<any>(queue, worker, (job) => ({ asyncJob: 'AsyncJob/' + job.data.asyncJobId }));
 
       const job = {
         id: '123',
+        timestamp: Date.now(),
+        processedOn: Date.now(),
         data: {
           asyncJobId: 'job-456',
           type: 'test-job-type',
         },
+        attemptsMade: 0,
+        attemptsStarted: 1,
       } as Job & { id: string };
 
       // Trigger each event and verify logging
       worker.emit('active', job, 'previous-state');
       expect(loggerInfoSpy).toHaveBeenCalledWith(`${queueName} worker: active`, {
         jobId: job.id,
-        jobAsyncJob: 'AsyncJob/' + job.data.asyncJobId,
+        attemptsMade: job.attemptsMade,
+        attemptsStarted: job.attemptsStarted,
+        asyncJob: 'AsyncJob/' + job.data.asyncJobId,
         prev: 'previous-state',
       });
+      loggerInfoSpy.mockClear();
 
       worker.emit('closing', 'shutdown-message');
       expect(loggerInfoSpy).toHaveBeenCalledWith(`${queueName} worker: closing`, {
         message: 'shutdown-message',
       });
+      loggerInfoSpy.mockClear();
 
       worker.emit('closed');
       expect(loggerInfoSpy).toHaveBeenCalledWith(`${queueName} worker: closed`);
+      loggerInfoSpy.mockClear();
+
+      // These are changes that BullMQ would usually make
+      job.finishedOn = Date.now();
+      job.attemptsMade = 1;
 
       worker.emit('completed', job, 'job-result', 'previous-state');
       expect(loggerInfoSpy).toHaveBeenCalledWith(`${queueName} worker: completed`, {
         jobId: job.id,
-        asyncJobId: job.data.asyncJobId,
-        type: job.data.type,
+        jobTimestamp: job.timestamp,
+        attemptsMade: 1,
+        attemptsStarted: 1,
+        processedOn: job.processedOn,
+        finishedOn: job.finishedOn,
+        queuedDurationMs: expect.any(Number),
+        executionDurationMs: expect.any(Number),
+        totalDurationMs: expect.any(Number),
+        asyncJob: 'AsyncJob/' + job.data.asyncJobId,
         result: 'job-result',
         prev: 'previous-state',
       });
+      loggerInfoSpy.mockClear();
 
       const testError = new Error('test error message');
       worker.emit('error', testError);
@@ -261,22 +282,32 @@ describe('worker utils', () => {
         error: testError.message,
         stack: testError.stack,
       });
+      loggerInfoSpy.mockClear();
 
       worker.emit('failed', job, testError, 'previous-state');
       expect(loggerInfoSpy).toHaveBeenCalledWith(`${queueName} worker: failed`, {
         jobId: job.id,
-        asyncJobId: job.data.asyncJobId,
-        type: job.data.type,
+        jobTimestamp: job.timestamp,
+        attemptsMade: 1,
+        attemptsStarted: 1,
+        processedOn: job.processedOn,
+        finishedOn: job.finishedOn,
+        queuedDurationMs: expect.any(Number),
+        executionDurationMs: expect.any(Number),
+        totalDurationMs: expect.any(Number),
+        asyncJob: 'AsyncJob/' + job.data.asyncJobId,
         prev: 'previous-state',
         error: testError.message,
         stack: testError.stack,
       });
+      loggerInfoSpy.mockClear();
 
       worker.emit('stalled', job.id, 'previous-state');
       expect(loggerInfoSpy).toHaveBeenCalledWith(`${queueName} worker: stalled`, {
         jobId: job.id,
         prev: 'previous-state',
       });
+      loggerInfoSpy.mockClear();
 
       // Restore the spy
       loggerInfoSpy.mockRestore();

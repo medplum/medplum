@@ -12,7 +12,7 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { Queue, Worker } from 'bullmq';
+import { Job, Queue, Worker } from 'bullmq';
 import * as semver from 'semver';
 import { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
@@ -263,11 +263,30 @@ export class DefaultQueueRegistry implements QueueRegistry {
 
 export const queueRegistry: QueueRegistry = new DefaultQueueRegistry();
 
-export function addVerboseQueueLogging(queue: Queue, worker: Worker): void {
+function getFinishedJobFieldsForLogging(job: Job): Record<string, string | number | undefined> {
+  return {
+    jobId: job.id,
+    jobTimestamp: job.timestamp,
+    processedOn: job.processedOn,
+    finishedOn: job.finishedOn,
+    queuedDurationMs: job.processedOn && job.processedOn - job.timestamp,
+    executionDurationMs: job.processedOn && job.finishedOn && job.finishedOn - job.processedOn,
+    totalDurationMs: job.finishedOn && job.finishedOn - job.timestamp,
+    attemptsMade: job.attemptsMade,
+    attemptsStarted: job.attemptsStarted,
+  };
+}
+export function addVerboseQueueLogging<TDataType>(
+  queue: Queue,
+  worker: Worker,
+  getJobDataLoggingFields?: (job: Job<TDataType>) => Record<string, string | number | undefined>
+): void {
   worker.on('active', (job, prev) => {
     globalLogger.info(`${queue.name} worker: active`, {
-      jobId: job?.id,
-      jobAsyncJob: job?.data?.asyncJobId && 'AsyncJob/' + job?.data?.asyncJobId,
+      jobId: job.id,
+      attemptsMade: job.attemptsMade,
+      attemptsStarted: job.attemptsStarted,
+      ...getJobDataLoggingFields?.(job),
       prev,
     });
   });
@@ -279,9 +298,8 @@ export function addVerboseQueueLogging(queue: Queue, worker: Worker): void {
   });
   worker.on('completed', async (job, result, prev) => {
     globalLogger.info(`${queue.name} worker: completed`, {
-      jobId: job?.id,
-      asyncJobId: job?.data?.asyncJobId,
-      type: job?.data?.type,
+      ...getFinishedJobFieldsForLogging(job),
+      ...getJobDataLoggingFields?.(job),
       result,
       prev,
     });
@@ -294,9 +312,8 @@ export function addVerboseQueueLogging(queue: Queue, worker: Worker): void {
   );
   worker.on('failed', (job, error, prev) =>
     globalLogger.info(`${queue.name} worker: failed`, {
-      jobId: job?.id,
-      asyncJobId: job?.data?.asyncJobId,
-      type: job?.data?.type,
+      ...(job && getFinishedJobFieldsForLogging(job)),
+      ...(job && getJobDataLoggingFields?.(job)),
       prev,
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,

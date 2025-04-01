@@ -89,7 +89,10 @@ export const initReindexWorker: WorkerInitializer = (config) => {
       ...config.bullmq,
     }
   );
-  addVerboseQueueLogging(queue, worker);
+  addVerboseQueueLogging<ReindexJobData>(queue, worker, (job) => ({
+    asyncJob: 'AsyncJob/' + job.data.asyncJobId,
+    jobType: job.data.type,
+  }));
 
   return { queue, worker, name: ReindexQueueName };
 };
