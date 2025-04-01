@@ -1,5 +1,5 @@
-import { BotEvent, MedplumClient, reorderBundle } from '@medplum/core';
-import { Bundle, DocumentReference, ResourceType } from '@medplum/fhirtypes';
+import { BotEvent, MedplumClient } from '@medplum/core';
+import { Bundle, DocumentReference, Identifier } from '@medplum/fhirtypes';
 
 /**
  * This bot is used to handle the consolidated data webhook from Metriport.
@@ -14,14 +14,14 @@ import { Bundle, DocumentReference, ResourceType } from '@medplum/fhirtypes';
  * @returns A promise that resolves to the response
  */
 export async function handler(medplum: MedplumClient, event: BotEvent<Record<string, any>>): Promise<any> {
-  const metriportWebhookKey = event.secrets['METRIPORT_WEBHOOK_KEY']?.valueString;
-  if (!metriportWebhookKey) {
-    throw new Error('Missing METRIPORT_WEBHOOK_KEY');
-  }
-
   const metriportApiKey = event.secrets['METRIPORT_API_KEY']?.valueString;
   if (!metriportApiKey) {
     throw new Error('Missing METRIPORT_API_KEY');
+  }
+
+  const metriportWebhookKey = event.secrets['METRIPORT_WEBHOOK_KEY']?.valueString;
+  if (!metriportWebhookKey) {
+    throw new Error('Missing METRIPORT_WEBHOOK_KEY');
   }
 
   const input = event.input;
@@ -34,6 +34,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
   // See https://docs.metriport.com/medical-api/handling-data/webhooks#types-of-messages
   switch (messageType) {
     case 'ping':
+      console.log('Received ping');
       return { pong: input.ping };
 
     case 'medical.consolidated-data':
@@ -49,11 +50,58 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
           const response = await fetch(docRef.content[0].attachment.url);
           const consolidatedData = (await response.json()) as Bundle; // This is a searchset bundle
 
-          // Process the consolidated data using Medplum's batch capability
-          const transactionBundle = convertToTransactionBundle(consolidatedData);
-          const responseBundle = await medplum.executeBatch(transactionBundle);
+          // Create a map of resource IDs to their fullUrls
+          const idToFullUrlMap = new Map<string, string>();
+          consolidatedData.entry?.forEach((entry) => {
+            if (entry.resource?.id && entry.fullUrl) {
+              idToFullUrlMap.set(entry.resource.id, entry.fullUrl);
+            }
+          });
 
-          console.log('Response bundle:', JSON.stringify(responseBundle, null, 2));
+          // Transform the bundle into a transaction bundle
+          const transactionBundle: Bundle = {
+            resourceType: 'Bundle',
+            type: 'transaction',
+            entry:
+              consolidatedData.entry?.map((entry) => {
+                // Process references and add Metriport identifier
+                const processedResource = prepareResourceForUpsert(entry.resource, idToFullUrlMap);
+                const originalId = processedResource?.id;
+
+                if (processedResource) {
+                  delete processedResource.id;
+                }
+
+                return {
+                  fullUrl: entry.fullUrl,
+                  resource: processedResource,
+                  request: {
+                    method: 'PUT',
+                    url: `${processedResource?.resourceType}?identifier=${originalId}`,
+                  },
+                };
+              }) || [],
+          };
+
+          const responseBundle = await medplum.executeBatch(transactionBundle);
+          // Log only error responses
+          const errors = responseBundle.entry
+            ?.filter((entry) => {
+              const outcome = entry.response?.outcome;
+              return (
+                outcome?.resourceType === 'OperationOutcome' &&
+                outcome.issue?.some((issue) => issue.severity === 'error')
+              );
+            })
+            .map((entry) => ({
+              resource: entry.resource?.resourceType,
+              error: entry.response?.outcome?.issue?.[0]?.details?.text,
+              expression: entry.response?.outcome?.issue?.[0]?.expression,
+            }));
+
+          if (errors && errors.length > 0) {
+            console.error('Errors in bundle:', JSON.stringify(errors, null, 2));
+          }
           return true;
         } catch (error) {
           console.error('Error processing consolidated data:', error);
@@ -69,33 +117,64 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
   return true;
 }
 
-function convertToTransactionBundle(bundle: Bundle): Bundle {
-  const transactionBundle: Bundle = {
-    resourceType: 'Bundle',
-    type: 'transaction',
-    entry:
-      bundle.entry?.map((entry) => ({
-        ...entry,
-        request: {
-          method: 'PUT',
-          url: getUpsertUrl(entry.resource),
-        },
-      })) || [],
-  };
+const METRIPORT_IDENTIFIER_SYSTEM = 'https://metriport.com/fhir/identifiers';
 
-  // Map to track contained resource IDs/identifiers -> UUIDs
-  // const resourceMap = new Map<string, string>();
-
-  return reorderBundle(transactionBundle);
-}
-
-function getUpsertUrl(resource: any): string {
-  const resourceType = resource.resourceType as ResourceType;
-
-  // Fallback to the resource name if no identifier is found
-  if (resource.name) {
-    return `${resourceType}?name=${resource.name}`;
+function prepareResourceForUpsert(resource: any, idToFullUrlMap: Map<string, string>): any {
+  if (!resource) {
+    return resource;
   }
 
-  throw new Error(`No upsert URL found for ${resourceType}`);
+  // Deep clone the resource to avoid modifying the original
+  const clonedResource = JSON.parse(JSON.stringify(resource));
+
+  // Handle DocumentReference date formatting
+  if (clonedResource.resourceType === 'DocumentReference' && clonedResource.date) {
+    try {
+      // Ensure the date is in proper ISO format with timezone
+      const date = new Date(clonedResource.date);
+      clonedResource.date = date.toISOString();
+    } catch (_error) {
+      console.warn('Invalid date format in DocumentReference:', clonedResource.date);
+      delete clonedResource.date;
+    }
+  }
+
+  if (!clonedResource.id) {
+    return clonedResource;
+  }
+
+  const metriportIdentifier = {
+    system: METRIPORT_IDENTIFIER_SYSTEM,
+    value: clonedResource.id,
+  };
+
+  if (!clonedResource.identifier) {
+    clonedResource.identifier = [metriportIdentifier];
+  } else if (Array.isArray(clonedResource.identifier)) {
+    // Check if identifier already exists
+    const exists = clonedResource.identifier.some(
+      (id: Identifier) => id.system === METRIPORT_IDENTIFIER_SYSTEM && id.value === clonedResource.id
+    );
+    if (!exists) {
+      clonedResource.identifier.push(metriportIdentifier);
+    }
+  }
+
+  // Recursively process all properties
+  Object.entries(clonedResource).forEach(([key, value]) => {
+    if (typeof value === 'object' && value !== null) {
+      if ('reference' in value && typeof value.reference === 'string') {
+        // This is a reference - replace it if we have a mapping
+        const [_resourceType, id] = value.reference.split('/');
+        if (id && idToFullUrlMap.has(id)) {
+          value.reference = idToFullUrlMap.get(id);
+        }
+      } else {
+        // Recursively process nested objects and arrays
+        clonedResource[key] = prepareResourceForUpsert(value, idToFullUrlMap);
+      }
+    }
+  });
+
+  return clonedResource;
 }
