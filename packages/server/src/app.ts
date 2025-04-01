@@ -4,7 +4,7 @@ import compression from 'compression';
 import cors from 'cors';
 import { Express, json, NextFunction, Request, Response, Router, text, urlencoded } from 'express';
 import { rmSync } from 'fs';
-import http from 'http';
+import http, { STATUS_CODES } from 'http';
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { adminRouter } from './admin/routes';
@@ -275,7 +275,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
       projectId,
       receivedAt: start,
       // If the response did not emit the 'finish' event, the client timed out and disconnected before it could be sent
-      status: res.writableFinished ? res.statusCode : 504,
+      status: res.writableFinished ? res.statusCode : 408,
       ua: req.get('User-Agent'),
       mode: ctx instanceof AuthenticatedRequestContext ? ctx.repo.mode : undefined,
     });
