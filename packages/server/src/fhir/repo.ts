@@ -75,6 +75,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
+import { getBinaryStorage } from '../storage/loader';
 import {
   AuditEventOutcome,
   AuditEventSubtype,
@@ -111,7 +112,6 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
-import { getBinaryStorage } from './storage';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];

@@ -25,9 +25,9 @@ import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
+import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
-import { getBinaryStorage } from '../storage';
 
 const botCodes = [
   [
