@@ -275,7 +275,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
       projectId,
       receivedAt: start,
       // If the response did not emit the 'finish' event, the client timed out and disconnected before it could be sent
-      status: res.writableFinished ? res.statusCode : 504,
+      status: res.writableFinished ? res.statusCode : 408,
       ua: req.get('User-Agent'),
       mode: ctx instanceof AuthenticatedRequestContext ? ctx.repo.mode : undefined,
     });
