@@ -32,11 +32,16 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
   const inputChargeItem = await ctx.repo.readReference<ChargeItem>(inputChargeItemRef);
 
   const chargeItemDefinitionReference = getReferenceString(chargeItemDefinition);
+  let definitionCanonical: string[] = [];
+  if (inputChargeItem.definitionCanonical && inputChargeItem.definitionCanonical.length > 0) {
+    definitionCanonical = [...inputChargeItem.definitionCanonical];
+  }
+  if (!definitionCanonical.includes(chargeItemDefinitionReference)) {
+    definitionCanonical.push(chargeItemDefinitionReference);
+  }
   const updatedChargeItem: ChargeItem = {
     ...inputChargeItem,
-    definitionCanonical: inputChargeItem.definitionCanonical?.includes(chargeItemDefinitionReference)
-      ? inputChargeItem.definitionCanonical
-      : [...(inputChargeItem.definitionCanonical || []), chargeItemDefinitionReference],
+    definitionCanonical: definitionCanonical,
   };
 
   if (chargeItemDefinition.propertyGroup) {
