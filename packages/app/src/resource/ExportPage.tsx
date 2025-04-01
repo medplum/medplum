@@ -13,7 +13,7 @@ export function ExportPage(): JSX.Element | null {
   }
 
   return (
-    <Document maw={600}>
+    <Document maw={700}>
       {resource.resourceType === 'Patient' ? (
         <PatientExportForm patient={resource} />
       ) : (

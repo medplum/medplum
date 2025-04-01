@@ -106,7 +106,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       firstName: claims.given_name,
       lastName: claims.family_name,
       email: claims.email,
-      project: projectId ? { reference: 'Project/' + projectId } : undefined,
+      project: projectId && projectId !== 'new' ? { reference: 'Project/' + projectId } : undefined,
     });
   }
 
@@ -124,13 +124,13 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     codeChallengeMethod: req.body.codeChallengeMethod,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
-    allowNoMembership: req.body.createUser,
+    allowNoMembership: req.body.createUser || projectId === 'new',
   });
   await sendLoginResult(res, login);
 }
 
 function validateProjectId(inputProjectId: unknown): string | undefined {
-  return isString(inputProjectId) && isUUID(inputProjectId) ? inputProjectId : undefined;
+  return isString(inputProjectId) && (isUUID(inputProjectId) || inputProjectId === 'new') ? inputProjectId : undefined;
 }
 
 function getProjectsByGoogleClientId(googleClientId: string, projectId: string | undefined): Promise<Project[]> {
