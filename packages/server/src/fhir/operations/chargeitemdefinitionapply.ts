@@ -109,7 +109,11 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
             if (component.type === 'surcharge') {
               if (component.amount?.value !== undefined && finalPrice.value !== undefined) {
                 finalPrice.value += component.amount.value;
-              } else if (component.factor !== undefined && basePrice.value !== undefined && finalPrice.value !== undefined) {
+              } else if (
+                component.factor !== undefined &&
+                basePrice.value !== undefined &&
+                finalPrice.value !== undefined
+              ) {
                 finalPrice.value += basePrice.value * component.factor;
               }
             }
@@ -117,7 +121,11 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
             if (component.type === 'discount') {
               if (component.amount?.value !== undefined && finalPrice.value !== undefined) {
                 finalPrice.value -= component.amount.value;
-              } else if (component.factor !== undefined && basePrice.value !== undefined && finalPrice.value !== undefined) {
+              } else if (
+                component.factor !== undefined &&
+                basePrice.value !== undefined &&
+                finalPrice.value !== undefined
+              ) {
                 finalPrice.value -= basePrice.value * component.factor;
               }
             }
