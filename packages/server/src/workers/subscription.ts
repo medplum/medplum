@@ -554,9 +554,7 @@ async function sendRestHook(
   }
 
   const fetchDurationMs = fetchEndTime - fetchStartTime;
-  recordHistogramValue('medplum.subscription.restHookFetchDuration', fetchDurationMs / 1000, {
-    attributes: { project: subscription?.meta?.project },
-  });
+  recordHistogramValue('medplum.subscription.restHookFetchDuration', fetchDurationMs / 1000);
   log.info('Subscription rest hook fetch duration', {
     fetchDurationMs,
     subscription: subscription.id,
