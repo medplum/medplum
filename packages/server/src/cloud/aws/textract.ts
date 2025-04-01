@@ -11,7 +11,7 @@ import { Readable } from 'stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { Repository } from '../../fhir/repo';
-import { getBinaryStorage } from '../../fhir/storage';
+import { getBinaryStorage } from '../../storage/loader';
 import { getLogger } from '../../logger';
 import { S3Storage } from './storage';
 

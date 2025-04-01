@@ -75,6 +75,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
+import { getBinaryStorage } from '../storage/loader';
 import {
   AuditEventOutcome,
   AuditEventSubtype,
@@ -111,7 +112,6 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
-import { getBinaryStorage } from './storage';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -415,6 +415,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     reference: Reference,
     cacheEntry: CacheEntry | undefined
   ): Promise<Resource | Error> {
+    if (!reference.reference?.match(/^[A-Z][a-zA-Z]+\//)) {
+      // Non-local references cannot be resolved
+      return new OperationOutcomeError(notFound);
+    }
+
     try {
       const [resourceType, id] = parseReference(reference);
       validateResourceType(resourceType);

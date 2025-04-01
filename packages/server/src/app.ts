@@ -21,7 +21,6 @@ import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
 import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
-import { initBinaryStorage } from './fhir/storage';
 import { loadStructureDefinitions } from './fhir/structure';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
 import { healthcheckHandler } from './healthcheck';
@@ -39,7 +38,8 @@ import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
-import { storageRouter } from './storage';
+import { initBinaryStorage } from './storage/loader';
+import { storageRouter } from './storage/routes';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
@@ -251,7 +251,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
   const ctx = getRequestContext();
   const start = Date.now();
 
-  res.on('finish', () => {
+  res.on('close', () => {
     const duration = Date.now() - start;
 
     let userProfile: string | undefined;
@@ -274,7 +274,8 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
       profile: userProfile,
       projectId,
       receivedAt: start,
-      status: res.statusCode,
+      // If the response did not emit the 'finish' event, the client timed out and disconnected before it could be sent
+      status: res.writableFinished ? res.statusCode : 408,
       ua: req.get('User-Agent'),
       mode: ctx instanceof AuthenticatedRequestContext ? ctx.repo.mode : undefined,
     });

@@ -43,6 +43,7 @@ import { buildTracingExtension, getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
+import { getBinaryStorage } from '../../storage/loader';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { readStreamToString } from '../../util/streams';
@@ -50,7 +51,6 @@ import { createAuditEventEntities, findProjectMembership } from '../../workers/u
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo, Repository } from '../repo';
 import { sendFhirResponse } from '../response';
-import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;

@@ -2,8 +2,8 @@ import { created, forbidden, getResourceTypes, isResourceType, Operator } from '
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { getBinaryStorage } from '../../storage/loader';
 import { Repository } from '../repo';
-import { getBinaryStorage } from '../storage';
 import { buildBinaryIds } from './utils/binary';
 
 /**

@@ -20,6 +20,7 @@ import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { getBinaryStorage } from '../../storage/loader';
 import {
   createTestProject,
   initTestAuth,
@@ -28,7 +29,6 @@ import {
   withTestContext,
 } from '../../test.setup';
 import { getSystemRepo } from '../repo';
-import { getBinaryStorage } from '../storage';
 import { createProject } from './projectinit';
 
 jest.mock('node-fetch');
