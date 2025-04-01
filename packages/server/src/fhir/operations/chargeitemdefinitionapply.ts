@@ -53,9 +53,8 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
 
   if (chargeItemDefinition.propertyGroup) {
     let basePrice: Money | undefined;
-    let currency: Money['currency'] | undefined;
 
-    // First pass: Find base price and capture the currency
+    // First pass: Find base price
     for (const group of chargeItemDefinition.propertyGroup) {
       let isGroupApplicable = true;
       if (group.applicability && group.applicability.length > 0) {
@@ -75,8 +74,7 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
       if (group.priceComponent && group.priceComponent.length > 0) {
         const basePriceComp = group.priceComponent.find((pc) => pc.type === 'base');
         if (basePriceComp?.amount) {
-          basePrice = basePriceComp.amount;
-          currency = basePriceComp.amount.currency;
+          basePrice = { ...basePriceComp.amount };
           break;
         }
       }
@@ -84,7 +82,7 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
 
     // Second pass: Apply all modifiers
     if (basePrice?.value !== undefined) {
-      let finalPrice = basePrice.value;
+      const finalPrice: Money = { ...basePrice };
 
       for (const group of chargeItemDefinition.propertyGroup) {
         let isGroupApplicable = true;
@@ -109,28 +107,25 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
             }
 
             if (component.type === 'surcharge') {
-              if (component.amount?.value) {
-                finalPrice += component.amount.value;
-              } else if (component.factor) {
-                finalPrice += basePrice.value * component.factor;
+              if (component.amount?.value !== undefined && finalPrice.value !== undefined) {
+                finalPrice.value += component.amount.value;
+              } else if (component.factor !== undefined && basePrice.value !== undefined && finalPrice.value !== undefined) {
+                finalPrice.value += basePrice.value * component.factor;
               }
             }
 
             if (component.type === 'discount') {
-              if (component.amount?.value) {
-                finalPrice -= component.amount.value;
-              } else if (component.factor) {
-                finalPrice -= basePrice.value * component.factor;
+              if (component.amount?.value !== undefined && finalPrice.value !== undefined) {
+                finalPrice.value -= component.amount.value;
+              } else if (component.factor !== undefined && basePrice.value !== undefined && finalPrice.value !== undefined) {
+                finalPrice.value -= basePrice.value * component.factor;
               }
             }
           }
         }
       }
 
-      updatedChargeItem.priceOverride = {
-        value: finalPrice,
-        currency: currency,
-      };
+      updatedChargeItem.priceOverride = finalPrice;
     }
   }
 

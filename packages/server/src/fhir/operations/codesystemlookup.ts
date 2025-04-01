@@ -1,4 +1,4 @@
-import { OperationOutcomeError, TypedValue, allOk, append, badRequest, notFound, serverError } from '@medplum/core';
+import { OperationOutcomeError, allOk, append, badRequest, notFound, serverError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, CodeSystemProperty, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
