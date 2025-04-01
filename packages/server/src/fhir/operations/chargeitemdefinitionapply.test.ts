@@ -1,5 +1,5 @@
 import { ContentType } from '@medplum/core';
-import { ChargeItem } from '@medplum/fhirtypes';
+import { ChargeItem, ChargeItemDefinition } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -83,6 +83,8 @@ describe('ChargeItemDefinition Apply', () => {
           },
         ],
       });
+      
+    console.log(JSON.stringify(chargeItemDefinition.body, null, 2));
     expect(chargeItemDefinition.status).toBe(201);
 
     // 4. Create a draft ChargeItem first
@@ -148,4 +150,366 @@ describe('ChargeItemDefinition Apply', () => {
     expect(chargeItem.context).toBeDefined();
     expect(chargeItem.context?.reference).toBe(`Encounter/${encounter.body.id}`);
   });
+
+  test('Apply ChargeItemDefinition with service-code based surcharge', async () => {
+    // 1. Create a patient
+    const patient = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Service'], family: 'CodeTest' }],
+      });
+    expect(patient.status).toBe(201);
+  
+    // 2. Create an encounter
+    const encounter = await request(app)
+      .post(`/fhir/R4/Encounter`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+          code: 'AMB',
+          display: 'ambulatory',
+        },
+        subject: {
+          reference: `Patient/${patient.body.id}`,
+        },
+      });
+    expect(encounter.status).toBe(201);
+  
+    // 3. Create a ChargeItemDefinition with code-specific surcharge
+    const chargeItemDefinitionBody: ChargeItemDefinition = {
+      resourceType: 'ChargeItemDefinition',
+      status: 'active',
+      url: 'http://example.org/fhir/ChargeItemDefinition/code-based-pricing',
+      title: 'Code-Based Pricing Model',
+      code: {
+        coding: [
+          {
+            system: 'http://www.ama-assn.org/go/cpt',
+            code: '99214',
+            display: 'Complex office visit',
+          },
+        ],
+      },
+      propertyGroup: [
+        {
+          priceComponent: [
+            {
+              type: 'base',
+              code: {
+                text: 'Standard Service Fee'
+              },
+              amount: {
+                value: 120,
+                currency: 'USD',
+              },
+            },
+          ],
+        },
+        {
+          applicability: [
+            {
+              description: 'Complex case surcharge for 99214',
+              expression: "%resource.code.coding.where(system='http://www.ama-assn.org/go/cpt' and code='99214').exists()"
+            }
+          ],
+          priceComponent: [
+            {
+              type: 'surcharge',
+              code: {
+                text: 'Higher Complexity Case (99214)'
+              },
+              amount: {
+                value: 35,
+                currency: 'USD',
+              },
+            },
+          ],
+        },
+        {
+          applicability: [
+            {
+              description: 'Medical decision making surcharge',
+              expression: 'true' // Always applies for test
+            }
+          ],
+          priceComponent: [
+            {
+              type: 'surcharge',
+              code: {
+                text: 'Medical Decision Making'
+              },
+              factor: 0.15, // 15% surcharge
+            },
+          ],
+        }
+      ],
+    }
+    const chargeItemDefinition = await request(app)
+      .post(`/fhir/R4/ChargeItemDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(chargeItemDefinitionBody);
+    expect(chargeItemDefinition.status).toBe(201);
+  
+    // 4. Create a draft ChargeItem with 99214 code
+    const draftChargeItem = await request(app)
+      .post(`/fhir/R4/ChargeItem`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ChargeItem',
+        status: 'draft',
+        subject: {
+          reference: `Patient/${patient.body.id}`,
+        },
+        context: {
+          reference: `Encounter/${encounter.body.id}`,
+        },
+        occurrenceDateTime: '2023-01-05T14:00:00Z',
+        performingOrganization: {
+          reference: 'Organization/example',
+        },
+        code: {
+          coding: [
+            {
+              system: 'http://www.ama-assn.org/go/cpt',
+              code: '99214',
+              display: 'Complex office visit',
+            },
+          ],
+        },
+      });
+    expect(draftChargeItem.status).toBe(201);
+  
+    // 5. Apply the ChargeItemDefinition to the draft ChargeItem
+    const applyResult = await request(app)
+      .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'chargeItem',
+            valueReference: {
+              reference: `ChargeItem/${draftChargeItem.body.id}`,
+            },
+          },
+        ],
+      });
+  
+    // 6. Verify the result
+    console.log(JSON.stringify(applyResult.body, null, 2));
+    expect(applyResult.status).toBe(200);
+    const chargeItem = applyResult.body as ChargeItem;
+    expect(chargeItem.resourceType).toBe('ChargeItem');
+    expect(chargeItem.id).toBe(draftChargeItem.body.id);
+  
+    // 7. Verify price calculation
+    // Base price: $120
+    // 99214-specific surcharge: $35 (fixed amount)
+    // Medical decision making surcharge: $18 (15% of base)
+    // Expected final price: $120 + $35 + $18 = $173
+    expect(chargeItem.priceOverride).toBeDefined();
+    expect(chargeItem.priceOverride?.value).toBe(173);
+    expect(chargeItem.priceOverride?.currency).toBe('USD');
+  });
+
+  test('Apply ChargeItemDefinition with multiple discount types', async () => {
+    // 1. Create a patient
+    const patient = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Discount'], family: 'TestCase' }],
+      });
+    expect(patient.status).toBe(201);
+  
+    // 2. Create an encounter
+    const encounter = await request(app)
+      .post(`/fhir/R4/Encounter`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+          code: 'AMB',
+          display: 'ambulatory',
+        },
+        subject: {
+          reference: `Patient/${patient.body.id}`,
+        },
+      });
+    expect(encounter.status).toBe(201);
+  
+    // 3. Create a ChargeItemDefinition with various discount types
+    const chargeItemDefinitionBody: ChargeItemDefinition = {
+      resourceType: 'ChargeItemDefinition',
+      status: 'active',
+      url: 'http://example.org/fhir/ChargeItemDefinition/discount-pricing',
+      title: 'Discount Pricing Model',
+      code: {
+        coding: [
+          {
+            system: 'http://www.ama-assn.org/go/cpt',
+            code: '99213',
+            display: 'Office visit',
+          },
+        ],
+      },
+      propertyGroup: [
+        {
+          priceComponent: [
+            {
+              type: 'base',
+              code: {
+                text: 'Standard Service Fee'
+              },
+              amount: {
+                value: 200,
+                currency: 'USD',
+              },
+            },
+          ],
+        },
+        {
+          applicability: [
+            {
+              description: 'Insurance contract discount',
+              expression: "true"
+            }
+          ],
+          priceComponent: [
+            {
+              type: 'discount',
+              code: {
+                text: 'Insurance Contract Rate'
+              },
+              factor: 0.2, 
+            },
+          ],
+        },
+        {
+          applicability: [
+            {
+              description: 'Senior citizen discount',
+              expression: "true" 
+            }
+          ],
+          priceComponent: [
+            {
+              type: 'discount',
+              code: {
+                text: 'Senior Discount'
+              },
+              amount: {
+                value: 25,
+                currency: 'USD',
+              },
+            },
+          ],
+        },
+        {
+          applicability: [
+            {
+              description: 'Preventive care discount',
+              expression: "%resource.code.coding.where(system='http://www.ama-assn.org/go/cpt' and code='99213').exists()"
+            }
+          ],
+          priceComponent: [
+            {
+              type: 'discount',
+              code: {
+                text: 'Preventive Care Discount'
+              },
+              factor: 0.05,
+            },
+          ],
+        }
+      ],
+    };
+    
+    const chargeItemDefinition = await request(app)
+      .post(`/fhir/R4/ChargeItemDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(chargeItemDefinitionBody);
+    expect(chargeItemDefinition.status).toBe(201);
+  
+    // 4. Create a draft ChargeItem
+    const draftChargeItem = await request(app)
+      .post(`/fhir/R4/ChargeItem`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ChargeItem',
+        status: 'draft',
+        subject: {
+          reference: `Patient/${patient.body.id}`,
+        },
+        context: {
+          reference: `Encounter/${encounter.body.id}`,
+        },
+        occurrenceDateTime: '2023-01-15T10:30:00Z',
+        performingOrganization: {
+          reference: 'Organization/example',
+        },
+        code: {
+          coding: [
+            {
+              system: 'http://www.ama-assn.org/go/cpt',
+              code: '99213',
+              display: 'Office visit',
+            },
+          ],
+        },
+      });
+    expect(draftChargeItem.status).toBe(201);
+  
+    // 5. Apply the ChargeItemDefinition to the draft ChargeItem
+    const applyResult = await request(app)
+      .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'chargeItem',
+            valueReference: {
+              reference: `ChargeItem/${draftChargeItem.body.id}`,
+            },
+          },
+        ],
+      });
+  
+    // 6. Verify the result
+    expect(applyResult.status).toBe(200);
+    const chargeItem = applyResult.body as ChargeItem;
+    expect(chargeItem.resourceType).toBe('ChargeItem');
+    expect(chargeItem.id).toBe(draftChargeItem.body.id);
+  
+    // 7. Verify price calculation
+    // Base price: $200
+    // Insurance contract discount: $40 (20% of base)
+    // Senior discount: $25 (fixed amount)
+    // Preventive care discount: $10 (5% of base)
+    // Expected final price: $200 - $40 - $25 - $10 = $125
+    expect(chargeItem.priceOverride).toBeDefined();
+    expect(chargeItem.priceOverride?.value).toBe(125);
+    expect(chargeItem.priceOverride?.currency).toBe('USD');
+  
+  });
+
 });
