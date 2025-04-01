@@ -132,7 +132,7 @@ export function HomePage(): JSX.Element {
           <ul>
             <li>http://hl7.org/fhir/ValueSet/allergyintolerance-code</li>
             <li>http://hl7.org/fhir/ValueSet/clinical-findings</li>
-            <li>http://example.org/custom-allergies (matches custom ValueSet on right)</li>
+            <li>http://example.org/fhir/ValueSet/rxnorm-branded-drugs (matches custom ValueSet on right)</li>
           </ul>
           <Group>
             <TextInput
