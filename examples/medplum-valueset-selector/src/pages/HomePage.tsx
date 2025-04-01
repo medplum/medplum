@@ -52,18 +52,6 @@ export function HomePage(): JSX.Element {
     setSuccessMessage(undefined);
 
     try {
-      // First try to parse if it's a custom ValueSet
-      try {
-        const customVS = JSON.parse(customValueSet);
-        if (customVS.url === term) {
-          setCurrentValueSet(customVS);
-          setSelectedValueSet(term);
-          return;
-        }
-      } catch (e) {
-        // If parsing fails, continue with normal search
-        console.log(e);
-      }
 
       const result = await medplum.search('ValueSet', {
         url: term,
