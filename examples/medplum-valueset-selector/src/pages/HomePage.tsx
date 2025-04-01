@@ -52,7 +52,6 @@ export function HomePage(): JSX.Element {
     setSuccessMessage(undefined);
 
     try {
-
       const result = await medplum.search('ValueSet', {
         url: term,
       });
@@ -162,16 +161,20 @@ export function HomePage(): JSX.Element {
               {selectedCode && (
                 <Box mt="md">
                   <p>Selected Code:</p>
-                  <pre style={{
-                    fontSize: '0.875rem',
-                    backgroundColor: '#f8f9fa',
-                    padding: '1rem',
-                    borderRadius: '4px',
-                    margin: 0,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    maxWidth: '100%'
-                  }}>{JSON.stringify(selectedCode, null, 2)}</pre>
+                  <pre
+                    style={{
+                      fontSize: '0.875rem',
+                      backgroundColor: '#f8f9fa',
+                      padding: '1rem',
+                      borderRadius: '4px',
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      maxWidth: '100%',
+                    }}
+                  >
+                    {JSON.stringify(selectedCode, null, 2)}
+                  </pre>
                 </Box>
               )}
             </Box>
