@@ -1,4 +1,4 @@
-import { Stack, Box, Card, Text } from '@mantine/core';
+import { Stack, Box, Card, Text, Group } from '@mantine/core';
 import {
   Task,
   ClinicalImpression,
@@ -20,6 +20,7 @@ import { usePatient } from '../../hooks/usePatient';
 import { useEncounter } from '../../hooks/useEncounter';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import ChageItemPanel from '../components/ChargeItem/ChageItemPanel';
+import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
 
 export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
@@ -33,6 +34,7 @@ export const EncounterChart = (): JSX.Element => {
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>();
   const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const [activeTab, setActiveTab] = useState<string>('notes');
 
   useEffect(() => {
     if (encounterId) {
@@ -270,9 +272,98 @@ export const EncounterChart = (): JSX.Element => {
     [encounter, medplum]
   );
 
+  const handleTabChange = (tab: string): void => {
+    setActiveTab(tab);
+  };
+
+  const handleEncounterChange = (updatedEncounter: Encounter): void => {
+    if (!updatedEncounter) {
+      return;
+    }
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const savedEncounter = await medplum.updateResource(updatedEncounter);
+        setEncounter(savedEncounter);
+      } catch (err) {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      }
+    }, SAVE_TIMEOUT_MS);
+  };
+
   if (!patient || !encounter || (clinicalImpression?.supportingInfo?.[0]?.reference && !questionnaireResponse)) {
     return <Loading />;
   }
+
+  const renderTabContent = (): JSX.Element => {
+    if (activeTab === 'notes') {
+      return (
+        <Stack gap="md">
+          {clinicalImpression && (
+            <Card withBorder shadow="sm">
+              <QuestionnaireForm
+                questionnaire={questionnaire}
+                questionnaireResponse={questionnaireResponse}
+                excludeButtons={true}
+                onChange={onChange}
+              />
+            </Card>
+          )}
+
+          {tasks.map((task: Task) => (
+            <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
+          ))}
+        </Stack>
+      );
+    } else {
+      return (
+        <Stack gap="md">
+          <Group grow align="flex-start">
+            <Stack gap={0}>
+              <Text fw={600} size="lg" mb="md">
+                Insurance Overview
+              </Text>
+              <Card withBorder shadow="sm" p="md">
+                <Stack gap="xs">
+                  <Text>Primary Insurance: {patient?.contact?.[0]?.name?.text || 'Not available'}</Text>
+                </Stack>
+              </Card>
+            </Stack>
+
+            <VisitDetailsPanel
+              practitioner={practitioner}
+              encounter={encounter}
+              onEncounterChange={handleEncounterChange}
+            />
+          </Group>
+
+          <Stack gap={0}>
+            <Text fw={600} size="lg" mb="md">
+              Charge Items
+            </Text>
+            {chargeItems.length > 0 ? (
+              <Stack gap="md">
+                {chargeItems.map((chargeItem: ChargeItem) => (
+                  <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} onChange={updateChargeItemList} />
+                ))}
+              </Stack>
+            ) : (
+              <Text c="dimmed">No charge items available</Text>
+            )}
+          </Stack>
+        </Stack>
+      );
+    }
+  };
 
   return (
     <>
@@ -281,37 +372,11 @@ export const EncounterChart = (): JSX.Element => {
           encounter={encounter}
           practitioner={practitioner}
           onStatusChange={handleEncounterStatusChange}
+          onTabChange={handleTabChange}
         />
 
         <Box p="md">
-          <Stack gap="md">
-            {clinicalImpression && (
-              <Card withBorder shadow="sm">
-                <QuestionnaireForm
-                  questionnaire={questionnaire}
-                  questionnaireResponse={questionnaireResponse}
-                  excludeButtons={true}
-                  onChange={onChange}
-                />
-              </Card>
-            )}
-
-            {tasks.map((task: Task) => (
-              <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
-            ))}
-
-            {chargeItems.length > 0 && (
-              <Stack gap="md" pt="lg">
-                <Text size="lg" fw={500}>
-                  Charge Items
-                </Text>
-                {chargeItems.map((chargeItem: ChargeItem) => (
-                  <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} onChange={updateChargeItemList} />
-                ))}
-              </Stack>
-            )}
-          </Stack>
-
+          {renderTabContent()}
           <Outlet />
         </Box>
       </Stack>
