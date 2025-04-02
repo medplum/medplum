@@ -1,6 +1,10 @@
 # Metriport and Medplum
 
-This folder contains a set of bots that integrate Medplum with Metriport.
+This folder contains a set of bots that integrate Medplum with Metriport. The integration consists of two bots that work together:
+
+- **Patient Bot** (`metriport-patient-bot.ts`): This bot is used to request medical records from the Metriport Medical API for a given Medplum Patient resource.
+
+- **Consolidated Data Webhook** (`metriport-consolidated-data-webhook.ts`): This bot is used to receive the consolidated data from Metriport with the medical records and process it to create resources in Medplum.
 
 ## Prerequisites
 
@@ -11,14 +15,16 @@ This folder contains a set of bots that integrate Medplum with Metriport.
 
 1. Create your [Medplum Access Policy](https://www.medplum.com/docs/access/access-policies#resource-type). An Access Policy is important because you want to make sure that the system sending webhooks only has the minimal set of permissions needed to function. Example below.
 
+> [!NOTE]
+> The following example grants access to create all resources using "\*". For production environments, you might want to specify only a subset of resources (e.g., "Patient", "Observation") to follow your use case.
+
 ```json
 {
   "resourceType": "AccessPolicy",
-  "name": "Stripe Webhook Access Policy",
+  "name": "Metriport Webhook Access Policy",
   "resource": [
     {
-      "resourceType": "Bot",
-      "readonly": true
+      "resourceType": "*"
     }
   ]
 }
@@ -26,13 +32,15 @@ This folder contains a set of bots that integrate Medplum with Metriport.
 
 2. Create a [ClientApplication](https://www.medplum.com/docs/auth/methods/client-credentials) and apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project)
 
-3. Create your [Bot](https://www.medplum.com/docs/bots/bot-basics) and [deploy](https://www.medplum.com/docs/bots/bots-in-production#deploying-your-bot) the code using the sample in this repository as a base, build and deploy your bot. Apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project).
+3. Create, build, and [deploy](https://www.medplum.com/docs/bots/bots-in-production#deploying-your-bot) the code of both [Bots](https://www.medplum.com/docs/bots/bot-basics) using the samples in this repository as a base.
+
+4. Apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project) to the Consolidated Data Webhook bot `(metriport-consolidated-data-webhook.ts)`.
 
 ## Metriport Setup
 
 1. Go to [Metriport Developer Dashboard](https://dash.metriport.com/sandbox/developers)
 
-2. Copy the `API Key` and the `Webhook Key` to add it to the [Medplum Project Secrets](https://app.medplum.com/admin/secrets).
+2. Copy the `API Key` and the `Webhook Key` to add both to the [Medplum Project Secrets](https://app.medplum.com/admin/secrets).
 
 3. For the `Webhook URL` add the following:
 
