@@ -1,8 +1,9 @@
 import { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
+import { getBinaryStorage } from '../storage/loader';
 import { Repository } from './repo';
-import { getBinaryStorage } from './storage';
+import { recordHistogramValue } from '../otel/otel';
 
 /**
  * The target type of the attachment rewrite.
@@ -41,7 +42,14 @@ export type RewriteMode = (typeof RewriteMode)[keyof typeof RewriteMode];
  * @returns The rewritten value.
  */
 export async function rewriteAttachments<T>(mode: RewriteMode, repo: Repository, input: T): Promise<T> {
-  return new Rewriter(mode, repo).rewriteValue(input);
+  const startTime = process.hrtime.bigint();
+  const result = new Rewriter(mode, repo).rewriteValue(input);
+  recordHistogramValue(
+    'medplum.server.rewriteAttachmentsDurationMs',
+    Number((process.hrtime.bigint() - startTime) / 1_000_000n), // High resolution time, converted from ns to ms
+    { options: { unit: 'ms' } }
+  );
+  return result;
 }
 
 /**

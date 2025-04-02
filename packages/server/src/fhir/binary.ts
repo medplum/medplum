@@ -7,10 +7,11 @@ import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
+import { getBinaryStorage } from '../storage/loader';
+import { BinarySource } from '../storage/types';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { sendFhirResponse } from './response';
-import { BinarySource, getBinaryStorage } from './storage';
 
 const DEFAULT_CONTENT_TYPE = 'application/octet-stream';
 

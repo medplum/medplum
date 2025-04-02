@@ -75,6 +75,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
+import { getBinaryStorage } from '../storage/loader';
 import {
   AuditEventOutcome,
   AuditEventSubtype,
@@ -111,7 +112,6 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
-import { getBinaryStorage } from './storage';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -415,6 +415,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     reference: Reference,
     cacheEntry: CacheEntry | undefined
   ): Promise<Resource | Error> {
+    if (!reference.reference?.match(/^[A-Z][a-zA-Z]+\//)) {
+      // Non-local references cannot be resolved
+      return new OperationOutcomeError(notFound);
+    }
+
     try {
       const [resourceType, id] = parseReference(reference);
       validateResourceType(resourceType);
@@ -1143,6 +1148,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
+    if (ids.length === 0) {
+      return;
+    }
     await this.withTransaction(async (client) => {
       for (const id of ids) {
         await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
@@ -1358,9 +1366,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
+      const startTime = process.hrtime.bigint();
       for (const searchParam of Object.values(searchParams)) {
         this.buildColumn(resource, row, searchParam);
       }
+      recordHistogramValue(
+        'medplum.server.indexingDurationMs',
+        Number((process.hrtime.bigint() - startTime) / 1_000_000n), // High resolution time, converted from ns to ms
+        {
+          options: { unit: 'ms' },
+        }
+      );
     }
     return row;
   }

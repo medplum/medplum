@@ -1,8 +1,8 @@
 import { Binary } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
-import { asyncWrap } from './async';
-import { getSystemRepo } from './fhir/repo';
-import { getBinaryStorage } from './fhir/storage';
+import { asyncWrap } from '../async';
+import { getSystemRepo } from '../fhir/repo';
+import { getBinaryStorage } from './loader';
 
 export const storageRouter = Router();
 

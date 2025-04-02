@@ -1,43 +1,26 @@
 import { DefaultAzureCredential } from '@azure/identity';
-import { BlobServiceClient, BlobSASPermissions } from '@azure/storage-blob';
-import { Readable } from 'stream';
-import { IncomingMessage } from 'http';
-import { BinarySource, BinaryStorage, checkFileMetadata } from '../../fhir/storage';
-import { Binary } from '@medplum/fhirtypes';
+import { BlobSASPermissions, BlobServiceClient } from '@azure/storage-blob';
 import { splitN } from '@medplum/core';
+import { Binary } from '@medplum/fhirtypes';
+import { IncomingMessage } from 'http';
+import { Readable } from 'stream';
+import { BaseBinaryStorage } from '../../storage/base';
+import { BinarySource } from '../../storage/types';
 
 /**
  * The AzureBlobStorage class stores binary data in an Azure Blob Storage container
  * Files are stored in bucket/binary/binary.id/binary.meta.versionId.
  */
-export class AzureBlobStorage implements BinaryStorage {
+export class AzureBlobStorage extends BaseBinaryStorage {
   private readonly client: BlobServiceClient;
   private readonly containerClient;
 
   constructor(azureStorage: string) {
-    // const config = getConfig();
+    super();
     const credentials = new DefaultAzureCredential();
     const [storageAccountName, containerName] = splitN(azureStorage, ':', 2);
     this.client = new BlobServiceClient(`https://${storageAccountName}.blob.core.windows.net`, credentials);
     this.containerClient = this.client.getContainerClient(containerName);
-  }
-
-  /**
-   * Writes a binary blob to Blob Storage.
-   * @param binary - The binary resource destination.
-   * @param filename - Optional binary filename.
-   * @param contentType - Optional binary content type.
-   * @param stream - The Node.js stream of readable content.
-   * @returns Promise that resolves when the write is complete.
-   */
-  async writeBinary(
-    binary: Binary,
-    filename: string | undefined,
-    contentType: string | undefined,
-    stream: BinarySource
-  ): Promise<void> {
-    checkFileMetadata(filename, contentType);
-    await this.writeFile(this.getKey(binary), contentType, stream);
   }
 
   async writeFile(key: string, contentType: string | undefined, stream: BinarySource): Promise<void> {
@@ -51,15 +34,11 @@ export class AzureBlobStorage implements BinaryStorage {
     });
   }
 
-  async readBinary(binary: Binary): Promise<Readable> {
-    const blobClient = this.containerClient.getBlobClient(this.getKey(binary));
+  async readFile(key: string): Promise<Readable> {
+    const blobClient = this.containerClient.getBlobClient(key);
     const downloadBlockBlobResponse = await blobClient.download();
 
     return downloadBlockBlobResponse.readableStreamBody as Readable;
-  }
-
-  async copyBinary(sourceBinary: Binary, destinationBinary: Binary): Promise<void> {
-    await this.copyFile(this.getKey(sourceBinary), this.getKey(destinationBinary));
   }
 
   async copyFile(sourceKey: string, destinationKey: string): Promise<void> {
@@ -91,9 +70,5 @@ export class AzureBlobStorage implements BinaryStorage {
     };
 
     return blobClient.generateUserDelegationSasUrl(generateSasUrlOptions, userDelegationKey);
-  }
-
-  getKey(binary: Binary): string {
-    return `binary/${binary.id}/${binary.meta?.versionId}`;
   }
 }
