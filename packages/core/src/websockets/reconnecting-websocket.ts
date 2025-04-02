@@ -1,4 +1,5 @@
 import { TypedEventTarget } from '../eventtarget';
+import { ILogger, Logger } from '../logger';
 
 /*!
  * Reconnecting WebSocket
@@ -164,8 +165,7 @@ export type Options<WS extends IWebSocket = WebSocket> = {
   maxRetries?: number;
   maxEnqueuedMessages?: number;
   startClosed?: boolean;
-  debug?: boolean;
-  debugLogger?: (...args: any[]) => void;
+  logger?: ILogger;
 };
 
 const DEFAULT = {
@@ -200,7 +200,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
   private _closeCalled = false;
   private _messageQueue: Message[] = [];
 
-  private readonly _debugLogger = console.log.bind(console);
+  private readonly _logger: ILogger;
 
   protected _url: string;
   protected _protocols?: ProtocolsProvider;
@@ -225,9 +225,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
     } else {
       this._binaryType = 'blob';
     }
-    if (this._options.debugLogger) {
-      this._debugLogger = this._options.debugLogger;
-    }
+    this._logger = options.logger ?? new Logger(console.log);
     this._connect();
   }
 
@@ -416,9 +414,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
   }
 
   private _debug(...args: unknown[]): void {
-    if (this._options.debug) {
-      this._debugLogger('RWS>', ...args);
-    }
+    this._logger.debug('RWS>', ...args);
   }
 
   private _getNextDelay(): number {
