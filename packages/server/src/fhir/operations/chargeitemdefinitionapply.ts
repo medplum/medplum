@@ -1,9 +1,9 @@
-import { allOk, getReferenceString } from '@medplum/core';
+import { allOk, evalFhirPathTyped, getReferenceString, toJsBoolean, toTypedValue } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { getAuthenticatedContext } from '../../context';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
-import { ChargeItem, ChargeItemDefinition, Reference } from '@medplum/fhirtypes';
+import { ChargeItem, ChargeItemDefinition, Money, Reference } from '@medplum/fhirtypes';
 
 const operation = getOperationDefinition('ChargeItemDefinition', 'apply');
 
@@ -23,17 +23,25 @@ interface ChargeItemDefinitionParameters {
 export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
-  const chargeItemDefinition = await ctx.repo.readResource<ChargeItemDefinition>('ChargeItemDefinition', id);
+  const chargeItemDefinition: ChargeItemDefinition = await ctx.repo.readResource<ChargeItemDefinition>(
+    'ChargeItemDefinition',
+    id
+  );
   const params = parseInputParameters<ChargeItemDefinitionParameters>(operation, req);
   const inputChargeItemRef = params.chargeItem;
   const inputChargeItem = await ctx.repo.readReference<ChargeItem>(inputChargeItemRef);
 
   const chargeItemDefinitionReference = getReferenceString(chargeItemDefinition);
+  let definitionCanonical: string[] = [];
+  if (inputChargeItem.definitionCanonical && inputChargeItem.definitionCanonical.length > 0) {
+    definitionCanonical = [...inputChargeItem.definitionCanonical];
+  }
+  if (chargeItemDefinitionReference && !definitionCanonical.includes(chargeItemDefinitionReference)) {
+    definitionCanonical.push(chargeItemDefinitionReference);
+  }
   const updatedChargeItem: ChargeItem = {
     ...inputChargeItem,
-    definitionCanonical: inputChargeItem.definitionCanonical?.includes(chargeItemDefinitionReference)
-      ? inputChargeItem.definitionCanonical
-      : [...(inputChargeItem.definitionCanonical || []), chargeItemDefinitionReference],
+    definitionCanonical: definitionCanonical,
   };
 
   if (chargeItemDefinition.propertyGroup) {
@@ -45,6 +53,92 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
           break;
         }
       }
+    }
+  }
+
+  if (chargeItemDefinition.propertyGroup) {
+    let basePrice: Money | undefined;
+
+    // First pass: Find base price
+    for (const group of chargeItemDefinition.propertyGroup) {
+      let isGroupApplicable = true;
+      if (group.applicability && group.applicability.length > 0) {
+        for (const condition of group.applicability) {
+          if (condition.expression) {
+            const value = toTypedValue(updatedChargeItem);
+            const result = evalFhirPathTyped(condition.expression, [value], { '%resource': value });
+            isGroupApplicable = toJsBoolean(result);
+          }
+        }
+      }
+
+      if (!isGroupApplicable) {
+        continue;
+      }
+
+      if (group.priceComponent && group.priceComponent.length > 0) {
+        const basePriceComp = group.priceComponent.find((pc) => pc.type === 'base');
+        if (basePriceComp?.amount) {
+          basePrice = { ...basePriceComp.amount };
+          break;
+        }
+      }
+    }
+
+    // Second pass: Apply all modifiers
+    if (basePrice?.value !== undefined) {
+      const finalPrice: Money = { ...basePrice };
+
+      for (const group of chargeItemDefinition.propertyGroup) {
+        let isGroupApplicable = true;
+        if (group.applicability && group.applicability.length > 0) {
+          for (const condition of group.applicability) {
+            if (condition.expression) {
+              const value = toTypedValue(updatedChargeItem);
+              const result = evalFhirPathTyped(condition.expression, [value], { '%resource': value });
+              isGroupApplicable = toJsBoolean(result);
+            }
+          }
+        }
+
+        if (!isGroupApplicable) {
+          continue;
+        }
+
+        if (group.priceComponent) {
+          for (const component of group.priceComponent) {
+            if (component.type === 'base') {
+              continue;
+            }
+
+            if (component.type === 'surcharge') {
+              if (component.amount?.value !== undefined && finalPrice.value !== undefined) {
+                finalPrice.value += component.amount.value;
+              } else if (
+                component.factor !== undefined &&
+                basePrice.value !== undefined &&
+                finalPrice.value !== undefined
+              ) {
+                finalPrice.value += basePrice.value * component.factor;
+              }
+            }
+
+            if (component.type === 'discount') {
+              if (component.amount?.value !== undefined && finalPrice.value !== undefined) {
+                finalPrice.value -= component.amount.value;
+              } else if (
+                component.factor !== undefined &&
+                basePrice.value !== undefined &&
+                finalPrice.value !== undefined
+              ) {
+                finalPrice.value -= basePrice.value * component.factor;
+              }
+            }
+          }
+        }
+      }
+
+      updatedChargeItem.priceOverride = finalPrice;
     }
   }
 
