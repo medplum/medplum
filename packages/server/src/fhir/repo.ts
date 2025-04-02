@@ -1366,7 +1366,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         'medplum.server.indexingDurationMs',
         Number((process.hrtime.bigint() - startTime) / 1_000_000n), // High resolution time, converted from ns to ms
         {
-          attributes: { resourceType },
           options: { unit: 'ms' },
         }
       );
