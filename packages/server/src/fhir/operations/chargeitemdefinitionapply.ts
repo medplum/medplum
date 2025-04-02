@@ -36,7 +36,7 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
   if (inputChargeItem.definitionCanonical && inputChargeItem.definitionCanonical.length > 0) {
     definitionCanonical = [...inputChargeItem.definitionCanonical];
   }
-  if (!definitionCanonical.includes(chargeItemDefinitionReference)) {
+  if (!definitionCanonical.includes(chargeItemDefinitionReference) && chargeItemDefinitionReference) {
     definitionCanonical.push(chargeItemDefinitionReference);
   }
   const updatedChargeItem: ChargeItem = {
