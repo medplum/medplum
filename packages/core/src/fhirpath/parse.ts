@@ -265,8 +265,9 @@ export function evalFhirPathTyped(
   variables: Record<string, TypedValue> = {},
   cache: LRUCache<FhirPathAtom> | undefined = undefined
 ): TypedValue[] {
-  const ast = cache?.get(expression) ?? parseFhirPath(expression);
-  if (cache) {
+  const cachedAst = cache?.get(expression);
+  const ast = cachedAst ?? parseFhirPath(expression);
+  if (cache && !cachedAst) {
     cache.set(expression, ast);
   }
   return ast.eval({ variables }, input).map((v) => ({
