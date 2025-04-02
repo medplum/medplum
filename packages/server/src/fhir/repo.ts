@@ -790,7 +790,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async validateResourceStrictly(resource: Resource): Promise<void> {
     const logger = getLogger();
-    const start = Date.now();
+    const start = process.hrtime.bigint();
 
     const issues = validateResource(resource);
     for (const issue of issues) {
@@ -802,7 +802,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.validateProfiles(resource, profileUrls);
     }
 
-    const durationMs = Date.now() - start;
+    const durationMs = Number(process.hrtime.bigint() - start) / 1e6; // Convert nanoseconds to milliseconds
+    recordHistogramValue('medplum.server.validationDurationMs', durationMs, { options: { unit: 'ms' } });
     if (durationMs > 10) {
       logger.debug('High validator latency', {
         resourceType: resource.resourceType,
@@ -1372,7 +1373,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
       recordHistogramValue(
         'medplum.server.indexingDurationMs',
-        Number((process.hrtime.bigint() - startTime) / 1_000_000n), // High resolution time, converted from ns to ms
+        Number(process.hrtime.bigint() - startTime) / 1e6, // High resolution time, converted from ns to ms
         {
           options: { unit: 'ms' },
         }
