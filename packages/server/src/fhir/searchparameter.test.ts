@@ -237,6 +237,13 @@ describe('SearchParameterImplementation', () => {
     expect(impl.columnName).toStrictEqual('code');
   });
 
+  test('Observation-code excluded from legacy behavior', () => {
+    const searchParam = indexedSearchParams.find((e) => e.id === 'clinical-code') as SearchParameter;
+    const impl = getSearchParameterImplementation('Observation', searchParam);
+    assertLookupTableImplementation(impl);
+    expect(impl.lookupTable instanceof TokenTable).toBeTruthy();
+  });
+
   test.each([
     ['Patient-identifier', TokenTable],
     ['individual-address-country', AddressTable],
