@@ -512,19 +512,19 @@ describe('ChargeItemDefinition Apply', () => {
     expect(chargeItem.priceOverride?.currency).toBe('USD');
   });
 
-  test('Apply ChargeItemDefinition with conditional group applicability', async () => {
-    // 1. Create a patient
+  test('Apply ChargeItemDefinition with base price applicability', async () => {
+    // Create a patient
     const patient = await request(app)
       .post(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
-        name: [{ given: ['Applicability'], family: 'TestCase' }],
+        name: [{ given: ['Base'], family: 'Applicability' }],
       });
     expect(patient.status).toBe(201);
   
-    // 2. Create an encounter
+    // Create an encounter
     const encounter = await request(app)
       .post(`/fhir/R4/Encounter`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -543,28 +543,45 @@ describe('ChargeItemDefinition Apply', () => {
       });
     expect(encounter.status).toBe(201);
   
-    // 3. Create a ChargeItemDefinition with conditional group applicability
+    // Create a ChargeItemDefinition with base price applicability
     const chargeItemDefinitionBody: ChargeItemDefinition = {
       resourceType: 'ChargeItemDefinition',
       status: 'active',
-      url: 'http://example.org/fhir/ChargeItemDefinition/conditional-pricing',
-      title: 'Conditional Pricing Model',
-      code: {
-        coding: [
-          {
-            system: 'http://www.ama-assn.org/go/cpt',
-            code: '99214',
-            display: 'Complex office visit',
-          },
-        ],
-      },
+      url: 'http://example.org/fhir/ChargeItemDefinition/base-price-applicability',
+      title: 'Base Price Applicability Model',
       propertyGroup: [
         {
+          applicability: [
+            {
+              description: 'Base price only applies for new patients',
+              expression: "%resource.code.coding.where(system='http://example.org/codes' and code='new-patient').exists()"
+            }
+          ],
           priceComponent: [
             {
               type: 'base',
               code: {
-                text: 'Standard Service Fee'
+                text: 'New Patient Fee'
+              },
+              amount: {
+                value: 150,
+                currency: 'USD',
+              },
+            },
+          ],
+        },
+        {
+          applicability: [
+            {
+              description: 'Base price only applies for established patients',
+              expression: "%resource.code.coding.where(system='http://example.org/codes' and code='established-patient').exists()"
+            }
+          ],
+          priceComponent: [
+            {
+              type: 'base',
+              code: {
+                text: 'Established Patient Fee'
               },
               amount: {
                 value: 100,
@@ -576,58 +593,18 @@ describe('ChargeItemDefinition Apply', () => {
         {
           applicability: [
             {
-              description: 'Applies if status is draft',
-              expression: "%resource.status = 'draft'"
+              description: 'Apply to all visits',
+              expression: "true"
             }
           ],
           priceComponent: [
             {
               type: 'surcharge',
               code: {
-                text: 'Draft Status Fee'
+                text: 'Standard Facility Fee'
               },
               amount: {
                 value: 25,
-                currency: 'USD',
-              },
-            },
-          ],
-        },
-        {
-          applicability: [
-            {
-              description: 'Applies if status is active',
-              expression: "%resource.status = 'active'"
-            }
-          ],
-          priceComponent: [
-            {
-              type: 'surcharge',
-              code: {
-                text: 'Active Status Fee'
-              },
-              amount: {
-                value: 50,
-                currency: 'USD',
-              },
-            },
-          ],
-        },
-        {
-          applicability: [
-            {
-              description: 'Applies if date is after 2023',
-              expression: "%resource.occurrenceDateTime.substring(0, 4).toInteger() >= 2023"
-            }
-          ],
-          priceComponent: [
-            {
-              type: 'surcharge',
-              code: {
-                text: 'Current Year Fee'
-              },
-              amount: {
-                value: 15,
                 currency: 'USD',
               },
             },
@@ -643,8 +620,8 @@ describe('ChargeItemDefinition Apply', () => {
       .send(chargeItemDefinitionBody);
     expect(chargeItemDefinition.status).toBe(201);
   
-    // 4. Create a draft ChargeItem
-    const draftChargeItem = await request(app)
+    // Create a ChargeItem for a new patient
+    const newPatientChargeItem = await request(app)
       .post(`/fhir/R4/ChargeItem`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -664,17 +641,17 @@ describe('ChargeItemDefinition Apply', () => {
         code: {
           coding: [
             {
-              system: 'http://www.ama-assn.org/go/cpt',
-              code: '99214',
-              display: 'Complex office visit',
+              system: 'http://example.org/codes',
+              code: 'new-patient',
+              display: 'New Patient Visit',
             },
           ],
         },
       });
-    expect(draftChargeItem.status).toBe(201);
+    expect(newPatientChargeItem.status).toBe(201);
   
-    // 5. Apply the ChargeItemDefinition to the draft ChargeItem
-    const applyResult = await request(app)
+    // Apply the ChargeItemDefinition to the new patient ChargeItem
+    const newPatientApplyResult = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -684,61 +661,58 @@ describe('ChargeItemDefinition Apply', () => {
           {
             name: 'chargeItem',
             valueReference: {
-              reference: `ChargeItem/${draftChargeItem.body.id}`,
+              reference: `ChargeItem/${newPatientChargeItem.body.id}`,
             },
           },
         ],
       });
   
-    // 6. Verify the result
-    console.log(JSON.stringify(applyResult.body, null, 2));
-    expect(applyResult.status).toBe(200);
-    const chargeItem = applyResult.body as ChargeItem;
-    expect(chargeItem.resourceType).toBe('ChargeItem');
-    expect(chargeItem.id).toBe(draftChargeItem.body.id);
+    // Verify new patient pricing
+    console.log(JSON.stringify(newPatientApplyResult.body, null, 2));
+    expect(newPatientApplyResult.status).toBe(200);
+    const newPatientResult = newPatientApplyResult.body as ChargeItem;
+    expect(newPatientResult.resourceType).toBe('ChargeItem');
+    expect(newPatientResult.id).toBe(newPatientChargeItem.body.id);
   
-    // 7. Verify selective application of property groups
-    // Base price: $100
-    // Draft Status Fee should apply: $25
-    // Active Status Fee should NOT apply (condition evaluates to false)
-    // Current Year Fee should apply: $15
-    // Expected final price: $100 + $25 + $15 = $140
-    expect(chargeItem.priceOverride).toBeDefined();
-    expect(chargeItem.priceOverride?.value).toBe(140);
-    expect(chargeItem.priceOverride?.currency).toBe('USD');
+    // New Patient base price: $150
+    // Standard Facility Fee: $25
+    // Expected total: $175
+    expect(newPatientResult.priceOverride).toBeDefined();
+    expect(newPatientResult.priceOverride?.value).toBe(175);
+    expect(newPatientResult.priceOverride?.currency).toBe('USD');
   
-    // 8. Now create an "active" status ChargeItem which should get different modifiers
-    const activeChargeItem = await request(app)
+    // Create a ChargeItem for an established patient
+    const establishedPatientChargeItem = await request(app)
       .post(`/fhir/R4/ChargeItem`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'ChargeItem',
-        status: 'active', // Should match the second conditional group
+        status: 'draft',
         subject: {
           reference: `Patient/${patient.body.id}`,
         },
         context: {
           reference: `Encounter/${encounter.body.id}`,
         },
-        occurrenceDateTime: '2023-03-15T14:00:00Z', // Should match the date condition
+        occurrenceDateTime: '2023-03-15T14:00:00Z',
         performingOrganization: {
           reference: 'Organization/example',
         },
         code: {
           coding: [
             {
-              system: 'http://www.ama-assn.org/go/cpt',
-              code: '99214',
-              display: 'Complex office visit',
+              system: 'http://example.org/codes',
+              code: 'established-patient',
+              display: 'Established Patient Visit',
             },
           ],
         },
       });
-    expect(activeChargeItem.status).toBe(201);
+    expect(establishedPatientChargeItem.status).toBe(201);
   
-    // 9. Apply the ChargeItemDefinition to the active ChargeItem
-    const activeApplyResult = await request(app)
+    // Apply the ChargeItemDefinition to the established patient ChargeItem
+    const establishedPatientApplyResult = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -748,23 +722,73 @@ describe('ChargeItemDefinition Apply', () => {
           {
             name: 'chargeItem',
             valueReference: {
-              reference: `ChargeItem/${activeChargeItem.body.id}`,
+              reference: `ChargeItem/${establishedPatientChargeItem.body.id}`,
             },
           },
         ],
       });
   
-    // 10. Verify different property groups were applied
-    expect(activeApplyResult.status).toBe(200);
-    const activeChargeItemResult = activeApplyResult.body as ChargeItem;
+    // Verify established patient pricing
+    expect(establishedPatientApplyResult.status).toBe(200);
+    const establishedPatientResult = establishedPatientApplyResult.body as ChargeItem;
     
-    // Base price: $100
-    // Draft Status Fee should NOT apply (condition evaluates to false)
-    // Active Status Fee should apply: $50
-    // Current Year Fee should apply: $15
-    // Expected final price: $100 + $50 + $15 = $165
-    expect(activeChargeItemResult.priceOverride).toBeDefined();
-    expect(activeChargeItemResult.priceOverride?.value).toBe(165);
-    expect(activeChargeItemResult.priceOverride?.currency).toBe('USD');
+    // Established Patient base price: $100
+    // Standard Facility Fee: $25
+    // Expected total: $125
+    expect(establishedPatientResult.priceOverride).toBeDefined();
+    expect(establishedPatientResult.priceOverride?.value).toBe(125);
+    expect(establishedPatientResult.priceOverride?.currency).toBe('USD');
+  
+    // Create a ChargeItem with no matching code
+    const otherChargeItem = await request(app)
+      .post(`/fhir/R4/ChargeItem`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ChargeItem',
+        status: 'draft',
+        subject: {
+          reference: `Patient/${patient.body.id}`,
+        },
+        context: {
+          reference: `Encounter/${encounter.body.id}`,
+        },
+        occurrenceDateTime: '2023-03-15T14:00:00Z',
+        performingOrganization: {
+          reference: 'Organization/example',
+        },
+        code: {
+          coding: [
+            {
+              system: 'http://example.org/codes',
+              code: 'other-service',
+              display: 'Other Service',
+            },
+          ],
+        },
+      });
+    expect(otherChargeItem.status).toBe(201);
+  
+    // Apply the ChargeItemDefinition to the other ChargeItem
+    const otherApplyResult = await request(app)
+      .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'chargeItem',
+            valueReference: {
+              reference: `ChargeItem/${otherChargeItem.body.id}`,
+            },
+          },
+        ],
+      });
+
+    expect(otherApplyResult.status).toBe(200);
+    const otherResult = otherApplyResult.body as ChargeItem;
+    expect(otherResult.priceOverride?.value).toBe(150);
+    expect(otherResult.priceOverride?.currency).toBe('USD');
   });
 });
