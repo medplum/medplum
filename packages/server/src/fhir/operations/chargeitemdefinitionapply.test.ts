@@ -523,7 +523,7 @@ describe('ChargeItemDefinition Apply', () => {
         name: [{ given: ['Applicability'], family: 'TestCase' }],
       });
     expect(patient.status).toBe(201);
-  
+
     // 2. Create an encounter
     const encounter = await request(app)
       .post(`/fhir/R4/Encounter`)
@@ -542,7 +542,7 @@ describe('ChargeItemDefinition Apply', () => {
         },
       });
     expect(encounter.status).toBe(201);
-  
+
     // 3. Create a ChargeItemDefinition with conditional group applicability
     const chargeItemDefinitionBody: ChargeItemDefinition = {
       resourceType: 'ChargeItemDefinition',
@@ -564,7 +564,7 @@ describe('ChargeItemDefinition Apply', () => {
             {
               type: 'base',
               code: {
-                text: 'Standard Service Fee'
+                text: 'Standard Service Fee',
               },
               amount: {
                 value: 100,
@@ -577,14 +577,14 @@ describe('ChargeItemDefinition Apply', () => {
           applicability: [
             {
               description: 'Applies if status is draft',
-              expression: "%resource.status = 'draft'"
-            }
+              expression: "%resource.status = 'draft'",
+            },
           ],
           priceComponent: [
             {
               type: 'surcharge',
               code: {
-                text: 'Draft Status Fee'
+                text: 'Draft Status Fee',
               },
               amount: {
                 value: 25,
@@ -597,14 +597,14 @@ describe('ChargeItemDefinition Apply', () => {
           applicability: [
             {
               description: 'Applies if status is active',
-              expression: "%resource.status = 'active'"
-            }
+              expression: "%resource.status = 'active'",
+            },
           ],
           priceComponent: [
             {
               type: 'surcharge',
               code: {
-                text: 'Active Status Fee'
+                text: 'Active Status Fee',
               },
               amount: {
                 value: 50,
@@ -617,14 +617,14 @@ describe('ChargeItemDefinition Apply', () => {
           applicability: [
             {
               description: 'Applies if date is after 2023',
-              expression: "%resource.occurrenceDateTime.substring(0, 4).toInteger() >= 2023"
-            }
+              expression: '%resource.occurrenceDateTime.substring(0, 4).toInteger() >= 2023',
+            },
           ],
           priceComponent: [
             {
               type: 'surcharge',
               code: {
-                text: 'Current Year Fee'
+                text: 'Current Year Fee',
               },
               amount: {
                 value: 15,
@@ -632,17 +632,17 @@ describe('ChargeItemDefinition Apply', () => {
               },
             },
           ],
-        }
+        },
       ],
     };
-    
+
     const chargeItemDefinition = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(chargeItemDefinitionBody);
     expect(chargeItemDefinition.status).toBe(201);
-  
+
     // 4. Create a draft ChargeItem
     const draftChargeItem = await request(app)
       .post(`/fhir/R4/ChargeItem`)
@@ -672,7 +672,7 @@ describe('ChargeItemDefinition Apply', () => {
         },
       });
     expect(draftChargeItem.status).toBe(201);
-  
+
     // 5. Apply the ChargeItemDefinition to the draft ChargeItem
     const applyResult = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
@@ -689,14 +689,14 @@ describe('ChargeItemDefinition Apply', () => {
           },
         ],
       });
-  
+
     // 6. Verify the result
     console.log(JSON.stringify(applyResult.body, null, 2));
     expect(applyResult.status).toBe(200);
     const chargeItem = applyResult.body as ChargeItem;
     expect(chargeItem.resourceType).toBe('ChargeItem');
     expect(chargeItem.id).toBe(draftChargeItem.body.id);
-  
+
     // 7. Verify selective application of property groups
     // Base price: $100
     // Draft Status Fee should apply: $25
@@ -706,7 +706,7 @@ describe('ChargeItemDefinition Apply', () => {
     expect(chargeItem.priceOverride).toBeDefined();
     expect(chargeItem.priceOverride?.value).toBe(140);
     expect(chargeItem.priceOverride?.currency).toBe('USD');
-  
+
     // 8. Now create an "active" status ChargeItem which should get different modifiers
     const activeChargeItem = await request(app)
       .post(`/fhir/R4/ChargeItem`)
@@ -736,7 +736,7 @@ describe('ChargeItemDefinition Apply', () => {
         },
       });
     expect(activeChargeItem.status).toBe(201);
-  
+
     // 9. Apply the ChargeItemDefinition to the active ChargeItem
     const activeApplyResult = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
@@ -753,11 +753,11 @@ describe('ChargeItemDefinition Apply', () => {
           },
         ],
       });
-  
+
     // 10. Verify different property groups were applied
     expect(activeApplyResult.status).toBe(200);
     const activeChargeItemResult = activeApplyResult.body as ChargeItem;
-    
+
     // Base price: $100
     // Draft Status Fee should NOT apply (condition evaluates to false)
     // Active Status Fee should apply: $50
