@@ -1,5 +1,5 @@
 import { Client, Pool } from 'pg';
-import { idempotentCreateIndex } from './migrate-functions';
+import { idempotentCreateIndex, MigrationAction } from './migrate-functions';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
 import { MedplumServerConfig } from '../config/types';
 import { loadTestConfig } from '../config/loader';
@@ -65,8 +65,9 @@ describe('idempotentCreateIndex', () => {
   const indexDefinition = 'CREATE INDEX test_index_1 ON public.test_table USING btree (id)';
 
   test('is idempotent', async () => {
-    const actions1 = await idempotentCreateIndex(client, indexName, createIndexSql);
-    expect(actions1).toEqual([{ action: 'create', durationMs: expect.any(Number) }]);
+    const actions: MigrationAction[] = [];
+    await idempotentCreateIndex(client, actions, indexName, createIndexSql);
+    expect(actions).toEqual([{ name: createIndexSql, durationMs: expect.any(Number) }]);
     const indexes1 = await getTableIndexes(client, 'test_table');
     expect(indexes1).toHaveLength(1);
     expect(indexes1[0]).toEqual(
@@ -79,7 +80,8 @@ describe('idempotentCreateIndex', () => {
     );
 
     // invoked twice to ensure idempotency; no actions this time
-    const actions2 = await idempotentCreateIndex(client, indexName, createIndexSql);
+    const actions2: MigrationAction[] = [];
+    await idempotentCreateIndex(client, actions2, indexName, createIndexSql);
     expect(actions2).toHaveLength(0);
     const indexes2 = await getTableIndexes(client, 'test_table');
     expect(indexes2).toHaveLength(1);
@@ -110,10 +112,11 @@ describe('idempotentCreateIndex', () => {
       })
     );
 
-    const actions3 = await idempotentCreateIndex(client, indexName, createIndexSql);
+    const actions3: MigrationAction[] = [];
+    await idempotentCreateIndex(client, actions3, indexName, createIndexSql);
     expect(actions3).toEqual([
-      { action: 'drop', durationMs: expect.any(Number) },
-      { action: 'create', durationMs: expect.any(Number) },
+      { name: `DROP INDEX IF EXISTS ${indexName}`, durationMs: expect.any(Number) },
+      { name: createIndexSql, durationMs: expect.any(Number) },
     ]);
     const indexes3 = await getTableIndexes(client, 'test_table');
     expect(indexes3).toHaveLength(1);
@@ -145,7 +148,7 @@ describe('idempotentCreateIndex', () => {
     );
 
     // Fails because index is being created by some other client
-    await expect(idempotentCreateIndex(client, indexName, createIndexSql)).rejects.toThrow(
+    await expect(idempotentCreateIndex(client, [], indexName, createIndexSql)).rejects.toThrow(
       'Another client is actively creating index'
     );
   });
