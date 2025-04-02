@@ -1366,9 +1366,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
+      const startTime = process.hrtime.bigint();
       for (const searchParam of Object.values(searchParams)) {
         this.buildColumn(resource, row, searchParam);
       }
+      recordHistogramValue(
+        'medplum.server.indexingDurationMs',
+        Number((process.hrtime.bigint() - startTime) / 1_000_000n), // High resolution time, converted from ns to ms
+        {
+          options: { unit: 'ms' },
+        }
+      );
     }
     return row;
   }
