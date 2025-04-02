@@ -84,7 +84,6 @@ describe('ChargeItemDefinition Apply', () => {
         ],
       });
 
-    console.log(JSON.stringify(chargeItemDefinition.body, null, 2));
     expect(chargeItemDefinition.status).toBe(201);
 
     // 4. Create a draft ChargeItem first
