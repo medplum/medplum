@@ -82,6 +82,7 @@ export const EncounterChart = (): JSX.Element => {
       return;
     }
     const chargeItems = await medplum.searchResources('ChargeItem', `context=${getReferenceString(encounter)}`);
+    console.log('chargeItems', chargeItems);
     setChargeItems(chargeItems);
   }, [medplum, encounter]);
 
