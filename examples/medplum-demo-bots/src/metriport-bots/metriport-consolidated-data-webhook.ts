@@ -50,39 +50,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
           const response = await fetch(docRef.content[0].attachment.url);
           const consolidatedData = (await response.json()) as Bundle; // This is a searchset bundle
 
-          // Create a map of resource IDs to their fullUrls
-          const idToFullUrlMap = new Map<string, string>();
-          consolidatedData.entry?.forEach((entry) => {
-            if (entry.resource?.id && entry.fullUrl) {
-              idToFullUrlMap.set(entry.resource.id, entry.fullUrl);
-            }
-          });
-
-          // Transform the bundle into a transaction bundle
-          const transactionBundle: Bundle = {
-            resourceType: 'Bundle',
-            type: 'transaction',
-            entry:
-              consolidatedData.entry?.map((entry) => {
-                // Process references and add Metriport identifier
-                const processedResource = prepareResourceForUpsert(entry.resource, idToFullUrlMap);
-                const originalId = processedResource?.id;
-
-                if (processedResource) {
-                  delete processedResource.id;
-                }
-
-                return {
-                  fullUrl: entry.fullUrl,
-                  resource: processedResource,
-                  request: {
-                    method: 'PUT',
-                    url: `${processedResource?.resourceType}?identifier=${originalId}`,
-                  },
-                };
-              }) || [],
-          };
-
+          const transactionBundle = convertToTransactionBundle(consolidatedData);
           const responseBundle = await medplum.executeBatch(transactionBundle);
           // Log only error responses
           const errors = responseBundle.entry
@@ -117,12 +85,45 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
   return true;
 }
 
-const METRIPORT_IDENTIFIER_SYSTEM = 'https://metriport.com/fhir/identifiers';
+export function convertToTransactionBundle(bundle: Bundle): Bundle {
+  const idToFullUrlMap = new Map<string, string>();
+  bundle.entry?.forEach((entry) => {
+    if (entry.resource?.id && entry.fullUrl) {
+      idToFullUrlMap.set(entry.resource.id, entry.fullUrl);
+    }
+  });
 
-function prepareResourceForUpsert(resource: any, idToFullUrlMap: Map<string, string>): any {
+  return {
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry:
+      bundle.entry?.map((entry) => {
+        const processedResource = processResourceForUpsert(entry.resource, idToFullUrlMap);
+        const originalId = processedResource?.id;
+
+        if (processedResource) {
+          delete processedResource.id;
+        }
+
+        return {
+          fullUrl: entry.fullUrl,
+          resource: processedResource,
+          request: {
+            method: 'PUT',
+            url: `${processedResource?.resourceType}?identifier=${originalId}`,
+          },
+        };
+      }) || [],
+  };
+}
+
+// Process references and add Metriport identifier
+export function processResourceForUpsert(resource: any, idToFullUrlMap: Map<string, string>): any {
   if (!resource) {
     return resource;
   }
+
+  const METRIPORT_IDENTIFIER_SYSTEM = 'https://metriport.com/fhir/identifiers';
 
   // Deep clone the resource to avoid modifying the original
   const clonedResource = JSON.parse(JSON.stringify(resource));
@@ -160,21 +161,35 @@ function prepareResourceForUpsert(resource: any, idToFullUrlMap: Map<string, str
     }
   }
 
-  // Recursively process all properties
-  Object.entries(clonedResource).forEach(([key, value]) => {
-    if (typeof value === 'object' && value !== null) {
-      if ('reference' in value && typeof value.reference === 'string') {
-        // This is a reference - replace it if we have a mapping
-        const [_resourceType, id] = value.reference.split('/');
-        if (id && idToFullUrlMap.has(id)) {
-          value.reference = idToFullUrlMap.get(id);
-        }
-      } else {
-        // Recursively process nested objects and arrays
-        clonedResource[key] = prepareResourceForUpsert(value, idToFullUrlMap);
-      }
+  // Helper function to process references recursively
+  const processReferences = (obj: any): any => {
+    if (!obj || typeof obj !== 'object') {
+      return obj;
     }
-  });
 
-  return clonedResource;
+    if (Array.isArray(obj)) {
+      return obj.map((item) => processReferences(item));
+    }
+
+    const processed = { ...obj };
+
+    // Handle reference property if present
+    if ('reference' in obj && typeof obj.reference === 'string') {
+      const [_resourceType, id] = obj.reference.split('/');
+      if (id && idToFullUrlMap.has(id)) {
+        processed.reference = idToFullUrlMap.get(id);
+      }
+      return processed;
+    }
+
+    // Process all properties recursively
+    for (const [key, value] of Object.entries(obj)) {
+      processed[key] = processReferences(value);
+    }
+
+    return processed;
+  };
+
+  // Process the entire resource
+  return processReferences(clonedResource);
 }
