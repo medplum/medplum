@@ -306,7 +306,6 @@ describe('ChargeItemDefinition Apply', () => {
       });
 
     // 6. Verify the result
-    console.log(JSON.stringify(applyResult.body, null, 2));
     expect(applyResult.status).toBe(200);
     const chargeItem = applyResult.body as ChargeItem;
     expect(chargeItem.resourceType).toBe('ChargeItem');
@@ -670,7 +669,6 @@ describe('ChargeItemDefinition Apply', () => {
       });
 
     // Verify new patient pricing
-    console.log(JSON.stringify(newPatientApplyResult.body, null, 2));
     expect(newPatientApplyResult.status).toBe(200);
     const newPatientResult = newPatientApplyResult.body as ChargeItem;
     expect(newPatientResult.resourceType).toBe('ChargeItem');
