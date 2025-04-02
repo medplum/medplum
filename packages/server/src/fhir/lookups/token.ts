@@ -183,7 +183,7 @@ export class TokenTable extends LookupTable {
  * @returns True if the search parameter is an "token" parameter.
  */
 function getTokenIndexType(searchParam: SearchParameter, resourceType: string): TokenIndexType | undefined {
-  if (legacyTokenColumnSearchParamIds.has(searchParam.id as string)) {
+  if (legacyTokenColumnSearchParamResourceTypeAndCodes.has(`${resourceType}|${searchParam.code}`)) {
     // This is a legacy search parameter that should be indexed as a column
     // instead of a lookup table.
     return undefined;
@@ -669,6 +669,9 @@ function isCaseSensitiveSearchParameter(param: SearchParameter, resourceType: Re
 
 /**
  * The following search parameters are affected by a change in FHIRpath's toString() method.
+ * Each entry is in the format "<resourceType>|<SearchParameter.code>". SearchParameter.id is
+ * not precise enough. E.g. `MedicationRequest|code` is included, but `Observation|code` is not
+ * and both of those share the SearchParameter.id `clinical-code`.
  *
  * Background:
  *
@@ -693,29 +696,46 @@ function isCaseSensitiveSearchParameter(param: SearchParameter, resourceType: Re
  *
  * See follow-up issue: https://github.com/medplum/medplum/issues/6271
  */
-export const legacyTokenColumnSearchParamIds = new Set([
-  'ActivityDefinition-context',
-  'ChargeItemDefinition-context',
-  'clinical-code',
-  'Composition-related-id',
-  'conformance-context',
-  'EffectEvidenceSynthesis-context',
-  'EventDefinition-context',
-  'Evidence-context',
-  'EvidenceVariable-context',
-  'ExampleScenario-context',
-  'Group-value',
-  'Library-context',
-  'Measure-context',
-  'Medication-ingredient-code',
-  'MedicationKnowledge-ingredient-code',
-  'Observation-combo-value-concept',
-  'Observation-component-value-concept',
-  'Observation-value-concept',
-  'PlanDefinition-context',
-  'Questionnaire-context',
-  'ResearchDefinition-context',
-  'ResearchElementDefinition-context',
-  'RiskEvidenceSynthesis-context',
-  'TestScript-context',
+const legacyTokenColumnSearchParamResourceTypeAndCodes = new Set([
+  'ActivityDefinition|context',
+  'CapabilityStatement|context',
+  'ChargeItemDefinition|context',
+  'CodeSystem|context',
+  'CompartmentDefinition|context',
+  'Composition|related-id',
+  'ConceptMap|context',
+  'DeviceRequest|code',
+  'EffectEvidenceSynthesis|context',
+  'EventDefinition|context',
+  'Evidence|context',
+  'EvidenceVariable|context',
+  'ExampleScenario|context',
+  'GraphDefinition|context',
+  'Group|value',
+  'ImplementationGuide|context',
+  'Library|context',
+  'Measure|context',
+  'Medication|ingredient-code',
+  'MedicationAdministration|code',
+  'MedicationDispense|code',
+  'MedicationKnowledge|ingredient-code',
+  'MedicationRequest|code',
+  'MedicationStatement|code',
+  'MessageDefinition|context',
+  'NamingSystem|context',
+  'Observation|combo-value-concept',
+  'Observation|component-value-concept',
+  'Observation|value-concept',
+  'OperationDefinition|context',
+  'PlanDefinition|context',
+  'Questionnaire|context',
+  'ResearchDefinition|context',
+  'ResearchElementDefinition|context',
+  'RiskEvidenceSynthesis|context',
+  'SearchParameter|context',
+  'StructureDefinition|context',
+  'StructureMap|context',
+  'TerminologyCapabilities|context',
+  'TestScript|context',
+  'ValueSet|context',
 ]);
