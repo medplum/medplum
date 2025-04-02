@@ -112,6 +112,7 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
+import { getAuthenticatedContext } from '../context';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -267,6 +268,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
+    await getAuthenticatedContext().fhirRateLimiter.recordWrite({ transactional: this.transactionDepth > 0 });
+
     const resourceWithId = {
       ...resource,
       id: options?.assignedId && resource.id ? resource.id : this.generateId(),
@@ -579,6 +582,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
+    await getAuthenticatedContext().fhirRateLimiter.recordWrite({ transactional: this.transactionDepth > 0 });
+
     const startTime = Date.now();
     try {
       let result: WithId<T>;
@@ -1022,6 +1027,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+    await getAuthenticatedContext().fhirRateLimiter.recordWrite({ transactional: this.transactionDepth > 0 });
+
     const startTime = Date.now();
     let resource: WithId<T>;
     try {
@@ -1096,6 +1103,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     patch: Operation[],
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
+    await getAuthenticatedContext().fhirRateLimiter.recordWrite({ transactional: this.transactionDepth > 0 });
+
     const startTime = Date.now();
     try {
       return await this.withTransaction(async () => {
@@ -1187,6 +1196,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
+    await getAuthenticatedContext().fhirRateLimiter.recordSearch();
+
     const startTime = Date.now();
     try {
       // Resource type validation is performed in the searchImpl function

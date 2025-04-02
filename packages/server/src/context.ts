@@ -9,6 +9,7 @@ import { systemLogger } from './logger';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { IRequestContext, requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
+import { FhirRateLimiter } from './ratelimit';
 
 export class RequestContext implements IRequestContext {
   readonly requestId: string;
@@ -35,6 +36,7 @@ export class RequestContext implements IRequestContext {
 export class AuthenticatedRequestContext extends RequestContext {
   readonly authState: Readonly<AuthState>;
   readonly repo: Repository;
+  readonly fhirRateLimiter: FhirRateLimiter;
 
   constructor(requestId: string, traceId: string, authState: Readonly<AuthState>, repo: Repository, logger?: Logger) {
     let loggerMetadata: Record<string, any> | undefined;
@@ -45,6 +47,7 @@ export class AuthenticatedRequestContext extends RequestContext {
 
     this.authState = authState;
     this.repo = repo;
+    this.fhirRateLimiter = new FhirRateLimiter(authState, 1_000);
   }
 
   get project(): WithId<Project> {

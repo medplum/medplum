@@ -1,9 +1,10 @@
-import { tooManyRequests } from '@medplum/core';
+import { OperationOutcomeError, tooManyRequests } from '@medplum/core';
 import { Request, Response, Handler } from 'express';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRedis } from './redis';
 import { MedplumServerConfig } from './config/types';
+import { AuthState } from './oauth/middleware';
 
 // History:
 // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
@@ -12,6 +13,83 @@ import { MedplumServerConfig } from './config/types';
 // Therefore, to maintain parity, the new default "auth rate limit" is 1200 per 15 minutes
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 60_000;
 const DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE = 160;
+
+export class FhirRateLimiter {
+  private readonly limiter: RateLimiterRedis;
+  private readonly key: string;
+
+  private currentValue: number;
+  private delta: number;
+  private limit: number;
+
+  constructor(authState: AuthState, limit: number, currentValue = 0) {
+    this.limiter = new RateLimiterRedis({
+      keyPrefix: 'medplum:rl:fhir:',
+      storeClient: getRedis(),
+      points: limit,
+      duration: 60, // Per minute
+    });
+    this.key = this.getKey(authState);
+
+    this.currentValue = currentValue;
+    this.delta = 0;
+    this.limit = limit;
+  }
+
+  /**
+   * Retrieve the user's current rate limit consumption
+   * @returns The rate limit result
+   */
+  async get(): Promise<RateLimiterRes> {
+    const result = await this.limiter.get(this.key);
+    if (!result) {
+      throw new Error('Rate limiter not available');
+    }
+
+    this.currentValue = result.consumedPoints;
+    return result;
+  }
+
+  /**
+   * Consume rate limit from Redis store
+   * @param points - Number of rate limit points to consume
+   * @returns Rate limiter result
+   */
+  async consume(points: number): Promise<RateLimiterRes> {
+    // If user is already over the limit, just block
+    if (this.currentValue > this.limit) {
+      throw new OperationOutcomeError(tooManyRequests);
+    }
+
+    this.delta += points;
+    try {
+      const result = await this.limiter.consume(this.key, points);
+      this.currentValue = result.consumedPoints;
+      return result;
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        throw err;
+      }
+      throw new OperationOutcomeError(tooManyRequests);
+    }
+  }
+
+  async recordSearch(opts?: { chained: boolean }): Promise<RateLimiterRes> {
+    return this.consume(opts?.chained ? 2 : 1);
+  }
+
+  async recordWrite(opts?: { transactional: boolean }): Promise<RateLimiterRes> {
+    return this.consume(opts?.transactional ? 10 : 5);
+  }
+
+  get unitsConsumed(): number {
+    return this.delta;
+  }
+
+  private getKey(authState: AuthState): string {
+    return 'fhir:' + authState.membership.id;
+  }
+}
 
 let handler: Handler | undefined;
 export function rateLimitHandler(config: MedplumServerConfig): Handler {
@@ -43,7 +121,7 @@ export function rateLimitHandler(config: MedplumServerConfig): Handler {
 export function getRateLimiter(req: Request, config?: MedplumServerConfig): RateLimiterRedis {
   const client = getRedis();
   return new RateLimiterRedis({
-    keyPrefix: 'medplum:ratelimit:',
+    keyPrefix: 'medplum:rl:',
     storeClient: client,
     points: getRateLimitForRequest(req, config), // Number of points
     duration: 60, // Per minute
