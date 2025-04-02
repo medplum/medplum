@@ -5,9 +5,11 @@ import { Bundle, DocumentReference, Identifier } from '@medplum/fhirtypes';
  * This bot is used to handle the consolidated data webhook from Metriport.
  * It will process the bundle using Medplum's batch capability.
  *
- * Docs:
- * - https://www.medplum.com/docs/bots/consuming-webhooks
- * - https://docs.metriport.com/medical-api/getting-started/webhooks
+ * References:
+ * - Medplum Webhook: https://www.medplum.com/docs/bots/consuming-webhooks
+ * - Metriport Implementing Webhooks: https://docs.metriport.com/medical-api/getting-started/webhooks
+ * - Metriport Receiving Webhooks: https://docs.metriport.com/medical-api/handling-data/webhooks
+ * - Metriport Message Types: https://docs.metriport.com/medical-api/handling-data/webhooks#types-of-messages
  *
  * @param medplum - The Medplum client
  * @param event - The event object
@@ -51,6 +53,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
           // This is a searchset bundle
           const consolidatedData = (await response.json()) as Bundle;
 
+          // NOTE: We are not filtering out any Resources from the consolidated data bundle.
+          // This means that we will process all resources in the bundle, so the AccessPolicy needs
+          // to be set to allow all resources to be processed. If you are using this bot in a production
+          // environment, you should filter out the resources that you do not want to process.
+          // See: https://www.medplum.com/docs/bots/consuming-webhooks#creating-access-policies
           const transactionBundle = convertToTransactionBundle(consolidatedData);
           const responseBundle = await medplum.executeBatch(transactionBundle);
 
