@@ -1,11 +1,12 @@
-import { createReference, getReferenceString, Operator, SNOMED } from '@medplum/core';
-import { Bundle, Condition, Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, getSearchParameter, Operator, SNOMED } from '@medplum/core';
+import { Bundle, Condition, MedicationRequest, Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { TokenColumnsFeature } from './token-column';
+import { getSearchParameterImplementation } from './searchparameter';
 
 describe.each(['token columns', 'lookup table'])('Token searching using %s', (tokenColumnsOrLookupTable) => {
   const systemRepo = getSystemRepo();
@@ -1111,6 +1112,93 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
         ],
       });
       expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected);
+    });
+  });
+  describe.only('MedicationRequest.code legacy behavior', () => {
+    let repo: Repository;
+    let patient: Patient;
+    let mr: MedicationRequest;
+    const sys1 = 'http://sys.one';
+    const sys2 = 'http://sys.two';
+
+    const val1 = 'ABCDEFGHIJ';
+    const val2 = '0123456789';
+
+    beforeAll(async () => {
+      const { project } = await createTestProject();
+      repo = new Repository({
+        strictMode: true,
+        projects: [project.id],
+        author: { reference: 'User/' + randomUUID() },
+      });
+
+      patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Henry'] }] });
+      mr = await repo.createResource<MedicationRequest>({
+        resourceType: 'MedicationRequest',
+        status: 'active',
+        intent: 'order',
+        subject: createReference(patient),
+        medicationCodeableConcept: { coding: [{ system: sys1, code: val1 }] },
+      });
+    });
+
+    test('Maybe uses legacy column implementation', async () => {
+      const searchParam = getSearchParameter('MedicationRequest', 'code');
+      if (!searchParam) {
+        throw new Error('Could not find MedicationRequest-code search parameter');
+      }
+
+      const impl = getSearchParameterImplementation('MedicationRequest', searchParam);
+      if (tokenColumnsOrLookupTable === 'token columns') {
+        expect(impl.searchStrategy).toBe('token-column');
+      } else {
+        expect(impl.searchStrategy).toBe('column');
+      }
+    });
+
+    test('Search by system', async () => {
+      const searchResult = await repo.search({
+        resourceType: 'MedicationRequest',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: sys1,
+          },
+        ],
+      });
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(mr.id);
+    });
+
+    test('Search by value', async () => {
+      const searchResult2 = await repo.search({
+        resourceType: 'MedicationRequest',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: val1,
+          },
+        ],
+      });
+      expect(searchResult2.entry?.length).toStrictEqual(1);
+      expect(searchResult2.entry?.[0]?.resource?.id).toStrictEqual(mr.id);
+    });
+
+    test('Search by system and value', async () => {
+      const searchResult3 = await repo.search({
+        resourceType: 'MedicationRequest',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: sys1 + '|' + val1,
+          },
+        ],
+      });
+      expect(searchResult3.entry?.length).toStrictEqual(1);
+      expect(searchResult3.entry?.[0]?.resource?.id).toStrictEqual(mr.id);
     });
   });
 });
