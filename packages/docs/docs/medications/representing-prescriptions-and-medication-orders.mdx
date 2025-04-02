@@ -9,12 +9,7 @@ Prescriptions and medication orders are very common in healthcare settings and a
 
 ## The `MedicationRequest` Resource
 
-Medical orders should be represented in FHIR using the [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) resource. This resource has two main use cases:
-
-1. Representing a prescription
-2. Representing a medication fulfillment order (e.g. a ordering a pharmacy to to fulfill an outstanding prescription)
-
-In addition, it can contain contextual information such as instructions on administration of the medication.
+Medication prescriptions should be represented in FHIR using the [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) resource. In addition, it can contain contextual information such as instructions on administration of the medication.
 
 <table>
   <tr>
@@ -31,7 +26,7 @@ In addition, it can contain contextual information such as instructions on admin
   <tr>
     <td colspan="3">
       <strong>
-        <em>Dispense and Ingestion Information</em>
+        <em>Dosage and Ingestion Information</em>
       </strong>
     </td>
   </tr>
@@ -53,10 +48,10 @@ In addition, it can contain contextual information such as instructions on admin
   <tr>
     <td>dispenseRequest</td>
     <td>
-      Provides details about how the medication should be dispensed or supplied, including quantity, refills, and more.
+      Provides details about how the medication should be dispensed or supplied, including quantity, total number of refills, and more.
     </td>
     <td>
-      <a href="#representing-dispense-instructions">See below</a>
+      <a href="#representing-dispense-instructions-and-fulfillment">See below</a>
     </td>
   </tr>
   <tr>
@@ -75,7 +70,7 @@ In addition, it can contain contextual information such as instructions on admin
   <tr>
     <td colspan="3">
       <strong>
-        <em>Tracking and Administration</em>
+        <em>Administration</em>
       </strong>
     </td>
   </tr>
@@ -125,34 +120,6 @@ The [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resour
 
 For more details on the `MedicationKnowledge` resource and how to model medications, see the [Modeling a Formulary docs](/docs/medications/formulary).
 
-## Representing Dispense Instructions
-
-The instructions to the pharmacy on how the order should be dispensed should be included on the `MedicationRequest.dispenseRequest` field.
-
-| Element                  | Description                                                                                                                                                                                              |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `initialFill`            | The duration or quantity of the first dispense of the medication.                                                                                                                                        |
-| `quantity`               | The amount of the medication that is to be dispensed for one fill after the initial fill.                                                                                                                |
-| `dispenseInterval`       | The minimum amount of time between refills of the medication.                                                                                                                                            |
-| `validityPeriod`         | The period over which the prescription or order remains valid.                                                                                                                                           |
-| `numberOfRepeatsAllowed` | The number of times that the order may be refilled. Note that this does not include the initial dispense. If the value here is 3, the order can be refilled 3 times in addition to the initial dispense. |
-| `expectedSupplyDuration` | The time period over which the medication is supposed to be used or which the prescription should last.                                                                                                  |
-| `performer`              | The organization (i.e. Pharmacy) that should dispense the medication.                                                                                                                                    |
-
-<details>
-  <summary>Example: Dispense Instructions</summary>
-  <MedplumCodeBlock language="ts" selectBlocks="dispenseInstructions">
-    {ExampleCode}
-  </MedplumCodeBlock>
-</details>
-
-:::note Preferred Pharmacies
-There is currently no community consensus on how to store a patient's preferred pharmacy in FHIR, but Medplum suggests one of two options:
-
-1. Add the information to a [`CareTeam`](/docs/api/fhir/resources/careteam) resource associated with the [`Patient`](/docs/api/fhir/resources/patient).
-2. Use a FHIR [`Extension`](/docs/api/fhir/datatypes/extension) to model a preferred pharmacy. The [Patient Preferred Pharmacy](https://build.fhir.org/ig/HL7/fhir-extensions/StructureDefinition-patient-preferredPharmacy.html) offers a way to do this.
-   :::
-
 ## Representing Patient Instructions
 
 The instructions for how the patient should take the medication should be included on the `MedicationRequest.dosageInstruction` field. This element includes fields to explain how, how often, and when the medication should be taken and is represented with a [`Dosage`](/docs/api/fhir/datatypes/dosage) type.
@@ -200,3 +167,44 @@ These types of requests should be differentiated as outpatient vs. inpatient usi
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
+
+## Representing Dispense Instructions and Fulfillment
+
+The instructions to the pharmacy on how the order should be dispensed should be included on the `MedicationRequest.dispenseRequest` field.
+
+| Element                  | Description                                                                                                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `authoredOn`             | The date on which this order was made.                                                                                                                                                                   |
+| `extension`              | The related MedicationDispense resources (see [Representing Dispense Fulfillments](#representing-dispense-fulfillments))                                                                                 |
+| `initialFill`            | The duration or quantity of the first dispense of the medication.                                                                                                                                        |
+| `quantity`               | The amount of the medication that is to be dispensed for one fill after the initial fill.                                                                                                                |
+| `dispenseInterval`       | The minimum amount of time between refills of the medication.                                                                                                                                            |
+| `validityPeriod`         | The period over which the prescription or order remains valid.                                                                                                                                           |
+| `numberOfRepeatsAllowed` | The number of times that the order may be refilled. Note that this does not include the initial dispense. If the value here is 3, the order can be refilled 3 times in addition to the initial dispense. |
+| `expectedSupplyDuration` | The time period over which the medication is supposed to be used or which the prescription should last.                                                                                                  |                                                                                                                                   |
+
+<details>
+  <summary>Example: Dispense Instructions</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="dispenseInstructions">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+### Representing Dispense Fulfillments
+
+The information related to fulfillment of a `MedicationRequest` should be stored on the [`MedicationDispense`](/docs/api/fhir/resources/medicationdispense) resource. If a `MedicationRequest` is refilled, there should be one `MedicationDispense` resource associated with the initial fill, and a MedicationDispense associated per each refill. 
+
+| Element                  | Description                                                                                                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status`                 | The current status of this dispense. This can be used to help track shipping progress.                                                                                                                   |
+| `statusReason`           | The information related to the status of the dispense. An extension here can be used to record shipment tracking information (i.e. shipping company and tracking number).                                |
+| `whenPrepared`           | The date on which the pharmacy prepares the dispense.                                                                                                                                                    |
+| `whenHandedOver`         | The date on which the patient receives the dispense.                                                                                                                                                     |
+| `performer`              | The organization (i.e. Pharmacy) that dispenses the medication.                                                                                                                                          |
+
+:::note Preferred Pharmacies
+There is currently no community consensus on how to store a patient's preferred pharmacy in FHIR, but Medplum suggests one of two options:
+
+1. Add the information to a [`CareTeam`](/docs/api/fhir/resources/careteam) resource associated with the [`Patient`](/docs/api/fhir/resources/patient).
+2. Use a FHIR [`Extension`](/docs/api/fhir/datatypes/extension) to model a preferred pharmacy. The [Patient Preferred Pharmacy](https://build.fhir.org/ig/HL7/fhir-extensions/StructureDefinition-patient-preferredPharmacy.html) offers a way to do this.
+   :::
