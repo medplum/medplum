@@ -2,6 +2,21 @@ import { BotEvent, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MetriportMedicalApi, PatientDTO, USState, Demographics, PatientCreate } from '@metriport/api-sdk';
 
+/**
+ * This bot is used to request medical records from the Metriport Medical API for a given Medplum
+ * Patient resource. It will then trigger an asynchronous query to retrieve the patient's
+ * consolidated data in FHIR JSON format. The results are sent through Webhook.
+ * See the consolidated-data-webhook.ts file for the webhook bot handler.
+ *
+ * References:
+ * - Medplum Consuming Webhook: https://www.medplum.com/docs/bots/consuming-webhooks
+ * - Metriport Medical API: https://docs.metriport.com/medical-api
+ *
+ * @param medplum - The Medplum client
+ * @param event - The BotEvent object containing the Medplum Patient resource
+ *
+ * @returns A promise that resolves to void
+ */
 export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<void> {
   const metriportApiKey = event.secrets['METRIPORT_API_KEY']?.valueString;
   if (!metriportApiKey) {

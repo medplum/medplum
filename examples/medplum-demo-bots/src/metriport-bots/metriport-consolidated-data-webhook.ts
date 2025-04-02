@@ -6,14 +6,15 @@ import { Bundle, DocumentReference, Identifier } from '@medplum/fhirtypes';
  * It will process the bundle using Medplum's batch capability.
  *
  * References:
- * - Medplum Webhook: https://www.medplum.com/docs/bots/consuming-webhooks
+ * - Medplum Consuming Webhook: https://www.medplum.com/docs/bots/consuming-webhooks
  * - Metriport Implementing Webhooks: https://docs.metriport.com/medical-api/getting-started/webhooks
  * - Metriport Receiving Webhooks: https://docs.metriport.com/medical-api/handling-data/webhooks
  * - Metriport Message Types: https://docs.metriport.com/medical-api/handling-data/webhooks#types-of-messages
  *
  * @param medplum - The Medplum client
- * @param event - The event object
- * @returns A promise that resolves to the response
+ * @param event - The BotEvent object containing the Metriport Webhook Message
+ *
+ * @returns A promise that resolves depending on the webhook message type
  */
 export async function handler(medplum: MedplumClient, event: BotEvent<Record<string, any>>): Promise<any> {
   const metriportApiKey = event.secrets['METRIPORT_API_KEY']?.valueString;
@@ -36,7 +37,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
   // See https://docs.metriport.com/medical-api/handling-data/webhooks#types-of-messages
   switch (messageType) {
     case 'ping':
-      console.log('Received ping');
       return { pong: input.ping };
 
     case 'medical.consolidated-data':
@@ -77,12 +77,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
             }));
 
           if (errors && errors.length > 0) {
-            console.error('Errors in bundle:', JSON.stringify(errors, null, 2));
+            throw new Error(`Error executing the transaction bundle: ${JSON.stringify(errors, null, 2)}`);
           }
           return true;
         } catch (error) {
-          console.error('Error processing consolidated data:', error);
-          throw error;
+          throw new Error(`Error processing consolidated data: ${error}`, { cause: error });
         }
       }
       break;
@@ -96,6 +95,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
 
 const METRIPORT_IDENTIFIER_SYSTEM = 'https://metriport.com/fhir/identifiers';
 
+/**
+ * Converts a searchset bundle to a transaction bundle.
+ *
+ *
+ * @param bundle - The searchset bundle
+ * @returns The transaction bundle
+ */
 export function convertToTransactionBundle(bundle: Bundle): Bundle {
   // Build the ID to fullUrl mapping
   const idToFullUrlMap: Record<string, string> = {};
