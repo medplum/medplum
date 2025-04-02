@@ -523,7 +523,7 @@ describe('ChargeItemDefinition Apply', () => {
         name: [{ given: ['Base'], family: 'Applicability' }],
       });
     expect(patient.status).toBe(201);
-  
+
     // Create an encounter
     const encounter = await request(app)
       .post(`/fhir/R4/Encounter`)
@@ -542,7 +542,7 @@ describe('ChargeItemDefinition Apply', () => {
         },
       });
     expect(encounter.status).toBe(201);
-  
+
     // Create a ChargeItemDefinition with base price applicability
     const chargeItemDefinitionBody: ChargeItemDefinition = {
       resourceType: 'ChargeItemDefinition',
@@ -554,14 +554,15 @@ describe('ChargeItemDefinition Apply', () => {
           applicability: [
             {
               description: 'Base price only applies for new patients',
-              expression: "%resource.code.coding.where(system='http://example.org/codes' and code='new-patient').exists()"
-            }
+              expression:
+                "%resource.code.coding.where(system='http://example.org/codes' and code='new-patient').exists()",
+            },
           ],
           priceComponent: [
             {
               type: 'base',
               code: {
-                text: 'New Patient Fee'
+                text: 'New Patient Fee',
               },
               amount: {
                 value: 150,
@@ -574,14 +575,15 @@ describe('ChargeItemDefinition Apply', () => {
           applicability: [
             {
               description: 'Base price only applies for established patients',
-              expression: "%resource.code.coding.where(system='http://example.org/codes' and code='established-patient').exists()"
-            }
+              expression:
+                "%resource.code.coding.where(system='http://example.org/codes' and code='established-patient').exists()",
+            },
           ],
           priceComponent: [
             {
               type: 'base',
               code: {
-                text: 'Established Patient Fee'
+                text: 'Established Patient Fee',
               },
               amount: {
                 value: 100,
@@ -594,14 +596,14 @@ describe('ChargeItemDefinition Apply', () => {
           applicability: [
             {
               description: 'Apply to all visits',
-              expression: "true"
-            }
+              expression: 'true',
+            },
           ],
           priceComponent: [
             {
               type: 'surcharge',
               code: {
-                text: 'Standard Facility Fee'
+                text: 'Standard Facility Fee',
               },
               amount: {
                 value: 25,
@@ -609,17 +611,17 @@ describe('ChargeItemDefinition Apply', () => {
               },
             },
           ],
-        }
+        },
       ],
     };
-    
+
     const chargeItemDefinition = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(chargeItemDefinitionBody);
     expect(chargeItemDefinition.status).toBe(201);
-  
+
     // Create a ChargeItem for a new patient
     const newPatientChargeItem = await request(app)
       .post(`/fhir/R4/ChargeItem`)
@@ -649,7 +651,7 @@ describe('ChargeItemDefinition Apply', () => {
         },
       });
     expect(newPatientChargeItem.status).toBe(201);
-  
+
     // Apply the ChargeItemDefinition to the new patient ChargeItem
     const newPatientApplyResult = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
@@ -666,21 +668,21 @@ describe('ChargeItemDefinition Apply', () => {
           },
         ],
       });
-  
+
     // Verify new patient pricing
     console.log(JSON.stringify(newPatientApplyResult.body, null, 2));
     expect(newPatientApplyResult.status).toBe(200);
     const newPatientResult = newPatientApplyResult.body as ChargeItem;
     expect(newPatientResult.resourceType).toBe('ChargeItem');
     expect(newPatientResult.id).toBe(newPatientChargeItem.body.id);
-  
+
     // New Patient base price: $150
     // Standard Facility Fee: $25
     // Expected total: $175
     expect(newPatientResult.priceOverride).toBeDefined();
     expect(newPatientResult.priceOverride?.value).toBe(175);
     expect(newPatientResult.priceOverride?.currency).toBe('USD');
-  
+
     // Create a ChargeItem for an established patient
     const establishedPatientChargeItem = await request(app)
       .post(`/fhir/R4/ChargeItem`)
@@ -710,7 +712,7 @@ describe('ChargeItemDefinition Apply', () => {
         },
       });
     expect(establishedPatientChargeItem.status).toBe(201);
-  
+
     // Apply the ChargeItemDefinition to the established patient ChargeItem
     const establishedPatientApplyResult = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
@@ -727,18 +729,18 @@ describe('ChargeItemDefinition Apply', () => {
           },
         ],
       });
-  
+
     // Verify established patient pricing
     expect(establishedPatientApplyResult.status).toBe(200);
     const establishedPatientResult = establishedPatientApplyResult.body as ChargeItem;
-    
+
     // Established Patient base price: $100
     // Standard Facility Fee: $25
     // Expected total: $125
     expect(establishedPatientResult.priceOverride).toBeDefined();
     expect(establishedPatientResult.priceOverride?.value).toBe(125);
     expect(establishedPatientResult.priceOverride?.currency).toBe('USD');
-  
+
     // Create a ChargeItem with no matching code
     const otherChargeItem = await request(app)
       .post(`/fhir/R4/ChargeItem`)
@@ -768,7 +770,7 @@ describe('ChargeItemDefinition Apply', () => {
         },
       });
     expect(otherChargeItem.status).toBe(201);
-  
+
     // Apply the ChargeItemDefinition to the other ChargeItem
     const otherApplyResult = await request(app)
       .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
