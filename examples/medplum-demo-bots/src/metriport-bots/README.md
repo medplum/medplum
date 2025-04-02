@@ -8,8 +8,8 @@ This folder contains a set of bots that integrate Medplum with Metriport. The in
 
 ## Prerequisites
 
-- A Medplum account with bot creation permissions
-- A Metriport developer account where you have permissions to the API keys
+- A Medplum account with bot creation permissions.
+- A Metriport developer account where you have permissions to the API keys.
 
 ## Medplum Setup
 
@@ -30,11 +30,9 @@ This folder contains a set of bots that integrate Medplum with Metriport. The in
 }
 ```
 
-2. Create a [ClientApplication](https://www.medplum.com/docs/auth/methods/client-credentials) and apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project)
+2. Create a [ClientApplication](https://www.medplum.com/docs/auth/methods/client-credentials) and apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project) to the Consolidated Data Webhook bot `(metriport-consolidated-data-webhook.ts)`.
 
 3. Create, build, and [deploy](https://www.medplum.com/docs/bots/bots-in-production#deploying-your-bot) the code of both [Bots](https://www.medplum.com/docs/bots/bot-basics) using the samples in this repository as a base.
-
-4. Apply the access policy from above in the [Admin Panel](https://app.medplum.com/admin/project) to the Consolidated Data Webhook bot `(metriport-consolidated-data-webhook.ts)`.
 
 ## Metriport Setup
 
