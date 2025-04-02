@@ -30,6 +30,7 @@ import { executeBot } from '../fhir/operations/execute';
 import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
 import { getLogger, globalLogger } from '../logger';
+import { recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
@@ -96,8 +97,32 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
       ...config.bullmq,
     }
   );
-  worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
+  worker.on('active', (job) => {
+    // Only record queuedDuration on the first attempt
+    if (job.attemptsMade === 0) {
+      recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - (job.timestamp as number)) / 1000);
+    }
+  });
+  worker.on('completed', (job) => {
+    globalLogger.info(`Completed job ${job.id} successfully`);
+    recordHistogramValue(
+      'medplum.subscription.executionDuration',
+      ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+    );
+    recordHistogramValue(
+      'medplum.subscription.totalDuration',
+      ((job.finishedOn as number) - (job.timestamp as number)) / 1000
+    );
+  });
+  worker.on('failed', (job, err) => {
+    globalLogger.info(`Failed job ${job?.id} with ${err}`);
+    if (job) {
+      recordHistogramValue(
+        'medplum.subscription.failedExecutionDuration',
+        ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+      );
+    }
+  });
 
   return { queue, worker, name: queueName };
 };
@@ -489,10 +514,13 @@ async function sendRestHook(
   const body = interaction === 'delete' ? '{}' : stringify(resource);
   let error: Error | undefined = undefined;
 
+  const fetchStartTime = Date.now();
+  let fetchEndTime: number;
   try {
     log.info('Sending rest hook to: ' + url);
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body });
+    fetchEndTime = Date.now();
     log.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
@@ -507,6 +535,7 @@ async function sendRestHook(
       error = new Error('Received status ' + response.status);
     }
   } catch (ex) {
+    fetchEndTime = Date.now();
     log.info('Subscription exception: ' + ex);
     await createAuditEvent(
       resource,
@@ -517,6 +546,14 @@ async function sendRestHook(
     );
     error = ex as Error;
   }
+
+  const fetchDurationMs = fetchEndTime - fetchStartTime;
+  recordHistogramValue('medplum.subscription.restHookFetchDuration', fetchDurationMs / 1000);
+  log.info('Subscription rest hook fetch duration', {
+    fetchDurationMs,
+    subscription: subscription.id,
+    project: subscription?.meta?.project,
+  });
 
   if (error) {
     throw error;
