@@ -48,10 +48,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
           console.log('Processing consolidated data for patient:', input.patients[0].patientId);
           // Fetch the actual data from the URL
           const response = await fetch(docRef.content[0].attachment.url);
-          const consolidatedData = (await response.json()) as Bundle; // This is a searchset bundle
+          // This is a searchset bundle
+          const consolidatedData = (await response.json()) as Bundle;
 
           const transactionBundle = convertToTransactionBundle(consolidatedData);
           const responseBundle = await medplum.executeBatch(transactionBundle);
+
           // Log only error responses
           const errors = responseBundle.entry
             ?.filter((entry) => {
@@ -85,24 +87,55 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
   return true;
 }
 
+const METRIPORT_IDENTIFIER_SYSTEM = 'https://metriport.com/fhir/identifiers';
+
 export function convertToTransactionBundle(bundle: Bundle): Bundle {
-  const idToFullUrlMap = new Map<string, string>();
+  // Build the ID to fullUrl mapping
+  const idToFullUrlMap: Record<string, string> = {};
   bundle.entry?.forEach((entry) => {
     if (entry.resource?.id && entry.fullUrl) {
-      idToFullUrlMap.set(entry.resource.id, entry.fullUrl);
+      idToFullUrlMap[entry.resource.id] = entry.fullUrl;
     }
   });
 
-  return {
+  const transactionBundle: Bundle = {
     resourceType: 'Bundle',
     type: 'transaction',
     entry:
       bundle.entry?.map((entry) => {
-        const processedResource = processResourceForUpsert(entry.resource, idToFullUrlMap);
-        const originalId = processedResource?.id;
+        const resource = entry.resource;
+        if (!resource) {
+          return entry;
+        }
 
-        if (processedResource) {
-          delete processedResource.id;
+        const originalId = resource.id;
+
+        // Create a deep clone and process the resource
+        const processedResource = JSON.parse(
+          JSON.stringify(resource, (key, value) => referenceReplacer(key, value, idToFullUrlMap))
+        );
+
+        // The id needs to be removed for the Upsert operation
+        delete processedResource.id;
+
+        // Add Metriport identifier
+        const metriportIdentifier = { system: METRIPORT_IDENTIFIER_SYSTEM, value: originalId };
+        processedResource.identifier = processedResource.identifier
+          ? [
+              ...processedResource.identifier.filter(
+                (id: Identifier) => !(id.system === METRIPORT_IDENTIFIER_SYSTEM && id.value === originalId)
+              ),
+              metriportIdentifier,
+            ]
+          : [metriportIdentifier];
+
+        // Handle DocumentReference dates
+        if (processedResource.resourceType === 'DocumentReference' && processedResource.date) {
+          try {
+            processedResource.date = new Date(processedResource.date).toISOString();
+          } catch {
+            delete processedResource.date;
+          }
         }
 
         return {
@@ -110,86 +143,32 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
           resource: processedResource,
           request: {
             method: 'PUT',
-            url: `${processedResource?.resourceType}?identifier=${originalId}`,
+            url: `${resource.resourceType}?identifier=${originalId}`,
           },
         };
       }) || [],
   };
+
+  return transactionBundle;
 }
 
-// Process references and add Metriport identifier
-export function processResourceForUpsert(resource: any, idToFullUrlMap: Map<string, string>): any {
-  if (!resource) {
-    return resource;
-  }
-
-  const METRIPORT_IDENTIFIER_SYSTEM = 'https://metriport.com/fhir/identifiers';
-
-  // Deep clone the resource to avoid modifying the original
-  const clonedResource = JSON.parse(JSON.stringify(resource));
-
-  // Handle DocumentReference date formatting
-  if (clonedResource.resourceType === 'DocumentReference' && clonedResource.date) {
-    try {
-      // Ensure the date is in proper ISO format with timezone
-      const date = new Date(clonedResource.date);
-      clonedResource.date = date.toISOString();
-    } catch (_error) {
-      console.warn('Invalid date format in DocumentReference:', clonedResource.date);
-      delete clonedResource.date;
+function referenceReplacer(key: string, value: string, idToFullUrl: Record<string, string>): string {
+  if (key === 'reference' && typeof value === 'string') {
+    let id;
+    if (value.includes('/')) {
+      id = value.split('/')[1];
+    } else if (value.startsWith('urn:uuid:')) {
+      id = value.slice(9);
+    } else if (value.startsWith('#')) {
+      id = value.slice(1);
     }
-  }
-
-  if (!clonedResource.id) {
-    return clonedResource;
-  }
-
-  const metriportIdentifier = {
-    system: METRIPORT_IDENTIFIER_SYSTEM,
-    value: clonedResource.id,
-  };
-
-  if (!clonedResource.identifier) {
-    clonedResource.identifier = [metriportIdentifier];
-  } else if (Array.isArray(clonedResource.identifier)) {
-    // Check if identifier already exists
-    const exists = clonedResource.identifier.some(
-      (id: Identifier) => id.system === METRIPORT_IDENTIFIER_SYSTEM && id.value === clonedResource.id
-    );
-    if (!exists) {
-      clonedResource.identifier.push(metriportIdentifier);
-    }
-  }
-
-  // Helper function to process references recursively
-  const processReferences = (obj: any): any => {
-    if (!obj || typeof obj !== 'object') {
-      return obj;
-    }
-
-    if (Array.isArray(obj)) {
-      return obj.map((item) => processReferences(item));
-    }
-
-    const processed = { ...obj };
-
-    // Handle reference property if present
-    if ('reference' in obj && typeof obj.reference === 'string') {
-      const [_resourceType, id] = obj.reference.split('/');
-      if (id && idToFullUrlMap.has(id)) {
-        processed.reference = idToFullUrlMap.get(id);
+    if (id) {
+      const fullUrl = idToFullUrl[id];
+      if (fullUrl) {
+        return fullUrl;
       }
-      return processed;
     }
-
-    // Process all properties recursively
-    for (const [key, value] of Object.entries(obj)) {
-      processed[key] = processReferences(value);
-    }
-
-    return processed;
-  };
-
-  // Process the entire resource
-  return processReferences(clonedResource);
+    return value;
+  }
+  return value;
 }
