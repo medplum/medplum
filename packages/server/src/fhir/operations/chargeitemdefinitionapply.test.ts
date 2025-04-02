@@ -511,4 +511,260 @@ describe('ChargeItemDefinition Apply', () => {
     expect(chargeItem.priceOverride?.value).toBe(125);
     expect(chargeItem.priceOverride?.currency).toBe('USD');
   });
+
+  test('Apply ChargeItemDefinition with conditional group applicability', async () => {
+    // 1. Create a patient
+    const patient = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Applicability'], family: 'TestCase' }],
+      });
+    expect(patient.status).toBe(201);
+  
+    // 2. Create an encounter
+    const encounter = await request(app)
+      .post(`/fhir/R4/Encounter`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Encounter',
+        status: 'in-progress',
+        class: {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+          code: 'AMB',
+          display: 'ambulatory',
+        },
+        subject: {
+          reference: `Patient/${patient.body.id}`,
+        },
+      });
+    expect(encounter.status).toBe(201);
+  
+    // 3. Create a ChargeItemDefinition with conditional group applicability
+    const chargeItemDefinitionBody: ChargeItemDefinition = {
+      resourceType: 'ChargeItemDefinition',
+      status: 'active',
+      url: 'http://example.org/fhir/ChargeItemDefinition/conditional-pricing',
+      title: 'Conditional Pricing Model',
+      code: {
+        coding: [
+          {
+            system: 'http://www.ama-assn.org/go/cpt',
+            code: '99214',
+            display: 'Complex office visit',
+          },
+        ],
+      },
+      propertyGroup: [
+        {
+          priceComponent: [
+            {
+              type: 'base',
+              code: {
+                text: 'Standard Service Fee'
+              },
+              amount: {
+                value: 100,
+                currency: 'USD',
+              },
+            },
+          ],
+        },
+        {
+          applicability: [
+            {
+              description: 'Applies if status is draft',
+              expression: "%resource.status = 'draft'"
+            }
+          ],
+          priceComponent: [
+            {
+              type: 'surcharge',
+              code: {
+                text: 'Draft Status Fee'
+              },
+              amount: {
+                value: 25,
+                currency: 'USD',
+              },
+            },
+          ],
+        },
+        {
+          applicability: [
+            {
+              description: 'Applies if status is active',
+              expression: "%resource.status = 'active'"
+            }
+          ],
+          priceComponent: [
+            {
+              type: 'surcharge',
+              code: {
+                text: 'Active Status Fee'
+              },
+              amount: {
+                value: 50,
+                currency: 'USD',
+              },
+            },
+          ],
+        },
+        {
+          applicability: [
+            {
+              description: 'Applies if date is after 2023',
+              expression: "%resource.occurrenceDateTime.substring(0, 4).toInteger() >= 2023"
+            }
+          ],
+          priceComponent: [
+            {
+              type: 'surcharge',
+              code: {
+                text: 'Current Year Fee'
+              },
+              amount: {
+                value: 15,
+                currency: 'USD',
+              },
+            },
+          ],
+        }
+      ],
+    };
+    
+    const chargeItemDefinition = await request(app)
+      .post(`/fhir/R4/ChargeItemDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(chargeItemDefinitionBody);
+    expect(chargeItemDefinition.status).toBe(201);
+  
+    // 4. Create a draft ChargeItem
+    const draftChargeItem = await request(app)
+      .post(`/fhir/R4/ChargeItem`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ChargeItem',
+        status: 'draft',
+        subject: {
+          reference: `Patient/${patient.body.id}`,
+        },
+        context: {
+          reference: `Encounter/${encounter.body.id}`,
+        },
+        occurrenceDateTime: '2023-03-15T14:00:00Z',
+        performingOrganization: {
+          reference: 'Organization/example',
+        },
+        code: {
+          coding: [
+            {
+              system: 'http://www.ama-assn.org/go/cpt',
+              code: '99214',
+              display: 'Complex office visit',
+            },
+          ],
+        },
+      });
+    expect(draftChargeItem.status).toBe(201);
+  
+    // 5. Apply the ChargeItemDefinition to the draft ChargeItem
+    const applyResult = await request(app)
+      .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'chargeItem',
+            valueReference: {
+              reference: `ChargeItem/${draftChargeItem.body.id}`,
+            },
+          },
+        ],
+      });
+  
+    // 6. Verify the result
+    console.log(JSON.stringify(applyResult.body, null, 2));
+    expect(applyResult.status).toBe(200);
+    const chargeItem = applyResult.body as ChargeItem;
+    expect(chargeItem.resourceType).toBe('ChargeItem');
+    expect(chargeItem.id).toBe(draftChargeItem.body.id);
+  
+    // 7. Verify selective application of property groups
+    // Base price: $100
+    // Draft Status Fee should apply: $25
+    // Active Status Fee should NOT apply (condition evaluates to false)
+    // Current Year Fee should apply: $15
+    // Expected final price: $100 + $25 + $15 = $140
+    expect(chargeItem.priceOverride).toBeDefined();
+    expect(chargeItem.priceOverride?.value).toBe(140);
+    expect(chargeItem.priceOverride?.currency).toBe('USD');
+  
+    // 8. Now create an "active" status ChargeItem which should get different modifiers
+    const activeChargeItem = await request(app)
+      .post(`/fhir/R4/ChargeItem`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ChargeItem',
+        status: 'active', // Should match the second conditional group
+        subject: {
+          reference: `Patient/${patient.body.id}`,
+        },
+        context: {
+          reference: `Encounter/${encounter.body.id}`,
+        },
+        occurrenceDateTime: '2023-03-15T14:00:00Z', // Should match the date condition
+        performingOrganization: {
+          reference: 'Organization/example',
+        },
+        code: {
+          coding: [
+            {
+              system: 'http://www.ama-assn.org/go/cpt',
+              code: '99214',
+              display: 'Complex office visit',
+            },
+          ],
+        },
+      });
+    expect(activeChargeItem.status).toBe(201);
+  
+    // 9. Apply the ChargeItemDefinition to the active ChargeItem
+    const activeApplyResult = await request(app)
+      .post(`/fhir/R4/ChargeItemDefinition/${chargeItemDefinition.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'chargeItem',
+            valueReference: {
+              reference: `ChargeItem/${activeChargeItem.body.id}`,
+            },
+          },
+        ],
+      });
+  
+    // 10. Verify different property groups were applied
+    expect(activeApplyResult.status).toBe(200);
+    const activeChargeItemResult = activeApplyResult.body as ChargeItem;
+    
+    // Base price: $100
+    // Draft Status Fee should NOT apply (condition evaluates to false)
+    // Active Status Fee should apply: $50
+    // Current Year Fee should apply: $15
+    // Expected final price: $100 + $50 + $15 = $165
+    expect(activeChargeItemResult.priceOverride).toBeDefined();
+    expect(activeChargeItemResult.priceOverride?.value).toBe(165);
+    expect(activeChargeItemResult.priceOverride?.currency).toBe('USD');
+  });
 });
