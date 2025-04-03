@@ -101,7 +101,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
           <Grid.Col span={7}>
             <Text size="sm" c="dimmed" pt={12}>
               Price calculated from Price chart, taking into account applied modifiers and patient's selected insurance
-              plan.{' '}
+              plan.
             </Text>
           </Grid.Col>
           <Grid.Col span={5}>
