@@ -163,7 +163,7 @@ export const EncounterChart = (): JSX.Element => {
                       {
                         name: 'chargeItem',
                         valueReference: {
-                          reference: `ChargeItem/${chargeItem.id}`,
+                          reference: getReferenceString(chargeItem),
                         },
                       },
                     ],
@@ -172,7 +172,6 @@ export const EncounterChart = (): JSX.Element => {
                 
                 if (applyResult) {
                   const updatedChargeItem = applyResult as ChargeItem;
-                  console.log('updatedChargeItem', updatedChargeItem);
                   updatedItems[index] = updatedChargeItem;
                   hasUpdates = true;
                 }
