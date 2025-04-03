@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { shutdownApp } from './app';
 import { main } from './index';
+import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 
 jest.mock('express', () => {
   const original = jest.requireActual('express');
@@ -18,13 +19,22 @@ jest.mock('express', () => {
   return fn;
 });
 
+// to appease jest, the name must start with "mock"
+const mockQueries = {
+  GetVersionSql,
+  GetDataVersionSql,
+};
+
 jest.mock('pg', () => {
   const original = jest.requireActual('pg');
 
   class MockPoolClient {
     async query(sql: string): Promise<any> {
-      if (sql === 'SELECT "version" FROM "DatabaseMigration"') {
+      if (sql === mockQueries.GetVersionSql) {
         return { rows: [{ version: 1000000 }] };
+      }
+      if (sql === mockQueries.GetDataVersionSql) {
+        return { rows: [{ dataVersion: 1 }] };
       }
       if (sql.startsWith('SELECT "User"."id"')) {
         return { rows: [{ id: '1', content: '{}' }] };

@@ -20,6 +20,7 @@ import {
   Observation,
   OperationOutcome,
   Patient,
+  PatientLink,
   Practitioner,
   Project,
   ProjectMembership,
@@ -1298,10 +1299,14 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         link: [],
       };
+
+      const link: PatientLink = { type: 'seealso', other: { reference: 'Patient/to-be-overwritten-in-loop' } };
+
       // Postgres uses a 16-bit counter for placeholder formats internally,
       // so 2^16 + 1 = 64k + 1 will definitely overflow it if not sent in smaller batches
       for (let i = 0; i < 64 * 1024 + 1; i++) {
-        patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
+        link.other.reference = 'Patient/' + randomUUID();
+        patient.link?.push(link);
       }
 
       await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();

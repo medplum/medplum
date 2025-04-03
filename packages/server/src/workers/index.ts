@@ -2,11 +2,13 @@ import { BackgroundJobContext, WithId } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
-import { closeBatchWorker, initBatchWorker } from './batch';
-import { addCronJobs, closeCronWorker, initCronWorker } from './cron';
-import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
-import { closeReindexWorker, initReindexWorker } from './reindex';
-import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
+import { initBatchWorker } from './batch';
+import { addCronJobs, initCronWorker } from './cron';
+import { addDownloadJobs, initDownloadWorker } from './download';
+import { initPostDeployMigrationWorker } from './post-deploy-migration';
+import { initReindexWorker } from './reindex';
+import { addSubscriptionJobs, initSubscriptionWorker } from './subscription';
+import { queueRegistry, WorkerInitializer } from './utils';
 
 /**
  * Initializes all background workers.
@@ -14,11 +16,19 @@ import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } 
  */
 export function initWorkers(config: MedplumServerConfig): void {
   globalLogger.debug('Initializing workers...');
-  initSubscriptionWorker(config);
-  initDownloadWorker(config);
-  initCronWorker(config);
-  initReindexWorker(config);
-  initBatchWorker(config);
+  const initializers: WorkerInitializer[] = [
+    initSubscriptionWorker,
+    initDownloadWorker,
+    initCronWorker,
+    initReindexWorker,
+    initBatchWorker,
+    initPostDeployMigrationWorker,
+  ];
+
+  for (const initializer of initializers) {
+    const { name, queue, worker } = initializer(config);
+    queueRegistry.add(name, queue, worker);
+  }
   globalLogger.debug('Workers initialized');
 }
 
@@ -26,11 +36,7 @@ export function initWorkers(config: MedplumServerConfig): void {
  * Shuts down all background workers.
  */
 export async function closeWorkers(): Promise<void> {
-  await closeSubscriptionWorker();
-  await closeDownloadWorker();
-  await closeCronWorker();
-  await closeReindexWorker();
-  await closeBatchWorker();
+  await Promise.all(queueRegistry.closeAll());
 }
 
 /**

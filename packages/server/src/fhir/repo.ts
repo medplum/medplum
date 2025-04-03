@@ -790,7 +790,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async validateResourceStrictly(resource: Resource): Promise<void> {
     const logger = getLogger();
-    const start = Date.now();
+    const start = process.hrtime.bigint();
 
     const issues = validateResource(resource);
     for (const issue of issues) {
@@ -802,7 +802,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.validateProfiles(resource, profileUrls);
     }
 
-    const durationMs = Date.now() - start;
+    const durationMs = Number(process.hrtime.bigint() - start) / 1e6; // Convert nanoseconds to milliseconds
+    recordHistogramValue('medplum.server.validationDurationMs', durationMs, { options: { unit: 'ms' } });
     if (durationMs > 10) {
       logger.debug('High validator latency', {
         resourceType: resource.resourceType,
@@ -1148,6 +1149,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
+    if (ids.length === 0) {
+      return;
+    }
     await this.withTransaction(async (client) => {
       for (const id of ids) {
         await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
@@ -1363,9 +1367,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
+      const startTime = process.hrtime.bigint();
       for (const searchParam of Object.values(searchParams)) {
         this.buildColumn(resource, row, searchParam);
       }
+      recordHistogramValue(
+        'medplum.server.indexingDurationMs',
+        Number(process.hrtime.bigint() - startTime) / 1e6, // High resolution time, converted from ns to ms
+        {
+          options: { unit: 'ms' },
+        }
+      );
     }
     return row;
   }

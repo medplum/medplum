@@ -97,6 +97,23 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
             updateModifierExtension(value);
           }}
         />
+        <Grid columns={12} mt="md">
+          <Grid.Col span={7}>
+            <Text size="sm" c="dimmed" pt={12}>
+              Price calculated from Price chart, taking into account applied modifiers and patient's selected insurance
+              plan.
+            </Text>
+          </Grid.Col>
+          <Grid.Col span={5}>
+            <Text size="sm" fw={500} mb={8}>
+              Calculated Price
+            </Text>
+            <TextInput
+              value={chargeItem.priceOverride?.value ? `$${chargeItem.priceOverride.value.toFixed(2)}` : 'N/A'}
+              readOnly
+            />
+          </Grid.Col>
+        </Grid>
       </Stack>
     </Card>
   );

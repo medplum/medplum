@@ -234,6 +234,14 @@ describe('SearchParameterDetails', () => {
     expect(details.type).toStrictEqual(SearchParameterType.TEXT);
   });
 
+  test('CodeSystem-context', () => {
+    const searchParam = searchParams.find((e) => e.id === 'conformance-context') as SearchParameter;
+    const details = getSearchParameterDetails('CodeSystem', searchParam);
+    expect(details).toBeDefined();
+    expect(details.elementDefinitions).toBeDefined();
+    expect(details.elementDefinitions?.length).toBe(1);
+  });
+
   test('Everything', () => {
     // Make sure that getSearchParameterDetails returns successfully for all known parameters.
     for (const resourceType of Object.keys(globalSchema.types)) {
