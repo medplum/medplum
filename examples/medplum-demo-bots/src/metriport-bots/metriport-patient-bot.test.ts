@@ -11,7 +11,7 @@ import {
   ValidatedPatientData,
   validatePatientResource,
 } from './metriport-patient-bot';
-import { JaneSmithMedplumPatient, JaneSmithMetriportPatient } from './metriport-patient-bot-test-data';
+import { JaneSmithMedplumPatient, JaneSmithMetriportPatient } from './metriport-test-data';
 
 vi.mock('@metriport/api-sdk', () => ({
   MetriportMedicalApi: vi.fn(),

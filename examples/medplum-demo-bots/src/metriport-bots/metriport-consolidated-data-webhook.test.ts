@@ -4,7 +4,7 @@ import { Bundle, Encounter, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 
 import { convertToTransactionBundle, handler } from './metriport-consolidated-data-webhook';
-import { MetriportConsolidatedDataBundle } from './metriport-patient-bot-test-data';
+import { MetriportConsolidatedDataBundle } from './metriport-test-data';
 
 describe('Metriport Consolidated Data Webhook', () => {
   const bot = { reference: 'Bot/123' };
