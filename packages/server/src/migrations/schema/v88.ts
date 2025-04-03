@@ -27,6 +27,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ActivityDefinition" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ActivityDefinition" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ActivityDefinition" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ActivityDefinition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ActivityDefinition" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ActivityDefinition" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ActivityDefinition" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -151,6 +152,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CapabilityStatement" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CapabilityStatement" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CapabilityStatement" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CapabilityStatement" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CapabilityStatement" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CapabilityStatement" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CapabilityStatement" ADD COLUMN IF NOT EXISTS "securityServiceSort" TEXT');
@@ -216,6 +218,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ChargeItemDefinition" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ChargeItemDefinition" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ChargeItemDefinition" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ChargeItemDefinition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ChargeItemDefinition" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ChargeItemDefinition" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ChargeItemDefinition" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -269,6 +272,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CodeSystem" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CodeSystem" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CodeSystem" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CodeSystem" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CodeSystem" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CodeSystem" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CodeSystem" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
@@ -312,6 +316,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CompartmentDefinition" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CompartmentDefinition" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CompartmentDefinition" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CompartmentDefinition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CompartmentDefinition" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "CompartmentDefinition" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Composition" ADD COLUMN IF NOT EXISTS "tokens" TEXT[]');
@@ -322,6 +327,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Composition" ADD COLUMN IF NOT EXISTS "typeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Composition" ADD COLUMN IF NOT EXISTS "categorySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Composition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Composition" ADD COLUMN IF NOT EXISTS "relatedIdSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Composition" ADD COLUMN IF NOT EXISTS "sectionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Composition" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Composition" ADD COLUMN IF NOT EXISTS "patientIdentifierSort" TEXT');
@@ -335,6 +341,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ConceptMap" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ConceptMap" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ConceptMap" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ConceptMap" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ConceptMap" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ConceptMap" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ConceptMap" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
@@ -466,6 +473,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "DeviceRequest" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "DeviceRequest" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "DeviceRequest" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "DeviceRequest" ADD COLUMN IF NOT EXISTS "codeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "DeviceRequest" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "DeviceRequest" ADD COLUMN IF NOT EXISTS "groupIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "DeviceRequest" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
@@ -546,6 +554,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EffectEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EffectEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EffectEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EffectEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EffectEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EffectEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EffectEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -615,6 +624,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EventDefinition" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EventDefinition" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EventDefinition" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EventDefinition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EventDefinition" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EventDefinition" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EventDefinition" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -629,6 +639,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Evidence" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Evidence" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Evidence" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Evidence" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Evidence" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Evidence" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Evidence" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -643,6 +654,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EvidenceVariable" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EvidenceVariable" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EvidenceVariable" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EvidenceVariable" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EvidenceVariable" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EvidenceVariable" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "EvidenceVariable" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -658,6 +670,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ExampleScenario" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ExampleScenario" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ExampleScenario" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ExampleScenario" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ExampleScenario" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ExampleScenario" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ExampleScenario" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -718,6 +731,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "GraphDefinition" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "GraphDefinition" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "GraphDefinition" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "GraphDefinition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "GraphDefinition" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "GraphDefinition" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "GraphDefinition" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
@@ -728,6 +742,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Group" ADD COLUMN IF NOT EXISTS "characteristicSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Group" ADD COLUMN IF NOT EXISTS "codeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Group" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Group" ADD COLUMN IF NOT EXISTS "valueSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Group" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Group" ADD COLUMN IF NOT EXISTS "managingEntityIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Group" ADD COLUMN IF NOT EXISTS "memberIdentifierSort" TEXT');
@@ -815,6 +830,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ImplementationGuide" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ImplementationGuide" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ImplementationGuide" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ImplementationGuide" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ImplementationGuide" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ImplementationGuide" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ImplementationGuide" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
@@ -849,6 +865,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Library" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Library" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Library" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Library" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Library" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Library" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Library" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -897,6 +914,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Measure" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Measure" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Measure" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Measure" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Measure" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Measure" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Measure" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -941,6 +959,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Medication" ADD COLUMN IF NOT EXISTS "codeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Medication" ADD COLUMN IF NOT EXISTS "formSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Medication" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Medication" ADD COLUMN IF NOT EXISTS "ingredientCodeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Medication" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Medication" ADD COLUMN IF NOT EXISTS "ingredientIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Medication" ADD COLUMN IF NOT EXISTS "manufacturerIdentifierSort" TEXT');
@@ -948,6 +967,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationAdministration" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationAdministration" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationAdministration" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationAdministration" ADD COLUMN IF NOT EXISTS "codeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationAdministration" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationAdministration" ADD COLUMN IF NOT EXISTS "reasonGivenSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationAdministration" ADD COLUMN IF NOT EXISTS "reasonNotGivenSort" TEXT');
@@ -963,6 +983,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationDispense" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationDispense" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationDispense" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationDispense" ADD COLUMN IF NOT EXISTS "codeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationDispense" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationDispense" ADD COLUMN IF NOT EXISTS "typeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationDispense" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
@@ -983,6 +1004,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationKnowledge" ADD COLUMN IF NOT EXISTS "classificationTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationKnowledge" ADD COLUMN IF NOT EXISTS "codeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationKnowledge" ADD COLUMN IF NOT EXISTS "doseformSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationKnowledge" ADD COLUMN IF NOT EXISTS "ingredientCodeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationKnowledge" ADD COLUMN IF NOT EXISTS "monitoringProgramTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationKnowledge" ADD COLUMN IF NOT EXISTS "monographTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationKnowledge" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
@@ -993,6 +1015,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationRequest" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationRequest" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationRequest" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationRequest" ADD COLUMN IF NOT EXISTS "codeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationRequest" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationRequest" ADD COLUMN IF NOT EXISTS "categorySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationRequest" ADD COLUMN IF NOT EXISTS "intendedPerformertypeSort" TEXT');
@@ -1008,6 +1031,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationStatement" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationStatement" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationStatement" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationStatement" ADD COLUMN IF NOT EXISTS "codeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationStatement" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationStatement" ADD COLUMN IF NOT EXISTS "categorySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MedicationStatement" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
@@ -1087,6 +1111,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MessageDefinition" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MessageDefinition" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MessageDefinition" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MessageDefinition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MessageDefinition" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MessageDefinition" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "MessageDefinition" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
@@ -1119,6 +1144,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "NamingSystem" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "NamingSystem" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "NamingSystem" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "NamingSystem" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "NamingSystem" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "NamingSystem" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "NamingSystem" ADD COLUMN IF NOT EXISTS "telecomSort" TEXT');
@@ -1147,10 +1173,13 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "categorySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "comboCodeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "comboDataAbsentReasonSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "comboValueConceptSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "componentCodeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "componentDataAbsentReasonSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "componentValueConceptSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "dataAbsentReasonSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "methodSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "valueConceptSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "patientIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Observation" ADD COLUMN IF NOT EXISTS "encounterIdentifierSort" TEXT');
@@ -1174,6 +1203,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "OperationDefinition" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "OperationDefinition" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "OperationDefinition" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "OperationDefinition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "OperationDefinition" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "OperationDefinition" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "OperationDefinition" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
@@ -1266,6 +1296,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "PlanDefinition" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "PlanDefinition" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "PlanDefinition" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "PlanDefinition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "PlanDefinition" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "PlanDefinition" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "PlanDefinition" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -1340,6 +1371,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Questionnaire" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Questionnaire" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Questionnaire" ADD COLUMN IF NOT EXISTS "codeSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Questionnaire" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Questionnaire" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Questionnaire" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Questionnaire" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -1387,6 +1419,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchDefinition" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchDefinition" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchDefinition" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchDefinition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchDefinition" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchDefinition" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchDefinition" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -1401,6 +1434,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchElementDefinition" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchElementDefinition" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchElementDefinition" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchElementDefinition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchElementDefinition" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchElementDefinition" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ResearchElementDefinition" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -1461,6 +1495,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "RiskEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "RiskEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "RiskEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "RiskEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "RiskEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "RiskEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "RiskEvidenceSynthesis" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -1479,6 +1514,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "SearchParameter" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "SearchParameter" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "SearchParameter" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "SearchParameter" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "SearchParameter" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "SearchParameter" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "SearchParameter" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
@@ -1542,6 +1578,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureDefinition" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureDefinition" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureDefinition" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureDefinition" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureDefinition" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureDefinition" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureDefinition" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
@@ -1553,6 +1590,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureMap" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureMap" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureMap" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureMap" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureMap" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureMap" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "StructureMap" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
@@ -1651,6 +1689,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TerminologyCapabilities" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TerminologyCapabilities" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TerminologyCapabilities" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TerminologyCapabilities" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TerminologyCapabilities" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TerminologyCapabilities" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TerminologyCapabilities" ADD COLUMN IF NOT EXISTS "_compartmentIdentifierSort" TEXT');
@@ -1665,6 +1704,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TestScript" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TestScript" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TestScript" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TestScript" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TestScript" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TestScript" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "TestScript" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
@@ -1673,6 +1713,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ValueSet" ADD COLUMN IF NOT EXISTS "tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ValueSet" ADD COLUMN IF NOT EXISTS "_securitySort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ValueSet" ADD COLUMN IF NOT EXISTS "_tagSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ValueSet" ADD COLUMN IF NOT EXISTS "contextSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ValueSet" ADD COLUMN IF NOT EXISTS "contextTypeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ValueSet" ADD COLUMN IF NOT EXISTS "jurisdictionSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "ValueSet" ADD COLUMN IF NOT EXISTS "identifierSort" TEXT');

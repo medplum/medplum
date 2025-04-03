@@ -29,6 +29,7 @@ import {
   quotedColumnName,
   splitIndexColumnNames,
 } from './migrate-utils';
+import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
 let DRY_RUN = false;
@@ -467,7 +468,11 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       continue;
     }
 
-    for (const column of getSearchParameterColumns(impl)) {
+    const legacyColumnImpl = isLegacyTokenColumnSearchParameter(searchParam, resourceType)
+      ? getSearchParameterImplementation(resourceType, searchParam, true)
+      : undefined;
+
+    for (const column of getSearchParameterColumns(impl, legacyColumnImpl)) {
       const existing = tableDefinition.columns.find((c) => c.name === column.name);
       if (existing) {
         if (!columnDefinitionsEqual(existing, column)) {
@@ -479,7 +484,8 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       }
       tableDefinition.columns.push(column);
     }
-    for (const index of getSearchParameterIndexes(impl)) {
+
+    for (const index of getSearchParameterIndexes(impl, legacyColumnImpl)) {
       const existing = tableDefinition.indexes.find((i) => indexDefinitionsEqual(i, index));
       if (existing) {
         continue;
@@ -498,19 +504,25 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
 }
 
 function getSearchParameterColumns(
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
+  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation,
+  legacyColumnImpl?: ColumnSearchParameterImplementation
 ): ColumnDefinition[] {
   switch (impl.searchStrategy) {
-    case 'token-column':
+    case 'token-column': {
       if (impl.type !== SearchParameterType.TEXT) {
         throw new Error('Expected SearchParameterDetails.type to be TEXT but got ' + impl.type);
       }
-      return [
+      const columns = [
         { name: impl.columnName, type: 'TEXT[]' },
         { name: impl.textSearchColumnName, type: 'TEXT[]' },
         { name: impl.sortColumnName, type: 'TEXT' },
       ];
 
+      if (legacyColumnImpl) {
+        columns.push(getColumnDefinition(legacyColumnImpl.columnName, legacyColumnImpl));
+      }
+      return columns;
+    }
     case 'column':
       return [getColumnDefinition(impl.columnName, impl)];
     default:
@@ -519,11 +531,12 @@ function getSearchParameterColumns(
 }
 
 function getSearchParameterIndexes(
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
+  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation,
+  legacyColumnImpl?: ColumnSearchParameterImplementation
 ): IndexDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
-      return [
+      const columns: IndexDefinition[] = [
         { columns: [impl.columnName], indexType: 'gin' },
         {
           columns: [
@@ -535,6 +548,11 @@ function getSearchParameterIndexes(
           indexType: 'gin',
         },
       ];
+
+      if (legacyColumnImpl) {
+        columns.push({ columns: [legacyColumnImpl.columnName], indexType: legacyColumnImpl.array ? 'gin' : 'btree' });
+      }
+      return columns;
     }
     case 'column':
       return [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];

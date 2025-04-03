@@ -105,7 +105,15 @@ function buildSearchParameterImplementation(
   forceColumnImplementation?: boolean
 ): SearchParameterImplementation {
   const code = searchParam.code;
-  const impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
+  let impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
+
+  if (forceColumnImplementation) {
+    impl = {
+      type: impl.type,
+      elementDefinitions: impl.elementDefinitions,
+      array: impl.array,
+    } as SearchParameterImplementation;
+  }
 
   if (!searchParam.base?.includes(resourceType as ResourceType)) {
     throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
