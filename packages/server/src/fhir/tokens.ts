@@ -10,6 +10,11 @@ import {
 } from '@medplum/core';
 import { CodeableConcept, Coding, ContactPoint, Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
 
+export const TokenColumnsFeature = {
+  write: true,
+  read: false,
+};
+
 export interface Token {
   readonly code: string;
   readonly system: string | undefined;
@@ -30,11 +35,11 @@ export type TokenIndexType = (typeof TokenIndexTypes)[keyof typeof TokenIndexTyp
  * @returns A `TokenIndexTypes` value if the search parameter is of a type including both a system and value, undefined otherwise.
  */
 export function getTokenIndexType(searchParam: SearchParameter, resourceType: string): TokenIndexType | undefined {
-  if (legacyTokenColumnSearchParamResourceTypeAndCodes.has(`${resourceType}|${searchParam.code}`)) {
-    // This is a legacy search parameter that should be indexed as a column
-    // instead of a lookup table.
-    return undefined;
-  }
+  // if (isLegacyTokenColumnSearchParameter(searchParam, resourceType)) {
+  //   // This is a legacy search parameter that should be indexed as a column
+  //   // instead of a lookup table.
+  //   return undefined;
+  // }
 
   if (searchParam.type !== 'token') {
     return undefined;
@@ -330,3 +335,7 @@ const legacyTokenColumnSearchParamResourceTypeAndCodes = new Set([
   'TestScript|context',
   'ValueSet|context',
 ]);
+
+export function isLegacyTokenColumnSearchParameter(searchParam: SearchParameter, resourceType: string): boolean {
+  return legacyTokenColumnSearchParamResourceTypeAndCodes.has(`${resourceType}|${searchParam.code}`);
+}

@@ -1,11 +1,12 @@
-import { createReference, getReferenceString, Operator, SNOMED } from '@medplum/core';
-import { Bundle, Condition, Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, getSearchParameter, Operator, SNOMED, WithId } from '@medplum/core';
+import { Bundle, Condition, MedicationRequest, Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
-import { TokenColumnsFeature } from './token-column';
+import { getSearchParameterImplementation } from './searchparameter';
+import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
 
 describe.each(['token columns', 'lookup table'])('Token searching using %s', (tokenColumnsOrLookupTable) => {
   const systemRepo = getSystemRepo();
@@ -1111,6 +1112,146 @@ describe.each(['token columns', 'lookup table'])('Token searching using %s', (to
         ],
       });
       expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected);
+    });
+  });
+  describe('MedicationRequest.code legacy behavior', () => {
+    let repo: Repository;
+    let patient: WithId<Patient>;
+    let mr1: WithId<MedicationRequest>;
+    let mr2: WithId<MedicationRequest>;
+    const sys1 = 'http://sys.one';
+
+    const val1 = 'ABCDEFGHIJ';
+    const val2 = 'ZZZZZZZZZZ';
+
+    beforeAll(async () => {
+      const { project } = await createTestProject();
+      repo = new Repository({
+        strictMode: true,
+        projects: [project.id],
+        author: { reference: 'User/' + randomUUID() },
+      });
+
+      patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Henry'] }] });
+      mr1 = await repo.createResource<MedicationRequest>({
+        resourceType: 'MedicationRequest',
+        status: 'active',
+        intent: 'order',
+        subject: createReference(patient),
+        medicationCodeableConcept: { coding: [{ system: sys1, code: val1 }] },
+      });
+      mr2 = await repo.createResource<MedicationRequest>({
+        resourceType: 'MedicationRequest',
+        status: 'active',
+        intent: 'order',
+        subject: createReference(patient),
+        medicationCodeableConcept: { coding: [{ system: sys1, code: val2 }] },
+      });
+    });
+
+    test('Uses legacy column implementation when NOT using token columns', async () => {
+      const searchParam = getSearchParameter('MedicationRequest', 'code');
+      if (!searchParam) {
+        throw new Error('Could not find MedicationRequest-code search parameter');
+      }
+
+      const impl = getSearchParameterImplementation('MedicationRequest', searchParam);
+      expect(impl.searchStrategy).toBe('token-column');
+      expect(isLegacyTokenColumnSearchParameter(searchParam, 'MedicationRequest')).toBe(true);
+    });
+
+    test('Search by system only works when using token columns', async () => {
+      const searchResult = await repo.search<MedicationRequest>({
+        resourceType: 'MedicationRequest',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: sys1 + '|',
+          },
+        ],
+      });
+      if (tokenColumnsOrLookupTable === 'token columns') {
+        expect(searchResult.entry?.length).toStrictEqual(2);
+        expect(searchResult.entry?.map((e) => e.resource?.id)).toContain(mr1.id);
+        expect(searchResult.entry?.map((e) => e.resource?.id)).toContain(mr2.id);
+      } else {
+        expect(searchResult.entry?.length).toStrictEqual(0);
+      }
+    });
+
+    test('Search by value always works', async () => {
+      const searchResult = await repo.search({
+        resourceType: 'MedicationRequest',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: val1,
+          },
+        ],
+      });
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(mr1.id);
+    });
+
+    test('Search by system and value only works when using token columns', async () => {
+      const searchResult = await repo.search({
+        resourceType: 'MedicationRequest',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: sys1 + '|' + val1,
+          },
+        ],
+      });
+      if (tokenColumnsOrLookupTable === 'token columns') {
+        expect(searchResult.entry?.length).toStrictEqual(1);
+        expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(mr1.id);
+      } else {
+        expect(searchResult.entry?.length).toStrictEqual(0);
+      }
+    });
+
+    test('Sort by code always works', async () => {
+      const ascResult = await repo.search<MedicationRequest>({
+        resourceType: 'MedicationRequest',
+        filters: [
+          {
+            code: 'patient',
+            operator: Operator.EQUALS,
+            value: patient.id,
+          },
+        ],
+        sortRules: [{ code: 'code', descending: false }],
+      });
+      expect(ascResult.entry?.length).toStrictEqual(2);
+      expect(ascResult.entry?.map((e) => e.resource?.id)).toContain(mr1.id);
+      expect(ascResult.entry?.map((e) => e.resource?.id)).toContain(mr2.id);
+      expect(ascResult.entry?.map((e) => e.resource?.medicationCodeableConcept?.coding?.[0]?.code)).toStrictEqual([
+        'ABCDEFGHIJ',
+        'ZZZZZZZZZZ',
+      ]);
+
+      const descResult = await repo.search<MedicationRequest>({
+        resourceType: 'MedicationRequest',
+        filters: [
+          {
+            code: 'patient',
+            operator: Operator.EQUALS,
+            value: patient.id,
+          },
+        ],
+        sortRules: [{ code: 'code', descending: true }],
+      });
+      expect(descResult.entry?.length).toStrictEqual(2);
+      expect(descResult.entry?.map((e) => e.resource?.id)).toContain(mr1.id);
+      expect(descResult.entry?.map((e) => e.resource?.id)).toContain(mr2.id);
+      expect(descResult.entry?.map((e) => e.resource?.medicationCodeableConcept?.coding?.[0]?.code)).toStrictEqual([
+        'ZZZZZZZZZZ',
+        'ABCDEFGHIJ',
+      ]);
     });
   });
 });

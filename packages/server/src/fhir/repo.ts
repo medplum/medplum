@@ -112,7 +112,8 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
-import { TokenColumnsFeature, buildTokenColumns } from './token-column';
+import { buildTokenColumns } from './token-column';
+import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -1512,21 +1513,31 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const values = evalFhirPath(searchParam.expression as string, resource);
 
+    let columnImpl: ColumnSearchParameterImplementation | undefined;
     if (impl.searchStrategy === 'token-column') {
       if (TokenColumnsFeature.write) {
         buildTokenColumns(searchParam, impl, columns, resource);
       }
+
+      if (isLegacyTokenColumnSearchParameter(searchParam, resource.resourceType)) {
+        // This is a legacy search parameter that should be indexed as a regular string column as well
+        columnImpl = getSearchParameterImplementation(resource.resourceType, searchParam, true);
+      }
     } else {
       impl satisfies ColumnSearchParameterImplementation;
+      columnImpl = impl;
+    }
+
+    if (columnImpl) {
       let columnValue = null;
       if (values.length > 0) {
-        if (impl.array) {
-          columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
+        if (columnImpl.array) {
+          columnValue = values.map((v) => this.buildColumnValue(searchParam, columnImpl, v));
         } else {
-          columnValue = this.buildColumnValue(searchParam, impl, values[0]);
+          columnValue = this.buildColumnValue(searchParam, columnImpl, values[0]);
         }
       }
-      columns[impl.columnName] = columnValue;
+      columns[columnImpl.columnName] = columnValue;
     }
 
     // Handle special case for "MeasureReport-period"

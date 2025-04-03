@@ -52,8 +52,21 @@ export const globalSearchParameterRegistry: IndexedSearchParameters = { types: {
 
 export function getSearchParameterImplementation(
   resourceType: string,
+  searchParam: SearchParameter,
+  forceColumnImplementation: true
+): ColumnSearchParameterImplementation;
+export function getSearchParameterImplementation(
+  resourceType: string,
   searchParam: SearchParameter
+): SearchParameterImplementation;
+export function getSearchParameterImplementation(
+  resourceType: string,
+  searchParam: SearchParameter,
+  forceColumnImplementation?: boolean
 ): SearchParameterImplementation {
+  if (forceColumnImplementation) {
+    return buildSearchParameterImplementation(resourceType, searchParam, true);
+  }
   let result: SearchParameterImplementation | undefined =
     globalSearchParameterRegistry.types[resourceType]?.searchParamsImplementations?.[searchParam.code as string];
   if (!result) {
@@ -88,7 +101,8 @@ const ContainsSupportSearchParameterIds = [
 
 function buildSearchParameterImplementation(
   resourceType: string,
-  searchParam: SearchParameter
+  searchParam: SearchParameter,
+  forceColumnImplementation?: boolean
 ): SearchParameterImplementation {
   const code = searchParam.code;
   const impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
@@ -97,7 +111,7 @@ function buildSearchParameterImplementation(
     throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
   }
 
-  const lookupTable = getLookupTable(resourceType, searchParam);
+  const lookupTable = forceColumnImplementation ? undefined : getLookupTable(resourceType, searchParam);
   if (lookupTable === tokenTable) {
     const writeable = impl as Writeable<TokenColumnSearchParameterImplementation>;
     writeable.searchStrategy = 'token-column';

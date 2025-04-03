@@ -53,12 +53,12 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
+import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { clampEstimateCount } from './search';
-import { DatabaseMode } from '../database';
 import { SelectQuery } from './sql';
-import { TokenColumnsFeature } from './token-column';
+import { TokenColumnsFeature } from './tokens';
 
 jest.mock('hibp');
 

@@ -67,7 +67,8 @@ import {
   Union,
   ValuesQuery,
 } from './sql';
-import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter, TokenColumnsFeature } from './token-column';
+import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-column';
+import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -958,6 +959,10 @@ function buildSearchFilterExpression(
   if (TokenColumnsFeature.read && impl.searchStrategy === 'token-column') {
     return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
   } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
+    if (isLegacyTokenColumnSearchParameter(param, resourceType)) {
+      const columnImpl = getSearchParameterImplementation(resourceType, param, true);
+      return buildNormalSearchFilterExpression(resourceType, table, param, columnImpl, filter);
+    }
     return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
   }
 
@@ -1383,7 +1388,12 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
   if (TokenColumnsFeature.read && impl.searchStrategy === 'token-column') {
     addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
   } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
-    impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
+    if (isLegacyTokenColumnSearchParameter(param, resourceType)) {
+      const columnImpl = getSearchParameterImplementation(resourceType, param, true);
+      builder.orderBy(columnImpl.columnName, !!sortRule.descending);
+    } else {
+      impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
+    }
   } else {
     impl satisfies ColumnSearchParameterImplementation;
     builder.orderBy(impl.columnName, !!sortRule.descending);
