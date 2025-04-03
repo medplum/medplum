@@ -31,7 +31,7 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
   const inputChargeItemRef = params.chargeItem;
   const inputChargeItem = await ctx.repo.readReference<ChargeItem>(inputChargeItemRef);
   const updatedChargeItem: ChargeItem = {
-    ...inputChargeItem
+    ...inputChargeItem,
   };
 
   if (chargeItemDefinition.propertyGroup) {

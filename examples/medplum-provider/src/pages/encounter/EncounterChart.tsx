@@ -138,19 +138,22 @@ export const EncounterChart = (): JSX.Element => {
       isUpdatingRef.current = false;
       return;
     }
-    
+
     const fetchChargeItemDefinitions = async (): Promise<void> => {
       if (!chargeItems || chargeItems.length === 0) {
         return;
       }
-      
+
       const updatedItems = [...chargeItems];
       let hasUpdates = false;
-      
+
       for (const [index, chargeItem] of chargeItems.entries()) {
         if (chargeItem.definitionCanonical && chargeItem.definitionCanonical.length > 0) {
           try {
-            const searchResult = await medplum.searchResources('ChargeItemDefinition', `url=${chargeItem.definitionCanonical[0]}`);
+            const searchResult = await medplum.searchResources(
+              'ChargeItemDefinition',
+              `url=${chargeItem.definitionCanonical[0]}`
+            );
             if (searchResult.length > 0) {
               const chargeItemDefinition = searchResult[0];
               try {
@@ -168,7 +171,7 @@ export const EncounterChart = (): JSX.Element => {
                     ],
                   }
                 );
-                
+
                 if (applyResult) {
                   const updatedChargeItem = applyResult as ChargeItem;
                   updatedItems[index] = updatedChargeItem;
@@ -183,22 +186,21 @@ export const EncounterChart = (): JSX.Element => {
           }
         }
       }
-      
+
       if (hasUpdates) {
         isUpdatingRef.current = true;
         setChargeItems(updatedItems);
       }
     };
-    
-    fetchChargeItemDefinitions()
-      .catch((err) => {
-        showNotification({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: normalizeErrorString(err),
-        });
+
+    fetchChargeItemDefinitions().catch((err) => {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
       });
+    });
   }, [chargeItems, medplum]);
 
   const saveQuestionnaireResponse = async (response: QuestionnaireResponse): Promise<void> => {
