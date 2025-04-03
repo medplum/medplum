@@ -1,5 +1,5 @@
 import { TextInput, Text, Stack, ActionIcon, Card, Flex, Grid } from '@mantine/core';
-import { IconDotsVertical, } from '@tabler/icons-react';
+import { IconDotsVertical } from '@tabler/icons-react';
 import { ChargeItem, CodeableConcept } from '@medplum/fhirtypes';
 import { CodeableConceptInput } from '@medplum/react';
 import { HTTP_HL7_ORG } from '@medplum/core';
