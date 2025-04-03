@@ -41,7 +41,7 @@ export abstract class InfixOperatorAtom implements Atom {
   abstract eval(context: AtomContext, input: TypedValue[]): TypedValue[];
 
   toString(): string {
-    return `${this.left.toString()} ${this.operator} ${this.right.toString()}`;
+    return `(${this.left.toString()} ${this.operator} ${this.right.toString()})`;
   }
 }
 

@@ -1,17 +1,16 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
+import { globalSchema, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, BundleEntry, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { AddressTable } from './lookups/address';
+import { HumanNameTable } from './lookups/humanname';
 import {
   ColumnSearchParameterImplementation,
   getSearchParameterImplementation,
-  globalSearchParameterRegistry,
   LookupTableSearchParameterImplementation,
   SearchParameterImplementation,
   SearchStrategies,
   TokenColumnSearchParameterImplementation,
 } from './searchparameter';
-import { AddressTable } from './lookups/address';
-import { HumanNameTable } from './lookups/humanname';
 
 describe('SearchParameterImplementation', () => {
   const indexedSearchParams: SearchParameter[] = [];
@@ -242,6 +241,19 @@ describe('SearchParameterImplementation', () => {
     }
   );
 
+  test('MedicationRequest-code legacy behavior', () => {
+    const searchParam = indexedSearchParams.find((e) => e.id === 'clinical-code') as SearchParameter;
+    const impl = getSearchParameterImplementation('MedicationRequest', searchParam);
+    assertColumnImplementation(impl);
+    expect(impl.columnName).toStrictEqual('code');
+  });
+
+  test('Observation-code excluded from legacy behavior', () => {
+    const searchParam = indexedSearchParams.find((e) => e.id === 'clinical-code') as SearchParameter;
+    const impl = getSearchParameterImplementation('Observation', searchParam);
+    expectTokenColumnImplementation(impl);
+  });
+
   test.each([
     ['individual-address-country', AddressTable],
     ['Patient-name', HumanNameTable],
@@ -255,7 +267,10 @@ describe('SearchParameterImplementation', () => {
 
   test('Everything', () => {
     // Make sure that getSearchParameterImplementation returns successfully for all known parameters.
-    for (const resourceType of Object.keys(globalSearchParameterRegistry.types)) {
+    for (const resourceType of Object.keys(globalSchema.types)) {
+      if (resourceType === 'Resource' || resourceType === 'DomainResource') {
+        continue;
+      }
       for (const searchParam of indexedSearchParams) {
         if (searchParam.base?.includes(resourceType as ResourceType)) {
           const impl = getSearchParameterImplementation(resourceType, searchParam);

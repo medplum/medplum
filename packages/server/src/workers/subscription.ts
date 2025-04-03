@@ -37,6 +37,12 @@ import { AuditEventOutcome } from '../util/auditevent';
 import { WorkerInitializer, createAuditEvent, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
 
 /**
+ * The timeout for outbound rest-hook subscription HTTP requests.
+ * This is passed into fetch and will make fetch abort the request after REQUEST_TIMEOUT milliseconds.
+ */
+const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
+
+/**
  * The upper limit on the number of times a job can be retried.
  * Using exponential backoff, 18 retries is about 73 hours.
  */
@@ -492,7 +498,7 @@ async function sendRestHook(
   try {
     log.info('Sending rest hook to: ' + url);
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
-    const response = await fetch(url, { method: 'POST', headers, body });
+    const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
     log.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
