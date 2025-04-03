@@ -1128,7 +1128,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected);
       });
 
-      describe('code :text and :contains special chars', () => {
+      describe('code :text search for special chars', () => {
         const identifier = randomUUID();
         let condWithSpecialChars: WithId<Condition>;
         beforeAll(async () => {
@@ -1180,7 +1180,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
           ['hello', true],
 
           ['||', false],
-        ])('searching for %s should match? %s', async (query, shouldBeFound) => {
+        ])(':text search for %s should match? %s', async (query, shouldBeFound) => {
           const res = await repo.search<Condition>({
             resourceType: 'Condition',
             filters: [
@@ -1215,7 +1215,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
           ['|hello|', true, false],
           ['.()', false, true],
         ])(
-          'searching for %s should match for token columns? %s lookup tables? %s',
+          ':text search for %s should match for token columns? %s lookup tables? %s',
           async (query, shouldBeFoundForTokenColumns, shouldBeFoundForLookupTables) => {
             const res = await repo.search<Condition>({
               resourceType: 'Condition',
@@ -1237,14 +1237,10 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
                 },
               ],
             });
-            if (tokenColumnsOrLookupTable === 'token columns') {
-              if (shouldBeFoundForTokenColumns) {
-                expect(res.entry?.length).toBe(1);
-                expect(res.entry?.[0].resource?.id).toBe(condWithSpecialChars.id);
-              } else {
-                expect(res.entry?.length).toBe(0);
-              }
-            } else if (shouldBeFoundForLookupTables) {
+            if (
+              (tokenColumnsOrLookupTable === 'token columns' && shouldBeFoundForTokenColumns) ||
+              (tokenColumnsOrLookupTable === 'lookup table' && shouldBeFoundForLookupTables)
+            ) {
               expect(res.entry?.length).toBe(1);
               expect(res.entry?.[0].resource?.id).toBe(condWithSpecialChars.id);
             } else {
