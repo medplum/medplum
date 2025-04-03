@@ -132,6 +132,77 @@ export const EncounterChart = (): JSX.Element => {
     });
   }, [encounter, medplum]);
 
+  const isUpdatingRef = useRef(false);
+
+  useEffect(() => {
+    if (isUpdatingRef.current) {
+      isUpdatingRef.current = false;
+      return;
+    }
+    
+    const fetchChargeItemDefinitions = async (): Promise<void> => {
+      if (!chargeItems || chargeItems.length === 0) {
+        return;
+      }
+      
+      const updatedItems = [...chargeItems];
+      let hasUpdates = false;
+      
+      for (const [index, chargeItem] of chargeItems.entries()) {
+        if (chargeItem.definitionCanonical && chargeItem.definitionCanonical.length > 0) {
+          try {
+            const searchResult = await medplum.searchResources('ChargeItemDefinition', `url=${chargeItem.definitionCanonical[0]}`);
+            if (searchResult.length > 0) {
+              const chargeItemDefinition = searchResult[0];
+              try {
+                const applyResult = await medplum.post(
+                  medplum.fhirUrl('ChargeItemDefinition', chargeItemDefinition.id as string, '$apply'),
+                  {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      {
+                        name: 'chargeItem',
+                        valueReference: {
+                          reference: `ChargeItem/${chargeItem.id}`,
+                        },
+                      },
+                    ],
+                  }
+                );
+                
+                if (applyResult) {
+                  const updatedChargeItem = applyResult as ChargeItem;
+                  console.log('updatedChargeItem', updatedChargeItem);
+                  updatedItems[index] = updatedChargeItem;
+                  hasUpdates = true;
+                }
+              } catch (err) {
+                console.error('Error applying ChargeItemDefinition:', err);
+              }
+            }
+          } catch (err) {
+            console.error('Error fetching ChargeItemDefinition:', err);
+          }
+        }
+      }
+      
+      if (hasUpdates) {
+        isUpdatingRef.current = true;
+        setChargeItems(updatedItems);
+      }
+    };
+    
+    fetchChargeItemDefinitions()
+      .catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
+  }, [chargeItems, medplum]);
+
   const saveQuestionnaireResponse = async (response: QuestionnaireResponse): Promise<void> => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);

@@ -3,7 +3,6 @@ import { showNotification } from '@mantine/notifications';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import {
   ChargeItem,
-  ChargeItemDefinition,
   ClinicalImpression,
   Coding,
   Encounter,
@@ -134,28 +133,12 @@ export const EncounterModal = (): JSX.Element => {
 
     // Look for ChargeItemDefinition
     let definitionCanonical: string[] = [];
-    try {
-      const chargeDefinitionExtension = serviceRequest.extension?.find(
-        (ext) => ext.url === 'http://medplum.com/fhir/StructureDefinition/applicable-charge-definition'
-      );
-
-      if (chargeDefinitionExtension?.valueCanonical) {
-        const canonicalUrl = chargeDefinitionExtension.valueCanonical;
-        const searchResponse = await medplum.search('ChargeItemDefinition', {
-          url: canonicalUrl,
-          status: 'active',
-        });
-
-        if (searchResponse.entry && searchResponse.entry.length > 0) {
-          const definition = searchResponse.entry[0].resource as ChargeItemDefinition;
-          const definitionCanonicalString = getReferenceString(definition);
-          if (definitionCanonicalString) {
-            definitionCanonical = [definitionCanonicalString];
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error searching for ChargeItemDefinition:', error);
+    const chargeDefinitionExtension = serviceRequest.extension?.find(
+      (ext) => ext.url === 'http://medplum.com/fhir/StructureDefinition/applicable-charge-definition'
+    );
+    if (chargeDefinitionExtension?.valueCanonical) {
+      const canonicalUrl = chargeDefinitionExtension.valueCanonical;
+      definitionCanonical = [canonicalUrl];
     }
 
     const chargeItem: ChargeItem = {

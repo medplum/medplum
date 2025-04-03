@@ -1,4 +1,4 @@
-import { allOk, evalFhirPathTyped, getReferenceString, toJsBoolean, toTypedValue } from '@medplum/core';
+import { allOk, evalFhirPathTyped, toJsBoolean, toTypedValue } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { getAuthenticatedContext } from '../../context';
 import { getOperationDefinition } from './definitions';
@@ -30,18 +30,8 @@ export async function chargeItemDefinitionApplyHandler(req: FhirRequest): Promis
   const params = parseInputParameters<ChargeItemDefinitionParameters>(operation, req);
   const inputChargeItemRef = params.chargeItem;
   const inputChargeItem = await ctx.repo.readReference<ChargeItem>(inputChargeItemRef);
-
-  const chargeItemDefinitionReference = getReferenceString(chargeItemDefinition);
-  let definitionCanonical: string[] = [];
-  if (inputChargeItem.definitionCanonical && inputChargeItem.definitionCanonical.length > 0) {
-    definitionCanonical = [...inputChargeItem.definitionCanonical];
-  }
-  if (chargeItemDefinitionReference && !definitionCanonical.includes(chargeItemDefinitionReference)) {
-    definitionCanonical.push(chargeItemDefinitionReference);
-  }
   const updatedChargeItem: ChargeItem = {
-    ...inputChargeItem,
-    definitionCanonical: definitionCanonical,
+    ...inputChargeItem
   };
 
   if (chargeItemDefinition.propertyGroup) {
