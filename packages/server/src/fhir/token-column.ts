@@ -294,20 +294,17 @@ function buildInValueSetCondition(
 }
 
 export function escapeRegexString(str: string): string {
-  // TODO{mattlong} - validate this is correct; it is from an LLM
-
-  // Escape special regex characters with a backslash:
-  // . (dot) - matches any character
-  // * - matches 0 or more of previous
-  // + - matches 1 or more of previous
-  // ? - matches 0 or 1 of previous
-  // ^ - start of line anchor
-  // $ - end of line anchor
-  // {} - match count specifier
-  // () - grouping
-  // | - alternation
-  // [] - character class
-  // \ - escape character itself
-  // return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return str;
+  // Escape the following special regex characters:
+  // . - matches any single character except newline
+  // ^ - matches the start of a string
+  // $ - matches the end of a string
+  // * - matches 0 or more of the preceding character
+  // + - matches 1 or more of the preceding character
+  // ? - matches 0 or 1 of the preceding character
+  // ( ) - define capturing groups
+  // [ ] - define character classes
+  // { } - define quantifiers
+  // \ - escapes a special character
+  // | - alternation (OR operator)
+  return str.replace(/[.^$*+?()[\]{}\\|]/g, '\\$&');
 }
