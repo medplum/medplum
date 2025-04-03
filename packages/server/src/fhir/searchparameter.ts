@@ -42,6 +42,7 @@ export type SearchParameterImplementation =
 
 interface ResourceTypeSearchParameterInfo {
   searchParamsImplementations: Record<string, SearchParameterImplementation>;
+  legacyTokenSearchParamsImplementations: Record<string, ColumnSearchParameterImplementation>;
 }
 
 type IndexedSearchParameters = {
@@ -65,8 +66,21 @@ export function getSearchParameterImplementation(
   forceColumnImplementation?: boolean
 ): SearchParameterImplementation {
   if (forceColumnImplementation) {
-    return buildSearchParameterImplementation(resourceType, searchParam, true);
+    let legacyImpl: ColumnSearchParameterImplementation | undefined =
+      globalSearchParameterRegistry.types[resourceType]?.legacyTokenSearchParamsImplementations?.[
+        searchParam.code as string
+      ];
+    if (!legacyImpl) {
+      legacyImpl = buildSearchParameterImplementation(
+        resourceType,
+        searchParam,
+        true
+      ) as ColumnSearchParameterImplementation;
+      setSearchParameterImplementation(resourceType, searchParam.code, legacyImpl, true);
+    }
+    return legacyImpl;
   }
+
   let result: SearchParameterImplementation | undefined =
     globalSearchParameterRegistry.types[resourceType]?.searchParamsImplementations?.[searchParam.code as string];
   if (!result) {
@@ -79,14 +93,19 @@ export function getSearchParameterImplementation(
 function setSearchParameterImplementation(
   resourceType: string,
   code: string,
-  implementation: SearchParameterImplementation
+  implementation: SearchParameterImplementation,
+  isLegacy?: boolean
 ): void {
   let typeSchema = globalSearchParameterRegistry.types[resourceType];
   if (!typeSchema) {
-    typeSchema = { searchParamsImplementations: {} };
+    typeSchema = { searchParamsImplementations: {}, legacyTokenSearchParamsImplementations: {} };
     globalSearchParameterRegistry.types[resourceType] = typeSchema;
   }
-  typeSchema.searchParamsImplementations[code] = implementation;
+  if (isLegacy) {
+    typeSchema.legacyTokenSearchParamsImplementations[code] = implementation as ColumnSearchParameterImplementation;
+  } else {
+    typeSchema.searchParamsImplementations[code] = implementation;
+  }
 }
 
 const ContainsSupportSearchParameterIds = [
@@ -108,6 +127,8 @@ function buildSearchParameterImplementation(
   let impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
 
   if (forceColumnImplementation) {
+    // Since impl manipulates the object returned from `getSearchParameterDetails`,
+    // make a copy of only the `SearchParameterDetails` properties so we are starting over
     impl = {
       type: impl.type,
       elementDefinitions: impl.elementDefinitions,
