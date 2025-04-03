@@ -130,6 +130,17 @@ export const EncounterModal = (): JSX.Element => {
       });
       return;
     }
+
+    // Look for ChargeItemDefinition
+    let definitionCanonical: string[] = [];
+    const chargeDefinitionExtension = serviceRequest.extension?.find(
+      (ext) => ext.url === 'http://medplum.com/fhir/StructureDefinition/applicable-charge-definition'
+    );
+    if (chargeDefinitionExtension?.valueCanonical) {
+      const canonicalUrl = chargeDefinitionExtension.valueCanonical;
+      definitionCanonical = [canonicalUrl];
+    }
+
     const chargeItem: ChargeItem = {
       resourceType: 'ChargeItem',
       status: 'planned',
@@ -145,6 +156,7 @@ export const EncounterModal = (): JSX.Element => {
       quantity: {
         value: 1,
       },
+      definitionCanonical: definitionCanonical,
     };
 
     try {
