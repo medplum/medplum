@@ -146,9 +146,9 @@ function buildSearchParameterImplementation(
     writeable.searchStrategy = 'token-column';
     writeable.lookupTable = lookupTable;
 
-    writeable.columnName = 'tokens';
-    writeable.sortColumnName = convertCodeToColumnName(code) + 'Sort';
-    writeable.textSearchColumnName = 'tokensText';
+    writeable.columnName = '__tokens';
+    writeable.sortColumnName = '__' + convertCodeToColumnName(code) + 'Sort';
+    writeable.textSearchColumnName = '__tokensText';
     writeable.caseInsensitive = tokenTable.isCaseInsensitive(searchParam, resourceType);
     writeable.textSearch = ContainsSupportSearchParameterIds.includes(searchParam.id as string);
     return impl;

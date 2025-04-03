@@ -139,55 +139,55 @@ describe('Generator', () => {
           notNull: false,
         },
         {
-          name: 'tokens',
+          name: '__tokens',
           type: 'TEXT[]',
         },
         {
-          name: 'tokensText',
+          name: '__tokensText',
           type: 'TEXT[]',
         },
         {
-          name: '_securitySort',
+          name: '___securitySort',
           type: 'TEXT',
         },
         {
-          name: '_tagSort',
+          name: '___tagSort',
           type: 'TEXT',
         },
         {
-          name: 'emailSort',
+          name: '__emailSort',
           type: 'TEXT',
         },
         {
-          name: 'identifierSort',
+          name: '__identifierSort',
           type: 'TEXT',
         },
         {
-          name: 'languageSort',
+          name: '__languageSort',
           type: 'TEXT',
         },
         {
-          name: 'phoneSort',
+          name: '__phoneSort',
           type: 'TEXT',
         },
         {
-          name: 'telecomSort',
+          name: '__telecomSort',
           type: 'TEXT',
         },
         {
-          name: '_compartmentIdentifierSort',
+          name: '___compartmentIdentifierSort',
           type: 'TEXT',
         },
         {
-          name: 'generalPractitionerIdentifierSort',
+          name: '__generalPractitionerIdentifierSort',
           type: 'TEXT',
         },
         {
-          name: 'linkIdentifierSort',
+          name: '__linkIdentifierSort',
           type: 'TEXT',
         },
         {
-          name: 'organizationIdentifierSort',
+          name: '__organizationIdentifierSort',
           type: 'TEXT',
         },
       ];
