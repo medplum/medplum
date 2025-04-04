@@ -33,7 +33,7 @@ This folder contains a set of bots that integrate Medplum with Metriport. The in
 
 3. Create, build, and [deploy](https://www.medplum.com/docs/bots/bots-in-production#deploying-your-bot) the code of both [Bots](https://www.medplum.com/docs/bots/bot-basics) using the samples in this repository as a base.
 
-### Enabling Metriport Interaction per Patient (Optional)
+### Enabling Patient Creation in Metriport (Optional, Not mandatory)
 
 The Patient Bot (`metriport-patient-bot.ts`) always attempts to match patients in Metriport based on the Medplum `Patient` resource's demographics when triggered. However, to enable the bot to _create_ a patient in Metriport if no match is found, the following conditions must be met for the specific Medplum `Patient` resource:
 
