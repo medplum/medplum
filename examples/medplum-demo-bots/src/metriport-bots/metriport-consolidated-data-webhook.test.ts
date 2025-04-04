@@ -2,6 +2,7 @@ import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@med
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, Encounter, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { randomUUID } from 'crypto';
 
 import { convertToTransactionBundle, handler } from './metriport-consolidated-data-webhook';
 import { MetriportConsolidatedDataBundle } from './metriport-test-data';
@@ -64,8 +65,10 @@ describe('Metriport Consolidated Data Webhook', () => {
 });
 
 describe('convertToTransactionBundle', () => {
+  const metriportPatientId = MetriportConsolidatedDataBundle.entry?.[0]?.resource?.id as string;
+
   test('converts a searchset bundle to a transaction bundle', () => {
-    const transactionBundle = convertToTransactionBundle(MetriportConsolidatedDataBundle);
+    const transactionBundle = convertToTransactionBundle(MetriportConsolidatedDataBundle, metriportPatientId);
 
     expect(transactionBundle.type).toBe('transaction');
     expect(transactionBundle.resourceType).toBe('Bundle');
@@ -86,7 +89,7 @@ describe('convertToTransactionBundle', () => {
   });
 
   test('replaces references with fullUrls', () => {
-    const transactionBundle = convertToTransactionBundle(MetriportConsolidatedDataBundle);
+    const transactionBundle = convertToTransactionBundle(MetriportConsolidatedDataBundle, metriportPatientId);
 
     const encounter = transactionBundle.entry?.find((entry) => entry.resource?.resourceType === 'Encounter')
       ?.resource as Encounter;
@@ -100,43 +103,57 @@ describe('convertToTransactionBundle', () => {
     );
   });
 
+  test('filters out the Patient resource', () => {
+    const transactionBundle = convertToTransactionBundle(MetriportConsolidatedDataBundle, metriportPatientId);
+
+    expect(MetriportConsolidatedDataBundle.entry?.length).toStrictEqual(8);
+    expect(transactionBundle.entry?.length).toStrictEqual(7);
+    expect(
+      transactionBundle.entry?.find(
+        (entry) => entry.resource?.resourceType === 'Patient' && entry.resource?.id === metriportPatientId
+      )
+    ).toBeUndefined();
+  });
+
   test('adds metriport identifier to resource without existing identifiers', () => {
+    const id = randomUUID();
     const bundle: Bundle = {
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [
         {
-          fullUrl: 'urn:uuid:123',
+          fullUrl: `urn:uuid:${id}`,
           resource: {
-            resourceType: 'Patient',
-            id: '123',
-            name: [{ given: ['John'], family: 'Doe' }],
+            resourceType: 'Practitioner',
+            id,
+            name: [{ given: ['Anne'], family: 'Doe' }],
           },
         },
       ],
     };
 
-    const transactionBundle = convertToTransactionBundle(bundle);
+    const transactionBundle = convertToTransactionBundle(bundle, metriportPatientId);
 
     expect((transactionBundle.entry?.[0].resource as any).identifier).toStrictEqual([
       {
-        system: 'https://metriport.com/fhir/identifiers/patient-id',
-        value: '123',
+        system: 'https://metriport.com/fhir/identifiers/practitioner-id',
+        value: id,
       },
     ]);
   });
 
   test('adds metriport identifier to resource with existing identifiers', () => {
+    const id = randomUUID();
     const bundle: Bundle = {
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [
         {
-          fullUrl: 'urn:uuid:123',
+          fullUrl: `urn:uuid:${id}`,
           resource: {
-            resourceType: 'Patient',
-            id: '123',
-            name: [{ family: 'Smith', given: ['Jane'] }],
+            resourceType: 'Practitioner',
+            id,
+            name: [{ given: ['Anne'], family: 'Doe' }],
             gender: 'female',
             birthDate: '1996-02-10',
             identifier: [{ system: 'other-system', value: 'other-value' }],
@@ -145,24 +162,25 @@ describe('convertToTransactionBundle', () => {
       ],
     };
 
-    const transactionBundle = convertToTransactionBundle(bundle);
+    const transactionBundle = convertToTransactionBundle(bundle, metriportPatientId);
 
     expect((transactionBundle.entry?.[0].resource as any).identifier).toStrictEqual([
       { system: 'other-system', value: 'other-value' },
-      { system: 'https://metriport.com/fhir/identifiers/patient-id', value: '123' },
+      { system: 'https://metriport.com/fhir/identifiers/practitioner-id', value: id },
     ]);
   });
 
   test('formats valid date property in DocumentReference', () => {
+    const id = randomUUID();
     const bundle: Bundle = {
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [
         {
-          fullUrl: 'urn:uuid:123',
+          fullUrl: `urn:uuid:${id}`,
           resource: {
             resourceType: 'DocumentReference',
-            id: '123',
+            id,
             status: 'current',
             content: [{ attachment: { contentType: 'text/plain; charset=UTF-8' } }],
             date: '2024-01-01',
@@ -171,7 +189,7 @@ describe('convertToTransactionBundle', () => {
       ],
     };
 
-    const transactionBundle = convertToTransactionBundle(bundle);
+    const transactionBundle = convertToTransactionBundle(bundle, metriportPatientId);
 
     expect((transactionBundle.entry?.[0].resource as any).date).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
@@ -179,15 +197,16 @@ describe('convertToTransactionBundle', () => {
   });
 
   test('removes invalid date property from DocumentReference', () => {
+    const id = randomUUID();
     const bundle: Bundle = {
       resourceType: 'Bundle',
       type: 'searchset',
       entry: [
         {
-          fullUrl: 'urn:uuid:123',
+          fullUrl: `urn:uuid:${id}`,
           resource: {
             resourceType: 'DocumentReference',
-            id: '123',
+            id,
             status: 'current',
             content: [{ attachment: { contentType: 'text/plain; charset=UTF-8' } }],
             date: 'invalid-date',
@@ -196,7 +215,7 @@ describe('convertToTransactionBundle', () => {
       ],
     };
 
-    const transactionBundle = convertToTransactionBundle(bundle);
+    const transactionBundle = convertToTransactionBundle(bundle, metriportPatientId);
 
     expect((transactionBundle.entry?.[0].resource as any).date).toBeUndefined();
   });
