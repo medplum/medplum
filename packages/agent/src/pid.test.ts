@@ -1,5 +1,13 @@
-import fs from 'node:fs';
-import { createPidFile, getPidFilePath, pidLogger, registerAgentCleanup, removePidFile } from './pid';
+import fs, { PathOrFileDescriptor } from 'node:fs';
+import { dirname } from 'node:path';
+import {
+  createPidFile,
+  deregisterAgentCleanup,
+  getPidFilePath,
+  pidLogger,
+  registerAgentCleanup,
+  removePidFile,
+} from './pid';
 
 jest.mock('node:fs');
 jest.mock('node:os', () => ({
@@ -10,13 +18,43 @@ jest.mock('node:os', () => ({
 
 const mockedFs = jest.mocked(fs);
 const APP_NAME = 'test-pid-app';
+const PID_DIR = dirname(getPidFilePath(APP_NAME));
 const TEST_PID_PATH = '/tmp/medplum-agent/test-pid-app.pid';
+const createdPidFiles = new Set<string>();
 
 describe('PID File Manager', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    mockedFs.existsSync.mockReturnValue(false);
+    jest.resetAllMocks();
+    mockedFs.existsSync.mockImplementation((filePath: PathOrFileDescriptor) => {
+      // This is for the `ensureDirectoryExists` check
+      if (filePath.toString() === PID_DIR) {
+        return true;
+      }
+      if (createdPidFiles.has(filePath.toString())) {
+        return true;
+      }
+      return false;
+    });
     mockedFs.mkdirSync.mockImplementation(() => undefined);
+    mockedFs.readFileSync.mockImplementation((filePath: PathOrFileDescriptor) => {
+      if (createdPidFiles.has(filePath.toString())) {
+        return process.pid.toString();
+      }
+      const err = new Error('ENOENT');
+      (err as Error & { code: string }).code = 'ENOENT';
+      throw err;
+    });
+    mockedFs.writeFileSync.mockImplementation((filePath: PathOrFileDescriptor) => {
+      if (createdPidFiles.has(filePath.toString())) {
+        throw new Error('File already exists');
+      }
+      createdPidFiles.add(filePath.toString());
+      return undefined;
+    });
+    mockedFs.unlinkSync.mockImplementation((filePath: PathOrFileDescriptor) => {
+      createdPidFiles.delete(filePath.toString());
+      return undefined;
+    });
   });
 
   afterEach(() => {
@@ -24,33 +62,22 @@ describe('PID File Manager', () => {
     process.removeAllListeners('SIGTERM');
     process.removeAllListeners('SIGINT');
     process.removeAllListeners('uncaughtException');
+    createdPidFiles.clear();
   });
 
   test('creates and removes PID file on normal process lifecycle', () => {
-    // Mock file operations
-    mockedFs.writeFileSync.mockImplementation(() => undefined);
-    mockedFs.unlinkSync.mockImplementation(() => undefined);
-    mockedFs.readFileSync.mockReturnValue(process.pid.toString());
-    mockedFs.renameSync.mockImplementation(() => undefined);
-
-    // Mock file existence checks - first for directory check (false), then for file check during removal (true)
-    let checkCount = 0;
-    mockedFs.existsSync.mockImplementation((p) => {
-      checkCount++;
-      return checkCount > 1 && p.toString() === TEST_PID_PATH;
-    });
-
     // Create PID file
     const pidFilePath = createPidFile(APP_NAME);
     expect(pidFilePath).toBe(TEST_PID_PATH);
 
     // Verify write was called with correct arguments
     expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
-      expect.stringContaining('.pid.tmp'),
+      expect.stringContaining('.pid'),
       process.pid.toString(),
-      expect.any(Object)
+      expect.objectContaining({
+        flag: 'wx',
+      })
     );
-    expect(mockedFs.renameSync).toHaveBeenCalledWith(expect.stringContaining('.pid.tmp'), TEST_PID_PATH);
 
     // Remove PID file
     removePidFile(pidFilePath);
@@ -60,9 +87,7 @@ describe('PID File Manager', () => {
   });
 
   test('prevents running multiple instances of the same app', () => {
-    // Mock existing process
-    mockedFs.existsSync.mockReturnValue(true);
-    mockedFs.readFileSync.mockReturnValue('1234');
+    createPidFile(APP_NAME);
 
     // Mock process.kill to simulate existing process
     const originalKill = process.kill;
@@ -71,16 +96,14 @@ describe('PID File Manager', () => {
     try {
       // Attempt to create PID file should throw
       expect(() => createPidFile(APP_NAME)).toThrow('test-pid-app already running');
-      expect(process.kill).toHaveBeenCalledWith(1234, 0);
+      expect(process.kill).toHaveBeenCalledWith(process.pid, 0);
     } finally {
       process.kill = originalKill;
     }
   });
 
   test('handles stale PID files correctly', () => {
-    // Mock existing but stale PID file
-    mockedFs.existsSync.mockReturnValue(true);
-    mockedFs.readFileSync.mockReturnValue('999999');
+    createPidFile(APP_NAME);
 
     // Mock process.kill to simulate non-existent process
     const originalKill = process.kill;
@@ -96,22 +119,25 @@ describe('PID File Manager', () => {
       const pidFilePath = createPidFile(APP_NAME);
       expect(pidFilePath).toBe(TEST_PID_PATH);
 
+      // Make sure stale PID file was deleted
+      expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
+
       // Verify write operations
       expect(mockedFs.writeFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('.pid.tmp'),
+        expect.stringContaining('.pid'),
         process.pid.toString(),
-        expect.any(Object)
+        expect.objectContaining({
+          flag: 'wx',
+        })
       );
-      expect(mockedFs.renameSync).toHaveBeenCalledWith(expect.stringContaining('.pid.tmp'), TEST_PID_PATH);
     } finally {
       process.kill = originalKill;
     }
   });
 
   test('handles EPERM errors correctly', () => {
-    // Mock existing but stale PID file
-    mockedFs.existsSync.mockReturnValue(true);
-    mockedFs.readFileSync.mockReturnValue('999999');
+    createPidFile(APP_NAME);
+    mockedFs.writeFileSync.mockClear();
 
     // Mock process.kill to simulate non-existent process
     const originalKill = process.kill;
@@ -127,16 +153,14 @@ describe('PID File Manager', () => {
 
       // Verify write operations didn't occur
       expect(mockedFs.writeFileSync).not.toHaveBeenCalled();
-      expect(mockedFs.renameSync).not.toHaveBeenCalled();
     } finally {
       process.kill = originalKill;
     }
   });
 
   test('handles other errors', () => {
-    // Mock existing but stale PID file
-    mockedFs.existsSync.mockReturnValue(true);
-    mockedFs.readFileSync.mockReturnValue('999999');
+    createPidFile(APP_NAME);
+    mockedFs.writeFileSync.mockClear();
 
     // Mock process.kill to simulate non-existent process
     const originalKill = process.kill;
@@ -150,7 +174,6 @@ describe('PID File Manager', () => {
 
       // Verify write operations didn't occur
       expect(mockedFs.writeFileSync).not.toHaveBeenCalled();
-      expect(mockedFs.renameSync).not.toHaveBeenCalled();
     } finally {
       process.kill = originalKill;
     }
@@ -162,9 +185,6 @@ describe('PID File Manager', () => {
   });
 
   test('safely handles non-existent PID file during removal', () => {
-    // Mock file not existing
-    mockedFs.existsSync.mockReturnValue(false);
-
     // Should not throw
     removePidFile(TEST_PID_PATH);
 
@@ -198,30 +218,42 @@ describe('PID File Manager', () => {
 
   describe('registerAgentCleanup', () => {
     let originalExit: typeof process.exit;
+    let processOnMock: jest.SpyInstance;
+    let processEvents: Record<string, (err?: Error) => void> = {};
 
     beforeEach(() => {
-      mockedFs.existsSync.mockReturnValue(true);
-      mockedFs.unlinkSync.mockImplementation(() => undefined);
       originalExit = process.exit;
       process.exit = jest.fn() as unknown as typeof process.exit;
+      processOnMock = jest.spyOn(process, 'on').mockImplementation((signal, cb) => {
+        processEvents[signal.toString()] = cb;
+        return process; // For chaining
+      });
     });
 
     afterEach(() => {
       process.exit = originalExit;
+      processOnMock.mockClear();
+      processEvents = {};
+      deregisterAgentCleanup();
     });
 
-    test('registers handlers for SIGTERM, SIGINT, and uncaughtException', () => {
+    test('registers handlers for SIGTERM, SIGINT, SIGHUP, and uncaughtException', () => {
       const addListenerSpy = jest.spyOn(process, 'on');
-      registerAgentCleanup(TEST_PID_PATH);
+      registerAgentCleanup();
 
       expect(addListenerSpy).toHaveBeenCalledWith('SIGTERM', expect.any(Function));
       expect(addListenerSpy).toHaveBeenCalledWith('SIGINT', expect.any(Function));
+      expect(addListenerSpy).toHaveBeenCalledWith('SIGHUP', expect.any(Function));
       expect(addListenerSpy).toHaveBeenCalledWith('uncaughtException', expect.any(Function));
+
+      addListenerSpy.mockClear();
     });
 
-    test('removes PID file and exits on SIGTERM', () => {
-      registerAgentCleanup(TEST_PID_PATH);
-      process.emit('SIGTERM');
+    test('removes PID file and exits on SIGTERM', async () => {
+      registerAgentCleanup();
+      createPidFile(APP_NAME);
+
+      processEvents.SIGTERM?.();
 
       expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
       expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -229,8 +261,21 @@ describe('PID File Manager', () => {
     });
 
     test('removes PID file and exits on SIGINT', () => {
-      registerAgentCleanup(TEST_PID_PATH);
-      process.emit('SIGINT');
+      registerAgentCleanup();
+      createPidFile(APP_NAME);
+
+      processEvents.SIGINT?.();
+
+      expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
+      expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
+      expect(process.exit).toHaveBeenCalledWith(0);
+    });
+
+    test('removes PID file and exits on SIGHUP', () => {
+      registerAgentCleanup();
+      createPidFile(APP_NAME);
+
+      processEvents.SIGHUP?.();
 
       expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
       expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -238,8 +283,10 @@ describe('PID File Manager', () => {
     });
 
     test('removes PID file and exits on uncaughtException', () => {
-      registerAgentCleanup(TEST_PID_PATH);
-      process.emit('uncaughtException', new Error('Test error'));
+      registerAgentCleanup();
+      createPidFile(APP_NAME);
+
+      processEvents.uncaughtException?.(new Error('Test error'));
 
       expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
       expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -247,10 +294,12 @@ describe('PID File Manager', () => {
     });
 
     test('handles non-existent PID file during cleanup and still exits', () => {
-      mockedFs.existsSync.mockReturnValue(false);
-      registerAgentCleanup(TEST_PID_PATH);
+      registerAgentCleanup();
+      const pidFilePath = createPidFile(APP_NAME);
+      mockedFs.unlinkSync(pidFilePath);
+      mockedFs.unlinkSync.mockReset();
 
-      process.emit('SIGTERM');
+      processEvents.SIGTERM?.();
 
       expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
       expect(mockedFs.unlinkSync).not.toHaveBeenCalled();
@@ -263,8 +312,9 @@ describe('PID File Manager', () => {
         throw new Error('Permission denied');
       });
 
-      registerAgentCleanup(TEST_PID_PATH);
-      process.emit('SIGTERM');
+      registerAgentCleanup();
+      createPidFile(APP_NAME);
+      processEvents.SIGTERM?.();
 
       expect(pidLoggerErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Error removing PID file: /tmp/medplum-agent/test-pid-app.pid'),
