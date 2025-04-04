@@ -14,6 +14,7 @@ import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { getSearchParameterImplementation } from './searchparameter';
+import { TokenQueryOperators } from './token-column';
 import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
 
 describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'])(
@@ -54,6 +55,21 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         expect(searchResult.entry?.length).toStrictEqual(1);
         expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
       }));
+
+    test.only.each(TokenQueryOperators)('%s with empty value does not throw errors', async (operator) => {
+      const search = systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'identifier',
+            operator: operator,
+            value: '',
+          },
+        ],
+      });
+
+      await expect(search).resolves;
+    });
 
     test('Multiple identifiers', () =>
       withTestContext(async () => {

@@ -145,17 +145,12 @@ export function buildTokenColumnsSearchFilter(
     case FhirOperator.EXACT:
     case FhirOperator.NOT:
     case FhirOperator.NOT_EQUALS: {
-      filter.operator satisfies TokenQueryOperators;
+      filter.operator satisfies TokenQueryOperator;
 
       // https://www.hl7.org/fhir/r4/search.html#combining
       const expressions: Expression[] = [];
       for (const searchValue of splitSearchOnComma(filter.value)) {
         expressions.push(buildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue));
-      }
-
-      //TODO{mattlong} throwing here may be a backwards incompatible change
-      if (expressions.length === 0) {
-        throw new OperationOutcomeError(badRequest(`Search filter '${filter.operator}' must specify a value`));
       }
 
       const expression = new Disjunction(expressions);
@@ -201,21 +196,24 @@ export function buildTokenColumnsSearchFilter(
   }
 }
 
-type TokenQueryOperators = (typeof FhirOperator)[
-  | 'IN'
-  | 'NOT_IN'
-  | 'TEXT'
-  | 'CONTAINS'
-  | 'EQUALS'
-  | 'EXACT'
-  | 'NOT'
-  | 'NOT_EQUALS'];
+export const TokenQueryOperators = [
+  FhirOperator.IN,
+  FhirOperator.NOT_IN,
+  FhirOperator.TEXT,
+  FhirOperator.CONTAINS,
+  FhirOperator.EQUALS,
+  FhirOperator.EXACT,
+  FhirOperator.NOT,
+  FhirOperator.NOT_EQUALS,
+] as const;
+
+type TokenQueryOperator = (typeof TokenQueryOperators)[number];
 
 function buildTokenColumnsWhereCondition(
   impl: TokenColumnSearchParameterImplementation,
   tableName: string,
   code: string,
-  operator: TokenQueryOperators,
+  operator: TokenQueryOperator,
   query: string
 ): Expression {
   query = query.trim();
@@ -260,11 +258,6 @@ function buildTokenColumnsWhereCondition(
       }
 
       const valuePart = value ? DELIM + value : '';
-
-      // it shouldn't be possible for both system and value to be empty strings
-      if (!system && !value) {
-        throw new Error('Invalid query: both system and value are empty strings');
-      }
 
       // Always start with code + DELIM + system (system may be empty string which is okay/expected)
       // if a value is specified, add DELIM + value resulting in code + DELIM + system + DELIM + value
