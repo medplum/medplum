@@ -1,4 +1,4 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
+import { BotEvent, formatHumanName, MedplumClient } from '@medplum/core';
 import { Bundle, DocumentReference, Identifier } from '@medplum/fhirtypes';
 
 /**
@@ -151,12 +151,18 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
           }
         }
 
+        let upsertUrl = `${processedResource.resourceType}?identifier=${originalId}`;
+        // If the resource is a Patient, we can use the name to search for it to avoid duplicates
+        if (processedResource.resourceType === 'Patient') {
+          upsertUrl = `${processedResource.resourceType}?name=${formatHumanName(processedResource.name?.[0])}&birthdate=${processedResource.birthDate}`;
+        }
+
         return {
           fullUrl: entry.fullUrl,
           resource: processedResource,
           request: {
             method: 'PUT',
-            url: `${resource.resourceType}?identifier=${originalId}`,
+            url: upsertUrl,
           },
         };
       }) || [],
