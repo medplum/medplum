@@ -1,11 +1,20 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle, ContentType } from '@medplum/core';
+import {
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+  ContentType,
+  getReferenceString,
+} from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, Encounter, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'crypto';
 
 import { convertToTransactionBundle, handler } from './metriport-consolidated-data-webhook';
-import { MetriportConsolidatedDataBundle, JaneSmithMedplumPatient } from './metriport-test-data';
+import {
+  MetriportConsolidatedDataBundle,
+  JaneSmithMedplumPatient,
+  JaneSmithMetriportPatient,
+} from './metriport-test-data';
 
 describe('Metriport Consolidated Data Webhook', () => {
   const bot = { reference: 'Bot/123' };
@@ -54,8 +63,6 @@ describe('Metriport Consolidated Data Webhook', () => {
   test('throws error when missing medplumPatientId', async () => {
     const input = {
       meta: {
-        messageId: randomUUID(),
-        when: new Date().toISOString(),
         type: 'medical.consolidated-data',
       },
     };
@@ -65,7 +72,7 @@ describe('Metriport Consolidated Data Webhook', () => {
     );
   });
 
-  test('successfully handles ping message', async () => {
+  test("successfully handles 'ping' message", async () => {
     const pingSequence = 'test-ping-value';
     const input = {
       meta: {
@@ -75,6 +82,107 @@ describe('Metriport Consolidated Data Webhook', () => {
     };
 
     await expect(handler(medplum, { bot, input, contentType, secrets })).resolves.toEqual({ pong: pingSequence });
+  });
+
+  test("successfully handles 'medical.consolidated-data' message", async () => {
+    let medplumPatient: Patient = await medplum.createResource(JaneSmithMedplumPatient);
+    const medplumPatientReference = getReferenceString(medplumPatient);
+    const medplumPatientId = medplumPatient.id as string;
+    const metriportPatientId = JaneSmithMetriportPatient.id;
+
+    const input = {
+      meta: {
+        messageId: randomUUID(),
+        when: new Date().toISOString(),
+        type: 'medical.consolidated-data',
+        data: {
+          medplumPatientId: medplumPatientId,
+        },
+      },
+      patients: [
+        {
+          patientId: metriportPatientId,
+          bundle: {
+            entry: [
+              {
+                resource: {
+                  resourceType: 'DocumentReference',
+                  content: [
+                    {
+                      attachment: {
+                        url: 'https://api.metriport.com/medical/v1/documents/test-document',
+                        contentType: 'application/json',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      json: vi.fn().mockResolvedValueOnce(MetriportConsolidatedDataBundle),
+    });
+
+    expect(medplumPatient.identifier).toBeUndefined();
+
+    await expect(handler(medplum, { bot, input, contentType, secrets })).resolves.toEqual(true);
+
+    expect(fetch).toHaveBeenCalledWith('https://api.metriport.com/medical/v1/documents/test-document');
+
+    medplumPatient = await medplum.readResource('Patient', medplumPatientId);
+    expect(medplumPatient.identifier).toStrictEqual([
+      { system: 'https://metriport.com/fhir/identifiers/patient-id', value: metriportPatientId },
+    ]);
+
+    const practitioners = await medplum.searchResources(
+      'Practitioner',
+      'identifier=73fbeae4-f7e6-425b-b9c7-2ff7c258e24d'
+    );
+    expect(practitioners).toHaveLength(1);
+    expect(practitioners[0].name?.[0].family).toBe('Smith');
+    expect(practitioners[0].name?.[0].given).toEqual(['David', 'K']);
+
+    // Verify DocumentReference was created
+    const docRefs = await medplum.searchResources(
+      'DocumentReference',
+      'identifier=52c3523e-4912-4d48-97a8-7e531e0682cb'
+    );
+    expect(docRefs).toHaveLength(1);
+    expect(docRefs[0].description).toStrictEqual('Progress Notes');
+    expect(docRefs[0].subject?.reference).toStrictEqual(medplumPatientReference);
+
+    const locations = await medplum.searchResources('Location', 'identifier=40a528af-5c42-4c05-ae03-f2527137f994');
+    expect(locations).toHaveLength(1);
+    expect(locations[0].name).toStrictEqual('MARY FREE BED AT SPARROW');
+
+    const encounters = await medplum.searchResources('Encounter', 'identifier=9617b8a1-efd0-4d37-bc0c-ae8b5a5a00a5');
+    expect(encounters).toHaveLength(1);
+    expect(encounters[0].status).toStrictEqual('finished');
+    expect(encounters[0].subject?.reference).toStrictEqual(medplumPatientReference);
+
+    const allergies = await medplum.searchResources(
+      'AllergyIntolerance',
+      'identifier=51893137-becb-4f5b-963b-7741d1cb8de2'
+    );
+    expect(allergies).toHaveLength(1);
+    expect(allergies[0].reaction?.[0].substance?.text).toStrictEqual('Dust');
+    expect(allergies[0].patient?.reference).toStrictEqual(medplumPatientReference);
+
+    const medications = await medplum.searchResources('Medication', 'identifier=7e6747bd-fc1a-418a-a178-8518db7f95f5');
+    expect(medications).toHaveLength(1);
+    expect(medications[0].code?.text).toStrictEqual('oxyCODONE-acetaminophen (PERCOCET) 5-325 mg tablet');
+
+    const medicationRequests = await medplum.searchResources(
+      'MedicationRequest',
+      'identifier=46806a66-3b4c-43dd-ac0d-7d0b10042ee5'
+    );
+    expect(medicationRequests).toHaveLength(1);
+    expect(medicationRequests[0].medicationReference?.reference).toStrictEqual(getReferenceString(medications[0]));
+    expect(medicationRequests[0].subject?.reference).toStrictEqual(medplumPatientReference);
   });
 });
 
