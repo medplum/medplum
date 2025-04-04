@@ -8,6 +8,19 @@ const EXIT_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
 
 export const pidLogger = new Logger((msg) => `[PID]: ${msg}`);
 const pidFilePaths = new Set<string>();
+const processExitListener = (): void => {
+  removeAllPidFiles();
+};
+const signalListener = (): void => {
+  console.warn('here');
+  removeAllPidFiles();
+  process.exit(0);
+};
+const uncaughtExceptionListener = (err: Error): void => {
+  pidLogger.error('Uncaught exception:', err);
+  removeAllPidFiles();
+  process.exit(1);
+};
 let agentCleanupSetup = false;
 
 /**
@@ -34,6 +47,7 @@ export function getPidFilePath(appName: string): string {
  * @param pidFilePath - Path to the PID file
  */
 export function removePidFile(pidFilePath: string): void {
+  console.log('Removing');
   if (fs.existsSync(pidFilePath)) {
     try {
       fs.unlinkSync(pidFilePath);
@@ -91,15 +105,16 @@ export function createPidFile(appName: string): string {
 
     // If we make it here, PID file exists but it's stale
     pidLogger.info('Stale PID file found. Overwriting...');
+    fs.unlinkSync(pidFilePath);
   }
 
   // We need to make sure the directory exists first since we aren't just using a system-created dir like /var/run
   ensureDirectoryExists(path.dirname(pidFilePath));
 
-  // Write the PID file atomically using a temporary file
-  const tempFile = `${pidFilePath}.tmp`;
-  fs.writeFileSync(tempFile, pid.toString(), { flag: 'w+' });
-  fs.renameSync(tempFile, pidFilePath);
+  // Write the PID file atomically using the wx flag
+  // This makes writeFileSync throw when another process tries to create the same file at the same time
+  // We do this in order to make sure only one agent process can start up at a given time
+  fs.writeFileSync(pidFilePath, pid.toString(), { flag: 'wx' });
 
   pidLogger.info(`PID file created at: ${pidFilePath}`);
 
@@ -136,25 +151,28 @@ export function removeAllPidFiles(): void {
 export function registerAgentCleanup(): void {
   if (!agentCleanupSetup) {
     // Handle normal exit
-    process.on('exit', () => {
-      removeAllPidFiles();
-    });
-
+    process.on('exit', processExitListener);
     // Handle various signals
     for (const signal of EXIT_SIGNALS) {
-      process.on(signal, () => {
-        removeAllPidFiles();
-        process.exit(0);
-      });
+      console.log('signal', signal);
+      process.on(signal, signalListener);
     }
-
     // Handle uncaught exceptions
-    process.on('uncaughtException', (err) => {
-      pidLogger.error('Uncaught exception:', err);
-      removeAllPidFiles();
-      process.exit(1);
-    });
-
+    process.on('uncaughtException', uncaughtExceptionListener);
     agentCleanupSetup = true;
+  }
+}
+
+/**
+ * Deregisters agent cleanup listeners.
+ */
+export function deregisterAgentCleanup(): void {
+  if (agentCleanupSetup) {
+    process.off('exit', processExitListener);
+    for (const signal of EXIT_SIGNALS) {
+      process.off(signal, signalListener);
+    }
+    process.off('uncaughtException', uncaughtExceptionListener);
+    agentCleanupSetup = false;
   }
 }
