@@ -929,6 +929,10 @@ function buildSearchFilterExpression(
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
   }
 
+  if (filter.value.includes('\0')) {
+    throw new OperationOutcomeError(badRequest('Search filter value cannot contain null bytes'));
+  }
+
   if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
     const chain = parseChainedParameter(resourceType, filter);
     return buildChainedSearch(repo, selectQuery, resourceType, chain);

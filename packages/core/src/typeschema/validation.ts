@@ -23,6 +23,8 @@ import {
   getDataType,
   parseStructureDefinition,
 } from './types';
+import { LRUCache } from '../cache';
+import { FhirPathAtom } from '../fhirpath/atoms';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -54,6 +56,8 @@ export const fhirTypeToJsType = {
   xhtml: 'string',
   'http://hl7.org/fhirpath/System.String': 'string', // Not actually a FHIR type, but included in some StructureDefinition resources
 } as const satisfies Record<string, 'string' | 'boolean' | 'number'>;
+
+const fhirPathCache = new LRUCache<FhirPathAtom>(1_000);
 
 /**
  * Returns true if the type code is a primitive type.
@@ -447,7 +451,7 @@ class ResourceValidator implements CrawlerVisitor {
     }
 
     try {
-      const evalValues = evalFhirPathTyped(constraint.expression, [value], variables);
+      const evalValues = evalFhirPathTyped(constraint.expression, [value], variables, fhirPathCache);
 
       return evalValues.length === 1 && evalValues[0].value === true;
     } catch (e: any) {
