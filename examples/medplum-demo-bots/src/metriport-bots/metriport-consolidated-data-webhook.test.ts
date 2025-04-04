@@ -75,7 +75,13 @@ describe('convertToTransactionBundle', () => {
       expect(entry.request).toBeDefined();
       expect(entry.request?.method).toBe('PUT');
       expect(entry.resource?.id).toBeUndefined();
-      expect(entry.request?.url).toMatch(/^[A-Za-z]+\?identifier=.+$/);
+
+      // Special case for Patient resources
+      if (entry.resource?.resourceType === 'Patient') {
+        expect(entry.request?.url).toMatch(/^Patient\?name=.+&birthdate=.+$/);
+      } else {
+        expect(entry.request?.url).toMatch(/^[A-Za-z]+\?identifier=.+$/);
+      }
     });
   });
 
@@ -84,7 +90,6 @@ describe('convertToTransactionBundle', () => {
 
     const encounter = transactionBundle.entry?.find((entry) => entry.resource?.resourceType === 'Encounter')
       ?.resource as Encounter;
-    console.log(JSON.stringify(encounter, null, 2));
 
     expect(encounter?.subject?.reference).toStrictEqual('urn:uuid:0195d965-bfbc-7825-8a8a-b48baf403559');
     expect(encounter?.participant?.[0]?.individual?.reference).toStrictEqual(
@@ -131,6 +136,9 @@ describe('convertToTransactionBundle', () => {
           resource: {
             resourceType: 'Patient',
             id: '123',
+            name: [{ family: 'Smith', given: ['Jane'] }],
+            gender: 'female',
+            birthDate: '1996-02-10',
             identifier: [{ system: 'other-system', value: 'other-value' }],
           },
         },
