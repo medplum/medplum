@@ -1,11 +1,11 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { indexSearchParameterBundle, indexStructureDefinitionBundle, ContentType } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Encounter, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Encounter, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { randomUUID } from 'crypto';
 
 import { convertToTransactionBundle, handler } from './metriport-consolidated-data-webhook';
-import { MetriportConsolidatedDataBundle } from './metriport-test-data';
+import { MetriportConsolidatedDataBundle, JaneSmithMedplumPatient } from './metriport-test-data';
 
 describe('Metriport Consolidated Data Webhook', () => {
   const bot = { reference: 'Bot/123' };
@@ -51,6 +51,20 @@ describe('Metriport Consolidated Data Webhook', () => {
     await expect(handler(medplum, { bot, input: {}, contentType, secrets })).rejects.toThrow('Missing message type');
   });
 
+  test('throws error when missing medplumPatientId', async () => {
+    const input = {
+      meta: {
+        messageId: randomUUID(),
+        when: new Date().toISOString(),
+        type: 'medical.consolidated-data',
+      },
+    };
+
+    await expect(handler(medplum, { bot, input, contentType, secrets })).rejects.toThrow(
+      'Missing medplumPatientId. The startConsolidatedQuery call must include the medplumPatientId metadata.'
+    );
+  });
+
   test('successfully handles ping message', async () => {
     const pingSequence = 'test-ping-value';
     const input = {
@@ -65,10 +79,18 @@ describe('Metriport Consolidated Data Webhook', () => {
 });
 
 describe('convertToTransactionBundle', () => {
-  const metriportPatientId = MetriportConsolidatedDataBundle.entry?.[0]?.resource?.id as string;
+  let medplum: MockClient;
+  let patient: Patient;
+  let medplumPatientId: string;
+
+  beforeEach(async () => {
+    medplum = new MockClient();
+    patient = await medplum.createResource(JaneSmithMedplumPatient);
+    medplumPatientId = patient.id as string;
+  });
 
   test('converts a searchset bundle to a transaction bundle', () => {
-    const transactionBundle = convertToTransactionBundle(MetriportConsolidatedDataBundle, metriportPatientId);
+    const transactionBundle = convertToTransactionBundle(MetriportConsolidatedDataBundle, medplumPatientId);
 
     expect(transactionBundle.type).toBe('transaction');
     expect(transactionBundle.resourceType).toBe('Bundle');
@@ -76,20 +98,22 @@ describe('convertToTransactionBundle', () => {
 
     transactionBundle.entry?.forEach((entry) => {
       expect(entry.request).toBeDefined();
-      expect(entry.request?.method).toBe('PUT');
-      expect(entry.resource?.id).toBeUndefined();
 
-      // Special case for Patient resources
-      if (entry.resource?.resourceType === 'Patient') {
-        expect(entry.request?.url).toMatch(/^Patient\?name=.+&birthdate=.+$/);
-      } else {
-        expect(entry.request?.url).toMatch(/^[A-Za-z]+\?identifier=.+$/);
+      if (entry.resource?.resourceType === 'Binary' && entry.request?.url?.startsWith('Patient/')) {
+        expect(entry.request?.method).toBe('PATCH');
+        expect(entry.request?.url).toBe(`Patient/${medplumPatientId}`);
+        expect(entry.resource.contentType).toBe(ContentType.JSON_PATCH);
+        expect(entry.resource.data).toBeDefined();
+      } else if (entry.resource) {
+        expect(entry.request?.method).toBe('PUT');
+        expect(entry.resource?.id).toBeUndefined();
+        expect(entry.request?.url).toMatch(new RegExp(`^${entry.resource.resourceType}\\?identifier=.+$`));
       }
     });
   });
 
   test('replaces references with fullUrls', () => {
-    const transactionBundle = convertToTransactionBundle(MetriportConsolidatedDataBundle, metriportPatientId);
+    const transactionBundle = convertToTransactionBundle(MetriportConsolidatedDataBundle, medplumPatientId);
 
     const encounter = transactionBundle.entry?.find((entry) => entry.resource?.resourceType === 'Encounter')
       ?.resource as Encounter;
@@ -101,18 +125,6 @@ describe('convertToTransactionBundle', () => {
     expect(encounter?.location?.[0]?.location?.reference).toStrictEqual(
       'urn:uuid:40a528af-5c42-4c05-ae03-f2527137f994'
     );
-  });
-
-  test('filters out the Patient resource', () => {
-    const transactionBundle = convertToTransactionBundle(MetriportConsolidatedDataBundle, metriportPatientId);
-
-    expect(MetriportConsolidatedDataBundle.entry?.length).toStrictEqual(8);
-    expect(transactionBundle.entry?.length).toStrictEqual(7);
-    expect(
-      transactionBundle.entry?.find(
-        (entry) => entry.resource?.resourceType === 'Patient' && entry.resource?.id === metriportPatientId
-      )
-    ).toBeUndefined();
   });
 
   test('adds metriport identifier to resource without existing identifiers', () => {
@@ -132,7 +144,7 @@ describe('convertToTransactionBundle', () => {
       ],
     };
 
-    const transactionBundle = convertToTransactionBundle(bundle, metriportPatientId);
+    const transactionBundle = convertToTransactionBundle(bundle, medplumPatientId);
 
     expect((transactionBundle.entry?.[0].resource as any).identifier).toStrictEqual([
       {
@@ -162,7 +174,7 @@ describe('convertToTransactionBundle', () => {
       ],
     };
 
-    const transactionBundle = convertToTransactionBundle(bundle, metriportPatientId);
+    const transactionBundle = convertToTransactionBundle(bundle, medplumPatientId);
 
     expect((transactionBundle.entry?.[0].resource as any).identifier).toStrictEqual([
       { system: 'other-system', value: 'other-value' },
@@ -189,7 +201,7 @@ describe('convertToTransactionBundle', () => {
       ],
     };
 
-    const transactionBundle = convertToTransactionBundle(bundle, metriportPatientId);
+    const transactionBundle = convertToTransactionBundle(bundle, medplumPatientId);
 
     expect((transactionBundle.entry?.[0].resource as any).date).toMatch(
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
@@ -215,7 +227,7 @@ describe('convertToTransactionBundle', () => {
       ],
     };
 
-    const transactionBundle = convertToTransactionBundle(bundle, metriportPatientId);
+    const transactionBundle = convertToTransactionBundle(bundle, medplumPatientId);
 
     expect((transactionBundle.entry?.[0].resource as any).date).toBeUndefined();
   });
