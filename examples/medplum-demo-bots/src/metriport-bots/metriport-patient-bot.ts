@@ -1,5 +1,5 @@
 import { BotEvent, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { Organization, Patient } from '@medplum/fhirtypes';
 import { MetriportMedicalApi, PatientDTO, USState, Demographics, PatientCreate } from '@metriport/api-sdk';
 
 /**
@@ -37,8 +37,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
 
   // Create a new patient in Metriport, if they don't exist
   if (!metriportPatient) {
-    // FIXME: This is a hardcoded facility ID. We should get this from elsewhere.
-    const facilityId = '0195d964-d166-7226-8912-76934c23c140';
+    const facilityId = await getMetriportFacilityIdFromMedplumPatient(medplum, medplumPatient);
+    if (!facilityId) {
+      console.warn(`Skipping patient creation in Metriport because facility ID is missing.`);
+      return;
+    }
     metriportPatient = await createMetriportPatient(metriport, validatedData, facilityId, medplumPatient.id as string);
   }
 
@@ -115,6 +118,48 @@ export function validatePatientResource(patient: Patient): ValidatedPatientData 
     phone,
     email,
   };
+}
+
+/**
+ * Retrieves the Metriport Facility ID from the Patient's managingOrganization.
+ * Assumes the Organization resource contains an identifier with the system
+ * 'https://metriport.com/fhir/identifiers/organization-id'.
+ *
+ * @param medplum - The Medplum client.
+ * @param patient - The Medplum Patient resource.
+ * @returns The Metriport Facility ID.
+ */
+export async function getMetriportFacilityIdFromMedplumPatient(
+  medplum: MedplumClient,
+  patient: Patient
+): Promise<string | undefined> {
+  const METRIPORT_ORGANIZATION_ID_SYSTEM = 'https://metriport.com/fhir/identifiers/organization-id';
+
+  if (!patient.managingOrganization?.reference) {
+    console.warn(`Patient ${patient.id} is missing the managingOrganization reference.`);
+    return undefined;
+  }
+
+  let organization: Organization;
+  try {
+    organization = await medplum.readReference(patient.managingOrganization);
+  } catch (error) {
+    console.warn(
+      `Error reading Organization reference ${patient.managingOrganization.reference}: ${normalizeErrorString(error)}`
+    );
+    return undefined;
+  }
+
+  const facilityIdentifier = organization.identifier?.find((id) => id.system === METRIPORT_ORGANIZATION_ID_SYSTEM);
+
+  if (!facilityIdentifier?.value) {
+    console.warn(
+      `Organization ${organization.id} is missing the required Metriport facility identifier (system: ${METRIPORT_ORGANIZATION_ID_SYSTEM}).`
+    );
+    return undefined;
+  }
+
+  return facilityIdentifier.value;
 }
 
 // Function overloads to ensure type safety
