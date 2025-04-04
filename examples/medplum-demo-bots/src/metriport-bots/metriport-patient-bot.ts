@@ -53,7 +53,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
     undefined, // A comma separated, case sensitive list of resources to be returned. If none are provided all resources will be included
     undefined, // No start date
     undefined, // No end date
-    'json' // FHIR JSON format
+    'json', // FHIR JSON format
+    undefined, // No fromDashboard
+    {
+      medplumPatientId: medplumPatient.id as string,
+    }
   );
   console.log('Consolidated data:', JSON.stringify(consolidatedData, null, 2));
 }
