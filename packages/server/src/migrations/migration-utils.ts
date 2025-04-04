@@ -1,17 +1,18 @@
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
+import { Pool, PoolClient } from 'pg';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
+import { getPostDeployVersion } from '../migration-sql';
 import { getServerVersion } from '../util/version';
 import { addPostDeployMigrationJobData } from '../workers/post-deploy-migration';
 import { InProgressAsyncJobStatuses } from '../workers/utils';
 import * as postDeployMigrations from './data';
 import { PostDeployMigration } from './data/types';
+import { getPostDeployMigrationVersions, MigrationVersion } from './migration-versions';
 import * as preDeployMigrations from './schema';
 import { PreDeployMigration } from './schema/types';
-import { getPostDeployVersion } from '../migration-sql';
-import { Pool, PoolClient } from 'pg';
-import { getPostDeployMigrationVersions, MigrationVersion } from './migration-versions';
 
 /**
  * Gets the next post-deploy migration that needs to be run.
@@ -150,4 +151,17 @@ export async function queuePostDeployMigration(systemRepo: Repository, version: 
   }
 
   return asyncJob;
+}
+
+export async function withLongRunningDatabaseClient<TResult>(
+  callback: (client: PoolClient) => Promise<TResult>
+): Promise<TResult> {
+  const pool = getDatabasePool(DatabaseMode.WRITER);
+  const client = await pool.connect();
+  try {
+    await client.query(`SET statement_timeout TO 0`);
+    return await callback(client);
+  } finally {
+    client.release(true);
+  }
 }
