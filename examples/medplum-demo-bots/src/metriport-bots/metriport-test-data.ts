@@ -1,4 +1,16 @@
-import { Bundle, Patient } from '@medplum/fhirtypes';
+import { Bundle, Organization, Patient } from '@medplum/fhirtypes';
+import { PatientDTO } from '@metriport/api-sdk';
+
+/* Medplum resources */
+
+export const CareFacilityMedplumOrganization: Organization = {
+  resourceType: 'Organization',
+  identifier: [
+    { system: 'http://hl7.org/fhir/sid/us-npi', value: '1234567891' },
+    { system: 'https://metriport.com/fhir/identifiers/organization-id', value: '0195d964-d166-7226-8912-76934c23c140' },
+  ],
+  name: 'Care Facility, LLC',
+};
 
 export const JaneSmithMedplumPatient: Patient = {
   resourceType: 'Patient',
@@ -19,11 +31,13 @@ export const JaneSmithMedplumPatient: Patient = {
   ],
 };
 
-export const JaneSmithMetriportPatient = {
+/* Metriport resources */
+
+export const JaneSmithMetriportPatient: PatientDTO = {
   id: '0195d965-bfbc-7825-8a8a-b48baf403559',
   facilityIds: ['0195d964-d166-7226-8912-76934c23c140'],
   externalId: '',
-  dateCreated: '2025-03-27T20:57:58.974Z',
+  dateCreated: new Date('2025-03-27T20:57:58.974Z'),
   firstName: 'Jane',
   lastName: 'Smith',
   dob: '1996-02-10',

@@ -1,4 +1,4 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -7,11 +7,16 @@ import {
   buildMetriportPatientPayload,
   createMetriportPatient,
   findMatchingMetriportPatient,
+  getMetriportFacilityIdFromMedplumPatient,
   handler,
   ValidatedPatientData,
   validatePatientResource,
 } from './metriport-patient-bot';
-import { JaneSmithMedplumPatient, JaneSmithMetriportPatient } from './metriport-test-data';
+import {
+  CareFacilityMedplumOrganization,
+  JaneSmithMedplumPatient,
+  JaneSmithMetriportPatient,
+} from './metriport-test-data';
 
 vi.mock('@metriport/api-sdk', () => ({
   MetriportMedicalApi: vi.fn(),
@@ -164,6 +169,46 @@ describe('validatePatientResource', () => {
       phone: undefined,
       email: undefined,
     });
+  });
+});
+
+describe('getMetriportFacilityIdFromMedplumPatient', () => {
+  let medplum: MockClient;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    medplum = new MockClient();
+  });
+
+  test('successfully retrieves facility ID', async () => {
+    const organization = await medplum.createResource(CareFacilityMedplumOrganization);
+    const patient = await medplum.createResource({
+      ...JaneSmithMedplumPatient,
+      managingOrganization: createReference(organization),
+    });
+
+    const facilityId = await getMetriportFacilityIdFromMedplumPatient(medplum, patient);
+
+    expect(facilityId).toBe(CareFacilityMedplumOrganization.identifier?.[1].value);
+  });
+
+  test('returns undefined when patient is missing managingOrganization', async () => {
+    const patient = await medplum.createResource(JaneSmithMedplumPatient);
+    const facilityId = await getMetriportFacilityIdFromMedplumPatient(medplum, patient);
+    expect(facilityId).toBeUndefined();
+  });
+
+  test('returns undefined when managingOrganization is missing identifier', async () => {
+    const organization = await medplum.createResource({
+      ...CareFacilityMedplumOrganization,
+      identifier: undefined,
+    });
+    const patient = await medplum.createResource({
+      ...JaneSmithMedplumPatient,
+      managingOrganization: createReference(organization),
+    });
+    const facilityId = await getMetriportFacilityIdFromMedplumPatient(medplum, patient);
+    expect(facilityId).toBeUndefined();
   });
 });
 

@@ -93,8 +93,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
   return true;
 }
 
-const METRIPORT_IDENTIFIER_SYSTEM = 'https://metriport.com/fhir/identifiers';
-
 /**
  * Converts a searchset bundle to a transaction bundle.
  *
@@ -111,6 +109,7 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
     }
   });
 
+  // TODO: Remove the patient resource from the bundle to avoid rewriting it and losing attributes
   const transactionBundle: Bundle = {
     resourceType: 'Bundle',
     type: 'transaction',
@@ -131,19 +130,26 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
         // The id needs to be removed for the Upsert operation
         delete processedResource.id;
 
+        const resourceType = processedResource.resourceType;
+        const metriportIdentifierSystem = `https://metriport.com/fhir/identifiers/${resourceType.toLowerCase()}-id`;
+
         // Add Metriport identifier
-        const metriportIdentifier = { system: METRIPORT_IDENTIFIER_SYSTEM, value: originalId };
+        const metriportIdentifier = {
+          system: metriportIdentifierSystem,
+          value: originalId,
+        };
         processedResource.identifier = processedResource.identifier
           ? [
               ...processedResource.identifier.filter(
-                (id: Identifier) => !(id.system === METRIPORT_IDENTIFIER_SYSTEM && id.value === originalId)
+                (id: Identifier) =>
+                  !(id.system === metriportIdentifier.system && id.value === metriportIdentifier.value)
               ),
               metriportIdentifier,
             ]
           : [metriportIdentifier];
 
         // Handle DocumentReference dates
-        if (processedResource.resourceType === 'DocumentReference' && processedResource.date) {
+        if (resourceType === 'DocumentReference' && processedResource.date) {
           try {
             processedResource.date = new Date(processedResource.date).toISOString();
           } catch {
@@ -151,10 +157,10 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
           }
         }
 
-        let upsertUrl = `${processedResource.resourceType}?identifier=${originalId}`;
+        let upsertUrl = `${resourceType}?identifier=${originalId}`;
         // If the resource is a Patient, we can use the name to search for it to avoid duplicates
-        if (processedResource.resourceType === 'Patient') {
-          upsertUrl = `${processedResource.resourceType}?name=${formatHumanName(processedResource.name?.[0])}&birthdate=${processedResource.birthDate}`;
+        if (resourceType === 'Patient') {
+          upsertUrl = `${resourceType}?name=${formatHumanName(processedResource.name?.[0])}&birthdate=${processedResource.birthDate}`;
         }
 
         return {

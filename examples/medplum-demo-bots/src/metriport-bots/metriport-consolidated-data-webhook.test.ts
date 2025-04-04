@@ -120,7 +120,7 @@ describe('convertToTransactionBundle', () => {
 
     expect((transactionBundle.entry?.[0].resource as any).identifier).toStrictEqual([
       {
-        system: 'https://metriport.com/fhir/identifiers',
+        system: 'https://metriport.com/fhir/identifiers/patient-id',
         value: '123',
       },
     ]);
@@ -149,7 +149,7 @@ describe('convertToTransactionBundle', () => {
 
     expect((transactionBundle.entry?.[0].resource as any).identifier).toStrictEqual([
       { system: 'other-system', value: 'other-value' },
-      { system: 'https://metriport.com/fhir/identifiers', value: '123' },
+      { system: 'https://metriport.com/fhir/identifiers/patient-id', value: '123' },
     ]);
   });
 
