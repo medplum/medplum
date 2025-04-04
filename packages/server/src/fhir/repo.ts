@@ -1347,7 +1347,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * The value should be incremented each time there is a change in the schema (really just columns)
    * of the resource tables or when there are code changes to `buildResourceRow`.
    */
-  static readonly VERSION: number = 1;
+  static readonly VERSION: number = 2;
 
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
