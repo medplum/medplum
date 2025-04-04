@@ -1,4 +1,4 @@
-import { BotEvent, formatHumanName, MedplumClient } from '@medplum/core';
+import { BotEvent, MedplumClient } from '@medplum/core';
 import { Bundle, DocumentReference, Identifier } from '@medplum/fhirtypes';
 
 /**
@@ -47,7 +47,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
         }
 
         try {
-          console.log('Processing consolidated data for patient:', input.patients[0].patientId);
+          const metriportPatientId = input.patients[0].patientId;
+          console.log('Processing consolidated data for patient:', metriportPatientId);
           // Fetch the actual data from the URL
           const response = await fetch(docRef.content[0].attachment.url);
           // This is a searchset bundle
@@ -58,7 +59,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
           // to be set to allow all resources to be processed. If you are using this bot in a production
           // environment, you should filter out the resources that you do not want to process.
           // See: https://www.medplum.com/docs/bots/consuming-webhooks#creating-access-policies
-          const transactionBundle = convertToTransactionBundle(consolidatedData);
+          const transactionBundle = convertToTransactionBundle(consolidatedData, metriportPatientId);
           const responseBundle = await medplum.executeBatch(transactionBundle);
 
           // Log only error responses
@@ -96,12 +97,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
 /**
  * Converts a searchset bundle to a transaction bundle.
  *
- *
  * @param bundle - The searchset bundle
+ * @param metriportPatientId - The Metriport patient ID
+ *
  * @returns The transaction bundle
  */
-export function convertToTransactionBundle(bundle: Bundle): Bundle {
-  // Build the ID to fullUrl mapping
+export function convertToTransactionBundle(bundle: Bundle, metriportPatientId: string): Bundle {
   const idToFullUrlMap: Record<string, string> = {};
   bundle.entry?.forEach((entry) => {
     if (entry.resource?.id && entry.fullUrl) {
@@ -109,69 +110,65 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
     }
   });
 
-  // TODO: Remove the patient resource from the bundle to avoid rewriting it and losing attributes
   const transactionBundle: Bundle = {
     resourceType: 'Bundle',
     type: 'transaction',
     entry:
-      bundle.entry?.map((entry) => {
-        const resource = entry.resource;
-        if (!resource) {
-          return entry;
-        }
-
-        const originalId = resource.id;
-
-        // Create a deep clone and process the resource
-        const processedResource = JSON.parse(
-          JSON.stringify(resource, (key, value) => referenceReplacer(key, value, idToFullUrlMap))
-        );
-
-        // The id needs to be removed for the Upsert operation
-        delete processedResource.id;
-
-        const resourceType = processedResource.resourceType;
-        const metriportIdentifierSystem = `https://metriport.com/fhir/identifiers/${resourceType.toLowerCase()}-id`;
-
-        // Add Metriport identifier
-        const metriportIdentifier = {
-          system: metriportIdentifierSystem,
-          value: originalId,
-        };
-        processedResource.identifier = processedResource.identifier
-          ? [
-              ...processedResource.identifier.filter(
-                (id: Identifier) =>
-                  !(id.system === metriportIdentifier.system && id.value === metriportIdentifier.value)
-              ),
-              metriportIdentifier,
-            ]
-          : [metriportIdentifier];
-
-        // Handle DocumentReference dates
-        if (resourceType === 'DocumentReference' && processedResource.date) {
-          try {
-            processedResource.date = new Date(processedResource.date).toISOString();
-          } catch {
-            delete processedResource.date;
+      bundle.entry
+        // Filter out the Patient to avoid rewriting it and losing previous data in Medplum
+        ?.filter((entry) => entry.resource?.id !== metriportPatientId)
+        .map((entry) => {
+          const resource = entry.resource;
+          if (!resource) {
+            return entry;
           }
-        }
 
-        let upsertUrl = `${resourceType}?identifier=${originalId}`;
-        // If the resource is a Patient, we can use the name to search for it to avoid duplicates
-        if (resourceType === 'Patient') {
-          upsertUrl = `${resourceType}?name=${formatHumanName(processedResource.name?.[0])}&birthdate=${processedResource.birthDate}`;
-        }
+          const originalId = resource.id;
 
-        return {
-          fullUrl: entry.fullUrl,
-          resource: processedResource,
-          request: {
-            method: 'PUT',
-            url: upsertUrl,
-          },
-        };
-      }) || [],
+          // Create a deep clone and process the resource
+          const processedResource = JSON.parse(
+            JSON.stringify(resource, (key, value) => referenceReplacer(key, value, idToFullUrlMap))
+          );
+
+          // The id needs to be removed for the Upsert operation
+          delete processedResource.id;
+
+          const resourceType = processedResource.resourceType;
+          const metriportIdentifierSystem = `https://metriport.com/fhir/identifiers/${resourceType.toLowerCase()}-id`;
+
+          // Add Metriport identifier
+          const metriportIdentifier = {
+            system: metriportIdentifierSystem,
+            value: originalId,
+          };
+          processedResource.identifier = processedResource.identifier
+            ? [
+                ...processedResource.identifier.filter(
+                  (id: Identifier) =>
+                    !(id.system === metriportIdentifier.system && id.value === metriportIdentifier.value)
+                ),
+                metriportIdentifier,
+              ]
+            : [metriportIdentifier];
+
+          // Handle DocumentReference dates
+          if (resourceType === 'DocumentReference' && processedResource.date) {
+            try {
+              processedResource.date = new Date(processedResource.date).toISOString();
+            } catch {
+              delete processedResource.date;
+            }
+          }
+
+          return {
+            fullUrl: entry.fullUrl,
+            resource: processedResource,
+            request: {
+              method: 'PUT',
+              url: `${resourceType}?identifier=${originalId}`,
+            },
+          };
+        }) || [],
   };
 
   return transactionBundle;
