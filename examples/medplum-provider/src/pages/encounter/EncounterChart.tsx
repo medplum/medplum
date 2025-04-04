@@ -1,4 +1,4 @@
-import { Stack, Box, Card, Text, Group } from '@mantine/core';
+import { Stack, Box, Card, Text, Group, Flex, TextInput } from '@mantine/core';
 import {
   Task,
   ClinicalImpression,
@@ -427,6 +427,21 @@ export const EncounterChart = (): JSX.Element => {
                 {chargeItems.map((chargeItem: ChargeItem) => (
                   <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} onChange={updateChargeItemList} />
                 ))}
+
+                <Card withBorder shadow="sm">
+                  <Flex justify="space-between" align="center">
+                    <Text size="lg" fw={500}>
+                      Total Calculated Price to Bill
+                    </Text>
+                    <Box>
+                      <TextInput
+                        w={300}
+                        value={`$${chargeItems.reduce((sum, item) => sum + (item.priceOverride?.value || 0), 0).toFixed(2)}`}
+                        readOnly
+                      />
+                    </Box>
+                  </Flex>
+                </Card>
               </Stack>
             ) : (
               <Text c="dimmed">No charge items available</Text>
