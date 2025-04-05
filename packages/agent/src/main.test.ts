@@ -35,7 +35,7 @@ describe('Main', () => {
     await expect(main(['node', 'main.ts', 'https://example.com/', randomUUID()])).rejects.toThrow('process.exit');
 
     expect(createPidSpy).toHaveBeenCalledWith('medplum-agent');
-    expect(registerCleanupSpy).toHaveBeenCalledWith('/tmp/test.pid');
+    expect(registerCleanupSpy).toHaveBeenCalledWith();
     expect(upgradeMainSpy).not.toHaveBeenCalled();
     expect(agentMainSpy).toHaveBeenCalledWith(['node', 'main.ts', 'https://example.com/', expect.any(String)]);
 
@@ -55,7 +55,7 @@ describe('Main', () => {
     );
 
     expect(createPidSpy).toHaveBeenCalledWith('medplum-agent-upgrader');
-    expect(registerCleanupSpy).toHaveBeenCalledWith('/tmp/test.pid');
+    expect(registerCleanupSpy).toHaveBeenCalledWith();
     expect(agentMainSpy).not.toHaveBeenCalled();
     expect(upgradeMainSpy).toHaveBeenCalledWith(['node', 'main.ts', '--upgrade']);
 

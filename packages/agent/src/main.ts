@@ -3,13 +3,12 @@ import { createPidFile, registerAgentCleanup } from './pid';
 import { upgraderMain } from './upgrader';
 
 export async function main(argv: string[]): Promise<void> {
+  registerAgentCleanup();
   if (argv[2] === '--upgrade') {
-    const pidFilePath = createPidFile('medplum-agent-upgrader');
-    registerAgentCleanup(pidFilePath);
+    createPidFile('medplum-agent-upgrader');
     await upgraderMain(argv);
   } else {
-    const pidFilePath = createPidFile('medplum-agent');
-    registerAgentCleanup(pidFilePath);
+    createPidFile('medplum-agent');
     await agentMain(argv);
   }
 }
