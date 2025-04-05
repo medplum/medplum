@@ -12,7 +12,6 @@ const processExitListener = (): void => {
   removeAllPidFiles();
 };
 const signalListener = (): void => {
-  console.warn('here');
   removeAllPidFiles();
   process.exit(0);
 };
@@ -47,7 +46,6 @@ export function getPidFilePath(appName: string): string {
  * @param pidFilePath - Path to the PID file
  */
 export function removePidFile(pidFilePath: string): void {
-  console.log('Removing');
   if (fs.existsSync(pidFilePath)) {
     try {
       fs.unlinkSync(pidFilePath);
@@ -154,7 +152,6 @@ export function registerAgentCleanup(): void {
     process.on('exit', processExitListener);
     // Handle various signals
     for (const signal of EXIT_SIGNALS) {
-      console.log('signal', signal);
       process.on(signal, signalListener);
     }
     // Handle uncaught exceptions
