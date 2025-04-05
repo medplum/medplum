@@ -983,9 +983,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         const projectRef = meta.compartment.find((r) => r.reference?.startsWith('Project/'));
         meta.project = resolveId(projectRef);
       }
-
-      await this.writeLookupTables(conn, resource, false);
     }
+
+    await this.batchWriteLookupTables(conn, resources, false);
     await this.batchWriteResources(conn, resources);
   }
 
@@ -1744,6 +1744,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(client, resource, create);
+    }
+  }
+
+  private async batchWriteLookupTables<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    for (const lookupTable of lookupTables) {
+      await lookupTable.batchIndexResources(client, resources, create);
     }
   }
 

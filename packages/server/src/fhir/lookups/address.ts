@@ -1,4 +1,4 @@
-import { formatAddress } from '@medplum/core';
+import { formatAddress, WithId } from '@medplum/core';
 import { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import { Column, DeleteQuery } from '../sql';
@@ -101,33 +101,56 @@ export class AddressTable extends LookupTable {
    * @param create - True if the resource should be created (vs updated).
    * @returns Promise on completion.
    */
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (!AddressTable.hasAddress(resource.resourceType)) {
+  async indexResource<T extends Resource>(client: PoolClient, resource: WithId<T>, create: boolean): Promise<void> {
+    return this.batchIndexResources(client, [resource], create);
+  }
+
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    if (resources.length === 0) {
+      return;
+    }
+
+    if (!AddressTable.hasAddress(resources[0].resourceType)) {
       return;
     }
 
     if (!create) {
-      await this.deleteValuesForResource(client, resource);
+      await this.batchDeleteValuesForResources(client, resources);
     }
 
-    const addresses = this.getIncomingAddresses(resource);
-    if (!addresses || !Array.isArray(addresses)) {
-      return;
+    const resourceType = resources[0].resourceType;
+
+    const resourceBatchSize = 500;
+    for (let i = 0; i < resources.length; i += resourceBatchSize) {
+      const batch = resources.slice(i, i + resourceBatchSize);
+      const newAddressRows = batch.flatMap((resource) => {
+        if (resource.resourceType !== resourceType) {
+          throw new Error(`Resource type mismatch: ${resource.resourceType} vs ${resourceType}`);
+        }
+
+        const incomingAddresses = this.getIncomingAddresses(resource);
+        if (!incomingAddresses || !Array.isArray(incomingAddresses)) {
+          return [];
+        }
+
+        const resourceId = resource.id;
+        return incomingAddresses.map((address) => ({
+          resourceId,
+          address: formatAddress(address),
+          city: address.city?.trim(),
+          country: address.country?.trim(),
+          postalCode: address.postalCode?.trim(),
+          state: address.state?.trim(),
+          use: address.use?.trim(),
+        }));
+      });
+
+      await this.insertValuesForResource(client, resourceType, newAddressRows);
     }
-
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id;
-    const values = addresses.map((address) => ({
-      resourceId,
-      address: formatAddress(address),
-      city: address.city?.trim(),
-      country: address.country?.trim(),
-      postalCode: address.postalCode?.trim(),
-      state: address.state?.trim(),
-      use: address.use?.trim(),
-    }));
-
-    await this.insertValuesForResource(client, resourceType, values);
   }
 
   private getIncomingAddresses(resource: Resource): Address[] | undefined {
