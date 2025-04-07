@@ -34,9 +34,9 @@
     "@medplum/mock": "4.0.4",
     "@medplum/react": "4.0.4",
     "@tabler/icons-react": "3.17.0",
-    "@types/node": "20.17.28",
+    "@types/node": "20.17.30",
     "@types/react": "18.3.20",
-    "@types/react-dom": "18.3.5",
+    "@types/react-dom": "18.3.6",
     "@vitejs/plugin-react": "4.3.4",
     "chart.js": "4.4.8",
     "postcss": "8.5.3",
@@ -44,10 +44,10 @@
     "react": "18.2.0",
     "react-chartjs-2": "5.3.0",
     "react-dom": "18.2.0",
-    "react-router": "7.4.1",
+    "react-router": "7.5.0",
     "rimraf": "6.0.1",
-    "typescript": "5.8.2",
-    "vite": "6.2.4",
+    "typescript": "5.8.3",
+    "vite": "6.2.5",
     "vitest": "3.1.1"
   }
 }
