@@ -1,8 +1,8 @@
 import { Binary, Resource } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
+import { getBinaryStorage } from '../storage/loader';
 import { Repository } from './repo';
-import { getBinaryStorage } from './storage';
 
 /**
  * The target type of the attachment rewrite.

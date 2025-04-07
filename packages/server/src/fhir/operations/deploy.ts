@@ -4,9 +4,9 @@ import { Attachment, Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
 import { getAuthenticatedContext } from '../../context';
+import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import { getSystemRepo } from '../repo';
-import { getBinaryStorage } from '../storage';
 import { isBotEnabled } from './execute';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {

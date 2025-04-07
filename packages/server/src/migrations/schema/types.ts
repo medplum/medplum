@@ -1,5 +1,5 @@
 import { PoolClient } from 'pg';
 
-export interface Migration {
+export interface PreDeployMigration {
   run(client: PoolClient): Promise<void>;
 }

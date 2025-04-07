@@ -265,6 +265,10 @@ const sidebars: SidebarsConfig = {
       id: 'integration/smart-app-launch',
     },
     {
+      type: 'doc',
+      id: 'integration/c-cda',
+    },
+    {
       type: 'html',
       value: '<strong>Advanced</strong>',
       className: 'sidebar-title',

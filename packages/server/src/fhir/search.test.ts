@@ -53,10 +53,10 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
+import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { clampEstimateCount } from './search';
-import { DatabaseMode } from '../database';
 import { SelectQuery } from './sql';
 
 jest.mock('hibp');
@@ -1063,6 +1063,44 @@ describe('FHIR Search', () => {
           fail('Expected error');
         } catch (err) {
           expect(normalizeErrorString(err)).toStrictEqual('Invalid date value: xyz');
+        }
+      }));
+
+    test('Handle non-string value', async () =>
+      withTestContext(async () => {
+        try {
+          await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              {
+                code: '_id',
+                operator: Operator.EQUALS,
+                value: {} as unknown as string,
+              },
+            ],
+          });
+          fail('Expected error');
+        } catch (err) {
+          expect(normalizeErrorString(err)).toStrictEqual('Search filter value must be a string');
+        }
+      }));
+
+    test('Handle string with null bytes', async () =>
+      withTestContext(async () => {
+        try {
+          await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              {
+                code: '_id',
+                operator: Operator.EQUALS,
+                value: 'foo\x00bar',
+              },
+            ],
+          });
+          fail('Expected error');
+        } catch (err) {
+          expect(normalizeErrorString(err)).toStrictEqual('Search filter value cannot contain null bytes');
         }
       }));
 

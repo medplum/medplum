@@ -6,12 +6,12 @@ import { unlinkSync } from 'fs';
 import { resolve } from 'path';
 import { Readable } from 'stream';
 import request from 'supertest';
-import { initApp, shutdownApp } from './app';
-import { loadTestConfig } from './config/loader';
-import { MedplumServerConfig } from './config/types';
-import { getSystemRepo } from './fhir/repo';
-import { getBinaryStorage } from './fhir/storage';
-import { withTestContext } from './test.setup';
+import { initApp, shutdownApp } from '../app';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
+import { getSystemRepo } from '../fhir/repo';
+import { withTestContext } from '../test.setup';
+import { getBinaryStorage } from './loader';
 
 const app = express();
 let config: MedplumServerConfig;
