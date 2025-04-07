@@ -46,8 +46,6 @@ export function HomePage(): JSX.Element {
         title: 'Success',
         message: 'Patients synced',
       });
-      close();
-      window.location.reload();
     } catch (err) {
       notifications.show({
         color: 'red',
