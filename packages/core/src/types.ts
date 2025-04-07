@@ -418,6 +418,15 @@ export function getElementDefinitionFromElements(
 }
 
 /**
+ * Returns true if the value is a TypedValue.
+ * @param value - The unknown value to check.
+ * @returns True if the value is a TypedValue.
+ */
+export function isTypedValue(value: unknown): value is TypedValue {
+  return !!(value && typeof value === 'object' && 'type' in value && 'value' in value);
+}
+
+/**
  * Type guard to validate that an object is a FHIR resource
  * @param value - The object to check
  * @param resourceType - Checks that the resource is of the given type

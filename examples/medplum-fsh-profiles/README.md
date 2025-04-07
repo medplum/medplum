@@ -64,6 +64,10 @@ To create new profiles:
 2. Run the build command to validate and compile
 3. Find the generated FHIR resources in the dist directory
 
+## Output
+
+The outputted FHIR resources in the dist directory are `StructureDefinitions` with two blocks: `snapshot`, which is the full specification of the schema, and `differential`, the difference between this profile and the profile it extends. The server tooling only looks at `snapshot`, so while `differential` can be left in, it also can be safely removed if we want to keep the resource smaller.
+
 ### Healthcare Service Profile
 
 The `ServiceManagementHealthcareService` profile enables consistent categorization of healthcare services by:

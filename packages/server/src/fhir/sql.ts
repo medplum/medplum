@@ -6,12 +6,13 @@ import { getLogger } from '../logger';
 
 const DEBUG = env['SQL_DEBUG'];
 
-export enum ColumnType {
-  UUID = 'uuid',
-  TIMESTAMP = 'timestamp',
-  TEXT = 'text',
-  TSTZRANGE = 'tstzrange',
-}
+export const ColumnType = {
+  UUID: 'uuid',
+  TIMESTAMP: 'timestamp',
+  TEXT: 'text',
+  TSTZRANGE: 'tstzrange',
+} as const;
+export type ColumnType = (typeof ColumnType)[keyof typeof ColumnType];
 
 export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
 
@@ -162,12 +163,17 @@ export interface Expression {
 }
 
 export class Column implements Expression {
-  constructor(
-    readonly tableName: string | undefined,
-    readonly columnName: string,
-    readonly raw?: boolean,
-    readonly alias?: string
-  ) {}
+  readonly tableName: string | undefined;
+  readonly columnName: string;
+  readonly raw?: boolean;
+  readonly alias?: string;
+
+  constructor(tableName: string | undefined, columnName: string, raw?: boolean, alias?: string) {
+    this.tableName = tableName;
+    this.columnName = columnName;
+    this.raw = raw;
+    this.alias = alias;
+  }
 
   buildSql(sql: SqlBuilder): void {
     sql.appendColumn(this);
@@ -175,7 +181,11 @@ export class Column implements Expression {
 }
 
 export class Parameter implements Expression {
-  constructor(readonly value: string) {}
+  readonly value: string;
+
+  constructor(value: string) {
+    this.value = value;
+  }
 
   buildSql(sql: SqlBuilder): void {
     sql.param(this.value);
@@ -183,7 +193,11 @@ export class Parameter implements Expression {
 }
 
 export class Negation implements Expression {
-  constructor(readonly expression: Expression) {}
+  readonly expression: Expression;
+
+  constructor(expression: Expression) {
+    this.expression = expression;
+  }
 
   buildSql(sql: SqlBuilder): void {
     sql.append('NOT (');
@@ -194,17 +208,19 @@ export class Negation implements Expression {
 
 export class Condition implements Expression {
   readonly column: Column;
-  constructor(
-    column: Column | string,
-    readonly operator: keyof typeof Operator,
-    readonly parameter: any,
-    readonly parameterType?: string
-  ) {
+  readonly operator: keyof typeof Operator;
+  readonly parameter: any;
+  readonly parameterType?: string;
+
+  constructor(column: Column | string, operator: keyof typeof Operator, parameter: any, parameterType?: string) {
     if (operator === 'ARRAY_CONTAINS' && !parameterType) {
       throw new Error('ARRAY_CONTAINS requires paramType');
     }
 
     this.column = getColumn(column);
+    this.operator = operator;
+    this.parameter = parameter;
+    this.parameterType = parameterType;
   }
 
   buildSql(sql: SqlBuilder): void {
@@ -214,10 +230,13 @@ export class Condition implements Expression {
 }
 
 export abstract class Connective implements Expression {
-  constructor(
-    readonly keyword: string,
-    readonly expressions: Expression[]
-  ) {}
+  readonly keyword: string;
+  readonly expressions: Expression[];
+
+  constructor(keyword: string, expressions: Expression[]) {
+    this.keyword = keyword;
+    this.expressions = expressions;
+  }
 
   whereExpr(expression: Expression): this {
     this.expressions.push(expression);
@@ -259,10 +278,13 @@ export class Disjunction extends Connective {
 }
 
 export class SqlFunction implements Expression {
-  constructor(
-    readonly name: string,
-    readonly args: (Expression | Column)[]
-  ) {}
+  readonly name: string;
+  readonly args: (Expression | Column)[];
+
+  constructor(name: string, args: (Expression | Column)[]) {
+    this.name = name;
+    this.args = args;
+  }
 
   buildSql(sql: SqlBuilder): void {
     sql.append(this.name + '(');
@@ -295,24 +317,38 @@ export class Union implements Expression {
   }
 }
 
+export type JoinType = 'INNER JOIN' | 'LEFT JOIN' | 'INNER JOIN LATERAL';
+
 export class Join {
-  constructor(
-    readonly joinType: 'LEFT JOIN' | 'INNER JOIN' | 'INNER JOIN LATERAL',
-    readonly joinItem: SelectQuery | string,
-    readonly joinAlias: string,
-    readonly onExpression: Expression
-  ) {}
+  readonly joinType: JoinType;
+  readonly joinItem: SelectQuery | string;
+  readonly joinAlias: string;
+  readonly onExpression: Expression;
+
+  constructor(joinType: JoinType, joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression) {
+    this.joinType = joinType;
+    this.joinItem = joinItem;
+    this.joinAlias = joinAlias;
+    this.onExpression = onExpression;
+  }
 }
 
 export class GroupBy {
-  constructor(readonly column: Column) {}
+  readonly column: Column;
+
+  constructor(column: Column) {
+    this.column = column;
+  }
 }
 
 export class OrderBy {
-  constructor(
-    readonly key: Column | Expression,
-    readonly descending?: boolean
-  ) {}
+  readonly key: Column | Expression;
+  readonly descending?: boolean;
+
+  constructor(key: Column | Expression, descending?: boolean) {
+    this.key = key;
+    this.descending = descending;
+  }
 }
 
 export class SqlBuilder {
@@ -412,7 +448,7 @@ export class SqlBuilder {
       }
 
       return { rowCount: result.rowCount ?? 0, rows: result.rows };
-    } catch (err: any) {
+    } catch (err) {
       throw normalizeDatabaseError(err);
     }
   }
@@ -430,21 +466,21 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
     case '23505': // unique_violation
       // Duplicate key error -> 409 Conflict
       // @see https://github.com/brianc/node-postgres/issues/1602
-      return new OperationOutcomeError(conflict(err.detail));
+      return new OperationOutcomeError(conflict(err.detail), err);
     case '40001': // serialization_failure
       // Transaction rollback due to serialization error -> 409 Conflict
-      return new OperationOutcomeError(conflict(err.message, err.code));
+      return new OperationOutcomeError(conflict(err.message, err.code), err);
     case '57014': // query_canceled
       // Statement timeout -> 504 Gateway Timeout
       getLogger().warn('Database statement timeout', { error: err.message, stack: err.stack, code: err.code });
-      return new OperationOutcomeError(serverTimeout(err.message));
+      return new OperationOutcomeError(serverTimeout(err.message), err);
     case '25P02': // in_failed_sql_transaction
       getLogger().warn('Statement in failed transaction', { stack: err.stack });
-      return new OperationOutcomeError(normalizeOperationOutcome(err));
+      return new OperationOutcomeError(normalizeOperationOutcome(err), err);
   }
 
   getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
-  return new OperationOutcomeError(normalizeOperationOutcome(err));
+  return new OperationOutcomeError(normalizeOperationOutcome(err), err);
 }
 
 export abstract class BaseQuery {

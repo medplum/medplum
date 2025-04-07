@@ -277,7 +277,7 @@ export function waitFor(fn: () => Promise<void>): Promise<void> {
 }
 
 export async function waitForAsyncJob(contentLocation: string, app: Express, accessToken: string): Promise<AsyncJob> {
-  for (let i = 0; i < 45; i++) {
+  for (let i = 0; i < 100; i++) {
     const res = await request(app)
       .get(new URL(contentLocation).pathname)
       .set('Authorization', 'Bearer ' + accessToken);
@@ -285,7 +285,7 @@ export async function waitForAsyncJob(contentLocation: string, app: Express, acc
       await sleep(500); // Buffer time to ensure that any remaining async processing has fully completed
       return res.body as AsyncJob;
     }
-    await sleep(1000);
+    await sleep(450);
   }
   throw new Error('Async Job did not complete');
 }

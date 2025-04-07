@@ -2639,7 +2639,7 @@
       "abstract" : false,
       "type" : "PasswordChangeRequest",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "@deprecated Password change request for the 'forgot password' flow. Use UserSecurityCheck instead.",
+      "description" : "@deprecated Password change request for the 'forgot password' flow. Use UserSecurityRequest instead.",
       "snapshot" : {
         "element" : [
           {

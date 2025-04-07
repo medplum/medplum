@@ -2,9 +2,12 @@ import net from 'node:net';
 import { Hl7Connection } from './connection';
 
 export class Hl7Server {
+  readonly handler: (connection: Hl7Connection) => void;
   server?: net.Server;
 
-  constructor(public readonly handler: (connection: Hl7Connection) => void) {}
+  constructor(handler: (connection: Hl7Connection) => void) {
+    this.handler = handler;
+  }
 
   start(port: number, encoding?: string): void {
     const server = net.createServer((socket) => {

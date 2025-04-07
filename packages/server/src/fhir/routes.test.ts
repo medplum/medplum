@@ -86,11 +86,16 @@ describe('FHIR Routes', () => {
     expect(res.headers['content-type']).toStrictEqual('application/json; charset=utf-8');
 
     // Required fields: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#response
-    expect(res.body.authorization_endpoint).toBeDefined();
-    expect(res.body.grant_types_supported).toBeDefined();
-    expect(res.body.token_endpoint).toBeDefined();
+    expect(res.body.authorization_endpoint).toMatch(/\/oauth2\/authorize$/);
+    expect(res.body.grant_types_supported).toEqual(
+      expect.arrayContaining(['authorization_code', 'refresh_token', 'client_credentials'])
+    );
+    expect(res.body.token_endpoint).toMatch(/\/oauth2\/token$/);
     expect(res.body.capabilities).toBeDefined();
-    expect(res.body.code_challenge_methods_supported).toBeDefined();
+    expect(res.body.code_challenge_methods_supported).toEqual(expect.arrayContaining(['S256']));
+
+    // Additional fields
+    expect(res.body.introspection_endpoint).toMatch(/\/oauth2\/introspect$/);
 
     const res2 = await request(app).get(`/fhir/R4/.well-known/smart-styles.json`);
     expect(res2.status).toBe(200);

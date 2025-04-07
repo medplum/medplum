@@ -2059,6 +2059,18 @@ describe('AccessPolicy', () => {
       expect(patient3.meta?.account?.reference).toStrictEqual(account2);
       expect(patient3.meta?.accounts).toHaveLength(1);
       expect(patient3.meta?.accounts).toContainEqual({ reference: account2 });
+
+      // Remove patient accounts as project admin
+      // Project admin should be allowed to clear accounts
+      const clearedPatient = await adminRepo.updateResource<Patient>({
+        ...patient2,
+        meta: {
+          accounts: undefined,
+          account: undefined,
+        },
+      });
+      expect(clearedPatient.meta?.account).toBeUndefined();
+      expect(clearedPatient.meta?.accounts).toBeUndefined();
     }));
 
   test('Project admin can set multiple accounts', () =>

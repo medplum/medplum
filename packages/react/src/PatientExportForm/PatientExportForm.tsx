@@ -6,9 +6,11 @@ import { useMedplum } from '@medplum/react-hooks';
 import { IconCheck, IconX } from '@tabler/icons-react';
 import { useCallback } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
+import { convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { FormSection } from '../FormSection/FormSection';
+import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
 
 export interface PatientExportFormProps {
   readonly patient: Patient | Reference<Patient>;
@@ -17,7 +19,14 @@ export interface PatientExportFormProps {
 const NOTIFICATION_ID = 'patient-export';
 const NOTIFICATION_TITLE = 'Patient Export';
 
-const formats = {
+interface FormatDefinition {
+  operation: string;
+  type?: string;
+  extension: string;
+  contentType: string;
+}
+
+const formats: Record<string, FormatDefinition> = {
   everything: {
     operation: '$everything',
     extension: 'json',
@@ -33,6 +42,12 @@ const formats = {
     extension: 'xml',
     contentType: ContentType.CDA_XML,
   },
+  ccdaReferral: {
+    operation: '$ccda-export',
+    type: 'referral',
+    extension: 'xml',
+    contentType: ContentType.CDA_XML,
+  },
 };
 
 export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
@@ -43,15 +58,28 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
     async (data: Record<string, string>) => {
       const patientId = resolveId(patient) as string;
       const format = data.format as keyof typeof formats;
-      const { operation, contentType, extension } = formats[format];
+      const { operation, type, contentType, extension } = formats[format];
       const url = medplum.fhirUrl('Patient', patientId, operation);
+      const params = {} as Record<string, unknown>;
+
+      if (type) {
+        params.type = type;
+      }
+
+      if (data.author) {
+        params.author = { reference: data.author };
+      }
+
+      if (data.authoredOn) {
+        params.authoredOn = convertLocalToIso(data.authoredOn);
+      }
 
       if (data.startDate) {
-        url.searchParams.append('start', data.startDate);
+        params.start = data.startDate;
       }
 
       if (data.endDate) {
-        url.searchParams.append('end', data.endDate);
+        params.end = data.endDate;
       }
 
       notifications.show({
@@ -64,7 +92,10 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
       });
 
       try {
-        const response = await medplum.get(url, { cache: 'no-cache', headers: { Accept: contentType } });
+        const response = await medplum.post(url, params, undefined, {
+          cache: 'no-cache',
+          headers: { Accept: contentType },
+        });
 
         const fileName = `Patient-export-${patientId}-${new Date().toISOString().replaceAll(':', '-')}.${extension}`;
 
@@ -106,19 +137,33 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
               { label: 'FHIR Everything', value: 'everything' },
               { label: 'Patient Summary', value: 'summary' },
               { label: 'C-CDA', value: 'ccda' },
+              { label: 'C-CDA Referral', value: 'ccdaReferral' },
             ]}
             fullWidth
           />
         </FormSection>
+        <FormSection title="Author" description="Optional author for composition. Default value is current user.">
+          <ReferenceInput
+            name="author"
+            placeholder="Author"
+            targetTypes={['Organization', 'Practitioner', 'PractitionerRole']}
+          />
+        </FormSection>
+        <FormSection
+          title="Authored On"
+          description="Optional date for composition authored on. Default value is current date."
+        >
+          <DateTimeInput name="authoredOn" placeholder="Authored on" />
+        </FormSection>
         <FormSection
           title="Start Date"
-          description="If no start date is provided, all records prior to the end date are in scope."
+          description="The start date of care. If no start date is provided, all records prior to the end date are in scope."
         >
           <DateTimeInput name="startDate" placeholder="Start date" />
         </FormSection>
         <FormSection
           title="End Date"
-          description="If no end date is provided, all records subsequent to the start date are in scope."
+          description="The end date of care. If no end date is provided, all records subsequent to the start date are in scope."
         >
           <DateTimeInput name="endDate" placeholder="End date" />
         </FormSection>

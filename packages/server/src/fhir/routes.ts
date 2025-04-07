@@ -18,6 +18,7 @@ import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
+import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -35,6 +36,7 @@ import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
+import { patientSetAccountsHandler } from './operations/patientsetaccounts';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
@@ -48,7 +50,6 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { patientSetAccountsHandler } from './operations/patientsetaccounts';
 
 export const fhirRouter = Router();
 
@@ -248,11 +249,15 @@ function initInternalFhirRouter(): FhirRouter {
   // PlanDefinition $apply operation
   router.add('POST', '/PlanDefinition/:id/$apply', planDefinitionApplyHandler);
 
+  // ChargeItemDefinition $apply operation
+  router.add('POST', '/ChargeItemDefinition/:id/$apply', chargeItemDefinitionApplyHandler);
+
   // Resource $graph operation
   router.add('GET', '/:resourceType/:id/$graph', resourceGraphHandler);
 
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
+  router.add('POST', '/Patient/:id/$everything', patientEverythingHandler);
 
   // Patient $summary operation
   router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);
@@ -263,6 +268,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Patient $ccda-export operation
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
+  router.add('POST', '/Patient/:id/$ccda-export', ccdaExportHandler);
 
   // $expunge operation
   router.add('POST', '/:resourceType/:id/$expunge', expungeHandler);

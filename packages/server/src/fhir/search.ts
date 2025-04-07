@@ -16,6 +16,7 @@ import {
   getSearchParameter,
   IncludeTarget,
   isResource,
+  isUUID,
   OperationOutcomeError,
   Operator,
   parseFilterParameter,
@@ -42,7 +43,6 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import validator from 'validator';
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
@@ -350,7 +350,7 @@ function getBaseSelectQuery(
     }
     builder = new SelectQuery('combined', new Union(...queries));
     if (opts?.addColumns ?? true) {
-      builder.column('id').column('content');
+      builder.column('id').column('lastUpdated').column('content');
     }
   } else {
     builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, opts);
@@ -368,7 +368,10 @@ function getBaseSelectQueryForResourceType(
   const addColumns = opts?.addColumns !== false;
   const idColumn = new Column(resourceType, 'id');
   if (addColumns) {
-    builder.column(idColumn).column(new Column(resourceType, 'content'));
+    builder
+      .column(idColumn)
+      .column(new Column(resourceType, 'lastUpdated'))
+      .column(new Column(resourceType, 'content'));
   }
   if (opts?.maxResourceVersion !== undefined) {
     const col = new Column(resourceType, '__version');
@@ -792,7 +795,7 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
   if (builder.joins.length > 0) {
     builder.raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`);
   } else {
-    builder.raw('COUNT("id")::int AS "count"');
+    builder.raw('COUNT(*)::int AS "count"');
   }
 
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
@@ -926,6 +929,10 @@ function buildSearchFilterExpression(
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
   }
 
+  if (filter.value.includes('\0')) {
+    throw new OperationOutcomeError(badRequest('Search filter value cannot contain null bytes'));
+  }
+
   if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
     const chain = parseChainedParameter(resourceType, filter);
     return buildChainedSearch(repo, selectQuery, resourceType, chain);
@@ -1042,13 +1049,22 @@ function trySpecialSearchParameter(
         filter
       );
     case '_compartment':
-    case '_project':
+    case '_project': {
+      if (filter.code === '_project') {
+        if (filter.operator === Operator.MISSING) {
+          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '=' : '!=', null);
+        } else if (filter.operator === Operator.PRESENT) {
+          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '!=' : '=', null);
+        }
+      }
+
       return buildIdSearchFilter(
         table,
         { columnName: 'compartments', type: SearchParameterType.UUID, array: true, searchStrategy: 'column' },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
+    }
     case '_filter':
       return buildFilterParameterExpression(repo, selectQuery, resourceType, table, parseFilterParameter(filter.value));
     default:
@@ -1125,7 +1141,7 @@ function buildStringSearchFilter(
   return expression;
 }
 
-const prefixMatchOperators = [Operator.EQUALS, Operator.STARTS_WITH];
+const prefixMatchOperators: Operator[] = [Operator.EQUALS, Operator.STARTS_WITH];
 function buildStringFilterExpression(column: Column, operator: Operator, values: string[]): Expression {
   const conditions = values.map((v) => {
     if (operator === Operator.EXACT) {
@@ -1161,7 +1177,7 @@ function buildIdSearchFilter(
     if (values[i].includes('/')) {
       values[i] = values[i].split('/').pop() as string;
     }
-    if (!validator.isUUID(values[i])) {
+    if (!isUUID(values[i])) {
       values[i] = '00000000-0000-0000-0000-000000000000';
     }
   }
@@ -1549,16 +1565,18 @@ function linkLiteralReference(selectQuery: SelectQuery, lookupTable: string, lin
 }
 
 function getCanonicalJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
-  let sourceTable: string, targetTable: string;
+  let sourceTable: string, targetTable: string, targetType: string;
   if (link.direction === Direction.FORWARD) {
     sourceTable = currentTable;
     targetTable = nextTable;
+    targetType = link.targetType;
   } else {
     sourceTable = nextTable;
     targetTable = currentTable;
+    targetType = link.originType;
   }
 
-  if (!getSearchParameter(targetTable, 'url')) {
+  if (!getSearchParameter(targetType, 'url')) {
     throw new OperationOutcomeError(
       badRequest(`${targetTable} cannot be chained via canonical reference (${sourceTable}:${link.code})`)
     );

@@ -14,18 +14,19 @@ import { PropertyType, getElementDefinition, globalSchema } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { lazy } from '../utils';
 
-export enum SearchParameterType {
-  BOOLEAN = 'BOOLEAN',
-  NUMBER = 'NUMBER',
-  QUANTITY = 'QUANTITY',
-  TEXT = 'TEXT',
-  REFERENCE = 'REFERENCE',
-  CANONICAL = 'CANONICAL',
-  DATE = 'DATE',
-  DATETIME = 'DATETIME',
-  PERIOD = 'PERIOD',
-  UUID = 'UUID',
-}
+export const SearchParameterType = {
+  BOOLEAN: 'BOOLEAN',
+  NUMBER: 'NUMBER',
+  QUANTITY: 'QUANTITY',
+  TEXT: 'TEXT',
+  REFERENCE: 'REFERENCE',
+  CANONICAL: 'CANONICAL',
+  DATE: 'DATE',
+  DATETIME: 'DATETIME',
+  PERIOD: 'PERIOD',
+  UUID: 'UUID',
+} as const;
+export type SearchParameterType = (typeof SearchParameterType)[keyof typeof SearchParameterType];
 
 export interface SearchParameterDetails {
   readonly type: SearchParameterType;
@@ -157,8 +158,18 @@ function crawlSearchParameterDetails(
     nextIndex++;
   }
 
+  const nextAtom = atoms[nextIndex];
+
   if (elementDefinition.isArray && !hasArrayIndex) {
     details.array = true;
+  }
+
+  if (nextIndex === atoms.length - 1 && nextAtom instanceof AsAtom) {
+    // This is the 2nd to last atom in the expression
+    // And the last atom is an "as" expression
+    details.elementDefinitions.push(elementDefinition);
+    details.propertyTypes.add(nextAtom.right.toString());
+    return;
   }
 
   if (nextIndex >= atoms.length) {
@@ -264,7 +275,7 @@ function buildExpressionsForResourceType(resourceType: string, atom: Atom, resul
     buildExpressionsForResourceType(resourceType, atom.right, result);
   } else {
     const str = atom.toString();
-    if (str.startsWith(resourceType + '.')) {
+    if (str.includes(resourceType + '.')) {
       result.push(atom);
     }
   }

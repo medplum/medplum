@@ -49,6 +49,9 @@ export const MAX_MISSED_HEARTBEATS = 1;
 
 export class App {
   static instance: App;
+  readonly medplum: MedplumClient;
+  readonly agentId: string;
+  readonly logLevel: LogLevel;
   readonly log: Logger;
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
@@ -64,12 +67,11 @@ export class App {
   private keepAlive = false;
   private config: Agent | undefined;
 
-  constructor(
-    readonly medplum: MedplumClient,
-    readonly agentId: string,
-    readonly logLevel: LogLevel
-  ) {
+  constructor(medplum: MedplumClient, agentId: string, logLevel: LogLevel) {
     App.instance = this;
+    this.medplum = medplum;
+    this.agentId = agentId;
+    this.logLevel = logLevel;
     this.log = new Logger((msg) => console.log(msg), undefined, logLevel);
   }
 

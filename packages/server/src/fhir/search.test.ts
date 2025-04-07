@@ -41,6 +41,7 @@ import {
   Provenance,
   Questionnaire,
   QuestionnaireResponse,
+  ResearchStudy,
   Resource,
   RiskAssessment,
   SearchParameter,
@@ -52,10 +53,10 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
+import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { clampEstimateCount } from './search';
-import { DatabaseMode } from '../database';
 import { SelectQuery } from './sql';
 
 jest.mock('hibp');
@@ -1065,6 +1066,44 @@ describe('FHIR Search', () => {
         }
       }));
 
+    test('Handle non-string value', async () =>
+      withTestContext(async () => {
+        try {
+          await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              {
+                code: '_id',
+                operator: Operator.EQUALS,
+                value: {} as unknown as string,
+              },
+            ],
+          });
+          fail('Expected error');
+        } catch (err) {
+          expect(normalizeErrorString(err)).toStrictEqual('Search filter value must be a string');
+        }
+      }));
+
+    test('Handle string with null bytes', async () =>
+      withTestContext(async () => {
+        try {
+          await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              {
+                code: '_id',
+                operator: Operator.EQUALS,
+                value: 'foo\x00bar',
+              },
+            ],
+          });
+          fail('Expected error');
+        } catch (err) {
+          expect(normalizeErrorString(err)).toStrictEqual('Search filter value cannot contain null bytes');
+        }
+      }));
+
     test('Filter by Coding', () =>
       withTestContext(async () => {
         const auditEvents = [] as AuditEvent[];
@@ -1987,6 +2026,19 @@ describe('FHIR Search', () => {
         );
         expect(result2.entry).toHaveLength(1);
         expect(result2.entry?.[0]?.resource?.id).toEqual(evidenceVariable.id);
+
+        const study = await repo.createResource<ResearchStudy>({
+          resourceType: 'ResearchStudy',
+          status: 'active',
+          outcomeMeasure: [{ reference: createReference(evidenceVariable) }],
+        });
+        const result3 = await repo.search(
+          parseSearchRequest(
+            `ResearchStudy?outcome-measure-reference:EvidenceVariable.derived-from:Questionnaire.identifier=${q}`
+          )
+        );
+        expect(result3.entry).toHaveLength(1);
+        expect(result3.entry?.[0]?.resource?.id).toEqual(study.id);
       }));
 
     test('Rejects too long chained search', () =>
@@ -4663,26 +4715,31 @@ describe('FHIR Search', () => {
 
     test('Filter by _project', () =>
       withTestContext(async () => {
+        const idValue = randomUUID();
         const project1 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
         const project2 = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
 
         const patient1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
-          name: [{ given: ['Alice1'], family: 'Smith1' }],
+          identifier: [{ system: 'id', value: idValue }],
           meta: {
             project: project1,
           },
         });
-        expect(patient1).toBeDefined();
 
         const patient2 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
-          name: [{ given: ['Alice2'], family: 'Smith2' }],
+          identifier: [{ system: 'id', value: idValue }],
           meta: {
             project: project2,
           },
         });
-        expect(patient2).toBeDefined();
+
+        const patient3 = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ system: 'id', value: idValue }],
+          // no project
+        });
 
         const bundle = await systemRepo.search({
           resourceType: 'Patient',
@@ -4697,6 +4754,43 @@ describe('FHIR Search', () => {
         expect(bundle.entry?.length).toStrictEqual(1);
         expect(bundleContains(bundle as Bundle, patient1 as Patient)).toBeDefined();
         expect(bundleContains(bundle as Bundle, patient2 as Patient)).toBeUndefined();
+
+        const missingBundle = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'identifier',
+              operator: Operator.EQUALS,
+              value: idValue,
+            },
+            {
+              code: '_project',
+              operator: Operator.MISSING,
+              value: 'true',
+            },
+          ],
+        });
+        expect(missingBundle.entry?.length).toStrictEqual(1);
+        expect(bundleContains(missingBundle, patient3)).toBeDefined();
+
+        const presentBundle = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'identifier',
+              operator: Operator.EQUALS,
+              value: idValue,
+            },
+            {
+              code: '_project',
+              operator: Operator.PRESENT,
+              value: 'true',
+            },
+          ],
+        });
+        expect(presentBundle.entry?.length).toStrictEqual(2);
+        expect(bundleContains(presentBundle, patient1)).toBeDefined();
+        expect(bundleContains(presentBundle, patient2)).toBeDefined();
       }));
 
     test('Filter by _lastUpdated', () =>

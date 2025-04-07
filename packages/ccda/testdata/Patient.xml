@@ -44,6 +44,8 @@
         <administrativeGenderCode code="F" displayName="Female" codeSystem="2.16.840.1.113883.5.1"
           codeSystemName="AdministrativeGender" />
         <birthTime value="19700601" />
+        <raceCode nullFlavor="UNK"/>
+        <ethnicGroupCode nullFlavor="UNK"/>
       </patient>
     </patientRole>
   </recordTarget>

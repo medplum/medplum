@@ -74,7 +74,7 @@
       "resource": {
         "resourceType": "CarePlan",
         "id": "3f8b4e4c-7abc-40eb-b8d0-df32e46c086a",
-        "status": "active",
+        "status": "completed",
         "intent": "plan",
         "title": "CARE PLAN",
         "category": [

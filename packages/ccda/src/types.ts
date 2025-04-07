@@ -8,6 +8,7 @@ export interface Ccda {
   author?: CcdaAuthor[];
   effectiveTime?: CcdaEffectiveTime[];
   custodian?: CcdaCustodian;
+  informationRecipient?: CcdaInformationRecipient;
   documentationOf?: CcdaDocumentationOf;
   title?: string;
   code?: CcdaCode;
@@ -51,7 +52,7 @@ export interface CcdaPatient {
 }
 
 export interface CcdaTelecom {
-  '@_use'?: 'HP' | 'WP';
+  '@_use'?: 'HP' | 'WP' | 'MC';
   '@_value'?: string;
   '@_nullFlavor'?: 'UNK';
 }
@@ -82,7 +83,8 @@ export interface CcdaSection {
   code?: CcdaCode;
   title?: string;
   text?: CcdaNarrative | string;
-  entry: CcdaEntry[];
+  author?: CcdaAuthor[];
+  entry?: CcdaEntry[];
 }
 
 export interface CcdaTemplateId {
@@ -98,6 +100,7 @@ export interface CcdaCode<T extends string = string> {
   '@_displayName'?: string;
   originalText?: CcdaText;
   translation?: CcdaCode[];
+  '@_nullFlavor'?: 'UNK' | 'NA';
 }
 
 export interface CcdaText {
@@ -158,8 +161,9 @@ export interface CcdaAct {
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code: CcdaCode;
-  statusCode: CcdaCode;
+  statusCode?: CcdaCode;
   effectiveTime?: CcdaEffectiveTime[];
+  priorityCode?: CcdaCode;
   entryRelationship?: CcdaEntryRelationship[];
   author?: CcdaAuthor[];
   text?: CcdaText;
@@ -178,6 +182,8 @@ export interface CcdaAssignedAuthor {
   assignedPerson?: CcdaAssignedPerson;
   addr: CcdaAddr[];
   telecom: CcdaTelecom[];
+  assignedAuthoringDevice?: CcdaAssignedAuthoringDevice;
+  representedOrganization?: CcdaOrganization;
 }
 
 export interface CcdaAssignedPerson {
@@ -185,9 +191,16 @@ export interface CcdaAssignedPerson {
   name?: CcdaName[];
 }
 
+export interface CcdaAssignedAuthoringDevice {
+  id?: CcdaId[];
+  manufacturerModelName?: string;
+  softwareName?: string;
+}
+
 export interface CcdaObservation {
   '@_classCode': string;
   '@_moodCode': string;
+  '@_negationInd'?: string;
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code?: CcdaCode;
@@ -307,14 +320,8 @@ export interface CcdaManufacturedProduct {
   '@_classCode'?: string;
   templateId?: CcdaTemplateId[];
   manufacturedMaterial?: CcdaManufacturedMaterial[];
-  manufacturerOrganization?: CcdaManufacturerOrganization[];
+  manufacturerOrganization?: CcdaOrganization[];
   manufacturedLabeledDrug?: CcdaManufacturedLabeledDrug[];
-}
-
-export interface CcdaManufacturerOrganization {
-  '@_classCode'?: string;
-  id?: CcdaId[];
-  name: string[];
 }
 
 export interface CcdaManufacturedMaterial {
@@ -364,10 +371,11 @@ export interface CcdaAssignedEntity {
   addr: CcdaAddr[];
   telecom: CcdaTelecom[];
   assignedPerson?: CcdaAssignedPerson;
-  representedOrganization?: CcdaRepresentedOrganization;
+  representedOrganization?: CcdaOrganization;
 }
 
-export interface CcdaRepresentedOrganization {
+export interface CcdaOrganization {
+  '@_classCode'?: string;
   id?: CcdaId[];
   name?: string[];
   telecom?: CcdaTelecom[];
@@ -395,14 +403,19 @@ export interface CcdaCustodian {
 }
 
 export interface CcdaAssignedCustodian {
-  representedCustodianOrganization: CcdaRepresentedCustodianOrganization;
+  representedCustodianOrganization: CcdaOrganization;
 }
 
-export interface CcdaRepresentedCustodianOrganization {
-  id?: CcdaId[];
-  name?: string[];
-  telecom?: CcdaTelecom[];
-  addr?: CcdaAddr[];
+export interface CcdaInformationRecipient {
+  intendedRecipient: CcdaIntendedRecipient;
+}
+
+export interface CcdaIntendedRecipient {
+  informationRecipient: CcdaInformationRecipientEntry;
+}
+
+export interface CcdaInformationRecipientEntry {
+  name?: CcdaName[];
 }
 
 export interface CcdaDocumentationOf {

@@ -15,13 +15,14 @@ export function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.authorizeUrl = config.authorizeUrl || concatUrls(config.baseUrl, '/oauth2/authorize');
   config.tokenUrl = config.tokenUrl || concatUrls(config.baseUrl, '/oauth2/token');
   config.userInfoUrl = config.userInfoUrl || concatUrls(config.baseUrl, '/oauth2/userinfo');
+  config.introspectUrl = config.introspectUrl || concatUrls(config.baseUrl, '/oauth2/introspect');
   config.storageBaseUrl = config.storageBaseUrl || concatUrls(config.baseUrl, '/storage');
   config.maxJsonSize = config.maxJsonSize || '1mb';
   config.maxBatchSize = config.maxBatchSize || '50mb';
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   config.bcryptHashSalt = config.bcryptHashSalt || 10;
-  config.bullmq = { concurrency: 10, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
+  config.bullmq = { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
   config.shutdownTimeoutMilliseconds = config.shutdownTimeoutMilliseconds ?? 30000;
   config.accurateCountThreshold = config.accurateCountThreshold ?? 1000000;
   config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
@@ -45,6 +46,8 @@ const booleanKeys = [
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
   'database.disableConnectionConfiguration',
+  'database.disableRunPostDeployMigrations',
+  'database.runMigrations',
   'readonlyDatabase.ssl.rejectUnauthorized',
   'readonlyDatabase.ssl.require',
   'readonlyDatabase.disableConnectionConfiguration',
