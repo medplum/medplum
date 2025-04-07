@@ -65,16 +65,16 @@
     "@medplum/mock": "4.0.4",
     "@medplum/react": "4.0.4",
     "@testing-library/jest-dom": "6.6.3",
-    "@testing-library/react": "16.2.0",
-    "@types/node": "20.17.26",
+    "@testing-library/react": "16.3.0",
+    "@types/node": "20.17.30",
     "@types/react": "18.3.20",
-    "@types/react-dom": "18.3.5",
+    "@types/react-dom": "18.3.6",
     "@vitejs/plugin-react": "4.3.4",
     "jsdom": "26.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router": "7.4.0",
-    "vitest": "3.0.9"
+    "react-router": "7.5.0",
+    "vitest": "3.1.1"
   },
   "peerDependencies": {
     "@medplum/core": "4.0.4",

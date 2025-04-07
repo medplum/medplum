@@ -24,7 +24,6 @@ import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Sub
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch, { HeadersInit } from 'node-fetch';
 import { createHmac } from 'node:crypto';
-import { MedplumServerConfig } from '../config/types';
 import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
@@ -35,7 +34,13 @@ import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { WorkerInitializer, createAuditEvent, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
+
+/**
+ * The timeout for outbound rest-hook subscription HTTP requests.
+ * This is passed into fetch and will make fetch abort the request after REQUEST_TIMEOUT milliseconds.
+ */
+const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -72,21 +77,13 @@ export interface SubscriptionJobData {
 
 const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
-let queue: Queue<SubscriptionJobData> | undefined = undefined;
-let worker: Worker<SubscriptionJobData> | undefined = undefined;
 
-/**
- * Initializes the subscription worker.
- * Sets up the BullMQ job queue.
- * Sets up the BullMQ worker.
- * @param config - The Medplum server config to use.
- */
-export function initSubscriptionWorker(config: MedplumServerConfig): void {
+export const initSubscriptionWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<SubscriptionJobData>(queueName, {
+  const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: MAX_JOB_ATTEMPTS, // 1 second * 2^18 = 73 hours
@@ -97,7 +94,7 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
     },
   });
 
-  worker = new Worker<SubscriptionJobData>(
+  const worker = new Worker<SubscriptionJobData>(
     queueName,
     (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
     {
@@ -107,24 +104,9 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
   );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
-}
 
-/**
- * Shuts down the subscription worker.
- * Closes the BullMQ job queue.
- * Clsoes the BullMQ worker.
- */
-export async function closeSubscriptionWorker(): Promise<void> {
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-}
+  return { queue, worker, name: queueName };
+};
 
 /**
  * Returns the subscription queue instance.
@@ -132,7 +114,7 @@ export async function closeSubscriptionWorker(): Promise<void> {
  * @returns The subscription queue (if available).
  */
 export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 /**
@@ -316,6 +298,7 @@ async function matchesCriteria(
  * @param job - The subscription job details.
  */
 async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
+  const queue = queueRegistry.get(queueName);
   if (queue) {
     await queue.add(jobName, job);
   }
@@ -515,7 +498,7 @@ async function sendRestHook(
   try {
     log.info('Sending rest hook to: ' + url);
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
-    const response = await fetch(url, { method: 'POST', headers, body });
+    const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
     log.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(

@@ -26,7 +26,7 @@
   "dependencies": {
     "@medplum/core": "4.0.4",
     "@medplum/hl7": "4.0.4",
-    "dcmjs-dimse": "0.2.1",
+    "dcmjs-dimse": "0.2.3",
     "iconv-lite": "0.6.3",
     "ws": "8.18.1"
   },
@@ -34,7 +34,7 @@
     "@medplum/fhirtypes": "4.0.4",
     "@medplum/mock": "4.0.4",
     "@types/async-eventemitter": "0.2.4",
-    "@types/ws": "8.18.0",
+    "@types/ws": "8.18.1",
     "mock-socket": "9.3.1",
     "postject": "1.0.0-alpha.6"
   },

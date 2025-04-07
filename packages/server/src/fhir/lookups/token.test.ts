@@ -21,11 +21,12 @@ describe('Identifier Lookup Table', () => {
   test('Identifier', () =>
     withTestContext(async () => {
       const identifier = randomUUID();
+      const text = 'this is some text';
 
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
-        identifier: [{ system: 'https://www.example.com', value: identifier }],
+        identifier: [{ system: 'https://www.example.com', value: identifier, type: { text } }],
       });
 
       const searchResult = await systemRepo.search({
@@ -40,6 +41,37 @@ describe('Identifier Lookup Table', () => {
       });
       expect(searchResult.entry?.length).toStrictEqual(1);
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+
+      const goodTextResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'identifier',
+            operator: Operator.EQUALS,
+            value: identifier,
+          },
+          {
+            code: 'identifier',
+            operator: Operator.TEXT,
+            value: text,
+          },
+        ],
+      });
+      expect(goodTextResult.entry?.length).toStrictEqual(1);
+      expect(goodTextResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+
+      const badTextResult = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'identifier',
+            operator: Operator.TEXT,
+            // :text on the identifier value itself should not match
+            value: identifier,
+          },
+        ],
+      });
+      expect(badTextResult.entry?.length).toStrictEqual(0);
     }));
 
   test('Multiple identifiers', () =>

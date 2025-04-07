@@ -29,6 +29,7 @@ import {
 import { parseDateString } from './date';
 import { tokenize } from './tokenize';
 import { toTypedValue } from './utils';
+import { LRUCache } from '../cache';
 
 /**
  * Operator precedence
@@ -255,14 +256,20 @@ export function evalFhirPath(expression: string, input: unknown): unknown[] {
  * @param expression - The FHIRPath expression to parse.
  * @param input - The resource or object to evaluate the expression against.
  * @param variables - A map of variables for eval input.
+ * @param cache - Cache for parsed ASTs.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPathTyped(
   expression: string,
   input: TypedValue[],
-  variables: Record<string, TypedValue> = {}
+  variables: Record<string, TypedValue> = {},
+  cache: LRUCache<FhirPathAtom> | undefined = undefined
 ): TypedValue[] {
-  const ast = parseFhirPath(expression);
+  const cachedAst = cache?.get(expression);
+  const ast = cachedAst ?? parseFhirPath(expression);
+  if (cache && !cachedAst) {
+    cache.set(expression, ast);
+  }
   return ast.eval({ variables }, input).map((v) => ({
     type: v.type,
     value: v.value?.valueOf(),

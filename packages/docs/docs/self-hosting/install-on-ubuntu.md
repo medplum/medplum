@@ -226,6 +226,21 @@ Force reinstall:
 sudo apt-get install --reinstall medplum
 ```
 
+Reconfigure Medplum:
+
+:::caution
+
+During the installation of Medplum, you will be asked for general configuration (app domain, api domain, database host). This is used to generate the correct nginx configurations and the medplum.config.json file. 
+If you've missed these configuration you can reconfigure with the following command line 
+
+:::
+
+```bash
+sudo dpkg-reconfigure medplum
+```
+
+Then force a reinstallation of Medplum.
+
 ## Additional Configuration
 
 The Medplum server configuration is located at `/etc/medplum/medplum.config.json`. You can edit this file to change the server configuration. After editing the file, restart the Medplum service:

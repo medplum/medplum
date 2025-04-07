@@ -33,7 +33,7 @@ import { getRedisSubscriber } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
-import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
+import { execSubscriptionJob, getSubscriptionQueue } from './subscription';
 
 jest.mock('node-fetch');
 
@@ -51,7 +51,6 @@ describe('Subscription Worker', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    await closeSubscriptionWorker(); // Double close to ensure quite ignore
   });
 
   beforeEach(async () => {
