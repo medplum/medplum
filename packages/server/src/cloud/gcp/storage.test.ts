@@ -4,7 +4,31 @@ import { GoogleCloudStorage } from './storage';
 
 describe('Integration Tests for GoogleCloudStorage', () => {
   const testStorageString = 'your-project-id:your-test-bucket';
-  const storage = new GoogleCloudStorage(testStorageString);
+  let storage: GCPBlobStorage;
+
+  beforeEach(() => {
+    jest.mock('@google-cloud/storage', () => {
+      return {
+        Storage: jest.fn().mockImplementation(() => ({
+          bucket: jest.fn().mockReturnValue({
+            file: jest.fn().mockReturnValue({
+              createWriteStream: jest.fn().mockReturnValue(new PassThrough()),
+              createReadStream: jest.fn().mockReturnValue(new PassThrough()),
+              getSignedUrl: jest.fn().mockResolvedValue(['https://mock-signed-url.com']),
+            }),
+          }),
+        })),
+      };
+    });
+
+    storage = new GCPBlobStorage(testStorageString);
+  });
+
+  afterEach(() => {
+    jest.resetModules();
+    jest.clearAllMocks();
+  });
+
   const testBinary: Binary = {
     id: 'test123',
     meta: { versionId: 'v1' },
