@@ -1,4 +1,4 @@
-import { OperationOutcomeError, tooManyRequests } from '@medplum/core';
+import { Logger, OperationOutcomeError, tooManyRequests } from '@medplum/core';
 import { Request, Response, Handler } from 'express';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
@@ -6,6 +6,7 @@ import { getRedis } from './redis';
 import { MedplumServerConfig } from './config/types';
 import { AuthState } from './oauth/middleware';
 import Redis from 'ioredis';
+import { globalLogger } from './logger';
 
 // History:
 // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
@@ -22,8 +23,11 @@ export class FhirRateLimiter {
   private unitsRemaining: number;
   private secondsToReset = 60;
   private delta: number;
+  private logThreshold: number;
 
-  constructor(redis: Redis, authState: AuthState, limit: number, remainingUnits = limit) {
+  private logger: Logger;
+
+  constructor(redis: Redis, authState: AuthState, limit: number, remainingUnits = limit, logger = globalLogger) {
     this.limiter = new RateLimiterRedis({
       keyPrefix: 'medplum:rl:fhir:',
       storeClient: redis,
@@ -34,6 +38,9 @@ export class FhirRateLimiter {
 
     this.unitsRemaining = remainingUnits;
     this.delta = 0;
+
+    this.logger = logger;
+    this.logThreshold = Math.floor(limit * 0.1); // Log requests that consume at least 10% of the user's total limit
   }
 
   private setState(result: RateLimiterRes): void {
@@ -73,12 +80,26 @@ export class FhirRateLimiter {
     this.delta += points;
     try {
       const result = await this.limiter.consume(this.key, points);
+      if (this.delta > this.logThreshold) {
+        this.logger.warn('High rate limit consumption', {
+          limit: this.limiter.points,
+          used: result.consumedPoints,
+          msToReset: result.msBeforeNext,
+        });
+        this.logThreshold = Number.POSITIVE_INFINITY; // Disable additional logs for this request
+      }
       this.setState(result);
       return result;
     } catch (err: unknown) {
       if (err instanceof Error) {
         throw err;
       }
+      const result = err as RateLimiterRes;
+      this.logger.warn('User rate limited', {
+        limit: this.limiter.points,
+        used: result.consumedPoints,
+        msToReset: result.msBeforeNext,
+      });
       throw new OperationOutcomeError(tooManyRequests);
     }
   }

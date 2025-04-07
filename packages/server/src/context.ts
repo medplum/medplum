@@ -30,7 +30,6 @@ export class RequestContext implements IRequestContext {
     this.logger =
       logger ??
       new Logger(write, { ...loggerMetadata, requestId, traceId }, parseLogLevel(getConfig().logLevel ?? 'info'));
-    // this.fhirRateLimiter = authState.membership ? new FhirRateLimiter(getRedis(), authState, 1_000) : undefined;
     this.fhirRateLimiter = rateLimiter;
   }
 
