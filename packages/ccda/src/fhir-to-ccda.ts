@@ -69,6 +69,7 @@ import {
   OID_MEDICATION_FREE_TEXT_SIG,
   OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL,
   OID_NOTE_ACTIVITY,
+  OID_PATIENT_REFERRAL_ACTIVITY_OBSERVATION,
   OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION,
   OID_PROBLEM_ACT,
   OID_PROBLEM_OBSERVATION,
@@ -77,6 +78,7 @@ import {
   OID_PROCEDURE_ACTIVITY_PROCEDURE,
   OID_PRODUCT_INSTANCE,
   OID_REACTION_OBSERVATION,
+  OID_REASON_FOR_REFERRAL,
   OID_RESULT_OBSERVATION,
   OID_RESULT_ORGANIZER,
   OID_SEVERITY_OBSERVATION,
@@ -109,6 +111,8 @@ import {
   LOINC_OVERALL_GOAL,
   LOINC_PLAN_OF_TREATMENT_SECTION,
   LOINC_PROBLEMS_SECTION,
+  LOINC_REASON_FOR_REFERRAL_SECTION,
+  LOINC_REFERRAL_NOTE,
   LOINC_SUMMARY_OF_EPISODE_NOTE,
   LOINC_TOBACCO_SMOKING_STATUS,
   mapCodeableConceptToCcdaCode,
@@ -120,7 +124,7 @@ import {
   US_CORE_ETHNICITY_URL,
   US_CORE_RACE_URL,
 } from './systems';
-import { CCDA_TEMPLATE_IDS, LOINC_TO_TEMPLATE_IDS } from './templates';
+import { CCDA_TEMPLATE_IDS, LOINC_TO_TEMPLATE_IDS, REFERRAL_TEMPLATE_IDS } from './templates';
 import {
   Ccda,
   CcdaAddr,
@@ -132,6 +136,7 @@ import {
   CcdaEntry,
   CcdaEntryRelationship,
   CcdaId,
+  CcdaInformationRecipient,
   CcdaLanguageCommunication,
   CcdaName,
   CcdaNarrative,
@@ -155,13 +160,21 @@ import {
 } from './types';
 import { parseXml } from './xml';
 
+export interface FhirToCcdaOptions {
+  /**
+   * Type of C-CDA document to generate.
+   */
+  type?: 'referral' | 'discharge' | 'summary';
+}
+
 /**
  * Convert a FHIR bundle to a C-CDA document.
  * @param bundle - The FHIR bundle to convert.
+ * @param options - Optional options.
  * @returns The C-CDA document.
  */
-export function convertFhirToCcda(bundle: Bundle): Ccda {
-  return new FhirToCcdaConverter(bundle).convert();
+export function convertFhirToCcda(bundle: Bundle, options?: FhirToCcdaOptions): Ccda {
+  return new FhirToCcdaConverter(bundle, options).convert();
 }
 
 /**
@@ -169,15 +182,18 @@ export function convertFhirToCcda(bundle: Bundle): Ccda {
  */
 class FhirToCcdaConverter {
   private readonly bundle: Bundle;
+  private readonly options: FhirToCcdaOptions | undefined;
   private readonly composition: Composition;
   private readonly patient: Patient;
 
   /**
    * Creates a new FhirToCcdaConverter for the given FHIR bundle.
    * @param bundle - The FHIR bundle to convert.
+   * @param options - Optional options.
    */
-  constructor(bundle: Bundle) {
+  constructor(bundle: Bundle, options?: FhirToCcdaOptions) {
     this.bundle = bundle;
+    this.options = options;
 
     const composition = this.findResource('Composition');
     if (!composition) {
@@ -200,6 +216,31 @@ class FhirToCcdaConverter {
   convert(): Ccda {
     const sections = this.createSections();
 
+    const referral = this.composition.section
+      ?.find((s) => s.code?.coding?.[0]?.code === LOINC_REASON_FOR_REFERRAL_SECTION)
+      ?.entry?.find((e) => e.reference?.startsWith('ServiceRequest/')) as Reference<ServiceRequest> | undefined;
+
+    let templateId: CcdaTemplateId[];
+    let code: CcdaCode | undefined;
+
+    if (this.options?.type === 'referral') {
+      templateId = REFERRAL_TEMPLATE_IDS;
+      code = {
+        '@_code': LOINC_REFERRAL_NOTE,
+        '@_displayName': 'Referral Note',
+        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+        '@_codeSystemName': 'LOINC',
+      };
+    } else {
+      templateId = CCDA_TEMPLATE_IDS;
+      code = {
+        '@_code': LOINC_SUMMARY_OF_EPISODE_NOTE,
+        '@_displayName': 'Summarization of Episode Note',
+        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+        '@_codeSystemName': 'LOINC',
+      };
+    }
+
     // Be careful! Order is important!
     // Validate changes with ETT: https://ett.healthit.gov/ett/#/validators/ccdauscidv3#ccdaValdReport
     return {
@@ -210,16 +251,9 @@ class FhirToCcdaConverter {
         '@_root': OID_HL7_REGISTERED_MODELS,
         '@_extension': 'POCD_HD000040',
       },
-      templateId: CCDA_TEMPLATE_IDS,
+      templateId,
       id: this.mapIdentifiers(this.composition.id, undefined),
-      // Consol Continuity of Care Document (CCD) (V3) SHALL contain exactly one [1..1] code (CONF:1198-17180)
-      // @code="34133-9" Summarization of Episode Note (CodeSystem: 2.16.840.1.113883.6.1 LOINC) (CONF:1198-17181, CONF:1198-32138)
-      code: {
-        '@_code': LOINC_SUMMARY_OF_EPISODE_NOTE,
-        '@_displayName': 'Summarization of Episode Note',
-        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
-        '@_codeSystemName': 'LOINC',
-      },
+      code,
       title: this.composition.title,
       effectiveTime: this.mapEffectiveTime(this.composition.date, undefined),
       confidentialityCode: this.composition.confidentiality
@@ -231,6 +265,7 @@ class FhirToCcdaConverter {
       recordTarget: this.createRecordTarget(),
       author: this.mapAuthor(this.composition.author?.[0], this.composition.date, true),
       custodian: this.mapCustodian(this.composition.custodian),
+      informationRecipient: this.mapRecipient(referral),
       documentationOf: this.mapDocumentationOf(this.composition.event),
       component:
         sections.length > 0
@@ -524,6 +559,14 @@ class FhirToCcdaConverter {
       resources[0].resourceType === 'ClinicalImpression'
     ) {
       return this.createClinicalImpressionSection(section, resources[0] as ClinicalImpression);
+    }
+
+    if (
+      sectionCode === LOINC_REASON_FOR_REFERRAL_SECTION &&
+      resources.length === 1 &&
+      resources[0].resourceType === 'ServiceRequest'
+    ) {
+      return this.createReasonForReferralSection(section, resources[0] as ServiceRequest);
     }
 
     return {
@@ -875,6 +918,35 @@ class FhirToCcdaConverter {
           name: organization.name ? [organization.name] : undefined,
           telecom: this.mapTelecom(organization.telecom),
           addr: this.mapFhirAddressArrayToCcdaAddressArray(organization.address),
+        },
+      },
+    };
+  }
+
+  private mapRecipient(referral: Reference<ServiceRequest> | undefined): CcdaInformationRecipient | undefined {
+    if (!referral) {
+      return undefined;
+    }
+
+    const serviceRequest = this.findResourceByReference(referral);
+    if (!serviceRequest) {
+      return undefined;
+    }
+
+    const recipient = serviceRequest.performer;
+    if (!recipient || recipient.length === 0) {
+      return undefined;
+    }
+
+    const resource = this.findResourceByReference(recipient[0]);
+    if (!resource || resource.resourceType !== 'Practitioner') {
+      return undefined;
+    }
+
+    return {
+      intendedRecipient: {
+        informationRecipient: {
+          name: this.mapNames(resource.name),
         },
       },
     };
@@ -2085,6 +2157,46 @@ class FhirToCcdaConverter {
           statusCode: { '@_code': 'completed' },
           effectiveTime: [{ '@_value': mapFhirToCcdaDate(resource.date) }],
           author: this.mapAuthor(resource.assessor, resource.date),
+        },
+      ],
+    };
+  }
+
+  /**
+   * Handles the Reason for Referral special case.
+   * @param section - The Composition section to create the C-CDA section for.
+   * @param resource - The ClinicalImpression resource to create the C-CDA section for.
+   * @returns The C-CDA section for the ClinicalImpression resource.
+   */
+  private createReasonForReferralSection(section: CompositionSection, resource: ServiceRequest): CcdaSection {
+    return {
+      templateId: [
+        { '@_root': OID_REASON_FOR_REFERRAL, '@_extension': '2014-06-09' },
+        { '@_root': OID_REASON_FOR_REFERRAL },
+      ],
+      code: mapCodeableConceptToCcdaCode(section.code),
+      title: section.title,
+      text: resource.note?.[0]?.text,
+      entry: [
+        {
+          act: [
+            {
+              '@_classCode': 'PCPR',
+              '@_moodCode': 'INT',
+              templateId: [{ '@_root': OID_PATIENT_REFERRAL_ACTIVITY_OBSERVATION }],
+              id: this.mapIdentifiers(resource.id, resource.identifier),
+              code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
+              statusCode: { '@_code': 'active' },
+              effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(resource.occurrenceDateTime) }],
+              priorityCode: {
+                '@_code': 'A',
+                '@_codeSystem': '2.16.840.1.113883.5.7',
+                '@_codeSystemName': 'ActPriority',
+                '@_displayName': 'ASAP',
+              },
+              author: this.mapAuthor(resource.requester, resource.occurrenceDateTime),
+            },
+          ],
         },
       ],
     };

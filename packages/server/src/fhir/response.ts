@@ -4,8 +4,8 @@ import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
+import { getBinaryStorage } from '../storage/loader';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import { getBinaryStorage } from './storage';
 
 export function isFhirJsonContentType(req: Request): boolean {
   return !!(req.is(ContentType.JSON) || req.is(ContentType.FHIR_JSON));

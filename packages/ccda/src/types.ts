@@ -8,6 +8,7 @@ export interface Ccda {
   author?: CcdaAuthor[];
   effectiveTime?: CcdaEffectiveTime[];
   custodian?: CcdaCustodian;
+  informationRecipient?: CcdaInformationRecipient;
   documentationOf?: CcdaDocumentationOf;
   title?: string;
   code?: CcdaCode;
@@ -162,6 +163,7 @@ export interface CcdaAct {
   code: CcdaCode;
   statusCode?: CcdaCode;
   effectiveTime?: CcdaEffectiveTime[];
+  priorityCode?: CcdaCode;
   entryRelationship?: CcdaEntryRelationship[];
   author?: CcdaAuthor[];
   text?: CcdaText;
@@ -181,7 +183,7 @@ export interface CcdaAssignedAuthor {
   addr: CcdaAddr[];
   telecom: CcdaTelecom[];
   assignedAuthoringDevice?: CcdaAssignedAuthoringDevice;
-  representedOrganization?: CcdaRepresentedOrganization;
+  representedOrganization?: CcdaOrganization;
 }
 
 export interface CcdaAssignedPerson {
@@ -318,14 +320,8 @@ export interface CcdaManufacturedProduct {
   '@_classCode'?: string;
   templateId?: CcdaTemplateId[];
   manufacturedMaterial?: CcdaManufacturedMaterial[];
-  manufacturerOrganization?: CcdaManufacturerOrganization[];
+  manufacturerOrganization?: CcdaOrganization[];
   manufacturedLabeledDrug?: CcdaManufacturedLabeledDrug[];
-}
-
-export interface CcdaManufacturerOrganization {
-  '@_classCode'?: string;
-  id?: CcdaId[];
-  name: string[];
 }
 
 export interface CcdaManufacturedMaterial {
@@ -375,10 +371,11 @@ export interface CcdaAssignedEntity {
   addr: CcdaAddr[];
   telecom: CcdaTelecom[];
   assignedPerson?: CcdaAssignedPerson;
-  representedOrganization?: CcdaRepresentedOrganization;
+  representedOrganization?: CcdaOrganization;
 }
 
-export interface CcdaRepresentedOrganization {
+export interface CcdaOrganization {
+  '@_classCode'?: string;
   id?: CcdaId[];
   name?: string[];
   telecom?: CcdaTelecom[];
@@ -406,14 +403,19 @@ export interface CcdaCustodian {
 }
 
 export interface CcdaAssignedCustodian {
-  representedCustodianOrganization: CcdaRepresentedCustodianOrganization;
+  representedCustodianOrganization: CcdaOrganization;
 }
 
-export interface CcdaRepresentedCustodianOrganization {
-  id?: CcdaId[];
-  name?: string[];
-  telecom?: CcdaTelecom[];
-  addr?: CcdaAddr[];
+export interface CcdaInformationRecipient {
+  intendedRecipient: CcdaIntendedRecipient;
+}
+
+export interface CcdaIntendedRecipient {
+  informationRecipient: CcdaInformationRecipientEntry;
+}
+
+export interface CcdaInformationRecipientEntry {
+  name?: CcdaName[];
 }
 
 export interface CcdaDocumentationOf {
