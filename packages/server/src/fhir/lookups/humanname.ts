@@ -1,8 +1,22 @@
-import { formatFamilyName, formatGivenName, formatHumanName } from '@medplum/core';
-import { HumanName, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { formatFamilyName, formatGivenName, formatHumanName, WithId } from '@medplum/core';
+import {
+  HumanName,
+  Patient,
+  Person,
+  Practitioner,
+  RelatedPerson,
+  Resource,
+  ResourceType,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 import { DeleteQuery, Column } from '../sql';
+
+const resourceTypes = ['Patient', 'Person', 'Practitioner', 'RelatedPerson'] as const;
+const resourceTypeSet = new Set(resourceTypes);
+type HumanNameResourceType = (typeof resourceTypes)[number];
+type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
 
 /**
  * The HumanNameTable class is used to index and search "name" properties on "Person" resources.
@@ -18,14 +32,8 @@ export class HumanNameTable extends LookupTable {
     'RelatedPerson-name',
   ]);
 
-  private static readonly resourceTypes = ['Patient', 'Person', 'Practitioner', 'RelatedPerson'] as const;
-
-  private static readonly resourceTypeSet = new Set(this.resourceTypes);
-
-  private static hasHumanName(
-    resourceType: ResourceType
-  ): resourceType is (typeof HumanNameTable.resourceTypes)[number] {
-    return HumanNameTable.resourceTypeSet.has(resourceType as any);
+  private static hasHumanName(resourceType: ResourceType): resourceType is HumanNameResourceType {
+    return resourceTypeSet.has(resourceType as any);
   }
 
   /**
@@ -54,55 +62,33 @@ export class HumanNameTable extends LookupTable {
     return HumanNameTable.knownParams.has(searchParam.id as string);
   }
 
-  /**
-   * Indexes a resource HumanName values.
-   * Attempts to reuse existing identifiers if they are correct.
-   * @param client - The database client.
-   * @param resource - The resource to index.
-   * @param create - True if the resource should be created (vs updated).
-   * @returns Promise on completion.
-   */
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    return this.batchIndexResources(client, [resource], create);
+  extractValues(resource: WithId<Resource>): object[] {
+    if (!HumanNameTable.hasHumanName(resource.resourceType)) {
+      return [];
+    }
+
+    const names = (resource as HumanNameResource).name;
+    if (!Array.isArray(names)) {
+      return [];
+    }
+    return names.map((name) => ({
+      resourceId: resource.id,
+      name: getNameString(name),
+      given: formatGivenName(name),
+      family: formatFamilyName(name),
+    }));
   }
 
-  async batchIndexResources<T extends Resource>(client: PoolClient, resources: T[], create: boolean): Promise<void> {
-    if (resources.length === 0) {
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    if (!resources[0] || !HumanNameTable.hasHumanName(resources[0].resourceType)) {
       return;
     }
 
-    const resourceType = resources[0].resourceType;
-    if (!HumanNameTable.hasHumanName(resourceType)) {
-      return;
-    }
-
-    if (!create) {
-      await this.batchDeleteValuesForResources(client, resources);
-    }
-
-    const resourceBatchSize = 1000;
-    for (let i = 0; i < resources.length; i += resourceBatchSize) {
-      const batch = resources.slice(i, i + resourceBatchSize);
-      const newHumanNameRows = batch.flatMap((resource) => {
-        if (resource.resourceType !== resourceType) {
-          throw new Error(`Resource type mismatch: ${resource.resourceType} vs ${resourceType}`);
-        }
-
-        const names: HumanName[] | undefined = resource.name;
-        if (!names || !Array.isArray(names)) {
-          return [];
-        }
-        const resourceId = resource.id;
-        return names.map((name) => ({
-          resourceId,
-          name: getNameString(name),
-          given: formatGivenName(name),
-          family: formatFamilyName(name),
-        }));
-      });
-
-      await this.insertValuesForResource(client, resourceType, newHumanNameRows);
-    }
+    await super.batchIndexResources(client, resources, create);
   }
 
   /**

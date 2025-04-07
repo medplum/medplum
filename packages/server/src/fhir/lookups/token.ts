@@ -23,7 +23,6 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
 import { getLogger } from '../../logger';
 import {
   Column,
@@ -87,53 +86,14 @@ export class TokenTable extends LookupTable {
     return Boolean(getTokenIndexType(searchParam, resourceType));
   }
 
-  /**
-   * Indexes a resource token values.
-   * Attempts to reuse existing tokens if they are correct.
-   * @param client - The database client.
-   * @param resource - The resource to index.
-   * @param create - True if the resource should be created (vs updated).
-   * @returns Promise on completion.
-   */
-  async indexResource<T extends Resource>(client: PoolClient, resource: WithId<T>, create: boolean): Promise<void> {
-    return this.batchIndexResources(client, [resource], create);
-  }
-
-  async batchIndexResources<T extends Resource>(
-    client: PoolClient,
-    resources: WithId<T>[],
-    create: boolean
-  ): Promise<void> {
-    if (resources.length === 0) {
-      return;
-    }
-
-    if (!create) {
-      await this.batchDeleteValuesForResources(client, resources);
-    }
-
-    const resourceType = resources[0].resourceType;
-
-    const resourceBatchSize = 500;
-    for (let i = 0; i < resources.length; i += resourceBatchSize) {
-      const batch = resources.slice(i, i + resourceBatchSize);
-      const newTokenRows = batch.flatMap((resource) => {
-        if (resource.resourceType !== resourceType) {
-          throw new Error(`Resource type mismatch: ${resource.resourceType} vs ${resourceType}`);
-        }
-
-        const resourceId = resource.id;
-        return getTokens(resource).map((token) => ({
-          resourceId,
-          code: token.code,
-          // logical OR coalesce to ensure that empty strings are inserted as NULL
-          system: token.system?.trim?.() || undefined,
-          value: token.value?.trim?.() || undefined,
-        }));
-      });
-
-      await this.insertValuesForResource(client, resourceType, newTokenRows);
-    }
+  extractValues(resource: WithId<Resource>): Token[] {
+    return getTokens(resource).map((token) => ({
+      resourceId: resource.id,
+      code: token.code,
+      // logical OR coalesce to ensure that empty strings are inserted as NULL
+      system: token.system?.trim?.() || undefined,
+      value: token.value?.trim?.() || undefined,
+    }));
   }
 
   /**

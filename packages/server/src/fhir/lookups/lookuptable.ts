@@ -48,12 +48,22 @@ export abstract class LookupTable {
   abstract isIndexed(searchParam: SearchParameter, resourceType: string): boolean;
 
   /**
+   * Extracts the specific values to be indexed from a resource for this table.
+   * @param resource - The resource to extract values from.
+   * @returns An array of row objects to be inserted.
+   */
+  protected abstract extractValues(resource: WithId<Resource>): object[];
+
+  /**
    * Indexes the resource in the lookup table.
    * @param client - The database client.
    * @param resource - The resource to index.
    * @param create - True if the resource should be created (vs updated).
+   * @returns Promise on completion.
    */
-  abstract indexResource(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void>;
+  indexResource(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
+    return this.batchIndexResources(client, [resource], create);
+  }
 
   /**
    * Indexes the resource in the lookup table.
@@ -61,11 +71,39 @@ export abstract class LookupTable {
    * @param resources - The resources to index.
    * @param create - True if the resource should be created (vs updated).
    */
-  abstract batchIndexResources<T extends Resource>(
+  async batchIndexResources<T extends Resource>(
     client: PoolClient,
     resources: WithId<T>[],
     create: boolean
-  ): Promise<void>;
+  ): Promise<void> {
+    if (resources.length === 0) {
+      return;
+    }
+
+    const resourceType = resources[0].resourceType;
+
+    if (!create) {
+      await this.batchDeleteValuesForResources(client, resources);
+    }
+
+    const resourceBatchSize = 500;
+    for (let i = 0; i < resources.length; i += resourceBatchSize) {
+      const batch = resources.slice(i, i + resourceBatchSize);
+
+      const newRows = batch.flatMap((resource) => {
+        if (resource.resourceType !== resourceType) {
+          throw new Error(
+            `batchIndexResources must be called with resources of the same type: ${resource.resourceType} vs ${resourceType}`
+          );
+        }
+        return this.extractValues(resource);
+      });
+
+      if (newRows.length > 0) {
+        await this.insertValuesForResource(client, resourceType, newRows);
+      }
+    }
+  }
 
   /**
    * Builds a "where" condition for the select query builder.

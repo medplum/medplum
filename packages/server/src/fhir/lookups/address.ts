@@ -93,16 +93,21 @@ export class AddressTable extends LookupTable {
     return AddressTable.knownParams.has(searchParam.id as string);
   }
 
-  /**
-   * Indexes a resource Address values.
-   * Attempts to reuse existing Addresses if they are correct.
-   * @param client - The database client.
-   * @param resource - The resource to index.
-   * @param create - True if the resource should be created (vs updated).
-   * @returns Promise on completion.
-   */
-  async indexResource<T extends Resource>(client: PoolClient, resource: WithId<T>, create: boolean): Promise<void> {
-    return this.batchIndexResources(client, [resource], create);
+  extractValues(resource: WithId<Resource>): object[] {
+    const addresses = this.getIncomingAddresses(resource);
+    if (!addresses) {
+      return [];
+    }
+
+    return addresses.map((address) => ({
+      resourceId: resource.id,
+      address: formatAddress(address),
+      city: address.city?.trim(),
+      country: address.country?.trim(),
+      postalCode: address.postalCode?.trim(),
+      state: address.state?.trim(),
+      use: address.use?.trim(),
+    }));
   }
 
   async batchIndexResources<T extends Resource>(
@@ -110,47 +115,11 @@ export class AddressTable extends LookupTable {
     resources: WithId<T>[],
     create: boolean
   ): Promise<void> {
-    if (resources.length === 0) {
+    if (!resources[0] || !AddressTable.hasAddress(resources[0].resourceType)) {
       return;
     }
 
-    if (!AddressTable.hasAddress(resources[0].resourceType)) {
-      return;
-    }
-
-    if (!create) {
-      await this.batchDeleteValuesForResources(client, resources);
-    }
-
-    const resourceType = resources[0].resourceType;
-
-    const resourceBatchSize = 500;
-    for (let i = 0; i < resources.length; i += resourceBatchSize) {
-      const batch = resources.slice(i, i + resourceBatchSize);
-      const newAddressRows = batch.flatMap((resource) => {
-        if (resource.resourceType !== resourceType) {
-          throw new Error(`Resource type mismatch: ${resource.resourceType} vs ${resourceType}`);
-        }
-
-        const incomingAddresses = this.getIncomingAddresses(resource);
-        if (!incomingAddresses || !Array.isArray(incomingAddresses)) {
-          return [];
-        }
-
-        const resourceId = resource.id;
-        return incomingAddresses.map((address) => ({
-          resourceId,
-          address: formatAddress(address),
-          city: address.city?.trim(),
-          country: address.country?.trim(),
-          postalCode: address.postalCode?.trim(),
-          state: address.state?.trim(),
-          use: address.use?.trim(),
-        }));
-      });
-
-      await this.insertValuesForResource(client, resourceType, newAddressRows);
-    }
+    await super.batchIndexResources(client, resources, create);
   }
 
   private getIncomingAddresses(resource: Resource): Address[] | undefined {

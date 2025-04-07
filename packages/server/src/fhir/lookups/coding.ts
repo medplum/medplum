@@ -34,20 +34,23 @@ export class CodingTable extends LookupTable {
     return false;
   }
 
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (resource.resourceType === 'CodeSystem' && (resource.content === 'complete' || resource.content === 'example')) {
-      if (!create) {
-        await this.deleteValuesForResource(client, resource);
-      }
-
-      const elements = this.getCodeSystemElements(resource);
-      await importCodeSystem(client, resource, elements.concepts, elements.properties);
-    }
+  extractValues(): object[] {
+    throw new Error('CodingTable.extractValues not implemented');
   }
 
-  async batchIndexResources<T extends Resource>(client: PoolClient, resources: T[], create: boolean): Promise<void> {
+  async batchIndexResources(client: PoolClient, resources: Resource[], create: boolean): Promise<void> {
     for (const resource of resources) {
-      await this.indexResource(client, resource, create);
+      if (
+        resource.resourceType === 'CodeSystem' &&
+        (resource.content === 'complete' || resource.content === 'example')
+      ) {
+        if (!create) {
+          await this.deleteValuesForResource(client, resource);
+        }
+
+        const elements = this.getCodeSystemElements(resource);
+        await importCodeSystem(client, resource, elements.concepts, elements.properties);
+      }
     }
   }
 
