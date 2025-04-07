@@ -5,7 +5,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
-import { getAuthenticatedContext } from '../context';
+import { AuthenticatedRequestContext, getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
 import { bulkDataRouter } from './bulkdata';
@@ -58,6 +58,7 @@ let internalFhirRouter: FhirRouter;
 // OperationOutcome interceptor
 fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
   const oldJson = res.json;
+  const oldSend = res.send;
 
   res.json = (data: any) => {
     // Restore the original json to avoid double response
@@ -98,6 +99,19 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
 
     // Default JSON response
     return res.send(JSON.stringify(data, undefined, pretty ? 2 : undefined));
+  };
+  res.send = (...args: any[]) => {
+    // Restore the original json to avoid double response
+    // See: https://stackoverflow.com/a/60817116
+    res.send = oldSend;
+
+    const ctx = tryGetRequestContext();
+    if (ctx instanceof AuthenticatedRequestContext && ctx.fhirRateLimiter) {
+      // Attach rate limit header before sending first part of response body
+      res.append('RateLimit', ctx.fhirRateLimiter.rateLimitHeader());
+    }
+
+    return oldSend(...args);
   };
   next();
 });

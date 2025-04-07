@@ -268,7 +268,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
-    await getAuthenticatedContext().fhirRateLimiter.recordWrite({ transactional: this.transactionDepth > 0 });
+    await getAuthenticatedContext().fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
 
     const resourceWithId = {
       ...resource,
@@ -582,7 +582,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
-    await getAuthenticatedContext().fhirRateLimiter.recordWrite({ transactional: this.transactionDepth > 0 });
+    await getAuthenticatedContext().fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
 
     const startTime = Date.now();
     try {
@@ -1027,7 +1027,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
-    await getAuthenticatedContext().fhirRateLimiter.recordWrite({ transactional: this.transactionDepth > 0 });
+    await getAuthenticatedContext().fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
 
     const startTime = Date.now();
     let resource: WithId<T>;
@@ -1103,7 +1103,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     patch: Operation[],
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
-    await getAuthenticatedContext().fhirRateLimiter.recordWrite({ transactional: this.transactionDepth > 0 });
+    await getAuthenticatedContext().fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
 
     const startTime = Date.now();
     try {
@@ -1196,7 +1196,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
-    await getAuthenticatedContext().fhirRateLimiter.recordSearch();
+    await getAuthenticatedContext().fhirRateLimiter?.recordSearch();
 
     const startTime = Date.now();
     try {

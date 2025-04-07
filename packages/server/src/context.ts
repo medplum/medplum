@@ -10,6 +10,7 @@ import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middle
 import { IRequestContext, requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
 import { FhirRateLimiter } from './ratelimit';
+import { getRedis } from './redis';
 
 export class RequestContext implements IRequestContext {
   readonly requestId: string;
@@ -36,7 +37,7 @@ export class RequestContext implements IRequestContext {
 export class AuthenticatedRequestContext extends RequestContext {
   readonly authState: Readonly<AuthState>;
   readonly repo: Repository;
-  readonly fhirRateLimiter: FhirRateLimiter;
+  readonly fhirRateLimiter?: FhirRateLimiter;
 
   constructor(requestId: string, traceId: string, authState: Readonly<AuthState>, repo: Repository, logger?: Logger) {
     let loggerMetadata: Record<string, any> | undefined;
@@ -47,7 +48,7 @@ export class AuthenticatedRequestContext extends RequestContext {
 
     this.authState = authState;
     this.repo = repo;
-    this.fhirRateLimiter = new FhirRateLimiter(authState, 1_000);
+    this.fhirRateLimiter = authState.membership ? new FhirRateLimiter(getRedis(), authState, 1_000) : undefined;
   }
 
   get project(): WithId<Project> {

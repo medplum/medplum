@@ -5,6 +5,7 @@ import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRedis } from './redis';
 import { MedplumServerConfig } from './config/types';
 import { AuthState } from './oauth/middleware';
+import Redis from 'ioredis';
 
 // History:
 // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
@@ -18,22 +19,30 @@ export class FhirRateLimiter {
   private readonly limiter: RateLimiterRedis;
   private readonly key: string;
 
-  private currentValue: number;
+  private unitsRemaining: number;
+  private secondsToReset = 60;
   private delta: number;
-  private limit: number;
 
-  constructor(authState: AuthState, limit: number, currentValue = 0) {
+  constructor(redis: Redis, authState: AuthState, limit: number, remainingUnits = limit) {
     this.limiter = new RateLimiterRedis({
       keyPrefix: 'medplum:rl:fhir:',
-      storeClient: getRedis(),
+      storeClient: redis,
       points: limit,
       duration: 60, // Per minute
     });
     this.key = this.getKey(authState);
 
-    this.currentValue = currentValue;
+    this.unitsRemaining = remainingUnits;
     this.delta = 0;
-    this.limit = limit;
+  }
+
+  private setState(result: RateLimiterRes): void {
+    this.unitsRemaining = result.remainingPoints;
+    this.secondsToReset = Math.ceil(result.msBeforeNext / 1_000);
+  }
+
+  rateLimitHeader(): string {
+    return `"fhirInteractions";r=${this.unitsRemaining};t=${this.secondsToReset}`;
   }
 
   /**
@@ -46,7 +55,7 @@ export class FhirRateLimiter {
       throw new Error('Rate limiter not available');
     }
 
-    this.currentValue = result.consumedPoints;
+    this.setState(result);
     return result;
   }
 
@@ -57,14 +66,14 @@ export class FhirRateLimiter {
    */
   async consume(points: number): Promise<RateLimiterRes> {
     // If user is already over the limit, just block
-    if (this.currentValue > this.limit) {
+    if (this.unitsRemaining <= 0) {
       throw new OperationOutcomeError(tooManyRequests);
     }
 
     this.delta += points;
     try {
       const result = await this.limiter.consume(this.key, points);
-      this.currentValue = result.consumedPoints;
+      this.setState(result);
       return result;
     } catch (err: unknown) {
       if (err instanceof Error) {
