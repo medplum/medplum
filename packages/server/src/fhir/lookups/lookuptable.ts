@@ -17,6 +17,10 @@ import {
 
 export const lookupTableBatchSize = 5_000;
 
+export interface LookupTableRow {
+  resourceId: string;
+}
+
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
  * This is necessary for array properties with specific structure.
@@ -49,10 +53,10 @@ export abstract class LookupTable {
 
   /**
    * Extracts the specific values to be indexed from a resource for this table.
+   * @param result - The array that rows to be inserted should be added to.
    * @param resource - The resource to extract values from.
-   * @returns An array of row objects to be inserted.
    */
-  protected abstract extractValues(resource: WithId<Resource>): object[];
+  protected abstract extractValues(result: LookupTableRow[], resource: WithId<Resource>): void;
 
   /**
    * Indexes the resource in the lookup table.
@@ -90,14 +94,15 @@ export abstract class LookupTable {
     for (let i = 0; i < resources.length; i += resourceBatchSize) {
       const batch = resources.slice(i, i + resourceBatchSize);
 
-      const newRows = batch.flatMap((resource) => {
+      const newRows: LookupTableRow[] = [];
+      for (const resource of batch) {
         if (resource.resourceType !== resourceType) {
           throw new Error(
             `batchIndexResources must be called with resources of the same type: ${resource.resourceType} vs ${resourceType}`
           );
         }
-        return this.extractValues(resource);
-      });
+        this.extractValues(newRows, resource);
+      }
 
       if (newRows.length > 0) {
         await this.insertValuesForResource(client, resourceType, newRows);
@@ -193,7 +198,7 @@ export abstract class LookupTable {
   protected async insertValuesForResource(
     client: Pool | PoolClient,
     resourceType: ResourceType,
-    values: Record<string, any>[]
+    values: LookupTableRow[]
   ): Promise<void> {
     if (values.length === 0) {
       return;

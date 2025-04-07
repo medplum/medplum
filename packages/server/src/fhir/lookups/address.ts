@@ -2,7 +2,16 @@ import { formatAddress, WithId } from '@medplum/core';
 import { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import { Column, DeleteQuery } from '../sql';
-import { LookupTable } from './lookuptable';
+import { LookupTable, LookupTableRow } from './lookuptable';
+
+interface AddressTableRow extends LookupTableRow {
+  address: string;
+  city: string | undefined;
+  country: string | undefined;
+  postalCode: string | undefined;
+  state: string | undefined;
+  use: string | undefined;
+}
 
 /**
  * The AddressTable class is used to index and search Address properties.
@@ -93,21 +102,23 @@ export class AddressTable extends LookupTable {
     return AddressTable.knownParams.has(searchParam.id as string);
   }
 
-  extractValues(resource: WithId<Resource>): object[] {
+  extractValues(result: AddressTableRow[], resource: WithId<Resource>): void {
     const addresses = this.getIncomingAddresses(resource);
-    if (!addresses) {
-      return [];
+    if (!Array.isArray(addresses)) {
+      return;
     }
 
-    return addresses.map((address) => ({
-      resourceId: resource.id,
-      address: formatAddress(address),
-      city: address.city?.trim(),
-      country: address.country?.trim(),
-      postalCode: address.postalCode?.trim(),
-      state: address.state?.trim(),
-      use: address.use?.trim(),
-    }));
+    for (const address of addresses) {
+      result.push({
+        resourceId: resource.id,
+        address: formatAddress(address),
+        city: address.city?.trim(),
+        country: address.country?.trim(),
+        postalCode: address.postalCode?.trim(),
+        state: address.state?.trim(),
+        use: address.use?.trim(),
+      });
+    }
   }
 
   async batchIndexResources<T extends Resource>(

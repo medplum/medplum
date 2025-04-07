@@ -35,13 +35,19 @@ import {
   SelectQuery,
   SqlFunction,
 } from '../sql';
-import { LookupTable } from './lookuptable';
+import { LookupTable, LookupTableRow } from './lookuptable';
 import { deriveIdentifierSearchParameter } from './util';
 
 interface Token {
   readonly code: string;
   readonly system: string | undefined;
   readonly value: string | undefined;
+}
+
+interface TokenTableRow extends LookupTableRow {
+  code: string;
+  system: string | undefined;
+  value: string | undefined;
 }
 
 /** Context for building a WHERE condition on the token table. */
@@ -86,14 +92,18 @@ export class TokenTable extends LookupTable {
     return Boolean(getTokenIndexType(searchParam, resourceType));
   }
 
-  extractValues(resource: WithId<Resource>): Token[] {
-    return getTokens(resource).map((token) => ({
-      resourceId: resource.id,
-      code: token.code,
-      // logical OR coalesce to ensure that empty strings are inserted as NULL
-      system: token.system?.trim?.() || undefined,
-      value: token.value?.trim?.() || undefined,
-    }));
+  extractValues(results: TokenTableRow[], resource: WithId<Resource>): void {
+    const tokens: Token[] = [];
+    getTokens(tokens, resource);
+    for (const token of tokens) {
+      results.push({
+        resourceId: resource.id,
+        code: token.code,
+        // logical OR coalesce to ensure that empty strings are inserted as NULL
+        system: token.system?.trim?.() || undefined,
+        value: token.value?.trim?.() || undefined,
+      });
+    }
   }
 
   /**
@@ -296,12 +306,11 @@ function getTableName(resourceType: ResourceType): string {
 /**
  * Returns a list of all tokens in the resource to be inserted into the database.
  * This includes all values for any SearchParameter using the TokenTable.
+ * @param result - The array that rows to be inserted should be added to.
  * @param resource - The resource being indexed.
- * @returns An array of all tokens from the resource to be inserted into the database.
  */
-function getTokens(resource: Resource): Token[] {
+function getTokens(result: Token[], resource: Resource): void {
   const searchParams = getSearchParameters(resource.resourceType);
-  const result: Token[] = [];
   if (searchParams) {
     for (const searchParam of Object.values(searchParams)) {
       if (getTokenIndexType(searchParam, resource.resourceType)) {
@@ -312,7 +321,6 @@ function getTokens(resource: Resource): Token[] {
       }
     }
   }
-  return result;
 }
 
 /**

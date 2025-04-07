@@ -10,13 +10,19 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
-import { LookupTable } from './lookuptable';
+import { LookupTable, LookupTableRow } from './lookuptable';
 import { DeleteQuery, Column } from '../sql';
 
 const resourceTypes = ['Patient', 'Person', 'Practitioner', 'RelatedPerson'] as const;
 const resourceTypeSet = new Set(resourceTypes);
 type HumanNameResourceType = (typeof resourceTypes)[number];
 type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
+
+interface HumanNameTableRow extends LookupTableRow {
+  name: string;
+  given: string;
+  family: string;
+}
 
 /**
  * The HumanNameTable class is used to index and search "name" properties on "Person" resources.
@@ -62,21 +68,23 @@ export class HumanNameTable extends LookupTable {
     return HumanNameTable.knownParams.has(searchParam.id as string);
   }
 
-  extractValues(resource: WithId<Resource>): object[] {
+  extractValues(result: HumanNameTableRow[], resource: WithId<Resource>): void {
     if (!HumanNameTable.hasHumanName(resource.resourceType)) {
-      return [];
+      return;
     }
 
     const names = (resource as HumanNameResource).name;
     if (!Array.isArray(names)) {
-      return [];
+      return;
     }
-    return names.map((name) => ({
-      resourceId: resource.id,
-      name: getNameString(name),
-      given: formatGivenName(name),
-      family: formatFamilyName(name),
-    }));
+    for (const name of names) {
+      result.push({
+        resourceId: resource.id,
+        name: getNameString(name),
+        given: formatGivenName(name),
+        family: formatFamilyName(name),
+      });
+    }
   }
 
   async batchIndexResources<T extends Resource>(
