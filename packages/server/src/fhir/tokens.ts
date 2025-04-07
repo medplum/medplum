@@ -35,12 +35,6 @@ export type TokenIndexType = (typeof TokenIndexTypes)[keyof typeof TokenIndexTyp
  * @returns A `TokenIndexTypes` value if the search parameter is of a type including both a system and value, undefined otherwise.
  */
 export function getTokenIndexType(searchParam: SearchParameter, resourceType: string): TokenIndexType | undefined {
-  // if (isLegacyTokenColumnSearchParameter(searchParam, resourceType)) {
-  //   // This is a legacy search parameter that should be indexed as a column
-  //   // instead of a lookup table.
-  //   return undefined;
-  // }
-
   if (searchParam.type !== 'token') {
     return undefined;
   }

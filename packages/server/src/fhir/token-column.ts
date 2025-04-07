@@ -229,7 +229,7 @@ function buildTokenColumnsWhereCondition(
     case FhirOperator.TEXT: {
       const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       return new Conjunction([
-        new TypedCondition(tokenCol, 'ARRAY_CONTAINS', code + DELIM + 'text', 'TEXT[]'), // TODO: does this actually improve query performance?
+        new TypedCondition(tokenCol, 'ARRAY_CONTAINS', code + DELIM + 'text', 'TEXT[]'),
         new TypedCondition(textSearchCol, 'ARRAY_IREGEX', regexStr, 'TEXT[]'),
       ]);
     }
