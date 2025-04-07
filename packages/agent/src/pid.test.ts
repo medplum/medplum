@@ -1,4 +1,5 @@
 import fs, { PathOrFileDescriptor } from 'node:fs';
+import os from 'node:os';
 import { dirname } from 'node:path';
 import {
   createPidFile,
@@ -12,11 +13,12 @@ import {
 jest.mock('node:fs');
 jest.mock('node:os', () => ({
   ...jest.requireActual('node:os'),
-  platform: () => 'darwin',
-  tmpdir: () => '/tmp',
+  platform: jest.fn(() => 'darwin'),
+  tmpdir: jest.fn(() => '/tmp'),
 }));
 
 const mockedFs = jest.mocked(fs);
+const mockedOs = jest.mocked(os);
 const APP_NAME = 'test-pid-app';
 const PID_DIR = dirname(getPidFilePath(APP_NAME));
 const TEST_PID_PATH = '/tmp/medplum-agent/test-pid-app.pid';
@@ -55,6 +57,8 @@ describe('PID File Manager', () => {
       createdPidFiles.delete(filePath.toString());
       return undefined;
     });
+    mockedOs.platform.mockImplementation(() => 'darwin');
+    mockedOs.tmpdir.mockImplementation(() => '/tmp');
   });
 
   afterEach(() => {
@@ -179,9 +183,21 @@ describe('PID File Manager', () => {
     }
   });
 
-  test('returns appropriate file path for the current OS', () => {
+  test.each(['darwin', 'linux'] as const)('returns appropriate file path for the current OS -- %s', (os) => {
+    mockedOs.platform.mockImplementationOnce(() => os);
     const pidFilePath = getPidFilePath(APP_NAME);
-    expect(pidFilePath).toBe(TEST_PID_PATH);
+    expect(pidFilePath).toEqual(TEST_PID_PATH);
+  });
+
+  test('returns appropriate file path for the current OS -- win32', () => {
+    mockedOs.platform.mockImplementationOnce(() => 'win32');
+    const pidFilePath = getPidFilePath(APP_NAME);
+    expect(pidFilePath).toEqual(`C:/ProgramData/MedplumAgent/pids/${APP_NAME}.pid`);
+  });
+
+  test('throws on unsupported or invalid OS', () => {
+    mockedOs.platform.mockImplementationOnce(() => 'freebsd');
+    expect(() => getPidFilePath(APP_NAME)).toThrow(new Error('Invalid OS'));
   });
 
   test('safely handles non-existent PID file during removal', () => {
@@ -224,8 +240,8 @@ describe('PID File Manager', () => {
     beforeEach(() => {
       originalExit = process.exit;
       process.exit = jest.fn() as unknown as typeof process.exit;
-      processOnMock = jest.spyOn(process, 'on').mockImplementation((signal, cb) => {
-        processEvents[signal.toString()] = cb;
+      processOnMock = jest.spyOn(process, 'on').mockImplementation((event, cb) => {
+        processEvents[event.toString()] = cb;
         return process; // For chaining
       });
     });
@@ -247,6 +263,16 @@ describe('PID File Manager', () => {
       expect(addListenerSpy).toHaveBeenCalledWith('uncaughtException', expect.any(Function));
 
       addListenerSpy.mockClear();
+    });
+
+    test('removes PID file and exits on process.exit', async () => {
+      registerAgentCleanup();
+      createPidFile(APP_NAME);
+
+      processEvents.exit?.();
+
+      expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
+      expect(mockedFs.existsSync).toHaveBeenCalledWith(TEST_PID_PATH);
     });
 
     test('removes PID file and exits on SIGTERM', async () => {
