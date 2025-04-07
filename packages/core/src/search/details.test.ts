@@ -123,7 +123,7 @@ describe('SearchParameterDetails', () => {
       expect(details.type).toStrictEqual(SearchParameterType.TEXT);
       expect(details.elementDefinitions).toBeDefined();
       expect(details.parsedExpression.toString()).toStrictEqual(
-        'AllergyIntolerance.code | AllergyIntolerance.reaction.substance'
+        '(AllergyIntolerance.code | AllergyIntolerance.reaction.substance)'
       );
     });
 
@@ -145,7 +145,7 @@ describe('SearchParameterDetails', () => {
       expect(details).toBeDefined();
       expect(details.type).toStrictEqual(SearchParameterType.TEXT);
       expect(details.elementDefinitions).toBeDefined();
-      expect(details.parsedExpression.toString()).toStrictEqual("Patient.telecom.where(system = 'phone')");
+      expect(details.parsedExpression.toString()).toStrictEqual("Patient.telecom.where((system = 'phone'))");
     });
 
     test('RelatedPerson', () => {
@@ -153,7 +153,7 @@ describe('SearchParameterDetails', () => {
       expect(details).toBeDefined();
       expect(details.type).toStrictEqual(SearchParameterType.TEXT);
       expect(details.elementDefinitions).toBeDefined();
-      expect(details.parsedExpression.toString()).toStrictEqual("RelatedPerson.telecom.where(system = 'phone')");
+      expect(details.parsedExpression.toString()).toStrictEqual("RelatedPerson.telecom.where((system = 'phone'))");
     });
   });
 
@@ -165,7 +165,7 @@ describe('SearchParameterDetails', () => {
     expect(details.type).toStrictEqual(SearchParameterType.DATETIME);
     expect(details.elementDefinitions).toBeDefined();
     expect(details.parsedExpression.toString()).toStrictEqual(
-      'Observation.value as dateTime | Observation.value as Period'
+      '((Observation.value as dateTime) | (Observation.value as Period))'
     );
   });
 
@@ -177,7 +177,7 @@ describe('SearchParameterDetails', () => {
     expect(details.type).toStrictEqual(SearchParameterType.QUANTITY);
     expect(details.elementDefinitions).toBeDefined();
     expect(details.parsedExpression.toString()).toStrictEqual(
-      'Observation.value as Quantity | Observation.value as SampledData'
+      '((Observation.value as Quantity) | (Observation.value as SampledData))'
     );
   });
 
