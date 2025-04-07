@@ -16,13 +16,22 @@ export class RequestContext implements IRequestContext {
   readonly requestId: string;
   readonly traceId: string;
   readonly logger: Logger;
+  readonly fhirRateLimiter?: FhirRateLimiter;
 
-  constructor(requestId: string, traceId: string, logger?: Logger, loggerMetadata?: Record<string, any>) {
+  constructor(
+    requestId: string,
+    traceId: string,
+    logger?: Logger,
+    loggerMetadata?: Record<string, any>,
+    rateLimiter?: FhirRateLimiter
+  ) {
     this.requestId = requestId;
     this.traceId = traceId;
     this.logger =
       logger ??
       new Logger(write, { ...loggerMetadata, requestId, traceId }, parseLogLevel(getConfig().logLevel ?? 'info'));
+    // this.fhirRateLimiter = authState.membership ? new FhirRateLimiter(getRedis(), authState, 1_000) : undefined;
+    this.fhirRateLimiter = rateLimiter;
   }
 
   [Symbol.dispose](): void {
@@ -37,18 +46,22 @@ export class RequestContext implements IRequestContext {
 export class AuthenticatedRequestContext extends RequestContext {
   readonly authState: Readonly<AuthState>;
   readonly repo: Repository;
-  readonly fhirRateLimiter?: FhirRateLimiter;
 
   constructor(requestId: string, traceId: string, authState: Readonly<AuthState>, repo: Repository, logger?: Logger) {
     let loggerMetadata: Record<string, any> | undefined;
     if (repo.currentProject()?.id) {
       loggerMetadata = { projectId: repo.currentProject()?.id };
     }
-    super(requestId, traceId, logger, loggerMetadata);
+    super(
+      requestId,
+      traceId,
+      logger,
+      loggerMetadata,
+      authState.membership ? new FhirRateLimiter(getRedis(), authState, 1_000) : undefined
+    );
 
     this.authState = authState;
     this.repo = repo;
-    this.fhirRateLimiter = authState.membership ? new FhirRateLimiter(getRedis(), authState, 1_000) : undefined;
   }
 
   get project(): WithId<Project> {

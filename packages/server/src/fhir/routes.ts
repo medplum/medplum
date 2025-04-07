@@ -5,7 +5,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
-import { AuthenticatedRequestContext, getAuthenticatedContext, tryGetRequestContext } from '../context';
+import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
 import { bulkDataRouter } from './bulkdata';
@@ -106,12 +106,12 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
     res.send = oldSend;
 
     const ctx = tryGetRequestContext();
-    if (ctx instanceof AuthenticatedRequestContext && ctx.fhirRateLimiter) {
+    if (ctx?.fhirRateLimiter) {
       // Attach rate limit header before sending first part of response body
       res.append('RateLimit', ctx.fhirRateLimiter.rateLimitHeader());
     }
 
-    return oldSend(...args);
+    return oldSend.call(res, ...args);
   };
   next();
 });
