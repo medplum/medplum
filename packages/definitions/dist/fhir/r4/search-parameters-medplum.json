@@ -1373,7 +1373,6 @@
         ],
         "type": "reference",
         "expression": "(Group.characteristic.value.ofType(Reference))",
-        "processingMode": "normal",
         "target": [
           "Account",
           "ActivityDefinition",
