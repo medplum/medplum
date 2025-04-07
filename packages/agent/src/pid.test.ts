@@ -4,6 +4,7 @@ import { dirname } from 'node:path';
 import {
   createPidFile,
   deregisterAgentCleanup,
+  ensureDirectoryExists,
   getPidFilePath,
   pidLogger,
   registerAgentCleanup,
@@ -348,6 +349,20 @@ describe('PID File Manager', () => {
       );
       expect(process.exit).toHaveBeenCalledWith(0);
       pidLoggerErrorSpy.mockRestore();
+    });
+  });
+
+  describe('ensureDirectoryExists', () => {
+    test('Path already exists', () => {
+      mockedFs.existsSync.mockImplementation(() => true);
+      ensureDirectoryExists('test/path/to/file');
+      expect(mockedFs.mkdirSync).not.toHaveBeenCalled();
+    });
+
+    test('Path does NOT exist already', () => {
+      mockedFs.existsSync.mockImplementation(() => false);
+      ensureDirectoryExists('test/path/to/file');
+      expect(mockedFs.mkdirSync).toHaveBeenCalledWith('test/path/to/file', { recursive: true });
     });
   });
 });
