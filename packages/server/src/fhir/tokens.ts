@@ -143,6 +143,9 @@ function buildTokens(result: Token[], searchParam: SearchParameter, resource: Re
  * @param identifier - The Identifier object to be indexed.
  */
 function buildIdentifierToken(result: Token[], context: TokensContext, identifier: Identifier | undefined): void {
+  if (identifier?.type?.text) {
+    buildSimpleToken(result, context, 'text', identifier.type.text);
+  }
   buildSimpleToken(result, context, identifier?.system, identifier?.value);
 }
 
