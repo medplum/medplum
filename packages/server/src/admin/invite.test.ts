@@ -762,7 +762,7 @@ describe('Admin Invite', () => {
   });
 
   test('Invite project scoped user', async () => {
-  const { project, accessToken } = await withTestContext(() =>
+    const { project, accessToken } = await withTestContext(() =>
       registerNew({
         firstName: 'Alice',
         lastName: 'Smith',
@@ -784,7 +784,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
         scope: 'project',
       });
-      
+
     expect(res.status).toBe(200);
     const res2 = await request(app)
       .get('/fhir/R4/User?email=' + bobEmail)
