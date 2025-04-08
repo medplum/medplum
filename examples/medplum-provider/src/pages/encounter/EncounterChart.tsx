@@ -1,4 +1,4 @@
-import { Stack, Box, Card, Text, Group, Flex, TextInput } from '@mantine/core';
+import { Stack, Box, Card, Text, Group, Flex, TextInput, Button } from '@mantine/core';
 import {
   Task,
   ClinicalImpression,
@@ -7,12 +7,13 @@ import {
   Practitioner,
   Encounter,
   ChargeItem,
+  Claim,
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { Outlet, useLocation, useParams } from 'react-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
-import { deepEquals, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { createReference, deepEquals, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { IconCircleOff } from '@tabler/icons-react';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
@@ -27,6 +28,7 @@ export const EncounterChart = (): JSX.Element => {
   const medplum = useMedplum();
   const patient = usePatient();
   const [encounter, setEncounter] = useState<Encounter | undefined>(useEncounter());
+  const [claim, setClaim] = useState<Claim | undefined>();
   const location = useLocation();
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -85,6 +87,20 @@ export const EncounterChart = (): JSX.Element => {
     setChargeItems(chargeItems);
   }, [medplum, encounter]);
 
+  const fetchClaim = useCallback(async (): Promise<void> => {
+    if (!encounter) {
+      return;
+    }
+    console.log(encounter);
+    // const searchResult = await medplum.search('Claim', {
+    //   '_has:Claim:supportingInfo:valueReference': `Encounter/${encounter.id}`
+    // });
+    // const claims = searchResult.entry?.map(entry => entry.resource as Claim) || []
+    // if (claims.length > 0) {
+    //   setClaim(claims[0]);
+    // }
+  }, [encounter]);
+
   useEffect(() => {
     fetchTasks().catch((err) => {
       showNotification({
@@ -111,7 +127,16 @@ export const EncounterChart = (): JSX.Element => {
         message: normalizeErrorString(err),
       });
     });
-  }, [medplum, encounterId, fetchTasks, fetchClinicalImpressions, fetchChargeItems, location.pathname]);
+
+    fetchClaim().catch((err) => {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err), 
+      });
+    });
+  }, [medplum, encounterId, fetchTasks, fetchClinicalImpressions, fetchChargeItems, fetchClaim, location.pathname]);
 
   useEffect(() => {
     const fetchPractitioner = async (): Promise<void> => {
@@ -372,6 +397,70 @@ export const EncounterChart = (): JSX.Element => {
     }, SAVE_TIMEOUT_MS);
   };
 
+  const createClaimFromEncounter = useCallback(async (): Promise<void> => {
+    if (!encounter || !patient) {
+      return;
+    }
+
+    if (!practitioner) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: 'Practitioner information is required to create a claim.',
+      });
+      return;
+    }
+
+    const claim: Claim = {
+      resourceType: 'Claim',
+      status: 'draft',
+      type: { coding: [{ code: 'professional' }] },
+      use: 'claim',
+      created: new Date().toISOString(),
+      patient: createReference(patient),
+      provider:  { reference: getReferenceString(practitioner), type: 'Practitioner' },
+      priority: { coding: [{ code: 'normal' }] },
+      insurance: [{
+        sequence: 1,
+        focal: true,
+        coverage: { reference: 'Coverage/unknown' },
+      }], // TODO: Add coverage
+      item: chargeItems.map((chargeItem, index) => ({
+        sequence: index + 1,
+        productOrService: chargeItem.code,
+        net: chargeItem.priceOverride,
+      })),
+      // supportingInfo: [
+      //   {
+      //     sequence: 1,
+      //     category: {
+      //       coding: [
+      //         {
+      //           system: "http://terminology.hl7.org/CodeSystem/claiminformationcategory",
+      //           code: "info",
+      //           display: "Information"
+      //         }
+      //       ]
+      //     },
+      //     valueReference: createReference(encounter)
+      //   }
+      // ]
+    };
+
+    try {
+      const createdClaim = await medplum.createResource(claim);
+      setClaim(createdClaim);
+    } catch (err) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
+  }, [encounter, medplum, chargeItems, patient, practitioner]);
+
   if (!patient || !encounter || (clinicalImpression?.supportingInfo?.[0]?.reference && !questionnaireResponse)) {
     return <Loading />;
   }
@@ -441,10 +530,46 @@ export const EncounterChart = (): JSX.Element => {
                       />
                     </Box>
                   </Flex>
+
+                  {claim && (
+                    <Box mt="md">
+                        <Group grow align="flex-start">
+                        <Text>
+                          Claim submitted for ${claim.total?.value || 0} on {new Date(claim.created || '').toLocaleDateString()}
+                        </Text>
+                          <Box>
+                            <Button 
+                              component="a" 
+                              href={`/Claim/${claim.id}`} 
+                              target="_blank"
+                              fullWidth
+                              variant="outline"
+                            >
+                              View Claim Details
+                            </Button>
+                          </Box>
+                        </Group>
+                    </Box>
+                  )}
+
+                  {!claim && encounter.status === 'finished' && (
+                    <Box mt="md">
+                      <Button
+                        fullWidth
+                        onClick={async () => {
+                          await createClaimFromEncounter();
+                        }}
+                      >
+                        Submit Claim
+                      </Button>
+                    </Box>
+                  )}
                 </Card>
               </Stack>
             ) : (
-              <Text c="dimmed">No charge items available</Text>
+              <Card withBorder shadow="sm">
+                <Text c="dimmed">No charge items available</Text>
+              </Card>
             )}
           </Stack>
         </Stack>
