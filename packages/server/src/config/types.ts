@@ -29,6 +29,7 @@ export interface MedplumServerConfig {
   /** @deprecated specify `readonlyDatabase.host` and `readonlyDatabase.ssl.require` as needed */
   readonlyDatabaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
+  shards?: Record<string, MedplumShardConfig>;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
   bullmq?: MedplumBullmqConfig;
@@ -198,4 +199,10 @@ export interface MedplumFissionConfig {
   readonly environmentName: string;
   readonly routerHost: string;
   readonly routerPort: number;
+}
+
+export interface MedplumShardConfig {
+  database: MedplumDatabaseConfig;
+  readonlyDatabase?: MedplumDatabaseConfig;
+  redis: MedplumRedisConfig;
 }
