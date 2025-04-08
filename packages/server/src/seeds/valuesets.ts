@@ -2,13 +2,13 @@ import { Operator, WithId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
 import { r4ProjectId } from '../constants';
-import { Repository, getSystemRepo } from '../fhir/repo';
+import { Repository } from '../fhir/repo';
 
 /**
  * Imports all built-in ValueSets and CodeSystems into the database.
+ * @param systemRepo - The system repository to use
  */
-export async function rebuildR4ValueSets(): Promise<void> {
-  const systemRepo = getSystemRepo();
+export async function rebuildR4ValueSets(systemRepo: Repository): Promise<void> {
   const files = [
     'v2-tables.json',
     'v3-codesystems.json',
