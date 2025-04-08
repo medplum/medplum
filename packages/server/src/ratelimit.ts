@@ -53,20 +53,6 @@ export class FhirRateLimiter {
   }
 
   /**
-   * Retrieve the user's current rate limit consumption
-   * @returns The rate limit result
-   */
-  async get(): Promise<RateLimiterRes> {
-    const result = await this.limiter.get(this.key);
-    if (!result) {
-      throw new Error('Rate limiter not available');
-    }
-
-    this.setState(result);
-    return result;
-  }
-
-  /**
    * Consume rate limit from Redis store
    * @param points - Number of rate limit points to consume
    * @returns Rate limiter result

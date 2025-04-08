@@ -51,13 +51,7 @@ export class AuthenticatedRequestContext extends RequestContext {
     if (repo.currentProject()?.id) {
       loggerMetadata = { projectId: repo.currentProject()?.id };
     }
-    super(
-      requestId,
-      traceId,
-      logger,
-      loggerMetadata,
-      authState.membership ? new FhirRateLimiter(getRedis(), authState, 1_000) : undefined
-    );
+    super(requestId, traceId, logger, loggerMetadata, getRateLimiter(authState));
 
     this.authState = authState;
     this.repo = repo;
@@ -215,4 +209,11 @@ function requestIds(req: Request): { requestId: string; traceId: string } {
 
 function write(msg: string): void {
   process.stdout.write(msg + '\n');
+}
+
+function getRateLimiter(authState: AuthState): FhirRateLimiter | undefined {
+  const config = getConfig();
+  const limit = config.defaultRateLimit ? Math.ceil(config.defaultRateLimit / 60) : 1_000;
+
+  return authState.membership ? new FhirRateLimiter(getRedis(), authState, limit) : undefined;
 }
