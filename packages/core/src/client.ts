@@ -498,6 +498,7 @@ export interface InviteRequest {
   lastName: string;
   email?: string;
   externalId?: string;
+  scope?: 'project' | 'system';
   password?: string;
   sendEmail?: boolean;
   membership?: Partial<ProjectMembership>;
