@@ -2606,6 +2606,16 @@ function getProfileCacheKey(projectId: string, url: string): string {
   return `Project/${projectId}/StructureDefinition/${url}`;
 }
 
+export async function getGlobalSystemRepo(): Promise<Repository> {
+  const conn = await getDatabasePool(DatabaseMode.WRITER).connect();
+  return getSystemRepo(conn);
+}
+
+export async function getShardSystemRepo(shardName: string): Promise<Repository> {
+  const conn = await getDatabasePool(DatabaseMode.WRITER, shardName).connect();
+  return getSystemRepo(conn);
+}
+
 export function getSystemRepo(conn?: PoolClient): Repository {
   return new Repository(
     {

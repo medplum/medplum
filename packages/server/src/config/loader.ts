@@ -50,6 +50,10 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     default:
       throw new Error('Unrecognized config type: ' + configType);
   }
+  if ((cachedConfig as any).shards?.global) {
+    throw new Error('Shard name "global" is reserved');
+  }
+
   cachedConfig = addDefaults(cachedConfig);
   return cachedConfig;
 }

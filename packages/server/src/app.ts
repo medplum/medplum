@@ -15,7 +15,7 @@ import { getConfig } from './config/loader';
 import { MedplumServerConfig } from './config/types';
 import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
 import { corsOptions } from './cors';
-import { closeDatabase, initDatabase, maybeAutoRunPendingPostDeployMigration } from './database';
+import { closeDatabase, initDatabase, maybeAutoRunPendingPostDeployMigrationOnShards } from './database';
 import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
@@ -37,7 +37,7 @@ import { closeRateLimiter, getRateLimiter } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
-import { seedDatabase } from './seed';
+import { seedDatabases } from './seed';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { closeWebSockets, initWebSockets } from './websockets';
@@ -215,13 +215,13 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     loadStructureDefinitions();
     initRedis(config.redis);
     await initDatabase(config);
-    await seedDatabase();
+    await seedDatabases();
     await initKeys(config);
     initBinaryStorage(config.binaryStorage);
     initWorkers(config);
     initHeartbeat(config);
     initOtelHeartbeat();
-    await maybeAutoRunPendingPostDeployMigration();
+    await maybeAutoRunPendingPostDeployMigrationOnShards();
   });
 }
 

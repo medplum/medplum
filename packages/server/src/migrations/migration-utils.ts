@@ -141,7 +141,7 @@ export async function queuePostDeployMigration(systemRepo: Repository, version: 
   // picked up before the transaction was committed.
   // globalLogger.info('Adding post-deploy migration job', { version, asyncJob: getReferenceString(asyncJob) });
   const jobData = migration.prepareJobData(asyncJob);
-  const result = await addPostDeployMigrationJobData(jobData);
+  const result = await addPostDeployMigrationJobData(systemRepo, jobData);
   if (!result) {
     globalLogger.error('Unable to add post-deploy migration job', {
       version,

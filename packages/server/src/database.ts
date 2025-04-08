@@ -5,8 +5,8 @@ import { resolve } from 'node:path';
 import { Pool, PoolClient } from 'pg';
 import * as semver from 'semver';
 import { getConfig } from './config/loader';
-import { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
-import { getSystemRepo } from './fhir/repo';
+import { MedplumDatabaseConfig, MedplumServerConfig, MedplumShardConfig } from './config/types';
+import { getShardSystemRepo, getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
@@ -29,16 +29,18 @@ const globalPools: { pool: Pool | undefined; readonlyPool: Pool | undefined } = 
 };
 const shardPools: Record<string, { pool: Pool | undefined; readonlyPool: Pool | undefined }> = {};
 
-export function getDatabasePool(mode: DatabaseMode): Pool {
-  if (!globalPools.pool) {
+export function getDatabasePool(mode: DatabaseMode, shardName?: string): Pool {
+  const pools = shardName ? shardPools[shardName] : globalPools;
+
+  if (!pools.pool) {
     throw new Error('Database not setup');
   }
 
-  if (mode === DatabaseMode.READER && globalPools.readonlyPool) {
-    return globalPools.readonlyPool;
+  if (mode === DatabaseMode.READER && pools.readonlyPool) {
+    return pools.readonlyPool;
   }
 
-  return globalPools.pool;
+  return pools.pool;
 }
 
 export const locks = {
@@ -57,7 +59,7 @@ export async function initDatabase(serverConfig: MedplumServerConfig): Promise<v
     await runMigrations(globalPools.pool);
   }
 
-  for (const [shardName, shardConfig] of Object.entries(serverConfig.shards ?? {})) {
+  for (const [shardName, shardConfig] of Object.entries(serverConfig.shards)) {
     const shardPool = await initPool(shardConfig.database, undefined);
     shardPools[shardName] = {
       pool: shardPool,
@@ -239,10 +241,20 @@ async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersi
   }
 }
 
-export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<AsyncJob> | undefined> {
-  const config = getConfig();
-  const isDisabled = config.database.runMigrations === false || config.database.disableRunPostDeployMigrations;
-  const pendingPostDeployMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER));
+export async function maybeAutoRunPendingPostDeployMigrationOnShards(): Promise<void> {
+  for (const shardConfig of Object.values(getConfig().shards)) {
+    await maybeAutoRunPendingPostDeployMigration(shardConfig);
+  }
+}
+
+export async function maybeAutoRunPendingPostDeployMigration(
+  shardConfig: MedplumShardConfig
+): Promise<WithId<AsyncJob> | undefined> {
+  const isDisabled =
+    shardConfig.database.runMigrations === false || shardConfig.database.disableRunPostDeployMigrations;
+  const pendingPostDeployMigration = await getPendingPostDeployMigration(
+    getDatabasePool(DatabaseMode.WRITER, shardConfig.name)
+  );
 
   if (!isDisabled && pendingPostDeployMigration === MigrationVersion.UNKNOWN) {
     //throwing here seems extreme since it stops the server from starting
@@ -257,13 +269,17 @@ export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<A
 
   if (isDisabled) {
     globalLogger.info('Not auto-queueing pending post-deploy migration because auto-run is disabled', {
+      shard: shardConfig.name,
       version: `v${pendingPostDeployMigration}`,
     });
     return undefined;
   }
 
-  const systemRepo = getSystemRepo();
-  globalLogger.info('Auto-queueing pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
+  const systemRepo = await getShardSystemRepo(shardConfig.name);
+  globalLogger.info('Auto-queueing pending post-deploy migration', {
+    shard: shardConfig.name,
+    version: `v${pendingPostDeployMigration}`,
+  });
   return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }
 

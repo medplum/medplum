@@ -5,6 +5,7 @@ import { Job } from 'bullmq';
 
 export interface PostDeployJobData {
   readonly type: 'reindex' | 'custom';
+  readonly shardName: string;
   readonly asyncJobId: string;
   readonly requestId?: string;
   readonly traceId?: string;

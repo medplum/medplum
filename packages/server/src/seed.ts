@@ -7,8 +7,28 @@ import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
-export async function seedDatabase(): Promise<void> {
-  const systemRepo = getSystemRepo();
+import { getConfig } from './config/loader';
+import { DatabaseMode, getDatabasePool } from './database';
+import { Pool } from 'pg';
+
+export async function seedDatabases(): Promise<void> {
+  // Ensure 'global' shard is run first
+  const globalPool = getDatabasePool(DatabaseMode.WRITER);
+  await seedDatabase(globalPool);
+
+  // Seed all other shards
+  for (const shardName of Object.keys(getConfig().shards)) {
+    if (shardName === 'global') {
+      continue;
+    }
+    const pool = getDatabasePool(DatabaseMode.WRITER, shardName);
+    await seedDatabase(pool);
+  }
+}
+
+export async function seedDatabase(pool: Pool): Promise<void> {
+  const conn = await pool.connect();
+  const systemRepo = getSystemRepo(conn);
 
   if (await isSeeded(systemRepo)) {
     globalLogger.info('Already seeded');

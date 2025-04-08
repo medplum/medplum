@@ -18,6 +18,7 @@ export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
 function getJobDataLoggingFields(job: Job<PostDeployJobData>): Record<string, string> {
   return {
+    shard: job.data.shardName,
     asyncJob: 'AsyncJob/' + job.data.asyncJobId,
     jobType: job.data.type,
   };
@@ -41,6 +42,7 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
     {
       ...config.bullmq,
       ...defaultOptions,
+      concurrency: 1,
     }
   );
   addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
@@ -146,10 +148,14 @@ function getAsyncJobOutputFromCustomMigrationResults(result: CustomMigrationResu
   };
 }
 
-export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): CustomPostDeployMigrationJobData {
+export function prepareCustomMigrationJobData(
+  asyncJob: WithId<AsyncJob>,
+  shardName: string
+): CustomPostDeployMigrationJobData {
   const { requestId, traceId } = getRequestContext();
   return {
     type: 'custom',
+    shardName,
     asyncJobId: asyncJob.id,
     requestId,
     traceId,
@@ -157,11 +163,12 @@ export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): Custo
 }
 
 export async function addPostDeployMigrationJobData<T extends PostDeployJobData>(
+  systemRepo: Repository,
   jobData: T,
   options?: JobsOptions
 ): Promise<Job<T> | undefined> {
-  const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
-  const deduplicationId = `v${asyncJob.dataVersion}`;
+  const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+  const deduplicationId = `${jobData.shardName}:v${asyncJob.dataVersion}`;
 
   const queue = queueRegistry.get<PostDeployJobData>(PostDeployMigrationQueueName);
   if (!queue) {

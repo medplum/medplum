@@ -28,6 +28,15 @@ export function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
   config.defaultProjectFeatures = config.defaultProjectFeatures ?? [];
   config.emailProvider = config.emailProvider || (config.smtp ? 'smtp' : 'awsses');
+  config.shards = config.shards ?? {};
+  config.shards.global = {
+    name: 'global',
+    database: config.database,
+    redis: config.redis,
+  };
+  for (const [shardName, shardConfig] of Object.entries(config.shards)) {
+    shardConfig.name = shardName;
+  }
   return config;
 }
 
