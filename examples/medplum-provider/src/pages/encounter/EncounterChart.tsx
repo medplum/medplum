@@ -133,7 +133,7 @@ export const EncounterChart = (): JSX.Element => {
         color: 'red',
         icon: <IconCircleOff />,
         title: 'Error',
-        message: normalizeErrorString(err), 
+        message: normalizeErrorString(err),
       });
     });
   }, [medplum, encounterId, fetchTasks, fetchClinicalImpressions, fetchChargeItems, fetchClaim, location.pathname]);
@@ -419,13 +419,15 @@ export const EncounterChart = (): JSX.Element => {
       use: 'claim',
       created: new Date().toISOString(),
       patient: createReference(patient),
-      provider:  { reference: getReferenceString(practitioner), type: 'Practitioner' },
+      provider: { reference: getReferenceString(practitioner), type: 'Practitioner' },
       priority: { coding: [{ code: 'normal' }] },
-      insurance: [{
-        sequence: 1,
-        focal: true,
-        coverage: { reference: 'Coverage/unknown' },
-      }], // TODO: Add coverage
+      insurance: [
+        {
+          sequence: 1,
+          focal: true,
+          coverage: { reference: 'Coverage/unknown' },
+        },
+      ], // TODO: Add coverage
       item: chargeItems.map((chargeItem, index) => ({
         sequence: index + 1,
         productOrService: chargeItem.code,
@@ -533,22 +535,17 @@ export const EncounterChart = (): JSX.Element => {
 
                   {claim && (
                     <Box mt="md">
-                        <Group grow align="flex-start">
+                      <Group grow align="flex-start">
                         <Text>
-                          Claim submitted for ${claim.total?.value || 0} on {new Date(claim.created || '').toLocaleDateString()}
+                          Claim submitted for ${claim.total?.value || 0} on{' '}
+                          {new Date(claim.created || '').toLocaleDateString()}
                         </Text>
-                          <Box>
-                            <Button 
-                              component="a" 
-                              href={`/Claim/${claim.id}`} 
-                              target="_blank"
-                              fullWidth
-                              variant="outline"
-                            >
-                              View Claim Details
-                            </Button>
-                          </Box>
-                        </Group>
+                        <Box>
+                          <Button component="a" href={`/Claim/${claim.id}`} target="_blank" fullWidth variant="outline">
+                            View Claim Details
+                          </Button>
+                        </Box>
+                      </Group>
                     </Box>
                   )}
 
