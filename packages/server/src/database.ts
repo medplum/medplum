@@ -22,19 +22,22 @@ export const DatabaseMode = {
 } as const;
 export type DatabaseMode = (typeof DatabaseMode)[keyof typeof DatabaseMode];
 
-let pool: Pool | undefined;
-let readonlyPool: Pool | undefined;
+const globalPools: { pool: Pool | undefined; readonlyPool: Pool | undefined } = {
+  pool: undefined,
+  readonlyPool: undefined,
+};
+const shardPools: Record<string, { pool: Pool | undefined; readonlyPool: Pool | undefined }> = {};
 
 export function getDatabasePool(mode: DatabaseMode): Pool {
-  if (!pool) {
+  if (!globalPools.pool) {
     throw new Error('Database not setup');
   }
 
-  if (mode === DatabaseMode.READER && readonlyPool) {
-    return readonlyPool;
+  if (mode === DatabaseMode.READER && globalPools.readonlyPool) {
+    return globalPools.readonlyPool;
   }
 
-  return pool;
+  return globalPools.pool;
 }
 
 export const locks = {
@@ -42,14 +45,27 @@ export const locks = {
 };
 
 export async function initDatabase(serverConfig: MedplumServerConfig): Promise<void> {
-  pool = await initPool(serverConfig.database, serverConfig.databaseProxyEndpoint);
-
+  globalPools.pool = await initPool(serverConfig.database, undefined);
+  if (serverConfig.readonlyDatabase) {
+    globalPools.readonlyPool = await initPool(
+      serverConfig.readonlyDatabase,
+      serverConfig.readonlyDatabaseProxyEndpoint
+    );
+  }
   if (serverConfig.database.runMigrations !== false) {
-    await runMigrations(pool);
+    await runMigrations(globalPools.pool);
   }
 
-  if (serverConfig.readonlyDatabase) {
-    readonlyPool = await initPool(serverConfig.readonlyDatabase, serverConfig.readonlyDatabaseProxyEndpoint);
+  for (const [shardName, shardConfig] of Object.entries(serverConfig.shards ?? {})) {
+    const shardPool = await initPool(shardConfig.database, undefined);
+    shardPools[shardName] = {
+      pool: shardPool,
+      readonlyPool: shardConfig.readonlyDatabase && (await initPool(shardConfig.readonlyDatabase, undefined)),
+    };
+
+    if (shardConfig.database.runMigrations !== false) {
+      await runMigrations(shardPool);
+    }
   }
 }
 
@@ -99,14 +115,15 @@ export function getDefaultStatementTimeout(config: MedplumDatabaseConfig): numbe
 }
 
 export async function closeDatabase(): Promise<void> {
-  if (pool) {
-    await pool.end();
-    pool = undefined;
-  }
-
-  if (readonlyPool) {
-    await readonlyPool.end();
-    readonlyPool = undefined;
+  for (const pools of [globalPools, ...Object.values(shardPools)]) {
+    if (pools.pool) {
+      await pools.pool.end();
+      pools.pool = undefined;
+    }
+    if (pools.readonlyPool) {
+      await pools.readonlyPool.end();
+      pools.readonlyPool = undefined;
+    }
   }
 }
 
