@@ -33,6 +33,7 @@ import {
   isReference,
   isResource,
   isResourceWithId,
+  isUUID,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
@@ -68,7 +69,6 @@ import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
 import { v7 } from 'uuid';
-import validator from 'validator';
 import { getConfig } from '../config/loader';
 import { r4ProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
@@ -317,7 +317,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     options?: ReadResourceOptions
   ): Promise<WithId<T>> {
-    if (!id || !validator.isUUID(id)) {
+    if (!id || !isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
 
@@ -349,7 +349,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    if (!validator.isUUID(id)) {
+    if (!isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
 
@@ -545,7 +545,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
     try {
-      if (!validator.isUUID(id) || !validator.isUUID(vid)) {
+      if (!isUUID(id) || !isUUID(vid)) {
         throw new OperationOutcomeError(notFound);
       }
 
@@ -609,7 +609,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
     const { resourceType, id } = resource;
-    if (!validator.isUUID(id)) {
+    if (!isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
 
@@ -1437,16 +1437,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private getCompartments(resource: WithId<Resource>): Reference[] {
     const compartments = new Set<string>();
 
-    if (resource.meta?.project && validator.isUUID(resource.meta.project)) {
+    if (resource.meta?.project && isUUID(resource.meta.project)) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       compartments.add('Project/' + resource.meta.project);
     }
 
-    if (
-      resource.resourceType === 'User' &&
-      resource.project?.reference &&
-      validator.isUUID(resolveId(resource.project) ?? '')
-    ) {
+    if (resource.resourceType === 'User' && resource.project?.reference && isUUID(resolveId(resource.project) ?? '')) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       compartments.add(resource.project.reference);
     }
@@ -1454,20 +1450,20 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (resource.meta?.accounts) {
       for (const account of resource.meta.accounts) {
         const id = resolveId(account);
-        if (!account.reference?.startsWith('Project/') && id && validator.isUUID(id)) {
+        if (!account.reference?.startsWith('Project/') && id && isUUID(id)) {
           compartments.add(account.reference as string);
         }
       }
     } else if (resource.meta?.account && !resource.meta.account.reference?.startsWith('Project/')) {
       const id = resolveId(resource.meta.account);
-      if (id && validator.isUUID(id)) {
+      if (id && isUUID(id)) {
         compartments.add(resource.meta.account.reference as string);
       }
     }
 
     for (const patient of getPatients(resource)) {
       const patientId = resolveId(patient);
-      if (patientId && validator.isUUID(patientId)) {
+      if (patientId && isUUID(patientId)) {
         compartments.add(patient.reference);
       }
     }

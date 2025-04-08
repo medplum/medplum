@@ -1,6 +1,6 @@
+import { isUUID } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
-import validator from 'validator';
 import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 
@@ -28,7 +28,7 @@ describe('Well Known', () => {
     for (const key of keys) {
       expect(key.kid).toBeDefined();
       expect(key.kid.length).toStrictEqual(36); // kid should be a UUID
-      expect(validator.isUUID(key.kid)).toStrictEqual(true);
+      expect(isUUID(key.kid)).toStrictEqual(true);
       expect(key.alg).toStrictEqual('RS256');
       expect(key.kty).toStrictEqual('RSA');
       expect(key.use).toStrictEqual('sig');

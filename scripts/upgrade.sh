@@ -78,8 +78,7 @@ echo "Last completed step: $LAST_STEP"
 # @tabler/icons-react - to avoid bad interaction with vite https://github.com/tabler/tabler-icons/issues/1233
 # react-native - 0.76.x is broken with an error caused by flow parser breaking when using `expo-crypto`: `SyntaxError: {..}/react-native/Libraries/vendor/emitter/EventEmitter.js: Unexpected token, expected "]" (39:5)`
 # storybook-addon-mantine - 4.1.0 seems to accidentally backported requirement for React 19 from v5: https://github.com/josiahayres/storybook-addon-mantine/issues/18
-# validator 13.15.0 introduced stricter validation of UUIDs which some of UUIDs don't pass for some reason, likely due to historical differences in UUID generation https://github.com/validatorjs/validator.js/pull/2421
-EXCLUDE="react react-dom @tabler/icons-react react-native storybook-addon-mantine validator"
+EXCLUDE="react react-dom @tabler/icons-react react-native storybook-addon-mantine"
 
 # Append any additional excludes from the command line
 if [ -n "$ADDITIONAL_EXCLUDES" ]; then

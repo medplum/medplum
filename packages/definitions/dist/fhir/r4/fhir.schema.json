@@ -60082,7 +60082,7 @@
       "required": ["resourceType", "user", "authMethod", "authTime"]
     },
     "PasswordChangeRequest": {
-      "description": "@deprecated Password change request for the \u0027forgot password\u0027 flow. Use UserSecurityCheck instead.",
+      "description": "@deprecated Password change request for the \u0027forgot password\u0027 flow. Use UserSecurityRequest instead.",
       "properties": {
         "resourceType": {
           "description": "This is a PasswordChangeRequest resource",

@@ -388,6 +388,9 @@ function buildIdentifierToken(
   caseSensitive: boolean,
   identifier: Identifier | undefined
 ): void {
+  if (identifier?.type?.text) {
+    buildSimpleToken(result, searchParam, caseSensitive, 'text', identifier.type.text);
+  }
   buildSimpleToken(result, searchParam, caseSensitive, identifier?.system, identifier?.value);
 }
 

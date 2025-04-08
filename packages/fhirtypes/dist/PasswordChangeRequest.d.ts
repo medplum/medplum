@@ -12,7 +12,7 @@ import { User } from './User';
 
 /**
  * @deprecated Password change request for the 'forgot password' flow.
- * Use UserSecurityCheck instead.
+ * Use UserSecurityRequest instead.
  */
 export interface PasswordChangeRequest {
 

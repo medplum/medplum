@@ -16,6 +16,7 @@ import {
   getSearchParameter,
   IncludeTarget,
   isResource,
+  isUUID,
   OperationOutcomeError,
   Operator,
   parseFilterParameter,
@@ -42,7 +43,6 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import validator from 'validator';
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
@@ -1177,7 +1177,7 @@ function buildIdSearchFilter(
     if (values[i].includes('/')) {
       values[i] = values[i].split('/').pop() as string;
     }
-    if (!validator.isUUID(values[i])) {
+    if (!isUUID(values[i])) {
       values[i] = '00000000-0000-0000-0000-000000000000';
     }
   }

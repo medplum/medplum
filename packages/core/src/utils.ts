@@ -773,7 +773,7 @@ export function deepClone<T>(input: T): T {
  * @returns True if the input string matches the UUID format.
  */
 export function isUUID(input: string): input is string {
-  return !!/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/i.exec(input);
+  return /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(input);
 }
 
 /**
