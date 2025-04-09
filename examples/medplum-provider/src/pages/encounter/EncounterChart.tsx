@@ -510,11 +510,7 @@ export const EncounterChart = (): JSX.Element => {
                       Total Calculated Price to Bill
                     </Text>
                     <Box>
-                      <TextInput
-                        w={300}
-                        value={`$${calculateTotalPrice(chargeItems)}`}
-                        readOnly
-                      />
+                      <TextInput w={300} value={`$${calculateTotalPrice(chargeItems)}`} readOnly />
                     </Box>
                   </Flex>
 
