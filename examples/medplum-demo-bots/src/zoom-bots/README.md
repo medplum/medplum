@@ -32,6 +32,33 @@ This module integrates Medplum with Zoom, allowing for automatic creation of Zoo
 
 The bot can be triggered through Subscription on Appointment resource or invoking the bot directly with an Appointment resource as input.
 
+## Appointment Resource
+```
+{
+  "resourceType": "Appointment",
+  "status": "arrived",
+  "start": "2025-04-08T23:08:00.000Z",
+  "end": "2025-04-08T23:10:00.000Z",
+  "minutesDuration": 30,
+  "participant": [
+    {
+      "actor": {
+        "reference": "Patient/0194be22-5338-7254-a03c-934f4eed3e5d",
+        "display": "Marge Simpson"
+      },
+      "status": "accepted",
+      "required": "information-only",
+      "period": {
+        "start": "2025-04-08T23:08:00.000Z",
+        "end": "2025-04-08T23:09:00.000Z"
+      }
+    }
+  ],
+  "id": "019617aa-18cb-7429-871d-53c69189e031",
+  ...
+}
+```
+
 ## Response Format
 
 The bot returns a response object containing:
@@ -46,29 +73,34 @@ The bot returns a response object containing:
 }
 ```
 
-## Integration with FHIR Resources
+and will update the Appointment resource with the following extensions:
 
-The bot can update various FHIR resources with the Zoom meeting details:
+```
+{
+  ...
+  "extension": [
+    {
+      "url": "https://medplum.com/zoom-meeting",
+      "extension": [
+        {
+          "url": "meetingId",
+          "valueString": "74192035879"
+        },
+        {
+          "url": "password",
+          "valueString": "pE426Z"
+        },
+        {
+          "url": "startUrl",
+          "valueString": "https://us04web.zoom.us/s/74192035879?zak=eyJ0eXAiOiJKV1QiLCJzdiI6IjAwMDAwMSIsInptX3NrbSI6InptX28ybSIsImFsZyI6IkhTMjU2In0.eyJpc3MiOiJ3ZWIiLCJjbHQiOjAsIm1udW0iOiI3NDE5MjAzNTg3OSIsImF1ZCI6ImNsaWVudHNtIiwidWlkIjoicFF0QXZKdHFTcUtuUmkzcFJvaTE2ZyIsInppZCI6ImFkMzI2YWQ5OTdjODQ3NDlhNDg0NTk4MDA3MzAwOTE2Iiwic2siOiIwIiwic3R5IjoxLCJ3Y2QiOiJ1czA0IiwiZXhwIjoxNzQ0MTYxMTY4LCJpYXQiOjE3NDQxNTM5NjgsImFpZCI6IjJZaXRWbjJUVFc2bHlXeWV1WTB4TFEiLCJjaWQiOiIifQ.PeJrxxSqMzm93OxlckJfsvSfM_NtqvsHVRbaA9kk8Bo"
+        },
+        {
+          "url": "joinUrl",
+          "valueString": "https://us04web.zoom.us/j/74192035879?pwd=OMj34DYuHSOnPDqHvcYs5pUt9cF7F3.1"
+        }
+      ]
+    }
+  ]
+}
+```
 
-- Appointment.telecom
-- Appointment.extension
-- ServiceRequest.orderDetail
-- Communication.payload
-
-## Error Handling
-
-The bot implements comprehensive error handling for various scenarios:
-- Invalid authentication
-- Rate limiting
-- Network issues
-- Invalid meeting parameters
-
-See the implementation file for detailed error handling logic.
-
-## Testing
-
-See `zoom-create-meeting.test.ts` for comprehensive test cases covering:
-- Meeting creation
-- Error scenarios
-- FHIR resource updates
-- Authentication flows 
