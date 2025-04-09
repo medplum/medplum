@@ -61,22 +61,11 @@ The bot can be triggered through Subscription on Appointment resource or invokin
 
 ## Response Format
 
-The bot returns a response object containing:
+The bot returns the updated Appointment resource with the following extensions:
 
 ```typescript
 {
-  meetingUrl: string;      // URL for joining the meeting
-  startUrl: string;        // URL for the host to start the meeting
-  password: string;        // Meeting password (if enabled)
-  joinUrl: string;         // URL for participants to join
-  meetingId: string;       // Zoom Meeting ID
-}
-```
-
-and will update the Appointment resource with the following extensions:
-
-```
-{
+  "resourceType": "Appointment",
   ...
   "extension": [
     {
@@ -84,23 +73,24 @@ and will update the Appointment resource with the following extensions:
       "extension": [
         {
           "url": "meetingId",
-          "valueString": "74192035879"
+          "valueString": "meetingId123"
         },
         {
           "url": "password",
-          "valueString": "pE426Z"
+          "valueString": "password123&*@%$"
         },
         {
           "url": "startUrl",
-          "valueString": "https://us04web.zoom.us/s/74192035879?zak=eyJ0eXAiOiJKV1QiLCJzdiI6IjAwMDAwMSIsInptX3NrbSI6InptX28ybSIsImFsZyI6IkhTMjU2In0.eyJpc3MiOiJ3ZWIiLCJjbHQiOjAsIm1udW0iOiI3NDE5MjAzNTg3OSIsImF1ZCI6ImNsaWVudHNtIiwidWlkIjoicFF0QXZKdHFTcUtuUmkzcFJvaTE2ZyIsInppZCI6ImFkMzI2YWQ5OTdjODQ3NDlhNDg0NTk4MDA3MzAwOTE2Iiwic2siOiIwIiwic3R5IjoxLCJ3Y2QiOiJ1czA0IiwiZXhwIjoxNzQ0MTYxMTY4LCJpYXQiOjE3NDQxNTM5NjgsImFpZCI6IjJZaXRWbjJUVFc2bHlXeWV1WTB4TFEiLCJjaWQiOiIifQ.PeJrxxSqMzm93OxlckJfsvSfM_NtqvsHVRbaA9kk8Bo"
+          "valueString": "https://us04web.zoom.us/s/74192035[...]M_NtqvsHVRbaA9kk8Bo"
         },
         {
           "url": "joinUrl",
-          "valueString": "https://us04web.zoom.us/j/74192035879?pwd=OMj34DYuHSOnPDqHvcYs5pUt9cF7F3.1"
+          "valueString": "https://us04web.zoom.us/j/74192035[...]HSOnPDqHvcYs5pUt9cF7F3.1"
         }
       ]
     }
   ]
 }
+  
 ```
 

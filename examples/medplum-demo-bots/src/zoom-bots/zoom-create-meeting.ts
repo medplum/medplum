@@ -201,7 +201,7 @@ async function updateAppointmentWithZoomDetails(
 export async function handler(
   medplum: MedplumClient,
   event: BotEvent< Appointment>
-): Promise<ZoomMeetingResponse> {
+): Promise<Appointment> {
   // Get Zoom credentials from bot secrets
   const accountId = event.secrets['ZOOM_ACCOUNT_ID']?.valueString;
   const clientId = event.secrets['ZOOM_CLIENT_ID']?.valueString;
@@ -227,10 +227,6 @@ export async function handler(
   // Create Zoom meeting
   const meetingDetails = await createZoomMeeting(accessToken, meetingInput, userEmail);
 
-  // Update appointment if provided
-  if (appointment) {
-    await updateAppointmentWithZoomDetails(medplum, appointment, meetingDetails);
-  }
-
-  return meetingDetails;
+  const updatedAppointment = await updateAppointmentWithZoomDetails(medplum, appointment, meetingDetails);
+  return updatedAppointment;
 } 

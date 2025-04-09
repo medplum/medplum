@@ -51,14 +51,28 @@ test('Create Zoom meeting from Appointment', async () => {
     },
   });
 
-  expect(result).toEqual({
-    meetingUrl: mockMeeting.join_url,
-    startUrl: mockMeeting.start_url,
-    password: mockMeeting.password,
-    joinUrl: mockMeeting.join_url,
-    meetingId: mockMeeting.id,
+  expect(result.extension?.[0]).toMatchObject({
+    url: 'https://medplum.com/zoom-meeting',
+    extension: [
+      {
+        url: 'meetingId',
+        valueString: mockMeeting.id,
+      },
+      {
+        url: 'password',
+        valueString: mockMeeting.password,
+      },
+      {
+        url: 'startUrl',
+        valueString: mockMeeting.start_url,
+      },
+      {
+        url: 'joinUrl',
+        valueString: mockMeeting.join_url,
+      },
+    ],
   });
-
+  
   // Verify appointment was updated with Zoom details
   const updatedAppointment = await medplum.readResource('Appointment', appointment.id as string);
   expect(updatedAppointment.extension?.[0]).toMatchObject({
