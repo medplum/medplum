@@ -1,5 +1,5 @@
 import { Title, Group, Box, Textarea, Button, Alert, Grid } from '@mantine/core';
-import { CodingInput, Document, ResourceName, useMedplum, ResourceTypeInput, ResourceInput } from '@medplum/react';
+import { CodingInput, Document, ResourceName, useMedplum, ResourceInput } from '@medplum/react';
 import { useState } from 'react';
 import { ValueSet } from '@medplum/fhirtypes';
 
@@ -110,14 +110,12 @@ export function HomePage(): JSX.Element {
           </ul>
           <Group>
             <Box style={{ width: '100%' }}>
-              <ResourceInput
+              <ResourceInput<ValueSet>
                 resourceType="ValueSet"
                 name="valueSet"
                 label="Search ValueSet"
                 placeholder="Start typing to search for ValueSets..."
                 onChange={handleValueSetChange}
-                searchParams={{ _count: 10 }}
-                stringify={(valueSet) => valueSet?.title || valueSet?.name || valueSet?.url || 'Unnamed ValueSet'}
               />
               {error && (
                 <Alert color="red" mt="md">
