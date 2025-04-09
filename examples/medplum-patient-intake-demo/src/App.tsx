@@ -87,14 +87,18 @@ export function App(): JSX.Element | null {
             <Routes>
               <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
               <Route path="/signin" element={<SignInPage />} />
-              <Route path="/Patient/:id">
-                <Route path="*" element={<PatientPage />} />
+              <Route path="/Patient/:id" element={<PatientPage />}>
+                <Route index element={<PatientPage />} />
+                <Route path="details" element={<PatientPage />} />
+                <Route path="edit" element={<PatientPage />} />
+                <Route path="history" element={<PatientPage />} />
+                <Route path="observations" element={<PatientPage />} />
+                <Route path="consents" element={<PatientPage />} />
+                <Route path="immunizations" element={<PatientPage />} />
               </Route>
               <Route path="/Patient/:patientId/intake/:responseId" element={<IntakeResponsePage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
-              <Route path="/:resourceType/:id">
-                <Route path="*" element={<ResourcePage />} />
-              </Route>
+              <Route path="/:resourceType/:id" element={<ResourcePage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/upload/:dataType" element={<UploadDataPage />} />
               <Route path="/Questionnaire/:questionnaireId/edit" element={<QuestionnaireCustomizationPage />} />
