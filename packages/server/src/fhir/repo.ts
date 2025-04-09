@@ -1525,7 +1525,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     if (columnImpl) {
-      let columnValue = null;
+      let columnValue = undefined;
       if (values.length > 0) {
         if (columnImpl.array) {
           columnValue = values.map((v) => this.buildColumnValue(searchParam, columnImpl, v));

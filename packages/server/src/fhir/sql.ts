@@ -94,14 +94,7 @@ export const Operator = {
     }
     sql.append(')');
   },
-  ARRAY_REGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
-    sql.append(`${TokenArrayToTextFn.name}(`);
-    sql.appendColumn(column);
-    sql.append(')');
-    sql.append(' ~ ');
-    sql.appendParameters(parameter, false);
-  },
-  ARRAY_IREGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+  TOKEN_ARRAY_IREGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.append(`${TokenArrayToTextFn.name}(`);
     sql.appendColumn(column);
     sql.append(')');

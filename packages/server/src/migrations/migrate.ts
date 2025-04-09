@@ -595,21 +595,10 @@ function getColumnDefinition(name: string, impl: SearchParameterImplementation):
       throw new Error('Token columns must have TEXT column type');
     }
 
-    return {
-      name,
-      type: 'TEXT[]',
-      // notNull: true,
-      // defaultValue: 'ARRAY[]::TEXT[]',
-    };
+    return { name, type: 'TEXT[]' };
   }
 
-  const type = impl.array ? baseColumnType + '[]' : baseColumnType;
-
-  return {
-    name,
-    type,
-    notNull: false,
-  };
+  return { name, type: impl.array ? baseColumnType + '[]' : baseColumnType, notNull: false };
 }
 
 function buildSearchIndexes(result: TableDefinition, resourceType: string): void {

@@ -960,10 +960,17 @@ function buildSearchFilterExpression(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
+
   if (TokenColumnsFeature.read && impl.searchStrategy === 'token-column') {
+    // Use the token-column strategy only if the read feature flag is enabled
     return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
   } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
+    // otherwise, if it's a token-column but the read flag is not enabled, use the search param's
+    // previous lookup-table implementation
+
     if (isLegacyTokenColumnSearchParameter(param, resourceType)) {
+      // legacy token search params should be treated as 'column' strategy; once the token-column read
+      // feature flag is enabled, this check goes away since all legacy search params will be token-column
       const columnImpl = getSearchParameterImplementation(resourceType, param, true);
       return buildNormalSearchFilterExpression(resourceType, table, param, columnImpl, filter);
     }
