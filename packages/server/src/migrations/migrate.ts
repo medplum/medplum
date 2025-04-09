@@ -986,7 +986,7 @@ function buildIndexSql(tableName: string, index: IndexDefinition): string {
 }
 
 function getMigrationFilenames(): string[] {
-  return readdirSync(SCHEMA_DIR).filter((filename) => /v\d+\.ts/.test(filename));
+  return readdirSync(SCHEMA_DIR).filter((filename) => /^v\d+\.ts$/.test(filename));
 }
 
 function getVersionFromFilename(filename: string): number {
