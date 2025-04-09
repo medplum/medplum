@@ -746,6 +746,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Group" ADD COLUMN IF NOT EXISTS "___compartmentIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Group" ADD COLUMN IF NOT EXISTS "__managingEntityIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Group" ADD COLUMN IF NOT EXISTS "__memberIdentifierSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Group" ADD COLUMN IF NOT EXISTS "__characteristicReferenceIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "GuidanceResponse" ADD COLUMN IF NOT EXISTS "__tokens" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "GuidanceResponse" ADD COLUMN IF NOT EXISTS "__tokensText" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "GuidanceResponse" ADD COLUMN IF NOT EXISTS "___securitySort" TEXT');
@@ -1318,6 +1319,7 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Practitioner" ADD COLUMN IF NOT EXISTS "__telecomSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Practitioner" ADD COLUMN IF NOT EXISTS "__communicationSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Practitioner" ADD COLUMN IF NOT EXISTS "__identifierSort" TEXT');
+  await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Practitioner" ADD COLUMN IF NOT EXISTS "__qualificationCodeSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "Practitioner" ADD COLUMN IF NOT EXISTS "___compartmentIdentifierSort" TEXT');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "PractitionerRole" ADD COLUMN IF NOT EXISTS "__tokens" TEXT[]');
   await fns.query(client, actions, 'ALTER TABLE IF EXISTS "PractitionerRole" ADD COLUMN IF NOT EXISTS "__tokensText" TEXT[]');
