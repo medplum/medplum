@@ -99,7 +99,13 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import { SearchOptions, buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
+import {
+  SearchOptions,
+  buildSearchExpression,
+  isChainedSearchFilter,
+  searchByReferenceImpl,
+  searchImpl,
+} from './search';
 import { getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
@@ -1200,7 +1206,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordSearch();
+    await tryGetRequestContext()?.fhirRateLimiter?.recordSearch({
+      chained: Boolean(searchRequest.filters?.some((f) => isChainedSearchFilter(f))),
+    });
 
     const startTime = Date.now();
     try {

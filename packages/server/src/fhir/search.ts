@@ -878,6 +878,10 @@ function addSearchFilters(
   }
 }
 
+export function isChainedSearchFilter(filter: Filter): boolean {
+  return filter.code.startsWith('_has:') || filter.code.includes('.');
+}
+
 export function buildSearchExpression(
   repo: Repository,
   selectQuery: SelectQuery,
@@ -888,7 +892,7 @@ export function buildSearchExpression(
   if (searchRequest.filters) {
     for (const filter of searchRequest.filters) {
       let expr: Expression | undefined;
-      if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
+      if (isChainedSearchFilter(filter)) {
         const chain = parseChainedParameter(searchRequest.resourceType, filter);
         expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
       } else {
