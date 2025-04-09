@@ -2,6 +2,15 @@
 
 Scheduling is a common workflow and correct use of the FHIR spec supports many complex scheduling workflows.
 
+## Demo and Example App 
+
+For a brief overview of Scheduling at Medplum, see the video below. For an example scheduling application, see our [Medplum Scheduling Demo](https://github.com/medplum/medplum-scheduling-demo). 
+
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/6yAROc0KPos" title="YouTube video player" frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
+
 ## Key Resources
 
 ```mermaid
