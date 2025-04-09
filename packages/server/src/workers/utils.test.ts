@@ -4,8 +4,13 @@ import { withTestContext } from '../test.setup';
 import { Job, Queue, Worker } from 'bullmq';
 import EventEmitter from 'node:events';
 import { globalLogger } from '../logger';
+import { loadTestConfig } from '../config/loader';
 
 describe('worker utils', () => {
+  beforeAll(async () => {
+    await loadTestConfig();
+  });
+
   describe('isJobSuccessful', () => {
     test('Successful job with no custom codes', () => {
       const subscription: Subscription = {

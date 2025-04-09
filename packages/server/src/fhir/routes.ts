@@ -101,7 +101,7 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
     return res.send(JSON.stringify(data, undefined, pretty ? 2 : undefined));
   };
   res.send = (...args: any[]) => {
-    // Restore the original json to avoid double response
+    // Restore the original method to avoid double response
     // See: https://stackoverflow.com/a/60817116
     res.send = oldSend;
 

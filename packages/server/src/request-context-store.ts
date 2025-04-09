@@ -1,6 +1,6 @@
 import { Logger } from '@medplum/core';
 import { AsyncLocalStorage } from 'async_hooks';
-import { FhirRateLimiter } from './ratelimit';
+import { FhirRateLimiter } from './fhirinteractionlimit';
 
 export interface IRequestContext extends Disposable {
   readonly requestId: string;

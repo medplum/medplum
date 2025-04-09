@@ -9,8 +9,8 @@ import { systemLogger } from './logger';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { IRequestContext, requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
-import { FhirRateLimiter } from './ratelimit';
 import { getRedis } from './redis';
+import { FhirRateLimiter } from './fhirinteractionlimit';
 
 export class RequestContext implements IRequestContext {
   readonly requestId: string;
@@ -51,7 +51,7 @@ export class AuthenticatedRequestContext extends RequestContext {
     if (repo.currentProject()?.id) {
       loggerMetadata = { projectId: repo.currentProject()?.id };
     }
-    super(requestId, traceId, logger, loggerMetadata, getRateLimiter(authState));
+    super(requestId, traceId, logger, loggerMetadata, getFhirRateLimiter(authState));
 
     this.authState = authState;
     this.repo = repo;
@@ -211,9 +211,9 @@ function write(msg: string): void {
   process.stdout.write(msg + '\n');
 }
 
-function getRateLimiter(authState: AuthState): FhirRateLimiter | undefined {
+function getFhirRateLimiter(authState: AuthState): FhirRateLimiter | undefined {
   const config = getConfig();
-  const limit = config.defaultRateLimit ? Math.ceil(config.defaultRateLimit / 60) : 1_000;
+  const limit = config.defaultFhirInteractionLimit;
 
   return authState.membership ? new FhirRateLimiter(getRedis(), authState, limit) : undefined;
 }
