@@ -12,7 +12,6 @@ import { useMedplum } from '@medplum/react';
 import { getReferenceString } from '@medplum/core';
 import { showErrorNotification } from '../utils/notifications';
 
-
 export interface EncounterChartHook {
   // State values
   encounter: Encounter | undefined;
@@ -32,12 +31,9 @@ export interface EncounterChartHook {
   setChargeItems: React.Dispatch<React.SetStateAction<ChargeItem[]>>;
 }
 
-
-export function useEncounterChart(
-  encounterId?: string,
-): EncounterChartHook {
+export function useEncounterChart(encounterId?: string): EncounterChartHook {
   const medplum = useMedplum();
-  
+
   // States
   const [encounter, setEncounter] = useState<Encounter | undefined>();
   const [claim, setClaim] = useState<Claim | undefined>();
@@ -51,9 +47,10 @@ export function useEncounterChart(
   // Load encounter data
   useEffect(() => {
     if (encounterId && !encounter) {
-      medplum.readResource('Encounter', encounterId)
+      medplum
+        .readResource('Encounter', encounterId)
         .then(setEncounter)
-        .catch(err => {
+        .catch((err) => {
           showErrorNotification(err);
         });
     }
@@ -117,10 +114,10 @@ export function useEncounterChart(
   // Fetch data on component mount or when encounter changes
   useEffect(() => {
     if (encounter) {
-      fetchTasks().catch(err => showErrorNotification(err));
-      fetchClinicalImpressions().catch(err => showErrorNotification(err));
-      fetchChargeItems().catch(err => showErrorNotification(err));
-      fetchClaim().catch(err => showErrorNotification(err));
+      fetchTasks().catch((err) => showErrorNotification(err));
+      fetchClinicalImpressions().catch((err) => showErrorNotification(err));
+      fetchChargeItems().catch((err) => showErrorNotification(err));
+      fetchClaim().catch((err) => showErrorNotification(err));
     }
   }, [encounter, fetchTasks, fetchClinicalImpressions, fetchChargeItems, fetchClaim]);
 
@@ -134,7 +131,7 @@ export function useEncounterChart(
     };
 
     if (encounter) {
-      fetchPractitioner().catch(err => showErrorNotification(err));
+      fetchPractitioner().catch((err) => showErrorNotification(err));
     }
   }, [encounter, medplum]);
 
@@ -213,7 +210,7 @@ export function useEncounterChart(
     clinicalImpression,
     questionnaireResponse,
     chargeItems,
-    
+
     // State setters
     setEncounter,
     setClaim,
