@@ -22,9 +22,6 @@ export interface EncounterChartHook {
   clinicalImpression: ClinicalImpression | undefined;
   questionnaireResponse: QuestionnaireResponse | undefined;
   chargeItems: ChargeItem[];
-  // Loading states
-  isLoadingEncounter: boolean;
-  isCalculatingPrice: boolean;
   // State setters
   setEncounter: React.Dispatch<React.SetStateAction<Encounter | undefined>>;
   setClaim: React.Dispatch<React.SetStateAction<Claim | undefined>>;
@@ -49,24 +46,15 @@ export function useEncounterChart(
   const [clinicalImpression, setClinicalImpression] = useState<ClinicalImpression | undefined>();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>();
   const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
-  
-  // Loading states
-  const [isLoadingEncounter, setIsLoadingEncounter] = useState<boolean>(false);
-  const [isCalculatingPrice, setIsCalculatingPrice] = useState<boolean>(false);
-  
   const isUpdatingRef = useRef(false);
 
   // Load encounter data
   useEffect(() => {
     if (encounterId && !encounter) {
-      setIsLoadingEncounter(true);
       medplum.readResource('Encounter', encounterId)
         .then(setEncounter)
         .catch(err => {
           showErrorNotification(err);
-        })
-        .finally(() => {
-          setIsLoadingEncounter(false);
         });
     }
   }, [encounterId, encounter, medplum]);
@@ -113,16 +101,8 @@ export function useEncounterChart(
     if (!encounter) {
       return;
     }
-    
-    setIsCalculatingPrice(true);
-    try {
-      const chargeItems = await medplum.searchResources('ChargeItem', `context=${getReferenceString(encounter)}`);
-      setChargeItems(chargeItems);
-    } catch (err) {
-      showErrorNotification(err);
-    } finally {
-      setIsCalculatingPrice(false);
-    }
+    const chargeItems = await medplum.searchResources('ChargeItem', `context=${getReferenceString(encounter)}`);
+    setChargeItems(chargeItems);
   }, [medplum, encounter]);
 
   // Fetch claim related to the encounter
@@ -170,65 +150,57 @@ export function useEncounterChart(
         return;
       }
 
-      setIsCalculatingPrice(true);
-      try {
-        const updatedItems = [...chargeItems];
-        let hasUpdates = false;
+      const updatedItems = [...chargeItems];
+      let hasUpdates = false;
 
-        for (const [index, chargeItem] of chargeItems.entries()) {
-          if (chargeItem.definitionCanonical && chargeItem.definitionCanonical.length > 0) {
-            try {
-              const searchResult = await medplum.searchResources(
-                'ChargeItemDefinition',
-                `url=${chargeItem.definitionCanonical[0]}`
-              );
-              if (searchResult.length > 0) {
-                const chargeItemDefinition = searchResult[0];
-                try {
-                  const applyResult = await medplum.post(
-                    medplum.fhirUrl('ChargeItemDefinition', chargeItemDefinition.id as string, '$apply'),
-                    {
-                      resourceType: 'Parameters',
-                      parameter: [
-                        {
-                          name: 'chargeItem',
-                          valueReference: {
-                            reference: getReferenceString(chargeItem),
-                          },
+      for (const [index, chargeItem] of chargeItems.entries()) {
+        if (chargeItem.definitionCanonical && chargeItem.definitionCanonical.length > 0) {
+          try {
+            const searchResult = await medplum.searchResources(
+              'ChargeItemDefinition',
+              `url=${chargeItem.definitionCanonical[0]}`
+            );
+            if (searchResult.length > 0) {
+              const chargeItemDefinition = searchResult[0];
+              try {
+                const applyResult = await medplum.post(
+                  medplum.fhirUrl('ChargeItemDefinition', chargeItemDefinition.id as string, '$apply'),
+                  {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      {
+                        name: 'chargeItem',
+                        valueReference: {
+                          reference: getReferenceString(chargeItem),
                         },
-                      ],
-                    }
-                  );
-
-                  if (applyResult) {
-                    const updatedChargeItem = applyResult as ChargeItem;
-                    updatedItems[index] = updatedChargeItem;
-                    hasUpdates = true;
+                      },
+                    ],
                   }
-                } catch (err) {
-                  console.error('Error applying ChargeItemDefinition:', err);
+                );
+
+                if (applyResult) {
+                  const updatedChargeItem = applyResult as ChargeItem;
+                  updatedItems[index] = updatedChargeItem;
+                  hasUpdates = true;
                 }
+              } catch (err) {
+                console.error('Error applying ChargeItemDefinition:', err);
               }
-            } catch (err) {
-              showErrorNotification(err);
             }
+          } catch (err) {
+            showErrorNotification(err);
           }
         }
+      }
 
-        if (hasUpdates) {
-          isUpdatingRef.current = true;
-          setChargeItems(updatedItems);
-        }
-      } catch (err) {
-        showErrorNotification(err);
-      } finally {
-        setIsCalculatingPrice(false);
+      if (hasUpdates) {
+        isUpdatingRef.current = true;
+        setChargeItems(updatedItems);
       }
     };
 
     fetchChargeItemDefinitions().catch((err) => {
       showErrorNotification(err);
-      setIsCalculatingPrice(false);
     });
   }, [chargeItems, medplum]);
 
@@ -242,10 +214,6 @@ export function useEncounterChart(
     questionnaireResponse,
     chargeItems,
     
-    // Loading states
-    isLoadingEncounter,
-    isCalculatingPrice,
-    
     // State setters
     setEncounter,
     setClaim,
@@ -256,7 +224,6 @@ export function useEncounterChart(
     setChargeItems,
   };
 }
-
 
 export function calculateTotalPrice(items: ChargeItem[]): number {
   return items.reduce((sum, item) => sum + (item.priceOverride?.value || 0), 0);
