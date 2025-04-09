@@ -1318,6 +1318,23 @@
         "type": "token",
         "expression": "AsyncJob.status"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Practitioner-qualification-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Practitioner-qualification-code",
+        "url": "https://medplum.com/fhir/SearchParameter/Practitioner-qualification-code",
+        "version": "4.0.1",
+        "name": "qualification-code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The type of qualification",
+        "code": "qualification-code",
+        "base": ["Practitioner"],
+        "type": "token",
+        "expression": "Practitioner.qualification.code"
+      }
     }
   ]
 }
