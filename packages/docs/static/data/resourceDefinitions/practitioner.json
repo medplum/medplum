@@ -555,6 +555,12 @@
       "type": "string",
       "description": "A server defined search that may match any of the string fields in the HumanName, including family, give, prefix, suffix, suffix, and/or text",
       "expression": "Practitioner.name"
+    },
+    {
+      "name": "topic",
+      "type": "token",
+      "description": "The type of qualification",
+      "expression": "Practitioner.qualification.code"
     }
   ]
 }
