@@ -91,15 +91,9 @@ export const EncounterChart = (): JSX.Element => {
     if (!encounter) {
       return;
     }
-    console.log(encounter);
-    // const searchResult = await medplum.search('Claim', {
-    //   '_has:Claim:supportingInfo:valueReference': `Encounter/${encounter.id}`
-    // });
-    // const claims = searchResult.entry?.map(entry => entry.resource as Claim) || []
-    // if (claims.length > 0) {
-    //   setClaim(claims[0]);
-    // }
-  }, [encounter]);
+    const response = await medplum.searchResources('Claim', `encounter=${getReferenceString(encounter)}`);
+    setClaim(response[0]);
+  }, [encounter, medplum]);
 
   useEffect(() => {
     fetchTasks().catch((err) => {
@@ -428,24 +422,11 @@ export const EncounterChart = (): JSX.Element => {
       }], // TODO: Add coverage
       item: chargeItems.map((chargeItem, index) => ({
         sequence: index + 1,
+        encounter: [{ reference: getReferenceString(encounter) }],
         productOrService: chargeItem.code,
         net: chargeItem.priceOverride,
       })),
-      // supportingInfo: [
-      //   {
-      //     sequence: 1,
-      //     category: {
-      //       coding: [
-      //         {
-      //           system: "http://terminology.hl7.org/CodeSystem/claiminformationcategory",
-      //           code: "info",
-      //           display: "Information"
-      //         }
-      //       ]
-      //     },
-      //     valueReference: createReference(encounter)
-      //   }
-      // ]
+      total: { value: calculateTotalPrice(chargeItems) },
     };
 
     try {
@@ -460,6 +441,10 @@ export const EncounterChart = (): JSX.Element => {
       });
     }
   }, [encounter, medplum, chargeItems, patient, practitioner]);
+
+  const calculateTotalPrice = (chargeItems: ChargeItem[]): number => {
+    return chargeItems.reduce((sum, item) => sum + (item.priceOverride?.value || 0), 0);
+  };
 
   if (!patient || !encounter || (clinicalImpression?.supportingInfo?.[0]?.reference && !questionnaireResponse)) {
     return <Loading />;
@@ -525,7 +510,7 @@ export const EncounterChart = (): JSX.Element => {
                     <Box>
                       <TextInput
                         w={300}
-                        value={`$${chargeItems.reduce((sum, item) => sum + (item.priceOverride?.value || 0), 0).toFixed(2)}`}
+                        value={`$${calculateTotalPrice(chargeItems)}`}
                         readOnly
                       />
                     </Box>
