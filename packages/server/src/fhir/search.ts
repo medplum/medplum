@@ -67,6 +67,8 @@ import {
   Union,
   ValuesQuery,
 } from './sql';
+import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-column';
+import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -958,11 +960,23 @@ function buildSearchFilterExpression(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy === 'lookup-table') {
+
+  if (TokenColumnsFeature.read && impl.searchStrategy === 'token-column') {
+    // Use the token-column strategy only if the read feature flag is enabled
+    return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
+  } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
+    // otherwise, if it's a token-column but the read flag is not enabled, use the search param's
+    // previous lookup-table implementation
+
+    if (isLegacyTokenColumnSearchParameter(param, resourceType)) {
+      // legacy token search params should be treated as 'column' strategy; once the token-column read
+      // feature flag is enabled, this check goes away since all legacy search params will be token-column
+      const columnImpl = getSearchParameterImplementation(resourceType, param, true);
+      return buildNormalSearchFilterExpression(resourceType, table, param, columnImpl, filter);
+    }
     return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
   }
 
-  // Not any special cases, just a normal search parameter.
   return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
 }
 
@@ -1251,7 +1265,7 @@ function buildReferenceSearchFilter(
   }
   let condition: Condition;
   if (impl.array) {
-    condition = new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
+    condition = new Condition(column, 'ARRAY_CONTAINS_AND_IS_NOT_NULL', values, 'TEXT[]');
   } else if (values instanceof Column) {
     condition = new Condition(column, '=', values);
   } else if (values.length === 1) {
@@ -1382,12 +1396,19 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy === 'lookup-table') {
-    impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
-    return;
+  if (TokenColumnsFeature.read && impl.searchStrategy === 'token-column') {
+    addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
+  } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
+    if (isLegacyTokenColumnSearchParameter(param, resourceType)) {
+      const columnImpl = getSearchParameterImplementation(resourceType, param, true);
+      builder.orderBy(columnImpl.columnName, !!sortRule.descending);
+    } else {
+      impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
+    }
+  } else {
+    impl satisfies ColumnSearchParameterImplementation;
+    builder.orderBy(impl.columnName, !!sortRule.descending);
   }
-
-  builder.orderBy(impl.columnName, !!sortRule.descending);
 }
 
 /**
@@ -1427,7 +1448,7 @@ function buildEqualityCondition(
 ): Condition {
   column = column ?? impl.columnName;
   if (impl.array) {
-    return new Condition(column, 'ARRAY_CONTAINS', values, impl.type + '[]');
+    return new Condition(column, 'ARRAY_CONTAINS_AND_IS_NOT_NULL', values, impl.type + '[]');
   } else if (values.length > 1) {
     return new Condition(column, 'IN', values, impl.type);
   } else {

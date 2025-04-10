@@ -5,6 +5,7 @@ concurrency:
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 jobs:
   build:
     name: Deploy
@@ -53,7 +54,7 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
       - name: Deploy
-        run: ./scripts/cicd-deploy.sh
+        run: ${{ github.event_name == 'workflow_dispatch' && (github.ref == 'refs/heads/main' && './scripts/cicd-deploy.sh --force') || './scripts/cicd-deploy.sh' }}
         env:
           APP_BUCKET: ${{ secrets.APP_BUCKET }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
