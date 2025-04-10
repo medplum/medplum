@@ -15,7 +15,7 @@ import {
   escapeLikeString,
 } from '../sql';
 
-export const lookupTableBatchSize = 5_000;
+const lookupTableBatchSize = 5_000;
 
 export interface LookupTableRow {
   resourceId: string;
@@ -90,7 +90,9 @@ export abstract class LookupTable {
       await this.batchDeleteValuesForResources(client, resources);
     }
 
-    const resourceBatchSize = 500;
+    // Batch at the resource level to avoid tying up the event loop for too long
+    // with synchronous work without any async breaks between DB calls.
+    const resourceBatchSize = 200;
     for (let i = 0; i < resources.length; i += resourceBatchSize) {
       const batch = resources.slice(i, i + resourceBatchSize);
 

@@ -103,7 +103,7 @@ function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resou
       }
     }
   }
-  result.push(...Array.from(resultMap.values()));
+  result.push(...resultMap.values());
 }
 
 /**
