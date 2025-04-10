@@ -19,6 +19,7 @@ import {
   isUUID,
   OperationOutcomeError,
   Operator,
+  parseFhirPath,
   parseFilterParameter,
   parseParameter,
   PropertyType,
@@ -1052,14 +1053,24 @@ function trySpecialSearchParameter(
     case '_id':
       return buildIdSearchFilter(
         table,
-        { columnName: 'id', type: SearchParameterType.UUID, searchStrategy: 'column' },
+        {
+          columnName: 'id',
+          type: SearchParameterType.UUID,
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('id'),
+        },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
     case '_lastUpdated':
       return buildDateSearchFilter(
         table,
-        { type: SearchParameterType.DATETIME, columnName: 'lastUpdated', searchStrategy: 'column' },
+        {
+          type: SearchParameterType.DATETIME,
+          columnName: 'lastUpdated',
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('lastUpdated'),
+        },
         filter
       );
     case '_compartment':
@@ -1074,7 +1085,13 @@ function trySpecialSearchParameter(
 
       return buildIdSearchFilter(
         table,
-        { columnName: 'compartments', type: SearchParameterType.UUID, array: true, searchStrategy: 'column' },
+        {
+          columnName: 'compartments',
+          type: SearchParameterType.UUID,
+          array: true,
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('compartments'),
+        },
         filter.operator,
         splitSearchOnComma(filter.value)
       );

@@ -92,7 +92,8 @@ export function getTokenIndexType(searchParam: SearchParameter, resourceType: st
  * @param searchParam - The search parameter.
  */
 export function buildTokensForSearchParameter(result: Token[], resource: Resource, searchParam: SearchParameter): void {
-  const typedValues = evalFhirPathTyped(searchParam.expression as string, [toTypedValue(resource)]);
+  const details = getSearchParameterDetails(resource.resourceType, searchParam);
+  const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
   for (const typedValue of typedValues) {
     buildTokens(result, searchParam, resource, typedValue);
   }

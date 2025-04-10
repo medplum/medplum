@@ -1508,7 +1508,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    const values = evalFhirPath(searchParam.expression as string, resource);
+    const values = evalFhirPath(impl.parsedExpression, resource);
 
     let columnImpl: ColumnSearchParameterImplementation | undefined;
     if (impl.searchStrategy === 'token-column') {
