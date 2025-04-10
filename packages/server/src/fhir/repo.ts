@@ -99,7 +99,13 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import { SearchOptions, buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
+import {
+  SearchOptions,
+  buildSearchExpression,
+  isChainedSearchFilter,
+  searchByReferenceImpl,
+  searchImpl,
+} from './search';
 import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
@@ -112,6 +118,7 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
+import { tryGetRequestContext } from '../context';
 import { buildTokenColumns } from './token-column';
 import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
 
@@ -269,6 +276,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
+
     const resourceWithId = {
       ...resource,
       id: options?.assignedId && resource.id ? resource.id : this.generateId(),
@@ -581,6 +590,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
+
     const startTime = Date.now();
     try {
       let result: WithId<T>;
@@ -1025,6 +1036,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
+
     const startTime = Date.now();
     let resource: WithId<T>;
     try {
@@ -1096,6 +1109,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     patch: Operation[],
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
+
     const startTime = Date.now();
     try {
       return await this.withTransaction(async () => {
@@ -1190,6 +1205,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordSearch({
+      chained: Boolean(searchRequest.filters?.some((f) => isChainedSearchFilter(f))),
+    });
+
     const startTime = Date.now();
     try {
       // Resource type validation is performed in the searchImpl function

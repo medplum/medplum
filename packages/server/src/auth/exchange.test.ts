@@ -25,9 +25,9 @@ let externalAuthClient: ClientApplication;
 let subjectAuthClient: ClientApplication;
 
 describe('Token Exchange', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       await initApp(app, config);
 
       // Create a new project
@@ -85,8 +85,8 @@ describe('Token Exchange', () => {
         firstName: 'External',
         lastName: 'User',
       });
-    })
-  );
+    });
+  });
 
   afterAll(async () => {
     await shutdownApp();

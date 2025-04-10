@@ -54,9 +54,9 @@ describe('Seed', () => {
     // asynchronously. Instead, run them synchronously below.
     config.database.disableRunPostDeployMigrations = true;
 
+    console.log(`${new Date().toISOString()} - Initializing app services`);
+    await initAppServices(config);
     await withTestContext(async () => {
-      console.log(`${new Date().toISOString()} - Initializing app services`);
-      await initAppServices(config);
       // Run post-deploy migrations synchronously
       await synchronouslyRunAllPendingPostDeployMigrations();
     });
@@ -66,29 +66,30 @@ describe('Seed', () => {
     await shutdownApp();
   });
 
-  test('Seeder completes successfully', async () => {
-    // Seeder was already run as part of `initAppServices`, but run it again
-    // incase it is ever removed from `initAppServices`
-    await seedDatabase();
+  test('Seeder completes successfully', () =>
+    withTestContext(async () => {
+      // Seeder was already run as part of `initAppServices`, but run it again
+      // incase it is ever removed from `initAppServices`
+      await seedDatabase();
 
-    // Make sure all database migrations have run
-    const pool = getDatabasePool(DatabaseMode.WRITER);
+      // Make sure all database migrations have run
+      const pool = getDatabasePool(DatabaseMode.WRITER);
 
-    const preDeployVersion = await getPreDeployVersion(pool);
-    expect(preDeployVersion).toBeGreaterThanOrEqual(67);
+      const preDeployVersion = await getPreDeployVersion(pool);
+      expect(preDeployVersion).toBeGreaterThanOrEqual(67);
 
-    const postDeployVersion = await getPostDeployVersion(pool);
-    expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
+      const postDeployVersion = await getPostDeployVersion(pool);
+      expect(postDeployVersion).toEqual(getLatestPostDeployMigrationVersion());
 
-    // Make sure the first project is a super admin
-    const rows = await new SelectQuery('Project').column('content').where('name', '=', 'Super Admin').execute(pool);
-    expect(rows.length).toBe(1);
+      // Make sure the first project is a super admin
+      const rows = await new SelectQuery('Project').column('content').where('name', '=', 'Super Admin').execute(pool);
+      expect(rows.length).toBe(1);
 
-    const project = JSON.parse(rows[0].content) as Project;
-    expect(project.superAdmin).toBe(true);
-    expect(project.strictMode).toBe(true);
+      const project = JSON.parse(rows[0].content) as Project;
+      expect(project.superAdmin).toBe(true);
+      expect(project.strictMode).toBe(true);
 
-    // Second time, seeder should silently ignore
-    await seedDatabase();
-  });
+      // Second time, seeder should silently ignore
+      await seedDatabase();
+    }));
 });

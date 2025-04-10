@@ -22,9 +22,9 @@ let encounter2: Encounter;
 let bobAccessToken: string;
 
 describe('GraphQL', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       await initApp(app, config);
 
       // Setup a new project
@@ -120,8 +120,8 @@ describe('GraphQL', () => {
         ],
       });
       bobAccessToken = bobRegistration.accessToken;
-    })
-  );
+    });
+  });
 
   afterEach(() => {
     jest.restoreAllMocks();

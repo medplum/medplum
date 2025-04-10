@@ -26,9 +26,9 @@ let project: WithId<Project>;
 let client: WithId<ClientApplication>;
 
 describe('Login', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       config.emailProvider = 'awsses';
       await initApp(app, config);
 
@@ -46,8 +46,8 @@ describe('Login', () => {
 
       // Set the test user password
       await setPassword(user, password);
-    })
-  );
+    });
+  });
 
   afterAll(async () => {
     await shutdownApp();

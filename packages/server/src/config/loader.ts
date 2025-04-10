@@ -6,15 +6,15 @@ import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
 import { loadGcpConfig } from '../cloud/gcp/config';
 import { MedplumServerConfig } from './types';
-import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig } from './utils';
+import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig, ServerConfig } from './utils';
 
-let cachedConfig: MedplumServerConfig | undefined = undefined;
+let cachedConfig: ServerConfig | undefined = undefined;
 
 /**
  * Returns the server configuration settings.
  * @returns The server configuration settings.
  */
-export function getConfig(): MedplumServerConfig {
+export function getConfig(): ServerConfig {
   if (!cachedConfig) {
     throw new Error('Config not loaded');
   }
@@ -31,26 +31,27 @@ export function getConfig(): MedplumServerConfig {
  */
 export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
   const [configType, configPath] = splitN(configName, ':', 2);
+  let config: MedplumServerConfig;
   switch (configType) {
     case 'env':
-      cachedConfig = loadEnvConfig();
+      config = loadEnvConfig();
       break;
     case 'file':
-      cachedConfig = await loadFileConfig(configPath);
+      config = await loadFileConfig(configPath);
       break;
     case 'aws':
-      cachedConfig = await loadAwsConfig(configPath);
+      config = await loadAwsConfig(configPath);
       break;
     case 'gcp':
-      cachedConfig = await loadGcpConfig(configPath);
+      config = await loadGcpConfig(configPath);
       break;
     case 'azure':
-      cachedConfig = await loadAzureConfig(configPath);
+      config = await loadAzureConfig(configPath);
       break;
     default:
       throw new Error('Unrecognized config type: ' + configType);
   }
-  cachedConfig = addDefaults(cachedConfig);
+  cachedConfig = addDefaults(config);
   return cachedConfig;
 }
 
