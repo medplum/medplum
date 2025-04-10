@@ -29,8 +29,13 @@ ADD ./medplum-app.tar.gz /usr/share/nginx/html
 
 # Copy the entrypoint script
 COPY ./docker-entrypoint.sh /docker-entrypoint.sh
+
+# Make entrypoint executable and add an nginx user
 RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 3005
+
+# Switch to nginx user
+USER nginx
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
