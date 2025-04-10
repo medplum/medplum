@@ -1,6 +1,10 @@
 import { loadTestConfig } from '../config/loader';
 import { closeDatabase, initDatabase } from '../database';
-import { withLongRunningDatabaseClient } from './migration-utils';
+import {
+  getPostDeployMigration,
+  MigrationDefinitionNotFoundError,
+  withLongRunningDatabaseClient,
+} from './migration-utils';
 
 describe('withLongRunningDatabaseClient', () => {
   beforeAll(async () => {
@@ -17,5 +21,15 @@ describe('withLongRunningDatabaseClient', () => {
       return client.query<{ result: string }>("SELECT '12-12-2022' as result").then((result) => result.rows[0].result);
     });
     expect(result).toBe('12-12-2022');
+  });
+});
+
+describe('getPostDeployMigration', () => {
+  test('definition found', () => {
+    expect(getPostDeployMigration(1)).toBeDefined();
+  });
+
+  test('migration definition not found', () => {
+    expect(() => getPostDeployMigration(9999)).toThrow(MigrationDefinitionNotFoundError);
   });
 });
