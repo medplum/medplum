@@ -213,7 +213,10 @@ function write(msg: string): void {
 
 function getFhirRateLimiter(authState: AuthState): FhirRateLimiter | undefined {
   const config = getConfig();
-  const limit = config.defaultFhirInteractionLimit;
+  const projectLimit = authState.project?.systemSetting?.find(
+    (s) => s.name === 'defaultFhirInteractionLimit'
+  )?.valueInteger;
+  const limit = projectLimit ?? config.defaultFhirInteractionLimit;
 
   return authState.membership ? new FhirRateLimiter(getRedis(), authState, limit) : undefined;
 }

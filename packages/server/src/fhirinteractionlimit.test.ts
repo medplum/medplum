@@ -110,4 +110,20 @@ describe('FHIR Rate Limits', () => {
     expect(res2.status).toBe(200);
     expect(res2.get('ratelimit')).toStrictEqual('"requests";r=98;t=59, "fhirInteractions";r=0;t=59');
   });
+
+  test('Respects Project setting override', async () => {
+    config.defaultFhirInteractionLimit = 1;
+    await initApp(app, config);
+
+    ({ accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: { systemSetting: [{ name: 'defaultFhirInteractionLimit', valueInteger: 10 }] },
+    }));
+
+    const res = await request(app)
+      .post('/fhir/R4/Patient')
+      .auth(accessToken, { type: 'bearer' })
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+  });
 });
