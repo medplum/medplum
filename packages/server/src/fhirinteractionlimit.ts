@@ -13,7 +13,7 @@ export class FhirRateLimiter {
   private delta: number;
   private logThreshold: number;
 
-  private logger: Logger;
+  private readonly logger: Logger;
 
   constructor(redis: Redis, authState: AuthState, limit: number, remainingUnits = limit, logger = globalLogger) {
     this.limiter = new RateLimiterRedis({
