@@ -94,10 +94,9 @@ export abstract class LookupTable {
     // with synchronous work without any async breaks between DB calls.
     const resourceBatchSize = 200;
     for (let i = 0; i < resources.length; i += resourceBatchSize) {
-      const batch = resources.slice(i, i + resourceBatchSize);
-
       const newRows: LookupTableRow[] = [];
-      for (const resource of batch) {
+      for (let j = i; j < i + resourceBatchSize && j < resources.length; j++) {
+        const resource = resources[j];
         if (resource.resourceType !== resourceType) {
           throw new Error(
             `batchIndexResources must be called with resources of the same type: ${resource.resourceType} vs ${resourceType}`
