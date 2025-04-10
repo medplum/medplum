@@ -1,6 +1,5 @@
-import { Operator as FhirOperator, Filter, SortRule, splitN, splitSearchOnComma } from '@medplum/core';
+import { Operator as FhirOperator, Filter, SortRule, splitN, splitSearchOnComma, WithId } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
 import { getLogger } from '../../logger';
 import {
   Column,
@@ -20,8 +19,14 @@ import {
   Token,
   TokenIndexTypes,
 } from '../tokens';
-import { LookupTable } from './lookuptable';
+import { LookupTable, LookupTableRow } from './lookuptable';
 import { getStandardAndDerivedSearchParameters } from './util';
+
+interface TokenTableRow extends LookupTableRow {
+  code: string;
+  system: string | undefined;
+  value: string | undefined;
+}
 
 /** Context for building a WHERE condition on the token table. */
 interface FilterContext {
@@ -74,31 +79,18 @@ export class TokenTable extends LookupTable {
     return tokenType === TokenIndexTypes.CASE_INSENSITIVE;
   }
 
-  /**
-   * Indexes a resource token values.
-   * Attempts to reuse existing tokens if they are correct.
-   * @param client - The database client.
-   * @param resource - The resource to index.
-   * @param create - True if the resource should be created (vs updated).
-   * @returns Promise on completion.
-   */
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (!create) {
-      await this.deleteValuesForResource(client, resource);
+  extractValues(results: TokenTableRow[], resource: WithId<Resource>): void {
+    const tokens: Token[] = [];
+    getTokens(tokens, resource);
+    for (const token of tokens) {
+      results.push({
+        resourceId: resource.id,
+        code: token.code,
+        // logical OR coalesce to ensure that empty strings are inserted as NULL
+        system: token.system?.trim?.() || undefined,
+        value: token.value?.trim?.() || undefined,
+      });
     }
-
-    const tokens = getTokens(resource);
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id;
-    const values = tokens.map((token) => ({
-      resourceId,
-      code: token.code,
-      // logical OR coalesce to ensure that empty strings are inserted as NULL
-      system: token.system?.trim?.() || undefined,
-      value: token.value?.trim?.() || undefined,
-    }));
-
-    await this.insertValuesForResource(client, resourceType, values);
   }
 
   /**
@@ -213,17 +205,15 @@ function getTableName(resourceType: ResourceType): string {
 /**
  * Returns a list of all tokens in the resource to be inserted into the database.
  * This includes all values for any SearchParameter using the TokenTable.
+ * @param result - The array that rows to be inserted should be added to.
  * @param resource - The resource being indexed.
- * @returns An array of all tokens from the resource to be inserted into the database.
  */
-function getTokens(resource: Resource): Token[] {
-  const result: Token[] = [];
+function getTokens(result: Token[], resource: Resource): void {
   for (const searchParam of getStandardAndDerivedSearchParameters(resource.resourceType)) {
     if (getTokenIndexType(searchParam, resource.resourceType)) {
       buildTokensForSearchParameter(result, resource, searchParam);
     }
   }
-  return result;
 }
 
 /**
