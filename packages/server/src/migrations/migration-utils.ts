@@ -53,12 +53,19 @@ export function getPreDeployMigration(migrationNumber: number): PreDeployMigrati
   return migration as PreDeployMigration;
 }
 
+export class MigrationDefinitionNotFoundError extends Error {
+  constructor(migrationNumber: number) {
+    super(`Migration definition not found for v${migrationNumber}`);
+  }
+}
+
 export function getPostDeployMigration(migrationNumber: number): PostDeployMigration {
   // Get the post-deploy migration from the post-deploy migrations module
-  const migration = (postDeployMigrations as Record<string, { migration: PostDeployMigration }>)['v' + migrationNumber]
-    .migration;
+  const migration = (postDeployMigrations as Record<string, { migration: PostDeployMigration } | undefined>)[
+    'v' + migrationNumber
+  ]?.migration;
   if (!migration) {
-    throw new Error(`Migration definition not found for v${migrationNumber}`);
+    throw new MigrationDefinitionNotFoundError(migrationNumber);
   }
 
   if (!('type' in migration)) {
