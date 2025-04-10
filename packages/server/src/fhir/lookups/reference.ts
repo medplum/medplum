@@ -10,8 +10,14 @@ import {
 } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
-import { LookupTable } from './lookuptable';
+import { LookupTable, LookupTableRow } from './lookuptable';
 import { InsertQuery } from '../sql';
+
+interface ReferenceTableRow extends LookupTableRow {
+  resourceId: string;
+  targetId: string;
+  code: string;
+}
 
 /**
  * The ReferenceTable class represents a set of lookup tables for references between resources.
@@ -35,13 +41,8 @@ export class ReferenceTable extends LookupTable {
     return false;
   }
 
-  async indexResource(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
-    if (!create) {
-      await this.deleteValuesForResource(client, resource);
-    }
-
-    const values = getSearchReferences(resource);
-    await this.insertValuesForResource(client, resource.resourceType, values);
+  extractValues(result: ReferenceTableRow[], resource: WithId<Resource>): void {
+    getSearchReferences(result, resource);
   }
 
   /**
@@ -70,25 +71,19 @@ export class ReferenceTable extends LookupTable {
   }
 }
 
-interface ReferenceRow {
-  resourceId: string;
-  targetId: string;
-  code: string;
-}
-
 /**
  * Returns a list of all references in the resource to be inserted into the database.
  * This includes all values for any SearchParameter of `reference` type
+ * @param result - The array to which the references will be added.
  * @param resource - The resource being indexed.
- * @returns An array of all references from the resource to be inserted into the database.
  */
-function getSearchReferences(resource: WithId<Resource>): ReferenceRow[] {
+function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resource>): void {
   const typedResource = [toTypedValue(resource)];
   const searchParams = getSearchParameters(resource.resourceType);
   if (!searchParams) {
-    return [];
+    return;
   }
-  const result = new Map<string, ReferenceRow>();
+  const resultMap = new Map<string, ReferenceTableRow>();
   for (const searchParam of Object.values(searchParams)) {
     if (!isIndexed(searchParam)) {
       continue;
@@ -99,16 +94,16 @@ function getSearchReferences(resource: WithId<Resource>): ReferenceRow[] {
       if (value.type === PropertyType.Reference && value.value.reference) {
         const targetId = resolveId(value.value);
         if (targetId && isUUID(targetId)) {
-          addSearchReferenceResult(result, resource, searchParam, targetId);
+          addSearchReferenceResult(resultMap, resource, searchParam, targetId);
         }
       }
 
       if (isResource(value.value) && value.value.id && isUUID(value.value.id)) {
-        addSearchReferenceResult(result, resource, searchParam, value.value.id);
+        addSearchReferenceResult(resultMap, resource, searchParam, value.value.id);
       }
     }
   }
-  return Array.from(result.values());
+  result.push(...resultMap.values());
 }
 
 /**
@@ -119,7 +114,7 @@ function getSearchReferences(resource: WithId<Resource>): ReferenceRow[] {
  * @param targetId - The target ID.
  */
 function addSearchReferenceResult(
-  result: Map<string, ReferenceRow>,
+  result: Map<string, ReferenceTableRow>,
   resource: WithId<Resource>,
   searchParam: SearchParameter,
   targetId: string
