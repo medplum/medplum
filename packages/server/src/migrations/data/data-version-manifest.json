@@ -5,5 +5,11 @@
   },
   "v2": {
     "serverVersion": "4.1.0"
+  },
+  "v3": {
+    "serverVersion": "4.1.0"
+  },
+  "v4": {
+    "serverVersion": "4.1.0"
   }
 }

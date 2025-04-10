@@ -56,7 +56,21 @@ export const Operator = {
   '>': simpleBinaryOperator('>'),
   '>=': simpleBinaryOperator('>='),
   IN: simpleBinaryOperator('IN'),
+  /*
+    Why do both of these exist? Mainly for consideration when negating the condition:
+    Negating ARRAY_CONTAINS_AND_IS_NOT_NULL includes records where the column is NULL.
+    Negating ARRAY_CONTAINS does NOT include records where the column is NULL.
+  */
   ARRAY_CONTAINS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' && ARRAY[');
+    sql.appendParameters(parameter, false);
+    sql.append(']');
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  ARRAY_CONTAINS_AND_IS_NOT_NULL: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
     sql.append('(');
     sql.appendColumn(column);
     sql.append(' IS NOT NULL AND ');
@@ -68,6 +82,24 @@ export const Operator = {
       sql.append('::' + paramType);
     }
     sql.append(')');
+  },
+  ARRAY_CONTAINS_SUBQUERY: (sql: SqlBuilder, column: Column, expression: Expression, expressionType?: string) => {
+    sql.append('(');
+    sql.appendColumn(column);
+    sql.append(' && (');
+    sql.appendExpression(expression);
+    sql.append(')');
+    if (expressionType) {
+      sql.append('::' + expressionType);
+    }
+    sql.append(')');
+  },
+  TOKEN_ARRAY_IREGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`${TokenArrayToTextFn.name}(`);
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' ~* ');
+    sql.appendParameters(parameter, false);
   },
   TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     const query = formatTsquery(parameter);
@@ -95,15 +127,15 @@ export const Operator = {
     sql.param(query);
     sql.append(')');
   },
-  IN_SUBQUERY: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+  IN_SUBQUERY: (sql: SqlBuilder, column: Column, expression: Expression, expressionType?: string) => {
     sql.appendColumn(column);
     sql.append('=ANY(');
-    if (paramType) {
+    if (expressionType) {
       sql.append('(');
     }
-    sql.appendExpression(parameter);
-    if (paramType) {
-      sql.append(')::' + paramType);
+    sql.appendExpression(expression);
+    if (expressionType) {
+      sql.append(')::' + expressionType);
     }
     sql.append(')');
   },
@@ -213,8 +245,8 @@ export class Condition implements Expression {
   readonly parameterType?: string;
 
   constructor(column: Column | string, operator: keyof typeof Operator, parameter: any, parameterType?: string) {
-    if (operator === 'ARRAY_CONTAINS' && !parameterType) {
-      throw new Error('ARRAY_CONTAINS requires paramType');
+    if ((operator === 'ARRAY_CONTAINS_AND_IS_NOT_NULL' || operator === 'ARRAY_CONTAINS') && !parameterType) {
+      throw new Error(`${operator} requires paramType`);
     }
 
     this.column = getColumn(column);
@@ -226,6 +258,23 @@ export class Condition implements Expression {
   buildSql(sql: SqlBuilder): void {
     const operator = Operator[this.operator];
     operator(sql, this.column, this.parameter, this.parameterType);
+  }
+}
+
+export class TypedCondition<T extends keyof typeof Operator> extends Condition {
+  readonly operator: T;
+  readonly parameter: Parameters<(typeof Operator)[T]>[2];
+  readonly parameterType?: string;
+  constructor(
+    column: Column | string,
+    operator: T,
+    parameter: Parameters<(typeof Operator)[T]>[2],
+    parameterType?: string
+  ) {
+    super(column, operator, parameter, parameterType);
+    this.operator = operator;
+    this.parameter = parameter;
+    this.parameterType = parameterType;
   }
 }
 
@@ -977,3 +1026,21 @@ export function periodToRangeString(period: Period): string | undefined {
   }
   return undefined;
 }
+
+export interface SqlFunctionDefinition {
+  readonly name: string;
+  readonly createQuery: string;
+}
+
+/**
+ * WARNING: Custom SQL functions should be avoided unless absolutely necessary.
+ *
+ * This function is necessary since the postgres `array_to_string` function is not IMMUTABLE,
+ * but only IMMUTABLE functions can be used in index expressions.
+ */
+export const TokenArrayToTextFn: SqlFunctionDefinition = {
+  name: 'token_array_to_text',
+  createQuery: `CREATE FUNCTION token_array_to_text(text[])
+    RETURNS text LANGUAGE sql IMMUTABLE
+    AS $function$SELECT e'\x03'||array_to_string($1, e'\x03')||e'\x03'$function$`,
+};
