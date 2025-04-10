@@ -1,4 +1,3 @@
-# Production stage with nginx
 FROM nginx:alpine
 
 # Copy nginx configuration
@@ -25,11 +24,11 @@ server {
 }
 EOF
 
-# Copy the built app
-COPY packages/app/dist /usr/share/nginx/html
+# Copy and extract the app tarball
+ADD ./medplum-app.tar.gz /usr/share/nginx/html
 
 # Copy the entrypoint script
-COPY scripts/app-docker-entrypoint.sh /docker-entrypoint.sh
+COPY ./docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 3005
