@@ -139,13 +139,13 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 }
 
 async function createUser(request: ServerInviteRequest): Promise<WithId<User>> {
-  const { firstName, lastName, externalId } = request;
+  const { firstName, lastName, externalId, scope } = request;
   const email = request.email?.toLowerCase();
   const password = request.password ?? generateSecret(16);
   const passwordHash = await bcryptHashPassword(password);
 
   let project: Reference<Project> | undefined = undefined;
-  if (request.resourceType === 'Patient' || externalId) {
+  if (request.resourceType === 'Patient' || externalId || scope === 'project') {
     // Users can optionally be scoped to a project.
     // We force users to be scoped to a project if:
     // 1) They are a patient

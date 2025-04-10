@@ -24,6 +24,7 @@ export function InvitePage(): JSX.Element {
         sendEmail: formData.sendEmail === 'on',
         accessPolicy,
         admin: formData.isAdmin === 'on',
+        scope: formData.isProjectScoped === 'on' ? 'project' : 'system',
       };
       medplum
         .invite(project?.id as string, body as InviteRequest)
@@ -89,6 +90,7 @@ export function InvitePage(): JSX.Element {
           </FormSection>
           <Checkbox name="sendEmail" label="Send email" defaultChecked={true} />
           <Checkbox name="isAdmin" label="Admin" />
+          <Checkbox name="isProjectScoped" label="Project scoped" />
           <Group justify="flex-end">
             <Button type="submit">Invite</Button>
           </Group>
