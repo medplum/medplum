@@ -116,7 +116,7 @@ async function createZoomMeeting(accessToken: string, input: ZoomMeetingInput, u
     headers,
     body: JSON.stringify({
       topic: input.topic || 'Medplum Meeting',
-      type: input.startTime ? 2 : 1, // 1 for instant, 2 for scheduled
+      type: 2, //2 for scheduled
       duration: input.duration || 30,
       start_time: input.startTime,
       timezone: input.timezone,
@@ -153,6 +153,133 @@ async function createZoomMeeting(accessToken: string, input: ZoomMeetingInput, u
 }
 
 /**
+ * Updates an existing Zoom meeting using the Zoom API
+ * @param accessToken - Zoom access token
+ * @param meetingId - Zoom meeting ID
+ * @param input - Meeting configuration
+ * @returns Meeting details
+ */
+async function updateZoomMeeting(accessToken: string, meetingId: string, input: ZoomMeetingInput): Promise<ZoomMeetingResponse> {
+  const url = `https://api.zoom.us/v2/meetings/${meetingId}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${accessToken}`,
+    'Accept': 'application/json'
+  };
+
+  console.log('Updating Zoom meeting with:', {
+    url,
+    headers: {
+      ...headers,
+      Authorization: 'Bearer [REDACTED]'
+    },
+    body: {
+      ...input,
+      settings: input.settings
+    }
+  });
+
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify({
+      topic: input.topic || 'Medplum Meeting',
+      type: 2, // 2 for scheduled
+      duration: input.duration || 30,
+      start_time: input.startTime,
+      timezone: input.timezone,
+      settings: {
+        host_video: input.settings?.host_video ?? true,
+        participant_video: input.settings?.participant_video ?? true,
+        join_before_host: input.settings?.join_before_host ?? false,
+        mute_upon_entry: input.settings?.mute_upon_entry ?? true,
+        waiting_room: input.settings?.waiting_room ?? true,
+      },
+    })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    console.error('Zoom API Error:', {
+      status: response.status,
+      statusText: response.statusText,
+      errorData,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+    throw new Error(`Failed to update Zoom meeting: ${response.statusText}. Details: ${errorData}`);
+  }
+
+  // After updating, get the latest meeting details
+  const getResponse = await fetch(url, {
+    method: 'GET',
+    headers
+  });
+
+  if (!getResponse.ok) {
+    const errorData = await getResponse.text();
+    throw new Error(`Failed to get updated meeting details: ${getResponse.statusText}. Details: ${errorData}`);
+  }
+
+  const meeting = (await getResponse.json()) as ZoomMeetingApiResponse;
+  return {
+    meetingUrl: meeting.join_url,
+    startUrl: meeting.start_url,
+    password: meeting.password,
+    joinUrl: meeting.join_url,
+    meetingId: meeting.id.toString(),
+  };
+}
+
+/**
+ * Deletes a Zoom meeting using the Zoom API
+ * @param accessToken - Zoom access token
+ * @param meetingId - Zoom meeting ID
+ */
+async function deleteZoomMeeting(accessToken: string, meetingId: string): Promise<void> {
+  const url = `https://api.zoom.us/v2/meetings/${meetingId}`;
+  const headers = {
+    'Authorization': `Bearer ${accessToken}`,
+    'Accept': 'application/json'
+  };
+
+  console.log('Deleting Zoom meeting:', {
+    url,
+    headers: {
+      ...headers,
+      Authorization: 'Bearer [REDACTED]'
+    }
+  });
+
+  const response = await fetch(url, {
+    method: 'DELETE',
+    headers
+  });
+
+  if (!response.ok) {
+    const errorData = await response.text();
+    console.error('Zoom API Error:', {
+      status: response.status,
+      statusText: response.statusText,
+      errorData,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+    throw new Error(`Failed to delete Zoom meeting: ${response.statusText}. Details: ${errorData}`);
+  }
+}
+
+/**
+ * Removes Zoom meeting extensions from an appointment
+ * @param appointment - Appointment resource
+ * @returns Appointment with Zoom extensions removed
+ */
+function removeZoomExtensions(appointment: Appointment): Appointment {
+  return {
+    ...appointment,
+    extension: appointment.extension?.filter(ext => ext.url !== 'https://medplum.com/zoom-meeting')
+  };
+}
+
+/**
  * Updates an Appointment resource with Zoom meeting details
  * @param medplum - Medplum client
  * @param appointment - Appointment resource
@@ -170,19 +297,19 @@ async function updateAppointmentWithZoomDetails(
     url: 'https://medplum.com/zoom-meeting',
     extension: [
       {
-        url: 'meetingId',
+        url: 'https://medplum.com/zoom-meeting-id',
         valueString: meetingDetails.meetingId,
       },
       {
-        url: 'password',
+        url: 'https://medplum.com/zoom-meeting-password',
         valueString: meetingDetails.password || '',
       },
       {
-        url: 'startUrl',
+        url: 'https://medplum.com/zoom-meeting-start-url',
         valueString: meetingDetails.startUrl,
       },
       {
-        url: 'joinUrl',
+        url: 'https://medplum.com/zoom-meeting-join-url',
         valueString: meetingDetails.joinUrl,
       },
     ],
@@ -200,7 +327,7 @@ async function updateAppointmentWithZoomDetails(
  */
 export async function handler(
   medplum: MedplumClient,
-  event: BotEvent< Appointment>
+  event: BotEvent<Appointment>
 ): Promise<Appointment> {
   // Get Zoom credentials from bot secrets
   const accountId = event.secrets['ZOOM_ACCOUNT_ID']?.valueString;
@@ -215,17 +342,44 @@ export async function handler(
   // Get access token
   const accessToken = await getZoomAccessToken(accountId, clientId, clientSecret);
 
-  // Handle different input types
-   const appointment = event.input as Appointment;
+  const appointment = event.input as Appointment;
 
-   const meetingInput = {
-      topic: appointment.description || 'Medical Appointment',
-      startTime: appointment.start,
-      duration: appointment.minutesDuration || 30,
-    };
+  // Check if this is a deletion (status is 'cancelled' or 'noshow')
+  const isDeletion = appointment.status === 'cancelled' || appointment.status === 'noshow';
 
-  // Create Zoom meeting
-  const meetingDetails = await createZoomMeeting(accessToken, meetingInput, userEmail);
+  // Get existing meeting ID if any
+  const existingMeetingId = appointment.extension?.find(ext => ext.url === 'https://medplum.com/zoom-meeting')
+    ?.extension?.find(ext => ext.url === 'https://medplum.com/zoom-meeting-id')
+    ?.valueString;
+
+  if (isDeletion && existingMeetingId) {
+    // Delete the Zoom meeting
+    await deleteZoomMeeting(accessToken, existingMeetingId);
+    // Remove Zoom extensions from the appointment and update in Medplum
+    const cancelledAppointment = removeZoomExtensions(appointment);
+    return medplum.updateResource(cancelledAppointment);
+  }
+
+  // If not a deletion, proceed with normal meeting creation/update
+  if (!appointment.start) {
+    throw new Error('Appointment start time is required');
+  }
+
+  const meetingInput = {
+    topic: appointment.description || 'Medical Appointment',
+    startTime: appointment.start,
+    duration: appointment.minutesDuration || 30,
+    timezone: 'UTC',
+  };
+
+  let meetingDetails: ZoomMeetingResponse;
+  if (existingMeetingId) {
+    // Update existing meeting
+    meetingDetails = await updateZoomMeeting(accessToken, existingMeetingId, meetingInput);
+  } else {
+    // Create new meeting
+    meetingDetails = await createZoomMeeting(accessToken, meetingInput, userEmail);
+  }
 
   const updatedAppointment = await updateAppointmentWithZoomDetails(medplum, appointment, meetingDetails);
   return updatedAppointment;

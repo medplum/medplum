@@ -1,6 +1,6 @@
 # Medplum Zoom Bot Integration
 
-This module integrates Medplum with Zoom, allowing for automatic creation of Zoom meetings and embedding meeting links in FHIR resources. The bot uses Zoom's Server-to-Server OAuth app type for authentication and can create meetings programmatically.
+This bot is responsible for creating and updating Zoom meetings. It can be triggered through Subscription on Appointment resource or invoking the bot directly with an Appointment resource as input.
 
 ## Prerequisites
 
@@ -30,9 +30,7 @@ This module integrates Medplum with Zoom, allowing for automatic creation of Zoo
 
 ## Usage
 
-The bot can be triggered through Subscription on Appointment resource or invoking the bot directly with an Appointment resource as input.
-
-## Appointment Resource
+### Example Appointment Resource as Input
 ```
 {
   "resourceType": "Appointment",
