@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Error on bad command
+set -e
+
 # Defaults taken from .env.defaults in Medplum monorepo packages/app
 DEFAULT_MEDPLUM_BASE_URL=http://localhost:8103/
 DEFAULT_MEDPLUM_CLIENT_ID=

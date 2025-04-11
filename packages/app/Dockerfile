@@ -1,9 +1,9 @@
-FROM nginx:alpine
+FROM nginxinc/nginx-unprivileged:alpine
 
 # Copy nginx configuration
 COPY <<EOF /etc/nginx/conf.d/default.conf
 server {
-    listen 3005;
+    listen 3000;
     server_name localhost;
     root /usr/share/nginx/html;
     index index.html;
@@ -24,18 +24,22 @@ server {
 }
 EOF
 
+USER root
+
 # Copy and extract the app tarball
 ADD ./medplum-app.tar.gz /usr/share/nginx/html
 
 # Copy the entrypoint script
 COPY ./docker-entrypoint.sh /docker-entrypoint.sh
 
-# Make entrypoint executable and add an nginx user
-RUN chmod +x /docker-entrypoint.sh
+# Grant ownership of the html dir and the entrypoint to the nginx default user/group
+RUN chown -R 101:101 /usr/share/nginx/html && \
+    chown 101:101 /docker-entrypoint.sh && \
+    chmod +x  /docker-entrypoint.sh
 
-EXPOSE 3005
+EXPOSE 3000
 
-# Switch to nginx user
-USER nginx
+# Switch back to the 101 UID
+USER 101
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
