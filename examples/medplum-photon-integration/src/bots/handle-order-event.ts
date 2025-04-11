@@ -2,7 +2,7 @@ import { BotEvent, createReference, MedplumClient, normalizeErrorString } from '
 import { MedicationDispense, MedicationRequest, Patient, Reference } from '@medplum/fhirtypes';
 import { Fill, OrderCreatedData, OrderData, PhotonEvent } from '../photon-types';
 import { NEUTRON_HEALTH } from './constants';
-import { handlePhotonAuth, photonGraphqlFetch } from './utils';
+import { getFillStatus, handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 export async function handler(
   medplum: MedplumClient,
@@ -155,21 +155,6 @@ async function createMedicationDispense(
     return medicationDispense;
   } catch (err) {
     throw new Error(normalizeErrorString(err));
-  }
-}
-
-export function getFillStatus(fillState: Fill['state']): MedicationDispense['status'] {
-  switch (fillState) {
-    case 'NEW':
-      return 'in-progress';
-    case 'SCHEDULED':
-      return 'preparation';
-    case 'SENT':
-      return 'in-progress';
-    case 'CANCELED':
-      return 'cancelled';
-    default:
-      throw new Error('Invalid Fill state');
   }
 }
 
