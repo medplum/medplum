@@ -81,7 +81,7 @@ jobs:
       - name: Build and push Docker images
         run: ./scripts/build-docker.sh --release
         env:
-          SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.SERVER_DOCKERHUB_REPOSITORY }}
+          SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
           APP_DOCKERHUB_REPOSITORY: ${{ secrets.APP_DOCKERHUB_REPOSITORY }}
 
       - name: Configure AWS Credentials
