@@ -201,7 +201,7 @@ describe('Agent/$upgrade', () => {
         {
           severity: 'error',
           code: 'invalid',
-          details: { text: `Invalid value 'INVALID' provided for integer parameter` },
+          details: { text: `Invalid value 'INVALID' provided for integer parameter 'timeout'` },
         },
       ]),
     });
