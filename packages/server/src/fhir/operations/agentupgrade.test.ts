@@ -201,7 +201,7 @@ describe('Agent/$upgrade', () => {
         {
           severity: 'error',
           code: 'invalid',
-          details: { text: "'timeout' must be an integer representing a duration in milliseconds, if defined" },
+          details: { text: `Invalid value 'INVALID' provided for integer parameter` },
         },
       ]),
     });
