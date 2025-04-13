@@ -264,7 +264,7 @@ function getSelectQueryForSearch<T extends Resource>(
   options?: GetSelectQueryForSearchOptions
 ): SelectQuery {
   const builder = getBaseSelectQuery(repo, searchRequest, options);
-  addSortRules(builder, searchRequest);
+  addSortRules(repo, builder, searchRequest);
   const count = searchRequest.count;
   builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
   if (searchRequest.offset > 0) {
@@ -962,7 +962,7 @@ function buildSearchFilterExpression(
 
   const impl = getSearchParameterImplementation(resourceType, param);
 
-  if (TokenColumnsFeature.read && impl.searchStrategy === 'token-column') {
+  if (readFromTokenColumns(repo) && impl.searchStrategy === 'token-column') {
     // Use the token-column strategy only if the read feature flag is enabled
     return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
   } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
@@ -1382,20 +1382,27 @@ function buildQuantitySearchFilter(
 
 /**
  * Adds all "order by" clauses to the query builder.
+ * @param repo - The repository.
  * @param builder - The client query builder.
  * @param searchRequest - The search request.
  */
-function addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
-  searchRequest.sortRules?.forEach((sortRule) => addOrderByClause(builder, searchRequest, sortRule));
+function addSortRules(repo: Repository, builder: SelectQuery, searchRequest: SearchRequest): void {
+  searchRequest.sortRules?.forEach((sortRule) => addOrderByClause(repo, builder, searchRequest, sortRule));
 }
 
 /**
  * Adds a single "order by" clause to the query builder.
+ * @param repo - The repository.
  * @param builder - The client query builder.
  * @param searchRequest - The search request.
  * @param sortRule - The sort rule.
  */
-function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
+function addOrderByClause(
+  repo: Repository,
+  builder: SelectQuery,
+  searchRequest: SearchRequest,
+  sortRule: SortRule
+): void {
   if (sortRule.code === '_id') {
     builder.orderBy('id', !!sortRule.descending);
     return;
@@ -1413,7 +1420,7 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (TokenColumnsFeature.read && impl.searchStrategy === 'token-column') {
+  if (readFromTokenColumns(repo) && impl.searchStrategy === 'token-column') {
     addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
   } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
     if (isLegacyTokenColumnSearchParameter(param, resourceType)) {
@@ -1752,4 +1759,11 @@ function splitChainedSearch(chain: string): string[] {
 
 function getCanonicalUrl(resource: Resource): string | undefined {
   return (resource as Resource & { url?: string }).url;
+}
+
+export function readFromTokenColumns(repo: Repository): boolean {
+  const project = repo.currentProject();
+  const maybeSystemSettings = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns')?.valueBoolean;
+  // If the Project.systemSetting exists, return its value. Otherwise, fallback to global setting
+  return maybeSystemSettings ?? TokenColumnsFeature.read;
 }
