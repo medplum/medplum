@@ -24,7 +24,11 @@ To export patient data as C-CDA, navigate to `https://app.medplum.com/Patient/<P
 
 ## Transitions of Care
 
-To send C-CDA to other systems via Direct Message to support transitions of care.
+Medplum enables sending C-CDA to other systems via Direct Message to support transitions of care.  To utilize the feature, implementors need to create a communication resource with the C-CDA attached as shown in the video.
+
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/39XlepPmeYQ?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 ## FHIR Server Integration
 
