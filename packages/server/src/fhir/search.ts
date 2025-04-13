@@ -1763,7 +1763,7 @@ function getCanonicalUrl(resource: Resource): string | undefined {
 
 export function readFromTokenColumns(repo: Repository): boolean {
   const project = repo.currentProject();
-  const maybeSystemSettings = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns')?.valueBoolean;
+  const maybeSystemSettingBoolean = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns')?.valueBoolean;
   // If the Project.systemSetting exists, return its value. Otherwise, fallback to global setting
-  return maybeSystemSettings ?? TokenColumnsFeature.read;
+  return maybeSystemSettingBoolean ?? TokenColumnsFeature.read;
 }
