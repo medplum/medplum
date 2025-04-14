@@ -5,7 +5,7 @@ import { expect, test } from 'vitest';
 import { handler } from './dft-transfer-bot';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 
-describe('DFT Message Cursor Tests', async () => {
+describe('DFT Message Tests', async () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
@@ -57,7 +57,7 @@ IN1|1|MEDICARE|INS123|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
     expect(claim?.diagnosis?.[0].diagnosisCodeableConcept?.coding?.[0].code).toBe('E11.9');
   });
 
-  test('DFT Message with Multiple Procedures Creates Single Claim', async () => {
+  test('DFT Message with Multiple Procedures Creates Single Claim with Multiple Diagnoses', async () => {
     const medplum = new MockClient();
     const bot: Reference<Bot> = { reference: 'Bot/123' };
     const input =
