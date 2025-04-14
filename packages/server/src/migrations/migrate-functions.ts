@@ -1,4 +1,5 @@
 import { Pool, PoolClient } from 'pg';
+import { globalLogger } from '../logger';
 
 export type MigrationAction = { name: string; durationMs: number };
 
@@ -51,13 +52,17 @@ export async function idempotentCreateIndex(
 
     const start = Date.now();
     await client.query(`DROP INDEX IF EXISTS ${indexName}`);
-    actions.push({ name: `DROP INDEX IF EXISTS ${indexName}`, durationMs: Date.now() - start });
+    const durationMs = Date.now() - start;
+    globalLogger.info('Dropped invalid index', { indexName, durationMs });
+    actions.push({ name: `DROP INDEX IF EXISTS ${indexName}`, durationMs });
     exists = false;
   }
 
   if (!exists) {
     const start = Date.now();
     await client.query(createIndexSql);
-    actions.push({ name: createIndexSql, durationMs: Date.now() - start });
+    const durationMs = Date.now() - start;
+    globalLogger.info('Created index', { indexName, durationMs });
+    actions.push({ name: createIndexSql, durationMs });
   }
 }
