@@ -88,7 +88,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         expect(badTextResult.entry?.length).toStrictEqual(0);
       }));
 
-    test.only.each(TokenQueryOperators)('%s with empty value does not throw errors', async (operator) => {
+    test.each(TokenQueryOperators)('%s with empty value does not throw errors', async (operator) => {
       const search = systemRepo.search({
         resourceType: 'Patient',
         filters: [

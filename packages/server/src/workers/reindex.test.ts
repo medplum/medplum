@@ -582,7 +582,7 @@ describe('Job cancellation', () => {
       expect(finalJob.output).toBeUndefined();
     }));
 
-  test.only.each(['some-token', undefined])('Job handles queue closing with job.token %s', async (jobToken) =>
+  test.each(['some-token', undefined])('Job handles queue closing with job.token %s', async (jobToken) =>
     withTestContext(async () => {
       const originalJob = await repo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
