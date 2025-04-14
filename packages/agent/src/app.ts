@@ -612,6 +612,26 @@ export class App {
       return;
     }
 
+    const targetVersion = message.version ?? (await fetchLatestVersionString('agent-upgrader'));
+
+    // MEDPLUM_VERSION contains major.minor.patch-commit_hash
+    if (MEDPLUM_VERSION.startsWith(targetVersion)) {
+      // If we are forcing an upgrade, we can still upgrade to a version that we're already on
+      // This is mostly if you somehow installed a version that was not released but installed manually
+      // This will get you on the official release version for the given semver
+      if (!message?.force) {
+        this.log.info(`Attempted to upgrade to version ${targetVersion}, but agent is already on that version`);
+        await this.sendToWebSocket({
+          type: 'agent:upgrade:response',
+          statusCode: 200,
+          callback: message.callback,
+        } satisfies AgentUpgradeResponse);
+        return;
+      }
+
+      this.log.info(`Forcing upgrade from ${MEDPLUM_VERSION} to ${targetVersion}`);
+    }
+
     try {
       const command = __filename;
       const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
@@ -655,8 +675,6 @@ export class App {
       this.log.info('Successfully stopped agent network services');
 
       // Write a manifest file
-      const targetVersion = message.version ?? (await fetchLatestVersionString('agent-upgrader'));
-
       this.log.info('Writing upgrade manifest...', { previousVersion: MEDPLUM_VERSION, targetVersion });
       writeFileSync(
         UPGRADE_MANIFEST_PATH,

@@ -1,6 +1,6 @@
 import { getReferenceString } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
-import { Job, Queue } from 'bullmq';
+import { Job, Queue, DelayedError } from 'bullmq';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
@@ -27,8 +27,6 @@ describe('Post-Deploy Migration Worker', () => {
   let config: MedplumServerConfig;
 
   beforeAll(async () => {
-    jest.spyOn(migrationUtils, 'getPostDeployMigration');
-
     config = await loadTestConfig();
 
     // initialize everything but workers
@@ -36,9 +34,12 @@ describe('Post-Deploy Migration Worker', () => {
     await closeWorkers();
   });
 
+  beforeEach(() => {
+    jest.restoreAllMocks();
+  });
+
   afterEach(async () => {
     await closeWorkers();
-    jest.clearAllMocks();
   });
 
   afterAll(async () => {
@@ -105,7 +106,7 @@ describe('Post-Deploy Migration Worker', () => {
     ['is not active', { status: 'cancelled' }, false],
     ['has no dataVersion', { dataVersion: undefined }, true],
   ])('Job processor skips job if AsyncJob %s', async (_, jobProps, shouldThrow) => {
-    const getPostDeployMigrationSpy = jest.mocked(migrationUtils.getPostDeployMigration);
+    const getPostDeployMigrationSpy = jest.spyOn(migrationUtils, 'getPostDeployMigration');
 
     const mockAsyncJob = await getSystemRepo().createResource<AsyncJob>({
       resourceType: 'AsyncJob',
@@ -157,7 +158,7 @@ describe('Post-Deploy Migration Worker', () => {
     };
 
     const getPostDeployMigrationSpy = jest
-      .mocked(migrationUtils.getPostDeployMigration)
+      .spyOn(migrationUtils, 'getPostDeployMigration')
       .mockReturnValue(mockCustomMigration);
 
     const systemRepo = getSystemRepo();
@@ -223,7 +224,7 @@ describe('Post-Deploy Migration Worker', () => {
       }),
     };
     const getPostDeployMigrationSpy = jest
-      .mocked(migrationUtils.getPostDeployMigration)
+      .spyOn(migrationUtils, 'getPostDeployMigration')
       .mockReturnValue(mockCustomMigration);
 
     // temporarily set to {} to appease typescript since it gets set within withTestContext
@@ -247,6 +248,67 @@ describe('Post-Deploy Migration Worker', () => {
 
     // Verify the job was re-queued
     expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', job.data, { attempts: 55 });
+  });
+
+  test('Job processor delays job when migration definition is not found', async () => {
+    await initWorkers(config);
+
+    const mockAsyncJob = await getSystemRepo().createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'accepted',
+      dataVersion: 456,
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/migrate',
+      minServerVersion: '1.0.0',
+    });
+
+    const mockCustomMigration: CustomPostDeployMigration = {
+      type: 'custom',
+      prepareJobData: jest.fn(),
+      run: jest.fn().mockImplementation(async (repo, job, jobData) => {
+        return runCustomMigration(repo, job, jobData, async () => {
+          const actions: CustomMigrationAction[] = [
+            { name: 'first', durationMs: 111 },
+            { name: 'second', durationMs: 222 },
+          ];
+          return { actions };
+        });
+      }),
+    };
+
+    // temporarily set to {} to appease typescript since it gets set within withTestContext
+    let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
+    const moveToDelayedSpy = jest.fn();
+    await withTestContext(async () => {
+      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+      job = {
+        id: '1',
+        name: 'PostDeployMigrationJobData',
+        data: jobData,
+        queueName: 'PostDeployMigrationQueue',
+        opts: { attempts: 55 },
+        token: 'some-token',
+        moveToDelayed: moveToDelayedSpy,
+      } as unknown as Job<PostDeployJobData>;
+    });
+    expect(job.opts.attempts).toEqual(55);
+
+    // DelayedError is part of the mocked bullmq module. Something about that causes
+    // the usual `expect(...).rejects.toThrow(...)`; it seems to be becuase DelayedError
+    // is no longer an `Error`. So instead, we manually check that it threw
+    let threw = undefined;
+    try {
+      await jobProcessor(job);
+      throw new Error('Expected jobProcessor to throw DelayedError');
+    } catch (err) {
+      threw = err;
+    }
+    expect(threw).toBeDefined();
+    expect(threw).toBeInstanceOf(DelayedError);
+
+    expect(mockCustomMigration.run).not.toHaveBeenCalled();
+    expect(moveToDelayedSpy).toHaveBeenCalledTimes(1);
+    expect(moveToDelayedSpy).toHaveBeenCalledWith(expect.any(Number), 'some-token');
   });
 
   test('Run custom migration success', async () => {

@@ -8,7 +8,7 @@ interface PatientTabsNavigationProps {
 
 export function PatientTabsNavigation({ currentTab, onTabChange }: PatientTabsNavigationProps): JSX.Element {
   return (
-    <Paper style={{ width: '100%' }}>
+    <Paper w="100%">
       <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
         <Tabs.List
           style={{

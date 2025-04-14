@@ -101,9 +101,6 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             label: {
               fontWeight: 500,
               color: theme.colors.dark[9],
-              '&[data-active]': {
-                color: theme.colors.dark[9],
-              },
               padding: `${theme.spacing.xs} ${theme.spacing.md}`,
             },
           })}

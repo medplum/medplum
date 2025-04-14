@@ -46,27 +46,58 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE NOT ("name" = $1)');
     });
 
-    test('Select where array contains', () => {
-      const sql = new SqlBuilder();
-      new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', 'x', 'TEXT[]').buildSql(sql);
-      expect(sql.toString()).toBe(
-        'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" && ARRAY[$1]::TEXT[])'
-      );
+    describe('array contains', () => {
+      test('single value', () => {
+        const sql = new SqlBuilder();
+        new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', 'x', 'TEXT[]').buildSql(sql);
+        expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" && ARRAY[$1]::TEXT[]');
+      });
+
+      test('multiple values', () => {
+        const sql = new SqlBuilder();
+        new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', ['x', 'y'], 'TEXT[]').buildSql(sql);
+        expect(sql.toString()).toBe(
+          'SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" && ARRAY[$1,$2]::TEXT[]'
+        );
+      });
+
+      test('missing param type', () => {
+        const sql = new SqlBuilder();
+        expect(() =>
+          new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', 'x').buildSql(sql)
+        ).toThrow('ARRAY_CONTAINS requires paramType');
+      });
     });
 
-    test('Select where array contains array', () => {
-      const sql = new SqlBuilder();
-      new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', ['x', 'y'], 'TEXT[]').buildSql(sql);
-      expect(sql.toString()).toBe(
-        'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" && ARRAY[$1,$2]::TEXT[])'
-      );
-    });
+    describe('array contains and is not null', () => {
+      test('single value', () => {
+        const sql = new SqlBuilder();
+        new SelectQuery('MyTable')
+          .column('id')
+          .where('name', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', 'x', 'TEXT[]')
+          .buildSql(sql);
+        expect(sql.toString()).toBe(
+          'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" && ARRAY[$1]::TEXT[])'
+        );
+      });
 
-    test('Select where array contains missing param type', () => {
-      const sql = new SqlBuilder();
-      expect(() => new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', 'x').buildSql(sql)).toThrow(
-        'ARRAY_CONTAINS requires paramType'
-      );
+      test('multiple values', () => {
+        const sql = new SqlBuilder();
+        new SelectQuery('MyTable')
+          .column('id')
+          .where('name', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', ['x', 'y'], 'TEXT[]')
+          .buildSql(sql);
+        expect(sql.toString()).toBe(
+          'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" && ARRAY[$1,$2]::TEXT[])'
+        );
+      });
+
+      test('missing param type', () => {
+        const sql = new SqlBuilder();
+        expect(() =>
+          new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', 'x').buildSql(sql)
+        ).toThrow('ARRAY_CONTAINS_AND_IS_NOT_NULL requires paramType');
+      });
     });
 
     test('Select where is null', () => {

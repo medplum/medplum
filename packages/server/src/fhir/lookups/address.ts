@@ -1,8 +1,17 @@
-import { formatAddress } from '@medplum/core';
+import { formatAddress, WithId } from '@medplum/core';
 import { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import { Column, DeleteQuery } from '../sql';
-import { LookupTable } from './lookuptable';
+import { LookupTable, LookupTableRow } from './lookuptable';
+
+interface AddressTableRow extends LookupTableRow {
+  address: string;
+  city: string | undefined;
+  country: string | undefined;
+  postalCode: string | undefined;
+  state: string | undefined;
+  use: string | undefined;
+}
 
 /**
  * The AddressTable class is used to index and search Address properties.
@@ -93,41 +102,35 @@ export class AddressTable extends LookupTable {
     return AddressTable.knownParams.has(searchParam.id as string);
   }
 
-  /**
-   * Indexes a resource Address values.
-   * Attempts to reuse existing Addresses if they are correct.
-   * @param client - The database client.
-   * @param resource - The resource to index.
-   * @param create - True if the resource should be created (vs updated).
-   * @returns Promise on completion.
-   */
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (!AddressTable.hasAddress(resource.resourceType)) {
-      return;
-    }
-
-    if (!create) {
-      await this.deleteValuesForResource(client, resource);
-    }
-
+  extractValues(result: AddressTableRow[], resource: WithId<Resource>): void {
     const addresses = this.getIncomingAddresses(resource);
-    if (!addresses || !Array.isArray(addresses)) {
+    if (!Array.isArray(addresses)) {
       return;
     }
 
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id;
-    const values = addresses.map((address) => ({
-      resourceId,
-      address: formatAddress(address),
-      city: address.city?.trim(),
-      country: address.country?.trim(),
-      postalCode: address.postalCode?.trim(),
-      state: address.state?.trim(),
-      use: address.use?.trim(),
-    }));
+    for (const address of addresses) {
+      result.push({
+        resourceId: resource.id,
+        address: formatAddress(address),
+        city: address.city?.trim(),
+        country: address.country?.trim(),
+        postalCode: address.postalCode?.trim(),
+        state: address.state?.trim(),
+        use: address.use?.trim(),
+      });
+    }
+  }
 
-    await this.insertValuesForResource(client, resourceType, values);
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    if (!resources[0] || !AddressTable.hasAddress(resources[0].resourceType)) {
+      return;
+    }
+
+    await super.batchIndexResources(client, resources, create);
   }
 
   private getIncomingAddresses(resource: Resource): Address[] | undefined {

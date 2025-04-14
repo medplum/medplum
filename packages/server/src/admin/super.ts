@@ -56,7 +56,8 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, async () => rebuildR4ValueSets());
+    const systemRepo = getSystemRepo();
+    await sendAsyncResponse(req, res, async () => rebuildR4ValueSets(systemRepo));
   })
 );
 
@@ -69,7 +70,8 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => rebuildR4StructureDefinitions());
+    const systemRepo = getSystemRepo();
+    await sendAsyncResponse(req, res, async () => rebuildR4StructureDefinitions(systemRepo));
   })
 );
 
@@ -82,7 +84,8 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => rebuildR4SearchParameters());
+    const systemRepo = getSystemRepo();
+    await sendAsyncResponse(req, res, async () => rebuildR4SearchParameters(systemRepo));
   })
 );
 

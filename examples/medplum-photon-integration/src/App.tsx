@@ -49,9 +49,11 @@ export function App(): JSX.Element | null {
               <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/Patient/:id">
+                <Route index element={<PatientPage />} />
                 <Route path="*" element={<PatientPage />} />
               </Route>
               <Route path="/MedicationRequest/:id">
+                <Route index element={<PrescriptionPage />} />
                 <Route path="*" element={<PrescriptionPage />} />
               </Route>
               <Route path="/:resourceType/:id" element={<ResourcePage />} />
@@ -59,6 +61,7 @@ export function App(): JSX.Element | null {
               <Route path="/upload/:dataType" element={<UploadDataPage />} />
               <Route path="/MedicationKnowledge" element={<MedicationsPage />} />
               <Route path="/MedicationKnowledge/:id">
+                <Route index element={<MedicationPage />} />
                 <Route path="*" element={<MedicationPage />} />
               </Route>
             </Routes>

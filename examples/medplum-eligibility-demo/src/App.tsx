@@ -45,12 +45,15 @@ export function App(): JSX.Element | null {
           <Route path="/:resourceType" element={<SearchPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/Coverage/:id">
+            <Route index element={<CoveragePage />} />
             <Route path="*" element={<CoveragePage />} />
           </Route>
           <Route path="/Patient/:id">
+            <Route index element={<PatientPage />} />
             <Route path="*" element={<PatientPage />} />
           </Route>
           <Route path="/:resourceType/:id">
+            <Route index element={<ResourcePage />} />
             <Route path="*" element={<ResourcePage />} />
           </Route>
           <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />

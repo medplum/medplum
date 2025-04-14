@@ -107,13 +107,22 @@ export function App(): JSX.Element | null {
                 path="/Patient/:patientId/Schedule/:scheduleId"
                 element={schedule ? <PatientSchedulePage /> : <Loading />}
               />
-              <Route path="/Patient/:id" element={<PatientPage />} />
+              <Route path="/Patient/:id" element={<PatientPage />}>
+                <Route index element={<PatientPage />} />
+                <Route path="*" element={<PatientPage />} />
+              </Route>
               <Route path="/Appointment/upcoming" element={<AppointmentsPage />} />
               <Route path="/Appointment/past" element={<AppointmentsPage />} />
-              <Route path="/Appointment/:id" element={<AppointmentDetailPage />} />
+              <Route path="/Appointment/:id" element={<AppointmentDetailPage />}>
+                <Route index element={<AppointmentDetailPage />} />
+                <Route path="*" element={<AppointmentDetailPage />} />
+              </Route>
               <Route path="/upload/:dataType" element={<UploadDataPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
-              <Route path="/:resourceType/:id" element={<ResourcePage />} />
+              <Route path="/:resourceType/:id" element={<ResourcePage />}>
+                <Route index element={<ResourcePage />} />
+                <Route path="*" element={<ResourcePage />} />
+              </Route>
             </Routes>
           </Suspense>
         </ErrorBoundary>

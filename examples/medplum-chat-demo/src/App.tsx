@@ -49,7 +49,7 @@ export function App(): JSX.Element | null {
         {
           // A section of the sidebar that links to a page to upload example data for the app
           title: 'Upload Data',
-          links: [{ icon: <IconFileImport />, label: 'Upload Example Data', href: 'upload/example' }],
+          links: [{ icon: <IconFileImport />, label: 'Upload Example Data', href: '/upload/example' }],
         },
       ]}
       // This adds notification icons for unread messages and active tasks for the current user
@@ -67,13 +67,16 @@ export function App(): JSX.Element | null {
           <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/Communication/:id">
+            <Route index element={<CommunicationPage />} />
             <Route path="*" element={<CommunicationPage />} />
           </Route>
           <Route path="/:resourceType" element={<SearchPage />} />
           <Route path="/:resourceType/:id">
+            <Route index element={<ResourcePage />} />
             <Route path="*" element={<ResourcePage />} />
           </Route>
           <Route path="/Patient/:id">
+            <Route index element={<PatientPage />} />
             <Route path="*" element={<PatientPage />} />
           </Route>
           <Route path="/:resourceType/:id" element={<ResourcePage />} />
