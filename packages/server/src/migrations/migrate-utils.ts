@@ -130,3 +130,29 @@ export function parseIndexColumns(expression: string): string[] {
 
   return parse(tokenize(expression));
 }
+
+/**
+ * Converts Unicode characters to their escaped representation
+ * - ASCII control chars (0x00-0x1F) and DEL (0x7F) use \x format
+ * - Other Unicode chars use \u format
+ * @param str - Input string
+ * @returns Escaped string
+ */
+export function escapeUnicode(str: string): string {
+  // eslint-disable-next-line no-control-regex
+  return str.replace(/[\x01-\x1F\x7F-\uFFFF]/g, (char) => {
+    const code = char.charCodeAt(0);
+    // tab, carriage return, line feed are okay
+    if (code === 0x09 || code === 0x0a || code === 0x0d) {
+      return char;
+    }
+
+    // For ASCII control characters (0x00-0x1F) and DEL (0x7F), use \x format
+    if (code < 0x20 || code === 0x7f) {
+      return '\\x' + code.toString(16).padStart(2, '0');
+    }
+
+    // For other Unicode characters, use \u format
+    return '\\u' + code.toString(16).padStart(4, '0');
+  });
+}

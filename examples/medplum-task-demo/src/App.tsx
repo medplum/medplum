@@ -103,9 +103,11 @@ export function App(): JSX.Element | null {
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/:resourceType" element={<SearchPage />} />
             <Route path="/:resourceType/:id">
+              <Route index element={<ResourcePage />} />
               <Route path="*" element={<ResourcePage />} />
             </Route>
             <Route path="/Task/:id">
+              <Route index element={<TaskPage />} />
               <Route path="*" element={<TaskPage />} />
             </Route>
             <Route path="/Task" element={<SearchPage />} />

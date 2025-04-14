@@ -1,6 +1,6 @@
 import { getReferenceString, WithId } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
-import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { DelayedError, Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -10,8 +10,9 @@ import {
   CustomPostDeployMigrationJobData,
   PostDeployJobData,
   PostDeployJobRunResult,
+  PostDeployMigration,
 } from '../migrations/data/types';
-import { getPostDeployMigration } from '../migrations/migration-utils';
+import { getPostDeployMigration, MigrationDefinitionNotFoundError } from '../migrations/migration-utils';
 import { addVerboseQueueLogging, isJobActive, isJobCompatible, queueRegistry, WorkerInitializer } from './utils';
 
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
@@ -78,7 +79,27 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
     version: migrationNumber,
   });
 
-  const migration = getPostDeployMigration(migrationNumber);
+  let migration: PostDeployMigration;
+  try {
+    migration = getPostDeployMigration(migrationNumber);
+  } catch (err: any) {
+    if (err instanceof MigrationDefinitionNotFoundError) {
+      const delayMs = 60_000;
+      globalLogger.info(
+        `${PostDeployMigrationQueueName} processor delaying job since migration definition was not found on this worker`,
+        {
+          jobId: job.id,
+          delayMs,
+          ...getJobDataLoggingFields(job),
+          version: migrationNumber,
+        }
+      );
+      await job.moveToDelayed(Date.now() + delayMs, job.token);
+      throw new DelayedError('Post-deploy migration delayed since migration definition was not found on this worker');
+    }
+    throw err;
+  }
+
   if (migration.type !== job.data.type) {
     throw new Error(`Post-deploy migration ${migrationNumber} is not a ${job.data.type} migration`);
   }

@@ -7,31 +7,30 @@ import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
-
 export async function seedDatabase(): Promise<void> {
-  if (await isSeeded()) {
+  const systemRepo = getSystemRepo();
+
+  if (await isSeeded(systemRepo)) {
     globalLogger.info('Already seeded');
     return;
   }
-
-  const systemRepo = getSystemRepo();
 
   await systemRepo.withTransaction(async () => {
     await createSuperAdmin(systemRepo);
 
     globalLogger.info('Building structure definitions...');
     let startTime = Date.now();
-    await rebuildR4StructureDefinitions();
+    await rebuildR4StructureDefinitions(systemRepo);
     globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
 
     globalLogger.info('Building value sets...');
     startTime = Date.now();
-    await rebuildR4ValueSets();
+    await rebuildR4ValueSets(systemRepo);
     globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
 
     globalLogger.info('Building search parameters...');
     startTime = Date.now();
-    await rebuildR4SearchParameters();
+    await rebuildR4SearchParameters(systemRepo);
     globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
   });
 }
@@ -92,9 +91,9 @@ async function createSuperAdmin(systemRepo: Repository): Promise<void> {
 
 /**
  * Returns true if the database is already seeded.
+ * @param systemRepo - The system repository to use to check if the database is seeded.
  * @returns True if already seeded.
  */
-function isSeeded(): Promise<User | undefined> {
-  const systemRepo = getSystemRepo();
+function isSeeded(systemRepo: Repository): Promise<User | undefined> {
   return systemRepo.searchOne({ resourceType: 'User' });
 }

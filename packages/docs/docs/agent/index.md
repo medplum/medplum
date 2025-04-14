@@ -102,7 +102,7 @@ This guide walks through how to install the agent onto the host. The agent conne
 
 #### Windows Install
 
-The agent executable for Windows is built with each release, and can be be downloaded from the [releases](https://github.com/medplum/medplum/releases) page.
+The agent executable for Windows is built with each release, and can be be downloaded from the [Medplum Releases](https://github.com/medplum/medplum/releases) page.
 
 To install on a Windows Host, remote into the host and download the agent executable to the host filesystem. Double click on the installer executable to start and go through the install screen, inputting the 4 pieces of information from the previous step into the screen.
 
@@ -113,11 +113,21 @@ Once the install is complete you should be able to see the following:
 
 #### Linux Install
 
-TODO
+The Linux version of the Medplum Agent is currently available as a standalone binary. You can get started by following these steps:
+
+1. Download the latest Linux binary from the [Medplum Releases](https://github.com/medplum/medplum/releases/latest) page.
+2. Make the binary executable
+   ```bash
+   chmod +x medplum-agent-linux
+   ```
+3. Run the agent with your configuration parameters
+   ```bash
+   ./medplum-agent-linux <base_url> <client_id> <client_secret> <agent_id>
+   ```
 
 #### Docker Image
 
-TODO
+For instructions on building and running the Docker image for the Medplum Agent, please refer to the [Medplum Agent package documentation](https://github.com/medplum/medplum/blob/main/packages/agent).
 
 ## Testing your Setup
 
@@ -170,7 +180,7 @@ All interactions between a `Bot` and an `Agent`, such as calling `Agent` operati
 
 :::note
 
-Because a reference to the `Agent` that interacted with the `Bot` is logged in the `AuditEvent` created by the `Bot`, these events will show up in the `Events` tab for both the `Bot` and the `Agent`. 
+Because a reference to the `Agent` that interacted with the `Bot` is logged in the `AuditEvent` created by the `Bot`, these events will show up in the `Events` tab for both the `Bot` and the `Agent`.
 
 These are not duplicated `AuditEvent` resources but rather the same resource showing up in both `Event` log views.
 

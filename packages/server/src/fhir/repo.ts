@@ -23,7 +23,6 @@ import {
   forbidden,
   formatSearchQuery,
   getReferenceString,
-  getSearchParameters,
   getStatus,
   gone,
   isGone,
@@ -95,12 +94,13 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { SearchOptions, buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
-import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
   DeleteQuery,
@@ -112,6 +112,8 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
+import { buildTokenColumns } from './token-column';
+import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -983,9 +985,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         const projectRef = meta.compartment.find((r) => r.reference?.startsWith('Project/'));
         meta.project = resolveId(projectRef);
       }
-
-      await this.writeLookupTables(conn, resource, false);
     }
+
+    await this.batchWriteLookupTables(conn, resources, false);
     await this.batchWriteResources(conn, resources);
   }
 
@@ -1054,11 +1056,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           content,
         };
 
-        const searchParams = getSearchParameters(resourceType);
-        if (searchParams) {
-          for (const searchParam of Object.values(searchParams)) {
-            this.buildColumn({ resourceType } as Resource, columns, searchParam);
-          }
+        for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
+          this.buildColumn({ resourceType } as Resource, columns, searchParam);
         }
 
         await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
@@ -1280,7 +1279,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private addProjectFilters(builder: SelectQuery): void {
     if (this.context.projects?.length) {
-      builder.where('compartments', 'ARRAY_CONTAINS', this.context.projects, 'UUID[]');
+      builder.where('compartments', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', this.context.projects, 'UUID[]');
     }
   }
 
@@ -1303,7 +1302,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         if (policyCompartmentId) {
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
-          expressions.push(new Condition('compartments', 'ARRAY_CONTAINS', policyCompartmentId, 'UUID[]'));
+          expressions.push(
+            new Condition('compartments', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', policyCompartmentId, 'UUID[]')
+          );
         } else if (policy.criteria) {
           if (!policy.criteria.startsWith(policy.resourceType + '?')) {
             getLogger().warn('Invalid access policy criteria', {
@@ -1346,8 +1347,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * The version to be set on resources when they are inserted/updated into the database.
    * The value should be incremented each time there is a change in the schema (really just columns)
    * of the resource tables or when there are code changes to `buildResourceRow`.
+   *
+   * Version history:
+   *
+   * 1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
+   * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
+   * 3. 04/09/25 - Added columns for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
+   *
    */
-  static readonly VERSION: number = 1;
+  static readonly VERSION: number = 3;
 
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
@@ -1365,10 +1373,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       __version: Repository.VERSION,
     };
 
-    const searchParams = getSearchParameters(resourceType);
-    if (searchParams) {
+    const searchParams = getStandardAndDerivedSearchParameters(resourceType);
+    if (searchParams.length > 0) {
       const startTime = process.hrtime.bigint();
-      for (const searchParam of Object.values(searchParams)) {
+      for (const searchParam of searchParams) {
         this.buildColumn(resource, row, searchParam);
       }
       recordHistogramValue(
@@ -1485,30 +1493,49 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param searchParam - The search parameter definition.
    */
   private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
-    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
-
     if (
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment' ||
-      searchParam.type === 'composite' ||
-      impl.searchStrategy === 'lookup-table'
+      searchParam.code === '_compartment:identifier' ||
+      searchParam.type === 'composite'
     ) {
       return;
     }
 
-    const values = evalFhirPath(searchParam.expression as string, resource);
-    let columnValue = null;
-
-    if (values.length > 0) {
-      if (impl.array) {
-        columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
-      } else {
-        columnValue = this.buildColumnValue(searchParam, impl, values[0]);
-      }
+    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
+    if (impl.searchStrategy === 'lookup-table') {
+      return;
     }
 
-    columns[impl.columnName] = columnValue;
+    const values = evalFhirPath(impl.parsedExpression, resource);
+
+    let columnImpl: ColumnSearchParameterImplementation | undefined;
+    if (impl.searchStrategy === 'token-column') {
+      if (TokenColumnsFeature.write) {
+        buildTokenColumns(searchParam, impl, columns, resource);
+      }
+
+      if (isLegacyTokenColumnSearchParameter(searchParam, resource.resourceType)) {
+        // This is a legacy search parameter that should be indexed as a regular string column as well
+        columnImpl = getSearchParameterImplementation(resource.resourceType, searchParam, true);
+      }
+    } else {
+      impl satisfies ColumnSearchParameterImplementation;
+      columnImpl = impl;
+    }
+
+    if (columnImpl) {
+      let columnValue = undefined;
+      if (values.length > 0) {
+        if (columnImpl.array) {
+          columnValue = values.map((v) => this.buildColumnValue(searchParam, columnImpl, v));
+        } else {
+          columnValue = this.buildColumnValue(searchParam, columnImpl, values[0]);
+        }
+      }
+      columns[columnImpl.columnName] = columnValue;
+    }
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
@@ -1744,6 +1771,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(client, resource, create);
+    }
+  }
+
+  private async batchWriteLookupTables<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    for (const lookupTable of lookupTables) {
+      await lookupTable.batchIndexResources(client, resources, create);
     }
   }
 
