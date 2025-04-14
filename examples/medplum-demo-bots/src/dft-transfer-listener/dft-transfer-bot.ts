@@ -158,15 +158,15 @@ function extractDiagnosisFromPr1(pr1: Hl7Segment): { code: string; display: stri
   const diagnosisCode = pr1.getField(15)?.getComponent(1) ?? ''; // PR1.15.1 Diagnosis Code
   const diagnosisDesc = pr1.getField(15)?.getComponent(2) ?? ''; // PR1.15.2 Diagnosis Description
   const diagnosisSystem = pr1.getField(15)?.getComponent(3) ?? ''; // PR1.15.3 Diagnosis Coding System
-  
+
   if (!diagnosisCode) {
     return undefined;
   }
-  
+
   return {
     code: diagnosisCode,
     display: diagnosisDesc,
-    system: diagnosisSystem || 'ICD-10',  // Default to ICD-10 if not specified
+    system: diagnosisSystem || 'ICD-10', // Default to ICD-10 if not specified
   };
 }
 
