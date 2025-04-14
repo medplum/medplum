@@ -9,6 +9,7 @@ import {
   ResourceType,
   User,
 } from '@medplum/fhirtypes';
+import { DelayedError, Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
@@ -17,6 +18,7 @@ import { getSystemRepo, Repository } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
 import { createTestProject, withTestContext } from '../test.setup';
 import { addReindexJob, getReindexQueue, prepareReindexJobData, ReindexJob, ReindexJobData } from './reindex';
+import { queueRegistry } from './utils';
 
 describe('Reindex Worker', () => {
   let repo: Repository;
@@ -579,6 +581,58 @@ describe('Job cancellation', () => {
       expect(finalJob.status).toStrictEqual('cancelled');
       expect(finalJob.output).toBeUndefined();
     }));
+
+  test.each(['some-token', undefined])('Job handles queue closing with job.token %s', async (jobToken) =>
+    withTestContext(async () => {
+      const originalJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const queueName = 'ReindexQueue';
+      const queue = queueRegistry.get(queueName);
+      if (!queue) {
+        throw new Error('Could not find queue');
+      }
+
+      const isClosingSpy = jest.spyOn(queueRegistry, 'isClosing').mockReturnValue(true);
+      const jobData = prepareReindexJobData(['MedicinalProductContraindication'], originalJob.id);
+      const job = new Job(queue, 'ReindexJob', jobData, { attempts: 55 });
+
+      // job.token generally gets set deep in the internals of bullmq, but we mock the module
+      job.token = jobToken;
+
+      // DelayedError is part of the mocked bullmq module. Something about that causes
+      // the usual `expect(...).rejects.toThrow(...)`; it seems to be becuase DelayedError
+      // is no longer an `Error`. So instead, we manually check that it threw
+      let threw = undefined;
+      let manuallyThrownError = undefined;
+      try {
+        await new ReindexJob().execute(job, jobData);
+        manuallyThrownError = new Error(
+          jobToken ? 'Expected job to throw DelayedError' : 'Expected job to throw Error'
+        );
+        throw manuallyThrownError;
+      } catch (err) {
+        threw = err;
+      }
+      expect(threw).toBeDefined();
+      expect(threw).not.toBe(manuallyThrownError);
+      expect(threw).toBeInstanceOf(jobToken ? DelayedError : Error);
+
+      expect(isClosingSpy).toHaveBeenCalledTimes(1);
+      isClosingSpy.mockRestore();
+
+      if (jobToken) {
+        expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
+        expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), 'some-token');
+      } else {
+        expect(job.moveToDelayed).not.toHaveBeenCalled();
+      }
+    })
+  );
 
   test('Ensure updates from job do not clobber cancellation status', () =>
     withTestContext(async () => {
