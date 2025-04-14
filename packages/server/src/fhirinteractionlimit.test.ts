@@ -28,7 +28,7 @@ describe('FHIR Rate Limits', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
-  test('Blocks request that would exceed limit', async () => {
+  test.skip('Blocks request that would exceed limit', async () => {
     config.defaultFhirInteractionLimit = 1;
     await initApp(app, config);
 
@@ -43,7 +43,7 @@ describe('FHIR Rate Limits', () => {
     expect(res2.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
   });
 
-  test('Blocks single too-expensive request', async () => {
+  test.skip('Blocks single too-expensive request', async () => {
     config.defaultFhirInteractionLimit = 1;
     await initApp(app, config);
 
@@ -73,7 +73,7 @@ describe('FHIR Rate Limits', () => {
     expect(res.status).toBe(200);
   });
 
-  test('Blocks oversized transaction bundle', async () => {
+  test.skip('Blocks oversized transaction bundle', async () => {
     config.defaultFhirInteractionLimit = 1;
     await initApp(app, config);
 

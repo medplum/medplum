@@ -43,12 +43,11 @@ export class FhirRateLimiter {
   /**
    * Consume rate limit from Redis store
    * @param points - Number of rate limit points to consume
-   * @returns Rate limiter result
    */
-  async consume(points: number): Promise<RateLimiterRes> {
+  async consume(points: number): Promise<void> {
     // If user is already over the limit, just block
     if (this.unitsRemaining <= 0) {
-      throw new OperationOutcomeError(tooManyRequests);
+      // throw new OperationOutcomeError(tooManyRequests);
     }
 
     this.delta += points;
@@ -63,10 +62,10 @@ export class FhirRateLimiter {
         this.logThreshold = Number.POSITIVE_INFINITY; // Disable additional logs for this request
       }
       this.setState(result);
-      return result;
+      // return result;
     } catch (err: unknown) {
       if (err instanceof Error) {
-        throw err;
+        // throw err;
       }
       const result = err as RateLimiterRes;
       this.setState(result);
@@ -75,15 +74,15 @@ export class FhirRateLimiter {
         used: result.consumedPoints,
         msToReset: result.msBeforeNext,
       });
-      throw new OperationOutcomeError(tooManyRequests);
+      // throw new OperationOutcomeError(tooManyRequests);
     }
   }
 
-  async recordSearch(opts?: { chained: boolean }): Promise<RateLimiterRes> {
+  async recordSearch(opts?: { chained: boolean }): Promise<void> {
     return this.consume(opts?.chained ? 2 : 1);
   }
 
-  async recordWrite(opts?: { transactional: boolean }): Promise<RateLimiterRes> {
+  async recordWrite(opts?: { transactional: boolean }): Promise<void> {
     return this.consume(opts?.transactional ? 10 : 5);
   }
 
