@@ -156,6 +156,10 @@ export class ReindexJob {
         });
         throw new DelayedError('Reindex job delayed since queue is closing');
       }
+
+      // This is one of those "this should never happen" errors. job.token is expected to always be set
+      // given the way we use bullmq.
+      throw new Error('Reindex job detected queue is closing, but job.token not available to delay the job');
     }
   }
 
