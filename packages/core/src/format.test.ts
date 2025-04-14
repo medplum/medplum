@@ -41,6 +41,8 @@ test('formatReferenceString', () => {
 });
 
 test('Format Address', () => {
+  expect(formatAddress(undefined)).toStrictEqual('');
+  expect(formatAddress(null as unknown as undefined)).toStrictEqual('');
   expect(formatAddress({})).toStrictEqual('');
 
   expect(
@@ -136,6 +138,8 @@ test('Format Address', () => {
 });
 
 test('Format HumanName', () => {
+  expect(formatHumanName(undefined)).toStrictEqual('');
+  expect(formatHumanName(null as unknown as undefined)).toStrictEqual('');
   expect(formatHumanName({})).toStrictEqual('');
 
   expect(
