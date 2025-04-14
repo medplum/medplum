@@ -24,7 +24,7 @@ export async function handler(medplum: MedplumClient, _event: BotEvent): Promise
   
   // Search for appointments starting within the next 24 hours
   const appointments = await medplum.searchResources('Appointment', {
-    date: `ge${now.toISOString()}&date=lt${twentyFourHoursFromNow.toISOString()}`,
+    _filter: `date ge ${now.toISOString()} and date lt ${twentyFourHoursFromNow.toISOString()}`,
     status: 'booked'
   });
     

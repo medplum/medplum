@@ -28,20 +28,21 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   const practitioner = await medplum.readReference(practitionerRef as Reference<Practitioner>);
   const providerName = getDisplayString(practitioner) || 'your provider';
   
-  // Format appointment time
+  // Format appointment time in Pacific Time
   const appointmentTime = new Date(appointment.start || '').toLocaleString('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
     hour: 'numeric',
     minute: 'numeric',
-    hour12: true
+    hour12: true,
+    timeZone: 'America/Los_Angeles' // Explicitly set to Pacific Time
   });
   
   // Optional: if you are using the zoom-create-meeting bot, you can get the zoom link from the extension
   const zoomLink = appointment.extension?.find(e => e.url === 'https://medplum.com/zoom-meeting-join-url')?.valueString;
   
-  let message = `Hi ${firstName}, this is a friendly reminder that you have an appointment with ${providerName} at ${appointmentTime}.`
+  let message = `Hi ${firstName}, this is a friendly reminder that you have an appointment with ${providerName} at ${appointmentTime}, PST.`
   
   if (zoomLink) { 
     message += `\n\nHere's your Zoom link: ${zoomLink}`;
