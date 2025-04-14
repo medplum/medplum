@@ -2,31 +2,30 @@ import {
   BotEvent,
   formatAddress,
   formatCodeableConcept,
-  formatDate,
   formatMoney,
   formatQuantity,
-  getDateProperty,
+  getDisplayString,
   MedplumClient,
 } from '@medplum/core';
-import {
-  Address,
-  Claim,
-  ClaimItem,
-  Coverage,
-  Device,
-  HumanName,
-  Media,
-  Organization,
-  Patient,
-  Practitioner,
-  PractitionerRole,
-  RelatedPerson,
-} from '@medplum/fhirtypes';
+import { Address, Claim, HumanName, Media, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { CSM_1500_PDF_BASE_64_BG } from './cms-1500-image';
 
+const PAGE_WIDTH = 612;
+const PAGE_HEIGHT = 792;
+
+const insuranceTypes = new Set<string>([
+  'MEDICARE',
+  'MEDICAID',
+  'TRICARE',
+  'CHAMPVA',
+  'GROUP HEALTH PLAN',
+  'FECA BLK LUNG',
+  'OTHER',
+]);
+
 export async function handler(medplum: MedplumClient, _event: BotEvent<Claim>): Promise<Media> {
-  const docDefinition = await getClaimPDFDocDefinition(medplum, _event.input);
+  const docDefinition = await getCms1500DocumentDefinition(medplum, _event.input);
 
   const binary = await medplum.createPdf({
     docDefinition,
@@ -45,7 +44,10 @@ export async function handler(medplum: MedplumClient, _event: BotEvent<Claim>): 
   return media;
 }
 
-export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Claim): Promise<TDocumentDefinitions> {
+export async function getCms1500DocumentDefinition(
+  medplum: MedplumClient,
+  claim: Claim
+): Promise<TDocumentDefinitions> {
   const patient = await medplum.readReference(claim.patient);
   const coverage = await medplum.readReference(claim.insurance[0].coverage);
   const insured = coverage.subscriber ? await medplum.readReference(coverage.subscriber) : undefined;
@@ -57,485 +59,48 @@ export async function getClaimPDFDocDefinition(medplum: MedplumClient, claim: Cl
   const referralRequest = claim.referral ? await medplum.readReference(claim.referral) : undefined;
   const referrer = referralRequest?.requester ? await medplum.readReference(referralRequest.requester) : undefined;
 
-  const { personName: patientName, personGender: patientGender, personPhone: patientPhone } = getPersonInfo(patient);
-  const patientDOB = getDateProperty(patient.birthDate);
-  const { insuranceType, insuredIdNumber, relationship, coverageName, coveragePolicyName } = getCoverageInfo(coverage);
-  const {
-    personName: insuredName,
-    personPhone: insuredPhone,
-    personDob: insuredDob,
-    personGender: insuredGender,
-  } = getPersonInfo(insured);
-  const insuredDOB = getDateProperty(insuredDob);
+  const insuranceType = coverage.type?.coding?.[0].code ?? coverage.type?.coding?.[0].display ?? '';
 
-  const { coverageName: otherCoverageName, coveragePolicyName: otherCoveragePolicyName } =
-    getCoverageInfo(otherCoverage);
-  const { personName: otherInsuredName } = getPersonInfo(otherInsured);
+  const relationship = (insured as RelatedPerson | undefined)?.relationship?.[0]?.coding?.[0].code ?? 'self';
 
-  const { referrerName, referrerNpi } = getReferralInfo(referrer);
-
-  const docDefinition = {
-    content: [
-      {
-        image: CSM_1500_PDF_BASE_64_BG,
-        absolutePosition: { x: 0, y: 0 },
-        width: 612,
-        height: 792,
-      },
-      createPositionedText(patientName, 22, 131),
-      createPositionedText(insuredIdNumber, 374, 108),
-      createPositionedText(insuredName, 374, 131),
-      createPositionedText(otherInsuredName, 22, 228),
-      createPositionedText(coveragePolicyName, 375, 228),
-      createPositionedText(otherCoveragePolicyName, 22, 251),
-      createPositionedText(coverageName, 375, 298),
-      createPositionedText(otherCoverageName, 22, 324),
-      createPositionedText(referrerName, 42, 420),
-      createPositionedText(referrerNpi, 247, 420),
-      ...getInsuranceProgramContent(insuranceType),
-      ...getDateContent(patientDOB),
-      ...getSexContent(patientGender),
-      ...getAddressContent(patient.address?.[0]),
-      ...getPhoneContent(patientPhone),
-      ...getPatientRelationshipToInsuredContent(relationship),
-      ...getAddressContent(insured?.address?.[0], 374),
-      ...getPhoneContent(insuredPhone, 482),
-      ...getClaimContent(claim),
-      ...getSexContent(insuredGender, 504, 51, 253),
-      ...getDateContent(insuredDOB, 395, 253),
-      ...getInsurerContent(insurer),
-      ...getProviderContent(provider),
-      ...getReservedNUCCContent(),
-      ...getSignatureContent(),
-    ],
-  };
-  return docDefinition;
-}
-
-/* PDF content helpers */
-
-export function createPositionedText(text: string, x: number, y: number, fontSize: number = 9): Content {
-  return {
-    text,
-    absolutePosition: { x, y },
-    fontSize,
-  };
-}
-
-export function getClaimContent(claim: Claim): Content[] {
-  const {
-    relatedToEmployment,
-    relatedToAutoAccident,
-    accidentLocationState,
-    relatedToOtherAccident,
-    dateOfCurrentIllness,
-    employmentImpactedStart,
-    employmentImpactedEnd,
-    hospitalizationStart,
-    hospitalizationEnd,
-    priorAuthRefNumber,
-    outsideLab,
-    outsideLabCharges,
-    resubmissionCode,
-    originalReference,
-    patientAccountNumber,
-    patientPaid,
-    totalCharge,
-    items,
-    diagnosis,
-  } = getClaimInfo(claim);
-
-  const dateOfCurrentIllnessAsDate = dateOfCurrentIllness ? getDateProperty(dateOfCurrentIllness) : undefined;
-  const employmentImpactedStartAsDate = employmentImpactedStart ? getDateProperty(employmentImpactedStart) : undefined;
-  const employmentImpactedEndAsDate = employmentImpactedEnd ? getDateProperty(employmentImpactedEnd) : undefined;
-  const hospitalizationStartAsDate = hospitalizationStart ? getDateProperty(hospitalizationStart) : undefined;
-  const hospitalizationEndAsDate = hospitalizationEnd ? getDateProperty(hospitalizationEnd) : undefined;
-
-  return [
-    createPositionedText(relatedToEmployment ? 'X' : '', 267, 253),
-    createPositionedText(!relatedToEmployment ? 'X' : '', 310, 253),
-    createPositionedText(relatedToAutoAccident ? 'X' : '', 267, 277),
-    createPositionedText(!relatedToAutoAccident ? 'X' : '', 310, 277),
-    createPositionedText(accidentLocationState, 343, 277),
-    createPositionedText(relatedToOtherAccident ? 'X' : '', 267, 300),
-    createPositionedText(!relatedToOtherAccident ? 'X' : '', 310, 300),
-    ...getDateContent(dateOfCurrentIllnessAsDate, 26, 396),
-    // Date of current illness' qualifier (specific code to indicate the type of date, such as the onset of illness, date of accident, initial treatment date, etc.)
-    createPositionedText('', 130, 396),
-    ...getDateContent(employmentImpactedStartAsDate, 402, 396),
-    ...getDateContent(employmentImpactedEndAsDate, 503, 396),
-    ...getDateContent(hospitalizationStartAsDate, 402, 420),
-    ...getDateContent(hospitalizationEndAsDate, 503, 420),
-    // Other date
-    createPositionedText('', 234, 396),
-    createPositionedText('', 279, 396),
-    createPositionedText('', 300, 396),
-    createPositionedText('', 322, 396),
-    createPositionedText(priorAuthRefNumber, 374, 490),
-    createPositionedText(outsideLab ? 'X' : '', 388, 444),
-    createPositionedText(!outsideLab ? 'X' : '', 423, 444),
-    createPositionedText(outsideLabCharges, 465, 444),
-    createPositionedText(resubmissionCode, 374, 469),
-    createPositionedText(originalReference, 456, 469),
-    createPositionedText(patientAccountNumber, 178, 684),
-    createPositionedText(totalCharge.replace('$', ''), 381, 684),
-    createPositionedText(patientPaid.replace('USD', ''), 463, 684),
-    ...getDiagnosisContent(diagnosis),
-    ...getClaimItemContent(items),
-    // Accept assignment
-    createPositionedText('', 287, 684),
-    createPositionedText('', 322, 684),
-  ];
-}
-
-export function getClaimItemContent(items: ClaimItemInfo[]): Content[] {
-  const content: Content[] = [];
-
-  // Base coordinates for each row
-  const rowBaseCoordinates = [
-    { y: 540 }, // Row 1
-    { y: 565 }, // Row 2
-    { y: 588 }, // Row 3
-    { y: 613 }, // Row 4
-    { y: 637 }, // Row 5
-    { y: 661 }, // Row 6
-  ];
-
-  items.forEach((item, index) => {
-    // Only process up to 6 items
-    if (index >= 6) {
-      return;
-    }
-
-    const yPos = rowBaseCoordinates[index].y;
-    const rowContent = [
-      ...getDateContent(getDateProperty(item.dateOfService), 21, yPos),
-      createPositionedText(item.placeOfServiceState, 149, yPos),
-      createPositionedText(item.emergency ? 'X' : '', 172, yPos),
-      createPositionedText(item.procedureCode, 194, yPos),
-      createPositionedText(item.modifiers, 246, yPos),
-      createPositionedText(item.diagnosisPointer, 335, yPos),
-      createPositionedText(item.charges, 373, yPos),
-      createPositionedText(item.daysOrUnits, 437, yPos),
-      createPositionedText(item.familyPlanIndicator, 466, yPos),
-    ];
-    content.push(...rowContent);
-  });
-
-  return content;
-}
-
-export function getInsuranceProgramContent(insuranceType: string): Content[] {
-  const optionsMap: Record<string, number> = {
-    MEDICARE: 23,
-    MEDICAID: 71,
-    TRICARE: 122,
-    CHAMPVA: 187,
-    'GROUP HEALTH PLAN': 237,
-    'FECA BLK LUNG': 295,
-    OTHER: 338,
-  };
-
-  return [createPositionedText('X', optionsMap[insuranceType] ?? 338, 108)];
-}
-
-export function getDateContent(
-  patientDOB: Date | undefined,
-  xAxisOffset: number = 236,
-  yAxisOffset: number = 131
-): Content[] {
-  if (!patientDOB) {
-    return [];
-  }
-
-  const day = String(patientDOB.getUTCDate()).padStart(2, '0');
-  const month = String(patientDOB.getUTCMonth() + 1).padStart(2, '0');
-  const year = String(patientDOB.getUTCFullYear()).substring(2);
-
-  return [
-    createPositionedText(day, xAxisOffset, yAxisOffset),
-    createPositionedText(month, xAxisOffset + 21, yAxisOffset),
-    createPositionedText(year, xAxisOffset + 42, yAxisOffset),
-  ];
-}
-
-export function getSexContent(
-  personGender: string,
-  xAxisOffset: number = 316,
-  xAxisDifference: number = 36,
-  yAxisOffset: number = 131
-): Content[] {
-  const optionsMap: Record<string, number> = {
-    male: xAxisOffset,
-    female: xAxisOffset + xAxisDifference,
-  };
-
-  if (!(personGender.toLocaleLowerCase() in optionsMap)) {
-    return [];
-  }
-
-  return [createPositionedText('X', optionsMap[personGender], yAxisOffset)];
-}
-
-export function getPhoneContent(phone: string, xAxisOffset: number = 123, yAxisOffset: number = 204): Content[] {
-  if (!phone) {
-    return [];
-  }
-
-  // Validate phone format XXX-XXX-XXXX, (XXX) XXX-XXXX, or XXXXXXXXXX
-  const phoneRegex = /^(\(\d{3}\)|\d{3}-|\d{3})\s*\d{3}[-\s]?\d{4}$/;
-  if (!phoneRegex.test(phone)) {
-    return [];
-  }
-
-  // Extract digits only from the phone number
-  const digits = phone.replace(/\D/g, '');
-  const areaCode = digits.substring(0, 3);
-  const middle = digits.substring(3, 6);
-  const last = digits.substring(6);
-
-  return [
-    createPositionedText(areaCode, xAxisOffset, yAxisOffset),
-    createPositionedText(`${middle}-${last}`, xAxisOffset + 27, yAxisOffset),
-  ];
-}
-
-export function getAddressContent(address: Address | undefined, xAxisOffset: number = 22): Content[] {
-  if (!address) {
-    return [];
-  }
-
-  const { line, city, postalCode, state } = address;
-
-  return [
-    createPositionedText(line?.[0] ?? '', xAxisOffset, 156),
-    createPositionedText(city ?? '', xAxisOffset, 179),
-    createPositionedText(state ?? '', xAxisOffset + 181, 179),
-    createPositionedText(postalCode ?? '', xAxisOffset, 204),
-  ];
-}
-
-export function getPatientRelationshipToInsuredContent(relationship: string): Content[] {
-  // Map of relationship codes to x-coordinates
-  const relationshipMap: Record<string, number> = {
-    self: 252,
-    spouse: 289,
-    child: 317,
-    other: 353,
-  };
-
-  const xCoord = relationshipMap[relationship.toLowerCase()] ?? relationshipMap['other'];
-
-  return [createPositionedText('X', xCoord, 156)];
-}
-
-function getReservedNUCCContent(): Content[] {
-  return [
-    createPositionedText('', 229, 179),
-    createPositionedText('', 22, 275),
-    createPositionedText('', 375, 277),
-    createPositionedText('', 393, 277),
-    createPositionedText('', 22, 298),
-    createPositionedText('', 386, 324),
-    createPositionedText('', 22, 324),
-    createPositionedText('', 422, 324),
-    createPositionedText('', 21, 440),
-  ];
-}
-
-function getSignatureContent(): Content[] {
-  return [
-    createPositionedText('', 59, 370),
-    createPositionedText('', 274, 370),
-    createPositionedText('', 415, 370),
-    createPositionedText('', 19, 726),
-    createPositionedText('', 113, 738),
-  ];
-}
-
-export function getInsurerContent(insurer: Organization | Patient | RelatedPerson): Content[] {
-  const { serviceNPI, serviceName, serviceLocation, fedTaxNumber } = getInsurerInfo(insurer);
-
-  return [
-    createPositionedText(fedTaxNumber, 20, 684),
-    // SSN (Social Security Number)
-    createPositionedText('', 136, 683),
-    // EIN (Employer Identification Number)
-    createPositionedText('X', 152, 684),
-    createPositionedText(serviceNPI, 187, 743),
-    createPositionedText(serviceName, 177, 705),
-    createPositionedText(serviceLocation, 177, 716),
-  ];
-}
-
-export function getProviderContent(provider: Practitioner | Organization | PractitionerRole): Content[] {
-  const { billingName, billingLocation, billingPhoneNumber, providerNpi } = getProviderInfo(provider);
-
-  return [
-    ...getPhoneContent(billingPhoneNumber, 489, 698),
-    createPositionedText(billingName, 372, 706),
-    createPositionedText(billingLocation, 372, 716),
-    createPositionedText(providerNpi, 380, 743),
-  ];
-}
-
-export function getDiagnosisContent(diagnosis: string[]): Content[] {
-  // Up to 12 diagnosis codes
-  const diagnosisPositions = [
-    // Row 1
-    { x: 35, y: 470, index: 0 },
-    { x: 128, y: 470, index: 1 },
-    { x: 222, y: 470, index: 2 },
-    { x: 317, y: 470, index: 3 },
-    // Row 2
-    { x: 35, y: 482, index: 4 },
-    { x: 128, y: 482, index: 5 },
-    { x: 222, y: 482, index: 6 },
-    { x: 317, y: 482, index: 7 },
-    // Row 3
-    { x: 35, y: 493, index: 8 },
-    { x: 128, y: 493, index: 9 },
-    { x: 222, y: 493, index: 10 },
-    { x: 317, y: 493, index: 11 },
-  ];
-
-  return diagnosisPositions.map(({ x, y, index }) => createPositionedText(diagnosis?.[index] ?? '', x, y));
-}
-
-/* Data retrieval helpers */
-
-export function getPersonInfo(
-  person: Patient | RelatedPerson | undefined
-): Record<'personName' | 'personDob' | 'personGender' | 'personAddress' | 'personPhone', string> {
-  if (!person) {
-    return {
-      personName: '',
-      personDob: '',
-      personGender: '',
-      personAddress: '',
-      personPhone: '',
-    };
-  }
-
-  const personName = person.name?.[0] ? formatHumanName(person.name?.[0]) : '';
-  const personDob = formatDate(person.birthDate);
-  const personGender = person.gender ?? '';
-  const personAddress = person.address ? formatAddress(person.address?.[0]) : '';
-  const personPhone = person.telecom?.find((telecom) => telecom.system === 'phone')?.value ?? '';
-
-  return {
-    personName,
-    personDob,
-    personGender,
-    personAddress,
-    personPhone,
-  };
-}
-
-export function getCoverageInfo(
-  coverage: Coverage | undefined
-): Record<
-  'insuranceType' | 'insuredIdNumber' | 'relationship' | 'coverageName' | 'coveragePolicy' | 'coveragePolicyName',
-  string
-> {
-  if (!coverage) {
-    return {
-      insuranceType: '',
-      insuredIdNumber: '',
-      relationship: '',
-      coverageName: '',
-      coveragePolicy: '',
-      coveragePolicyName: '',
-    };
-  }
-
-  const insuranceType = coverage.type?.coding?.[0].display ?? coverage.type?.coding?.[0].code ?? '';
-  const insuredIdNumber = coverage.identifier?.find((id) => id.use === 'official')?.value ?? '';
-  const relationship = coverage.relationship?.coding?.[0].display ?? coverage.relationship?.coding?.[0].code ?? '';
-  const coverageName = coverage.payor[0].display ?? '';
-  const coveragePlan = coverage.class?.find(
-    (classification) =>
-      classification.type.coding?.[0].code === 'plan' || classification.type.coding?.[0].code === 'group'
-  );
-  const coveragePolicy = formatCodeableConcept(coveragePlan?.type);
-  const coveragePolicyName = coveragePlan?.name ?? '';
-
-  return {
-    insuranceType,
-    insuredIdNumber,
-    relationship,
-    coverageName,
-    coveragePolicy,
-    coveragePolicyName,
-  };
-}
-
-export function getClaimInfo(claim: Claim): {
-  relatedToEmployment: boolean;
-  relatedToAutoAccident: boolean;
-  accidentLocation: string;
-  accidentLocationState: string;
-  relatedToOtherAccident: boolean;
-  dateOfCurrentIllness: string;
-  employmentImpactedStart: string;
-  employmentImpactedEnd: string;
-  hospitalizationStart: string;
-  hospitalizationEnd: string;
-  priorAuthRefNumber: string;
-  outsideLab: boolean;
-  outsideLabCharges: string;
-  diagnosis: string[];
-  resubmissionCode: string;
-  originalReference: string;
-  patientAccountNumber: string;
-  patientPaid: string;
-  totalCharge: string;
-  items: ClaimItemInfo[];
-} {
   const relatedToEmployment =
     claim.supportingInfo?.some((info) => info.category.coding?.[0].code === 'employmentimpacted') ?? false;
   const relatedToAutoAccident = claim.accident?.type?.coding?.some((code) => code.code === 'MVA') ?? false;
-  const accidentLocation = claim.accident?.locationAddress ? formatAddress(claim.accident.locationAddress) : '';
-  const accidentLocationState = claim.accident?.locationAddress?.state ?? '';
+
+  const accidentLocationState = claim.accident?.locationAddress?.state;
   const relatedToOtherAccident = !relatedToAutoAccident && !!claim.accident;
 
-  const dateOfCurrentIllness = formatDate(
-    claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'onset')?.timingDate
-  );
+  const dateOfCurrentIllness = claim.supportingInfo?.find(
+    (info) => info.category.coding?.[0].code === 'onset'
+  )?.timingDate;
 
   const employmentImpacted = claim.supportingInfo?.find(
     (info) => info.category.coding?.[0].code === 'employmentimpacted'
   );
-  const employmentImpactedStart = employmentImpacted?.timingPeriod?.start ?? '';
-  const employmentImpactedEnd = employmentImpacted?.timingPeriod?.end ?? '';
 
   const hospitalization = claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'hospitalized');
-  const hospitalizationStart = hospitalization?.timingPeriod?.start
-    ? formatDate(hospitalization.timingPeriod.start)
-    : '';
-  const hospitalizationEnd = hospitalization?.timingPeriod?.end ? formatDate(hospitalization.timingPeriod.end) : '';
 
-  const priorAuthRefNumber = claim.insurance[0]?.preAuthRef?.[0] ?? '';
+  const priorAuthRefNumber = claim.insurance[0]?.preAuthRef?.[0];
 
   const outsideLab = claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'outsidelab');
   const outsideLabCharges = outsideLab ? formatQuantity(outsideLab.valueQuantity) : '';
 
-  const diagnosis = (claim.diagnosis || [])
+  const diagnosis = (claim.diagnosis ?? [])
     .map(
-      (d) =>
-        d.diagnosisCodeableConcept?.coding?.find((code) => code.system === 'http://hl7.org/fhir/sid/icd-10')?.code ?? ''
+      (d) => d.diagnosisCodeableConcept?.coding?.find((code) => code.system === 'http://hl7.org/fhir/sid/icd-10')?.code
     )
-    .filter((code) => code !== '');
-  const resubmissionCode =
-    claim.related?.[0].relationship?.coding?.find((code) => code.code === 'prior')?.display ?? '';
-  const originalReference = claim.related?.[0].claim?.display ?? '';
+    .filter(Boolean) as string[];
 
-  const patientAccountNumber =
-    claim.supportingInfo?.find(
-      (info) =>
-        info.category?.coding?.find((code) => code.code === 'info') &&
-        info.code?.coding?.find((code) => code.code === 'patientaccount')
-    )?.valueString ?? '';
+  const resubmissionCode = claim.related?.[0].relationship?.coding?.find((code) => code.code === 'prior')?.display;
+
+  const originalReference = claim.related?.[0].claim?.display;
+
+  const patientAccountNumber = claim.supportingInfo?.find(
+    (info) =>
+      info.category?.coding?.find((code) => code.code === 'info') &&
+      info.code?.coding?.find((code) => code.code === 'patientaccount')
+  )?.valueString;
+
   const patientPaid = formatQuantity(
     claim.supportingInfo?.find(
       (info) =>
@@ -543,191 +108,286 @@ export function getClaimInfo(claim: Claim): {
         info.code?.coding?.find((code) => code.code === 'patientpaid')
     )?.valueQuantity
   );
-  const totalCharge = formatMoney(claim.total);
-
-  // Handle multiple service items (up to 6)
-  const claimItems = claim.item || [];
-  const items = [];
-  for (let i = 0; i < Math.min(6, claimItems.length); i++) {
-    const item = claimItems[i];
-    const itemInfo = getClaimItemInfo(item);
-    items.push(itemInfo);
-  }
-
-  return {
-    relatedToEmployment,
-    relatedToAutoAccident,
-    accidentLocation,
-    accidentLocationState,
-    relatedToOtherAccident,
-    dateOfCurrentIllness,
-    employmentImpactedStart,
-    employmentImpactedEnd,
-    hospitalizationStart,
-    hospitalizationEnd,
-    priorAuthRefNumber,
-    outsideLab: !!outsideLab,
-    outsideLabCharges,
-    diagnosis,
-    resubmissionCode,
-    originalReference,
-    patientAccountNumber,
-    patientPaid,
-    totalCharge,
-    items,
-  };
-}
-
-type ClaimItemInfo = ReturnType<typeof getClaimItemInfo>;
-
-export function getClaimItemInfo(item: ClaimItem): {
-  dateOfService: string;
-  placeOfService: string;
-  placeOfServiceState: string;
-  emergency: boolean;
-  procedureCode: string;
-  modifiers: string;
-  diagnosisPointer: string;
-  charges: string;
-  daysOrUnits: string;
-  familyPlanIndicator: string;
-} {
-  const dateOfService = formatDate(item.servicedDate);
-  const placeOfService = item.locationAddress ? formatAddress(item.locationAddress) : '';
-  const placeOfServiceState = item.locationAddress?.state ?? '';
-  const emergency = item.category?.coding?.[0].code === 'EMG';
-  const procedureCode = formatCodeableConcept(item.productOrService);
-  const modifiers = formatCodeableConcept(item.modifier?.[0]);
-  const diagnosisPointer = (item.diagnosisSequence || [])
-    .map((num) => {
-      // Convert numbers 1-12 to letters A-L
-      if (num >= 1 && num <= 12) {
-        return String.fromCharCode(64 + num); // 65 is ASCII for 'A'
-      }
-      return '';
-    })
-    .filter((letter) => letter)
-    .join('');
-  const charges = formatMoney(item.net);
-  const daysOrUnits = formatQuantity(item.quantity);
-  const familyPlanIndicator =
-    item.programCode?.[0].coding?.[0].code === 'none' ? '' : formatCodeableConcept(item.programCode?.[0]);
-
-  return {
-    dateOfService,
-    placeOfService,
-    placeOfServiceState,
-    emergency,
-    procedureCode,
-    modifiers,
-    diagnosisPointer,
-    charges,
-    daysOrUnits,
-    familyPlanIndicator,
-  };
-}
-
-export function getInsurerInfo(insurer: Organization | Patient | RelatedPerson): {
-  serviceNPI: string;
-  serviceName: string;
-  serviceLocation: string;
-  fedTaxNumber: string;
-  fedTaxType: string;
-} {
-  if (insurer.resourceType === 'Patient' || insurer.resourceType === 'RelatedPerson') {
-    return {
-      serviceNPI: '',
-      serviceName: '',
-      serviceLocation: '',
-      fedTaxNumber: '',
-      fedTaxType: '',
-    };
-  }
-
-  const serviceNPI = insurer.identifier?.find((id) => id.system === 'http://hl7.org/fhir/sid/us-npi')?.value ?? '';
-  const serviceName = insurer.name ?? '';
-  const serviceLocation = insurer.address ? formatAddress(insurer.address[0]) : '';
 
   const taxIdentifier = insurer.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'TAX'));
-  const fedTaxNumber = taxIdentifier?.value ?? '';
-  const fedTaxType = taxIdentifier?.system ?? '';
 
+  const docDefinition: TDocumentDefinitions = {
+    defaultStyle: {
+      font: 'Helvetica',
+      fontSize: 8,
+    },
+    pageSize: { width: PAGE_WIDTH, height: PAGE_HEIGHT },
+    pageMargins: 0,
+    content: [
+      // Optional background image
+      // When printing on official CMS-1500 paper, this image is not needed.
+      {
+        image: CSM_1500_PDF_BASE_64_BG,
+        absolutePosition: { x: 0, y: 0 },
+        width: PAGE_WIDTH,
+        height: PAGE_HEIGHT,
+      },
+
+      // 1. Insurance Type
+      createCheckmark(insuranceType === 'MEDICARE', 23, 111),
+      createCheckmark(insuranceType === 'MEDICAID', 71, 111),
+      createCheckmark(insuranceType === 'TRICARE', 122, 111),
+      createCheckmark(insuranceType === 'CHAMPVA', 187, 111),
+      createCheckmark(insuranceType === 'GROUP HEALTH PLAN', 237, 111),
+      createCheckmark(insuranceType === 'FECA BLK LUNG', 295, 111),
+      createCheckmark(insuranceType === 'OTHER' || !insuranceTypes.has(insuranceType), 338, 111),
+
+      // 1a. Insured's ID Number
+      createText(coverage.identifier?.find((id) => id.use === 'official')?.value, 374, 111),
+
+      // 2. Patient's Name
+      createText(formatHumanName(patient.name?.[0]), 22, 135),
+
+      // 3. Patient's Birth Date (MM/DD/YYYY)
+      createDate(patient.birthDate, 236, 135),
+
+      // Patient's sex
+      createCheckmark(patient.gender === 'male', 316, 135),
+      createCheckmark(patient.gender === 'female', 352, 135),
+
+      // 4. Insured's Name
+      createText(formatHumanName(insured?.name?.[0]), 374, 135),
+
+      // 5. Patient's Address
+      createText(patient.address?.[0]?.line?.join(', '), 22, 159),
+      createText(patient.address?.[0]?.city, 22, 182),
+      createText(patient.address?.[0]?.state, 203, 182),
+      createText(patient.address?.[0]?.postalCode, 22, 207),
+      createText(getPhoneAreaCode(patient.telecom?.find((cp) => cp.system === 'phone')?.value), 126, 207),
+      createText(getRemainingPhone(patient.telecom?.find((cp) => cp.system === 'phone')?.value), 153, 207),
+
+      // 6. Patient's Relationship to Insured
+      createCheckmark(relationship === 'self', 252, 159),
+      createCheckmark(relationship === 'spouse', 289, 159),
+      createCheckmark(relationship === 'child', 317, 159),
+      createCheckmark(relationship === 'other', 353, 159),
+
+      // 7. Insured's Address
+      createText(insured?.address?.[0]?.line?.join(', '), 374, 159),
+      createText(insured?.address?.[0]?.city, 374, 182),
+      createText(insured?.address?.[0]?.state, 555, 182),
+      createText(insured?.address?.[0]?.postalCode, 374, 207),
+      createText(getPhoneAreaCode(insured?.telecom?.find((cp) => cp.system === 'phone')?.value), 483, 207),
+      createText(getRemainingPhone(insured?.telecom?.find((cp) => cp.system === 'phone')?.value), 511, 207),
+
+      // 9. Other Insured's Name
+      createText(formatHumanName(otherInsured?.name?.[0]), 22, 231),
+
+      // 9a. Other Insured's ID Number
+      createText(otherCoverage?.identifier?.find((id) => id.use === 'official')?.value, 22, 254),
+
+      // 9d. Insurance plan name or program name
+      createText(getDisplayString(insurer), 22, 327),
+
+      // 10a. Employment?
+      createCheckmark(relatedToEmployment, 267, 255),
+      createCheckmark(!relatedToEmployment, 310, 255),
+
+      // 10b. Auto accident?
+      createCheckmark(relatedToAutoAccident, 267, 279),
+      createCheckmark(!relatedToAutoAccident, 310, 279),
+      createText(accidentLocationState, 341, 279),
+
+      // 10c. Other accident?
+      createCheckmark(relatedToOtherAccident, 267, 302),
+      createCheckmark(!relatedToOtherAccident, 310, 302),
+
+      // 11. Insured's policy group or FECA number
+      createText(coverage.class?.find((c) => c.type?.coding?.[0]?.code === 'group')?.value, 375, 228),
+
+      // 11a. Insured's date of birth (MM/DD/YYYY)
+      createDate(insured?.birthDate, 396, 255),
+
+      // Insured's sex
+      createCheckmark(insured?.gender === 'male', 504, 255),
+      createCheckmark(insured?.gender === 'female', 555, 255),
+
+      // 11b. Other claim ID (designated by NUCC)
+
+      // 11c. Insurance plan name or program name
+      createText(coverage.class?.find((c) => c.type?.coding?.[0]?.code === 'plan')?.name, 375, 301),
+
+      // 12. Patient's or authorized person's signature
+
+      // 14. Date of current illness, injury, or pregnancy (LMP)
+      createDate(dateOfCurrentIllness, 28, 399),
+
+      // 16. Dates patient unable to work in current occupation
+      createDate(employmentImpacted?.timingPeriod?.start, 404, 399),
+      createDate(employmentImpacted?.timingPeriod?.end, 505, 399),
+
+      // 17. Name of referring provider or other source
+      createText(referrer ? getDisplayString(referrer) : '', 43, 423),
+
+      // 17b. NPI number
+      createText(referrer?.identifier?.find((id) => id.system === 'http://hl7.org/fhir/sid/us-npi')?.value, 247, 423),
+
+      // 18. Hospitalization dates related to current services
+      createDate(hospitalization?.timingPeriod?.start, 404, 423),
+      createDate(hospitalization?.timingPeriod?.end, 505, 423),
+
+      // 19. Additional claim information (designated by NUCC)
+
+      // 20. Outside lab
+      createCheckmark(!!outsideLab, 389, 446),
+      createCheckmark(!outsideLab, 424, 446),
+      createText(outsideLabCharges, 465, 446),
+
+      // 21. Diagnosis or Nature of Illness or Injury
+      diagnosis.map((diagnosisCode, index) => {
+        const x = 37 + (index % 4) * 94;
+        const y = 471 + Math.floor(index / 4) * 12;
+        return createText(diagnosisCode, x, y);
+      }),
+
+      // 22. Resubmission code
+      createText(resubmissionCode, 374, 471),
+
+      // Original ref number
+      createText(originalReference, 456, 471),
+
+      // 23. Prior authorization number
+      createText(priorAuthRefNumber, 374, 493),
+
+      // 24. Claim lines
+      claim.item?.map((item, index) => {
+        const y = 542 + index * 25;
+        return [
+          // 24A. Dates of service
+          createDate(item?.servicedDate, 21, y),
+
+          // 24B. Place of service
+          createText(item?.locationAddress?.state, 149, y),
+
+          // 24C. EMG
+          createCheckmark(item.category?.coding?.[0].code === 'EMG', 172, y),
+
+          // 24D. Procedures, services, or supplies
+          createText(formatCodeableConcept(item.productOrService), 194, y),
+          createText(formatCodeableConcept(item.modifier?.[0]), 246, y),
+
+          // 24E. Diagnosis pointer
+          createText('', 335, y),
+
+          // 24F. Charges
+          createText(formatMoney(item.net), 373, y),
+
+          // 24G. Days or units
+          createText(formatQuantity(item.quantity), 437, y),
+
+          // 24H. EPSDT family plan
+          createText(formatCodeableConcept(item.programCode?.[0]), 466, y),
+        ].flat();
+      }),
+
+      // 25. Federal tax ID number
+      createText(taxIdentifier?.value, 22, 686),
+
+      // 26. Patient's account number
+      createText(patientAccountNumber, 180, 686),
+
+      // 28. Total charge
+      createText(formatMoney(claim.total).replace('$', ''), 383, 686),
+
+      // 29. Amount paid
+      createText(patientPaid.replace('USD', ''), 463, 686),
+
+      // 32. Service facility location information
+      createText('', 179, 707),
+      createText('', 177, 719),
+
+      // 32a. Service facility NPI number
+      createText('', 187, 745),
+
+      // 33. Billing provider info & phone number
+      createText(getPhoneAreaCode(provider?.telecom?.find((cp) => cp.system === 'phone')?.value), 491, 699),
+      createText(getRemainingPhone(provider?.telecom?.find((cp) => cp.system === 'phone')?.value), 518, 699),
+      createText(getDisplayString(provider), 375, 709),
+      createText(
+        (provider as Practitioner).address?.[0]
+          ? formatAddress((provider as Practitioner).address?.[0] as Address)
+          : '',
+        375,
+        721
+      ),
+
+      // 33a. Billing provider NPI number
+      createText(provider?.identifier?.find((i) => i.system === 'http://hl7.org/fhir/sid/us-npi')?.value, 380, 745),
+    ]
+      .flat()
+      .filter(Boolean) as Content[],
+  };
+  return docDefinition;
+}
+
+function createText(text: string | undefined, x: number, y: number): Content | undefined {
+  if (!text) {
+    return undefined;
+  }
   return {
-    serviceNPI,
-    serviceName,
-    serviceLocation,
-    fedTaxNumber,
-    fedTaxType,
+    text,
+    absolutePosition: { x, y },
   };
 }
 
-export function getProviderInfo(provider: Practitioner | Organization | PractitionerRole): {
-  billingName: string;
-  billingLocation: string;
-  billingPhoneNumber: string;
-  providerNpi: string;
-} {
-  if (provider.resourceType === 'PractitionerRole') {
-    return {
-      billingName: '',
-      billingLocation: '',
-      billingPhoneNumber: '',
-      providerNpi: '',
-    };
-  }
-
-  let billingName = '';
-  if (provider.resourceType === 'Practitioner' && provider.name?.[0]) {
-    billingName = formatHumanName(provider.name[0]);
-  } else if (provider.resourceType === 'Organization' && provider.name) {
-    billingName = provider.name;
-  }
-  const billingLocation = provider?.address?.[0] ? formatAddress(provider.address?.[0]) : '';
-  const phoneNumber = provider.telecom?.find((comm) => comm.system === 'phone');
-  const providerNpi = provider.identifier?.find((id) => id.system === 'http://hl7.org/fhir/sid/us-npi')?.value ?? '';
-
-  return {
-    billingName,
-    billingLocation,
-    billingPhoneNumber: phoneNumber?.value ?? '',
-    providerNpi,
-  };
+function createCheckmark(checked: boolean, x: number, y: number): Content | undefined {
+  return createText(checked ? 'X' : '', x, y);
 }
 
-export function getReferralInfo(
-  referrer?: Practitioner | Organization | Device | Patient | RelatedPerson | PractitionerRole
-): Record<string, string> {
-  if (
-    !referrer ||
-    referrer.resourceType === 'Device' ||
-    referrer.resourceType === 'Patient' ||
-    referrer.resourceType === 'RelatedPerson' ||
-    referrer.resourceType === 'PractitionerRole'
-  ) {
-    return {
-      referrerName: '',
-      referrerNpi: '',
-    };
-  }
-
-  let referrerName = '';
-  if (referrer.resourceType === 'Organization') {
-    referrerName = referrer.name ?? '';
-  } else {
-    referrerName = referrer.name?.[0] ? formatHumanName(referrer.name[0]) : '';
-  }
-  const referrerNpi = referrer?.identifier?.find((id) => id.system === 'http://hl7.org/fhir/sid/us-npi')?.value ?? '';
-
-  return {
-    referrerName,
-    referrerNpi,
-  };
+function createDate(date: string | undefined, x: number, y: number): (Content | undefined)[] | undefined {
+  return [
+    createText(date?.substring(5, 7), x, y),
+    createText(date?.substring(8, 10), x + 21, y),
+    createText(date?.substring(0, 4), x + 42, y),
+  ];
 }
 
-/* General helpers */
+function getSimplePhone(phone: string | undefined): string | undefined {
+  if (!phone) {
+    return undefined;
+  }
 
-export function formatHumanName(name: HumanName): string {
-  const family = name.family ?? '';
+  let result = phone;
+
+  if (result.startsWith('tel:')) {
+    result = result.substring(4);
+  }
+
+  if (result.startsWith('+1')) {
+    result = result.substring(2);
+  }
+
+  if (result.startsWith('1')) {
+    result = result.substring(1);
+  }
+
+  // Remove all remaining non-digit characters
+  return result.replace(/\D/g, '');
+}
+
+function getPhoneAreaCode(phone: string | undefined): string | undefined {
+  return getSimplePhone(phone)?.substring(0, 3);
+}
+
+function getRemainingPhone(phone: string | undefined): string | undefined {
+  const simple = getSimplePhone(phone);
+  if (!simple) {
+    return undefined;
+  }
+  return simple.substring(3, 6) + '-' + simple.substring(6);
+}
+
+export function formatHumanName(name: HumanName | undefined): string {
+  if (!name) {
+    return '';
+  }
+
+  const family = name.family;
   const given = name.given ?? [];
 
   if (!family && given.length === 0) {
