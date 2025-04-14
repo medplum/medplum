@@ -22,7 +22,7 @@ describe('DFT Message Cursor Tests', async () => {
 EVN|P03|20240218153044
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA
 FT1|1|ABC123|9876|20240218|20240218|CG|150.00|1|Units|||||||||||||99213^Office Visit^CPT
-PR1|1||99213^Office Visit^CPT|20240218|GP
+PR1|1||99213^Office Visit^CPT|20240218|GP||||||||||E11.9^Type 2 diabetes mellitus without complications^ICD-10
 IN1|1|MEDICARE|INS123|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
     const contentType = 'x-application/hl7-v2+er7';
     const secrets = {};
@@ -54,6 +54,7 @@ IN1|1|MEDICARE|INS123|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
     expect(claim).toBeDefined();
     expect(claim?.insurance?.[0].coverage?.reference).toBe('Coverage/' + coverage?.id);
     expect(claim?.item?.[0].productOrService.coding?.[0].code).toBe('99213');
+    expect(claim?.diagnosis?.[0].diagnosisCodeableConcept?.coding?.[0].code).toBe('E11.9');
   });
 
   test('DFT Message with Multiple Procedures Creates Single Claim', async () => {
@@ -64,8 +65,8 @@ IN1|1|MEDICARE|INS123|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
 EVN|P03|20240218153044
 PID|1||12345^^^MRN^MR||DOE^JOHN^A||19800101|M|||123 MAIN ST^^CITY^ST^12345^USA
 FT1|1|ABC123|9876|20240218|20240218|CG|150.00|1|Units|||||||||||||99213^Office Visit^CPT
-PR1|1||99213^Office Visit^CPT|20240218|GP
-PR1|2||85025^Blood Test^CPT|20240218|GP
+PR1|1||99213^Office Visit^CPT|20240218|GP||||||||||J45.909^Unspecified asthma, uncomplicated^ICD-10
+PR1|2||85025^Blood Test^CPT|20240218|GP||||||||||D64.9^Anemia, unspecified^ICD-10
 IN1|1|BCBS|67890|Blue Cross Blue Shield||||||||||||||||||||||||||||||||XYZ789`);
     const contentType = 'x-application/hl7-v2+er7';
     const secrets = {};
@@ -76,12 +77,15 @@ IN1|1|BCBS|67890|Blue Cross Blue Shield||||||||||||||||||||||||||||||||XYZ789`);
     const patient = await medplum.searchOne('Patient', 'identifier=12345');
     expect(patient).toBeDefined();
 
-    // Verify Claim has multiple procedures
+    // Verify Claim has multiple procedures and diagnoses
     const claim = await medplum.searchOne('Claim', 'patient=Patient/' + patient?.id);
     expect(claim).toBeDefined();
     expect(claim?.item?.length).toBe(2);
     expect(claim?.item?.[0].productOrService.coding?.[0].code).toBe('99213');
     expect(claim?.item?.[1].productOrService.coding?.[0].code).toBe('85025');
+    expect(claim?.diagnosis?.length).toBe(2);
+    expect(claim?.diagnosis?.[0].diagnosisCodeableConcept?.coding?.[0].code).toBe('J45.909');
+    expect(claim?.diagnosis?.[1].diagnosisCodeableConcept?.coding?.[0].code).toBe('D64.9');
   });
 
   test('Non-DFT Message Type Returns Error', async () => {

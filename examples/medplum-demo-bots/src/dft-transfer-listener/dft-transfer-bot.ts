@@ -150,6 +150,27 @@ export async function handleCoverageFromIn1(
 }
 
 /**
+ * Extract diagnosis information from a PR1 segment
+ * @param pr1 - The PR1 segment from an HL7 message
+ * @returns An object containing the diagnosis code, description, and system
+ */
+function extractDiagnosisFromPr1(pr1: Hl7Segment): { code: string; display: string; system: string } | undefined {
+  const diagnosisCode = pr1.getField(15)?.getComponent(1) ?? ''; // PR1.15.1 Diagnosis Code
+  const diagnosisDesc = pr1.getField(15)?.getComponent(2) ?? ''; // PR1.15.2 Diagnosis Description
+  const diagnosisSystem = pr1.getField(15)?.getComponent(3) ?? ''; // PR1.15.3 Diagnosis Coding System
+  
+  if (!diagnosisCode) {
+    return undefined;
+  }
+  
+  return {
+    code: diagnosisCode,
+    display: diagnosisDesc,
+    system: diagnosisSystem || 'ICD-10',  // Default to ICD-10 if not specified
+  };
+}
+
+/**
  * Creates a Claim resource based on PR1 segments and insurance information
  * @param medplum - The Medplum client
  * @param pr1Segments - Array of PR1 segments from an HL7 message
@@ -167,6 +188,7 @@ export async function handleClaimFromPr1s(
   const procedures = pr1Segments.map((pr1) => ({
     code: pr1.getField(3)?.getComponent(1) ?? '', // PR1.3.1 Procedure Code
     display: pr1.getField(3)?.getComponent(2) ?? '', // PR1.3.2 Procedure Description
+    diagnosis: extractDiagnosisFromPr1(pr1), // Extract diagnosis from PR1.15
   }));
 
   if (procedures.length === 0 || !insuranceInfo) {
@@ -174,6 +196,28 @@ export async function handleClaimFromPr1s(
   }
 
   const [coverage] = insuranceInfo;
+
+  // Create an array of diagnoses for the claim
+  const diagnoses = procedures
+    .map((proc, index) => {
+      if (!proc.diagnosis) {
+        return null;
+      }
+      return {
+        sequence: index + 1,
+        diagnosisCodeableConcept: {
+          coding: [
+            {
+              system: proc.diagnosis.system === 'ICD-10' ? 'http://hl7.org/fhir/sid/icd-10-cm' : proc.diagnosis.system,
+              code: proc.diagnosis.code,
+              display: proc.diagnosis.display,
+            },
+          ],
+          text: proc.diagnosis.display,
+        },
+      };
+    })
+    .filter((diagnosis) => diagnosis !== null);
 
   const claim = await medplum.createResource<Claim>({
     resourceType: 'Claim',
@@ -207,6 +251,7 @@ export async function handleClaimFromPr1s(
         coverage: createReference(coverage),
       },
     ],
+    diagnosis: diagnoses,
     item: procedures.map((proc, index) => ({
       sequence: index + 1,
       productOrService: {
@@ -218,6 +263,8 @@ export async function handleClaimFromPr1s(
           },
         ],
       },
+      // Link item to diagnosis if available
+      diagnosisSequence: proc.diagnosis ? [index + 1] : undefined,
     })),
   });
 
