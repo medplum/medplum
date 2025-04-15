@@ -14,7 +14,7 @@ import { getRequestContext, tryRunInRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
-import { getLogger, globalLogger } from '../logger';
+import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
 import { MigrationVersion } from '../migrations/migration-versions';
@@ -46,7 +46,7 @@ export interface ReindexJobData extends PostDeployJobData {
 
 export type ReindexResult =
   | { count: number; cursor: string; nextTimestamp: string; err?: Error }
-  | { count: number; duration: number };
+  | { count: number; durationMs: number };
 
 export interface ReindexPostDeployMigration extends PostDeployMigration<ReindexJobData> {
   type: 'reindex';
@@ -101,6 +101,7 @@ export class ReindexJob {
   private readonly systemRepo: Repository;
   private readonly batchSize: number;
   private readonly progressLogThreshold: number;
+  private readonly logger = globalLogger;
 
   constructor(systemRepo?: Repository, batchSize?: number, progressLogThreshold?: number) {
     this.systemRepo = systemRepo ?? getSystemRepo();
@@ -115,7 +116,7 @@ export class ReindexJob {
   private async maybeSkipJob(asyncJob: WithId<AsyncJob>): Promise<boolean> {
     const postDeployVersion = await getPostDeployVersion(getDatabasePool(DatabaseMode.WRITER));
     if (Boolean(asyncJob.dataVersion) && postDeployVersion === MigrationVersion.FIRST_BOOT) {
-      globalLogger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
+      this.logger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
         asyncJob: getReferenceString(asyncJob),
         version: `v${asyncJob.dataVersion}`,
       });
@@ -126,6 +127,40 @@ export class ReindexJob {
       return true;
     }
     return false;
+  }
+
+  private async checkForQueueClosing(
+    job: Job<ReindexJobData> | undefined,
+    asyncJob: WithId<AsyncJob>,
+    nextJobData: ReindexJobData
+  ): Promise<void> {
+    if (queueRegistry.isClosing(job?.queueName ?? '')) {
+      this.logger.info('Reindex job detected queue is closing', {
+        queueName: job?.queueName,
+        token: job?.token,
+        asyncJob: getReferenceString(asyncJob),
+      });
+      if (job?.token) {
+        this.logger.info('Reindex job delaying self', {
+          queueName: job.queueName,
+          token: job.token,
+          asyncJob: getReferenceString(asyncJob),
+          jobData: JSON.stringify(nextJobData),
+        });
+        await job.updateData(nextJobData);
+        await job.moveToDelayed(Date.now() + 60_000, job.token);
+        this.logger.info('Reindex job delayed', {
+          queueName: job.queueName,
+          token: job.token,
+          asyncJob: getReferenceString(asyncJob),
+        });
+        throw new DelayedError('Reindex job delayed since queue is closing');
+      }
+
+      // This is one of those "this should never happen" errors. job.token is expected to always be set
+      // given the way we use bullmq.
+      throw new Error('Reindex job detected queue is closing, but job.token not available to delay the job');
+    }
   }
 
   async execute(
@@ -149,29 +184,7 @@ export class ReindexJob {
 
     let nextJobData: ReindexJobData | undefined = inputJobData;
     while (nextJobData) {
-      if (queueRegistry.isClosing(job?.queueName ?? '')) {
-        getLogger().info('Reindex job detected queue is closing', {
-          queueName: job?.queueName,
-          token: job?.token,
-          asyncJob: getReferenceString(asyncJob),
-        });
-        if (job?.token) {
-          getLogger().info('Reindex job delaying self', {
-            queueName: job.queueName,
-            token: job.token,
-            asyncJob: getReferenceString(asyncJob),
-            jobData: JSON.stringify(nextJobData),
-          });
-          await job.updateData(nextJobData);
-          await job.moveToDelayed(Date.now() + 60_000, job.token);
-          getLogger().info('Reindex job delayed', {
-            queueName: job.queueName,
-            token: job.token,
-            asyncJob: getReferenceString(asyncJob),
-          });
-          throw new DelayedError('Reindex job delayed since queue is closing');
-        }
-      }
+      await this.checkForQueueClosing(job, asyncJob, nextJobData);
       const result = await this.processIteration(this.systemRepo, nextJobData);
       const resourceType = nextJobData.resourceTypes[0];
       nextJobData.results[resourceType] = result;
@@ -234,17 +247,17 @@ export class ReindexJob {
     } else if (resourceTypes.length > 1) {
       // Completed reindex for this resource type
       const elapsedTime = Date.now() - jobData.startTime;
-      getLogger().info('Reindex completed', {
+      this.logger.info('Reindex completed for resourceType', {
         resourceType,
         count: newCount,
-        duration: `${elapsedTime} ms`,
+        durationMs: elapsedTime,
       });
 
-      return { count: newCount, duration: elapsedTime };
+      return { count: newCount, durationMs: elapsedTime };
     } else {
       const elapsedTime = Date.now() - jobData.startTime;
-      getLogger().info('Reindex completed', { resourceType, count, duration: `${elapsedTime} ms` });
-      return { count: newCount, duration: elapsedTime };
+      this.logger.info('Reindex completed', { resourceType, count, durationMs: elapsedTime });
+      return { count: newCount, durationMs: elapsedTime };
     }
   }
 
@@ -262,7 +275,7 @@ export class ReindexJob {
       }
 
       // Log periodic progress updates for the job
-      globalLogger.info('Reindex in progress', {
+      this.logger.info('Reindex in progress', {
         resourceType: jobData.resourceTypes[0],
         cursor: result.cursor,
         currentCount: result.count,
@@ -338,7 +351,7 @@ export class ReindexJob {
 }
 
 function isResultComplete(result: ReindexResult): boolean {
-  return 'duration' in result || 'err' in result;
+  return 'durationMs' in result || 'err' in result;
 }
 
 function isResultInProgress(
@@ -402,7 +415,7 @@ function formatReindexResult(result: ReindexResult, resourceType: string): Param
       part: [
         { name: 'resourceType', valueCode: resourceType },
         { name: 'count', valueInteger: result.count },
-        { name: 'elapsedTime', valueQuantity: { value: result.duration, code: 'ms' } },
+        { name: 'elapsedTime', valueQuantity: { value: result.durationMs, code: 'ms' } },
       ],
     };
   }

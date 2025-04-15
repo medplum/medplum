@@ -7,12 +7,14 @@ import {
   Encounter,
   ChargeItem,
   Claim,
+  Coverage,
+  Organization,
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router';
 import { showNotification } from '@mantine/notifications';
 import { createReference, deepEquals, getReferenceString } from '@medplum/core';
-import { IconCircleOff } from '@tabler/icons-react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { usePatient } from '../../hooks/usePatient';
@@ -20,8 +22,9 @@ import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import ChageItemPanel from '../components/ChargeItem/ChageItemPanel';
 import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
+import classes from './EncounterChart.module.css';
 
 export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
@@ -30,7 +33,8 @@ export const EncounterChart = (): JSX.Element => {
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const [activeTab, setActiveTab] = useState<string>('notes');
   const [isLoadingEncounter, setIsLoadingEncounter] = useState<boolean>(false);
-
+  const [coverage, setCoverage] = useState<Coverage | undefined>();
+  const [organization, setOrganization] = useState<Organization | undefined>();
   const {
     encounter,
     claim,
@@ -46,6 +50,31 @@ export const EncounterChart = (): JSX.Element => {
     setQuestionnaireResponse,
     setChargeItems,
   } = useEncounterChart(encounterId);
+
+  useEffect(() => {
+    const fetchCoverage = async (): Promise<void> => {
+      if (!patient) {
+        return;
+      }
+      const coverageResult = await medplum.searchResources('Coverage', `patient=${getReferenceString(patient)}`);
+      if (coverageResult.length > 0) {
+        setCoverage(coverageResult[0] as Coverage);
+      }
+    };
+
+    fetchCoverage().catch((err) => showErrorNotification(err));
+  }, [medplum, patient]);
+
+  useEffect(() => {
+    const fetchOrganization = async (): Promise<void> => {
+      if (coverage?.payor?.[0]?.reference) {
+        const organizationResult = await medplum.readReference({ reference: coverage.payor[0].reference });
+        setOrganization(organizationResult as Organization);
+      }
+    };
+
+    fetchOrganization().catch((err) => showErrorNotification(err));
+  }, [coverage, medplum]);
 
   const saveQuestionnaireResponse = async (response: QuestionnaireResponse): Promise<void> => {
     if (saveTimeoutRef.current) {
@@ -274,9 +303,78 @@ export const EncounterChart = (): JSX.Element => {
                 Insurance Overview
               </Text>
               <Card withBorder shadow="sm" p="md">
-                <Stack gap="xs">
-                  <Text>Primary Insurance: {patient?.contact?.[0]?.name?.text || 'Not available'}</Text>
+                <Stack gap="md">
+                  {organization ? (
+                    <>
+                      {coverage?.status === 'active' && (
+                        <Group gap={4}>
+                          <IconCircleCheck size={16} className={classes.checkmark} />
+                          <Text className={classes.active} fw={500} size="md">
+                            Active
+                          </Text>
+                        </Group>
+                      )}
+
+                      <Stack gap={0}>
+                        <Text fw={600} size="lg">
+                          {organization.name}
+                        </Text>
+                        {coverage && (
+                          <>
+                            {coverage.class?.map((coverageClass, index) => (
+                              <Text key={index} size="md">
+                                {coverageClass.name || 'Not specified'}
+                              </Text>
+                            )) || <Text size="md">Not specified</Text>}
+                          </>
+                        )}
+                      </Stack>
+
+                      {coverage?.period && (
+                        <Group grow>
+                          <Box>
+                            <Text size="sm" c="dimmed">
+                              Effective Date
+                            </Text>
+                            <Text>
+                              {coverage.period.start
+                                ? new Date(coverage.period.start).toLocaleDateString()
+                                : 'Not specified'}
+                            </Text>
+                          </Box>
+                          <Box>
+                            <Text size="sm" c="dimmed">
+                              End Date
+                            </Text>
+                            <Text>
+                              {coverage.period.end
+                                ? new Date(coverage.period.end).toLocaleDateString()
+                                : 'Not specified'}
+                            </Text>
+                          </Box>
+                        </Group>
+                      )}
+                    </>
+                  ) : (
+                    <Text c="dimmed">
+                      <IconCircleOff size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                      No insurance information available
+                    </Text>
+                  )}
                 </Stack>
+
+                {coverage && (
+                  <Button
+                    variant="outline"
+                    fullWidth
+                    mt="md"
+                    component="a"
+                    href={`/Coverage/${coverage.id}`}
+                    target="_blank"
+                  >
+                    View Insurance Information
+                  </Button>
+                )}
               </Card>
             </Stack>
 

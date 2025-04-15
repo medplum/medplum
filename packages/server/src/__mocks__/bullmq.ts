@@ -11,3 +11,4 @@ export class Queue extends bullmq.Queue {
 }
 export const Worker = bullmq.Worker;
 export const DelayedError = bullmq.DelayedError;
+export const Job = bullmq.Job;
