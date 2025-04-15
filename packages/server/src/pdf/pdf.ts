@@ -16,15 +16,15 @@ export function createPdf(
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
 
-    const defaultFonts = {
-      Roboto: {
-        normal: 'fonts/Roboto/Roboto-Regular.ttf',
-        bold: 'fonts/Roboto/Roboto-Medium.ttf', 
-        italics: 'fonts/Roboto/Roboto-Italic.ttf',
-        bolditalics: 'fonts/Roboto/Roboto-MediumItalic.ttf'
-      }
+    const defaultFonts: TFontDictionary = {
+      Helvetica: {
+        normal: 'Helvetica',
+        bold: 'Helvetica-Bold',
+        italics: 'Helvetica-Oblique',
+        bolditalics: 'Helvetica-BoldOblique',
+      },
     };
-
+    
     const printer = new PdfPrinter(fonts || defaultFonts);
     const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
     const chunks: Uint8Array[] = [];

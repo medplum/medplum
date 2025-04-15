@@ -62,6 +62,7 @@ export async function claimExportHandler(req: FhirRequest): Promise<FhirResponse
     };
     return [allOk, binary];
   } catch (error) {
+    console.error(error);
     return [badRequest(`Error exporting claim: ${(error as Error).message}`)];
   }
 }

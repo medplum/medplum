@@ -308,6 +308,18 @@ export const fullAnswer: Bundle = {
             value: 'B37FC',
             name: 'Independence Blue Full Coverage',
           },
+          {
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/coverage-class',
+                  code: 'group',
+                },
+              ],
+            },
+            value: '123456789',
+            name: 'Independence Blue Group Plan',
+          },
         ],
       },
     },
@@ -536,6 +548,38 @@ export const fullAnswer: Bundle = {
               coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'G89.4', display: 'Chronic pain syndrome' }],
             },
           },
+          {
+            sequence: 3,
+            diagnosisCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'XYZ3' }] },
+          },
+          {
+            sequence: 4,
+            diagnosisCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'XYZ4' }] },
+          },
+          {
+            sequence: 5,
+            diagnosisCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'XYZ5' }] },
+          },
+          {
+            sequence: 6,
+            diagnosisCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'XYZ6' }] },
+          },
+          {
+            sequence: 7,
+            diagnosisCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'XYZ7' }] },
+          },
+          {
+            sequence: 8,
+            diagnosisCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'XYZ8' }] },
+          },
+          {
+            sequence: 9,
+            diagnosisCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'XYZ9' }] },
+          },
+          {
+            sequence: 10,
+            diagnosisCodeableConcept: { coding: [{ system: 'http://hl7.org/fhir/sid/icd-10', code: 'XYZ10' }] },
+          },
         ],
         related: [
           {
@@ -594,6 +638,40 @@ export const fullAnswer: Bundle = {
             quantity: {
               unit: 'days',
               value: 20,
+            },
+            programCode: [
+              {
+                coding: [
+                  { code: 'none', system: 'http://terminology.hl7.org/CodeSystem/ex-programcode', display: 'None' },
+                ],
+              },
+            ],
+          },
+          {
+            servicedDate: '2024-05-15',
+            sequence: 1,
+            productOrService: {
+              coding: [{ system: 'http://hl7.org/fhir/ValueSet/service-uscls', code: '1201', display: 'Exam, recall' }],
+            },
+            locationAddress: {
+              line: ['289 Johnson Street'],
+              city: 'Ames',
+              state: 'IA',
+            },
+            category: {
+              coding: [{ system: 'http://example.org/claim-item-category', code: 'EMG', display: 'Emergency' }],
+            },
+            modifier: [
+              { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/modifiers', code: 'x', display: 'None' }] },
+            ],
+            diagnosisSequence: [1, 2],
+            net: {
+              currency: 'USD',
+              value: 2000,
+            },
+            quantity: {
+              unit: 'days',
+              value: 10,
             },
             programCode: [
               {
