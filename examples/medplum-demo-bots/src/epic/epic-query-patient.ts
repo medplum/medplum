@@ -4,7 +4,7 @@ import { createPrivateKey, randomBytes } from 'crypto';
 import { SignJWT } from 'jose';
 import fetch from 'node-fetch';
 
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<Patient | undefined> {
+export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<Patient | undefined> {
   const clientId = event.secrets['EPIC_CLIENT_ID']?.valueString;
   if (!clientId) {
     throw new Error('Missing EPIC_CLIENT_ID');
@@ -45,13 +45,22 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   // Start the JWT assertion login
   await epic.startJwtAssertionLogin(jwt);
 
-  // Read resource for Camila (sandbox patient)
-  // TODO: Get patient ID from event.input
-  const epicPatientId = 'erXuFYUfucBZaryVksYEcMg3';
-  const epicPatient = await epic.readResource('Patient', epicPatientId);
-  if (!epicPatient) {
-    throw new Error(`No patient found for ${epicPatientId} on Epic`);
+  let medplumPatient = event.input;
+  const epicPatientId = getIdentifier(medplumPatient, 'http://open.epic.com/FHIR/StructureDefinition/patient-fhir-id');
+  if (!epicPatientId) {
+    console.log(`No existing Epic patient found. It will be created.`);
+    // Destructure to omit id and meta before creating the resource in Epic
+    const { id: _id, meta: _meta, ...patientToCreate } = medplumPatient;
+    const epicPatient = await epic.createResource<Patient>(patientToCreate);
+    medplumPatient.identifier?.push({
+      system: 'http://open.epic.com/FHIR/StructureDefinition/patient-fhir-id',
+      value: epicPatient.id,
+    });
+    medplumPatient = await medplum.updateResource(medplumPatient);
+    return medplumPatient;
   }
+
+  const epicPatient = await epic.readResource('Patient', epicPatientId);
 
   // Upsert referenced resources first to ensure they exist in Medplum
   // Note that Epic ID and Medplum ID are different so we need to remove it to execute the upsert
@@ -88,7 +97,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     );
   }
 
-  const medplumPatient = await medplum.upsertResource({ ...epicPatient, id: undefined }, { identifier: epicPatientId });
+  medplumPatient = await medplum.upsertResource({ ...epicPatient, id: undefined }, { identifier: epicPatientId });
 
   // Create resources that relates to the Patient Profile
   const epicAllergies = await epic.searchResources('AllergyIntolerance', { patient: epicPatientId });
