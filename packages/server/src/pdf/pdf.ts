@@ -3,7 +3,7 @@ import PdfPrinter from 'pdfmake';
 
 /**
  * Generates a PDF buffer from a document definition.
- * 
+ *
  * @param docDefinition - The PDF document definition.
  * @param tableLayouts - Optional custom table layouts.
  * @param fonts - Optional custom fonts (uses default fonts if not provided).
@@ -15,7 +15,6 @@ export function createPdf(
   fonts?: TFontDictionary
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-
     const defaultFonts: TFontDictionary = {
       Helvetica: {
         normal: 'Helvetica',
@@ -24,7 +23,7 @@ export function createPdf(
         bolditalics: 'Helvetica-BoldOblique',
       },
     };
-    
+
     const printer = new PdfPrinter(fonts || defaultFonts);
     const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
     const chunks: Uint8Array[] = [];
