@@ -4,9 +4,11 @@ import { MockClient } from '@medplum/mock';
 import { Patient, Bundle, SearchParameter } from '@medplum/fhirtypes';
 
 import { handler } from './epic-query-patient';
+import { medplumPatientWithoutEpicId } from './epic-query-patient-test-data';
 
 describe.skip('epic-query-patient', () => {
   let medplum: MockClient;
+  let input: Patient;
 
   const bot = { reference: 'Bot/123' };
   const contentType = 'application/fhir+json';
@@ -24,15 +26,17 @@ describe.skip('epic-query-patient', () => {
     }
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     medplum = new MockClient();
+
+    input = await medplum.createResource(medplumPatientWithoutEpicId);
   });
 
   test('throws error when missing EPIC_CLIENT_ID', async () => {
     await expect(
       handler(medplum, {
         bot,
-        input: {},
+        input,
         secrets: { EPIC_PRIVATE_KEY: secrets.EPIC_PRIVATE_KEY },
         contentType,
       })
@@ -43,7 +47,7 @@ describe.skip('epic-query-patient', () => {
     await expect(
       handler(medplum, {
         bot,
-        input: {},
+        input,
         secrets: { EPIC_CLIENT_ID: secrets.EPIC_CLIENT_ID },
         contentType,
       })
@@ -53,7 +57,7 @@ describe.skip('epic-query-patient', () => {
   test('successfully upserts a Epic patient and related resources in Medplum', async () => {
     const patient = await handler(medplum, {
       bot,
-      input: {},
+      input,
       secrets,
       contentType,
     });
@@ -62,7 +66,7 @@ describe.skip('epic-query-patient', () => {
     expect(patient?.resourceType).toStrictEqual('Patient');
     expect(
       getIdentifier(patient as Patient, 'http://open.epic.com/FHIR/StructureDefinition/patient-fhir-id')
-    ).toStrictEqual('erXuFYUfucBZaryVksYEcMg3');
+    ).toBeDefined();
 
     expect(patient?.managingOrganization).toBeDefined();
     const managingOrganization = medplum.readResource(

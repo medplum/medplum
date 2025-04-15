@@ -1,4 +1,45 @@
-import { Organization, Patient, Practitioner } from '@medplum/fhirtypes';
+import {
+  AllergyIntolerance,
+  Medication,
+  MedicationRequest,
+  Organization,
+  Patient,
+  Practitioner,
+} from '@medplum/fhirtypes';
+
+export const medplumPatientWithoutEpicId: Patient = {
+  resourceType: 'Patient',
+  identifier: [
+    {
+      system: 'http://hl7.org/fhir/sid/us-ssn',
+      value: '444222222',
+    },
+  ],
+  name: [
+    {
+      given: ['Jane'],
+      family: 'California',
+    },
+  ],
+  gender: 'female',
+  birthDate: '1970-01-01',
+  address: [
+    {
+      use: 'home',
+      line: ['123 Main St.'],
+      city: 'San Francisco',
+      state: 'CA',
+      postalCode: '98732',
+    },
+  ],
+  telecom: [
+    {
+      system: 'phone',
+      use: 'mobile',
+      value: '555-325-6392',
+    },
+  ],
+};
 
 export const epicOrganization: Organization = {
   resourceType: 'Organization',
@@ -392,5 +433,345 @@ export const epicPatient: Patient = {
   managingOrganization: {
     reference: 'Organization/enRyWnSP963FYDpoks4NHOA3',
     display: 'Epic Hospital System',
+  },
+};
+
+export const epicAllergyIntolerance: AllergyIntolerance = {
+  resourceType: 'AllergyIntolerance',
+  id: 'eARZpey6BWRZxRZkRpc8OFJ46j3QOFrduk77hYQKWRQnp6GRlpYc2I3BfUN6pz4Anz77ow8.GJh54fUVfm3O8Vw3',
+  clinicalStatus: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+        version: '4.0.0',
+        code: 'active',
+        display: 'Active',
+      },
+    ],
+  },
+  verificationStatus: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-verification',
+        version: '4.0.0',
+        code: 'unconfirmed',
+        display: 'Unconfirmed',
+      },
+    ],
+  },
+  code: {
+    coding: [
+      {
+        system: 'http://snomed.info/sct',
+        code: '1631000175102',
+        display: 'Patient not asked',
+      },
+    ],
+    text: 'Not on File',
+  },
+  patient: {
+    reference: 'Patient/erXuFYUfucBZaryVksYEcMg3',
+    display: 'Lopez, Camila Maria',
+  },
+};
+
+export const epicMedication: Medication = {
+  resourceType: 'Medication',
+  id: 'ej-bgums0x4N6E0.QqIjJb3kGhOQBVK3lIYjcil9mb9j-ukNrz6P2y90AiDm3R20Y3',
+  identifier: [
+    {
+      use: 'usual',
+      system: 'urn:oid:1.2.840.114350.1.13.0.1.7.2.698288',
+      value: '70784',
+    },
+  ],
+  code: {
+    coding: [
+      {
+        system: 'urn:oid:2.16.840.1.113883.6.253',
+        code: '100899',
+      },
+      {
+        system: 'urn:oid:2.16.840.1.113883.6.68',
+        code: '25990002150316',
+      },
+      {
+        system: 'urn:oid:2.16.840.1.113883.6.162',
+        code: '49431',
+      },
+      {
+        system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+        code: '4124',
+      },
+      {
+        system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+        code: '11636',
+      },
+      {
+        system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+        code: '630734',
+      },
+      {
+        system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+        code: '748794',
+      },
+      {
+        system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+        code: '748798',
+      },
+      {
+        system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+        code: '840781',
+      },
+    ],
+    text: 'drospirenone-ethinyl estradiol (YAZ,GIANVI) tablet 3-0.02 mg',
+  },
+  form: {
+    coding: [
+      {
+        system: 'urn:oid:1.2.840.114350.1.13.0.1.7.4.698288.310',
+        code: 'TABS',
+        display: 'tablet',
+      },
+    ],
+    text: 'tablet',
+  },
+  ingredient: [
+    {
+      itemCodeableConcept: {
+        coding: [
+          {
+            system: 'urn:oid:2.16.840.1.113883.6.253',
+            code: '100899',
+          },
+          {
+            system: 'urn:oid:2.16.840.1.113883.6.68',
+            code: '25990002150316',
+          },
+          {
+            system: 'urn:oid:2.16.840.1.113883.6.162',
+            code: '49431',
+          },
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '4124',
+          },
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '11636',
+          },
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '630734',
+          },
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '748794',
+          },
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '748798',
+          },
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '840781',
+          },
+        ],
+        text: 'drospirenone-ethinyl estradiol (YAZ,GIANVI) tablet 3-0.02 mg',
+      },
+    },
+  ],
+};
+
+export const epicMedicationRequest: MedicationRequest = {
+  resourceType: 'MedicationRequest',
+  id: 'ePDJ.zsf3Jfg2.MKkAMgW9EcIbsaiB.y-OTrPS5v2h8Q3',
+  identifier: [
+    {
+      use: 'usual',
+      system: 'urn:oid:1.2.840.114350.1.13.0.1.7.2.798268',
+      value: '1066899',
+    },
+  ],
+  status: 'active',
+  intent: 'order',
+  category: [
+    {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/medicationrequest-category',
+          code: 'community',
+          display: 'Community',
+        },
+      ],
+      text: 'Community',
+    },
+  ],
+  medicationReference: {
+    reference: 'Medication/ej-bgums0x4N6E0.QqIjJb3kGhOQBVK3lIYjcil9mb9j-ukNrz6P2y90AiDm3R20Y3',
+    display: 'drospirenone-ethinyl estradiol (YAZ,GIANVI) tablet 3-0.02 mg',
+  },
+  subject: {
+    reference: 'Patient/erXuFYUfucBZaryVksYEcMg3',
+    display: 'Lopez, Camila Maria',
+  },
+  authoredOn: '2019-05-28',
+  requester: {
+    reference: 'Practitioner/eM5CWtq15N0WJeuCet5bJlQ3',
+    type: 'Practitioner',
+    display: 'Physician Family Medicine, MD',
+  },
+  recorder: {
+    reference: 'Practitioner/eM5CWtq15N0WJeuCet5bJlQ3',
+    type: 'Practitioner',
+    display: 'Physician Family Medicine, MD',
+  },
+  reasonCode: [
+    {
+      coding: [
+        {
+          system: 'http://snomed.info/sct',
+          code: '69878008',
+          display: 'Polycystic ovaries (disorder)',
+        },
+        {
+          system: 'http://hl7.org/fhir/sid/icd-9-cm',
+          code: '256.4',
+          display: 'Polycystic ovaries',
+        },
+        {
+          system: 'http://hl7.org/fhir/sid/icd-10-cm',
+          code: 'E28.2',
+          display: 'Polycystic ovarian syndrome',
+        },
+      ],
+      text: 'PCOS (polycystic ovarian syndrome)',
+    },
+  ],
+  courseOfTherapyType: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/medicationrequest-course-of-therapy',
+        code: 'continuous',
+        display: 'Continuous long term therapy',
+      },
+    ],
+    text: 'Continuous long term therapy',
+  },
+  dosageInstruction: [
+    {
+      text: 'Take 1 tablet by mouth 1 (one) time each day., Starting Tue 5/28/2019, Until Wed 5/27/2020, Normal',
+      patientInstruction: 'Take 1 tablet by mouth 1 (one) time each day.',
+      timing: {
+        repeat: {
+          boundsPeriod: {
+            start: '2019-05-28',
+          },
+          count: 365,
+          timeOfDay: ['09:00:00'],
+        },
+        code: {
+          text: '0900',
+        },
+      },
+      asNeededBoolean: false,
+      route: {
+        coding: [
+          {
+            system: 'http://snomed.info/sct',
+            code: '260548002',
+            display: 'Oral (qualifier value)',
+          },
+          {
+            system: 'urn:oid:1.2.840.114350.1.13.0.1.7.4.798268.7025',
+            code: '15',
+            display: 'Oral',
+          },
+        ],
+        text: 'Oral',
+      },
+      method: {
+        coding: [
+          {
+            system: 'http://snomed.info/sct',
+            code: '419652001',
+            display: 'Take',
+          },
+        ],
+        text: 'Take',
+      },
+      doseAndRate: [
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://epic.com/CodeSystem/dose-rate-type',
+                code: 'calculated',
+                display: 'calculated',
+              },
+            ],
+            text: 'calculated',
+          },
+          doseQuantity: {
+            value: 1,
+            unit: 'tablet',
+            system: 'http://unitsofmeasure.org',
+            code: '{tbl}',
+          },
+        },
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://epic.com/CodeSystem/dose-rate-type',
+                code: 'admin-amount',
+                display: 'admin-amount',
+              },
+            ],
+            text: 'admin-amount',
+          },
+          doseQuantity: {
+            value: 1,
+            unit: 'tablet',
+            system: 'http://unitsofmeasure.org',
+            code: '{tbl}',
+          },
+        },
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://epic.com/CodeSystem/dose-rate-type',
+                code: 'ordered',
+                display: 'ordered',
+              },
+            ],
+            text: 'ordered',
+          },
+          doseQuantity: {
+            value: 1,
+            unit: 'tablet',
+            system: 'http://unitsofmeasure.org',
+            code: '{tbl}',
+          },
+        },
+      ],
+    },
+  ],
+  dispenseRequest: {
+    validityPeriod: {
+      start: '2019-05-28',
+    },
+    numberOfRepeatsAllowed: 12,
+    quantity: {
+      value: 28,
+      unit: 'tablet',
+    },
+    expectedSupplyDuration: {
+      value: 28,
+      unit: 'Day',
+      system: 'http://unitsofmeasure.org',
+      code: 'd',
+    },
   },
 };

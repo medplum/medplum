@@ -4,7 +4,15 @@ import { createPrivateKey, randomBytes } from 'crypto';
 import { SignJWT } from 'jose';
 import fetch from 'node-fetch';
 
-export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<Patient | undefined> {
+/**
+ * Handles the logic for the Epic FHIR integration bot.
+ *
+ * @param medplum - The Medplum client
+ * @param event - The BotEvent object
+ *
+ * @returns The Patient resource in Medplum
+ */
+export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<Patient> {
   const clientId = event.secrets['EPIC_CLIENT_ID']?.valueString;
   if (!clientId) {
     throw new Error('Missing EPIC_CLIENT_ID');
@@ -49,9 +57,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   const epicPatientId = getIdentifier(medplumPatient, 'http://open.epic.com/FHIR/StructureDefinition/patient-fhir-id');
 
   if (!epicPatientId) {
+    console.log('No Epic Patient ID found, creating patient in Epic');
     // If no Epic patient ID exists, create the patient in Epic
     return createEpicPatient(medplum, epic, medplumPatient);
   } else {
+    console.log('Epic Patient ID found, syncing data from Epic to Medplum');
     // If an Epic patient ID exists, sync data from Epic to Medplum
     return syncEpicPatient(medplum, epic, medplumPatient, epicPatientId);
   }
@@ -71,9 +81,33 @@ async function createEpicPatient(
   epic: MedplumClient,
   medplumPatient: Patient
 ): Promise<Patient> {
+  const ssnIdentifier = getIdentifier(medplumPatient, 'http://hl7.org/fhir/sid/us-ssn');
+  if (!ssnIdentifier) {
+    throw new Error('SSN identifier is required to create a patient in Epic');
+  }
+
   // Destructure to omit id and meta before creating the resource in Epic
   const { id: _id, meta: _meta, ...patientToCreate } = medplumPatient;
-  const epicPatient = await epic.createResource<Patient>(patientToCreate);
+
+  // Epic requires the SSN identifier to be in the OID system
+  patientToCreate.identifier = patientToCreate.identifier?.map((id) => {
+    if (id.system === 'http://hl7.org/fhir/sid/us-ssn') {
+      return {
+        use: 'usual',
+        system: 'urn:oid:2.16.840.1.113883.4.1',
+        value: id.value,
+      };
+    }
+
+    return id;
+  });
+
+  await epic.createResource<Patient>(patientToCreate);
+  const epicPatient = await epic.searchOne('Patient', { identifier: ssnIdentifier });
+
+  if (!epicPatient) {
+    throw new Error('Failed to create patient in Epic');
+  }
 
   medplumPatient.identifier ??= [];
   medplumPatient.identifier.push({
