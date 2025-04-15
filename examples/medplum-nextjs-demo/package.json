@@ -20,13 +20,13 @@
     ]
   },
   "dependencies": {
-    "@mantine/core": "7.17.3",
-    "@mantine/hooks": "7.17.3",
-    "@mantine/notifications": "7.17.3",
+    "@mantine/core": "7.17.4",
+    "@mantine/hooks": "7.17.4",
+    "@mantine/notifications": "7.17.4",
     "@medplum/core": "4.0.4",
     "@medplum/react": "4.0.4",
-    "@next/bundle-analyzer": "15.2.4",
-    "next": "15.2.4",
+    "@next/bundle-analyzer": "15.3.0",
+    "next": "15.3.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "rfc6902": "5.1.2"
@@ -37,7 +37,7 @@
     "@types/react": "18.3.20",
     "@types/react-dom": "18.3.6",
     "eslint": "8.57.1",
-    "eslint-config-next": "15.2.4",
+    "eslint-config-next": "15.3.0",
     "postcss": "8.5.3",
     "postcss-preset-mantine": "1.17.0",
     "typescript": "5.8.3"
