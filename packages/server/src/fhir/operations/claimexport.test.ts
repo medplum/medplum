@@ -46,10 +46,11 @@ describe('CMS 1500 PDF Bot', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', 'application/fhir+json');
 
+    console.log(JSON.stringify(response.body, null, 2));
     expect(response).toBeDefined();
     expect(response.status).toBe(200);
-    expect(response.body.resourceType).toBe('Binary');
-    expect(response.body.contentType).toBe('application/pdf');
+    expect(response.body.resourceType).toBe('Media');
+    expect(response.body.content.contentType).toBe('application/pdf');
   });
 });
 

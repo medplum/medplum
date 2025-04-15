@@ -1,9 +1,10 @@
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, getReferenceString, WithId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Binary, Claim, OperationDefinition } from '@medplum/fhirtypes';
+import { Binary, Claim, Media, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { createPdf } from '../../pdf/pdf';
 import { getClaimPDFDocDefinition } from './utils/cms1500pdf';
+import { getBinaryStorage } from '../../storage/loader';
 
 /**
  * Operation definition for the Claim $export operation.
@@ -55,14 +56,34 @@ export async function claimExportHandler(req: FhirRequest): Promise<FhirResponse
     const claim = await repo.readResource<Claim>('Claim', claimId);
     const docDefinition = await getClaimPDFDocDefinition(claim);
     const pdfBuffer = await createPdf(docDefinition);
-    const binary: Binary = {
+    const binary = await repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType: 'application/pdf',
-      data: pdfBuffer.toString('base64'),
-    };
-    return [allOk, binary];
+    });
+    await getBinaryStorage().writeBinary(binary, 'cms-1500.pdf', 'application/pdf', pdfBuffer.toString('base64'));
+    
+    const media: Media = {
+      "resourceType": "Media",
+      "status": "completed",
+      "subject": {
+        "reference": getReferenceString(claim.patient)
+      },
+      "operator": {
+        "reference": getReferenceString(claim.provider)
+      },
+      "issued": new Date().toISOString(),
+      "content": {
+        "contentType": "application/pdf",
+        "url": getReferenceString(binary),
+        "title": "cms-1500.pdf"
+      }
+    }
+    return [allOk, media];
+
+
   } catch (error) {
     console.error(error);
     return [badRequest(`Error exporting claim: ${(error as Error).message}`)];
   }
 }
+
