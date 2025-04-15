@@ -6,7 +6,7 @@ import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 import { getDatabasePool, DatabaseMode } from '../../database';
 
-describe('$db-schema-diff', () => {
+describe('$db-invalid-indexes', () => {
   const app = express();
 
   beforeAll(async () => {
@@ -20,12 +20,7 @@ describe('$db-schema-diff', () => {
 
   afterEach(async () => {
     const client = getDatabasePool(DatabaseMode.WRITER);
-    await client.query(
-      `UPDATE pg_index SET indislive = true 
-      FROM pg_class WHERE pg_class.oid = pg_index.indexrelid 
-      AND pg_class.relname = $1`,
-      ['CarePlan_replaces_idx']
-    );
+    await client.query(`REINDEX INDEX CONCURRENTLY "CarePlan_replaces_idx"`);
   });
 
   test('Success', async () => {
