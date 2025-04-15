@@ -1,4 +1,4 @@
-import { allOk, badRequest, getReferenceString, WithId } from '@medplum/core';
+import { allOk, badRequest, getReferenceString } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Claim, Media, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
