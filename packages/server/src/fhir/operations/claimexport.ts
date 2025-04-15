@@ -61,29 +61,26 @@ export async function claimExportHandler(req: FhirRequest): Promise<FhirResponse
       contentType: 'application/pdf',
     });
     await getBinaryStorage().writeBinary(binary, 'cms-1500.pdf', 'application/pdf', pdfBuffer.toString('base64'));
-    
+
     const media: Media = {
-      "resourceType": "Media",
-      "status": "completed",
-      "subject": {
-        "reference": getReferenceString(claim.patient)
+      resourceType: 'Media',
+      status: 'completed',
+      subject: {
+        reference: getReferenceString(claim.patient),
       },
-      "operator": {
-        "reference": getReferenceString(claim.provider)
+      operator: {
+        reference: getReferenceString(claim.provider),
       },
-      "issued": new Date().toISOString(),
-      "content": {
-        "contentType": "application/pdf",
-        "url": getReferenceString(binary),
-        "title": "cms-1500.pdf"
-      }
-    }
+      issued: new Date().toISOString(),
+      content: {
+        contentType: 'application/pdf',
+        url: getReferenceString(binary),
+        title: 'cms-1500.pdf',
+      },
+    };
     return [allOk, media];
-
-
   } catch (error) {
     console.error(error);
     return [badRequest(`Error exporting claim: ${(error as Error).message}`)];
   }
 }
-
