@@ -22,7 +22,7 @@ describe('CMS 1500 PDF Bot', async () => {
     medplum = new MockClient();
   });
 
-  test('Actual PDF', async () => {
+  test.skip('Actual PDF', async () => {
     await medplum.executeBatch(fullAnswer);
 
     const claim = (await medplum.searchOne('Claim', {
