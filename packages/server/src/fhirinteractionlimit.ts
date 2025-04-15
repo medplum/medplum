@@ -78,12 +78,20 @@ export class FhirRateLimiter {
     }
   }
 
-  async recordSearch(opts?: { chained: boolean }): Promise<void> {
-    return this.consume(opts?.chained ? 2 : 1);
+  async recordRead(num?: number): Promise<void> {
+    return this.consume(Math.min(num ?? 1, 1));
   }
 
-  async recordWrite(opts?: { transactional: boolean }): Promise<void> {
-    return this.consume(opts?.transactional ? 10 : 5);
+  async recordHistory(): Promise<void> {
+    return this.consume(10);
+  }
+
+  async recordSearch(): Promise<void> {
+    return this.consume(100);
+  }
+
+  async recordWrite(): Promise<void> {
+    return this.consume(100);
   }
 
   get unitsConsumed(): number {

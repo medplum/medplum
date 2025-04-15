@@ -25,8 +25,8 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.botLambdaLayerName ||= 'medplum-bot-layer';
   config.bcryptHashSalt ||= 10;
   config.bullmq = { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
-  config.shutdownTimeoutMilliseconds ??= 30000;
-  config.accurateCountThreshold ??= 1000000;
+  config.shutdownTimeoutMilliseconds ??= 30_000;
+  config.accurateCountThreshold ??= 1_000_000;
   config.defaultBotRuntimeVersion ??= 'awslambda';
   config.defaultProjectFeatures ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
@@ -39,7 +39,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
 
-  config.defaultFhirInteractionLimit ??= 1_000;
+  config.defaultFhirInteractionLimit ??= 50_000;
   return config as ServerConfig;
 }
 

@@ -99,13 +99,7 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import {
-  SearchOptions,
-  buildSearchExpression,
-  isChainedSearchFilter,
-  searchByReferenceImpl,
-  searchImpl,
-} from './search';
+import { SearchOptions, buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
@@ -276,7 +270,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
 
     const resourceWithId = {
       ...resource,
@@ -307,6 +301,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     options?: ReadResourceOptions
   ): Promise<WithId<T>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordRead();
+
     const startTime = Date.now();
     try {
       const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, options));
@@ -396,6 +392,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(T | Error)[]> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordRead(references.length);
     const cacheEntries = await this.getCacheEntries(references);
     const result: (T | Error)[] = new Array(references.length);
 
@@ -481,6 +478,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns Operation outcome and a history bundle.
    */
   async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string, limit = 100): Promise<Bundle<T>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordHistory();
     const startTime = Date.now();
     try {
       let resource: T | undefined = undefined;
@@ -553,6 +551,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordRead();
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
     try {
@@ -590,7 +589,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
 
     const startTime = Date.now();
     try {
@@ -1036,7 +1035,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
 
     const startTime = Date.now();
     let resource: WithId<T>;
@@ -1109,7 +1108,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     patch: Operation[],
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite({ transactional: this.transactionDepth > 0 });
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
 
     const startTime = Date.now();
     try {
@@ -1205,9 +1204,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordSearch({
-      chained: Boolean(searchRequest.filters?.some((f) => isChainedSearchFilter(f))),
-    });
+    await tryGetRequestContext()?.fhirRateLimiter?.recordSearch();
 
     const startTime = Date.now();
     try {
