@@ -1,21 +1,8 @@
-import {
-  formatAddress,
-  formatCodeableConcept,
-  formatMoney,
-  formatQuantity,
-  getDisplayString,
-} from '@medplum/core';
-import {
-  Address,
-  Claim,
-  HumanName,
-  Practitioner,
-  RelatedPerson,
-} from '@medplum/fhirtypes';
+import { formatAddress, formatCodeableConcept, formatMoney, formatQuantity, getDisplayString } from '@medplum/core';
+import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
 import fs from 'fs';
-
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
@@ -44,8 +31,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
   const insured = coverage.subscriber ? await repo.readReference(coverage.subscriber) : undefined;
   const insurer = await repo.readReference(coverage.payor[0]);
   const provider = await repo.readReference(claim.provider);
-  const otherCoverage =
-    claim.insurance.length > 1 ? await repo.readReference(claim.insurance[1].coverage) : undefined;
+  const otherCoverage = claim.insurance.length > 1 ? await repo.readReference(claim.insurance[1].coverage) : undefined;
   const otherInsured = otherCoverage?.subscriber ? await repo.readReference(otherCoverage.subscriber) : undefined;
   const referralRequest = claim.referral ? await repo.readReference(claim.referral) : undefined;
   const referrer = referralRequest?.requester ? await repo.readReference(referralRequest.requester) : undefined;
