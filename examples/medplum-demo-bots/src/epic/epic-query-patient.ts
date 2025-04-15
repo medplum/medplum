@@ -115,7 +115,8 @@ async function createEpicPatient(
     value: epicPatient.id,
   });
 
-  return medplum.updateResource(medplumPatient);
+  const updatedMedplumPatient = await medplum.updateResource(medplumPatient);
+  return updatedMedplumPatient;
 }
 
 /**
