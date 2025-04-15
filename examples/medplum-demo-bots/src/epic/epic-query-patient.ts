@@ -45,25 +45,68 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   // Start the JWT assertion login
   await epic.startJwtAssertionLogin(jwt);
 
-  let medplumPatient = event.input;
+  const medplumPatient = event.input;
   const epicPatientId = getIdentifier(medplumPatient, 'http://open.epic.com/FHIR/StructureDefinition/patient-fhir-id');
-  if (!epicPatientId) {
-    console.log(`No existing Epic patient found. It will be created.`);
-    // Destructure to omit id and meta before creating the resource in Epic
-    const { id: _id, meta: _meta, ...patientToCreate } = medplumPatient;
-    const epicPatient = await epic.createResource<Patient>(patientToCreate);
-    medplumPatient.identifier?.push({
-      system: 'http://open.epic.com/FHIR/StructureDefinition/patient-fhir-id',
-      value: epicPatient.id,
-    });
-    medplumPatient = await medplum.updateResource(medplumPatient);
-    return medplumPatient;
-  }
 
+  if (!epicPatientId) {
+    // If no Epic patient ID exists, create the patient in Epic
+    return createEpicPatient(medplum, epic, medplumPatient);
+  } else {
+    // If an Epic patient ID exists, sync data from Epic to Medplum
+    return syncEpicPatient(medplum, epic, medplumPatient, epicPatientId);
+  }
+}
+
+/**
+ * Creates a patient in Epic
+ *
+ * @param medplum - The Medplum client
+ * @param epic - The Epic client
+ * @param medplumPatient - The Patient resource in Medplum
+ *
+ * @returns The Patient resource in Medplum
+ */
+async function createEpicPatient(
+  medplum: MedplumClient,
+  epic: MedplumClient,
+  medplumPatient: Patient
+): Promise<Patient> {
+  // Destructure to omit id and meta before creating the resource in Epic
+  const { id: _id, meta: _meta, ...patientToCreate } = medplumPatient;
+  const epicPatient = await epic.createResource<Patient>(patientToCreate);
+
+  medplumPatient.identifier ??= [];
+  medplumPatient.identifier.push({
+    system: 'http://open.epic.com/FHIR/StructureDefinition/patient-fhir-id',
+    value: epicPatient.id,
+  });
+
+  return medplum.updateResource(medplumPatient);
+}
+
+/**
+ * Syncs data from an existing Epic patient to Medplum
+ *
+ * @param medplum - The Medplum client
+ * @param epic - The Epic client
+ * @param medplumPatient - The Patient resource in Medplum
+ * @param epicPatientId - The ID of the patient in Epic
+ *
+ * @returns The Patient resource in Medplum
+ */
+async function syncEpicPatient(
+  medplum: MedplumClient,
+  epic: MedplumClient,
+  medplumPatient: Patient,
+  epicPatientId: string
+): Promise<Patient> {
+  // Note that Epic ID and Medplum ID are different so that is why id is being removed
+  // when performing the upsert below.
+
+  // Read the patient resource from Epic
   const epicPatient = await epic.readResource('Patient', epicPatientId);
 
-  // Upsert referenced resources first to ensure they exist in Medplum
-  // Note that Epic ID and Medplum ID are different so we need to remove it to execute the upsert
+  // Upsert referenced resources first to ensure they exist in Medplum.
   if (epicPatient.managingOrganization?.reference) {
     const [orgResourceType, orgId] = epicPatient.managingOrganization.reference.split('/');
     if (orgResourceType === 'Organization' && orgId) {
@@ -97,9 +140,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
     );
   }
 
-  medplumPatient = await medplum.upsertResource({ ...epicPatient, id: undefined }, { identifier: epicPatientId });
+  // Update the patient resource in Medplum with the Epic patient data
+  const updatedMedplumPatient = await medplum.updateResource({ ...epicPatient, ...medplumPatient });
 
-  // Create resources that relates to the Patient Profile
+  // Create resources that relate to the Patient Profile (e.g. allergies, medications)
   const epicAllergies = await epic.searchResources('AllergyIntolerance', { patient: epicPatientId });
   await Promise.all(
     epicAllergies.map(async (allergyIntolerance) => {
@@ -108,9 +152,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
         return;
       }
       await medplum.upsertResource(
-        { ...allergyIntolerance, id: undefined, patient: createReference(medplumPatient) },
+        { ...allergyIntolerance, id: undefined, patient: createReference(updatedMedplumPatient) },
         {
-          patient: getReferenceString(medplumPatient),
+          patient: getReferenceString(updatedMedplumPatient),
           code: `${code.system}|${code.code}`,
         }
       );
@@ -160,14 +204,14 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
           ...medicationRequest,
           id: undefined,
           encounter: undefined, // To simplify the demo
-          subject: createReference(medplumPatient),
+          subject: createReference(updatedMedplumPatient),
         },
         {
-          patient: getReferenceString(medplumPatient),
+          patient: getReferenceString(updatedMedplumPatient),
           identifier: medicationRequest.identifier?.[0].value,
         }
       );
     })
   );
-  return medplumPatient;
+  return updatedMedplumPatient;
 }
