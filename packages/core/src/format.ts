@@ -76,7 +76,11 @@ export function formatReferenceString(value: Reference | undefined): string {
  * @param options - Optional address format options.
  * @returns The formatted address string.
  */
-export function formatAddress(address: Address, options?: AddressFormatOptions): string {
+export function formatAddress(address: Address | undefined, options?: AddressFormatOptions): string {
+  if (!address) {
+    return '';
+  }
+
   const builder = [];
 
   if (address.line) {
@@ -110,7 +114,11 @@ export function formatAddress(address: Address, options?: AddressFormatOptions):
  * @param options - Optional name format options.
  * @returns The formatted name string.
  */
-export function formatHumanName(name: HumanName, options?: HumanNameFormatOptions): string {
+export function formatHumanName(name: HumanName | undefined, options?: HumanNameFormatOptions): string {
+  if (!name) {
+    return '';
+  }
+
   const builder = [];
 
   if (name.prefix && options?.prefix !== false) {
