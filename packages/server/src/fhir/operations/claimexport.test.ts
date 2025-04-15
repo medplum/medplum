@@ -1,16 +1,14 @@
-import { Bundle, Claim } from "@medplum/fhirtypes";
+import { Bundle, Claim } from '@medplum/fhirtypes';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 import express from 'express';
 import request from 'supertest';
 
-
 const app = express();
 let accessToken: string;
 
 describe('CMS 1500 PDF Bot', () => {
-
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -22,7 +20,6 @@ describe('CMS 1500 PDF Bot', () => {
   });
 
   test('Fully answered CMS1500 pdf', async () => {
-
     const bundleRes = await request(app)
       .post(`/fhir/R4`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -39,10 +36,10 @@ describe('CMS 1500 PDF Bot', () => {
     expect(searchRes.status).toBe(200);
     expect(searchRes.body.resourceType).toBe('Bundle');
     expect(searchRes.body.entry.length).toBeGreaterThan(0);
-    
+
     const claim = searchRes.body.entry[0].resource as Claim;
     expect(claim.resourceType).toBe('Claim');
-    expect(claim.identifier?.some(id => id.value === 'example-claim-cms1500')).toBe(true);
+    expect(claim.identifier?.some((id) => id.value === 'example-claim-cms1500')).toBe(true);
 
     const response = await request(app)
       .get(`/fhir/R4/Claim/${claim.id}/$export`)
