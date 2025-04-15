@@ -26,7 +26,7 @@
     "@medplum/fhirtypes": "4.0.4",
     "@medplum/react-hooks": "4.0.4",
     "expo": "52.0.44",
-    "expo-status-bar": "2.1.0",
+    "expo-status-bar": "2.2.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.75.4",

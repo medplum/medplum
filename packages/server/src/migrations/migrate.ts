@@ -387,6 +387,7 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: string
       { columns: ['projectId'], indexType: 'btree' },
       { columns: ['_source'], indexType: 'btree' },
       { columns: ['_profile'], indexType: 'gin' },
+      { columns: ['__version'], indexType: 'btree' },
     ],
   };
 
