@@ -1,4 +1,4 @@
-import { BotEvent, createReference, getIdentifier, MedplumClient } from '@medplum/core';
+import { BotEvent, createReference, getIdentifier, getReferenceString, MedplumClient, resolveId } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { createPrivateKey, randomBytes } from 'crypto';
 import { SignJWT } from 'jose';
@@ -45,7 +45,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   // Start the JWT assertion login
   await epic.startJwtAssertionLogin(jwt);
 
-  // Read resource for patient Camila
+  // Read resource for Camila (sandbox patient)
   // TODO: Get patient ID from event.input
   const epicPatientId = 'erXuFYUfucBZaryVksYEcMg3';
   const epicPatient = await epic.readResource('Patient', epicPatientId);
@@ -73,30 +73,92 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   if (epicPatient.generalPractitioner) {
     await Promise.all(
       epicPatient.generalPractitioner.map(async (gp) => {
-        if (gp?.reference) {
-          const [gpResourceType, gpId] = gp.reference.split('/');
-          if (gpResourceType === 'Practitioner' && gpId) {
-            const epicPractitioner = await epic.readResource('Practitioner', gpId);
-            const npiIdentifier = getIdentifier(epicPractitioner, 'http://hl7.org/fhir/sid/us-npi');
-            const medplumPractitioner = await medplum.upsertResource(
-              { ...epicPractitioner, id: undefined },
-              {
-                identifier: npiIdentifier,
-              }
-            );
-            gp.reference = createReference(medplumPractitioner).reference;
-          }
+        if (!gp?.reference) {
+          return;
         }
+
+        const epicPractitioner = await epic.readResource('Practitioner', resolveId(gp) as string);
+        const npiIdentifier = getIdentifier(epicPractitioner, 'http://hl7.org/fhir/sid/us-npi');
+        const medplumPractitioner = await medplum.upsertResource(
+          { ...epicPractitioner, id: undefined },
+          { identifier: npiIdentifier }
+        );
+        gp.reference = getReferenceString(medplumPractitioner);
       })
     );
   }
 
-  const medplumPatient = await medplum.upsertResource(
-    { ...epicPatient, id: undefined },
-    {
-      identifier: epicPatientId,
-    }
+  const medplumPatient = await medplum.upsertResource({ ...epicPatient, id: undefined }, { identifier: epicPatientId });
+
+  // Create resources that relates to the Patient Profile
+  const epicAllergies = await epic.searchResources('AllergyIntolerance', { patient: epicPatientId });
+  await Promise.all(
+    epicAllergies.map(async (allergyIntolerance) => {
+      const code = allergyIntolerance.code?.coding?.[0];
+      if (!code) {
+        return;
+      }
+      await medplum.upsertResource(
+        { ...allergyIntolerance, id: undefined, patient: createReference(medplumPatient) },
+        {
+          patient: getReferenceString(medplumPatient),
+          code: `${code.system}|${code.code}`,
+        }
+      );
+    })
   );
 
+  const epicMedicationRequests = await epic.searchResources('MedicationRequest', { patient: epicPatientId });
+  await Promise.all(
+    epicMedicationRequests.map(async (medicationRequest) => {
+      if (!medicationRequest.medicationReference?.reference) {
+        return;
+      }
+
+      const epicMedication = await epic.readResource(
+        'Medication',
+        resolveId(medicationRequest.medicationReference) as string
+      );
+
+      const medplumMedication = await medplum.upsertResource(
+        { ...epicMedication, id: undefined },
+        { identifier: epicMedication.identifier?.[0].value }
+      );
+      medicationRequest.medicationReference = createReference(medplumMedication);
+
+      if (medicationRequest.requester) {
+        const epicRequester = await epic.readResource('Practitioner', resolveId(medicationRequest.requester) as string);
+        const npiIdentifier = getIdentifier(epicRequester, 'http://hl7.org/fhir/sid/us-npi');
+        const medplumRequester = await medplum.upsertResource(
+          { ...epicRequester, id: undefined },
+          { identifier: npiIdentifier }
+        );
+        medicationRequest.requester = createReference(medplumRequester);
+      }
+
+      if (medicationRequest.recorder) {
+        const epicRecorder = await epic.readResource('Practitioner', resolveId(medicationRequest.recorder) as string);
+        const npiIdentifier = getIdentifier(epicRecorder, 'http://hl7.org/fhir/sid/us-npi');
+        const medplumRecorder = await medplum.upsertResource(
+          { ...epicRecorder, id: undefined },
+          { identifier: npiIdentifier }
+        );
+        medicationRequest.recorder = createReference(medplumRecorder);
+      }
+
+      await medplum.upsertResource(
+        {
+          ...medicationRequest,
+          id: undefined,
+          encounter: undefined, // To simplify the demo
+          subject: createReference(medplumPatient),
+        },
+        {
+          patient: getReferenceString(medplumPatient),
+          identifier: medicationRequest.identifier?.[0].value,
+        }
+      );
+    })
+  );
   return medplumPatient;
 }
