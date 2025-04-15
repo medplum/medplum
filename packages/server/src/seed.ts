@@ -1,4 +1,5 @@
 import { createReference } from '@medplum/core';
+import { RepositoryMode } from '@medplum/fhir-router';
 import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { bcryptHashPassword } from './auth/utils';
 import { r4ProjectId } from './constants';
@@ -7,6 +8,7 @@ import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
+
 export async function seedDatabase(): Promise<void> {
   const systemRepo = getSystemRepo();
 
@@ -15,6 +17,11 @@ export async function seedDatabase(): Promise<void> {
     return;
   }
 
+  // Check if this is the first boot
+  const result = await systemRepo
+    .getDatabaseClient(RepositoryMode.WRITER)
+    .query<{ firstBoot?: boolean }>('SELECT "firstBoot" from "DatabaseMigration"');
+  const firstBoot = result.rows?.[0].firstBoot;
   await systemRepo.withTransaction(async () => {
     await createSuperAdmin(systemRepo);
 
@@ -25,7 +32,7 @@ export async function seedDatabase(): Promise<void> {
 
     globalLogger.info('Building value sets...');
     startTime = Date.now();
-    await rebuildR4ValueSets(systemRepo);
+    await rebuildR4ValueSets(systemRepo, firstBoot);
     globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
 
     globalLogger.info('Building search parameters...');

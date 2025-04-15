@@ -1,5 +1,7 @@
+import { WithId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { Pool, PoolClient } from 'pg';
 import { r4ProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { Repository } from '../fhir/repo';
@@ -22,23 +24,47 @@ async function createStructureDefinitionsForBundle(
   systemRepo: Repository,
   structureDefinitions: Bundle
 ): Promise<void> {
+  const sds: WithId<StructureDefinition>[] = [];
   for (const entry of structureDefinitions.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
 
     if (resource.resourceType === 'StructureDefinition' && resource.name) {
       globalLogger.debug('StructureDefinition: ' + resource.name);
-      const result = await systemRepo.createResource<StructureDefinition>({
+      const structureDefinition = {
         ...resource,
         meta: {
           ...resource.meta,
           project: r4ProjectId,
-          lastUpdated: undefined,
-          versionId: undefined,
+          lastUpdated: new Date().toISOString(),
+          versionId: systemRepo.generateId(),
+          author: {
+            reference: 'system',
+          },
         },
         text: undefined,
         differential: undefined,
-      });
-      globalLogger.debug('Created: ' + result.id);
+        id: systemRepo.generateId(),
+      };
+      globalLogger.debug('Created: ' + structureDefinition.id);
     }
+  }
+
+  // Get a client
+  const clientOrPool = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+  let needToClose = false;
+  let dbClient: PoolClient;
+
+  if (clientOrPool instanceof Pool) {
+    dbClient = await clientOrPool.connect();
+    needToClose = true;
+  } else {
+    dbClient = clientOrPool;
+  }
+
+  // Write StructureDefinitions
+  await systemRepo.reindexResources(dbClient, sds);
+
+  if (needToClose) {
+    dbClient.release(true);
   }
 }

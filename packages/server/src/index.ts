@@ -30,6 +30,7 @@ export async function main(configName: string): Promise<void> {
   });
 
   globalLogger.info('Starting Medplum Server...', { configName });
+  const startTimeMs = Date.now();
 
   const config = await loadConfig(configName);
 
@@ -51,6 +52,9 @@ export async function main(configName: string): Promise<void> {
       globalLogger.info('Shutdown complete');
     },
   });
+
+  const durationMs = Date.now() - startTimeMs;
+  globalLogger.info('Startup complete', { durationMs });
 }
 
 if (require.main === module) {
