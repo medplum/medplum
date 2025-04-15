@@ -10,7 +10,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
     throw new Error('Missing EPIC_CLIENT_ID');
   }
 
-  // Replace \n with actual newlines is needed to properly parse key stored in secrets
+  // Handles unknown issue with newlines in private key
   const privateKeyString = event.secrets['EPIC_PRIVATE_KEY']?.valueString?.replace(/\\n/g, '\n');
   if (!privateKeyString) {
     throw new Error('Missing EPIC_PRIVATE_KEY');
