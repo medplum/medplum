@@ -46,8 +46,6 @@ export const operation: OperationDefinition = {
  */
 export async function claimExportHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
-  
-  // Get the claim ID from the request URL
   const claimId = req.params.id;
   if (!claimId) {
     return [badRequest('Claim ID is required')];
