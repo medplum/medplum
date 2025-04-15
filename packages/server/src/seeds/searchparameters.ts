@@ -27,6 +27,9 @@ export async function rebuildR4SearchParameters(systemRepo: Repository): Promise
           project: r4ProjectId,
           lastUpdated: new Date().toISOString(),
           versionId: systemRepo.generateId(),
+          author: {
+            reference: 'system',
+          },
         },
         text: undefined,
         id: systemRepo.generateId(),

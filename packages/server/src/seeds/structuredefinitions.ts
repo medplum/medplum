@@ -24,13 +24,13 @@ async function createStructureDefinitionsForBundle(
   systemRepo: Repository,
   structureDefinitions: Bundle
 ): Promise<void> {
-  const sds: WithId<StructureDefinition>[] = [];
+  const structureDefs: WithId<StructureDefinition>[] = [];
   for (const entry of structureDefinitions.entry as BundleEntry[]) {
     const resource = entry.resource as Resource;
 
     if (resource.resourceType === 'StructureDefinition' && resource.name) {
       globalLogger.debug('StructureDefinition: ' + resource.name);
-      const structureDefinition = {
+      const cleanStructureDef = {
         ...resource,
         meta: {
           ...resource.meta,
@@ -45,7 +45,7 @@ async function createStructureDefinitionsForBundle(
         differential: undefined,
         id: systemRepo.generateId(),
       };
-      globalLogger.debug('Created: ' + structureDefinition.id);
+      globalLogger.debug('Created: ' + cleanStructureDef.id);
     }
   }
 
@@ -62,7 +62,7 @@ async function createStructureDefinitionsForBundle(
   }
 
   // Write StructureDefinitions
-  await systemRepo.reindexResources(dbClient, sds);
+  await systemRepo.reindexResources(dbClient, structureDefs);
 
   if (needToClose) {
     dbClient.release(true);
