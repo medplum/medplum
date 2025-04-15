@@ -95,6 +95,12 @@
       "id": "",
       "source": "src/billing-bots/cms-1500-pdf.ts",
       "dist": "dist/billing-bots/cms-1500-pdf.js"
+    },
+    {
+      "name": "epic-query-patient",
+      "id": "",
+      "source": "src/epic/epic-query-patient.ts",
+      "dist": "dist/epic/epic-query-patient.js"
     }
   ]
 }
