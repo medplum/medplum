@@ -50,6 +50,7 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { claimExportHandler } from './operations/claimexport';
 
 export const fhirRouter = Router();
 
@@ -236,6 +237,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
+
+  // Claim $export operation
+  router.add('GET', '/Claim/:id/$export', claimExportHandler);
 
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);

@@ -5,6 +5,7 @@ import { initTestAuth } from '../../test.setup';
 import express from 'express';
 import request from 'supertest';
 
+
 const app = express();
 let accessToken: string;
 
@@ -21,7 +22,7 @@ describe('CMS 1500 PDF Bot', () => {
   });
 
   test('Fully answered CMS1500 pdf', async () => {
-    // Execute the bundle to create related resources
+
     const bundleRes = await request(app)
       .post(`/fhir/R4`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -31,7 +32,6 @@ describe('CMS 1500 PDF Bot', () => {
     expect(bundleRes.body.resourceType).toBe('Bundle');
     expect(bundleRes.body.type).toBe('transaction-response');
 
-    // Search for the claim with the specific identifier
     const searchRes = await request(app)
       .get(`/fhir/R4/Claim?identifier=example-claim-cms1500`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -48,6 +48,7 @@ describe('CMS 1500 PDF Bot', () => {
       .get(`/fhir/R4/Claim/${claim.id}/$export`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', 'application/fhir+json');
+
     expect(response).toBeDefined();
     expect(response.status).toBe(200);
     expect(response.body.resourceType).toBe('Binary');

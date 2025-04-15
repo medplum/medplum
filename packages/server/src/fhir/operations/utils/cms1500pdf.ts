@@ -65,7 +65,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
   const docDefinition: TDocumentDefinitions = {
     content: [
       {
-        image: imageToBase64('./cms1500.png'),
+        image: 'data:image/png;base64,' + imageToBase64(__dirname + '/cms1500.png'),
         absolutePosition: { x: 0, y: 0 },
         width: 612,
         height: 792,

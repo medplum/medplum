@@ -2,8 +2,9 @@ import { allOk, badRequest } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Claim, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { createPdf } from './utils/pdf';
-import { getClaimPDFDocDefinition } from './utils/claimcms1500pdf';
+import { createPdf } from '../../pdf/pdf';
+import { getClaimPDFDocDefinition } from './utils/cms1500pdf';
+
 /**
  * Operation definition for the Claim $export operation.
  * This operation exports a claim as a PDF document.
@@ -53,24 +54,16 @@ export async function claimExportHandler(req: FhirRequest): Promise<FhirResponse
   }
 
   try {
-    // Read the claim
     const claim = await repo.readResource<Claim>('Claim', claimId);
-    
-    // Generate the PDF document definition
     const docDefinition = await getClaimPDFDocDefinition(claim);
-    
-    // Create the PDF binary
     const pdfBuffer = await createPdf(docDefinition);
     const binary: Binary = {
       resourceType: 'Binary',
       contentType: 'application/pdf',
       data: pdfBuffer.toString('base64'),
     };
-    
-    // Return the Binary resource directly
     return [allOk, binary];
   } catch (error) {
-    console.error('Error exporting claim:', error);
     return [badRequest(`Error exporting claim: ${(error as Error).message}`)];
   }
 }
