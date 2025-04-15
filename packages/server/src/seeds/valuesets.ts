@@ -1,10 +1,9 @@
 import { Operator, WithId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { RepositoryMode } from '@medplum/fhir-router';
 import { Bundle, BundleEntry, CodeSystem, Resource, ValueSet } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
 import { r4ProjectId } from '../constants';
 import { Repository } from '../fhir/repo';
+import { getDbClientFromRepo } from './utils';
 
 /**
  * Imports all built-in ValueSets and CodeSystems into the database.
@@ -52,8 +51,10 @@ export async function rebuildR4ValueSets(systemRepo: Repository, firstBoot = fal
       }
     }
 
-    await systemRepo.reindexResources(systemRepo.getDatabaseClient(RepositoryMode.WRITER) as PoolClient, codeSystems);
-    await systemRepo.reindexResources(systemRepo.getDatabaseClient(RepositoryMode.WRITER) as PoolClient, valueSets);
+    const [dbClient, cleanupDbClient] = await getDbClientFromRepo(systemRepo);
+    await systemRepo.reindexResources(dbClient, codeSystems);
+    await systemRepo.reindexResources(dbClient, valueSets);
+    cleanupDbClient();
   }
 }
 

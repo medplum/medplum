@@ -1,11 +1,11 @@
 import { WithId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { Pool, PoolClient } from 'pg';
 import { r4ProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
+import { getDbClientFromRepo } from './utils';
 
 /**
  * Creates all StructureDefinition resources.
@@ -49,22 +49,7 @@ async function createStructureDefinitionsForBundle(
     }
   }
 
-  // Get a client
-  const clientOrPool = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
-  let needToClose = false;
-  let dbClient: PoolClient;
-
-  if (clientOrPool instanceof Pool) {
-    dbClient = await clientOrPool.connect();
-    needToClose = true;
-  } else {
-    dbClient = clientOrPool;
-  }
-
-  // Write StructureDefinitions
+  const [dbClient, cleanupDbClient] = await getDbClientFromRepo(systemRepo);
   await systemRepo.reindexResources(dbClient, structureDefs);
-
-  if (needToClose) {
-    dbClient.release(true);
-  }
+  cleanupDbClient();
 }
