@@ -7,16 +7,16 @@ describe('createPdf', () => {
       content: [
         {
           text: 'Test Document',
-          style: 'header'
+          style: 'header',
         },
         {
-          text: 'This is a paragraph of text.'
-        }
-      ]
+          text: 'This is a paragraph of text.',
+        },
+      ],
     };
 
     const pdfBuffer = await createPdf(docDefinition);
-    
+
     expect(pdfBuffer).toBeInstanceOf(Buffer);
     expect(pdfBuffer.length).toBeGreaterThan(0);
     expect(pdfBuffer.toString().substring(0, 5)).toBe('%PDF-'); // Check PDF header
@@ -26,8 +26,8 @@ describe('createPdf', () => {
     // Define custom fonts
     const customFonts = {
       Avenir: {
-        normal: 'fonts/Avenir/Avenir.ttf'
-      }
+        normal: 'fonts/Avenir/Avenir.ttf',
+      },
     };
 
     // Create document definition using custom fonts
@@ -41,9 +41,9 @@ describe('createPdf', () => {
         {
           text: 'Normal text with Avenir',
           font: 'Avenir',
-          fontSize: 12
-        }
-      ]
+          fontSize: 12,
+        },
+      ],
     };
 
     const pdfBuffer = await createPdf(docDefinition, undefined, customFonts);

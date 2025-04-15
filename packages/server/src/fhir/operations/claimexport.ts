@@ -21,26 +21,26 @@ export const operation: OperationDefinition = {
   type: false,
   instance: true,
   parameter: [
-    { 
-      use: 'out', 
-      name: 'return', 
-      type: 'Binary', 
-      min: 1, 
+    {
+      use: 'out',
+      name: 'return',
+      type: 'Binary',
+      min: 1,
       max: '1',
-      documentation: 'A Binary resource containing the PDF document'
-    }
+      documentation: 'A Binary resource containing the PDF document',
+    },
   ],
 };
 
 /**
  * Handles HTTP requests for the Claim $export operation.
- * 
+ *
  * Reads the claim and generates a PDF document based on its contents.
  * Returns a Binary resource containing the PDF document directly.
- * 
+ *
  * Endpoint:
  * [fhir base]/Claim/{id}/$export
- * 
+ *
  * @param req - The FHIR request.
  * @returns The FHIR response with a Binary resource containing the PDF.
  */

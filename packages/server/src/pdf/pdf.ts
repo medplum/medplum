@@ -3,7 +3,7 @@ import PdfPrinter from 'pdfmake';
 
 /**
  * Generates a PDF buffer from a document definition.
- * 
+ *
  * @param docDefinition - The PDF document definition.
  * @param tableLayouts - Optional custom table layouts.
  * @param fonts - Optional custom fonts (uses default fonts if not provided).
@@ -15,14 +15,13 @@ export function createPdf(
   fonts?: TFontDictionary
 ): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-
     const defaultFonts = {
       Roboto: {
         normal: 'fonts/Roboto/Roboto-Regular.ttf',
-        bold: 'fonts/Roboto/Roboto-Medium.ttf', 
+        bold: 'fonts/Roboto/Roboto-Medium.ttf',
         italics: 'fonts/Roboto/Roboto-Italic.ttf',
-        bolditalics: 'fonts/Roboto/Roboto-MediumItalic.ttf'
-      }
+        bolditalics: 'fonts/Roboto/Roboto-MediumItalic.ttf',
+      },
     };
 
     const printer = new PdfPrinter(fonts || defaultFonts);

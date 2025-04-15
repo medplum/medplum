@@ -37,8 +37,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
   const insured = coverage.subscriber ? await repo.readReference(coverage.subscriber) : undefined;
   const insurer = await repo.readReference(coverage.payor[0]);
   const provider = await repo.readReference(claim.provider);
-  const otherCoverage =
-    claim.insurance.length > 1 ? await repo.readReference(claim.insurance[1].coverage) : undefined;
+  const otherCoverage = claim.insurance.length > 1 ? await repo.readReference(claim.insurance[1].coverage) : undefined;
   const otherInsured = otherCoverage?.subscriber ? await repo.readReference(otherCoverage.subscriber) : undefined;
   const referralRequest = claim.referral ? await repo.readReference(claim.referral) : undefined;
   const referrer = referralRequest?.requester ? await repo.readReference(referralRequest.requester) : undefined;
@@ -97,7 +96,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
       ...getSignatureContent(),
     ],
   };
-  
+
   return docDefinition;
 }
 
@@ -111,7 +110,6 @@ function imageToBase64(imagePath: string): string {
     throw new Error('Failed to convert image to base64: ' + (error as Error).message);
   }
 }
-
 
 /**
  * PDF content helper functions.
