@@ -304,22 +304,27 @@ export const EncounterChart = (): JSX.Element => {
               </Text>
               <Card withBorder shadow="sm" p="md">
                 <Stack gap="md">
-                  
-                  {coverage?.status === 'active' && (
-                    <Group gap={4}>
-                      <IconCircleCheck size={16} className={classes.checkmark} />
-                      <Text className={classes.active} fw={500} size="md">Active</Text>
-                    </Group>
-                  )}
-
                   {organization ? (
                     <>
+                      {coverage?.status === 'active' && (
+                        <Group gap={4}>
+                          <IconCircleCheck size={16} className={classes.checkmark} />
+                          <Text className={classes.active} fw={500} size="md">
+                            Active
+                          </Text>
+                        </Group>
+                      )}
+
                       <Stack gap={0}>
-                        <Text fw={600} size="lg">{organization.name}</Text>
+                        <Text fw={600} size="lg">
+                          {organization.name}
+                        </Text>
                         {coverage && (
                           <>
                             {coverage.class?.map((coverageClass, index) => (
-                              <Text key={index} size="md">{coverageClass.name || 'Not specified'}</Text>
+                              <Text key={index} size="md">
+                                {coverageClass.name || 'Not specified'}
+                              </Text>
                             )) || <Text size="md">Not specified</Text>}
                           </>
                         )}
@@ -359,7 +364,14 @@ export const EncounterChart = (): JSX.Element => {
                 </Stack>
 
                 {coverage && (
-                  <Button variant="outline" fullWidth mt="md" component="a" href={`/Coverage/${coverage.id}`} target="_blank">
+                  <Button
+                    variant="outline"
+                    fullWidth
+                    mt="md"
+                    component="a"
+                    href={`/Coverage/${coverage.id}`}
+                    target="_blank"
+                  >
                     View Insurance Information
                   </Button>
                 )}
