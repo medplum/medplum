@@ -7,7 +7,7 @@ Allergies are recorded via [`AllergyIntolerance`](/docs/api/fhir/resources/aller
 | `clinicalStatus`           | The status of the allergy. Allergies may become inactive or re-activate over time.                     |
 | `verificationStatus`       | Whether the allergy has been confirmed by the clinician.                                               |
 | `category`                 | Whether the allergy is food, medication, environmental, or biologic.                                   |
-| `code`                     | The code, along with the code system. In the US, this is commonly SNOMED.                              |
+| `code`                     | The code, along with the code system. In the US, this is commonly RxNorm (medications) or SNOMED (food + environment).                              |
 | `patient`                  | Patient who has this allergy.                                                                          |
 | `encounter`                | The Encounter where this allergy was discussed.                                                        |
 | `recorder`                 | Who recorded this allergy.                                                                             |
