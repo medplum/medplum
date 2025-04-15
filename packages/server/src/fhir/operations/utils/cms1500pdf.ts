@@ -1,4 +1,4 @@
-import { formatAddress, formatCodeableConcept, formatMoney, formatQuantity, getDisplayString } from '@medplum/core';
+import { formatAddress, formatCodeableConcept, formatMoney, formatQuantity, getDisplayString, HTTP_HL7_ORG } from '@medplum/core';
 import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
@@ -64,7 +64,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
 
   const diagnosis = (claim.diagnosis ?? [])
     .map(
-      (d) => d.diagnosisCodeableConcept?.coding?.find((code) => code.system === 'http://hl7.org/fhir/sid/icd-10')?.code
+      (d) => d.diagnosisCodeableConcept?.coding?.find((code) => code.system === `${HTTP_HL7_ORG}/fhir/sid/icd-10`)?.code
     )
     .filter(Boolean) as string[];
 
@@ -200,7 +200,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
       createText(referrer ? getDisplayString(referrer) : '', 43, 423),
 
       // 17b. NPI number
-      createText(referrer?.identifier?.find((id) => id.system === 'http://hl7.org/fhir/sid/us-npi')?.value, 247, 423),
+      createText(referrer?.identifier?.find((id) => id.system === `${HTTP_HL7_ORG}/fhir/sid/us-npi`)?.value, 247, 423),
 
       // 18. Hospitalization dates related to current services
       createDate(hospitalization?.timingPeriod?.start, 404, 423),
@@ -292,7 +292,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
       ),
 
       // 33a. Billing provider NPI number
-      createText(provider?.identifier?.find((i) => i.system === 'http://hl7.org/fhir/sid/us-npi')?.value, 380, 745),
+      createText(provider?.identifier?.find((i) => i.system === `${HTTP_HL7_ORG}/fhir/sid/us-npi`)?.value, 380, 745),
     ]
       .flat()
       .filter(Boolean) as Content[],
