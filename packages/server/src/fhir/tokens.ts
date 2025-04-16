@@ -9,11 +9,61 @@ import {
   TypedValue,
 } from '@medplum/core';
 import { CodeableConcept, Coding, ContactPoint, Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { heartbeat } from '../heartbeat';
+import { globalLogger } from '../logger';
+import { getRedis } from '../redis';
 
+export const DefaultReadFromTokenColumns = false;
 export const TokenColumnsFeature: { write: boolean; read: false | 'unified-tokens-column' | 'column-per-code' } = {
   write: true,
-  read: false,
+  read: DefaultReadFromTokenColumns,
 };
+
+let readFromTokenColumnsHeartbeatListener: (() => Promise<void>) | undefined;
+
+const READ_FROM_TOKEN_COLUMNS_FEATURE_KEY = 'medplum:features:readFromTokenColumns';
+
+export async function getReadFromTokenColumnsFeature(): Promise<
+  false | 'unified-tokens-column' | 'column-per-code' | undefined
+> {
+  const enabled = (await getRedis().get(READ_FROM_TOKEN_COLUMNS_FEATURE_KEY)) ?? undefined;
+  if (enabled === 'false') {
+    return false;
+  } else if (enabled === 'unified-tokens-column' || enabled === 'column-per-code') {
+    return enabled;
+  }
+  return undefined;
+}
+
+export async function setReadFromTokenColumnsFeature(
+  value: false | 'unified-tokens-column' | 'column-per-code'
+): Promise<void> {
+  await getRedis().set(READ_FROM_TOKEN_COLUMNS_FEATURE_KEY, value.toString());
+}
+
+export function initReadFromTokenColumnsHeartbeat(): void {
+  if (readFromTokenColumnsHeartbeatListener) {
+    return;
+  }
+  readFromTokenColumnsHeartbeatListener = async () => {
+    const newValue = await getReadFromTokenColumnsFeature();
+    if (newValue !== undefined && TokenColumnsFeature.read !== newValue) {
+      globalLogger.info('Updating value of TokenColumnsFeature.read', {
+        newValue,
+        prevValue: TokenColumnsFeature.read,
+      });
+      TokenColumnsFeature.read = newValue;
+    }
+  };
+  heartbeat.addEventListener('heartbeat', readFromTokenColumnsHeartbeatListener);
+}
+
+export function cleanupReadFromTokenColumnsHeartbeat(): void {
+  if (readFromTokenColumnsHeartbeatListener) {
+    heartbeat.removeEventListener('heartbeat', readFromTokenColumnsHeartbeatListener);
+    readFromTokenColumnsHeartbeatListener = undefined;
+  }
+}
 
 export interface Token {
   readonly code: string;

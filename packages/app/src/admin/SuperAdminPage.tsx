@@ -22,17 +22,19 @@ import {
   FormSection,
   MedplumLink,
   OperationOutcomeAlert,
+  SubmitButton,
   convertLocalToIso,
   useMedplum,
 } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
-import { JSX, ReactNode, useState } from 'react';
+import { JSX, ReactNode, useEffect, useState } from 'react';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
   const [opened, { open, close }] = useDisclosure(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<ReactNode | undefined>();
+  const [refresh, setRefresh] = useState(0);
 
   if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
     return <OperationOutcomeAlert outcome={forbidden} />;
@@ -133,6 +135,23 @@ export function SuperAdminPage(): JSX.Element {
 
   function reconcileSchemaDiff(): void {
     startAsyncJob(medplum, 'Reconcile Schema Diff', 'admin/super/reconcile-db-schema-drift');
+  }
+
+  function setReadFromTokenColumns(formData: Record<string, string>): Promise<void> {
+    if (!['true', 'false'].includes(formData.newValue)) {
+      showNotification({ color: 'red', message: 'Missing new value', autoClose: false });
+      return Promise.reject(new Error('Missing new value'));
+    }
+    return medplum
+      .post('admin/super/setreadfromtokencolumns', { newValue: formData.newValue === 'true' })
+      .then(() => {
+        setRefresh((prev) => prev + 1);
+        showNotification({ color: 'green', message: 'Done' });
+      })
+      .catch((err) => {
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+        return Promise.reject(err);
+      });
   }
 
   return (
@@ -283,11 +302,44 @@ export function SuperAdminPage(): JSX.Element {
           <Button type="submit">Reload Cron Resources</Button>
         </Stack>
       </Form>
+      <Divider my="lg" />
+      <Title order={2}>Toggle Read From Token Columns</Title>
+      <p>Enables or disables the use of token columns for search parameters.</p>
+      <CurrentReadFromTokenColumns medplum={medplum} key={refresh} />
+      <Form onSubmit={setReadFromTokenColumns}>
+        <Stack>
+          <FormSection title="New Value" htmlFor="newValue">
+            <NativeSelect id="newValue" name="newValue" data={['token-table', 'column-per-code']} />
+          </FormSection>
+          <SubmitButton>Toggle Read From Token Columns</SubmitButton>
+        </Stack>
+      </Form>
 
       <Modal opened={opened} onClose={close} title={modalTitle} centered size="auto">
         {modalContent}
       </Modal>
     </Document>
+  );
+}
+
+function CurrentReadFromTokenColumns({ medplum }: { medplum: MedplumClient }): JSX.Element {
+  const [defaultValue, setDefaultValue] = useState<boolean | undefined>(undefined);
+  const [redisValue, setRedisValue] = useState<boolean | undefined>(undefined);
+  useEffect(() => {
+    medplum
+      .get('admin/super/getreadfromtokencolumns', { cache: 'no-cache' })
+      .then((params: Parameters) => {
+        console.log(params);
+        setDefaultValue(params.parameter?.find((p) => p.name === 'defaultValue')?.valueBoolean);
+        setRedisValue(params.parameter?.find((p) => p.name === 'redisValue')?.valueBoolean);
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }, [medplum]);
+  return (
+    <>
+      <p>Default Value: {defaultValue === undefined ? 'n/a' : defaultValue.toString()}</p>
+      <p>Value in Redis: {redisValue === undefined ? 'n/a' : redisValue.toString()}</p>
+    </>
   );
 }
 

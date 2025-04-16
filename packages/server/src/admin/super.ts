@@ -22,6 +22,11 @@ import { DatabaseMode, getDatabasePool, maybeStartPostDeployMigration } from '..
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo, Repository } from '../fhir/repo';
+import {
+  DefaultReadFromTokenColumns,
+  getReadFromTokenColumnsFeature,
+  setReadFromTokenColumnsFeature,
+} from '../fhir/tokens';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { generateMigrationActions } from '../migrations/migrate';
@@ -494,6 +499,50 @@ superAdminRouter.post(
         parameter: [{ name: 'outcome', resource: allOk }],
       };
     });
+  })
+);
+
+superAdminRouter.get(
+  '/getreadfromtokencolumns',
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const params = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'defaultValue', valueBoolean: DefaultReadFromTokenColumns },
+        { name: 'redisValue', valueBoolean: await getReadFromTokenColumnsFeature() },
+      ],
+    };
+    res.json(params);
+  })
+);
+
+superAdminRouter.post(
+  '/setreadfromtokencolumns',
+
+  [
+    body('newValue')
+      .isIn(['token-table', 'column-per-code'])
+      .withMessage('newValue must be "token-table" or "column-per-code"'),
+  ],
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    let newValue: false | 'column-per-code';
+    if (req.body.newValue === 'token-table') {
+      newValue = false;
+    } else {
+      newValue = req.body.newValue;
+    }
+    await setReadFromTokenColumnsFeature(newValue);
+    sendOutcome(res, allOk);
   })
 );
 
