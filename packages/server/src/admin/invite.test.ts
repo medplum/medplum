@@ -816,7 +816,7 @@ describe('Admin Invite', () => {
         firstName: 'Bob',
         lastName: 'Jones',
         email: bobEmail,
-        scope: 'system',
+        scope: 'server',
       });
 
     expect(res.status).toBe(200);

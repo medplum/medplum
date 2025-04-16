@@ -24,7 +24,7 @@ export function InvitePage(): JSX.Element {
         sendEmail: formData.sendEmail === 'on',
         accessPolicy,
         admin: formData.isAdmin === 'on',
-        scope: formData.isProjectScoped === 'on' ? 'project' : 'system',
+        scope: formData.isProjectScoped === 'on' ? 'project' : 'server',
       };
       medplum
         .invite(project?.id as string, body as InviteRequest)

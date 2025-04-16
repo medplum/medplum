@@ -5,6 +5,15 @@ tags: [auth]
 
 # Project vs Server Scoped Users
 
+
+### Server Scoped Users
+
+Server scoped [`Users`](/docs/api/fhir/medplum/user) can be used across multiple projects across the Medplum Server. Server scoped Users should be used for **developers and administrators** that need to interact with multiple projects (e.g. staging and production). By default, Practitioners are scoped to `server`.
+
+### Project Scoped Users
+
+Project scoped [`Users`](/docs/api/fhir/medplum/user) exist inside a single [`Project`](/docs/api/fhir/medplum/project). Project scoped Users should be used for **real practicing clinicians and patients** that will primarily interact with a single production project. By default, Patients are scoped to `project`. If you want to include a project scoped User in multiple projects, you will need to invite them to each [`Project`](/docs/api/fhir/medplum/project) separately. 
+
 You can specify the scope of a [User](/docs/api/fhir/medplum/user) by adding the `scope` parameter to the [Invite User](/docs/api/project-admin/invite) endpoint.
 
 ```ts
@@ -16,12 +25,7 @@ const response = await medplum.post('/admin/projects/:projectId/invite', {
   scope: 'project' // or 'server'
 })
 ```
- **Server Scoped Users** - Used for developers and administrators that need to interact with multiple projects (e.g. staging and production).
-
- **Project Scoped Users** - Used for real practicing clinicians and patients that will only interact with your single production project. By default, the server scopes all Patient [`Users`](https://www.medplum.com/docs/api/fhir/medplum/user) to the project.
-
-
-```mermaid
+```mermaid  
 flowchart TD
     subgraph MedplumServer["<div style='font-size:25px; font-weight:bold;'>Medplum Server</div>"]
         %% Server‑Scoped User
