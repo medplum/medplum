@@ -498,7 +498,7 @@ export interface InviteRequest {
   lastName: string;
   email?: string;
   externalId?: string;
-  scope?: 'project' | 'system';
+  scope?: 'project' | 'server';
   password?: string;
   sendEmail?: boolean;
   membership?: Partial<ProjectMembership>;
