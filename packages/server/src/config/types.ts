@@ -62,8 +62,11 @@ export interface MedplumServerConfig {
     | 'graphql-introspection'
     | 'websocket-subscriptions'
   )[];
+  /** Number of HTTP requests per minute users can make by default; overridable by Project settings */
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
+  /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
+  defaultFhirInteractionLimit?: number;
 
   /** Max length of Bot AuditEvent.outcomeDesc when creating a FHIR Resource */
   maxBotLogLengthForResource?: number;
