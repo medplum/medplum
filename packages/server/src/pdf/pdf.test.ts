@@ -34,13 +34,13 @@ describe('createPdf', () => {
     const docDefinition: TDocumentDefinitions = {
       content: [
         {
-          text: 'Heading with Avenir',
-          font: 'Avenir',
+          text: 'Heading',
+          font: 'Helvetica',
           fontSize: 18,
         },
         {
-          text: 'Normal text with Avenir',
-          font: 'Avenir',
+          text: 'Normal text',
+          font: 'Helvetica',
           fontSize: 12,
         },
       ],
