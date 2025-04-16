@@ -4,6 +4,7 @@ import { allOk } from '@medplum/core';
 import { Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import { getDefaultNormalizer } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
@@ -134,6 +135,31 @@ describe('SuperAdminPage', () => {
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  test('Invalid indexes', async () => {
+    setup();
+
+    const expectString = 'Some__column_idx:\n  [is_valid: false]';
+    medplum.router.add('POST', '$db-invalid-indexes', async () => {
+      return [
+        allOk,
+        {
+          resourceType: 'Parameters',
+          parameter: [{ name: 'invalidIndex', valueString: expectString }],
+        },
+      ];
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Get Database Invalid Indexes' }));
+    });
+
+    expect(
+      await screen.findByText(expectString, {
+        normalizer: getDefaultNormalizer({ collapseWhitespace: false }),
+      })
+    ).toBeInTheDocument();
   });
 
   test('Database Stats', async () => {
