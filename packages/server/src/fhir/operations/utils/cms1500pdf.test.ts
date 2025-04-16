@@ -1,8 +1,7 @@
-import { HumanName } from "@medplum/fhirtypes";
-import { formatHumanName, getSimplePhone } from "./cms1500pdf";
+import { HumanName } from '@medplum/fhirtypes';
+import { formatHumanName, getSimplePhone } from './cms1500pdf';
 
 describe('CMS 1500 PDF Utils', () => {
-
   test('formats full name with middle name', () => {
     const name: HumanName = {
       family: 'Smith',
@@ -74,7 +73,6 @@ describe('CMS 1500 PDF Utils', () => {
     expect(getSimplePhone('')).toBeUndefined();
   });
 
-
   test('removes tel: prefix from the beginning of phone numbers', () => {
     expect(getSimplePhone('tel:1234567890')).toBe('234567890');
   });
@@ -86,5 +84,4 @@ describe('CMS 1500 PDF Utils', () => {
   test('removes standalone 1 prefix from the beginning of phone numbers', () => {
     expect(getSimplePhone('11234567890')).toBe('1234567890');
   });
-
 });
