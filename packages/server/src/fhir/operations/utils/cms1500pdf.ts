@@ -340,7 +340,7 @@ function createDate(date: string | undefined, x: number, y: number): (Content | 
   ];
 }
 
-function getSimplePhone(phone: string | undefined): string | undefined {
+export function getSimplePhone(phone: string | undefined): string | undefined {
   if (!phone) {
     return undefined;
   }
