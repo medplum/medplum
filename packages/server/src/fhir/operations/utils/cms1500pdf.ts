@@ -1,4 +1,11 @@
-import { formatAddress, formatCodeableConcept, formatMoney, formatQuantity, getDisplayString, HTTP_HL7_ORG } from '@medplum/core';
+import {
+  formatAddress,
+  formatCodeableConcept,
+  formatMoney,
+  formatQuantity,
+  getDisplayString,
+  HTTP_HL7_ORG,
+} from '@medplum/core';
 import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
