@@ -23,5 +23,4 @@ describe('createPdf', () => {
     expect(pdfBuffer.length).toBeGreaterThan(0);
     expect(pdfBuffer.toString().substring(0, 5)).toBe('%PDF-'); // Check PDF header
   });
-
 });
