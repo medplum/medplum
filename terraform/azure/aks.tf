@@ -2,24 +2,23 @@ resource "random_id" "prefix" {
   byte_length = 8
 }
 
-resource "azurerm_user_assigned_identity" "aks_identity" {
+resource "azurerm_user_assigned_identity" "aks-identity" {
   location            = var.location
   name                = "${random_id.prefix.hex}-identity"
-  resource_group_name = var.resource_group_name
+  resource_group_name = var.resource-group-name
 }
 
-module "medplum_aks" {
+module "medplum-aks" {
   source  = "Azure/aks/azurerm"
   version = "9.2.0"
 
   prefix                               = "medplum-aks"
-  resource_group_name                  = var.resource_group_name
+  resource_group_name                  = var.resource-group-name
   admin_username                       = null
-  azure_policy_enabled                 = true
   cluster_log_analytics_workspace_name = "medplum-aks"
   cluster_name                         = "medplum-aks"
-  disk_encryption_set_id               = azurerm_disk_encryption_set.des.id
-  identity_ids                         = [azurerm_user_assigned_identity.aks_identity.id]
+  disk_encryption_set_id               = azurerm_disk_encryption_set.des-disk-encryption-set.id
+  identity_ids                         = [azurerm_user_assigned_identity.aks-identity.id]
   identity_type                        = "UserAssigned"
   log_analytics_solution = {
     id = azurerm_log_analytics_solution.main.id
@@ -45,8 +44,8 @@ module "medplum_aks" {
   oidc_issuer_enabled               = true
   workload_identity_enabled         = true
 
-  vnet_subnet_id = azurerm_subnet.medplum_aks_nodes_snet_01.id
-  pod_subnet_id  = azurerm_subnet.medplum_aks_pods_snet_01.id
+  vnet_subnet_id = azurerm_subnet.medplum-aks-nodes-snet-01.id
+  pod_subnet_id  = azurerm_subnet.medplum-aks-pods-snet-01.id
   network_plugin = "azure"
 
   #   KMS etcd encryption
@@ -56,9 +55,10 @@ module "medplum_aks" {
 
   # Connect existing app gateway 
   brown_field_application_gateway_for_ingress = {
-    id        = azurerm_application_gateway.medplum_appgw.id
-    subnet_id = azurerm_subnet.medplum_appgw_subnet.id
+    id        = azurerm_application_gateway.medplum-appgw.id
+    subnet_id = azurerm_subnet.medplum-appgw-subnet.id
   }
+
 
   depends_on = [
     azurerm_resource_group.rg,
@@ -68,12 +68,10 @@ module "medplum_aks" {
 
 }
 
-
-
 resource "azurerm_log_analytics_workspace" "main" {
-  name                = "medplum-log-analytics"
+  name                = "${var.resource-naming-prefix}-log-analytics"
   location            = var.location
-  resource_group_name = var.resource_group_name
+  resource_group_name = var.resource-group-name
   sku                 = "PerGB2018"
   retention_in_days   = 30
 
@@ -88,7 +86,7 @@ resource "azurerm_log_analytics_solution" "main" {
 
   solution_name         = "ContainerInsights"
   location              = var.location
-  resource_group_name   = var.resource_group_name
+  resource_group_name   = var.resource-group-name
   workspace_resource_id = azurerm_log_analytics_workspace.main.id
   workspace_name        = azurerm_log_analytics_workspace.main.name
 
@@ -104,14 +102,14 @@ resource "azurerm_log_analytics_solution" "main" {
   }
 }
 
-# output "managed_identity_id" {
-#   value = azurerm_user_assigned_identity.aks_identity.name
-# }
+output "managed-identity-id" {
+  value = azurerm_user_assigned_identity.aks-identity.name
+}
 
-# output "managed_identity_client_id" {
-#   value = azurerm_user_assigned_identity.aks_identity.client_id
-# }
+output "managed-identity-client-id" {
+  value = azurerm_user_assigned_identity.aks-identity.client_id
+}
 
-output "oidc_issuer_url" {
-  value = module.medplum_aks.oidc_issuer_url
+output "oidc-issuer-url" {
+  value = module.medplum-aks.oidc_issuer_url
 }

@@ -2,7 +2,7 @@ variable "location" {
   default = "eastus"
 }
 
-variable "resource_group_name" {
+variable "resource-group-name" {
   type    = string
   default = null
 }
@@ -12,17 +12,23 @@ variable "tags" {
   default = null
 }
 
-variable "managed_identity_principal_id" {
+variable "managed-identity-principal-id" {
   type    = string
   default = null
 }
 
-variable "app_domain" {
+variable "app-domain" {
   type    = string
   default = null
 }
 
-variable "app_certificate_secret_id" {
+variable "app-certificate-secret-id" {
+  description = "The ID of the Key Vault certificate secret"
+  type        = string
+  default     = null
+}
+
+variable "resource-naming-prefix" {
   type    = string
-  default = null
+  default = "medplum"
 }

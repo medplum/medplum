@@ -1,43 +1,43 @@
-resource "random_id" "db_random_id" {
+resource "random_id" "db-random-id" {
   byte_length = 2
 }
 
 resource "azurerm_private_dns_zone" "db" {
   name                = "db.private.postgres.database.azure.com"
-  resource_group_name = var.resource_group_name
+  resource_group_name = var.resource-group-name
   depends_on = [
     azurerm_resource_group.rg,
   ]
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "db-medplum-vnet" {
-  name                  = "medplum-db"
+  name                  = "${var.resource-naming-prefix}-db"
   private_dns_zone_name = azurerm_private_dns_zone.db.name
-  resource_group_name   = var.resource_group_name
-  virtual_network_id    = azurerm_virtual_network.medplum_vnet.id
+  resource_group_name   = var.resource-group-name
+  virtual_network_id    = azurerm_virtual_network.medplum-vnet.id
 }
 
-resource "random_password" "postgresql_password" {
+resource "random_password" "postgresql-password" {
   length           = 16
   special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
-
+# 
 resource "azurerm_postgresql_flexible_server" "db" {
   auto_grow_enabled             = true
   backup_retention_days         = 30
-  delegated_subnet_id           = azurerm_subnet.medplum_db_snet_01.id
+  delegated_subnet_id           = azurerm_subnet.medplum-db-snet-01.id
   geo_redundant_backup_enabled  = false
   location                      = var.location
   private_dns_zone_id           = azurerm_private_dns_zone.db.id
   public_network_access_enabled = false
-  name                          = "medplum-db-${random_id.db_random_id.hex}"
-  resource_group_name           = var.resource_group_name
+  name                          = "${var.resource-naming-prefix}-db-${random_id.db-random-id.hex}"
+  resource_group_name           = var.resource-group-name
   sku_name                      = "B_Standard_B1ms" # "GP_Standard_D2s_v3"
   storage_mb                    = 32768
   version                       = 15
   administrator_login           = "medplumadmin"
-  administrator_password        = random_password.postgresql_password.result
+  administrator_password        = random_password.postgresql-password.result
   authentication {
     password_auth_enabled         = true
     active_directory_auth_enabled = true
@@ -56,24 +56,24 @@ resource "azurerm_postgresql_flexible_server" "db" {
 
 }
 
-output "postgresql_password" {
-  value     = random_password.postgresql_password.result
+output "postgresql-password" {
+  value     = random_password.postgresql-password.result
   sensitive = true
 }
 
-resource "azurerm_postgresql_flexible_server_configuration" "require_secure_transport" {
+resource "azurerm_postgresql_flexible_server_configuration" "require-secure-transport" {
   name      = "require_secure_transport"
   server_id = azurerm_postgresql_flexible_server.db.id
   value     = "off"
 }
 
-resource "azurerm_postgresql_flexible_server_configuration" "azure_extensions" {
+resource "azurerm_postgresql_flexible_server_configuration" "azure-extensions" {
   name      = "azure.extensions"
   server_id = azurerm_postgresql_flexible_server.db.id
   value     = "pg_stat_statements,btree_gin,pg_trgm"
 }
 
-output "postgresql_dns_record" {
+output "postgresql-dns-record" {
   description = "Custom DNS record (FQDN) for the PostgreSQL server in the private DNS zone"
   value       = format("%s.postgres.database.azure.com", azurerm_postgresql_flexible_server.db.name)
 }
