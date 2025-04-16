@@ -24,7 +24,7 @@ export function createPdf(
       },
     };
 
-    const printer = new PdfPrinter(fonts || defaultFonts);
+    const printer = new PdfPrinter(fonts ?? defaultFonts);
     const pdfDoc = printer.createPdfKitDocument(docDefinition, { tableLayouts });
     const chunks: Uint8Array[] = [];
     pdfDoc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
