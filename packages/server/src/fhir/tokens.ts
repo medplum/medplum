@@ -9,11 +9,52 @@ import {
   TypedValue,
 } from '@medplum/core';
 import { CodeableConcept, Coding, ContactPoint, Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { heartbeat } from '../heartbeat';
+import { globalLogger } from '../logger';
+import { getRedis } from '../redis';
 
+export const DefaultReadFromTokenColumns = false;
 export const TokenColumnsFeature = {
   write: true,
-  read: false,
+  read: DefaultReadFromTokenColumns,
 };
+
+let readFromTokenColumnsHeartbeatListener: (() => Promise<void>) | undefined;
+
+const READ_FROM_TOKEN_COLUMNS_FEATURE_KEY = 'medplum:features:readFromTokenColumns';
+
+export async function getReadFromTokenColumnsFeature(): Promise<boolean | undefined> {
+  const enabled = (await getRedis().get(READ_FROM_TOKEN_COLUMNS_FEATURE_KEY)) ?? undefined;
+  return enabled === undefined ? undefined : enabled === 'true';
+}
+
+export async function setReadFromTokenColumnsFeature(value: boolean): Promise<void> {
+  await getRedis().set(READ_FROM_TOKEN_COLUMNS_FEATURE_KEY, value.toString());
+}
+
+export function initReadFromTokenColumnsHeartbeat(): void {
+  if (readFromTokenColumnsHeartbeatListener) {
+    return;
+  }
+  readFromTokenColumnsHeartbeatListener = async () => {
+    const newValue = await getReadFromTokenColumnsFeature();
+    if (newValue !== undefined && TokenColumnsFeature.read !== newValue) {
+      globalLogger.info('Updating value of TokenColumnsFeature.read', {
+        newValue,
+        prevValue: TokenColumnsFeature.read,
+      });
+      TokenColumnsFeature.read = newValue;
+    }
+  };
+  heartbeat.addEventListener('heartbeat', readFromTokenColumnsHeartbeatListener);
+}
+
+export function cleanupReadFromTokenColumnsHeartbeat(): void {
+  if (readFromTokenColumnsHeartbeatListener) {
+    heartbeat.removeEventListener('heartbeat', readFromTokenColumnsHeartbeatListener);
+    readFromTokenColumnsHeartbeatListener = undefined;
+  }
+}
 
 export interface Token {
   readonly code: string;
