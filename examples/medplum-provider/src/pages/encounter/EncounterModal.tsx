@@ -34,7 +34,7 @@ export const EncounterModal = (): JSX.Element => {
         color: 'yellow',
         icon: <IconAlertSquareRounded />,
         title: 'Error',
-        message: 'Fill up mandatory fields.',
+        message: 'Please fill out required fields.',
       });
       return;
     }

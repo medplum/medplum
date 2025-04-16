@@ -1,5 +1,8 @@
 FROM nginxinc/nginx-unprivileged:alpine
 
+# Start off as user root so we have permissions to run APK and chown
+USER root
+
 # Copy nginx configuration
 COPY <<EOF /etc/nginx/conf.d/default.conf
 server {
@@ -24,8 +27,6 @@ server {
 }
 EOF
 
-USER root
-
 # Copy and extract the app tarball
 ADD ./medplum-app.tar.gz /usr/share/nginx/html
 
@@ -39,7 +40,7 @@ RUN chown -R 101:101 /usr/share/nginx/html && \
 
 EXPOSE 3000
 
-# Switch back to the 101 UID
+# Switch back to the 101 UID (non-root user)
 USER 101
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
