@@ -44,6 +44,7 @@ export * from './ErrorBoundary/ErrorBoundary';
 export * from './FhirPathTable/FhirPathTable';
 export * from './Form/Form';
 export * from './Form/FormUtils';
+export * from './Form/SubmitButton';
 export * from './FormSection/FormSection';
 export * from './HumanNameDisplay/HumanNameDisplay';
 export * from './HumanNameInput/HumanNameInput';
