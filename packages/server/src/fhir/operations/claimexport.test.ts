@@ -52,7 +52,6 @@ describe('CMS 1500 PDF Bot', () => {
     expect(response.body.resourceType).toBe('Media');
     expect(response.body.content.contentType).toBe('application/pdf');
   });
-  
 });
 
 export const fullAnswer: Bundle = {
