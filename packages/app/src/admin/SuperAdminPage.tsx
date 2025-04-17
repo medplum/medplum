@@ -285,7 +285,7 @@ export function SuperAdminPage(): JSX.Element {
         </Stack>
       </Form>
       <Divider my="lg" />
-      <Title order={2}>Toggle Read From Token Columns</Title>
+      <Title order={2}>Set Read From Token Columns</Title>
       <p>Enables or disables the use of token columns for search parameters.</p>
       <CurrentReadFromTokenColumns medplum={medplum} key={refresh} />
       <Form onSubmit={setReadFromTokenColumns}>
@@ -293,7 +293,7 @@ export function SuperAdminPage(): JSX.Element {
           <FormSection title="New Value" htmlFor="newValue">
             <NativeSelect id="newValue" name="newValue" data={['false', 'true']} />
           </FormSection>
-          <SubmitButton>Toggle Read From Token Columns</SubmitButton>
+          <SubmitButton>Set Read From Token Columns</SubmitButton>
         </Stack>
       </Form>
 
@@ -311,7 +311,6 @@ function CurrentReadFromTokenColumns({ medplum }: { medplum: MedplumClient }): J
     medplum
       .get('admin/super/getreadfromtokencolumns', { cache: 'no-cache' })
       .then((params: Parameters) => {
-        console.log(params);
         setDefaultValue(params.parameter?.find((p) => p.name === 'defaultValue')?.valueBoolean);
         setRedisValue(params.parameter?.find((p) => p.name === 'redisValue')?.valueBoolean);
       })
