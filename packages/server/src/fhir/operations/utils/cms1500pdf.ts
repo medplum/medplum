@@ -24,6 +24,8 @@ const insuranceTypes = new Set<string>([
   'OTHER',
 ]);
 
+const CMS_1500_IMG_DATA_URL = 'data:image/png;base64,' + imageToBase64(__dirname + '/cms1500.png');
+
 /**
  * Creates a PDF document definition from a Claim resource.
  * @param claim - The Claim resource.
@@ -104,7 +106,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
     pageMargins: 0,
     content: [
       {
-        image: 'data:image/png;base64,' + imageToBase64(__dirname + '/cms1500.png'),
+        image: CMS_1500_IMG_DATA_URL,
         absolutePosition: { x: 0, y: 0 },
         width: PAGE_WIDTH,
         height: PAGE_HEIGHT,
