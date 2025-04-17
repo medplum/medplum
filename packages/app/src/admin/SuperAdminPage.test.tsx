@@ -11,9 +11,9 @@ import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
-function setup(): void {
+function setup(client?: MockClient): void {
   render(
-    <MedplumProvider medplum={medplum}>
+    <MedplumProvider medplum={client ?? medplum}>
       <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
         <MantineProvider>
           <Notifications />
@@ -268,6 +268,68 @@ describe('SuperAdminPage', () => {
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  test('Get/Set Read from Token Columns', async () => {
+    let redisValue = false;
+
+    const mockFetch = (url: string, options: any): Promise<any> => {
+      let status = 404;
+      let result: any = {};
+
+      if (options.method === 'GET' && url.endsWith('admin/super/getreadfromtokencolumns')) {
+        result = {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'defaultValue', valueBoolean: false },
+            { name: 'redisValue', valueBoolean: redisValue },
+          ],
+        } satisfies Parameters;
+        status = 200;
+      } else if (options.method === 'POST' && url.endsWith('admin/super/setreadfromtokencolumns')) {
+        const { newValue } = JSON.parse(options.body);
+        expect(typeof newValue).toBe('boolean');
+        redisValue = newValue;
+        status = 200;
+      }
+
+      return Promise.resolve({
+        status,
+        ok: status < 400,
+        headers: { get: () => 'application/fhir+json' },
+        json: () => Promise.resolve(result),
+      });
+    };
+
+    const client = new MockClient({ fetch: mockFetch });
+    jest.spyOn(client, 'isSuperAdmin').mockImplementation(() => true);
+    setup(client);
+
+    // Wait for initial values to be displayed
+    expect(await screen.findByText('Default Value: false')).toBeInTheDocument();
+    expect(await screen.findByText('Value in Redis: false')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('New Value'), { target: { value: 'true' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Set Read From Token Columns' }));
+    });
+
+    expect(await screen.findByText('Default Value: false')).toBeInTheDocument();
+    expect(await screen.findByText('Value in Redis: true')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('New Value'), { target: { value: 'false' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Set Read From Token Columns' }));
+    });
+
+    expect(await screen.findByText('Default Value: false')).toBeInTheDocument();
+    expect(await screen.findByText('Value in Redis: false')).toBeInTheDocument();
   });
 
   test('Access denied', async () => {

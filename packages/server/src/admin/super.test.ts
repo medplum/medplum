@@ -9,6 +9,7 @@ import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { AuthenticatedRequestContext } from '../context';
 import { getSystemRepo, Repository } from '../fhir/repo';
+import * as tokensModule from '../fhir/tokens';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { requestContextStore } from '../request-context-store';
@@ -963,6 +964,113 @@ describe('Super Admin routes', () => {
           },
         }
       );
+    });
+  });
+
+  describe.only('Get/Set ReadFromTokenColumns Feature Flag', () => {
+    let getSpy: jest.SpyInstance;
+    let setSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      getSpy = jest.spyOn(tokensModule, 'getReadFromTokenColumnsFeature');
+      setSpy = jest.spyOn(tokensModule, 'setReadFromTokenColumnsFeature');
+    });
+
+    afterEach(() => {
+      getSpy.mockRestore();
+      setSpy.mockRestore();
+    });
+
+    test('GET /getreadfromtokencolumns - success', async () => {
+      getSpy.mockResolvedValue(true);
+
+      const res = await request(app)
+        .get('/admin/super/getreadfromtokencolumns')
+        .set('Authorization', 'Bearer ' + adminAccessToken);
+
+      expect(res.status).toBe(200);
+      expect(res.body.resourceType).toBe('Parameters');
+      expect(res.body.parameter).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'defaultValue', valueBoolean: expect.any(Boolean) }), // Default value might change, just check type
+          expect.objectContaining({ name: 'redisValue', valueBoolean: true }),
+        ])
+      );
+      expect(getSpy).toHaveBeenCalledTimes(1);
+    });
+
+    test('GET /getreadfromtokencolumns - access denied', async () => {
+      const res = await request(app)
+        .get('/admin/super/getreadfromtokencolumns')
+        .set('Authorization', 'Bearer ' + nonAdminAccessToken);
+
+      expect(res.status).toBe(403);
+      expect(getSpy).not.toHaveBeenCalled();
+    });
+
+    test('POST /setreadfromtokencolumns - set to true', async () => {
+      setSpy.mockResolvedValue(undefined);
+
+      const res = await request(app)
+        .post('/admin/super/setreadfromtokencolumns')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .type('json')
+        .send({ newValue: true });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject(allOk);
+      expect(setSpy).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledWith(true);
+    });
+
+    test('POST /setreadfromtokencolumns - set to false', async () => {
+      setSpy.mockResolvedValue(undefined);
+
+      const res = await request(app)
+        .post('/admin/super/setreadfromtokencolumns')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .type('json')
+        .send({ newValue: false });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toMatchObject(allOk);
+      expect(setSpy).toHaveBeenCalledTimes(1);
+      expect(setSpy).toHaveBeenCalledWith(false);
+    });
+
+    test('POST /setreadfromtokencolumns - access denied', async () => {
+      const res = await request(app)
+        .post('/admin/super/setreadfromtokencolumns')
+        .set('Authorization', 'Bearer ' + nonAdminAccessToken)
+        .type('json')
+        .send({ newValue: true });
+
+      expect(res.status).toBe(403);
+      expect(setSpy).not.toHaveBeenCalled();
+    });
+
+    test('POST /setreadfromtokencolumns - invalid body (not boolean)', async () => {
+      const res = await request(app)
+        .post('/admin/super/setreadfromtokencolumns')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .type('json')
+        .send({ newValue: 'false' }); // not a boolean
+
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toContain('newValue must be true or false');
+      expect(setSpy).not.toHaveBeenCalled();
+    });
+
+    test('POST /setreadfromtokencolumns - invalid body (missing newValue)', async () => {
+      const res = await request(app)
+        .post('/admin/super/setreadfromtokencolumns')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .type('json')
+        .send({});
+
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toContain('newValue must be true or false');
+      expect(setSpy).not.toHaveBeenCalled();
     });
   });
 });

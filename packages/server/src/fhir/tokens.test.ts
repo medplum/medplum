@@ -1,4 +1,12 @@
-import { createReference, getReferenceString, getSearchParameter, Operator, SNOMED, WithId } from '@medplum/core';
+import {
+  createReference,
+  getReferenceString,
+  getSearchParameter,
+  Operator,
+  sleep,
+  SNOMED,
+  WithId,
+} from '@medplum/core';
 import {
   Bundle,
   Condition,
@@ -13,6 +21,8 @@ import {
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { heartbeat } from '../heartbeat';
+import * as redisModule from '../redis';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
@@ -20,7 +30,10 @@ import { loadStructureDefinitions } from './structure';
 import { TokenQueryOperators } from './token-column';
 import {
   buildTokensForSearchParameter,
+  cleanupReadFromTokenColumnsHeartbeat,
+  initReadFromTokenColumnsHeartbeat,
   isLegacyTokenColumnSearchParameter,
+  setReadFromTokenColumnsFeature,
   Token,
   TokenColumnsFeature,
 } from './tokens';
@@ -1509,6 +1522,93 @@ describe('buildTokens', () => {
       { code: 'identifier', system: 'http://example.com', value: '123' },
       { code: 'identifier', system: 'http://example.com', value: '456' },
     ]);
+  });
+});
+
+describe('initReadFromTokenColumnsHeartbeat', () => {
+  let getRedisSpy: jest.SpyInstance;
+  let redisGetSpy: jest.SpyInstance;
+  let redisSetSpy: jest.SpyInstance;
+  let redisGetReturnValue: string | null;
+
+  beforeEach(() => {
+    redisGetReturnValue = null;
+
+    redisGetSpy = jest.fn().mockImplementation(() => {
+      console.log('GET', redisGetReturnValue);
+      return Promise.resolve(redisGetReturnValue);
+    });
+
+    redisSetSpy = jest.fn().mockImplementation((_key: string, val: string) => {
+      console.log('SET', val);
+      redisGetReturnValue = val;
+      return Promise.resolve(undefined);
+    });
+
+    getRedisSpy = jest.spyOn(redisModule, 'getRedis');
+    getRedisSpy.mockImplementation(() => {
+      return {
+        get: redisGetSpy,
+        set: redisSetSpy,
+      };
+    });
+  });
+
+  afterEach(() => {
+    cleanupReadFromTokenColumnsHeartbeat();
+
+    redisGetSpy.mockRestore();
+    redisSetSpy.mockRestore();
+    getRedisSpy.mockRestore();
+  });
+
+  test('idempotent', () => {
+    const heartbeatAddListenerSpy = jest.spyOn(heartbeat, 'addEventListener');
+    const heartbeatRemoveListenerSpy = jest.spyOn(heartbeat, 'removeEventListener');
+
+    // Init otel heartbeat
+    initReadFromTokenColumnsHeartbeat();
+    expect(heartbeatAddListenerSpy).toHaveBeenCalled();
+
+    heartbeatAddListenerSpy.mockClear();
+
+    // Call init again, no-op
+    initReadFromTokenColumnsHeartbeat();
+    expect(heartbeatAddListenerSpy).not.toHaveBeenCalled();
+
+    // Cleanup heartbeat
+    cleanupReadFromTokenColumnsHeartbeat();
+    expect(heartbeatRemoveListenerSpy).toHaveBeenCalled();
+
+    heartbeatRemoveListenerSpy.mockClear();
+
+    // Cleanup heartbeat again, no-op
+    cleanupReadFromTokenColumnsHeartbeat();
+    expect(heartbeatRemoveListenerSpy).not.toHaveBeenCalled();
+  });
+
+  test('Heartbeat listener is called after calling initReadFromTokenColumnsHeartbeat', async () => {
+    initReadFromTokenColumnsHeartbeat();
+
+    heartbeat.dispatchEvent({ type: 'heartbeat' });
+    // let async heartbeat listener to run
+    await sleep(0);
+
+    expect(TokenColumnsFeature.read).toBe(false);
+    expect(redisGetSpy).toHaveBeenCalledTimes(1);
+    redisGetSpy.mockClear();
+
+    await setReadFromTokenColumnsFeature(true);
+    expect(redisSetSpy).toHaveBeenCalledTimes(1);
+    redisSetSpy.mockClear();
+
+    heartbeat.dispatchEvent({ type: 'heartbeat' });
+    // let async heartbeat listener to run
+    await sleep(0);
+
+    expect(TokenColumnsFeature.read).toBe(true);
+    expect(redisGetSpy).toHaveBeenCalledTimes(1);
+    redisGetSpy.mockClear();
   });
 });
 
