@@ -7,7 +7,7 @@ import {
   Practitioner,
 } from '@medplum/fhirtypes';
 
-export const medplumPatientWithoutEpicId: Patient = {
+export const medplumPatientWithoutEpicIdentifier: Patient = {
   resourceType: 'Patient',
   identifier: [
     {
