@@ -53,7 +53,6 @@ describe('CMS 1500 PDF Bot', () => {
     expect(response.body.content.contentType).toBe('application/pdf');
   });
 
-
   test('Bad request - missing claim ID', async () => {
     const response = await request(app)
       .get(`/fhir/R4/Claim/$export`)
@@ -75,7 +74,6 @@ describe('CMS 1500 PDF Bot', () => {
     expect(response.body.resourceType).toBe('OperationOutcome');
     expect(response.body.issue[0].severity).toBe('error');
   });
-  
 });
 
 export const fullAnswer: Bundle = {
