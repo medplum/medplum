@@ -1,25 +1,25 @@
 import { MEDPLUM_VERSION } from '@medplum/core';
-import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 // import { AwsLambdaInstrumentation } from '@opentelemetry/instrumentation-aws-lambda';
 // import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 // import { DataloaderInstrumentation } from '@opentelemetry/instrumentation-dataloader';
 // import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
-// import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 // import FsInstrumentation from '@opentelemetry/instrumentation-fs';
 // import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
-// import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
+import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 // import { NetInstrumentation } from '@opentelemetry/instrumentation-net';
-// import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
+import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
 // import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { Resource } from '@opentelemetry/resources';
 import { MetricReader, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { SpanExporter } from '@opentelemetry/sdk-trace-base';
-import { SEMRESATTRS_SERVICE_NAME, SEMRESATTRS_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 
 // This file includes OpenTelemetry instrumentation.
 // Note that this file is related but separate from the OpenTelemetry helpers in otel.ts.
@@ -42,8 +42,8 @@ export function initOpenTelemetry(): void {
 
   const resource = Resource.default().merge(
     new Resource({
-      [SEMRESATTRS_SERVICE_NAME]: 'medplum',
-      [SEMRESATTRS_SERVICE_VERSION]: MEDPLUM_VERSION,
+      [ATTR_SERVICE_NAME]: 'medplum',
+      [ATTR_SERVICE_VERSION]: MEDPLUM_VERSION,
     })
   );
 
@@ -63,13 +63,20 @@ export function initOpenTelemetry(): void {
     // new FsInstrumentation(),
     // new NetInstrumentation(),
     // new DnsInstrumentation(),
-    new HttpInstrumentation(),
+    new HttpInstrumentation({
+      applyCustomAttributesOnSpan(span, req, res) {
+        span.setStatus(
+          res.statusCode && res.statusCode < 400 ? { code: SpanStatusCode.OK } : { code: SpanStatusCode.ERROR }
+        );
+        span.setAttribute('medplum.foo', 'bar');
+      },
+    }),
     // new UndiciInstrumentation(),
 
-    // new PgInstrumentation(),
-    // new IORedisInstrumentation(),
+    new PgInstrumentation(),
+    new IORedisInstrumentation(),
 
-    // new ExpressInstrumentation(),
+    new ExpressInstrumentation(),
     // new GraphQLInstrumentation({
     //   ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
     // }),
