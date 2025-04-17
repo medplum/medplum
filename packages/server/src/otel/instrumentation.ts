@@ -4,7 +4,7 @@ import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 // import { AwsLambdaInstrumentation } from '@opentelemetry/instrumentation-aws-lambda';
 // import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
-// import { DataloaderInstrumentation } from '@opentelemetry/instrumentation-dataloader';
+import { DataloaderInstrumentation } from '@opentelemetry/instrumentation-dataloader';
 // import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 // import FsInstrumentation from '@opentelemetry/instrumentation-fs';
@@ -14,7 +14,7 @@ import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 // import { NetInstrumentation } from '@opentelemetry/instrumentation-net';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
-import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
+// import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { Resource } from '@opentelemetry/resources';
 import { MetricReader, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
@@ -71,7 +71,7 @@ export function initOpenTelemetry(): void {
         span.setAttribute('medplum.foo', 'bar');
       },
     }),
-    new UndiciInstrumentation(),
+    // new UndiciInstrumentation(),
 
     new PgInstrumentation(),
     new IORedisInstrumentation(),
@@ -80,7 +80,7 @@ export function initOpenTelemetry(): void {
     new GraphQLInstrumentation({
       ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
     }),
-    // new DataloaderInstrumentation(),
+    new DataloaderInstrumentation(),
 
     // new AwsInstrumentation(),
     // new AwsLambdaInstrumentation(),
