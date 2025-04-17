@@ -14,7 +14,7 @@ Allergies are recorded via [`AllergyIntolerance`](/docs/api/fhir/resources/aller
 | `asserter`                 | Who reported this allergy (i.e. patient, parent, clinician after reviewing allergy tests, etc.)        |
 
 
-# Recording Unknown Allergy Status vs. No Known Allergies 
+## Recording Allergy Statuses
 
 In healthcare, there is a distinction between unknown allergy status (no recorded allergies for the patient, perhaps because no one had asked), and the patient having confirmed that they have no allergies. 
 
