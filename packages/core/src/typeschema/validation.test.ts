@@ -870,6 +870,23 @@ describe('FHIR resource validation', () => {
     }
   });
 
+  test('Empty object in array element', () => {
+    try {
+      validateResource({
+        resourceType: 'Patient',
+        address: [{}, { use: 'home' }, {}],
+      } as unknown as Patient);
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.length).toBe(2);
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.address[0]');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Patient.address[2]');
+    }
+  });
+
   test('Deep nested null array element', () => {
     try {
       validateResource({
