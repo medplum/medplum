@@ -6,14 +6,11 @@ import {
   Questionnaire,
   Encounter,
   ChargeItem,
-  Claim,
   Coverage,
   Organization,
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router';
-import { showNotification } from '@mantine/notifications';
-import { createReference, deepEquals, getReferenceString } from '@medplum/core';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
@@ -21,10 +18,11 @@ import { usePatient } from '../../hooks/usePatient';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import ChageItemPanel from '../components/ChargeItem/ChageItemPanel';
 import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
-import { useEncounterChart } from '../../hooks/useEncounterChart';
+import { calculateTotalPrice, useEncounterChart } from '../../hooks/useEncounterChart';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './EncounterChart.module.css';
+import { deepEquals, getReferenceString } from '@medplum/core';
 
 export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
@@ -32,7 +30,6 @@ export const EncounterChart = (): JSX.Element => {
   const patient = usePatient();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const [activeTab, setActiveTab] = useState<string>('notes');
-  const [isLoadingEncounter, setIsLoadingEncounter] = useState<boolean>(false);
   const [coverage, setCoverage] = useState<Coverage | undefined>();
   const [organization, setOrganization] = useState<Organization | undefined>();
   const {
@@ -44,7 +41,6 @@ export const EncounterChart = (): JSX.Element => {
     questionnaireResponse,
     chargeItems,
     setEncounter,
-    setClaim,
     setTasks,
     setClinicalImpression,
     setQuestionnaireResponse,
@@ -201,7 +197,6 @@ export const EncounterChart = (): JSX.Element => {
       return;
     }
 
-    setIsLoadingEncounter(true);
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
@@ -212,63 +207,10 @@ export const EncounterChart = (): JSX.Element => {
         setEncounter(savedEncounter);
       } catch (err) {
         showErrorNotification(err);
-      } finally {
-        setIsLoadingEncounter(false);
       }
     }, SAVE_TIMEOUT_MS);
   };
 
-  const createClaimFromEncounter = useCallback(async (): Promise<void> => {
-    if (!encounter || !patient) {
-      return;
-    }
-
-    if (!practitioner) {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: 'Practitioner information is required to create a claim.',
-      });
-      return;
-    }
-
-    const claim: Claim = {
-      resourceType: 'Claim',
-      status: 'draft',
-      type: { coding: [{ code: 'professional' }] },
-      use: 'claim',
-      created: new Date().toISOString(),
-      patient: createReference(patient),
-      provider: { reference: getReferenceString(practitioner), type: 'Practitioner' },
-      priority: { coding: [{ code: 'normal' }] },
-      insurance: [
-        {
-          sequence: 1,
-          focal: true,
-          coverage: { reference: 'Coverage/unknown' },
-        },
-      ], // TODO: Add coverage
-      item: chargeItems.map((chargeItem, index) => ({
-        sequence: index + 1,
-        encounter: [{ reference: getReferenceString(encounter) }],
-        productOrService: chargeItem.code,
-        net: chargeItem.priceOverride,
-      })),
-      total: { value: calculateTotalPrice(chargeItems) },
-    };
-
-    try {
-      const createdClaim = await medplum.createResource(claim);
-      setClaim(createdClaim);
-    } catch (err) {
-      showErrorNotification(err);
-    }
-  }, [encounter, medplum, chargeItems, patient, practitioner, setClaim]);
-
-  const calculateTotalPrice = (chargeItems: ChargeItem[]): number => {
-    return chargeItems.reduce((sum, item) => sum + (item.priceOverride?.value || 0), 0);
-  };
 
   if (!patient || !encounter) {
     return <Loading />;
@@ -421,7 +363,7 @@ export const EncounterChart = (): JSX.Element => {
                     </Box>
                   )}
 
-                  {!claim && encounter.status === 'finished' && (
+                  {/* {!claim && encounter.status === 'finished' && (
                     <Box mt="md">
                       <Button
                         fullWidth
@@ -433,7 +375,7 @@ export const EncounterChart = (): JSX.Element => {
                         Submit Claim
                       </Button>
                     </Box>
-                  )}
+                  )} */}
                 </Card>
               </Stack>
             ) : (

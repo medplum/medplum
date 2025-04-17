@@ -31,7 +31,7 @@ export interface EncounterChartHook {
   setChargeItems: React.Dispatch<React.SetStateAction<ChargeItem[]>>;
 }
 
-export function useEncounterChart(encounterId?: string): EncounterChartHook {
+export function useEncounterChart(patientId?: string, encounterId?: string): EncounterChartHook {
   const medplum = useMedplum();
 
   // States
@@ -102,14 +102,70 @@ export function useEncounterChart(encounterId?: string): EncounterChartHook {
     setChargeItems(chargeItems);
   }, [medplum, encounter]);
 
+  const createClaimFromEncounter = useCallback(
+    (
+      patientId: string,
+      encounterId: string,
+      practitionerId: string
+    ): Promise<Claim | undefined> => {
+      const claim: Claim = {
+        resourceType: 'Claim',
+        status: 'draft',
+        type: { coding: [{ code: 'professional' }] },
+        use: 'claim',
+        created: new Date().toISOString(),
+        patient: { reference: `Patient/${patientId}` },
+        provider: { reference: `Practitioner/${practitionerId}`, type: 'Practitioner' },
+        priority: { coding: [{ code: 'normal' }] },
+        insurance: [
+          {
+            sequence: 1,
+            focal: true,
+            coverage: { reference: 'Coverage/unknown' },
+          },
+        ], // TODO: Add coverage
+        item: chargeItems.map((chargeItem, index) => ({
+          sequence: index + 1,
+          encounter: [{ reference: `Encounter/${encounterId}` }],
+          productOrService: chargeItem.code,
+          net: chargeItem.priceOverride,
+        })),
+        total: { value: calculateTotalPrice(chargeItems) },
+      };
+      return medplum.createResource(claim);
+    },
+    [chargeItems, medplum]
+  );
+
   // Fetch claim related to the encounter
   const fetchClaim = useCallback(async (): Promise<void> => {
     if (!encounter) {
       return;
     }
     const response = await medplum.searchResources('Claim', `encounter=${getReferenceString(encounter)}`);
-    setClaim(response[0]);
-  }, [encounter, medplum]);
+    // If no claims exist for this encounter, create one
+    if (response.length !== 0) {
+      setClaim(response[0]);
+    } else {
+      if (!patientId || !encounter.id || !practitioner?.id) {
+        return;
+      }
+
+      try {
+        const newClaim = await createClaimFromEncounter(
+          patientId,
+          encounter.id,
+          practitioner.id
+        );
+        if (newClaim) {
+          setClaim(newClaim);
+        }
+      } catch (err) {
+        showErrorNotification(err);
+      }
+    }
+
+  }, [patientId, encounter, medplum, practitioner, createClaimFromEncounter]);
 
   // Fetch data on component mount or when encounter changes
   useEffect(() => {
@@ -221,6 +277,54 @@ export function useEncounterChart(encounterId?: string): EncounterChartHook {
     setChargeItems,
   };
 }
+
+// const createClaimFromEncounter = useCallback(async (): Promise<void> => {
+//   if (!encounter || !patient) {
+//     return;
+//   }
+
+//   if (!practitioner) {
+//     showNotification({
+//       color: 'red',
+//       icon: <IconCircleOff />,
+//       title: 'Error',
+//       message: 'Practitioner information is required to create a claim.',
+//     });
+//     return;
+//   }
+
+// const claim: Claim = {
+//   resourceType: 'Claim',
+//   status: 'draft',
+//   type: { coding: [{ code: 'professional' }] },
+//   use: 'claim',
+//   created: new Date().toISOString(),
+//   patient: createReference(patient),
+//   provider: { reference: getReferenceString(practitioner), type: 'Practitioner' },
+//   priority: { coding: [{ code: 'normal' }] },
+//   insurance: [
+//     {
+//       sequence: 1,
+//       focal: true,
+//       coverage: { reference: 'Coverage/unknown' },
+//     },
+//   ], // TODO: Add coverage
+//   item: chargeItems.map((chargeItem, index) => ({
+//     sequence: index + 1,
+//     encounter: [{ reference: getReferenceString(encounter) }],
+//     productOrService: chargeItem.code,
+//     net: chargeItem.priceOverride,
+//   })),
+//   total: { value: calculateTotalPrice(chargeItems) },
+// };
+
+// try {
+//   const createdClaim = await medplum.createResource(claim);
+//   setClaim(createdClaim);
+// } catch (err) {
+//   showErrorNotification(err);
+// }
+// }, [encounter, medplum, chargeItems, patient, practitioner, setClaim]);
 
 export function calculateTotalPrice(items: ChargeItem[]): number {
   return items.reduce((sum, item) => sum + (item.priceOverride?.value || 0), 0);
