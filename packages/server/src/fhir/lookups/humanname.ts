@@ -19,9 +19,9 @@ type HumanNameResourceType = (typeof resourceTypes)[number];
 type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
 
 interface HumanNameTableRow extends LookupTableRow {
-  name: string;
-  given: string;
-  family: string;
+  name: string | undefined;
+  given: string | undefined;
+  family: string | undefined;
 }
 
 /**
@@ -78,12 +78,24 @@ export class HumanNameTable extends LookupTable {
       return;
     }
     for (const name of names) {
-      result.push({
+      if (!name) {
+        continue;
+      }
+
+      const extracted = {
         resourceId: resource.id,
-        name: getNameString(name),
-        given: formatGivenName(name),
-        family: formatFamilyName(name),
-      });
+        // logical OR coalesce to ensure that empty strings are inserted as NULL
+        name: getNameString(name) || undefined,
+        given: formatGivenName(name) || undefined,
+        family: formatFamilyName(name) || undefined,
+      };
+
+      if (
+        (extracted.name || extracted.given || extracted.family) &&
+        !result.some((n) => n.name === extracted.name && n.given === extracted.given && n.family === extracted.family)
+      ) {
+        result.push(extracted);
+      }
     }
   }
 
