@@ -24,7 +24,7 @@ resource "azurerm_redis_cache" "medplum-cache" {
   sku_name             = "Standard"
   non_ssl_port_enabled = false
   minimum_tls_version  = "1.2"
-  
+
   redis_configuration {
   }
 }

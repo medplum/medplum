@@ -90,22 +90,21 @@ resource "azurerm_cdn_frontdoor_custom_domain" "fd-custom-domain" {
   host_name                = var.app-domain
 
   tls {
-    cdn_frontdoor_secret_id = azurerm_cdn_frontdoor_secret.fd-custom-secret.id
     certificate_type        = "CustomerCertificate"
     minimum_tls_version     = "TLS12"
   }
 }
 
-resource "azurerm_cdn_frontdoor_secret" "fd-custom-secret" {
-  name                     = "${azurerm_storage_account.sa.name}-secret"
-  cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd-profile.id
+# resource "azurerm_cdn_frontdoor_secret" "fd-custom-secret" {
+#   name                     = "${azurerm_storage_account.sa.name}-secret"
+#   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd-profile.id
 
-  secret {
-    customer_certificate {
-      key_vault_certificate_id = var.app-certificate-secret-id
-    }
-  }
-}
+#   secret {
+#     customer_certificate {
+#       key_vault_certificate_id = var.app-certificate-secret-id
+#     }
+#   }
+# }
 
 resource "azurerm_cdn_frontdoor_custom_domain_association" "custom-domain-association" {
   cdn_frontdoor_custom_domain_id = azurerm_cdn_frontdoor_custom_domain.fd-custom-domain.id
