@@ -1,4 +1,4 @@
-import { allOk, badRequest, getReferenceString } from '@medplum/core';
+import { allOk, badRequest, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Claim, Media, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -25,10 +25,10 @@ export const operation: OperationDefinition = {
     {
       use: 'out',
       name: 'return',
-      type: 'Binary',
+      type: 'Media',
       min: 1,
       max: '1',
-      documentation: 'A Binary resource containing the PDF document',
+      documentation: 'A Media resource containing the PDF document',
     },
   ],
 };
@@ -80,6 +80,6 @@ export async function claimExportHandler(req: FhirRequest): Promise<FhirResponse
     };
     return [allOk, media];
   } catch (error) {
-    return [badRequest(`Error exporting claim: ${(error as Error).message}`)];
+    return [badRequest(normalizeErrorString(error))];
   }
 }
