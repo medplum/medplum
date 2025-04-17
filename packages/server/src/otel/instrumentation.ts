@@ -8,13 +8,13 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 // import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 // import FsInstrumentation from '@opentelemetry/instrumentation-fs';
-// import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
+import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 // import { NetInstrumentation } from '@opentelemetry/instrumentation-net';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
-// import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
+import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { Resource } from '@opentelemetry/resources';
 import { MetricReader, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
@@ -71,15 +71,15 @@ export function initOpenTelemetry(): void {
         span.setAttribute('medplum.foo', 'bar');
       },
     }),
-    // new UndiciInstrumentation(),
+    new UndiciInstrumentation(),
 
     new PgInstrumentation(),
     new IORedisInstrumentation(),
 
     new ExpressInstrumentation(),
-    // new GraphQLInstrumentation({
-    //   ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
-    // }),
+    new GraphQLInstrumentation({
+      ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
+    }),
     // new DataloaderInstrumentation(),
 
     // new AwsInstrumentation(),

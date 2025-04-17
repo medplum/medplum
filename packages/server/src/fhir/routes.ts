@@ -57,7 +57,7 @@ export const fhirRouter = Router();
 let internalFhirRouter: FhirRouter;
 
 // OperationOutcome interceptor
-fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
+fhirRouter.use(function setupResponseInterceptors(req: Request, res: Response, next: NextFunction) {
   const oldJson = res.json;
 
   res.json = (data: any) => {
@@ -349,7 +349,7 @@ function initInternalFhirRouter(): FhirRouter {
 // Default route
 protectedRoutes.use(
   '*',
-  asyncWrap(async (req: Request, res: Response) => {
+  asyncWrap(async function routeFhirRequest(req: Request, res: Response) {
     const ctx = getAuthenticatedContext();
 
     const request: FhirRequest = {
