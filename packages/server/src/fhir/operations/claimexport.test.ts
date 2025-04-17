@@ -52,7 +52,6 @@ describe('CMS 1500 PDF Bot', () => {
     expect(response.body.resourceType).toBe('Media');
     expect(response.body.content.contentType).toBe('application/pdf');
   });
-<<<<<<< HEAD
 
 
   test('Bad request - missing claim ID', async () => {
@@ -77,8 +76,6 @@ describe('CMS 1500 PDF Bot', () => {
     expect(response.body.issue[0].severity).toBe('error');
   });
   
-=======
->>>>>>> 9d62262c88ac2599bb95db013d15cdfa5ecce249
 });
 
 export const fullAnswer: Bundle = {
