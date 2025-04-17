@@ -95,5 +95,5 @@ In a lab implementation, you'll see the following abbreviations.
 
 ## Related Reading
 
-- [Sample Implementation](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/health-gorilla) via Medplum Bot - this is reference material that can be used to plan your integration
+- [Sample Implementation](https://github.com/medplum/medplum/tree/main/examples/medplum-health-gorilla-demo) via Medplum Bot - this is reference material that can be used to plan your integration
 - [React Component](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--lab-ordering) - this is a sample questionnaire that shows an ordering workflow
