@@ -52,4 +52,9 @@ These URLs might differ for specific hospital system production environments. A 
 > [!IMPORTANT]
 > Medplum examples use FHIR R4. Ensure your Epic application is configured for R4 APIs, and do not select STU3 or DSTU2 options.
 
+## Tips and Known Issues
+
+- **Private Key Formatting:** When adding the `EPIC_PRIVATE_KEY` secret in Medplum Project Secrets, ensure it is formatted correctly, including the header and footer, with newline characters represented as `\n`. For example: `-----BEGIN PRIVATE KEY-----\n<your-private-key-string>\n-----END PRIVATE KEY-----`. Incorrect formatting can lead to authentication failures.
+- **Epic API Change Propagation:** If you modify the **Incoming APIs** settings for your application in the Epic developer portal (e.g., adding access to new FHIR resources), these changes might take some time (potentially up to an hour) to propagate through Epic's systems. During this period, requests involving the newly added APIs might fail. If you encounter unexpected errors after changing API permissions, wait a while and try again.
+
 We recommend reading the official [Epic FHIR documentation](https://fhir.epic.com/Documentation?docId=developerguidelines) to fully understand the available FHIR APIs, configuration parameters, and specific requirements for a successful implementation.
