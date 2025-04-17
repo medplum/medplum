@@ -139,7 +139,7 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
 
   // Fetch claim related to the encounter
   const fetchClaim = useCallback(async (): Promise<void> => {
-    if (!encounter) {
+    if (!patientId || !encounter?.id || !practitioner?.id) {
       return;
     }
     const response = await medplum.searchResources('Claim', `encounter=${getReferenceString(encounter)}`);
@@ -147,10 +147,7 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     if (response.length !== 0) {
       setClaim(response[0]);
     } else {
-      if (!patientId || !encounter.id || !practitioner?.id) {
-        return;
-      }
-
+  
       try {
         const newClaim = await createClaimFromEncounter(
           patientId,
