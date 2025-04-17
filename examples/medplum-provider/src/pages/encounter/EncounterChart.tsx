@@ -8,6 +8,8 @@ import {
   ChargeItem,
   Coverage,
   Organization,
+  Practitioner,
+  Claim,
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router';
@@ -18,11 +20,12 @@ import { usePatient } from '../../hooks/usePatient';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import ChageItemPanel from '../components/ChargeItem/ChageItemPanel';
 import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
-import { calculateTotalPrice, useEncounterChart } from '../../hooks/useEncounterChart';
+import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './EncounterChart.module.css';
 import { deepEquals, getReferenceString } from '@medplum/core';
+import { calculateTotalPrice, createClaimFromEncounter } from '../../utils/claims';
 
 export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
@@ -41,6 +44,8 @@ export const EncounterChart = (): JSX.Element => {
     questionnaireResponse,
     chargeItems,
     setEncounter,
+    setClaim,
+    setPractitioner,
     setTasks,
     setClinicalImpression,
     setQuestionnaireResponse,
@@ -205,12 +210,45 @@ export const EncounterChart = (): JSX.Element => {
       try {
         const savedEncounter = await medplum.updateResource(updatedEncounter);
         setEncounter(savedEncounter);
+
+        if (savedEncounter?.participant?.[0]?.individual) {
+          const practitionerResult = await medplum.readReference(savedEncounter.participant[0].individual);
+          setPractitioner(practitionerResult as Practitioner);
+        }
+        
+        if(!patient?.id || !encounter?.id || !practitioner?.id) {
+          return;
+        }
+
+        if(!claim) {
+          console.log('Creating new claim');
+          const newClaim = await createClaimFromEncounter(
+            medplum,
+            patient.id,
+            encounter.id,
+            practitioner.id,
+            chargeItems
+          );
+          if (newClaim) {
+            setClaim(newClaim);
+          }
+        } else {
+          console.log('Updating claim');
+          const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(practitioner);
+          if (providerRefNeedsUpdate) {
+            const updatedClaim: Claim = await medplum.updateResource(  
+              {
+                ...claim,
+                provider: { reference: getReferenceString(practitioner) }
+              });
+              setClaim(updatedClaim);
+          }
+        }
       } catch (err) {
         showErrorNotification(err);
       }
     }, SAVE_TIMEOUT_MS);
   };
-
 
   if (!patient || !encounter) {
     return <Loading />;
