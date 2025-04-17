@@ -55,6 +55,12 @@ If you haven't already done so, follow the instructions in [this tutorial](https
 
 [Fork](https://github.com/medplum/medplum-chart-demo/fork) and clone the repo.
 
+Copy the `.env.example` file to `.env`. 
+
+```bash
+cp .env.example .env
+```
+
 Next, install the dependencies.
 
 ```bash
