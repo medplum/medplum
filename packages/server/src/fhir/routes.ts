@@ -347,7 +347,7 @@ function initInternalFhirRouter(): FhirRouter {
 }
 
 // Default route
-protectedRoutes.use(
+protectedRoutes.all(
   '*',
   asyncWrap(async function routeFhirRequest(req: Request, res: Response) {
     const ctx = getAuthenticatedContext();
