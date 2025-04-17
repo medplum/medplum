@@ -10,7 +10,7 @@ Allergies are recorded via [`AllergyIntolerance`](/docs/api/fhir/resources/aller
 | `code`                     | The code, along with the code system. In the US, this is commonly RxNorm (medications) or SNOMED (food + environment).                              |
 | `patient`                  | Patient who has this allergy.                                                                          |
 | `encounter`                | The Encounter where this allergy was discussed.                                                        |
-| `recorder`                 | Who recorded this allergy.                                                                             |
+| `recorder`                 | Who documented this allergy.                                                                             |
 | `asserter`                 | Who reported this allergy (i.e. patient, parent, clinician after reviewing allergy tests, etc.)        |
 
 
