@@ -17,6 +17,7 @@ import {
   fetchLatestVersionString,
   isValidHostname,
   normalizeErrorString,
+  sleep,
 } from '@medplum/core';
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
@@ -29,6 +30,7 @@ import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import { checkProcessExists, createPidFile, getPidFilePath, removePidFile } from './pid';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -80,10 +82,11 @@ export class App {
 
     await this.startWebSocket();
 
-    // We do this after starting WebSockets so that we can send a message if we finished upgrading
-    await this.maybeFinalizeUpgrade();
-
     await this.reloadConfig();
+
+    // We do this after starting WebSockets so that we can send a message if we finished upgrading
+    // We also do it after reloading the config, to make sure that we have bound to the ports before releasing the upgrading agent PID file
+    await this.maybeFinalizeUpgrade();
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
@@ -127,6 +130,27 @@ export class App {
 
       // Delete manifest
       rmSync(UPGRADE_MANIFEST_PATH);
+      removePidFile('medplum-upgrading-agent');
+      await this.tryToCreateAgentPidFile();
+    }
+  }
+
+  private async tryToCreateAgentPidFile(): Promise<void> {
+    const maxAttempts = 15;
+    let attempt = 0;
+    let success = false;
+    while (!success) {
+      try {
+        createPidFile('medplum-agent');
+        success = true;
+      } catch (_err) {
+        this.log.info('Unable to create agent PID file, trying again...');
+        attempt++;
+        if (attempt === maxAttempts) {
+          throw new Error('Too many unsuccessful attempts to create agent PID file');
+        }
+        await sleep(50);
+      }
     }
   }
 
@@ -282,7 +306,7 @@ export class App {
   }
 
   private async reloadConfig(): Promise<void> {
-    const agent = await this.medplum.readResource('Agent', this.agentId);
+    const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
 
     if (!keepAlive && this.hl7Clients.size !== 0) {
@@ -315,7 +339,9 @@ export class App {
 
     const endpointPromises = [] as Promise<Endpoint>[];
     for (const definition of channels) {
-      endpointPromises.push(this.medplum.readReference(definition.endpoint as Reference<Endpoint>));
+      endpointPromises.push(
+        this.medplum.readReference(definition.endpoint as Reference<Endpoint>, { cache: 'no-cache' })
+      );
     }
 
     const endpoints = await Promise.all(endpointPromises);
@@ -415,6 +441,27 @@ export class App {
     if (channel) {
       await channel.reloadConfig(definition, endpoint);
       return;
+    }
+
+    // Only check PID files if we're not in the middle of an upgrade
+    if (!existsSync(UPGRADE_MANIFEST_PATH)) {
+      const pidFilePath = getPidFilePath(definition.name);
+      if (existsSync(pidFilePath)) {
+        const existingPid = Number.parseInt(readFileSync(pidFilePath, 'utf8').trim(), 10);
+        if (checkProcessExists(existingPid)) {
+          this.log.info(
+            `Found existing process with PID ${existingPid} for channel ${definition.name}, stopping it...`
+          );
+          try {
+            process.kill(existingPid);
+            // Wait a bit for the process to die
+            await sleep(1000);
+          } catch (err) {
+            this.log.error(`Error stopping existing process: ${normalizeErrorString(err)}`);
+          }
+        }
+        removePidFile(pidFilePath);
+      }
     }
 
     switch (getChannelType(endpoint)) {
