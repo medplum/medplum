@@ -156,8 +156,9 @@ export const EncounterChart = (): JSX.Element => {
       saveTimeoutRef.current = setTimeout(async () => {
         const savedChargeItem = await saveChargeItem(updatedChargeItem);
         const updatedChargeItems = await fetchAndApplyChargeItemDefinitions(
-          medplum, 
-          chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item)));
+          medplum,
+          chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item))
+        );
         setChargeItems(updatedChargeItems);
       }, SAVE_TIMEOUT_MS);
     },
@@ -202,7 +203,6 @@ export const EncounterChart = (): JSX.Element => {
   };
 
   const handleEncounterChange = (updatedEncounter: Encounter): void => {
-
     console.log('handleEncounterChange', updatedEncounter);
     if (!updatedEncounter) {
       return;
@@ -221,12 +221,12 @@ export const EncounterChart = (): JSX.Element => {
           const practitionerResult = await medplum.readReference(savedEncounter.participant[0].individual);
           setPractitioner(practitionerResult as Practitioner);
         }
-        
-        if(!patient?.id || !encounter?.id || !practitioner?.id || chargeItems.length === 0) {
+
+        if (!patient?.id || !encounter?.id || !practitioner?.id || chargeItems.length === 0) {
           return;
         }
 
-        if(!claim) {
+        if (!claim) {
           console.log('Creating new claim');
           const newClaim = await createClaimFromEncounter(
             medplum,
@@ -240,12 +240,11 @@ export const EncounterChart = (): JSX.Element => {
           console.log('Updating claim');
           const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(practitioner);
           if (providerRefNeedsUpdate) {
-            const updatedClaim: Claim = await medplum.updateResource(  
-              {
-                ...claim,
-                provider: { reference: getReferenceString(practitioner) }
-              });
-              setClaim(updatedClaim);
+            const updatedClaim: Claim = await medplum.updateResource({
+              ...claim,
+              provider: { reference: getReferenceString(practitioner) },
+            });
+            setClaim(updatedClaim);
           }
         }
       } catch (err) {
@@ -281,31 +280,33 @@ export const EncounterChart = (): JSX.Element => {
     } else {
       return (
         <Stack gap="md">
-
           {claim && (
-           <Card withBorder shadow="sm">
-             <Menu shadow="md" width={200}>
-              <Menu.Target>
-                <Button>Export Claim</Button>
-              </Menu.Target>
-        
-              <Menu.Dropdown>
-                <Menu.Label>Export Options</Menu.Label>
-                
-                <Menu.Item leftSection={<IconFileText size={14} />} onClick={() => console.log('CMS 1500 selected')}>
-                  CMS 1500 Form
-                </Menu.Item>
-                
-                <Menu.Item leftSection={<IconFileText size={14} />}  onClick={() => console.log('EDI X12 selected')}>
-                  EDI X12
-                </Menu.Item>
-                
-                <Menu.Item leftSection={<IconFileText size={14} />}  onClick={() => console.log('NUCC Crosswalk selected')}>
-                  NUCC Crosswalk CSV
-                </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-           </Card>
+            <Card withBorder shadow="sm">
+              <Menu shadow="md" width={200}>
+                <Menu.Target>
+                  <Button>Export Claim</Button>
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                  <Menu.Label>Export Options</Menu.Label>
+
+                  <Menu.Item leftSection={<IconFileText size={14} />} onClick={() => console.log('CMS 1500 selected')}>
+                    CMS 1500 Form
+                  </Menu.Item>
+
+                  <Menu.Item leftSection={<IconFileText size={14} />} onClick={() => console.log('EDI X12 selected')}>
+                    EDI X12
+                  </Menu.Item>
+
+                  <Menu.Item
+                    leftSection={<IconFileText size={14} />}
+                    onClick={() => console.log('NUCC Crosswalk selected')}
+                  >
+                    NUCC Crosswalk CSV
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Card>
           )}
 
           <Group grow align="flex-start">
@@ -415,7 +416,6 @@ export const EncounterChart = (): JSX.Element => {
                       <TextInput w={300} value={`$${calculateTotalPrice(chargeItems)}`} readOnly />
                     </Box>
                   </Flex>
-
                 </Card>
               </Stack>
             ) : (

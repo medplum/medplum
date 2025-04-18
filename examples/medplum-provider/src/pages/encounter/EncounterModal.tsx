@@ -259,12 +259,7 @@ export const EncounterModal = (): JSX.Element => {
         </Box>
 
         <Box className={classes.footer} h={70} p="md">
-          <Button 
-          fullWidth={false} 
-          onClick={handleCreateEncounter}
-          loading={isLoading}
-            disabled={isLoading}
-            >
+          <Button fullWidth={false} onClick={handleCreateEncounter} loading={isLoading} disabled={isLoading}>
             Create Encounter
           </Button>
         </Box>
