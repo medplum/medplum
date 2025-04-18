@@ -7,8 +7,6 @@ import {
   HTTP_HL7_ORG,
 } from '@medplum/core';
 import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
-import fs from 'node:fs';
-import path from 'node:path';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
 
@@ -24,14 +22,6 @@ const insuranceTypes = new Set<string>([
   'FECA BLK LUNG',
   'OTHER',
 ]);
-
-<<<<<<< HEAD
-// const CMS_1500_IMG_DATA_URL = 'data:image/png;base64,' + imageToBase64(__dirname + '/cms1500.png');
-=======
-const CMS_1500_IMG_DATA_URL =
-  'data:image/png;base64,' + imageToBase64(path.resolve(__dirname, '../../../img', 'cms1500.png'));
->>>>>>> dd9e619cc21d4ebb7ef93f441d4c0db588751f4c
-
 /**
  * Creates a PDF document definition from a Claim resource.
  * @param claim - The Claim resource.
