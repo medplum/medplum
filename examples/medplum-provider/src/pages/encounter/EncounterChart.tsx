@@ -1,4 +1,4 @@
-import { Stack, Box, Card, Text, Group, Flex, TextInput, Button } from '@mantine/core';
+import { Stack, Box, Card, Text, Group, Flex, TextInput, Button, Menu } from '@mantine/core';
 import {
   Task,
   ClinicalImpression,
@@ -6,15 +6,14 @@ import {
   Questionnaire,
   Encounter,
   ChargeItem,
-  Claim,
   Coverage,
   Organization,
+  Practitioner,
+  Claim,
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router';
-import { showNotification } from '@mantine/notifications';
-import { createReference, deepEquals, getReferenceString } from '@medplum/core';
-import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { IconCircleCheck, IconCircleOff, IconDownload, IconFileText } from '@tabler/icons-react';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { usePatient } from '../../hooks/usePatient';
@@ -25,14 +24,15 @@ import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './EncounterChart.module.css';
+import { deepEquals, getReferenceString } from '@medplum/core';
+import { calculateTotalPrice, createClaimFromEncounter, fetchAndApplyChargeItemDefinitions } from '../../utils/claims';
 
 export const EncounterChart = (): JSX.Element => {
-  const { encounterId } = useParams();
+  const { patientId, encounterId } = useParams();
   const medplum = useMedplum();
   const patient = usePatient();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const [activeTab, setActiveTab] = useState<string>('notes');
-  const [isLoadingEncounter, setIsLoadingEncounter] = useState<boolean>(false);
   const [coverage, setCoverage] = useState<Coverage | undefined>();
   const [organization, setOrganization] = useState<Organization | undefined>();
   const {
@@ -45,11 +45,12 @@ export const EncounterChart = (): JSX.Element => {
     chargeItems,
     setEncounter,
     setClaim,
+    setPractitioner,
     setTasks,
     setClinicalImpression,
     setQuestionnaireResponse,
     setChargeItems,
-  } = useEncounterChart(encounterId);
+  } = useEncounterChart(patientId, encounterId);
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
@@ -147,16 +148,37 @@ export const EncounterChart = (): JSX.Element => {
 
   const updateChargeItemList = useCallback(
     (updatedChargeItem: ChargeItem): void => {
+      console.log('NEEEEWWW updateChargeItemList', updatedChargeItem);
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
 
       saveTimeoutRef.current = setTimeout(async () => {
         const savedChargeItem = await saveChargeItem(updatedChargeItem);
-        setChargeItems(chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item)));
+        const updatedChargeItems = await fetchAndApplyChargeItemDefinitions(
+          medplum,
+          chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item))
+        );
+        setChargeItems(updatedChargeItems);
+
+        if (claim?.id) {
+          const updatedClaim = {
+            ...claim,
+            item: updatedChargeItems.map((chargeItem, index) => ({
+              sequence: index + 1,
+              encounter: claim.item?.[0]?.encounter || [],
+              productOrService: chargeItem.code,
+              net: chargeItem.priceOverride,
+            })),
+            total: { value: calculateTotalPrice(updatedChargeItems) },
+          };
+          const savedClaim = await medplum.updateResource(updatedClaim);
+          setClaim(savedClaim);
+          console.log('Updated claim with new charge items', savedClaim);
+        }
       }, SAVE_TIMEOUT_MS);
     },
-    [chargeItems, saveChargeItem, setChargeItems]
+    [chargeItems, saveChargeItem, setChargeItems, medplum, claim, setClaim]
   );
 
   const handleEncounterStatusChange = useCallback(
@@ -197,11 +219,11 @@ export const EncounterChart = (): JSX.Element => {
   };
 
   const handleEncounterChange = (updatedEncounter: Encounter): void => {
+    console.log('handleEncounterChange', updatedEncounter);
     if (!updatedEncounter) {
       return;
     }
 
-    setIsLoadingEncounter(true);
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
@@ -210,64 +232,41 @@ export const EncounterChart = (): JSX.Element => {
       try {
         const savedEncounter = await medplum.updateResource(updatedEncounter);
         setEncounter(savedEncounter);
+
+        if (savedEncounter?.participant?.[0]?.individual) {
+          const practitionerResult = await medplum.readReference(savedEncounter.participant[0].individual);
+          setPractitioner(practitionerResult as Practitioner);
+        }
+
+        if (!patient?.id || !encounter?.id || !practitioner?.id || chargeItems.length === 0) {
+          return;
+        }
+
+        if (!claim) {
+          console.log('Creating new claim');
+          const newClaim = await createClaimFromEncounter(
+            medplum,
+            patient.id,
+            encounter.id,
+            practitioner.id,
+            chargeItems
+          );
+          setClaim(newClaim);
+        } else {
+          console.log('Updating claim');
+          const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(practitioner);
+          if (providerRefNeedsUpdate) {
+            const updatedClaim: Claim = await medplum.updateResource({
+              ...claim,
+              provider: { reference: getReferenceString(practitioner) },
+            });
+            setClaim(updatedClaim);
+          }
+        }
       } catch (err) {
         showErrorNotification(err);
-      } finally {
-        setIsLoadingEncounter(false);
       }
     }, SAVE_TIMEOUT_MS);
-  };
-
-  const createClaimFromEncounter = useCallback(async (): Promise<void> => {
-    if (!encounter || !patient) {
-      return;
-    }
-
-    if (!practitioner) {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: 'Practitioner information is required to create a claim.',
-      });
-      return;
-    }
-
-    const claim: Claim = {
-      resourceType: 'Claim',
-      status: 'draft',
-      type: { coding: [{ code: 'professional' }] },
-      use: 'claim',
-      created: new Date().toISOString(),
-      patient: createReference(patient),
-      provider: { reference: getReferenceString(practitioner), type: 'Practitioner' },
-      priority: { coding: [{ code: 'normal' }] },
-      insurance: [
-        {
-          sequence: 1,
-          focal: true,
-          coverage: { reference: 'Coverage/unknown' },
-        },
-      ], // TODO: Add coverage
-      item: chargeItems.map((chargeItem, index) => ({
-        sequence: index + 1,
-        encounter: [{ reference: getReferenceString(encounter) }],
-        productOrService: chargeItem.code,
-        net: chargeItem.priceOverride,
-      })),
-      total: { value: calculateTotalPrice(chargeItems) },
-    };
-
-    try {
-      const createdClaim = await medplum.createResource(claim);
-      setClaim(createdClaim);
-    } catch (err) {
-      showErrorNotification(err);
-    }
-  }, [encounter, medplum, chargeItems, patient, practitioner, setClaim]);
-
-  const calculateTotalPrice = (chargeItems: ChargeItem[]): number => {
-    return chargeItems.reduce((sum, item) => sum + (item.priceOverride?.value || 0), 0);
   };
 
   if (!patient || !encounter) {
@@ -297,6 +296,42 @@ export const EncounterChart = (): JSX.Element => {
     } else {
       return (
         <Stack gap="md">
+          {claim && (
+            <Card withBorder shadow="sm">
+              <Box display="inline-block">
+                <Menu shadow="md" width={200}>
+                  <Menu.Target>
+                    <Button variant="outline" leftSection={<IconDownload size={16} />}>
+                      Export Claim
+                    </Button>
+                  </Menu.Target>
+
+                  <Menu.Dropdown>
+                    <Menu.Label>Export Options</Menu.Label>
+
+                    <Menu.Item
+                      leftSection={<IconFileText size={14} />}
+                      onClick={() => console.log('CMS 1500 selected')}
+                    >
+                      CMS 1500 Form
+                    </Menu.Item>
+
+                    <Menu.Item leftSection={<IconFileText size={14} />} onClick={() => console.log('EDI X12 selected')}>
+                      EDI X12
+                    </Menu.Item>
+
+                    <Menu.Item
+                      leftSection={<IconFileText size={14} />}
+                      onClick={() => console.log('NUCC Crosswalk selected')}
+                    >
+                      NUCC Crosswalk CSV
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
+              </Box>
+            </Card>
+          )}
+
           <Group grow align="flex-start">
             <Stack gap={0}>
               <Text fw={600} size="lg" mb="md">
@@ -404,36 +439,6 @@ export const EncounterChart = (): JSX.Element => {
                       <TextInput w={300} value={`$${calculateTotalPrice(chargeItems)}`} readOnly />
                     </Box>
                   </Flex>
-
-                  {claim && (
-                    <Box mt="md">
-                      <Group grow align="flex-start">
-                        <Text>
-                          Claim submitted for ${claim.total?.value || 0} on{' '}
-                          {new Date(claim.created || '').toLocaleDateString()}
-                        </Text>
-                        <Box>
-                          <Button component="a" href={`/Claim/${claim.id}`} target="_blank" fullWidth variant="outline">
-                            View Claim Details
-                          </Button>
-                        </Box>
-                      </Group>
-                    </Box>
-                  )}
-
-                  {!claim && encounter.status === 'finished' && (
-                    <Box mt="md">
-                      <Button
-                        fullWidth
-                        loading={isLoadingEncounter}
-                        onClick={async () => {
-                          await createClaimFromEncounter();
-                        }}
-                      >
-                        Submit Claim
-                      </Button>
-                    </Box>
-                  )}
                 </Card>
               </Stack>
             ) : (
