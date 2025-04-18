@@ -80,13 +80,17 @@ export const initReindexWorker: WorkerInitializer = (config) => {
 
   const worker = new Worker<ReindexJobData>(
     ReindexQueueName,
-    (job) =>
+    async (job) =>
       tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => {
-        const result = await new ReindexJob(undefined, 500, 5_000).execute(job, job.data);
+        const result = await new ReindexJob().execute(job, job.data);
         if (result === 'ineligible') {
-          // Since we can't handle this ourselves, re-enqueue the job for another worker that can
-          const queue = queueRegistry.get(job.queueName);
-          await queue?.add(job.name, job.data, job.opts);
+          globalLogger.info('Delaying ReindexJob since worker is not eligible to execute it', {
+            queueName: job.queueName,
+            token: job.token,
+            jobData: JSON.stringify(job.data),
+          });
+          await job.moveToDelayed(Date.now() + 60_000, job.token);
+          throw new DelayedError('Reindex job delayed since worker is not eligible to execute it');
         }
       }),
     {

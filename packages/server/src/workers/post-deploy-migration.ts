@@ -57,10 +57,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   }
 
   if (!isJobCompatible(asyncJob)) {
-    // re-queue the job for an eligible worker to pick up
-    const queue = queueRegistry.get(job.queueName);
-    await queue?.add(job.name, job.data, job.opts);
-    return;
+    await moveToDelayed(job, 'Post-deploy migration delayed since this worker is not compatible');
   }
 
   if (!isJobActive(asyncJob)) {
@@ -84,18 +81,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
     migration = getPostDeployMigration(migrationNumber);
   } catch (err: any) {
     if (err instanceof MigrationDefinitionNotFoundError) {
-      const delayMs = 60_000;
-      globalLogger.info(
-        `${PostDeployMigrationQueueName} processor delaying job since migration definition was not found on this worker`,
-        {
-          jobId: job.id,
-          delayMs,
-          ...getJobDataLoggingFields(job),
-          version: migrationNumber,
-        }
-      );
-      await job.moveToDelayed(Date.now() + delayMs, job.token);
-      throw new DelayedError('Post-deploy migration delayed since migration definition was not found on this worker');
+      await moveToDelayed(job, 'Post-deploy migration delayed since migration definition was not found on this worker');
     }
     throw err;
   }
@@ -108,11 +94,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
 
   switch (result) {
     case 'ineligible': {
-      // Since we can't handle this ourselves, re-enqueue the job for another worker that can
-      // Prefer job.queueName over PostDeployMigrationQueueName to ensure the job is re-queued
-      // on the same queue it came from.
-      const queue = queueRegistry.get(job.queueName);
-      await queue?.add(job.name, job.data, job.opts);
+      await moveToDelayed(job, 'Post-deploy migration delayed since worker is not eligible to execute it');
       break;
     }
     case 'finished':
@@ -122,6 +104,17 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
       result satisfies never;
       throw new Error(`Unexpected PostDeployMigration.run(${migrationNumber}) result: ${result}`);
   }
+}
+
+async function moveToDelayed(job: Job<PostDeployJobData>, reason: string): Promise<void> {
+  const delayMs = 60_000;
+  globalLogger.info(reason, {
+    jobId: job.id,
+    delayMs,
+    ...getJobDataLoggingFields(job),
+  });
+  await job.moveToDelayed(Date.now() + delayMs, job.token);
+  throw new DelayedError(reason);
 }
 
 export async function runCustomMigration(
