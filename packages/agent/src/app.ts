@@ -27,7 +27,7 @@ import { platform } from 'node:os';
 import process from 'node:process';
 import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
-import { RETRY_WAIT_DURATION_MS } from './constants';
+import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
@@ -44,9 +44,6 @@ async function execAsync(command: string, options: ExecOptions): Promise<{ stdou
     });
   });
 }
-
-export const DEFAULT_PING_TIMEOUT = 3600;
-export const MAX_MISSED_HEARTBEATS = 1;
 
 export class App {
   static instance: App;
