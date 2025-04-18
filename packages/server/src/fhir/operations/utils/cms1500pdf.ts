@@ -24,7 +24,7 @@ const insuranceTypes = new Set<string>([
   'OTHER',
 ]);
 
-const CMS_1500_IMG_DATA_URL = 'data:image/png;base64,' + imageToBase64(__dirname + '/cms1500.png');
+// const CMS_1500_IMG_DATA_URL = 'data:image/png;base64,' + imageToBase64(__dirname + '/cms1500.png');
 
 /**
  * Creates a PDF document definition from a Claim resource.
@@ -106,7 +106,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
     pageMargins: 0,
     content: [
       {
-        image: CMS_1500_IMG_DATA_URL,
+        image: 'static/cms1500.png',
         absolutePosition: { x: 0, y: 0 },
         width: PAGE_WIDTH,
         height: PAGE_HEIGHT,
@@ -307,17 +307,6 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
       .filter(Boolean) as Content[],
   };
   return docDefinition;
-}
-
-function imageToBase64(imagePath: string): string {
-  try {
-    const fileData = fs.readFileSync(imagePath);
-    const base64String = fileData.toString('base64');
-    return base64String;
-  } catch (error) {
-    console.error('Error converting image to base64:', error);
-    throw new Error('Failed to convert image to base64: ' + (error as Error).message);
-  }
 }
 
 function createText(text: string | undefined, x: number, y: number): Content | undefined {

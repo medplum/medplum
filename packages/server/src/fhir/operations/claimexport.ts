@@ -2,7 +2,7 @@ import { allOk, badRequest, getReferenceString, normalizeErrorString } from '@me
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Claim, Media, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { createPdf } from '../../pdf/pdf';
+import { createPdf } from '../../util/pdf';
 import { getClaimPDFDocDefinition } from './utils/cms1500pdf';
 import { getBinaryStorage } from '../../storage/loader';
 
