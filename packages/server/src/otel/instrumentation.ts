@@ -61,7 +61,7 @@ export function initOpenTelemetry(): void {
       },
     }),
 
-    new PgInstrumentation({ enhancedDatabaseReporting: true }),
+    new PgInstrumentation({ enhancedDatabaseReporting: true, requireParentSpan: true }),
     new IORedisInstrumentation(),
 
     new ExpressInstrumentation(),
