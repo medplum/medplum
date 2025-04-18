@@ -26,6 +26,7 @@ import { createTestProject, withTestContext } from '../test.setup';
 import {
   addReindexJob,
   getReindexQueue,
+  jobProcessor,
   prepareReindexJobData,
   REINDEX_WORKER_VERSION,
   ReindexJob,
@@ -650,9 +651,14 @@ describe('Job cancellation', () => {
     })
   );
 
-  test.each([undefined, REINDEX_WORKER_VERSION + 1, REINDEX_WORKER_VERSION])(
-    'Handles insufficient reindex worker version with job.token %s and minReindexWorkerVersion %s',
-    async (minReindexWorkerVersion) => {
+  test.each([
+    [undefined, 'some-token'], // can process job
+    [REINDEX_WORKER_VERSION, 'some-token'], // can process job
+    [REINDEX_WORKER_VERSION + 1, 'some-token'], // cannot process job
+    [REINDEX_WORKER_VERSION + 1, undefined], // cannot process job
+  ])(
+    'Handles insufficient reindex worker version with minReindexWorkerVersion %s and job.token %s',
+    async (minReindexWorkerVersion, jobToken) => {
       const originalJob = await repo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
@@ -677,11 +683,45 @@ describe('Job cancellation', () => {
       const job = new Job(queue, 'ReindexJob', jobData, { attempts: 55 });
       // Since the Job class is fully mocked, we need to set the data property manually
       job.data = jobData;
+      job.token = jobToken;
+
+      const isIneligible = minReindexWorkerVersion && REINDEX_WORKER_VERSION < minReindexWorkerVersion;
 
       const result = await new ReindexJob().execute(job, jobData);
-      expect(result).toBe(
-        minReindexWorkerVersion && REINDEX_WORKER_VERSION < minReindexWorkerVersion ? 'ineligible' : 'finished'
-      );
+      expect(result).toBe(isIneligible ? 'ineligible' : 'finished');
+
+      // DelayedError is part of the mocked bullmq module. Something about that causes
+      // the usual `expect(...).rejects.toThrow(...)`; it seems to be becuase DelayedError
+      // is no longer an `Error`. So instead, we manually check that it threw
+      let threw = undefined;
+      let manuallyThrownError = undefined;
+      try {
+        await jobProcessor(job);
+        if (isIneligible) {
+          manuallyThrownError = new Error(
+            jobToken ? 'Expected job to throw DelayedError' : 'Expected job to throw Error'
+          );
+          throw manuallyThrownError;
+        }
+      } catch (err) {
+        threw = err;
+      }
+
+      if (isIneligible) {
+        expect(threw).toBeDefined();
+        expect(threw).not.toBe(manuallyThrownError);
+        expect(threw).toBeInstanceOf(jobToken ? DelayedError : Error);
+
+        if (jobToken) {
+          expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
+          expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), jobToken);
+        } else {
+          expect(job.moveToDelayed).not.toHaveBeenCalled();
+        }
+      } else {
+        expect(threw).toBeUndefined();
+        expect(job.moveToDelayed).not.toHaveBeenCalled();
+      }
     }
   );
 

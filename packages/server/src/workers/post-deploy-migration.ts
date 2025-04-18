@@ -1,6 +1,6 @@
 import { getReferenceString, WithId } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
-import { DelayedError, Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -13,7 +13,14 @@ import {
   PostDeployMigration,
 } from '../migrations/data/types';
 import { getPostDeployMigration, MigrationDefinitionNotFoundError } from '../migrations/migration-utils';
-import { addVerboseQueueLogging, isJobActive, isJobCompatible, queueRegistry, WorkerInitializer } from './utils';
+import {
+  addVerboseQueueLogging,
+  isJobActive,
+  isJobCompatible,
+  moveToDelayed,
+  queueRegistry,
+  WorkerInitializer,
+} from './utils';
 
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
@@ -104,28 +111,6 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
       result satisfies never;
       throw new Error(`Unexpected PostDeployMigration.run(${migrationNumber}) result: ${result}`);
   }
-}
-
-async function moveToDelayed(job: Job<PostDeployJobData>, reason: string): Promise<void> {
-  if (job.token) {
-    const delayMs = 60_000;
-    globalLogger.info(reason, {
-      jobId: job.id,
-      delayMs,
-      ...getJobDataLoggingFields(job),
-    });
-    await job.moveToDelayed(Date.now() + delayMs, job.token);
-    throw new DelayedError(reason);
-  }
-  globalLogger.error('Cannot delay job since job.token is not available', {
-    jobId: job.id,
-    reason,
-    ...getJobDataLoggingFields(job),
-  });
-
-  // This is one of those "this should never happen" errors. job.token is expected to always be set
-  // given the way we use bullmq.
-  throw new Error('Cannot delay Post-deploy migration job since job.token is not available');
 }
 
 export async function runCustomMigration(

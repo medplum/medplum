@@ -9,7 +9,7 @@ import {
   WithId,
 } from '@medplum/core';
 import { AsyncJob, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
-import { DelayedError, Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -22,6 +22,7 @@ import {
   addVerboseQueueLogging,
   isJobActive,
   isJobCompatible,
+  moveToDelayed,
   queueRegistry,
   updateAsyncJobOutput,
   WorkerInitializer,
@@ -97,13 +98,7 @@ export const initReindexWorker: WorkerInitializer = (config) => {
 export async function jobProcessor(job: Job<ReindexJobData>): Promise<void> {
   const result = await new ReindexJob().execute(job, job.data);
   if (result === 'ineligible') {
-    globalLogger.info('Delaying ReindexJob since worker is not eligible to execute it', {
-      queueName: job.queueName,
-      token: job.token,
-      jobData: JSON.stringify(job.data),
-    });
-    await job.moveToDelayed(Date.now() + 60_000, job.token);
-    throw new DelayedError('Reindex job delayed since worker is not eligible to execute it');
+    await moveToDelayed(job, 'Reindex job delayed since worker is not eligible to execute it');
   }
 }
 
@@ -160,13 +155,7 @@ export class ReindexJob {
           jobData: JSON.stringify(nextJobData),
         });
         await job.updateData(nextJobData);
-        await job.moveToDelayed(Date.now() + 60_000, job.token);
-        this.logger.info('Reindex job delayed', {
-          queueName: job.queueName,
-          token: job.token,
-          asyncJob: getReferenceString(asyncJob),
-        });
-        throw new DelayedError('Reindex job delayed since queue is closing');
+        await moveToDelayed(job, 'ReindexJob delayed since queue is closing');
       }
 
       // This is one of those "this should never happen" errors. job.token is expected to always be set
