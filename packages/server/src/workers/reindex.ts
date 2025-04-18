@@ -97,6 +97,8 @@ export const initReindexWorker: WorkerInitializer = (config) => {
   return { queue, worker, name: ReindexQueueName };
 };
 
+export type ReindexExecuteResult = 'finished' | 'ineligible' | 'interrupted';
+
 export class ReindexJob {
   private readonly systemRepo: Repository;
   private readonly batchSize: number;
@@ -163,11 +165,8 @@ export class ReindexJob {
     }
   }
 
-  async execute(
-    job: Job<ReindexJobData> | undefined,
-    inputJobData: ReindexJobData
-  ): Promise<'finished' | 'ineligible' | 'interrupted'> {
-    let asyncJob = await this.refreshAsyncJob(this.systemRepo, inputJobData.asyncJobId);
+  async execute(job: Job<ReindexJobData> | undefined, inputJobData: ReindexJobData): Promise<ReindexExecuteResult> {
+    const asyncJob = await this.refreshAsyncJob(this.systemRepo, inputJobData.asyncJobId);
 
     if (!isJobCompatible(asyncJob)) {
       return 'ineligible';
@@ -182,6 +181,20 @@ export class ReindexJob {
       return 'finished';
     }
 
+    const client = await this.systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+    try {
+      await client.query(`SET statement_timeout TO 7200000`); // 2 hours
+      return await this.executeMainLoop(job, asyncJob, inputJobData);
+    } finally {
+      this.systemRepo[Symbol.dispose](true);
+    }
+  }
+
+  private async executeMainLoop(
+    job: Job<ReindexJobData> | undefined,
+    asyncJob: WithId<AsyncJob>,
+    inputJobData: ReindexJobData
+  ): Promise<ReindexExecuteResult> {
     let nextJobData: ReindexJobData | undefined = inputJobData;
     while (nextJobData) {
       await this.checkForQueueClosing(job, asyncJob, nextJobData);
