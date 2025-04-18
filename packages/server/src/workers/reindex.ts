@@ -195,9 +195,26 @@ export class ReindexJob {
       return 'finished';
     }
 
+    /*
+    When a ReindexJob needs to scan a very large table for resources to reindex,
+    but most/all have already been reindexed, the search will scan the most/all of table
+    before finding any results with a query such as the following. Depending on factors
+    such as the size of the table, the number of rows that have already been reindexed,
+    and the performance of the database, this can take a long time.
+
+    ```sql
+    SELECT "Task"."id", "Task"."lastUpdated", "Task"."content"
+    FROM "Task"
+    WHERE (
+      ("Task"."__version" <= 2 OR "Task"."__version" IS NULL)
+      AND "Task"."deleted" = false
+      AND "Task"."lastUpdated" < '2025-04-19'
+    ORDER BY "Task"."lastUpdated" LIMIT 501
+    ```
+    */
     const client = await this.systemRepo.getDatabaseClient(DatabaseMode.WRITER);
     try {
-      await client.query(`SET statement_timeout TO 7200000`); // 2 hours
+      await client.query(`SET statement_timeout TO 3600000`); // 1 hour
       return await this.executeMainLoop(job, asyncJob, inputJobData);
     } finally {
       this.systemRepo[Symbol.dispose](true);
