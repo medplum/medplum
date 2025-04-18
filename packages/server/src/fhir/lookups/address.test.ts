@@ -235,9 +235,9 @@ describe('Address Lookup Table', () => {
       id: '1',
       address: undefined,
     };
-    let result: any[] = [];
-    table.extractValues(result, r1);
-    expect(result).toStrictEqual([]);
+    const result1: any[] = [];
+    table.extractValues(result1, r1);
+    expect(result1).toStrictEqual([]);
 
     const r2: WithId<Patient> = {
       resourceType: 'Patient',
@@ -260,9 +260,9 @@ describe('Address Lookup Table', () => {
       ] as unknown as Address[],
     };
 
-    result = [];
-    table.extractValues(result, r2);
-    expect(result).toStrictEqual([
+    const result2: any[] = [];
+    table.extractValues(result2, r2);
+    expect(result2).toStrictEqual([
       {
         resourceId: '2',
         address: 'Line 1, City 1, State 1, Postal 1',
@@ -289,6 +289,47 @@ describe('Address Lookup Table', () => {
         resourceId: '2',
         state: undefined,
         use: 'home',
+      },
+    ]);
+
+    const r3: WithId<InsurancePlan> = {
+      resourceType: 'InsurancePlan',
+      id: '3',
+      contact: [
+        {
+          address: {
+            use: 'work',
+            line: ['Line 1'],
+            city: 'City 1',
+            country: 'Country 1',
+            postalCode: 'Postal 1',
+            state: 'State 1',
+          },
+        },
+        {
+          address: {
+            use: 'work',
+            line: ['Line 1'],
+            city: 'City 1',
+            country: 'Country 1',
+            postalCode: 'Postal 1',
+            state: 'State 1',
+          },
+        },
+      ],
+    };
+
+    const result3: any[] = [];
+    table.extractValues(result3, r3);
+    expect(result3).toStrictEqual([
+      {
+        resourceId: '3',
+        address: 'Line 1, City 1, State 1, Postal 1',
+        city: 'City 1',
+        country: 'Country 1',
+        postalCode: 'Postal 1',
+        state: 'State 1',
+        use: 'work',
       },
     ]);
   });

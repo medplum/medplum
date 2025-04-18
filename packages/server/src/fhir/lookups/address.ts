@@ -158,21 +158,28 @@ export class AddressTable extends LookupTable {
       return undefined;
     }
 
+    let addresses: (Address | undefined | null)[] | undefined;
+
     switch (resource.resourceType) {
       case 'Patient':
       case 'Person':
       case 'Practitioner':
       case 'RelatedPerson':
       case 'Organization':
-        return resource.address?.filter((address) => !!address);
+        addresses = resource.address;
+        break;
       case 'InsurancePlan':
-        return resource.contact?.map((contact) => contact.address).filter((address) => !!address);
+        addresses = resource.contact?.map((contact) => contact.address);
+        break;
       case 'Location':
-        return resource.address ? [resource.address] : undefined;
+        addresses = resource.address ? [resource.address] : undefined;
+        break;
       default:
         resource.resourceType satisfies never;
         return undefined;
     }
+
+    return addresses?.filter((a) => !!a);
   }
 
   /**

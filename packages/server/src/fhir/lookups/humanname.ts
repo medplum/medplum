@@ -73,7 +73,7 @@ export class HumanNameTable extends LookupTable {
       return;
     }
 
-    const names = (resource as HumanNameResource).name;
+    const names: (HumanName | undefined | null)[] | undefined = (resource as HumanNameResource).name;
     if (!Array.isArray(names)) {
       return;
     }
