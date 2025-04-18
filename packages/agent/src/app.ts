@@ -27,6 +27,7 @@ import { platform } from 'node:os';
 import process from 'node:process';
 import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
+import { RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
@@ -269,13 +270,10 @@ export class App {
       }
     });
 
-    return new Promise<void>((resolve, reject) => {
-      const connectTimeout = setTimeout(
-        () => reject(new Error('Timeout when attempting to connect to server WebSocket')),
-        10000
-      );
+    return new Promise<void>((resolve) => {
+      const connectInterval = setInterval(() => this.webSocket?.reconnect(), RETRY_WAIT_DURATION_MS);
       this.webSocket?.addEventListener('open', () => {
-        clearTimeout(connectTimeout);
+        clearInterval(connectInterval);
         resolve();
       });
     });
