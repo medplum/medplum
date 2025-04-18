@@ -107,14 +107,25 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
 }
 
 async function moveToDelayed(job: Job<PostDeployJobData>, reason: string): Promise<void> {
-  const delayMs = 60_000;
-  globalLogger.info(reason, {
+  if (job.token) {
+    const delayMs = 60_000;
+    globalLogger.info(reason, {
+      jobId: job.id,
+      delayMs,
+      ...getJobDataLoggingFields(job),
+    });
+    await job.moveToDelayed(Date.now() + delayMs, job.token);
+    throw new DelayedError(reason);
+  }
+  globalLogger.error('Cannot delay job since job.token is not available', {
     jobId: job.id,
-    delayMs,
+    reason,
     ...getJobDataLoggingFields(job),
   });
-  await job.moveToDelayed(Date.now() + delayMs, job.token);
-  throw new DelayedError(reason);
+
+  // This is one of those "this should never happen" errors. job.token is expected to always be set
+  // given the way we use bullmq.
+  throw new Error('Cannot delay Post-deploy migration job since job.token is not available');
 }
 
 export async function runCustomMigration(

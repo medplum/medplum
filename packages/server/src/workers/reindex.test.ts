@@ -627,7 +627,7 @@ describe('Job cancellation', () => {
 
       if (jobToken) {
         expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
-        expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), 'some-token');
+        expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), jobToken);
       } else {
         expect(job.moveToDelayed).not.toHaveBeenCalled();
       }
