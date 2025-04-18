@@ -21,7 +21,13 @@ import { DatabaseMode, getDatabasePool, maybeStartPostDeployMigration } from '..
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo, Repository } from '../fhir/repo';
+import {
+  DefaultReadFromTokenColumns,
+  getReadFromTokenColumnsFeature,
+  setReadFromTokenColumnsFeature,
+} from '../fhir/tokens';
 import { globalLogger } from '../logger';
+import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
@@ -29,7 +35,6 @@ import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import { addReindexJob } from '../workers/reindex';
-import { markPostDeployMigrationCompleted } from '../migration-sql';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_scale_factor: 'float',
@@ -434,6 +439,40 @@ superAdminRouter.post(
         parameter: [{ name: 'outcome', resource: allOk }],
       };
     });
+  })
+);
+
+superAdminRouter.get(
+  '/getreadfromtokencolumns',
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const params = {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'defaultValue', valueBoolean: DefaultReadFromTokenColumns },
+        { name: 'redisValue', valueBoolean: await getReadFromTokenColumnsFeature() },
+      ],
+    };
+    res.json(params);
+  })
+);
+
+superAdminRouter.post(
+  '/setreadfromtokencolumns',
+
+  [body('newValue').isBoolean({ strict: true }).withMessage('newValue must be true or false')],
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    await setReadFromTokenColumnsFeature(req.body.newValue);
+    sendOutcome(res, allOk);
   })
 );
 
