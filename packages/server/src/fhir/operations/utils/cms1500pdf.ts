@@ -9,6 +9,7 @@ import {
 import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
+import { join } from 'path';
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
@@ -102,7 +103,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
     pageMargins: 0,
     content: [
       {
-        image: 'static/cms1500.png',
+        image: join(__dirname, '../../../../static/cms1500.png'),
         absolutePosition: { x: 0, y: 0 },
         width: PAGE_WIDTH,
         height: PAGE_HEIGHT,
