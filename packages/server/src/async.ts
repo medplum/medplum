@@ -10,9 +10,7 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
  * @returns Async wrapped handler.
  */
 export function asyncWrap(callback: (req: Request, res: Response, next: NextFunction) => Promise<any>): RequestHandler {
-  const fn = function (req: Request, res: Response, next: NextFunction): void {
+  return (req: Request, res: Response, next: NextFunction): void => {
     callback(req, res, next).catch(next);
   };
-  fn.name = callback.name;
-  return fn;
 }
