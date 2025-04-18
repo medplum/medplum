@@ -193,12 +193,9 @@ function buildCodingToken(result: Token[], context: TokensContext, coding: Codin
  * @param contactPoint - The ContactPoint object to be indexed.
  */
 function buildContactPointToken(result: Token[], context: TokensContext, contactPoint: ContactPoint | undefined): void {
-  buildSimpleToken(
-    result,
-    context,
-    contactPoint?.system,
-    contactPoint?.value ? contactPoint.value.toLocaleLowerCase() : contactPoint?.value
-  );
+  if (contactPoint) {
+    buildSimpleToken(result, context, contactPoint.system, contactPoint.value?.toLocaleLowerCase());
+  }
 }
 
 /**

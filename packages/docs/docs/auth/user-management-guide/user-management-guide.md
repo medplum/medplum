@@ -19,7 +19,7 @@ Medplum has several resources that represent user identities. The following reso
 ```mermaid
 
 graph TD
-	User1["<strong>User</strong><br/>email: foo@example.com"]
+	User1["<strong>User</strong><br/>email: foo＠example.com<br/><span style='color:grey'><em>Server Scoped</em></span>"]
 	PM1_1("<strong>ProjectMembership</strong><br/>admin: true")
 	PM1_2("<strong>ProjectMembership</strong><br/>admin: false")
 	PM2_2("<strong>ProjectMembership</strong><br/>accessPolicy: ['AccessPolicy/123']")
@@ -36,7 +36,7 @@ graph TD
     Bot["<strong>Bot</strong>"] --> PM2_3("<strong>ProjectMembership</strong><br/>accessPolicy: ['AccessPolicy/456']")
 	end
 	subgraph Project1
-    User2["<strong>User</strong><br/>email: bar@example.com"]
+    User2["<strong>User</strong><br/>email: bar＠example.com<br/><span style='color:grey'><em>Project Scoped</em></span>"]
     PM1_2 --> p4
 		p4[[Practitioner]]
 	  p5[[DiagnosticReport]]
@@ -57,22 +57,13 @@ graph TD
 
 The [User](/docs/api/fhir/medplum/user) resource is the main resource that represents digital identity during authentication.
 
-[Users](/docs/api/fhir/medplum/user) can have two different scopes:
+[Users](/docs/api/fhir/medplum/user) can have two different scopes, `server` or `project`:
 
-- Server scoped users
-- Project scoped users
+- [Server scoped users](/docs/auth/project-vs-server-scoped-users#server-scoped-users) tend to be administrators and developers that need to access multiple projects.
+- [Project scoped users](/docs/auth/project-vs-server-scoped-users#project-scoped-users) tend to be clinicians and patients that only need access to a single project.
 
-#### Server Scoped Users
+See our guide on [Project vs Server Scoped Users](/docs/auth/project-vs-server-scoped-users) for more details.
 
-Server scoped [`Users`](/docs/api/fhir/medplum/user) are typically used for `Practitioners`. Practitioners can be members of multiple projects (e.g. "staging" and "prod"), and having their `Users` at the server level allows them to easily sign into multiple projects.
-
-#### Project Scoped Users
-
-Project scoped [`Users`](/docs/api/fhir/medplum/user) only exist inside a project level, and cannot sign into server-level tools such as the [Medplum App](/docs/app). The most common use case is for [`Patient`](/docs/api/fhir/resources/patient) users. These users will have to be invited and enrolled separately to each[ `Project` ](/docs/api/fhir/medplum/project) they are a part of, and there will be no link between their identities across projects.
-
-This is desirable in multi-tenant use cases, where patients enrolled with one tenant should not be aware of other tenants.
-
-By default, the server scopes all users [`Users`](/docs/api/fhir/medplum/user) enrolled as with a [`Patient`](/docs/api/fhir/resources/patient) profile ([see below](#profiles)) as project-scoped users.
 
 ### Profiles
 

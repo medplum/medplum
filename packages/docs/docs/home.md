@@ -25,6 +25,7 @@ Medplum is a **headless EHR**. Using [Medplum products](./products) you can buil
 - Get started right away, you can [register here](https://app.medplum.com/register). If needed, Medplum also supports [self-hosting](./docs/self-hosting), get the [source code](https://github.com/medplum/medplum) on Github.
 - The [Basic Concepts](./docs/fhir-basics) page provides a good primer on Medplum and contains important information about the FHIR, the healthcare data standard on which Medplum is built.
 - If you're ready to start coding, use our [tutorials](./docs/tutorials) to get up and running
+- If you want to test out the full Medplum stack locally, see how how you can [run the stack with just two commands!](./docs/self-hosting/running-full-medplum-stack-in-docker)
 - Our detailed documentations goes step-by-step through specific use cases. Don't see a how-to guide you need? Reach out on our [Discord](https://discord.gg/medplum) or send us an email at [support@medplum.com](mailto:support@medplum.com)
 
 ## Reference Material

@@ -1,5 +1,5 @@
-import { Operator } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { Operator, WithId } from '@medplum/core';
+import { HumanName, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
@@ -257,5 +257,34 @@ describe('HumanName Lookup Table', () => {
     await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');
 
     expect(db.query).not.toHaveBeenCalled();
+  });
+
+  test('extractValues defensive against nullish values', () => {
+    const table = new HumanNameTable();
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      name: undefined,
+    };
+    let result: any[] = [];
+    table.extractValues(result, r1);
+    expect(result).toStrictEqual([]);
+
+    const r2: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '2',
+      name: [{}, null, undefined, { family: 'Family' }, { family: 'Family' }] as unknown as HumanName[],
+    };
+
+    result = [];
+    table.extractValues(result, r2);
+    expect(result).toStrictEqual([
+      {
+        resourceId: '2',
+        name: 'Family',
+        given: undefined,
+        family: 'Family',
+      },
+    ]);
   });
 });
