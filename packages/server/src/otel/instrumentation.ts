@@ -68,7 +68,6 @@ export function initOpenTelemetry(): void {
         span.setStatus(
           res.statusCode && res.statusCode < 400 ? { code: SpanStatusCode.OK } : { code: SpanStatusCode.ERROR }
         );
-        span.setAttribute('medplum.foo', 'bar');
       },
     }),
     // new UndiciInstrumentation(),
