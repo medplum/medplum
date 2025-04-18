@@ -1,4 +1,10 @@
-import { createReference, OperationOutcomeError, parseSearchRequest, preconditionFailed } from '@medplum/core';
+import {
+  createReference,
+  LogLevel,
+  OperationOutcomeError,
+  parseSearchRequest,
+  preconditionFailed,
+} from '@medplum/core';
 import {
   AsyncJob,
   ImmunizationEvaluation,
@@ -17,8 +23,16 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
 import { createTestProject, withTestContext } from '../test.setup';
-import { addReindexJob, getReindexQueue, prepareReindexJobData, ReindexJob, ReindexJobData } from './reindex';
+import {
+  addReindexJob,
+  getReindexQueue,
+  prepareReindexJobData,
+  REINDEX_WORKER_VERSION,
+  ReindexJob,
+  ReindexJobData,
+} from './reindex';
 import { queueRegistry } from './utils';
+import { systemLogger } from '../logger';
 
 describe('Reindex Worker', () => {
   let repo: Repository;
@@ -215,7 +229,10 @@ describe('Reindex Worker', () => {
       const systemRepo = getSystemRepo();
       const reindexJob = new ReindexJob(systemRepo);
       jest.spyOn(systemRepo, 'search').mockRejectedValueOnce(new Error('Failed to search systemRepo'));
+      const originalLevel = systemLogger.level;
+      systemLogger.level = LogLevel.NONE;
       await expect(reindexJob.execute(undefined, jobData)).resolves.toBe('finished');
+      systemLogger.level = originalLevel;
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('error');
@@ -600,7 +617,6 @@ describe('Job cancellation', () => {
       const isClosingSpy = jest.spyOn(queueRegistry, 'isClosing').mockReturnValue(true);
       const jobData = prepareReindexJobData(['MedicinalProductContraindication'], originalJob.id);
       const job = new Job(queue, 'ReindexJob', jobData, { attempts: 55 });
-
       // job.token generally gets set deep in the internals of bullmq, but we mock the module
       job.token = jobToken;
 
@@ -632,6 +648,41 @@ describe('Job cancellation', () => {
         expect(job.moveToDelayed).not.toHaveBeenCalled();
       }
     })
+  );
+
+  test.each([undefined, REINDEX_WORKER_VERSION + 1, REINDEX_WORKER_VERSION])(
+    'Handles insufficient reindex worker version with job.token %s and minReindexWorkerVersion %s',
+    async (minReindexWorkerVersion) => {
+      const originalJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const queueName = 'ReindexQueue';
+      const queue = queueRegistry.get(queueName);
+      if (!queue) {
+        throw new Error('Could not find queue');
+      }
+      // temporarily set to {} to appease typescript since it gets set within the withTestContext callback
+      let jobData: ReindexJobData = {} as unknown as ReindexJobData;
+      await withTestContext(async () => {
+        jobData = prepareReindexJobData(['MedicinalProductContraindication'], originalJob.id);
+      });
+
+      // `as any` since it's a readonly property
+      (jobData as any).minReindexWorkerVersion = minReindexWorkerVersion;
+
+      const job = new Job(queue, 'ReindexJob', jobData, { attempts: 55 });
+      // Since the Job class is fully mocked, we need to set the data property manually
+      job.data = jobData;
+
+      const result = await new ReindexJob().execute(job, jobData);
+      expect(result).toBe(
+        minReindexWorkerVersion && REINDEX_WORKER_VERSION < minReindexWorkerVersion ? 'ineligible' : 'finished'
+      );
+    }
   );
 
   test('Ensure updates from job do not clobber cancellation status', () =>

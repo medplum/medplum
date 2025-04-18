@@ -60,7 +60,7 @@ const defaultProgressLogThreshold = 50_000;
 
 // Version that can be bumped when the worker code changes, typically for bug fixes,
 // to prevent workers running older versions of the reindex worker from processing jobs
-const REINDEX_WORKER_VERSION = 1;
+export const REINDEX_WORKER_VERSION = 1;
 
 export const initReindexWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
@@ -80,19 +80,7 @@ export const initReindexWorker: WorkerInitializer = (config) => {
 
   const worker = new Worker<ReindexJobData>(
     ReindexQueueName,
-    async (job) =>
-      tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => {
-        const result = await new ReindexJob().execute(job, job.data);
-        if (result === 'ineligible') {
-          globalLogger.info('Delaying ReindexJob since worker is not eligible to execute it', {
-            queueName: job.queueName,
-            token: job.token,
-            jobData: JSON.stringify(job.data),
-          });
-          await job.moveToDelayed(Date.now() + 60_000, job.token);
-          throw new DelayedError('Reindex job delayed since worker is not eligible to execute it');
-        }
-      }),
+    async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
     {
       ...defaultOptions,
       ...config.bullmq,
@@ -105,6 +93,19 @@ export const initReindexWorker: WorkerInitializer = (config) => {
 
   return { queue, worker, name: ReindexQueueName };
 };
+
+export async function jobProcessor(job: Job<ReindexJobData>): Promise<void> {
+  const result = await new ReindexJob().execute(job, job.data);
+  if (result === 'ineligible') {
+    globalLogger.info('Delaying ReindexJob since worker is not eligible to execute it', {
+      queueName: job.queueName,
+      token: job.token,
+      jobData: JSON.stringify(job.data),
+    });
+    await job.moveToDelayed(Date.now() + 60_000, job.token);
+    throw new DelayedError('Reindex job delayed since worker is not eligible to execute it');
+  }
+}
 
 export type ReindexExecuteResult = 'finished' | 'ineligible' | 'interrupted';
 
