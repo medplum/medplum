@@ -109,15 +109,8 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
       console.log('Claim found', response[0]);
       setClaim(response[0]);
     } else {
-  
       try {
-        const newClaim = await createClaimFromEncounter(
-          medplum,
-          patientId,
-          encounter.id,
-          practitioner.id,
-          chargeItems
-        );
+        const newClaim = await createClaimFromEncounter(medplum, patientId, encounter.id, practitioner.id, chargeItems);
         if (newClaim) {
           setClaim(newClaim);
           console.log('Claim created', newClaim);
@@ -126,7 +119,6 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
         showErrorNotification(err);
       }
     }
-
   }, [patientId, encounter, medplum, practitioner, chargeItems]);
 
   // Fetch data on component mount or when encounter changes
@@ -138,7 +130,7 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
       // fetchChargeItems().catch((err) => showErrorNotification(err));
     }
   }, [encounter, fetchTasks, fetchClinicalImpressions]);
-  
+
   useEffect(() => {
     if (encounter) {
       fetchClaim().catch((err) => showErrorNotification(err));
@@ -159,7 +151,6 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     }
   }, [encounter, medplum]);
 
-  
   return {
     // State values
     encounter,
