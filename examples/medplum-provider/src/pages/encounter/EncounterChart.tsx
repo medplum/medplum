@@ -13,7 +13,7 @@ import {
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router';
-import { IconCircleCheck, IconCircleOff, IconFileText } from '@tabler/icons-react';
+import { IconCircleCheck, IconCircleOff, IconDownload, IconFileText } from '@tabler/icons-react';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { usePatient } from '../../hooks/usePatient';
@@ -156,12 +156,29 @@ export const EncounterChart = (): JSX.Element => {
       saveTimeoutRef.current = setTimeout(async () => {
         const savedChargeItem = await saveChargeItem(updatedChargeItem);
         const updatedChargeItems = await fetchAndApplyChargeItemDefinitions(
-          medplum, 
-          chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item)));
+          medplum,
+          chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item))
+        );
         setChargeItems(updatedChargeItems);
+        
+        if (claim?.id) {
+          const updatedClaim = {
+            ...claim,
+            item: updatedChargeItems.map((chargeItem, index) => ({
+              sequence: index + 1,
+              encounter: claim.item?.[0]?.encounter || [],
+              productOrService: chargeItem.code,
+              net: chargeItem.priceOverride,
+            })),
+            total: { value: calculateTotalPrice(updatedChargeItems) },
+          };
+          const savedClaim = await medplum.updateResource(updatedClaim);
+          setClaim(savedClaim);
+          console.log('Updated claim with new charge items', savedClaim);
+        }
       }, SAVE_TIMEOUT_MS);
     },
-    [chargeItems, saveChargeItem, setChargeItems, medplum]
+    [chargeItems, saveChargeItem, setChargeItems, medplum, claim, setClaim]
   );
 
   const handleEncounterStatusChange = useCallback(
@@ -202,7 +219,6 @@ export const EncounterChart = (): JSX.Element => {
   };
 
   const handleEncounterChange = (updatedEncounter: Encounter): void => {
-
     console.log('handleEncounterChange', updatedEncounter);
     if (!updatedEncounter) {
       return;
@@ -221,12 +237,12 @@ export const EncounterChart = (): JSX.Element => {
           const practitionerResult = await medplum.readReference(savedEncounter.participant[0].individual);
           setPractitioner(practitionerResult as Practitioner);
         }
-        
-        if(!patient?.id || !encounter?.id || !practitioner?.id || chargeItems.length === 0) {
+
+        if (!patient?.id || !encounter?.id || !practitioner?.id || chargeItems.length === 0) {
           return;
         }
 
-        if(!claim) {
+        if (!claim) {
           console.log('Creating new claim');
           const newClaim = await createClaimFromEncounter(
             medplum,
@@ -240,12 +256,11 @@ export const EncounterChart = (): JSX.Element => {
           console.log('Updating claim');
           const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(practitioner);
           if (providerRefNeedsUpdate) {
-            const updatedClaim: Claim = await medplum.updateResource(  
-              {
-                ...claim,
-                provider: { reference: getReferenceString(practitioner) }
-              });
-              setClaim(updatedClaim);
+            const updatedClaim: Claim = await medplum.updateResource({
+              ...claim,
+              provider: { reference: getReferenceString(practitioner) },
+            });
+            setClaim(updatedClaim);
           }
         }
       } catch (err) {
@@ -281,31 +296,36 @@ export const EncounterChart = (): JSX.Element => {
     } else {
       return (
         <Stack gap="md">
-
           {claim && (
-           <Card withBorder shadow="sm">
-             <Menu shadow="md" width={200}>
-              <Menu.Target>
-                <Button>Export Claim</Button>
-              </Menu.Target>
-        
-              <Menu.Dropdown>
-                <Menu.Label>Export Options</Menu.Label>
-                
-                <Menu.Item leftSection={<IconFileText size={14} />} onClick={() => console.log('CMS 1500 selected')}>
-                  CMS 1500 Form
-                </Menu.Item>
-                
-                <Menu.Item leftSection={<IconFileText size={14} />}  onClick={() => console.log('EDI X12 selected')}>
-                  EDI X12
-                </Menu.Item>
-                
-                <Menu.Item leftSection={<IconFileText size={14} />}  onClick={() => console.log('NUCC Crosswalk selected')}>
-                  NUCC Crosswalk CSV
-                </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-           </Card>
+            
+            <Card withBorder shadow="sm">
+            <Box display="inline-block">
+              <Menu shadow="md" width={200}>
+                <Menu.Target>
+                  <Button variant="outline" leftSection={<IconDownload size={16} />}>Export Claim</Button>
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                  <Menu.Label>Export Options</Menu.Label>
+
+                  <Menu.Item leftSection={<IconFileText size={14} />} onClick={() => console.log('CMS 1500 selected')}>
+                    CMS 1500 Form
+                  </Menu.Item>
+
+                  <Menu.Item leftSection={<IconFileText size={14} />} onClick={() => console.log('EDI X12 selected')}>
+                    EDI X12
+                  </Menu.Item>
+
+                  <Menu.Item
+                    leftSection={<IconFileText size={14} />}
+                    onClick={() => console.log('NUCC Crosswalk selected')}
+                  >
+                    NUCC Crosswalk CSV
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+              </Box>
+            </Card>
           )}
 
           <Group grow align="flex-start">
@@ -415,7 +435,6 @@ export const EncounterChart = (): JSX.Element => {
                       <TextInput w={300} value={`$${calculateTotalPrice(chargeItems)}`} readOnly />
                     </Box>
                   </Flex>
-
                 </Card>
               </Stack>
             ) : (
