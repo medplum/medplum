@@ -282,7 +282,7 @@ describe('HumanName Lookup Table', () => {
       {
         resourceId: '2',
         name: 'Family',
-        given: '',
+        given: undefined,
         family: 'Family',
       },
     ]);
