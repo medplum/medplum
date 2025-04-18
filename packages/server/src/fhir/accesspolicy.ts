@@ -12,6 +12,8 @@ import { AuthState } from '../oauth/middleware';
 import { Repository, getSystemRepo } from './repo';
 import { applySmartScopes } from './smart';
 
+export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
+
 /**
  * Creates a repository object for the user auth state.
  * Individual instances of the Repository class manage access rights to resources.
@@ -80,7 +82,7 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
  * @param membership - The user project membership.
  * @returns The parameterized compound access policy.
  */
-export async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessPolicy> {
+export async function buildAccessPolicy(membership: ProjectMembership): Promise<PopulatedAccessPolicy> {
   let access: ProjectMembershipAccess[] = [];
 
   if (membership.accessPolicy) {
@@ -185,32 +187,20 @@ function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void
 function applyProjectAdminAccessPolicy(
   project: Project,
   membership: ProjectMembership,
-  accessPolicy: AccessPolicy
-): AccessPolicy {
+  accessPolicy: PopulatedAccessPolicy
+): PopulatedAccessPolicy {
   if (project.superAdmin) {
-    // If the user is a super admin, then do not apply any additional access policy rules.
-    return accessPolicy;
-  }
-
-  if (accessPolicy) {
-    // If there is an existing access policy
-    // Remove any references to project admin resource types
+    for (const adminResourceType of projectAdminResourceTypes) {
+      if (!accessPolicy.resource.some((r) => r.resourceType === adminResourceType)) {
+        accessPolicy.resource.push({ resourceType: adminResourceType });
+      }
+    }
+  } else if (membership.admin) {
+    // If the user is a project admin,
+    // then grant limited access to the project admin resource types
     accessPolicy.resource = accessPolicy.resource?.filter(
       (r) => !projectAdminResourceTypes.includes(r.resourceType as string)
     );
-  }
-
-  if (membership.admin) {
-    // If the user is a project admin,
-    // then grant limited access to the project admin resource types
-    if (!accessPolicy) {
-      accessPolicy = { resourceType: 'AccessPolicy' };
-    }
-
-    if (!accessPolicy.resource) {
-      accessPolicy.resource = [{ resourceType: '*' }];
-    }
-
     accessPolicy.resource.push({
       resourceType: 'Project',
       criteria: `Project?_id=${resolveId(membership.project)}`,
@@ -229,7 +219,6 @@ function applyProjectAdminAccessPolicy(
 
     accessPolicy.resource.push({
       resourceType: 'ProjectMembership',
-      criteria: `ProjectMembership?project=${membership.project.reference}`,
       readonlyFields: ['project', 'user'],
     });
 
@@ -245,10 +234,14 @@ function applyProjectAdminAccessPolicy(
 
     accessPolicy.resource.push({
       resourceType: 'User',
-      criteria: `User?project=${membership.project.reference}`,
       hiddenFields: ['passwordHash', 'mfaSecret'],
       readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
     });
+  } else {
+    // Remove any references to project admin resource types
+    accessPolicy.resource = accessPolicy.resource?.filter(
+      (r) => !projectAdminResourceTypes.includes(r.resourceType as string)
+    );
   }
 
   return accessPolicy;
