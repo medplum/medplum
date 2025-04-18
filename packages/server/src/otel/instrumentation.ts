@@ -2,19 +2,13 @@ import { MEDPLUM_VERSION } from '@medplum/core';
 import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
-// import { AwsLambdaInstrumentation } from '@opentelemetry/instrumentation-aws-lambda';
-// import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import { DataloaderInstrumentation } from '@opentelemetry/instrumentation-dataloader';
-// import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-// import FsInstrumentation from '@opentelemetry/instrumentation-fs';
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
-// import { NetInstrumentation } from '@opentelemetry/instrumentation-net';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
-// import { UndiciInstrumentation } from '@opentelemetry/instrumentation-undici';
 import { Resource } from '@opentelemetry/resources';
 import { MetricReader, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
@@ -60,19 +54,14 @@ export function initOpenTelemetry(): void {
 
   const instrumentations = [
     new RuntimeNodeInstrumentation(),
-    // new FsInstrumentation(),
-    // new NetInstrumentation(),
-    // new DnsInstrumentation(),
     new HttpInstrumentation({
       applyCustomAttributesOnSpan(span, req, res) {
-        span.setStatus(
-          res.statusCode && res.statusCode < 400 ? { code: SpanStatusCode.OK } : { code: SpanStatusCode.ERROR }
-        );
+        const code = res.statusCode && res.statusCode < 400 ? SpanStatusCode.OK : SpanStatusCode.ERROR;
+        span.setStatus({ code });
       },
     }),
-    // new UndiciInstrumentation(),
 
-    new PgInstrumentation(),
+    new PgInstrumentation({ enhancedDatabaseReporting: true }),
     new IORedisInstrumentation(),
 
     new ExpressInstrumentation(),
@@ -80,18 +69,9 @@ export function initOpenTelemetry(): void {
       ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
     }),
     new DataloaderInstrumentation(),
-
-    // new AwsInstrumentation(),
-    // new AwsLambdaInstrumentation(),
   ];
 
-  sdk = new NodeSDK({
-    resource,
-    instrumentations,
-    metricReader,
-    traceExporter,
-  });
-
+  sdk = new NodeSDK({ resource, instrumentations, metricReader, traceExporter });
   sdk.start();
 }
 
