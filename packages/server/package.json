@@ -14,7 +14,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "build": "npm run clean && tsc && tsc --project tsconfig.build.json && node -e \"require('node:fs').cpSync('src/img', 'dist/img', { recursive: true });\"",
+    "build": "npm run clean && tsc && tsc --project tsconfig.build.json",
     "clean": "rimraf dist",
     "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/otel/instrumentation.ts src/index.ts",
     "lint": "eslint .",
