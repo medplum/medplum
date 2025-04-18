@@ -50,7 +50,7 @@ spec:
             httpGet:
               path: /healthcheck
               port: {{ .Values.service.targetPort | default 8103 }}
-              initialDelaySeconds: 60
+            initialDelaySeconds: 60
           readinessProbe:
             httpGet:
               path: /healthcheck
@@ -63,6 +63,9 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+        {{- with .Values.deployment.sidecars }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
