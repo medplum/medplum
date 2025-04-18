@@ -35,6 +35,7 @@ import {
 export interface ReindexJobData extends PostDeployJobData {
   readonly type: 'reindex';
   readonly resourceTypes: ResourceType[];
+  readonly minReindexWorkerVersion?: number;
   readonly maxResourceVersion?: number;
   readonly cursor?: string;
   readonly endTimestamp: string;
@@ -56,6 +57,10 @@ const ReindexQueueName = 'ReindexQueue';
 
 const defaultBatchSize = 500;
 const defaultProgressLogThreshold = 50_000;
+
+// Version that can be bumped when the worker code changes, typically for bug fixes,
+// to prevent workers running older versions of the reindex worker from processing jobs
+const REINDEX_WORKER_VERSION = 1;
 
 export const initReindexWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
@@ -167,6 +172,10 @@ export class ReindexJob {
 
   async execute(job: Job<ReindexJobData> | undefined, inputJobData: ReindexJobData): Promise<ReindexExecuteResult> {
     const asyncJob = await this.refreshAsyncJob(this.systemRepo, inputJobData.asyncJobId);
+
+    if (inputJobData.minReindexWorkerVersion && inputJobData.minReindexWorkerVersion > REINDEX_WORKER_VERSION) {
+      return 'ineligible';
+    }
 
     if (!isJobCompatible(asyncJob)) {
       return 'ineligible';
@@ -473,6 +482,7 @@ export function prepareReindexJobData(
 
   return {
     type: 'reindex',
+    minReindexWorkerVersion: REINDEX_WORKER_VERSION,
     resourceTypes,
     endTimestamp,
     asyncJobId,
