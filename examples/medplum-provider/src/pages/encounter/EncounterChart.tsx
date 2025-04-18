@@ -1,4 +1,4 @@
-import { Stack, Box, Card, Text, Group, Flex, TextInput, Button } from '@mantine/core';
+import { Stack, Box, Card, Text, Group, Flex, TextInput, Button, Menu } from '@mantine/core';
 import {
   Task,
   ClinicalImpression,
@@ -13,7 +13,7 @@ import {
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router';
-import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { IconCircleCheck, IconCircleOff, IconFileText } from '@tabler/icons-react';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { usePatient } from '../../hooks/usePatient';
@@ -25,10 +25,10 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './EncounterChart.module.css';
 import { deepEquals, getReferenceString } from '@medplum/core';
-import { calculateTotalPrice, createClaimFromEncounter } from '../../utils/claims';
+import { calculateTotalPrice, createClaimFromEncounter, fetchAndApplyChargeItemDefinitions } from '../../utils/claims';
 
 export const EncounterChart = (): JSX.Element => {
-  const { encounterId } = useParams();
+  const { patientId, encounterId } = useParams();
   const medplum = useMedplum();
   const patient = usePatient();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -50,7 +50,7 @@ export const EncounterChart = (): JSX.Element => {
     setClinicalImpression,
     setQuestionnaireResponse,
     setChargeItems,
-  } = useEncounterChart(encounterId);
+  } = useEncounterChart(patientId, encounterId);
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
@@ -148,16 +148,20 @@ export const EncounterChart = (): JSX.Element => {
 
   const updateChargeItemList = useCallback(
     (updatedChargeItem: ChargeItem): void => {
+      console.log('NEEEEWWW updateChargeItemList', updatedChargeItem);
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
 
       saveTimeoutRef.current = setTimeout(async () => {
         const savedChargeItem = await saveChargeItem(updatedChargeItem);
-        setChargeItems(chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item)));
+        const updatedChargeItems = await fetchAndApplyChargeItemDefinitions(
+          medplum, 
+          chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item)));
+        setChargeItems(updatedChargeItems);
       }, SAVE_TIMEOUT_MS);
     },
-    [chargeItems, saveChargeItem, setChargeItems]
+    [chargeItems, saveChargeItem, setChargeItems, medplum]
   );
 
   const handleEncounterStatusChange = useCallback(
@@ -198,6 +202,8 @@ export const EncounterChart = (): JSX.Element => {
   };
 
   const handleEncounterChange = (updatedEncounter: Encounter): void => {
+
+    console.log('handleEncounterChange', updatedEncounter);
     if (!updatedEncounter) {
       return;
     }
@@ -216,7 +222,7 @@ export const EncounterChart = (): JSX.Element => {
           setPractitioner(practitionerResult as Practitioner);
         }
         
-        if(!patient?.id || !encounter?.id || !practitioner?.id) {
+        if(!patient?.id || !encounter?.id || !practitioner?.id || chargeItems.length === 0) {
           return;
         }
 
@@ -229,9 +235,7 @@ export const EncounterChart = (): JSX.Element => {
             practitioner.id,
             chargeItems
           );
-          if (newClaim) {
-            setClaim(newClaim);
-          }
+          setClaim(newClaim);
         } else {
           console.log('Updating claim');
           const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(practitioner);
@@ -277,6 +281,33 @@ export const EncounterChart = (): JSX.Element => {
     } else {
       return (
         <Stack gap="md">
+
+          {claim && (
+           <Card withBorder shadow="sm">
+             <Menu shadow="md" width={200}>
+              <Menu.Target>
+                <Button>Export Claim</Button>
+              </Menu.Target>
+        
+              <Menu.Dropdown>
+                <Menu.Label>Export Options</Menu.Label>
+                
+                <Menu.Item leftSection={<IconFileText size={14} />} onClick={() => console.log('CMS 1500 selected')}>
+                  CMS 1500 Form
+                </Menu.Item>
+                
+                <Menu.Item leftSection={<IconFileText size={14} />}  onClick={() => console.log('EDI X12 selected')}>
+                  EDI X12
+                </Menu.Item>
+                
+                <Menu.Item leftSection={<IconFileText size={14} />}  onClick={() => console.log('NUCC Crosswalk selected')}>
+                  NUCC Crosswalk CSV
+                </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+           </Card>
+          )}
+
           <Group grow align="flex-start">
             <Stack gap={0}>
               <Text fw={600} size="lg" mb="md">
@@ -385,35 +416,6 @@ export const EncounterChart = (): JSX.Element => {
                     </Box>
                   </Flex>
 
-                  {claim && (
-                    <Box mt="md">
-                      <Group grow align="flex-start">
-                        <Text>
-                          Claim submitted for ${claim.total?.value || 0} on{' '}
-                          {new Date(claim.created || '').toLocaleDateString()}
-                        </Text>
-                        <Box>
-                          <Button component="a" href={`/Claim/${claim.id}`} target="_blank" fullWidth variant="outline">
-                            View Claim Details
-                          </Button>
-                        </Box>
-                      </Group>
-                    </Box>
-                  )}
-
-                  {/* {!claim && encounter.status === 'finished' && (
-                    <Box mt="md">
-                      <Button
-                        fullWidth
-                        loading={isLoadingEncounter}
-                        onClick={async () => {
-                          await createClaimFromEncounter();
-                        }}
-                      >
-                        Submit Claim
-                      </Button>
-                    </Box>
-                  )} */}
                 </Card>
               </Stack>
             ) : (

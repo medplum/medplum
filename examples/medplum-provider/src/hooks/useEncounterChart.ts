@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Task,
   ClinicalImpression,
@@ -11,7 +11,7 @@ import {
 import { useMedplum } from '@medplum/react';
 import { getReferenceString } from '@medplum/core';
 import { showErrorNotification } from '../utils/notifications';
-import { createClaimFromEncounter } from '../utils/claims';
+import { createClaimFromEncounter, getChargeItemsForEncounter } from '../utils/claims';
 
 export interface EncounterChartHook {
   // State values
@@ -43,18 +43,20 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
   const [clinicalImpression, setClinicalImpression] = useState<ClinicalImpression | undefined>();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>();
   const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
-  const isUpdatingRef = useRef(false);
 
   // Load encounter data
   useEffect(() => {
-    if (encounterId && !encounter) {
-      medplum
-        .readResource('Encounter', encounterId)
-        .then(setEncounter)
-        .catch((err) => {
-          showErrorNotification(err);
-        });
+    async function loadEncounter(): Promise<void> {
+      if (encounterId && !encounter) {
+        const encounterResult = await medplum.readResource('Encounter', encounterId);
+        if (encounterResult) {
+          setEncounter(encounterResult);
+          const chargeItems = await getChargeItemsForEncounter(medplum, encounterResult);
+          setChargeItems(chargeItems);
+        }
+      }
     }
+    loadEncounter().catch(showErrorNotification);
   }, [encounterId, encounter, medplum]);
 
   // Fetch tasks related to the encounter
@@ -94,22 +96,15 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     }
   }, [medplum, encounter]);
 
-  // Fetch charge items related to the encounter
-  const fetchChargeItems = useCallback(async (): Promise<void> => {
-    if (!encounter) {
-      return;
-    }
-    const chargeItems = await medplum.searchResources('ChargeItem', `context=${getReferenceString(encounter)}`);
-    setChargeItems(chargeItems);
-  }, [medplum, encounter]);
-
   // Fetch claim related to the encounter
   const fetchClaim = useCallback(async (): Promise<void> => {
-    if (!patientId || !encounter?.id || !practitioner?.id) {
+    if (!patientId || !encounter?.id || !practitioner?.id || chargeItems.length === 0) {
       return;
     }
+    console.log('Fetching claim', patientId, encounter.id, practitioner.id);
     const response = await medplum.searchResources('Claim', `encounter=${getReferenceString(encounter)}`);
     // If no claims exist for this encounter, create one
+    console.log('Response', response);
     if (response.length !== 0) {
       console.log('Claim found', response[0]);
       setClaim(response[0]);
@@ -137,12 +132,18 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
   // Fetch data on component mount or when encounter changes
   useEffect(() => {
     if (encounter) {
+      console.log('Fetching data', encounter);
       fetchTasks().catch((err) => showErrorNotification(err));
       fetchClinicalImpressions().catch((err) => showErrorNotification(err));
-      fetchChargeItems().catch((err) => showErrorNotification(err));
+      // fetchChargeItems().catch((err) => showErrorNotification(err));
+    }
+  }, [encounter, fetchTasks, fetchClinicalImpressions]);
+  
+  useEffect(() => {
+    if (encounter) {
       fetchClaim().catch((err) => showErrorNotification(err));
     }
-  }, [encounter, fetchTasks, fetchClinicalImpressions, fetchChargeItems, fetchClaim]);
+  }, [encounter, fetchClaim]);
 
   // Fetch practitioner related to the encounter
   useEffect(() => {
@@ -158,72 +159,7 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     }
   }, [encounter, medplum]);
 
-  // Apply charge item definitions
-  useEffect(() => {
-    if (isUpdatingRef.current) {
-      isUpdatingRef.current = false;
-      return;
-    }
-
-    const fetchChargeItemDefinitions = async (): Promise<void> => {
-      if (!chargeItems || chargeItems.length === 0) {
-        return;
-      }
-
-      const updatedItems = [...chargeItems];
-      let hasUpdates = false;
-
-      for (const [index, chargeItem] of chargeItems.entries()) {
-        if (chargeItem.definitionCanonical && chargeItem.definitionCanonical.length > 0) {
-          try {
-            const searchResult = await medplum.searchResources(
-              'ChargeItemDefinition',
-              `url=${chargeItem.definitionCanonical[0]}`
-            );
-            if (searchResult.length > 0) {
-              const chargeItemDefinition = searchResult[0];
-              try {
-                const applyResult = await medplum.post(
-                  medplum.fhirUrl('ChargeItemDefinition', chargeItemDefinition.id as string, '$apply'),
-                  {
-                    resourceType: 'Parameters',
-                    parameter: [
-                      {
-                        name: 'chargeItem',
-                        valueReference: {
-                          reference: getReferenceString(chargeItem),
-                        },
-                      },
-                    ],
-                  }
-                );
-
-                if (applyResult) {
-                  const updatedChargeItem = applyResult as ChargeItem;
-                  updatedItems[index] = updatedChargeItem;
-                  hasUpdates = true;
-                }
-              } catch (err) {
-                console.error('Error applying ChargeItemDefinition:', err);
-              }
-            }
-          } catch (err) {
-            showErrorNotification(err);
-          }
-        }
-      }
-
-      if (hasUpdates) {
-        isUpdatingRef.current = true;
-        setChargeItems(updatedItems);
-      }
-    };
-
-    fetchChargeItemDefinitions().catch((err) => {
-      showErrorNotification(err);
-    });
-  }, [chargeItems, medplum]);
-
+  
   return {
     // State values
     encounter,
