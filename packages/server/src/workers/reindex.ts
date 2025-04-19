@@ -10,8 +10,9 @@ import {
 } from '@medplum/core';
 import { AsyncJob, Bundle, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { getConfig } from '../config/loader';
 import { getRequestContext, tryRunInRequestContext } from '../context';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
@@ -109,11 +110,13 @@ export class ReindexJob {
   private readonly batchSize: number;
   private readonly progressLogThreshold: number;
   private readonly logger = globalLogger;
+  private readonly defaultStatementTimeout: number | 'DEFAULT';
 
   constructor(systemRepo?: Repository, batchSize?: number, progressLogThreshold?: number) {
     this.systemRepo = systemRepo ?? getSystemRepo();
     this.batchSize = batchSize ?? defaultBatchSize;
     this.progressLogThreshold = progressLogThreshold ?? defaultProgressLogThreshold;
+    this.defaultStatementTimeout = getDefaultStatementTimeout(getConfig());
   }
 
   private async refreshAsyncJob(repo: Repository, asyncJobOrId: string | WithId<AsyncJob>): Promise<WithId<AsyncJob>> {
@@ -257,7 +260,8 @@ export class ReindexJob {
           await conn.query(`SET statement_timeout TO 3600000`); // 1 hour
           bundle = await systemRepo.search(searchRequest, { maxResourceVersion });
         } finally {
-          await conn.query(`SET statement_timeout TO DEFAULT`);
+          console.log(`Setting statement timeout to ${this.defaultStatementTimeout}`);
+          await conn.query(`SET statement_timeout TO ${this.defaultStatementTimeout}`);
         }
         if (bundle.entry?.length) {
           const resources = bundle.entry.map((e) => e.resource as WithId<Resource>);
