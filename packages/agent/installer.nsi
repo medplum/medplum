@@ -195,6 +195,11 @@ Function UpgradeApp
     ExecWait "sc.exe config $\"${SERVICE_NAME}$\" start= auto" $1
     DetailPrint "Exit code $1"
 
+    # Set service to restart on failure
+    DetailPrint "Setting service to restart on failure..."
+    ExecWait "sc.exe failure $\"${SERVICE_NAME}$\" reset= 0 actions= restart/0/restart/0/restart/0"
+    DetailPrint "Exit code $1"
+
     # Start the service
     DetailPrint "Starting service..."
     ExecWait "sc.exe start $\"${SERVICE_NAME}$\"" $1
@@ -255,6 +260,11 @@ Function InstallApp
     # Set service to start automatically
     DetailPrint "Setting service to start automatically..."
     ExecWait "sc.exe config $\"${SERVICE_NAME}$\" start= auto" $1
+    DetailPrint "Exit code $1"
+
+    # Set service to restart on failure
+    DetailPrint "Setting service to restart on failure..."
+    ExecWait "sc.exe failure $\"${SERVICE_NAME}$\" reset= 0 actions= restart/0/restart/0/restart/0"
     DetailPrint "Exit code $1"
 
     # Start the service
