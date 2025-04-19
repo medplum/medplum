@@ -8,10 +8,11 @@ import {
   SearchRequest,
   WithId,
 } from '@medplum/core';
-import { AsyncJob, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
+import { AsyncJob, Bundle, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { getConfig } from '../config/loader';
 import { getRequestContext, tryRunInRequestContext } from '../context';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
@@ -61,7 +62,7 @@ const defaultProgressLogThreshold = 50_000;
 
 // Version that can be bumped when the worker code changes, typically for bug fixes,
 // to prevent workers running older versions of the reindex worker from processing jobs
-export const REINDEX_WORKER_VERSION = 1;
+export const REINDEX_WORKER_VERSION = 2;
 
 export const initReindexWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
@@ -109,11 +110,13 @@ export class ReindexJob {
   private readonly batchSize: number;
   private readonly progressLogThreshold: number;
   private readonly logger = globalLogger;
+  private readonly defaultStatementTimeout: number | 'DEFAULT';
 
   constructor(systemRepo?: Repository, batchSize?: number, progressLogThreshold?: number) {
     this.systemRepo = systemRepo ?? getSystemRepo();
     this.batchSize = batchSize ?? defaultBatchSize;
     this.progressLogThreshold = progressLogThreshold ?? defaultProgressLogThreshold;
+    this.defaultStatementTimeout = getDefaultStatementTimeout(getConfig());
   }
 
   private async refreshAsyncJob(repo: Repository, asyncJobOrId: string | WithId<AsyncJob>): Promise<WithId<AsyncJob>> {
@@ -184,30 +187,7 @@ export class ReindexJob {
       return 'finished';
     }
 
-    /*
-    When a ReindexJob needs to scan a very large table for resources to reindex,
-    but most/all have already been reindexed, the search will scan the most/all of table
-    before finding any results with a query such as the following. Depending on factors
-    such as the size of the table, the number of rows that have already been reindexed,
-    and the performance of the database, this can take a long time.
-
-    ```sql
-    SELECT "Task"."id", "Task"."lastUpdated", "Task"."content"
-    FROM "Task"
-    WHERE (
-      ("Task"."__version" <= 2 OR "Task"."__version" IS NULL)
-      AND "Task"."deleted" = false
-      AND "Task"."lastUpdated" < '2025-04-19'
-    ORDER BY "Task"."lastUpdated" LIMIT 501
-    ```
-    */
-    const client = await this.systemRepo.getDatabaseClient(DatabaseMode.WRITER);
-    try {
-      await client.query(`SET statement_timeout TO 3600000`); // 1 hour
-      return await this.executeMainLoop(job, asyncJob, inputJobData);
-    } finally {
-      this.systemRepo[Symbol.dispose](true);
-    }
+    return this.executeMainLoop(job, asyncJob, inputJobData);
   }
 
   private async executeMainLoop(
@@ -258,7 +238,31 @@ export class ReindexJob {
     let nextTimestamp = new Date(0).toISOString();
     try {
       await systemRepo.withTransaction(async (conn) => {
-        const bundle = await systemRepo.search(searchRequest, { maxResourceVersion });
+        /*
+        When a ReindexJob needs to scan a very large table for resources to reindex,
+        but most/all have already been reindexed, the search will scan the most/all of table
+        before finding any results with a query such as the following. Depending on factors
+        such as the size of the table, the number of rows that have already been reindexed,
+        and the performance of the database, this can take a long time.
+
+        ```sql
+        SELECT "Task"."id", "Task"."lastUpdated", "Task"."content"
+        FROM "Task"
+        WHERE (
+          ("Task"."__version" <= 2 OR "Task"."__version" IS NULL)
+          AND "Task"."deleted" = false
+          AND "Task"."lastUpdated" < '2025-04-19'
+        ORDER BY "Task"."lastUpdated" LIMIT 501
+        ```
+        */
+        let bundle: Bundle<WithId<Resource>>;
+        try {
+          await conn.query(`SET statement_timeout TO 3600000`); // 1 hour
+          bundle = await systemRepo.search(searchRequest, { maxResourceVersion });
+        } finally {
+          console.log(`Setting statement timeout to ${this.defaultStatementTimeout}`);
+          await conn.query(`SET statement_timeout TO ${this.defaultStatementTimeout}`);
+        }
         if (bundle.entry?.length) {
           const resources = bundle.entry.map((e) => e.resource as WithId<Resource>);
           await systemRepo.reindexResources(conn, resources);
