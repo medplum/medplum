@@ -62,7 +62,7 @@ const defaultProgressLogThreshold = 50_000;
 
 // Version that can be bumped when the worker code changes, typically for bug fixes,
 // to prevent workers running older versions of the reindex worker from processing jobs
-export const REINDEX_WORKER_VERSION = 1;
+export const REINDEX_WORKER_VERSION = 2;
 
 export const initReindexWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
