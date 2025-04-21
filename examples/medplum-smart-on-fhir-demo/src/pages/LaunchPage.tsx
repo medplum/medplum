@@ -61,7 +61,7 @@ async function initiateEhrLaunch(params: URLSearchParams): Promise<never> {
   const config = await fetchSmartConfiguration(iss);
 
   // Generate and store state for verification
-  const state = crypto.randomUUID();
+  const state = launch;
   sessionStorage.setItem('smart_state', state);
 
   // Get the appropriate client ID
@@ -74,8 +74,7 @@ async function initiateEhrLaunch(params: URLSearchParams): Promise<never> {
     scope: FHIR_SCOPE,
     redirect_uri: window.location.origin + '/launch',
     state,
-    aud: iss,
-    launch: launch as string,
+    aud: config.authorization_endpoint,
   });
 
   const url = new URL(config.authorization_endpoint);
@@ -121,20 +120,20 @@ async function exchangeCodeForToken(
       grant_type: 'authorization_code',
       code: code as string,
       redirect_uri: window.location.origin + '/launch',
-      client_id: clientId,
+      client_id: "",
     }).toString(),
   });
 
   if (!tokenResponse.ok) {
-    throw new Error('Failed to get access token');
+    console.log(await tokenResponse.text());
+    return null;
+    //throw new Error('Failed to get access token');
   }
 
   return tokenResponse.json();
 }
 
 function setupMedplumClient(tokenData: TokenResponse, iss: string, medplumContext: { medplum: MedplumClient }): void {
-  // Store the access token and other relevant data
-  sessionStorage.setItem('smart_patient', tokenData.patient);
 
   // Configure the Medplum client
   medplumContext.medplum = new MedplumClient({
@@ -172,6 +171,11 @@ export function LaunchPage(): JSX.Element {
         const clientId = getClientId(params, iss);
         const tokenData = await exchangeCodeForToken(params, config, clientId);
 
+        if (!tokenData) {
+          console.log("closing");
+          return;
+        }
+
         // Clean up session storage
         sessionStorage.removeItem('smart_state');
         sessionStorage.removeItem('smart_iss');
@@ -179,7 +183,7 @@ export function LaunchPage(): JSX.Element {
         setupMedplumClient(tokenData, iss, medplumContext);
 
         // Redirect to patient page
-        navigate('/patient')?.catch(console.error);
+        navigate(`/patient`)?.catch(console.error);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
       }

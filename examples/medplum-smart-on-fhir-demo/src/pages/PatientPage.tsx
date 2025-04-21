@@ -20,8 +20,12 @@ export function PatientPage(): JSX.Element {
       try {
         const patientId = sessionStorage.getItem('smart_patient');
 
-        if (!medplum.getAccessToken() || !patientId) {
-          throw new Error('No authentication token or patient ID found');
+        if (!medplum.getAccessToken()) {
+          throw new Error('No authentication token');
+        }
+
+        if (!patientId) {
+          throw new Error('No patientId found');
         }
 
         const patient = await medplum.readResource('Patient', patientId);
