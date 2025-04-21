@@ -4,7 +4,7 @@ import { GoogleCloudStorage } from './storage';
 
 describe('Integration Tests for GoogleCloudStorage', () => {
   const testStorageString = 'your-project-id:your-test-bucket';
-  let storage: GCPBlobStorage;
+  let storage: GoogleCloudStorage;
 
   beforeEach(() => {
     jest.mock('@google-cloud/storage', () => {
@@ -21,7 +21,7 @@ describe('Integration Tests for GoogleCloudStorage', () => {
       };
     });
 
-    storage = new GCPBlobStorage(testStorageString);
+    storage = new GoogleCloudStorage(testStorageString);
   });
 
   afterEach(() => {
