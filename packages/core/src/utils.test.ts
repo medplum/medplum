@@ -677,6 +677,9 @@ describe('Core Utils', () => {
 
     // Make sure we preserve "false", even though falsy
     expect(stringify({ low: false, high: true })).toStrictEqual('{"low":false,"high":true}');
+
+    // empty objects within arrays should be translated to null, but NOT removed
+    expect(stringify({ address: [{}, { use: 'home' }, {}] })).toStrictEqual('{"address":[null,{"use":"home"},null]}');
   });
 
   test('Deep equals', () => {

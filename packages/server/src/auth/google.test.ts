@@ -35,6 +35,10 @@ describe('Google Auth', () => {
     await initApp(app, config);
   });
 
+  beforeEach(() => {
+    getConfig().registerEnabled = undefined;
+  });
+
   afterAll(async () => {
     await shutdownApp();
   });
@@ -107,6 +111,25 @@ describe('Google Auth', () => {
         googleCredential: createCredential('Test', 'Test', email),
       });
     expect(res.status).toBe(400);
+
+    const user = await getUserByEmail(email, undefined);
+    expect(user).toBeUndefined();
+  });
+
+  test('Register disabled', async () => {
+    getConfig().registerEnabled = false;
+    const email = 'new-google-' + randomUUID() + '@example.com';
+    const res = await request(app)
+      .post('/auth/google')
+      .type('json')
+      .send({
+        googleClientId: getConfig().googleClientId,
+        googleCredential: createCredential('Test', 'Test', email),
+        createUser: true,
+        projectId: 'new',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Registration is disabled');
 
     const user = await getUserByEmail(email, undefined);
     expect(user).toBeUndefined();
