@@ -1,3 +1,4 @@
+import { BullMQInstrumentation } from '@appsignal/opentelemetry-instrumentation-bullmq';
 import { MEDPLUM_VERSION } from '@medplum/core';
 import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
@@ -70,6 +71,9 @@ export function initOpenTelemetry(): void {
       ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
     }),
     new DataloaderInstrumentation(),
+    new BullMQInstrumentation({
+      requireParentSpanForPublish: true,
+    }),
   ];
 
   sdk = new NodeSDK({ resource, instrumentations, metricReader, traceExporter });
