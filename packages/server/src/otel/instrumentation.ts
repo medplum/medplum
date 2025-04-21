@@ -58,6 +58,7 @@ export function initOpenTelemetry(): void {
       applyCustomAttributesOnSpan(span, req, res) {
         const code = res.statusCode && res.statusCode < 400 ? SpanStatusCode.OK : SpanStatusCode.ERROR;
         span.setStatus({ code });
+        span.setAttribute('http.method', req.method ?? 'unknown');
       },
     }),
 
