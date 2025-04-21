@@ -1,15 +1,16 @@
 # Appointment Bots
 
-
-
-
-### `appointment-send-scheduled-reminders.ts`
+### `send-appointment-reminders.ts`
 
 This bot is responsible for triggering appointment reminders that are scheduled to start in the next 24 hours. It runs on a schedule and:
 
 1. Finds all appointments starting within the next 24 hours
-2. Triggers the appointment reminder bot for each appointment(make sure you name the appointment reminder bot "appointment-reminder")
-3. Logs success/failure for each reminder
+2. Compiles the pracitioner and patient details for each appointment and creates a reminder message
+3. Creates a Communication resource for each reminder messafe with status 'in-progress'
+4. Returns the appointments that were processed.
+
+Note: You could create a bot that is subscribed to Communication resources that have a status of 'in-progress' and process the reminder via SMS or Email.
+
 
 You could schedule this bot to run every day at 7:00AM to send reminders for appointments starting in the next 24 hours.
 **Configuration:**
@@ -26,20 +27,4 @@ ex in the Bot resource:
       "2025-04-11T07:00:00.000Z"
     ]
   }
-```
-
-### `appointment-reminder.ts`
-
-This bot handles the actual sending of appointment reminders. It:
-
-1. Sends reminders to both the patient
-2. Includes appointment details in the reminder(Provider, Date, Time, Zoom link if available)
-
-**Configuration:**
-- You should fill in the message sending via SMS or email in the bot. By default it will log to the console.
-
-**Example Usage for sending reminder not on a schedule:**
-```typescript
-// The bot will send reminders for a specific appointment
-await medplum.executeBot('reminder-bot-id', appointment);
 ```

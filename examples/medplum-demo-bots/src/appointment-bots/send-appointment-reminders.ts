@@ -1,17 +1,15 @@
 import { BotEvent, MedplumClient, createReference, getDisplayString } from '@medplum/core';
-import { Appointment, Reference, Patient, Practitioner } from '@medplum/fhirtypes';
+import { Appointment, Reference, Patient, Practitioner, Bundle } from '@medplum/fhirtypes';
 
 /**
- * This bot is used to send a reminder for an appointment.
+ * Helper function to send an appointment reminder.
  * It will send a reminder to the patient and the provider.
  * It will also send a reminder to the patient's phone.
  * @param medplum - The Medplum client.
- * @param event - The event object.
+ * @param appointment - The appointment to send a reminder for.
  * @returns The appointment.
  */
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<Appointment> {
-  const appointment = event.input as Appointment;
-  
+async function sendAppointmentReminder(medplum: MedplumClient, appointment: Appointment): Promise<Appointment> {
   // Get patient details from the appointment participant field
   const patientRef = appointment.participant.find(p => p.actor?.reference?.startsWith('Patient/'))?.actor;
   if (!patientRef) {
@@ -62,8 +60,47 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       url: 'https://medplum.com/appointment-reminder-sent',
       valueBoolean: true,
     }],
+    basedOn: [createReference(appointment)],
   });
 
-
   return appointment;
+}
+
+/**
+ * This bot is used to send reminders for upcoming appointments.
+ * It will send reminders to patients and providers for appointments starting in the next 24 hours.
+ * 
+ * You should schedule to run this bot every day at 7:00AM to 
+ * send reminders for appointments starting in the next 24 hours.
+ * @param medplum - The Medplum client.
+ * @param _event - The event object
+ * @returns A Bundle containing the appointments that were processed
+ */
+export async function handler(medplum: MedplumClient, _event: BotEvent): Promise<Bundle> {
+  // Get current time and 24 hours from now. You could change this to run at a different time or different time intervals.
+  const now = new Date();
+  const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  
+  // Search for appointments starting within the next 24 hours
+  const appointments = await medplum.searchResources('Appointment', {
+    _filter: `date ge ${now.toISOString()} and date lt ${twentyFourHoursFromNow.toISOString()}`,
+    status: 'booked'
+  });
+
+  // Send reminders for each appointment
+  for (const appointment of appointments) {
+    try {
+      await sendAppointmentReminder(medplum, appointment);
+      console.log(`Sent reminder for appointment ${appointment.id}`);
+    } catch (err) {
+      console.error(`Failed to send reminder for appointment ${appointment.id}:`, err);
+    }
+  }
+  
+  return {
+    resourceType: 'Bundle',
+    type: 'searchset',
+    total: appointments.length,
+    entry: appointments.map(appointment => ({ resource: appointment }))
+  };
 } 
