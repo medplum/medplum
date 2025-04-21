@@ -45,7 +45,7 @@
     "@aws-sdk/client-acm": "3.787.0",
     "@aws-sdk/client-cloudformation": "3.787.0",
     "@aws-sdk/client-cloudfront": "3.787.0",
-    "@aws-sdk/client-ecs": "3.787.0",
+    "@aws-sdk/client-ecs": "3.791.0",
     "@aws-sdk/client-s3": "3.787.0",
     "@aws-sdk/client-ssm": "3.787.0",
     "@aws-sdk/client-sts": "3.787.0",

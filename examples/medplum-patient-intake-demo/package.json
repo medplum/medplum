@@ -39,19 +39,19 @@
     "@types/node": "20.17.30",
     "@types/react": "18.3.20",
     "@types/react-dom": "18.3.6",
-    "@vitejs/plugin-react": "4.3.4",
-    "chart.js": "4.4.8",
+    "@vitejs/plugin-react": "4.4.1",
+    "chart.js": "4.4.9",
     "esbuild": "0.25.2",
     "postcss": "8.5.3",
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
     "react-chartjs-2": "5.3.0",
     "react-dom": "18.2.0",
-    "react-router": "7.5.0",
+    "react-router": "7.5.1",
     "rimraf": "6.0.1",
     "ts-node": "10.9.2",
     "typescript": "5.8.3",
-    "vite": "6.2.6",
-    "vitest": "3.1.1"
+    "vite": "6.3.2",
+    "vitest": "3.1.2"
   }
 }
