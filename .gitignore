@@ -40,6 +40,9 @@ tsconfig.tsbuildinfo
 # Server tarball
 medplum-server.tar.gz
 
+# App tarball
+medplum-app.tar.gz
+
 # Deb files
 *.deb
 

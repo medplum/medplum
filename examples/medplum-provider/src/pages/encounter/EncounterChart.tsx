@@ -1,133 +1,80 @@
-import { Stack, Box, Card, Text } from '@mantine/core';
+import { Stack, Box, Card, Text, Group, Flex, TextInput, Button } from '@mantine/core';
 import {
   Task,
   ClinicalImpression,
   QuestionnaireResponse,
   Questionnaire,
-  Practitioner,
   Encounter,
   ChargeItem,
+  Claim,
+  Coverage,
+  Organization,
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
-import { Outlet, useLocation, useParams } from 'react-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Outlet, useParams } from 'react-router';
 import { showNotification } from '@mantine/notifications';
-import { deepEquals, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { IconCircleOff } from '@tabler/icons-react';
+import { createReference, deepEquals, getReferenceString } from '@medplum/core';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { usePatient } from '../../hooks/usePatient';
-import { useEncounter } from '../../hooks/useEncounter';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import ChageItemPanel from '../components/ChargeItem/ChageItemPanel';
+import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
+import { useEncounterChart } from '../../hooks/useEncounterChart';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { showErrorNotification } from '../../utils/notifications';
+import classes from './EncounterChart.module.css';
 
 export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
   const medplum = useMedplum();
   const patient = usePatient();
-  const [encounter, setEncounter] = useState<Encounter | undefined>(useEncounter());
-  const location = useLocation();
-  const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [clinicalImpression, setClinicalImpression] = useState<ClinicalImpression | undefined>();
-  const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>();
-  const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const [activeTab, setActiveTab] = useState<string>('notes');
+  const [isLoadingEncounter, setIsLoadingEncounter] = useState<boolean>(false);
+  const [coverage, setCoverage] = useState<Coverage | undefined>();
+  const [organization, setOrganization] = useState<Organization | undefined>();
+  const {
+    encounter,
+    claim,
+    practitioner,
+    tasks,
+    clinicalImpression,
+    questionnaireResponse,
+    chargeItems,
+    setEncounter,
+    setClaim,
+    setTasks,
+    setClinicalImpression,
+    setQuestionnaireResponse,
+    setChargeItems,
+  } = useEncounterChart(encounterId);
 
   useEffect(() => {
-    if (encounterId) {
-      medplum.readResource('Encounter', encounterId).then(setEncounter).catch(console.error);
-    }
-  }, [encounterId, medplum]);
-
-  const fetchTasks = useCallback(async (): Promise<void> => {
-    if (!encounter) {
-      return;
-    }
-    const taskResult = await medplum.searchResources('Task', `encounter=${getReferenceString(encounter)}`, {
-      cache: 'no-cache',
-    });
-
-    taskResult.sort((a: Task, b: Task) => {
-      const dateA = new Date(a.authoredOn || '').getTime();
-      const dateB = new Date(b.authoredOn || '').getTime();
-      return dateA - dateB;
-    });
-
-    setTasks(taskResult);
-  }, [medplum, encounter]);
-
-  const fetchClinicalImpressions = useCallback(async (): Promise<void> => {
-    if (!encounter) {
-      return;
-    }
-    const clinicalImpressionResult = await medplum.searchResources(
-      'ClinicalImpression',
-      `encounter=${getReferenceString(encounter)}`
-    );
-
-    const result = clinicalImpressionResult?.[0];
-    setClinicalImpression(result);
-
-    if (result?.supportingInfo?.[0]?.reference) {
-      const response = await medplum.readReference({ reference: result.supportingInfo[0].reference });
-      setQuestionnaireResponse(response as QuestionnaireResponse);
-    }
-  }, [medplum, encounter]);
-
-  const fetchChargeItems = useCallback(async (): Promise<void> => {
-    if (!encounter) {
-      return;
-    }
-    const chargeItems = await medplum.searchResources('ChargeItem', `context=${getReferenceString(encounter)}`);
-    setChargeItems(chargeItems);
-  }, [medplum, encounter]);
-
-  useEffect(() => {
-    fetchTasks().catch((err) => {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-    });
-    fetchClinicalImpressions().catch((err) => {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-    });
-
-    fetchChargeItems().catch((err) => {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-    });
-  }, [medplum, encounterId, fetchTasks, fetchClinicalImpressions, fetchChargeItems, location.pathname]);
-
-  useEffect(() => {
-    const fetchPractitioner = async (): Promise<void> => {
-      if (encounter?.participant?.[0]?.individual) {
-        const practitionerResult = await medplum.readReference(encounter.participant[0].individual);
-        setPractitioner(practitionerResult as Practitioner);
+    const fetchCoverage = async (): Promise<void> => {
+      if (!patient) {
+        return;
+      }
+      const coverageResult = await medplum.searchResources('Coverage', `patient=${getReferenceString(patient)}`);
+      if (coverageResult.length > 0) {
+        setCoverage(coverageResult[0] as Coverage);
       }
     };
 
-    fetchPractitioner().catch((err) => {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-    });
-  }, [encounter, medplum]);
+    fetchCoverage().catch((err) => showErrorNotification(err));
+  }, [medplum, patient]);
+
+  useEffect(() => {
+    const fetchOrganization = async (): Promise<void> => {
+      if (coverage?.payor?.[0]?.reference) {
+        const organizationResult = await medplum.readReference({ reference: coverage.payor[0].reference });
+        setOrganization(organizationResult as Organization);
+      }
+    };
+
+    fetchOrganization().catch((err) => showErrorNotification(err));
+  }, [coverage, medplum]);
 
   const saveQuestionnaireResponse = async (response: QuestionnaireResponse): Promise<void> => {
     if (saveTimeoutRef.current) {
@@ -153,12 +100,7 @@ export const EncounterChart = (): JSX.Element => {
           setQuestionnaireResponse(updatedResponse);
         }
       } catch (err) {
-        showNotification({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: normalizeErrorString(err),
-        });
+        showErrorNotification(err);
       }
     }, SAVE_TIMEOUT_MS);
   };
@@ -167,12 +109,7 @@ export const EncounterChart = (): JSX.Element => {
     if (!questionnaireResponse) {
       const updatedResponse: QuestionnaireResponse = { ...response, status: 'in-progress' };
       saveQuestionnaireResponse(updatedResponse).catch((err) => {
-        showNotification({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: normalizeErrorString(err),
-        });
+        showErrorNotification(err);
       });
     } else {
       const equals = deepEquals(response.item, questionnaireResponse?.item);
@@ -183,12 +120,7 @@ export const EncounterChart = (): JSX.Element => {
           status: 'in-progress',
         };
         saveQuestionnaireResponse(updatedResponse).catch((err) => {
-          showNotification({
-            color: 'red',
-            icon: <IconCircleOff />,
-            title: 'Error',
-            message: normalizeErrorString(err),
-          });
+          showErrorNotification(err);
         });
       }
     }
@@ -198,7 +130,7 @@ export const EncounterChart = (): JSX.Element => {
     (updatedTask: Task): void => {
       setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
     },
-    [tasks]
+    [tasks, setTasks]
   );
 
   const saveChargeItem = useCallback(
@@ -206,12 +138,7 @@ export const EncounterChart = (): JSX.Element => {
       try {
         return await medplum.updateResource(chargeItem);
       } catch (err) {
-        showNotification({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: normalizeErrorString(err),
-        });
+        showErrorNotification(err);
         return chargeItem;
       }
     },
@@ -229,7 +156,7 @@ export const EncounterChart = (): JSX.Element => {
         setChargeItems(chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item)));
       }, SAVE_TIMEOUT_MS);
     },
-    [chargeItems, saveChargeItem]
+    [chargeItems, saveChargeItem, setChargeItems]
   );
 
   const handleEncounterStatusChange = useCallback(
@@ -259,20 +186,266 @@ export const EncounterChart = (): JSX.Element => {
         await medplum.updateResource(updatedEncounter);
         setEncounter(updatedEncounter);
       } catch (err) {
-        showNotification({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: normalizeErrorString(err),
-        });
+        showErrorNotification(err);
       }
     },
-    [encounter, medplum]
+    [encounter, medplum, setEncounter]
   );
 
-  if (!patient || !encounter || (clinicalImpression?.supportingInfo?.[0]?.reference && !questionnaireResponse)) {
+  const handleTabChange = (tab: string): void => {
+    setActiveTab(tab);
+  };
+
+  const handleEncounterChange = (updatedEncounter: Encounter): void => {
+    if (!updatedEncounter) {
+      return;
+    }
+
+    setIsLoadingEncounter(true);
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const savedEncounter = await medplum.updateResource(updatedEncounter);
+        setEncounter(savedEncounter);
+      } catch (err) {
+        showErrorNotification(err);
+      } finally {
+        setIsLoadingEncounter(false);
+      }
+    }, SAVE_TIMEOUT_MS);
+  };
+
+  const createClaimFromEncounter = useCallback(async (): Promise<void> => {
+    if (!encounter || !patient) {
+      return;
+    }
+
+    if (!practitioner) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: 'Practitioner information is required to create a claim.',
+      });
+      return;
+    }
+
+    const claim: Claim = {
+      resourceType: 'Claim',
+      status: 'draft',
+      type: { coding: [{ code: 'professional' }] },
+      use: 'claim',
+      created: new Date().toISOString(),
+      patient: createReference(patient),
+      provider: { reference: getReferenceString(practitioner), type: 'Practitioner' },
+      priority: { coding: [{ code: 'normal' }] },
+      insurance: [
+        {
+          sequence: 1,
+          focal: true,
+          coverage: { reference: 'Coverage/unknown' },
+        },
+      ], // TODO: Add coverage
+      item: chargeItems.map((chargeItem, index) => ({
+        sequence: index + 1,
+        encounter: [{ reference: getReferenceString(encounter) }],
+        productOrService: chargeItem.code,
+        net: chargeItem.priceOverride,
+      })),
+      total: { value: calculateTotalPrice(chargeItems) },
+    };
+
+    try {
+      const createdClaim = await medplum.createResource(claim);
+      setClaim(createdClaim);
+    } catch (err) {
+      showErrorNotification(err);
+    }
+  }, [encounter, medplum, chargeItems, patient, practitioner, setClaim]);
+
+  const calculateTotalPrice = (chargeItems: ChargeItem[]): number => {
+    return chargeItems.reduce((sum, item) => sum + (item.priceOverride?.value || 0), 0);
+  };
+
+  if (!patient || !encounter) {
     return <Loading />;
   }
+
+  const renderTabContent = (): JSX.Element => {
+    if (activeTab === 'notes') {
+      return (
+        <Stack gap="md">
+          {clinicalImpression && (
+            <Card withBorder shadow="sm">
+              <QuestionnaireForm
+                questionnaire={questionnaire}
+                questionnaireResponse={questionnaireResponse}
+                excludeButtons={true}
+                onChange={onChange}
+              />
+            </Card>
+          )}
+
+          {tasks.map((task: Task) => (
+            <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
+          ))}
+        </Stack>
+      );
+    } else {
+      return (
+        <Stack gap="md">
+          <Group grow align="flex-start">
+            <Stack gap={0}>
+              <Text fw={600} size="lg" mb="md">
+                Insurance Overview
+              </Text>
+              <Card withBorder shadow="sm" p="md">
+                <Stack gap="md">
+                  {organization ? (
+                    <>
+                      {coverage?.status === 'active' && (
+                        <Group gap={4}>
+                          <IconCircleCheck size={16} className={classes.checkmark} />
+                          <Text className={classes.active} fw={500} size="md">
+                            Active
+                          </Text>
+                        </Group>
+                      )}
+
+                      <Stack gap={0}>
+                        <Text fw={600} size="lg">
+                          {organization.name}
+                        </Text>
+                        {coverage && (
+                          <>
+                            {coverage.class?.map((coverageClass, index) => (
+                              <Text key={index} size="md">
+                                {coverageClass.name || 'Not specified'}
+                              </Text>
+                            )) || <Text size="md">Not specified</Text>}
+                          </>
+                        )}
+                      </Stack>
+
+                      {coverage?.period && (
+                        <Group grow>
+                          <Box>
+                            <Text size="sm" c="dimmed">
+                              Effective Date
+                            </Text>
+                            <Text>
+                              {coverage.period.start
+                                ? new Date(coverage.period.start).toLocaleDateString()
+                                : 'Not specified'}
+                            </Text>
+                          </Box>
+                          <Box>
+                            <Text size="sm" c="dimmed">
+                              End Date
+                            </Text>
+                            <Text>
+                              {coverage.period.end
+                                ? new Date(coverage.period.end).toLocaleDateString()
+                                : 'Not specified'}
+                            </Text>
+                          </Box>
+                        </Group>
+                      )}
+                    </>
+                  ) : (
+                    <Text c="dimmed">
+                      <IconCircleOff size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                      No insurance information available
+                    </Text>
+                  )}
+                </Stack>
+
+                {coverage && (
+                  <Button
+                    variant="outline"
+                    fullWidth
+                    mt="md"
+                    component="a"
+                    href={`/Coverage/${coverage.id}`}
+                    target="_blank"
+                  >
+                    View Insurance Information
+                  </Button>
+                )}
+              </Card>
+            </Stack>
+
+            <VisitDetailsPanel
+              practitioner={practitioner}
+              encounter={encounter}
+              onEncounterChange={handleEncounterChange}
+            />
+          </Group>
+
+          <Stack gap={0}>
+            <Text fw={600} size="lg" mb="md">
+              Charge Items
+            </Text>
+            {chargeItems.length > 0 ? (
+              <Stack gap="md">
+                {chargeItems.map((chargeItem: ChargeItem) => (
+                  <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} onChange={updateChargeItemList} />
+                ))}
+
+                <Card withBorder shadow="sm">
+                  <Flex justify="space-between" align="center">
+                    <Text size="lg" fw={500}>
+                      Total Calculated Price to Bill
+                    </Text>
+                    <Box>
+                      <TextInput w={300} value={`$${calculateTotalPrice(chargeItems)}`} readOnly />
+                    </Box>
+                  </Flex>
+
+                  {claim && (
+                    <Box mt="md">
+                      <Group grow align="flex-start">
+                        <Text>
+                          Claim submitted for ${claim.total?.value || 0} on{' '}
+                          {new Date(claim.created || '').toLocaleDateString()}
+                        </Text>
+                        <Box>
+                          <Button component="a" href={`/Claim/${claim.id}`} target="_blank" fullWidth variant="outline">
+                            View Claim Details
+                          </Button>
+                        </Box>
+                      </Group>
+                    </Box>
+                  )}
+
+                  {!claim && encounter.status === 'finished' && (
+                    <Box mt="md">
+                      <Button
+                        fullWidth
+                        loading={isLoadingEncounter}
+                        onClick={async () => {
+                          await createClaimFromEncounter();
+                        }}
+                      >
+                        Submit Claim
+                      </Button>
+                    </Box>
+                  )}
+                </Card>
+              </Stack>
+            ) : (
+              <Card withBorder shadow="sm">
+                <Text c="dimmed">No charge items available</Text>
+              </Card>
+            )}
+          </Stack>
+        </Stack>
+      );
+    }
+  };
 
   return (
     <>
@@ -281,37 +454,11 @@ export const EncounterChart = (): JSX.Element => {
           encounter={encounter}
           practitioner={practitioner}
           onStatusChange={handleEncounterStatusChange}
+          onTabChange={handleTabChange}
         />
 
         <Box p="md">
-          <Stack gap="md">
-            {clinicalImpression && (
-              <Card withBorder shadow="sm">
-                <QuestionnaireForm
-                  questionnaire={questionnaire}
-                  questionnaireResponse={questionnaireResponse}
-                  excludeButtons={true}
-                  onChange={onChange}
-                />
-              </Card>
-            )}
-
-            {tasks.map((task: Task) => (
-              <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
-            ))}
-
-            {chargeItems.length > 0 && (
-              <Stack gap="md" pt="lg">
-                <Text size="lg" fw={500}>
-                  Charge Items
-                </Text>
-                {chargeItems.map((chargeItem: ChargeItem) => (
-                  <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} onChange={updateChargeItemList} />
-                ))}
-              </Stack>
-            )}
-          </Stack>
-
+          {renderTabContent()}
           <Outlet />
         </Box>
       </Stack>

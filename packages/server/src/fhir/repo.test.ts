@@ -20,6 +20,7 @@ import {
   Observation,
   OperationOutcome,
   Patient,
+  PatientLink,
   Practitioner,
   Project,
   ProjectMembership,
@@ -1298,10 +1299,14 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         link: [],
       };
+
+      const link: PatientLink = { type: 'seealso', other: { reference: 'Patient/to-be-overwritten-in-loop' } };
+
       // Postgres uses a 16-bit counter for placeholder formats internally,
       // so 2^16 + 1 = 64k + 1 will definitely overflow it if not sent in smaller batches
       for (let i = 0; i < 64 * 1024 + 1; i++) {
-        patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
+        link.other.reference = 'Patient/' + randomUUID();
+        patient.link?.push(link);
       }
 
       await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
@@ -1346,6 +1351,26 @@ describe('FHIR Repo', () => {
       expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
     });
   });
+
+  test('Legacy UUID support -- non-conformant IDs that match UUID form are accepted', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      // Random invalid UUID that is invalid based on RFC9562 for the following reasons:
+      // 1. The version field (the first digit in the third group) should be 4 to indicate UUID version 4, but here it's e
+      // 2. The variant field (the first digit in the fourth group) should be 8, 9, a, or b, but here it's c
+      // This is invalid in a similar way to some of the legacy UUIDs imported from other systems which we must continue to support
+      // This test fails using the version of the validator.js isUUID (13.15.0) that caused the regression this PR fixed: https://github.com/medplum/medplum/pull/6289
+      const nonconformantUuid = '03a8d57b-91c2-e45f-c312-a7fe09c2d8e4';
+      const patient = await repo.createResource<Patient>(
+        {
+          id: nonconformantUuid,
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        },
+        { assignedId: true }
+      );
+      expect(patient.id).toStrictEqual(nonconformantUuid);
+    }));
 });
 
 function shuffleString(s: string): string {

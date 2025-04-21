@@ -23,7 +23,6 @@ import {
   forbidden,
   formatSearchQuery,
   getReferenceString,
-  getSearchParameters,
   getStatus,
   gone,
   isGone,
@@ -33,6 +32,7 @@ import {
   isReference,
   isResource,
   isResourceWithId,
+  isUUID,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
@@ -68,13 +68,13 @@ import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
 import { v7 } from 'uuid';
-import validator from 'validator';
 import { getConfig } from '../config/loader';
 import { r4ProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
+import { getBinaryStorage } from '../storage/loader';
 import {
   AuditEventOutcome,
   AuditEventSubtype,
@@ -94,12 +94,13 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { SearchOptions, buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
-import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
   DeleteQuery,
@@ -111,7 +112,8 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
-import { getBinaryStorage } from './storage';
+import { buildTokenColumns } from './token-column';
+import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -317,7 +319,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     options?: ReadResourceOptions
   ): Promise<WithId<T>> {
-    if (!id || !validator.isUUID(id)) {
+    if (!id || !isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
 
@@ -349,7 +351,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    if (!validator.isUUID(id)) {
+    if (!isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
 
@@ -415,6 +417,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     reference: Reference,
     cacheEntry: CacheEntry | undefined
   ): Promise<Resource | Error> {
+    if (!reference.reference?.match(/^[A-Z][a-zA-Z]+\//)) {
+      // Non-local references cannot be resolved
+      return new OperationOutcomeError(notFound);
+    }
+
     try {
       const [resourceType, id] = parseReference(reference);
       validateResourceType(resourceType);
@@ -540,7 +547,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
     try {
-      if (!validator.isUUID(id) || !validator.isUUID(vid)) {
+      if (!isUUID(id) || !isUUID(vid)) {
         throw new OperationOutcomeError(notFound);
       }
 
@@ -604,7 +611,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
     const { resourceType, id } = resource;
-    if (!validator.isUUID(id)) {
+    if (!isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
 
@@ -785,7 +792,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async validateResourceStrictly(resource: Resource): Promise<void> {
     const logger = getLogger();
-    const start = Date.now();
+    const start = process.hrtime.bigint();
 
     const issues = validateResource(resource);
     for (const issue of issues) {
@@ -797,7 +804,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.validateProfiles(resource, profileUrls);
     }
 
-    const durationMs = Date.now() - start;
+    const durationMs = Number(process.hrtime.bigint() - start) / 1e6; // Convert nanoseconds to milliseconds
+    recordHistogramValue('medplum.server.validationDurationMs', durationMs, { options: { unit: 'ms' } });
     if (durationMs > 10) {
       logger.debug('High validator latency', {
         resourceType: resource.resourceType,
@@ -977,9 +985,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         const projectRef = meta.compartment.find((r) => r.reference?.startsWith('Project/'));
         meta.project = resolveId(projectRef);
       }
-
-      await this.writeLookupTables(conn, resource, false);
     }
+
+    await this.batchWriteLookupTables(conn, resources, false);
     await this.batchWriteResources(conn, resources);
   }
 
@@ -1048,11 +1056,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           content,
         };
 
-        const searchParams = getSearchParameters(resourceType);
-        if (searchParams) {
-          for (const searchParam of Object.values(searchParams)) {
-            this.buildColumn({ resourceType } as Resource, columns, searchParam);
-          }
+        for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
+          this.buildColumn({ resourceType } as Resource, columns, searchParam);
         }
 
         await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
@@ -1142,6 +1147,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async expungeResources(resourceType: string, ids: string[]): Promise<void> {
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
+    }
+    if (ids.length === 0) {
+      return;
     }
     await this.withTransaction(async (client) => {
       for (const id of ids) {
@@ -1271,7 +1279,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private addProjectFilters(builder: SelectQuery): void {
     if (this.context.projects?.length) {
-      builder.where('compartments', 'ARRAY_CONTAINS', this.context.projects, 'UUID[]');
+      builder.where('compartments', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', this.context.projects, 'UUID[]');
     }
   }
 
@@ -1294,7 +1302,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         if (policyCompartmentId) {
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
-          expressions.push(new Condition('compartments', 'ARRAY_CONTAINS', policyCompartmentId, 'UUID[]'));
+          expressions.push(
+            new Condition('compartments', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', policyCompartmentId, 'UUID[]')
+          );
         } else if (policy.criteria) {
           if (!policy.criteria.startsWith(policy.resourceType + '?')) {
             getLogger().warn('Invalid access policy criteria', {
@@ -1337,8 +1347,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * The version to be set on resources when they are inserted/updated into the database.
    * The value should be incremented each time there is a change in the schema (really just columns)
    * of the resource tables or when there are code changes to `buildResourceRow`.
+   *
+   * Version history:
+   *
+   * 1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
+   * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
+   * 3. 04/09/25 - Added columns for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
+   *
    */
-  static readonly VERSION: number = 1;
+  static readonly VERSION: number = 3;
 
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
@@ -1356,11 +1373,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       __version: Repository.VERSION,
     };
 
-    const searchParams = getSearchParameters(resourceType);
-    if (searchParams) {
-      for (const searchParam of Object.values(searchParams)) {
+    const searchParams = getStandardAndDerivedSearchParameters(resourceType);
+    if (searchParams.length > 0) {
+      const startTime = process.hrtime.bigint();
+      for (const searchParam of searchParams) {
         this.buildColumn(resource, row, searchParam);
       }
+      recordHistogramValue(
+        'medplum.server.indexingDurationMs',
+        Number(process.hrtime.bigint() - startTime) / 1e6, // High resolution time, converted from ns to ms
+        {
+          options: { unit: 'ms' },
+        }
+      );
     }
     return row;
   }
@@ -1420,16 +1445,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private getCompartments(resource: WithId<Resource>): Reference[] {
     const compartments = new Set<string>();
 
-    if (resource.meta?.project && validator.isUUID(resource.meta.project)) {
+    if (resource.meta?.project && isUUID(resource.meta.project)) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       compartments.add('Project/' + resource.meta.project);
     }
 
-    if (
-      resource.resourceType === 'User' &&
-      resource.project?.reference &&
-      validator.isUUID(resolveId(resource.project) ?? '')
-    ) {
+    if (resource.resourceType === 'User' && resource.project?.reference && isUUID(resolveId(resource.project) ?? '')) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       compartments.add(resource.project.reference);
     }
@@ -1437,20 +1458,20 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (resource.meta?.accounts) {
       for (const account of resource.meta.accounts) {
         const id = resolveId(account);
-        if (!account.reference?.startsWith('Project/') && id && validator.isUUID(id)) {
+        if (!account.reference?.startsWith('Project/') && id && isUUID(id)) {
           compartments.add(account.reference as string);
         }
       }
     } else if (resource.meta?.account && !resource.meta.account.reference?.startsWith('Project/')) {
       const id = resolveId(resource.meta.account);
-      if (id && validator.isUUID(id)) {
+      if (id && isUUID(id)) {
         compartments.add(resource.meta.account.reference as string);
       }
     }
 
     for (const patient of getPatients(resource)) {
       const patientId = resolveId(patient);
-      if (patientId && validator.isUUID(patientId)) {
+      if (patientId && isUUID(patientId)) {
         compartments.add(patient.reference);
       }
     }
@@ -1472,30 +1493,49 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param searchParam - The search parameter definition.
    */
   private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
-    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
-
     if (
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment' ||
-      searchParam.type === 'composite' ||
-      impl.searchStrategy === 'lookup-table'
+      searchParam.code === '_compartment:identifier' ||
+      searchParam.type === 'composite'
     ) {
       return;
     }
 
-    const values = evalFhirPath(searchParam.expression as string, resource);
-    let columnValue = null;
-
-    if (values.length > 0) {
-      if (impl.array) {
-        columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
-      } else {
-        columnValue = this.buildColumnValue(searchParam, impl, values[0]);
-      }
+    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
+    if (impl.searchStrategy === 'lookup-table') {
+      return;
     }
 
-    columns[impl.columnName] = columnValue;
+    const values = evalFhirPath(impl.parsedExpression, resource);
+
+    let columnImpl: ColumnSearchParameterImplementation | undefined;
+    if (impl.searchStrategy === 'token-column') {
+      if (TokenColumnsFeature.write) {
+        buildTokenColumns(searchParam, impl, columns, resource);
+      }
+
+      if (isLegacyTokenColumnSearchParameter(searchParam, resource.resourceType)) {
+        // This is a legacy search parameter that should be indexed as a regular string column as well
+        columnImpl = getSearchParameterImplementation(resource.resourceType, searchParam, true);
+      }
+    } else {
+      impl satisfies ColumnSearchParameterImplementation;
+      columnImpl = impl;
+    }
+
+    if (columnImpl) {
+      let columnValue = undefined;
+      if (values.length > 0) {
+        if (columnImpl.array) {
+          columnValue = values.map((v) => this.buildColumnValue(searchParam, columnImpl, v));
+        } else {
+          columnValue = this.buildColumnValue(searchParam, columnImpl, values[0]);
+        }
+      }
+      columns[columnImpl.columnName] = columnValue;
+    }
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
@@ -1731,6 +1771,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
       await lookupTable.indexResource(client, resource, create);
+    }
+  }
+
+  private async batchWriteLookupTables<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    for (const lookupTable of lookupTables) {
+      await lookupTable.batchIndexResources(client, resources, create);
     }
   }
 
@@ -2520,7 +2570,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.context;
   }
 
-  [Symbol.dispose](): void {
+  [Symbol.dispose](removeConnection?: boolean): void {
     this.assertNotClosed();
     if (this.disposable) {
       if (this.transactionDepth > 0) {
@@ -2529,7 +2579,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         this.releaseConnection(new Error('Closing Repository with active transaction'));
       } else {
         // Good state, return healthy connection to pool
-        this.releaseConnection();
+        this.releaseConnection(removeConnection);
       }
     }
     this.closed = true;
