@@ -120,7 +120,7 @@ async function exchangeCodeForToken(
       grant_type: 'authorization_code',
       code: code as string,
       redirect_uri: window.location.origin + '/launch',
-      client_id: "",
+      client_id: '',
     }).toString(),
   });
 
@@ -134,7 +134,6 @@ async function exchangeCodeForToken(
 }
 
 function setupMedplumClient(tokenData: TokenResponse, iss: string, medplumContext: { medplum: MedplumClient }): void {
-
   // Configure the Medplum client
   medplumContext.medplum = new MedplumClient({
     baseUrl: iss,
@@ -172,7 +171,7 @@ export function LaunchPage(): JSX.Element {
         const tokenData = await exchangeCodeForToken(params, config, clientId);
 
         if (!tokenData) {
-          console.log("closing");
+          console.log('closing');
           return;
         }
 

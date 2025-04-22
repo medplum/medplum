@@ -14,18 +14,16 @@ interface SmartLaunchProps {
 }
 
 function SmartLaunch({ clientId, iss, children }: SmartLaunchProps): JSX.Element {
-
   const handleClick = (): void => {
-
-    const patientId = document.getElementById("patientIdBox").value;
-    const patientIdNullString = "*** Must set patient ID for SMART launch ***";
+    const patientId = document.getElementById('patientIdBox').value;
+    const patientIdNullString = '*** Must set patient ID for SMART launch ***';
 
     if (!patientId) {
-      document.getElementsByName("patientIdBox")[0].placeholder = patientIdNullString;
-      return
+      document.getElementsByName('patientIdBox')[0].placeholder = patientIdNullString;
+      return;
     }
 
-    sessionStorage.setItem('smart_patient', patientId)
+    sessionStorage.setItem('smart_patient', patientId);
 
     const params = new URLSearchParams({
       iss: iss,
@@ -57,8 +55,13 @@ export function HomePage(): JSX.Element {
           <Button>Launch with SMART Health IT Sandbox</Button>
         </SmartLaunch>
 
-        <input type="text" id="patientIdBox" name="patientIdBox" placeholder="Please set patient ID here" required></input>
-
+        <input
+          type="text"
+          id="patientIdBox"
+          name="patientIdBox"
+          placeholder="Please set patient ID here"
+          required
+        ></input>
       </Stack>
     </Container>
   );
