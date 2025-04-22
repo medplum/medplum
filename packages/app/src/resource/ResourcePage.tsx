@@ -64,7 +64,7 @@ export function ResourcePage(): JSX.Element | null {
     const tab = window.location.pathname.split('/').pop();
     return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
   });
-
+  
   async function restoreResource(): Promise<void> {
     const historyBundle = await medplum.readHistory(resourceType, id);
     const restoredResource = historyBundle.entry?.find((e) => !!e.resource)?.resource;
