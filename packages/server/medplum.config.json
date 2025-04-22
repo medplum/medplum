@@ -25,8 +25,8 @@
     "host": "localhost",
     "port": 5432,
     "dbname": "medplum",
-    "username": "medplum",
-    "password": "medplum"
+    "username": "postgres",
+    "password": "postgres"
   },
   "redis": {
     "host": "localhost",
