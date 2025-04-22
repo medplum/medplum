@@ -5,6 +5,7 @@ import { getAuthenticatedContext } from '../../context';
 import { createPdf } from '../../util/pdf';
 import { getClaimPDFDocDefinition } from './utils/cms1500pdf';
 import { getBinaryStorage } from '../../storage/loader';
+import { Readable } from 'stream';
 
 /**
  * Operation definition for the Claim $export operation.
@@ -60,8 +61,13 @@ export async function claimExportHandler(req: FhirRequest): Promise<FhirResponse
       resourceType: 'Binary',
       contentType: 'application/pdf',
     });
-    await getBinaryStorage().writeBinary(binary, 'cms-1500.pdf', 'application/pdf', pdfBuffer.toString('base64'));
-
+    
+    const readableStream = new Readable();
+    readableStream.push(pdfBuffer);
+    readableStream.push(null);
+    
+    await getBinaryStorage().writeBinary(binary, 'cms-1500.pdf', 'application/pdf', readableStream);
+    
     const media: Media = {
       resourceType: 'Media',
       status: 'completed',
