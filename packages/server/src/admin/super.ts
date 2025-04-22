@@ -384,6 +384,7 @@ superAdminRouter.post(
       .withMessage('Table name(s) must be a snake_cased_string')
       .optional(),
     body('analyze').isBoolean().optional().default(false),
+    body('vacuum').isBoolean().optional().default(true),
     checkExact(),
   ],
   asyncWrap(async (req: Request, res: Response) => {
@@ -396,7 +397,14 @@ superAdminRouter.post(
       return;
     }
 
-    const query = `VACUUM${req.body.analyze ? ' ANALYZE' : ''}${req.body.tableNames?.length ? ` ${req.body.tableNames.map((name: string) => `"${name}"`).join(', ')}` : ''};`;
+    let action = (req.body.vacuum ?? true) ? 'VACUUM' : '';
+    action += req.body.analyze ? ' ANALYZE' : '';
+    if (!action) {
+      throw new OperationOutcomeError(badRequest('At least one of vacuum or analyze must be true'));
+    }
+
+    const query =
+      `${action}${req.body.tableNames?.length ? ` ${req.body.tableNames.map((name: string) => `"${name}"`).join(', ')}` : ''};`.trim();
 
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();

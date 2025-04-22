@@ -813,6 +813,40 @@ describe('Super Admin routes', () => {
       infoSpy.mockRestore();
     });
 
+    test('Vacuum -- Only analyze', async () => {
+      const infoSpy = jest.spyOn(globalLogger, 'info');
+
+      const res1 = await request(app)
+        .post('/admin/super/vacuum')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({ tableNames: ['Observation', 'Observation_History'], analyze: true, vacuum: false });
+
+      expect(res1.status).toStrictEqual(202);
+      expect(res1.headers['content-location']).toBeDefined();
+      await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+
+      expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
+        durationMs: expect.any(Number),
+        analyze: true,
+        query: 'ANALYZE "Observation", "Observation_History";',
+        tableNames: ['Observation', 'Observation_History'],
+      });
+      infoSpy.mockRestore();
+    });
+
+    test('Vacuum -- neither vacuum nor analyze', async () => {
+      const res1 = await request(app)
+        .post('/admin/super/vacuum')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({ tableNames: ['Observation', 'Observation_History'], analyze: false, vacuum: false });
+
+      expect(res1.status).toStrictEqual(400);
+    });
+
     test('Vacuum -- Non-string table names', async () => {
       const infoSpy = jest.spyOn(globalLogger, 'info');
 
