@@ -159,7 +159,7 @@ export const EncounterChart = (): JSX.Element => {
           chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item))
         );
         setChargeItems(updatedChargeItems);
-        
+
         if (claim?.id) {
           const updatedClaim = {
             ...claim,
@@ -265,17 +265,19 @@ export const EncounterChart = (): JSX.Element => {
   };
 
   const exportClaimAsCMS1500 = async (): Promise<void> => {
-    if (!claim?.id || !coverage) { 
+    if (!claim?.id || !coverage) {
       return;
     }
 
-     await medplum.updateResource({
+    await medplum.updateResource({
       ...claim,
-      insurance: [{ 
-        sequence: 1, 
-        focal: true,
-        coverage: { reference: getReferenceString(coverage) } 
-      }],
+      insurance: [
+        {
+          sequence: 1,
+          focal: true,
+          coverage: { reference: getReferenceString(coverage) },
+        },
+      ],
     });
 
     const response = await medplum.get(medplum.fhirUrl('Claim', claim.id, '$export'));
@@ -317,38 +319,39 @@ export const EncounterChart = (): JSX.Element => {
       return (
         <Stack gap="md">
           {claim && (
-            
             <Card withBorder shadow="sm">
-            <Box display="inline-block">
-              <Menu shadow="md" width={200}>
-                <Menu.Target>
-                  <Button variant="outline" leftSection={<IconDownload size={16} />}>Export Claim</Button>
-                </Menu.Target>
+              <Box display="inline-block">
+                <Menu shadow="md" width={200}>
+                  <Menu.Target>
+                    <Button variant="outline" leftSection={<IconDownload size={16} />}>
+                      Export Claim
+                    </Button>
+                  </Menu.Target>
 
-                <Menu.Dropdown>
-                  <Menu.Label>Export Options</Menu.Label>
+                  <Menu.Dropdown>
+                    <Menu.Label>Export Options</Menu.Label>
 
-                  <Menu.Item 
-                    leftSection={<IconFileText size={14} />} 
-                    onClick={async () => {
-                      await exportClaimAsCMS1500();
-                    }}
-                  >
-                    CMS 1500 Form
-                  </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconFileText size={14} />}
+                      onClick={async () => {
+                        await exportClaimAsCMS1500();
+                      }}
+                    >
+                      CMS 1500 Form
+                    </Menu.Item>
 
-                  <Menu.Item leftSection={<IconFileText size={14} />} onClick={() => console.log('EDI X12 selected')}>
-                    EDI X12
-                  </Menu.Item>
+                    <Menu.Item leftSection={<IconFileText size={14} />} onClick={() => console.log('EDI X12 selected')}>
+                      EDI X12
+                    </Menu.Item>
 
-                  <Menu.Item
-                    leftSection={<IconFileText size={14} />}
-                    onClick={() => console.log('NUCC Crosswalk selected')}
-                  >
-                    NUCC Crosswalk CSV
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
+                    <Menu.Item
+                      leftSection={<IconFileText size={14} />}
+                      onClick={() => console.log('NUCC Crosswalk selected')}
+                    >
+                      NUCC Crosswalk CSV
+                    </Menu.Item>
+                  </Menu.Dropdown>
+                </Menu>
               </Box>
             </Card>
           )}

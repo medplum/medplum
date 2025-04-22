@@ -1,5 +1,5 @@
-import { Claim, ChargeItem, Encounter } from "@medplum/fhirtypes";
-import { getReferenceString, MedplumClient } from "@medplum/core";
+import { Claim, ChargeItem, Encounter } from '@medplum/fhirtypes';
+import { getReferenceString, MedplumClient } from '@medplum/core';
 
 export function createClaimFromEncounter(
   medplum: MedplumClient,
@@ -99,25 +99,16 @@ export async function fetchAndApplyChargeItemDefinitions(
 }
 
 // Define the function outside your component (if possible)
-export async function getChargeItemsForEncounter(
-  medplum: MedplumClient, 
-  encounter: Encounter
-): Promise<ChargeItem[]> {
+export async function getChargeItemsForEncounter(medplum: MedplumClient, encounter: Encounter): Promise<ChargeItem[]> {
   console.log('Getting charge items', encounter);
   if (!encounter) {
     return [];
   }
-  
-  const chargeItems = await medplum.searchResources(
-    'ChargeItem', 
-    `context=${getReferenceString(encounter)}`
-  );
-  
-  const updatedChargeItems = await fetchAndApplyChargeItemDefinitions(
-    medplum, 
-    chargeItems
-  );
-  
+
+  const chargeItems = await medplum.searchResources('ChargeItem', `context=${getReferenceString(encounter)}`);
+
+  const updatedChargeItems = await fetchAndApplyChargeItemDefinitions(medplum, chargeItems);
+
   return updatedChargeItems;
 }
 
