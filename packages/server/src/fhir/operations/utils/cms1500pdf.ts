@@ -103,12 +103,11 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
     pageMargins: 0,
     content: [
       {
-        image: path.resolve(__dirname, '../../../../static/cms1500.png'),
+        image: path.relative(process.cwd(), path.resolve(__dirname, '../../../../static/cms1500.png')),
         absolutePosition: { x: 0, y: 0 },
         width: PAGE_WIDTH,
         height: PAGE_HEIGHT,
       },
-
       // 1. Insurance Type
       createCheckmark(insuranceType === 'MEDICARE', 23, 111),
       createCheckmark(insuranceType === 'MEDICAID', 71, 111),
