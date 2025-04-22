@@ -66,7 +66,18 @@ export function initOpenTelemetry(): void {
     new PgInstrumentation({ enhancedDatabaseReporting: true, requireParentSpan: true }),
     new IORedisInstrumentation(),
 
-    new ExpressInstrumentation(),
+    new ExpressInstrumentation({
+      ignoreLayers: [
+        'expressInit',
+        'query',
+        'urlencodedParser',
+        'textParser',
+        'setupResponseInterceptors',
+        'standardHeaders',
+        'corsMiddleware',
+        'compression',
+      ].map((name) => `middleware - ${name}`),
+    }),
     new GraphQLInstrumentation({
       ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
     }),
