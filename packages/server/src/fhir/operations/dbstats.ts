@@ -60,6 +60,8 @@ export async function dbStatsHandler(req: FhirRequest): Promise<FhirResponse> {
       n_dead_tup AS dead_tuples,
       last_autovacuum,
       last_autoanalyze,
+      last_analyze,
+      last_vacuum,
       indisvalid
     FROM
       pg_stat_user_indexes i
@@ -79,20 +81,22 @@ export async function dbStatsHandler(req: FhirRequest): Promise<FhirResponse> {
     if (row.table_name !== currentTable) {
       output.push(
         `${row.table_name}: ${row.total_size}`,
-        `  [table: ${row.table_size} indexes: ${row.all_indexes_size}]`,
-        `  [estimated rows: ${row.estimated_row_count}]`,
-        `  [settings overrides: ${row.table_level_overrides}]`,
-        `  [live tuples: ${row.live_tuples}]`,
-        `  [dead tuples: ${row.dead_tuples}]`,
-        `  [last autovacuum: ${new Date(row.last_autovacuum).toISOString()}]`,
-        `  [last autoanalyze: ${new Date(row.last_autoanalyze).toISOString()}]`
+        `  [table_size: ${row.table_size} indexes_size: ${row.all_indexes_size}]`,
+        `  [estimated_row_count: ${row.estimated_row_count}]`,
+        `  [table_level_overrides: ${row.table_level_overrides}]`,
+        `  [live_tuples: ${row.live_tuples}]`,
+        `  [dead_tuples: ${row.dead_tuples}]`,
+        `  [last_autovacuum: ${new Date(row.last_autovacuum).toISOString()}]`,
+        `  [last_autoanalyze: ${new Date(row.last_autoanalyze).toISOString()}]`,
+        `  [last_analyze: ${new Date(row.last_analyze).toISOString()}]`,
+        `  [last_vacuum: ${new Date(row.last_vacuum).toISOString()}]`
       );
       currentTable = row.table_name;
     }
     output.push(
       `    ${row.index_name}: ${row.index_size}`,
       row.indisvalid
-        ? `      [scans: ${row.index_scans} entries read: ${row.index_entries_read} rows fetched: ${row.index_rows_fetched}]`
+        ? `      [scans: ${row.index_scans} entries_read: ${row.index_entries_read} rows_fetched: ${row.index_rows_fetched}]`
         : `      [!INVALID!]`
     );
   }
