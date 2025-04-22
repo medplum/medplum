@@ -57,14 +57,25 @@ export function initOpenTelemetry(): void {
     new RuntimeNodeInstrumentation(),
     new HttpInstrumentation({
       applyCustomAttributesOnSpan(span, req, res) {
-        const code = res.statusCode && res.statusCode < 400 ? SpanStatusCode.OK : SpanStatusCode.ERROR;
+        // All error traces are kept, but others may be sampled
+        const code = res.statusCode && res.statusCode < 500 ? SpanStatusCode.OK : SpanStatusCode.ERROR;
         span.setStatus({ code });
         span.setAttribute('http.method', req.method ?? 'unknown');
       },
     }),
 
-    new PgInstrumentation({ enhancedDatabaseReporting: true, requireParentSpan: true }),
-    new IORedisInstrumentation(),
+    new PgInstrumentation({
+      enhancedDatabaseReporting: true,
+      requireParentSpan: true,
+      requestHook(span, info) {
+        span.updateName(`DB: ${info.query.text}`);
+      },
+    }),
+    new IORedisInstrumentation({
+      requestHook(span, info) {
+        span.updateName(`Redis: ${info.cmdName} ${info.cmdArgs}`);
+      },
+    }),
 
     new ExpressInstrumentation({
       ignoreLayers: [
