@@ -279,8 +279,13 @@ export const EncounterChart = (): JSX.Element => {
     });
 
     const response = await medplum.get(medplum.fhirUrl('Claim', claim.id, '$export'));
-    console.log(response);
-   
+    
+    if (response.resourceType === 'Media' && response.content?.url) {
+      const url = response.content.url;
+      window.open(url, '_blank');
+    } else {
+      showErrorNotification('Failed to download PDF');
+    }
 
   };
 
