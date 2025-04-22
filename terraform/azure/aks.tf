@@ -8,7 +8,7 @@ resource "azurerm_user_assigned_identity" "aks_identity" {
   resource_group_name = var.resource_group_name
 }
 
-module "medplum-aks" {
+module "medplum_aks" {
   source  = "Azure/aks/azurerm"
   version = "9.2.0"
 
@@ -111,5 +111,5 @@ output "managed_identity_client_id" {
 }
 
 output "oidc_issuer_url" {
-  value = module.medplum-aks.oidc_issuer_url
+  value = module.medplum_aks.oidc_issuer_url
 }
