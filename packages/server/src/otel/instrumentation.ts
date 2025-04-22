@@ -4,7 +4,7 @@ import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentele
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { DataloaderInstrumentation } from '@opentelemetry/instrumentation-dataloader';
-import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { ExpressInstrumentation, ExpressLayerType } from '@opentelemetry/instrumentation-express';
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
@@ -77,6 +77,7 @@ export function initOpenTelemetry(): void {
         'corsMiddleware',
         'compression',
       ].map((name) => `middleware - ${name}`),
+      ignoreLayersType: [ExpressLayerType.ROUTER],
     }),
     new GraphQLInstrumentation({
       ignoreTrivialResolveSpans: true, // Don't record simple object property lookups
