@@ -2,7 +2,7 @@ data "azurerm_client_config" "current" {}
 
 resource "azurerm_key_vault" "des_vault" {
   location                      = var.location
-  name                          = "medplum-${var.environment}-des-keyvault"
+  name                          = "medplum-${var.environment}-des-vault"
   resource_group_name           = var.resource_group_name
   sku_name                      = "premium"
   tenant_id                     = data.azurerm_client_config.current.tenant_id

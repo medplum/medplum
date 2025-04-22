@@ -25,7 +25,7 @@ resource "azurerm_key_vault_key" "des_key" {
 resource "azurerm_disk_encryption_set" "des_disk_encryption_set" {
   key_vault_key_id    = azurerm_key_vault_key.des_key.id
   location            = var.location
-  name                = "des"
+  name                = "medplum-${var.environment}-${var.deployment_id}-des"
   resource_group_name = var.resource_group_name
 
   identity {
