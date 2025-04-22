@@ -1,0 +1,218 @@
+---
+sidebar_position: 0
+---
+
+# Referral Management
+
+Building out a referral management experience requires composing multiple FHIR resources into a workflow that meets the requirements of both referring and receiving providers. There are three primary interactions that developers should consider when building out a custom referral management solution:
+
+- **Capturing referral requests** from the referring provider
+- **Transmitting referrals** to receiving providers
+- **Tracking referral status** throughout the workflow
+
+## Referral Overview
+
+Here is a **sample** of what a referral management experience might look like - to be clear, referral interfaces can look however you want them to. A sample referral application could be built using Medplum [React components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs).
+
+When capturing referral information, gathering the essential details using a [Questionnaire](/docs/api/fhir/resources/questionnaire.mdx) is a good first step. This can be used to create a [ServiceRequest](/docs/api/fhir/resources/servicerequest.mdx) which serves as the core referral resource. You can query all resources related to a given referral from the [ServiceRequest](/docs/api/fhir/resources/servicerequest.mdx) endpoint.
+
+Depending on your use case, you might need to include different supporting information such as [Conditions](/docs/api/fhir/resources/condition.mdx), [Observations](/docs/api/fhir/resources/observation.mdx), or [DocumentReferences](/docs/api/fhir/resources/documentreference.mdx). [Search](/docs/search/) is useful to construct the specific queries that will give the context needed for a complete referral.
+
+React components are available to aid in building a quick referral experience. [QuestionnaireForm](https://storybook.medplum.com/?path=/docs/medplum-questionnaireform--basic), [ResourceTable](https://storybook.medplum.com/?path=/docs/medplum-resourcetable--basic), [Search control](https://storybook.medplum.com/?path=/docs/medplum-searchcontrol--checkboxes), [ResourceAvatar](https://storybook.medplum.com/?path=/docs/medplum-resourceavatar--image), and [Timeline](https://storybook.medplum.com/?path=/docs/medplum-timeline--basic) are potential components that can speed development of the referral management interface.
+
+```mermaid
+
+flowchart BT
+    referral[<table><thead><tr><th>ServiceRequest</th></tr></thead><tbody><tr><td>Cardiology Referral</td></tr></tbody></table>]
+    patient[<table><thead><tr><th>Patient</th></tr></thead><tbody><tr><td>Homer Simpson</td></tr></tbody></table>]
+    requester[<table><thead><tr><th>Practitioner</th></tr></thead><tbody><tr><td>Dr. Julius Hibbert</td></tr></tbody></table>]
+    performer[<table><thead><tr><th>Practitioner</th></tr></thead><tbody><tr><td>Dr. Nick Riviera</td></tr></tbody></table>]
+    condition[<table><thead><tr><th>Condition</th></tr></thead><tbody><tr><td>Chest Pain</td></tr></tbody></table>]
+    obs[<table><thead><tr><th>Observation</th></tr></thead><tbody><tr><td>ECG: Abnormal</td></tr></tbody></table>]
+    task[<table><thead><tr><th>Task</th></tr></thead><tbody><tr><td>Referral Tracking</td></tr></tbody></table>]
+    comm[<table><thead><tr><th>Communication</th></tr></thead><tbody><tr><td>Referral Document</td></tr></tbody></table>]
+
+referral -->|subject| patient
+referral -->|requester| requester
+referral -->|performer| performer
+referral -->|reasonReference| condition
+referral -->|supportingInfo| obs
+task -->|focus| referral
+comm -->|about| referral
+
+```
+
+### Key Resources
+
+| **Resource**                                                   | **Description**                                                                                                                                  |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| [`ServiceRequest`](/docs/api/fhir/resources/servicerequest)    | The primary resource for representing a referral. Contains details about the requested service, priority, and supporting information.             |
+| [`Task`](/docs/api/fhir/resources/task)                        | Used to track the status of the referral through its lifecycle (requested, accepted, rejected, in-progress, completed).                          |
+| [`Questionnaire`](/docs/api/fhir/resources/questionnaire)      | Defines structured forms for capturing referral information consistently.                                                                         |
+| [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) | Contains the completed referral form data that can be processed to create a ServiceRequest.                                          |
+| [`Communication`](/docs/api/fhir/resources/communication)      | Represents the transmission of referral information between providers, including attachments and delivery status.                                 |
+| [`DocumentReference`](/docs/api/fhir/resources/documentreference) | Used to attach clinical documents, images, or other files to the referral.                                                                    |
+| [`Condition`](/docs/api/fhir/resources/condition)              | Represents diagnoses that justify the reason for the referral.                                                                                    |
+| [`Observation`](/docs/api/fhir/resources/observation)          | Contains clinical measurements or findings that support the referral.                                                                             |
+
+### Key Code Systems
+
+| **Code System**                                                | **Description**                                                                                                                                |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [SNOMED CT](https://www.snomed.org/)                           | Used in [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) resources to specify referral types and specialties.                       |
+| [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) | Used in [`Condition`](/docs/api/fhir/resources/condition) resources to specify diagnoses that justify the referral.                           |
+| [LOINC](https://loinc.org/)                                    | Used in [`Observation`](/docs/api/fhir/resources/observation) resources to specify clinical measurements included in the referral.            |
+
+## Referral Creation & Capture {#referral-creation}
+
+### Capturing Referral Requests
+
+A variety of referral capture experiences are possible, and customizability is one of the key reasons to use a headless system. From a technical perspective, the referral capture process should result in the creation of a complete [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) resource along with supporting information.
+
+Some implementations use a simple form interface that collects basic information about the patient, reason for referral, and intended recipient, then constructs a [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) resource.
+
+More sophisticated implementations use a library of [`Questionnaires`](/docs/questionnaires/) tailored to different specialties or referral types, and then use [`Bots`](/docs/bots/) to process the [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) and create the appropriate resources.
+
+```mermaid
+
+flowchart BT
+
+ questionnaire[<table><thead><tr><th>Questionnaire</th></tr></thead><tbody><tr><td>Cardiology Referral Form</td></tr></tbody></table>]
+ response[<table><thead><tr><th>QuestionnaireResponse</th></tr></thead><tbody><tr><td>Completed Cardiology Referral</td></tr></tbody></table>]
+ bot[<table><thead><tr><th>Bot</th></tr></thead><tbody><tr><td>Referral Processing Bot</td></tr></tbody></table>]
+ 
+ subgraph Results
+   serviceRequest[<table><thead><tr><th>ServiceRequest</th></tr></thead><tbody><tr><td>Cardiology Referral</td></tr></tbody></table>]
+   task[<table><thead><tr><th>Task</th></tr></thead><tbody><tr><td>Referral Tracking</td></tr></tbody></table>]
+   communication[<table><thead><tr><th>Communication</th></tr></thead><tbody><tr><td>Referral Document</td></tr></tbody></table>]
+ end
+
+ response -->|questionnaire| questionnaire
+ bot -->|processes| response
+ bot -->|creates| serviceRequest
+ bot -->|creates| task
+ bot -->|creates| communication
+ task -->|focus| serviceRequest
+ communication -->|about| serviceRequest
+
+```
+
+### Key Resources
+
+| **Resource**                                                         | **Description**                                                                                                                              |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`Questionnaire`](/docs/api/fhir/resources/questionnaire)            | Defines the structure and content of the referral form.                                                                                       |
+| [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) | Contains the completed referral data.                                                                                                 |
+| [`ServiceRequest`](/docs/api/fhir/resources/servicerequest)          | The primary referral resource created from the QuestionnaireResponse.                                                                         |
+| [`Task`](/docs/api/fhir/resources/task)                              | Created to track the workflow status of the referral.                                                                                         |
+| [`Communication`](/docs/api/fhir/resources/communication)            | Created to represent the transmission of the referral to the receiving provider.                                                              |
+
+### Key Code Systems
+
+| **Code System**                                                | **Description**                                                                                                                                     |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [SNOMED CT](https://www.snomed.org/)                           | Used to code referral types (e.g., "308447001" for "Referral to specialist").                                                                       |
+| [LOINC](https://loinc.org/)                                    | Can be used to standardize questionnaire items when capturing referral data.                                                                        |
+
+## Referral Transmission & Tracking
+
+### Transmitting Referrals
+
+Referrals need to be securely transmitted to receiving providers. This can be done using various methods depending on the technical capabilities of the receiving system.
+
+The [`Communication`](/docs/api/fhir/resources/communication) resource is used to represent the transmission event, including details about the sender, recipient, and payload. For recipients without a FHIR API, a [`Bot`](/docs/bots/) can be used to generate and send a PDF of the referral information.
+
+### Tracking Referral Status
+
+Once a referral has been sent, it's important to track its status through the entire lifecycle. The [`Task`](/docs/api/fhir/resources/task) resource is ideal for this purpose, as it provides a standard way to represent workflow status.
+
+```mermaid
+
+flowchart LR
+  requested[Requested]
+  accepted[Accepted]
+  rejected[Rejected]
+  inProgress[In Progress]
+  completed[Completed]
+  
+  requested --> accepted
+  requested --> rejected
+  accepted --> inProgress
+  inProgress --> completed
+
+  classDef status fill:#f9f9f9,stroke:#333,stroke-width:1px;
+  class requested,accepted,rejected,inProgress,completed status;
+
+```
+
+When a specialist responds to a referral, their response can be captured as a [`DocumentReference`](/docs/api/fhir/resources/documentreference) and linked to the original referral through the [`ServiceRequest`](/docs/api/fhir/resources/servicerequest). If the response results in an appointment, an [`Appointment`](/docs/api/fhir/resources/appointment) resource can be created and linked to the referral.
+
+## Magic Links for Secure Access
+
+For receiving providers who are not users of your system, you can implement magic links to provide secure, temporary access to referral information:
+
+```typescript
+import { MedplumClient } from '@medplum/core';
+import { v4 as uuidv4 } from 'uuid';
+import { createHash } from 'crypto';
+
+// Store for magic link tokens (in production, use a database)
+const magicLinkTokens = new Map();
+
+// Function to generate a magic link for referral access
+export async function generateReferralMagicLink(
+  email: string, 
+  serviceRequestId: string, 
+  redirectUrl: string,
+  expiresIn: number = 24 * 60 * 60 * 1000 // 24 hours by default
+) {
+  // Generate a unique token
+  const token = uuidv4();
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+  
+  // Store token with referral info
+  magicLinkTokens.set(tokenHash, {
+    email,
+    serviceRequestId,
+    expires: Date.now() + expiresIn,
+    used: false
+  });
+
+  // Create the magic link URL
+  const magicLink = `${redirectUrl}?token=${token}`;
+  
+  return magicLink;
+}
+
+// Function to validate a magic link token
+export async function validateReferralMagicLink(token: string) {
+  const tokenHash = createHash('sha256').update(token).digest('hex');
+  const tokenData = magicLinkTokens.get(tokenHash);
+  
+  if (!tokenData) {
+    throw new Error('Invalid token');
+  }
+  
+  if (tokenData.expires < Date.now()) {
+    magicLinkTokens.delete(tokenHash);
+    throw new Error('Token expired');
+  }
+  
+  if (tokenData.used) {
+    throw new Error('Token already used');
+  }
+  
+  // Mark token as used if it's a one-time use token
+  tokenData.used = true;
+  
+  return tokenData.serviceRequestId;
+}
+```
+
+## Reference
+
+- [FHIR ServiceRequest Resource](https://hl7.org/fhir/R4/servicerequest.html)
+- [FHIR Task Resource](https://hl7.org/fhir/R4/task.html)
+- [FHIR Communication Resource](https://hl7.org/fhir/R4/communication.html)
+- [Medplum Questionnaires Documentation](/docs/questionnaires/)
+- [Medplum Bots Documentation](/docs/bots/)
