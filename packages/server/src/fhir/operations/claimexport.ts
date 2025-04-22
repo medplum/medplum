@@ -62,25 +62,25 @@ export async function claimExportHandler(req: FhirRequest): Promise<FhirResponse
       resourceType: 'Binary',
       contentType: 'application/pdf',
     });
-    
+
     // Convert Buffer to Readable stream for writeBinary
     const readableStream = new Readable();
     readableStream.push(pdfBuffer);
     readableStream.push(null);
-    
+
     await getBinaryStorage().writeBinary(binary, 'cms-1500.pdf', 'application/pdf', readableStream);
-    
+
     // Create directory if it doesn't exist
     const outputDir = path.resolve(__dirname, '../../../output/claims');
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
-    
+
     // Generate a unique filename using the claim ID and timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const filename = `claim-${claimId}-${timestamp}.pdf`;
     const filePath = path.join(outputDir, filename);
-    
+
     // Write the PDF to the file system
     fs.writeFileSync(filePath, pdfBuffer);
     console.log(`PDF saved to: ${filePath}`);
