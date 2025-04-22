@@ -61,13 +61,13 @@ export async function claimExportHandler(req: FhirRequest): Promise<FhirResponse
       resourceType: 'Binary',
       contentType: 'application/pdf',
     });
-    
+
     const readableStream = new Readable();
     readableStream.push(pdfBuffer);
     readableStream.push(null);
-    
+
     await getBinaryStorage().writeBinary(binary, 'cms-1500.pdf', 'application/pdf', readableStream);
-    
+
     const media: Media = {
       resourceType: 'Media',
       status: 'completed',
