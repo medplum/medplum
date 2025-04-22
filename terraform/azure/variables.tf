@@ -37,5 +37,5 @@ variable "environment" {
 variable "deployment_id" {
   description = "The deployment ID for the current deployment"
   type        = string
-  default     = null
+  default     = "1"
 }

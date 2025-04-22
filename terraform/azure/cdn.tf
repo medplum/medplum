@@ -1,6 +1,6 @@
 # Storage Account to host static content
 resource "azurerm_storage_account" "sa" {
-  name                     = "medplum-${var.environment}-${var.deployment_id}-sa"
+  name                     = "medplum${var.environment}${var.deployment_id}sa"
   resource_group_name      = var.resource_group_name
   location                 = var.location
   account_tier             = "Standard"
