@@ -1,17 +1,13 @@
-import { allOk, badRequest, createReference, getReferenceString, WithId } from '@medplum/core';
-import { AsyncJob, Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import { Job, Queue } from 'bullmq';
+import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
+import { Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { Queue } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
-import { Pool, PoolConfig } from 'pg';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { MedplumServerConfig } from '../config/types';
 import { AuthenticatedRequestContext } from '../context';
-import * as database from '../database';
-import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
@@ -21,7 +17,7 @@ import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { CronJobData, getCronQueue } from '../workers/cron';
-import { getReindexQueue, ReindexJob, ReindexJobData } from '../workers/reindex';
+import { getReindexQueue, ReindexJobData } from '../workers/reindex';
 import { isValidTableName } from './super';
 
 jest.mock('../seeds/valuesets');
@@ -340,11 +336,9 @@ describe('Super Admin routes', () => {
       'ReindexJobData',
       expect.objectContaining<Partial<ReindexJobData>>({
         resourceTypes: ['PaymentNotice'],
+        maxResourceVersion: expectedMaxResourceVersion,
       })
     );
-    expect(queue.add.mock.calls[0][1].maxResourceVersion).toStrictEqual(expectedMaxResourceVersion);
-    await withTestContext(() => new ReindexJob().execute({ data: queue.add.mock.calls[0][1] } as Job));
-    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
   test.each([
@@ -397,33 +391,6 @@ describe('Super Admin routes', () => {
         resourceTypes: ['PaymentNotice', 'MedicinalProductManufactured', 'BiologicallyDerivedProduct'],
       })
     );
-    let job = { data: queue.add.mock.calls[0][1] } as Job;
-    queue.add.mockClear();
-
-    await withTestContext(() => new ReindexJob().execute(job));
-    expect(queue.add).toHaveBeenCalledWith(
-      'ReindexJobData',
-      expect.objectContaining<Partial<ReindexJobData>>({
-        resourceTypes: ['MedicinalProductManufactured', 'BiologicallyDerivedProduct'],
-      })
-    );
-    job = { data: queue.add.mock.calls[0][1] } as Job;
-    queue.add.mockClear();
-
-    await withTestContext(() => new ReindexJob().execute(job));
-    expect(queue.add).toHaveBeenCalledWith(
-      'ReindexJobData',
-      expect.objectContaining<Partial<ReindexJobData>>({
-        resourceTypes: ['BiologicallyDerivedProduct'],
-      })
-    );
-    job = { data: queue.add.mock.calls[0][1] } as Job;
-    queue.add.mockClear();
-
-    await withTestContext(() => new ReindexJob().execute(job));
-    expect(queue.add).not.toHaveBeenCalled();
-
-    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
   test('Set password access denied', async () => {
@@ -579,160 +546,6 @@ describe('Super Admin routes', () => {
     expect(res1.status).toStrictEqual(202);
     expect(res1.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
-  });
-
-  describe('Data migrations', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
-
-    test('Run data migrations -- Migrations to run or already running', async () => {
-      const res1 = await request(app)
-        .post('/fhir/R4/AsyncJob')
-        .set('Authorization', 'Bearer ' + adminAccessToken)
-        .type('json')
-        .send({
-          resourceType: 'AsyncJob',
-          status: 'accepted',
-          request: 'mock-job',
-          requestTime: new Date().toISOString(),
-        } satisfies AsyncJob);
-
-      expect(res1.status).toStrictEqual(201);
-      expect(res1.body).toBeDefined();
-
-      const asyncJob = res1.body as WithId<AsyncJob>;
-
-      const maybeStartDataMigrationSpy = jest
-        .spyOn(database, 'maybeStartDataMigration')
-        .mockImplementation(async () => asyncJob);
-
-      const res2 = await request(app)
-        .post('/admin/super/migrate')
-        .set('Authorization', 'Bearer ' + adminAccessToken)
-        .set('Prefer', 'respond-async')
-        .type('json')
-        .send({});
-
-      expect(res2.status).toStrictEqual(202);
-      expect(res2.headers['content-location']).toBeDefined();
-
-      setTimeout(async () => {
-        const exec = new AsyncJobExecutor(getSystemRepo(), asyncJob);
-        await exec.completeJob(getSystemRepo());
-      }, 250);
-
-      await waitForAsyncJob(res2.headers['content-location'], app, adminAccessToken);
-      expect(maybeStartDataMigrationSpy).toHaveBeenCalledTimes(1);
-    });
-
-    describe('Data version asserted', () => {
-      test('Run data migrations -- invalid dataVersion asserted', async () => {
-        const res1 = await request(app)
-          .post('/admin/super/migrate')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .set('Prefer', 'respond-async')
-          .type('json')
-          .send({ dataVersion: true });
-
-        expect(res1.status).toStrictEqual(400);
-        expect(res1.headers['content-location']).not.toBeDefined();
-        expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
-      });
-
-      test('Run data migrations -- Asserted version is less than or equal to current version', async () => {
-        await database.markPendingDataMigrationCompleted({
-          resourceType: 'AsyncJob',
-          type: 'data-migration',
-          status: 'accepted',
-          request: 'mock-job',
-          requestTime: new Date().toISOString(),
-          dataVersion: 1,
-        });
-
-        const res1 = await request(app)
-          .post('/admin/super/migrate')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .set('Prefer', 'respond-async')
-          .type('json')
-          .send({ dataVersion: 1 });
-
-        expect(res1.status).toStrictEqual(200);
-        expect(res1.headers['content-location']).not.toBeDefined();
-        expect(res1.body).toMatchObject(allOk);
-      });
-    });
-
-    describe('Set data version', () => {
-      let noMigrationsConfig: MedplumServerConfig;
-      let poolConfig: PoolConfig;
-      let outOfBandPool: Pool;
-      let originalDataVersion: number;
-
-      beforeAll(async () => {
-        console.log = jest.fn();
-
-        noMigrationsConfig = await loadTestConfig();
-
-        poolConfig = {
-          host: noMigrationsConfig.database.host,
-          port: noMigrationsConfig.database.port,
-          database: noMigrationsConfig.database.dbname,
-          user: noMigrationsConfig.database.username,
-          password: noMigrationsConfig.database.password,
-          application_name: 'medplum-server',
-          ssl: noMigrationsConfig.database.ssl,
-          max: noMigrationsConfig.database.maxConnections ?? 100,
-        };
-
-        outOfBandPool = new Pool(poolConfig);
-        const results = await outOfBandPool.query<{ dataVersion: number }>(
-          'SELECT "dataVersion" FROM "DatabaseMigration";'
-        );
-        // We store the original version before our edits for this test suite
-        originalDataVersion = results.rows[0].dataVersion ?? -1;
-      });
-
-      beforeEach(async () => {
-        jest.restoreAllMocks();
-        // We set the dataVersion to 1 so that we can trigger the 'v1' migration to be pending after schema migrations run
-        await outOfBandPool.query('UPDATE "DatabaseMigration" SET "dataVersion" = 0;');
-      });
-
-      afterAll(async () => {
-        // We unset our version changes
-        await outOfBandPool.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1;', [originalDataVersion]);
-        await outOfBandPool.end();
-      });
-
-      test('Set data version -- Valid dataVersion', async () => {
-        const res1 = await request(app)
-          .post('/admin/super/setdataversion')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .type('json')
-          .send({ dataVersion: 1337 });
-
-        expect(res1.status).toStrictEqual(200);
-        expect(res1.body).toMatchObject(allOk);
-
-        // Check that data version actually gets set
-        const results = await database
-          .getDatabasePool(database.DatabaseMode.WRITER)
-          .query<{ dataVersion: number }>('SELECT "dataVersion" FROM "DatabaseMigration";');
-        expect(results.rows[0].dataVersion).toEqual(1337);
-      });
-
-      test.each([undefined, '3.3.0'])('Set data version -- invalid dataVersion - %s', async (dataVersion) => {
-        const res1 = await request(app)
-          .post('/admin/super/setdataversion')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .type('json')
-          .send({ dataVersion });
-
-        expect(res1.status).toStrictEqual(400);
-        expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
-      });
-    });
   });
 
   describe('Table settings', () => {

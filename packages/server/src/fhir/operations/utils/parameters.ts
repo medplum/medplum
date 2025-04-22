@@ -124,7 +124,9 @@ function parseStringifiedParameter(
       return value;
   }
 
-  throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
+  throw new OperationOutcomeError(
+    badRequest(`Invalid value '${value}' provided for ${param.type} parameter '${param.name}'`)
+  );
 }
 
 function validateInputParam(param: OperationDefinitionParameter, value: unknown): unknown {

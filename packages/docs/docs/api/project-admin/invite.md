@@ -25,6 +25,7 @@ Invite a new user to the project. This will perform the following actions:
   lastName: string;
   email?: string;
   externalId?: string;
+  scope?: 'project' | 'server';
   password?: string;
   sendEmail?: boolean;
   membership?: Partial<ProjectMembership>;
@@ -38,6 +39,7 @@ Invite a new user to the project. This will perform the following actions:
 | `email`                 | The email address assigned to the [User](/docs/api/fhir/medplum/user). Used to identify users within each project                                                                                                                                                                                  |
 | `externalId`            | The unique id provided by external identity provider (if applicable). See [Using External Ids](/docs/auth/methods/external-ids)                                                                                                                                                                    |
 | `password`              | The [User's](/docs/api/fhir/medplum/user) password                                                                                                                                                                                                                                                 |
+| `scope`                 | The scope of the user. If `project`, the user will be scoped to the project. If `server`, the user will be a server scoped user. Defaults to `server` for Practitioners and `project` for Patients. See [server vs project scoped user guide](/docs/auth/project-vs-server-scoped-users)                                                                                                                               |
 | `sendEmail`             | If `true`, send an invite email to the user. If self-hosting, see our [guide on setting up SES](/docs/self-hosting/install-on-aws#setup-ses)                                                                                                                                                       |
 | `membership`            | Used to override any fields of the resulting [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resource. Common use cases include: <ul><li>Setting [Access Policies](/docs/access/access-policies) upon invite </li><li>Overriding the default `ProjectMembership.profile`</li></ul> |
 

@@ -16,8 +16,10 @@ import {
   getSearchParameter,
   IncludeTarget,
   isResource,
+  isUUID,
   OperationOutcomeError,
   Operator,
+  parseFhirPath,
   parseFilterParameter,
   parseParameter,
   PropertyType,
@@ -42,7 +44,6 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import validator from 'validator';
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
@@ -67,6 +68,8 @@ import {
   Union,
   ValuesQuery,
 } from './sql';
+import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-column';
+import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -261,7 +264,7 @@ function getSelectQueryForSearch<T extends Resource>(
   options?: GetSelectQueryForSearchOptions
 ): SelectQuery {
   const builder = getBaseSelectQuery(repo, searchRequest, options);
-  addSortRules(builder, searchRequest);
+  addSortRules(repo, builder, searchRequest);
   const count = searchRequest.count;
   builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
   if (searchRequest.offset > 0) {
@@ -929,6 +932,10 @@ function buildSearchFilterExpression(
     throw new OperationOutcomeError(badRequest('Search filter value must be a string'));
   }
 
+  if (filter.value.includes('\0')) {
+    throw new OperationOutcomeError(badRequest('Search filter value cannot contain null bytes'));
+  }
+
   if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
     const chain = parseChainedParameter(resourceType, filter);
     return buildChainedSearch(repo, selectQuery, resourceType, chain);
@@ -954,11 +961,23 @@ function buildSearchFilterExpression(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy === 'lookup-table') {
+
+  if (readFromTokenColumns(repo) && impl.searchStrategy === 'token-column') {
+    // Use the token-column strategy only if the read feature flag is enabled
+    return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
+  } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
+    // otherwise, if it's a token-column but the read flag is not enabled, use the search param's
+    // previous lookup-table implementation
+
+    if (isLegacyTokenColumnSearchParameter(param, resourceType)) {
+      // legacy token search params should be treated as 'column' strategy; once the token-column read
+      // feature flag is enabled, this check goes away since all legacy search params will be token-column
+      const columnImpl = getSearchParameterImplementation(resourceType, param, true);
+      return buildNormalSearchFilterExpression(resourceType, table, param, columnImpl, filter);
+    }
     return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
   }
 
-  // Not any special cases, just a normal search parameter.
   return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
 }
 
@@ -1034,14 +1053,24 @@ function trySpecialSearchParameter(
     case '_id':
       return buildIdSearchFilter(
         table,
-        { columnName: 'id', type: SearchParameterType.UUID, searchStrategy: 'column' },
+        {
+          columnName: 'id',
+          type: SearchParameterType.UUID,
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('id'),
+        },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
     case '_lastUpdated':
       return buildDateSearchFilter(
         table,
-        { type: SearchParameterType.DATETIME, columnName: 'lastUpdated', searchStrategy: 'column' },
+        {
+          type: SearchParameterType.DATETIME,
+          columnName: 'lastUpdated',
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('lastUpdated'),
+        },
         filter
       );
     case '_compartment':
@@ -1056,7 +1085,13 @@ function trySpecialSearchParameter(
 
       return buildIdSearchFilter(
         table,
-        { columnName: 'compartments', type: SearchParameterType.UUID, array: true, searchStrategy: 'column' },
+        {
+          columnName: 'compartments',
+          type: SearchParameterType.UUID,
+          array: true,
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('compartments'),
+        },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
@@ -1173,7 +1208,7 @@ function buildIdSearchFilter(
     if (values[i].includes('/')) {
       values[i] = values[i].split('/').pop() as string;
     }
-    if (!validator.isUUID(values[i])) {
+    if (!isUUID(values[i])) {
       values[i] = '00000000-0000-0000-0000-000000000000';
     }
   }
@@ -1247,7 +1282,7 @@ function buildReferenceSearchFilter(
   }
   let condition: Condition;
   if (impl.array) {
-    condition = new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
+    condition = new Condition(column, 'ARRAY_CONTAINS_AND_IS_NOT_NULL', values, 'TEXT[]');
   } else if (values instanceof Column) {
     condition = new Condition(column, '=', values);
   } else if (values.length === 1) {
@@ -1347,20 +1382,27 @@ function buildQuantitySearchFilter(
 
 /**
  * Adds all "order by" clauses to the query builder.
+ * @param repo - The repository.
  * @param builder - The client query builder.
  * @param searchRequest - The search request.
  */
-function addSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
-  searchRequest.sortRules?.forEach((sortRule) => addOrderByClause(builder, searchRequest, sortRule));
+function addSortRules(repo: Repository, builder: SelectQuery, searchRequest: SearchRequest): void {
+  searchRequest.sortRules?.forEach((sortRule) => addOrderByClause(repo, builder, searchRequest, sortRule));
 }
 
 /**
  * Adds a single "order by" clause to the query builder.
+ * @param repo - The repository.
  * @param builder - The client query builder.
  * @param searchRequest - The search request.
  * @param sortRule - The sort rule.
  */
-function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
+function addOrderByClause(
+  repo: Repository,
+  builder: SelectQuery,
+  searchRequest: SearchRequest,
+  sortRule: SortRule
+): void {
   if (sortRule.code === '_id') {
     builder.orderBy('id', !!sortRule.descending);
     return;
@@ -1378,12 +1420,19 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy === 'lookup-table') {
-    impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
-    return;
+  if (readFromTokenColumns(repo) && impl.searchStrategy === 'token-column') {
+    addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
+  } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
+    if (isLegacyTokenColumnSearchParameter(param, resourceType)) {
+      const columnImpl = getSearchParameterImplementation(resourceType, param, true);
+      builder.orderBy(columnImpl.columnName, !!sortRule.descending);
+    } else {
+      impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
+    }
+  } else {
+    impl satisfies ColumnSearchParameterImplementation;
+    builder.orderBy(impl.columnName, !!sortRule.descending);
   }
-
-  builder.orderBy(impl.columnName, !!sortRule.descending);
 }
 
 /**
@@ -1423,7 +1472,7 @@ function buildEqualityCondition(
 ): Condition {
   column = column ?? impl.columnName;
   if (impl.array) {
-    return new Condition(column, 'ARRAY_CONTAINS', values, impl.type + '[]');
+    return new Condition(column, 'ARRAY_CONTAINS_AND_IS_NOT_NULL', values, impl.type + '[]');
   } else if (values.length > 1) {
     return new Condition(column, 'IN', values, impl.type);
   } else {
@@ -1710,4 +1759,11 @@ function splitChainedSearch(chain: string): string[] {
 
 function getCanonicalUrl(resource: Resource): string | undefined {
   return (resource as Resource & { url?: string }).url;
+}
+
+export function readFromTokenColumns(repo: Repository): boolean {
+  const project = repo.currentProject();
+  const maybeSystemSettingBoolean = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns')?.valueBoolean;
+  // If the Project.systemSetting exists, return its value. Otherwise, fallback to global setting
+  return maybeSystemSettingBoolean ?? TokenColumnsFeature.read;
 }

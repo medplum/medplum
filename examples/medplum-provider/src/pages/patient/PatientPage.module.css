@@ -2,6 +2,8 @@
   display: flex;
   flex-direction: row;
   align-items: stretch;
+  height: calc(100vh - 60px);
+  overflow: hidden;
 }
 
 .sidebar {
@@ -10,6 +12,12 @@
   height: 100%;
 }
 
+.scrollArea {
+  height: 100%;
+}
+
 .content {
   width: calc(100% - 350px);
+  height: 100%;
+  overflow: auto;
 }

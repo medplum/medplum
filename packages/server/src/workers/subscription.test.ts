@@ -21,21 +21,25 @@ import {
   Subscription,
 } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
-import { Job } from 'bullmq';
+import * as bullmqModule from 'bullmq';
+import bullmq, { Job } from 'bullmq';
 import { Redis } from 'ioredis';
 import fetch from 'node-fetch';
 import { createHmac, randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
+import * as otelModule from '../otel/otel';
 import { getRedisSubscriber } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { createTestProject, withTestContext } from '../test.setup';
 import { AuditEventOutcome } from '../util/auditevent';
-import { closeSubscriptionWorker, execSubscriptionJob, getSubscriptionQueue } from './subscription';
+import { execSubscriptionJob, getSubscriptionQueue, initSubscriptionWorker } from './subscription';
 
 jest.mock('node-fetch');
+const mockBullmq = jest.mocked(bullmqModule);
 
 describe('Subscription Worker', () => {
   const systemRepo = getSystemRepo();
@@ -51,7 +55,6 @@ describe('Subscription Worker', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    await closeSubscriptionWorker(); // Double close to ensure quite ignore
   });
 
   beforeEach(async () => {
@@ -1957,5 +1960,115 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
       }));
+  });
+});
+
+describe('Subscription Worker Event Handling', () => {
+  test('Worker event handlers work correctly', async () => {
+    // Set up mocks for the bullmq module
+    const handlers = new Map<string, (job?: Job, error?: Error) => void>();
+    const mockWorker = {
+      on: jest.fn().mockImplementation((event: string, handler: () => void) => {
+        handlers.set(event, handler);
+        return mockWorker;
+      }),
+    };
+    mockBullmq.Worker.mockReturnValue(mockWorker as unknown as bullmq.Worker);
+    // Now import the subscription worker init function
+
+    // Mock the logger and metrics functions
+    const infoSpy = jest.spyOn(globalLogger, 'info').mockImplementation();
+    const recordHistogramValueSpy = jest.spyOn(otelModule, 'recordHistogramValue').mockImplementation();
+
+    // Initialize the subscription worker with mock config
+    initSubscriptionWorker({} as MedplumServerConfig);
+
+    // Create test job objects with the structure expected by the handlers
+    const createTestJob = (id: string, attemptsMade = 0): Job =>
+      ({
+        id,
+        attemptsMade,
+        timestamp: Date.now() - 5000, // 5 seconds ago
+        processedOn: Date.now() - 2000, // 2 seconds ago
+        finishedOn: Date.now(), // now
+        data: {
+          subscriptionId: 'subscription-456',
+          resourceType: 'Patient',
+          id: 'patient-789',
+          versionId: '1',
+          interaction: 'create',
+          requestTime: new Date().toISOString(),
+        },
+      }) as Job;
+
+    // Test the 'active' event handler with a first attempt job
+    const firstAttemptJob = createTestJob('job-123', 0);
+    const activeHandler = handlers.get('active');
+    expect(activeHandler).toBeDefined();
+    if (activeHandler) {
+      activeHandler(firstAttemptJob);
+
+      // Verify recordHistogramValue was called for queuedDuration on first attempt
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.subscription.queuedDuration', expect.any(Number));
+      recordHistogramValueSpy.mockClear();
+    }
+
+    // Test 'active' handler with a subsequent attempt job
+    const subsequentAttemptJob = createTestJob('job-123', 1);
+    if (activeHandler) {
+      activeHandler(subsequentAttemptJob);
+
+      // Verify recordHistogramValue was NOT called for subsequent attempts
+      expect(recordHistogramValueSpy).not.toHaveBeenCalled();
+      recordHistogramValueSpy.mockClear();
+    }
+
+    // Test the 'completed' event handler
+    const completedJob = createTestJob('job-456');
+    const completedHandler = handlers.get('completed');
+    expect(completedHandler).toBeDefined();
+    if (completedHandler) {
+      completedHandler(completedJob);
+
+      // Verify completed job logging and metrics
+      expect(infoSpy).toHaveBeenCalledWith(`Completed job ${completedJob.id} successfully`);
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(
+        'medplum.subscription.executionDuration',
+        expect.any(Number)
+      );
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith('medplum.subscription.totalDuration', expect.any(Number));
+      infoSpy.mockClear();
+      recordHistogramValueSpy.mockClear();
+    }
+
+    // Test the 'failed' event handler with a job
+    const failedJob = createTestJob('job-789');
+    const error = new Error('Test error');
+    const failedHandler = handlers.get('failed');
+    expect(failedHandler).toBeDefined();
+    if (failedHandler) {
+      failedHandler(failedJob, error);
+
+      // Verify failed job logging and metrics
+      expect(infoSpy).toHaveBeenCalledWith(`Failed job ${failedJob.id} with ${error}`);
+      expect(recordHistogramValueSpy).toHaveBeenCalledWith(
+        'medplum.subscription.failedExecutionDuration',
+        expect.any(Number)
+      );
+      infoSpy.mockClear();
+      recordHistogramValueSpy.mockClear();
+
+      // Test 'failed' handler with undefined job
+      failedHandler(undefined, error);
+
+      // Verify logging for undefined job (no metrics)
+      expect(infoSpy).toHaveBeenCalledWith(`Failed job undefined with ${error}`);
+      expect(recordHistogramValueSpy).not.toHaveBeenCalled();
+    }
+
+    // Clean up
+    infoSpy.mockRestore();
+    recordHistogramValueSpy.mockRestore();
+    jest.resetModules();
   });
 });

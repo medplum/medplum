@@ -1,5 +1,5 @@
-import { TextInput, NumberInput, Text, Stack, ActionIcon, Card, Flex, Grid } from '@mantine/core';
-import { IconDotsVertical, IconChevronDown } from '@tabler/icons-react';
+import { TextInput, Text, Stack, ActionIcon, Card, Flex, Grid } from '@mantine/core';
+import { IconDotsVertical } from '@tabler/icons-react';
 import { ChargeItem, CodeableConcept } from '@medplum/fhirtypes';
 import { CodeableConceptInput } from '@medplum/react';
 import { HTTP_HL7_ORG } from '@medplum/core';
@@ -44,12 +44,6 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
     return undefined;
   };
 
-  const handleQuantityChange = (value: number): void => {
-    const updatedChargeItem = { ...chargeItem };
-    updatedChargeItem.quantity = { value: value };
-    onChange(updatedChargeItem);
-  };
-
   const modifierExtensionValue = getModifierExtension(chargeItem);
 
   return (
@@ -61,7 +55,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
           </ActionIcon>
         </Flex>
         <Grid columns={12}>
-          <Grid.Col span={10}>
+          <Grid.Col span={12}>
             <Text size="sm" fw={500} mb={8}>
               Procedure, Service, or Other CPT Code
             </Text>
@@ -71,20 +65,6 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
               }
               return null;
             })}
-          </Grid.Col>
-          <Grid.Col span={2}>
-            <Text size="sm" fw={500} mb={8}>
-              Quantity
-            </Text>
-            <NumberInput
-              defaultValue={chargeItem.quantity?.value}
-              onChange={(value) => handleQuantityChange(value as number)}
-              min={1}
-              max={99}
-              step={1}
-              rightSection={<IconChevronDown size={14} />}
-              rightSectionProps={{ style: { pointerEvents: 'none' } }}
-            />
           </Grid.Col>
         </Grid>
         <CodeableConceptInput
@@ -97,6 +77,23 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
             updateModifierExtension(value);
           }}
         />
+        <Grid columns={12} mt="md">
+          <Grid.Col span={7}>
+            <Text size="sm" c="dimmed" pt={12}>
+              Price calculated from Price chart, taking into account applied modifiers and patient's selected insurance
+              plan.
+            </Text>
+          </Grid.Col>
+          <Grid.Col span={5}>
+            <Text size="sm" fw={500} mb={8}>
+              Calculated Price
+            </Text>
+            <TextInput
+              value={chargeItem.priceOverride?.value ? `$${chargeItem.priceOverride.value.toFixed(2)}` : 'N/A'}
+              readOnly
+            />
+          </Grid.Col>
+        </Grid>
       </Stack>
     </Card>
   );

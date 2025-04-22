@@ -24,6 +24,7 @@ import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
+import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
 import { dbSchemaDiffHandler } from './operations/dbschemadiff';
 import { dbStatsHandler } from './operations/dbstats';
 import { deployHandler } from './operations/deploy';
@@ -50,6 +51,7 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { claimExportHandler } from './operations/claimexport';
 
 export const fhirRouter = Router();
 
@@ -237,6 +239,9 @@ function initInternalFhirRouter(): FhirRouter {
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
+  // Claim $export operation
+  router.add('GET', '/Claim/:id/$export', claimExportHandler);
+
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
 
@@ -314,6 +319,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Super admin operations
   router.add('POST', '/$db-stats', dbStatsHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
+  router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();

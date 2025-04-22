@@ -245,11 +245,20 @@ export class MockClient extends MedplumClient {
       onProgress({ loaded: 100, total: 100, lengthComputable: true } as ProgressEvent);
     }
 
-    return {
+    let data: string | undefined;
+    if (typeof createBinaryOptions.data === 'string') {
+      data = base64Encode(createBinaryOptions.data);
+    }
+
+    const binary = await this.repo.createResource<Binary>({
       resourceType: 'Binary',
-      id: 'mock-binary',
       contentType,
-      url: 'https://example.com/binary/123',
+      data,
+    });
+
+    return {
+      ...binary,
+      url: `https://example.com/binary/${binary.id}`,
     };
   }
 

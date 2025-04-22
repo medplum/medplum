@@ -17,7 +17,7 @@ import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
-import { DatabaseMode, getDatabasePool, maybeStartDataMigration } from '../database';
+import { DatabaseMode, getDatabasePool, maybeStartPostDeployMigration } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -29,6 +29,7 @@ import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import { addReindexJob } from '../workers/reindex';
+import { markPostDeployMigrationCompleted } from '../migration-sql';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_scale_factor: 'float',
@@ -55,7 +56,8 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, async () => rebuildR4ValueSets());
+    const systemRepo = getSystemRepo();
+    await sendAsyncResponse(req, res, async () => rebuildR4ValueSets(systemRepo));
   })
 );
 
@@ -68,7 +70,8 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => rebuildR4StructureDefinitions());
+    const systemRepo = getSystemRepo();
+    await sendAsyncResponse(req, res, async () => rebuildR4StructureDefinitions(systemRepo));
   })
 );
 
@@ -81,7 +84,8 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => rebuildR4SearchParameters());
+    const systemRepo = getSystemRepo();
+    await sendAsyncResponse(req, res, async () => rebuildR4SearchParameters(systemRepo));
   })
 );
 
@@ -268,7 +272,7 @@ superAdminRouter.post(
     }
 
     const { baseUrl } = getConfig();
-    const dataMigrationJob = await maybeStartDataMigration(req?.body?.dataVersion as number | undefined);
+    const dataMigrationJob = await maybeStartPostDeployMigration(req?.body?.dataVersion as number | undefined);
     // If there is no migration job to run, return allOk
     if (!dataMigrationJob) {
       sendOutcome(res, allOk);
@@ -296,9 +300,7 @@ superAdminRouter.post(
     }
 
     assert(req.body.dataVersion !== undefined);
-    await getDatabasePool(DatabaseMode.WRITER).query('UPDATE "DatabaseMigration" SET "dataVersion" = $1', [
-      req.body.dataVersion,
-    ]);
+    await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), req.body.dataVersion);
 
     sendOutcome(res, allOk);
   })
