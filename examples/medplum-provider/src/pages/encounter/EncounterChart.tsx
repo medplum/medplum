@@ -10,7 +10,6 @@ import {
   Organization,
   Practitioner,
   Claim,
-  RelatedPerson,
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router';
@@ -25,7 +24,7 @@ import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './EncounterChart.module.css';
-import { deepEquals, formatQuantity, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
+import { deepEquals, getReferenceString } from '@medplum/core';
 import { calculateTotalPrice, createClaimFromEncounter, fetchAndApplyChargeItemDefinitions } from '../../utils/claims';
 
 export const EncounterChart = (): JSX.Element => {
@@ -149,7 +148,6 @@ export const EncounterChart = (): JSX.Element => {
 
   const updateChargeItemList = useCallback(
     (updatedChargeItem: ChargeItem): void => {
-      console.log('NEEEEWWW updateChargeItemList', updatedChargeItem);
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
@@ -175,7 +173,6 @@ export const EncounterChart = (): JSX.Element => {
           };
           const savedClaim = await medplum.updateResource(updatedClaim);
           setClaim(savedClaim);
-          console.log('Updated claim with new charge items', savedClaim);
         }
       }, SAVE_TIMEOUT_MS);
     },
@@ -220,7 +217,6 @@ export const EncounterChart = (): JSX.Element => {
   };
 
   const handleEncounterChange = (updatedEncounter: Encounter): void => {
-    console.log('handleEncounterChange', updatedEncounter);
     if (!updatedEncounter) {
       return;
     }
@@ -244,7 +240,6 @@ export const EncounterChart = (): JSX.Element => {
         }
 
         if (!claim) {
-          console.log('Creating new claim');
           const newClaim = await createClaimFromEncounter(
             medplum,
             patient.id,
@@ -254,7 +249,6 @@ export const EncounterChart = (): JSX.Element => {
           );
           setClaim(newClaim);
         } else {
-          console.log('Updating claim');
           const providerRefNeedsUpdate = claim.provider?.reference !== getReferenceString(practitioner);
           if (providerRefNeedsUpdate) {
             const updatedClaim: Claim = await medplum.updateResource({
@@ -289,102 +283,6 @@ export const EncounterChart = (): JSX.Element => {
    
 
   };
-
-  const getClaimPDFDocDefinition = async (claim: Claim): Promise<void> => {
-
-    const patient = await medplum.readReference(claim.patient);
-    const coverage = await medplum.readReference(claim.insurance[0].coverage);
-    const insured = coverage.subscriber ? await medplum.readReference(coverage.subscriber) : undefined;
-    const insurer = await medplum.readReference(coverage.payor[0]);
-    const provider = await medplum.readReference(claim.provider);
-    const otherCoverage = claim.insurance.length > 1 ? await medplum.readReference(claim.insurance[1].coverage) : undefined;
-    const otherInsured = otherCoverage?.subscriber ? await medplum.readReference(otherCoverage.subscriber) : undefined;
-    const referralRequest = claim.referral ? await medplum.readReference(claim.referral) : undefined;
-    const referrer = referralRequest?.requester ? await medplum.readReference(referralRequest.requester) : undefined;
-  
-    const insuranceType = coverage.type?.coding?.[0].code ?? coverage.type?.coding?.[0].display ?? '';
-  
-    const relationship = (insured as RelatedPerson | undefined)?.relationship?.[0]?.coding?.[0].code ?? 'self';
-  
-    const relatedToEmployment =
-      claim.supportingInfo?.some((info) => info.category.coding?.[0].code === 'employmentimpacted') ?? false;
-    const relatedToAutoAccident = claim.accident?.type?.coding?.some((code) => code.code === 'MVA') ?? false;
-  
-    const accidentLocationState = claim.accident?.locationAddress?.state;
-    const relatedToOtherAccident = !relatedToAutoAccident && !!claim.accident;
-  
-    const dateOfCurrentIllness = claim.supportingInfo?.find(
-      (info) => info.category.coding?.[0].code === 'onset'
-    )?.timingDate;
-  
-    const employmentImpacted = claim.supportingInfo?.find(
-      (info) => info.category.coding?.[0].code === 'employmentimpacted'
-    );
-  
-    const hospitalization = claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'hospitalized');
-  
-    const priorAuthRefNumber = claim.insurance[0]?.preAuthRef?.[0];
-  
-    const outsideLab = claim.supportingInfo?.find((info) => info.category.coding?.[0].code === 'outsidelab');
-    const outsideLabCharges = outsideLab ? formatQuantity(outsideLab.valueQuantity) : '';
-  
-    const diagnosis = (claim.diagnosis ?? [])
-      .map(
-        (d) => d.diagnosisCodeableConcept?.coding?.find((code) => code.system === `${HTTP_HL7_ORG}/fhir/sid/icd-10`)?.code
-      )
-      .filter(Boolean) as string[];
-  
-    const resubmissionCode = claim.related?.[0].relationship?.coding?.find((code) => code.code === 'prior')?.display;
-  
-    const originalReference = claim.related?.[0].claim?.display;
-  
-    const patientAccountNumber = claim.supportingInfo?.find(
-      (info) =>
-        info.category?.coding?.find((code) => code.code === 'info') &&
-        info.code?.coding?.find((code) => code.code === 'patientaccount')
-    )?.valueString;
-  
-    const patientPaid = formatQuantity(
-      claim.supportingInfo?.find(
-        (info) =>
-          info.category?.coding?.find((code) => code.code === 'info') &&
-          info.code?.coding?.find((code) => code.code === 'patientpaid')
-      )?.valueQuantity
-    );
-  
-    const taxIdentifier = insurer.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'TAX'));
-  
-    // Log all variables for debugging purposes
-    console.log('Claim PDF Variables:', {
-      patient,
-      coverage,
-      insured,
-      insurer,
-      provider,
-      otherCoverage,
-      otherInsured,
-      referralRequest,
-      referrer,
-      insuranceType,
-      relationship,
-      relatedToEmployment,
-      relatedToAutoAccident,
-      accidentLocationState,
-      relatedToOtherAccident,
-      dateOfCurrentIllness,
-      employmentImpacted,
-      hospitalization,
-      priorAuthRefNumber,
-      outsideLab,
-      outsideLabCharges,
-      diagnosis,
-      resubmissionCode,
-      originalReference,
-      patientAccountNumber,
-      patientPaid,
-      taxIdentifier
-    });
-  }
 
   if (!patient || !encounter) {
     return <Loading />;
