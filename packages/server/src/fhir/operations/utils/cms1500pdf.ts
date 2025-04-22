@@ -9,7 +9,7 @@ import {
 import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
-import path from 'path';
+import path, { join } from 'path';
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
@@ -94,6 +94,9 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
 
   const taxIdentifier = insurer.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'TAX'));
 
+  console.log(path.relative(__dirname, join(__dirname, '../../../../static/cms1500.png')));
+
+
   const docDefinition: TDocumentDefinitions = {
     defaultStyle: {
       font: 'Helvetica',
@@ -103,12 +106,11 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
     pageMargins: 0,
     content: [
       {
-        image: path.resolve(__dirname, '../../../../static/cms1500.png'),
+        image: path.relative(process.cwd(), path.resolve(__dirname, '../../../../static/cms1500.png')),
         absolutePosition: { x: 0, y: 0 },
         width: PAGE_WIDTH,
         height: PAGE_HEIGHT,
       },
-
       // 1. Insurance Type
       createCheckmark(insuranceType === 'MEDICARE', 23, 111),
       createCheckmark(insuranceType === 'MEDICAID', 71, 111),
