@@ -1,39 +1,42 @@
 /// <reference types="vite/client" />
-import react from '@vitejs/plugin-react';
-import { execSync } from 'child_process';
-import { copyFileSync, existsSync } from 'fs';
-import path from 'path';
-import { defineConfig } from 'vite';
-import packageJson from './package.json' with { type: 'json' };
+import react from "@vitejs/plugin-react";
+import { execSync } from "child_process";
+import { copyFileSync, existsSync } from "fs";
+import path from "path";
+import { defineConfig } from "vite";
+import packageJson from "./package.json" with { type: "json" };
 
-if (!existsSync(path.join(__dirname, '.env'))) {
-  copyFileSync(path.join(__dirname, '.env.defaults'), path.join(__dirname, '.env'));
+if (!existsSync(path.join(__dirname, ".env"))) {
+  copyFileSync(
+    path.join(__dirname, ".env.defaults"),
+    path.join(__dirname, ".env")
+  );
 }
 
 let gitHash;
 try {
-  gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+  gitHash = execSync("git rev-parse --short HEAD").toString().trim();
 } catch (_err) {
-  gitHash = 'unknown'; // Default value when not in a git repository
+  gitHash = "unknown"; // Default value when not in a git repository
 }
 
-process.env.MEDPLUM_VERSION = packageJson.version + '-' + gitHash;
+process.env.MEDPLUM_VERSION = packageJson.version + "-" + gitHash;
 
 export default defineConfig({
-  envPrefix: ['MEDPLUM_', 'GOOGLE_', 'RECAPTCHA_'],
+  envPrefix: ["MEDPLUM_", "GOOGLE_", "RECAPTCHA_"],
   plugins: [react()],
   server: {
-    port: 3000,
+    port: 3059,
   },
-  publicDir: 'static',
+  publicDir: "static",
   build: {
     sourcemap: true,
   },
   resolve: {
     alias: {
-      '@medplum/core': path.resolve(__dirname, '../core/src'),
-      '@medplum/react': path.resolve(__dirname, '../react/src'),
-      '@medplum/react-hooks': path.resolve(__dirname, '../react-hooks/src'),
+      "@medplum/core": path.resolve(__dirname, "../core/src"),
+      "@medplum/react": path.resolve(__dirname, "../react/src"),
+      "@medplum/react-hooks": path.resolve(__dirname, "../react-hooks/src"),
     },
   },
 });
