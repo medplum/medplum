@@ -67,13 +67,13 @@ export function initOpenTelemetry(): void {
     new PgInstrumentation({
       enhancedDatabaseReporting: true,
       requireParentSpan: true,
-      requestHook(span, info) {
-        span.updateName(`DB: ${info.query.text}`);
+      responseHook(span, { data }) {
+        span.setAttribute('medplum.db.rowCount', data.rowCount);
       },
     }),
     new IORedisInstrumentation({
-      requestHook(span, info) {
-        span.updateName(`Redis: ${info.cmdName} ${info.cmdArgs}`);
+      responseHook(span, { length }) {
+        span.setAttribute('medplum.redis.responseLength', length);
       },
     }),
 
