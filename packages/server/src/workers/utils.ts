@@ -12,7 +12,7 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { Job, Queue, Worker } from 'bullmq';
+import { DelayedError, Job, Queue, Worker } from 'bullmq';
 import * as semver from 'semver';
 import { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
@@ -322,4 +322,26 @@ export function addVerboseQueueLogging<TDataType>(
   worker.on('stalled', (jobId, prev) => {
     globalLogger.info(`${queue.name} worker: stalled`, { jobId, prev });
   });
+}
+
+export async function moveToDelayed(job: Job, reason: string): Promise<void> {
+  if (job.token) {
+    const delayMs = 60_000;
+    globalLogger.info(reason, {
+      queueName: job.queueName,
+      jobId: job.id,
+      delayMs,
+    });
+    await job.moveToDelayed(Date.now() + delayMs, job.token);
+    throw new DelayedError(reason);
+  }
+  globalLogger.error('Cannot delay job since job.token is not available', {
+    queueName: job.queueName,
+    jobId: job.id,
+    reason,
+  });
+
+  // This is one of those "this should never happen" errors. job.token is expected to always be set
+  // given the way we use bullmq.
+  throw new Error('Cannot delay Post-deploy migration job since job.token is not available');
 }

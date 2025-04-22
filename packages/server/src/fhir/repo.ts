@@ -2570,7 +2570,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.context;
   }
 
-  [Symbol.dispose](): void {
+  [Symbol.dispose](removeConnection?: boolean): void {
     this.assertNotClosed();
     if (this.disposable) {
       if (this.transactionDepth > 0) {
@@ -2579,7 +2579,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         this.releaseConnection(new Error('Closing Repository with active transaction'));
       } else {
         // Good state, return healthy connection to pool
-        this.releaseConnection();
+        this.releaseConnection(removeConnection);
       }
     }
     this.closed = true;

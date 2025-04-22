@@ -1,6 +1,6 @@
 import { getReferenceString, WithId } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
-import { DelayedError, Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -13,7 +13,14 @@ import {
   PostDeployMigration,
 } from '../migrations/data/types';
 import { getPostDeployMigration, MigrationDefinitionNotFoundError } from '../migrations/migration-utils';
-import { addVerboseQueueLogging, isJobActive, isJobCompatible, queueRegistry, WorkerInitializer } from './utils';
+import {
+  addVerboseQueueLogging,
+  isJobActive,
+  isJobCompatible,
+  moveToDelayed,
+  queueRegistry,
+  WorkerInitializer,
+} from './utils';
 
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
@@ -57,10 +64,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   }
 
   if (!isJobCompatible(asyncJob)) {
-    // re-queue the job for an eligible worker to pick up
-    const queue = queueRegistry.get(job.queueName);
-    await queue?.add(job.name, job.data, job.opts);
-    return;
+    await moveToDelayed(job, 'Post-deploy migration delayed since this worker is not compatible');
   }
 
   if (!isJobActive(asyncJob)) {
@@ -84,18 +88,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
     migration = getPostDeployMigration(migrationNumber);
   } catch (err: any) {
     if (err instanceof MigrationDefinitionNotFoundError) {
-      const delayMs = 60_000;
-      globalLogger.info(
-        `${PostDeployMigrationQueueName} processor delaying job since migration definition was not found on this worker`,
-        {
-          jobId: job.id,
-          delayMs,
-          ...getJobDataLoggingFields(job),
-          version: migrationNumber,
-        }
-      );
-      await job.moveToDelayed(Date.now() + delayMs, job.token);
-      throw new DelayedError('Post-deploy migration delayed since migration definition was not found on this worker');
+      await moveToDelayed(job, 'Post-deploy migration delayed since migration definition was not found on this worker');
     }
     throw err;
   }
@@ -108,11 +101,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
 
   switch (result) {
     case 'ineligible': {
-      // Since we can't handle this ourselves, re-enqueue the job for another worker that can
-      // Prefer job.queueName over PostDeployMigrationQueueName to ensure the job is re-queued
-      // on the same queue it came from.
-      const queue = queueRegistry.get(job.queueName);
-      await queue?.add(job.name, job.data, job.opts);
+      await moveToDelayed(job, 'Post-deploy migration delayed since worker is not eligible to execute it');
       break;
     }
     case 'finished':
