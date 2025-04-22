@@ -9,7 +9,7 @@ import {
 import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
-import path, { join } from 'path';
+import path from 'path';
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
@@ -93,9 +93,6 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
   );
 
   const taxIdentifier = insurer.identifier?.find((id) => id.type?.coding?.find((code) => code.code === 'TAX'));
-
-  console.log(path.relative(__dirname, join(__dirname, '../../../../static/cms1500.png')));
-
 
   const docDefinition: TDocumentDefinitions = {
     defaultStyle: {
