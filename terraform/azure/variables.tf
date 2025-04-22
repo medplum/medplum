@@ -12,23 +12,23 @@ variable "tags" {
   default = null
 }
 
-variable "managed-identity-principal-id" {
+variable "managed_identity_principal_id" {
   type    = string
   default = null
 }
 
-variable "app-domain" {
+variable "app_domain" {
   type    = string
   default = null
 }
 
-variable "app-certificate-secret-id" {
+variable "app_certificate_secret_id" {
   description = "The ID of the Key Vault certificate secret"
   type        = string
   default     = null
 }
 
-variable "resource-naming-prefix" {
+variable "resource_naming_prefix" {
   type    = string
   default = "medplum"
 }

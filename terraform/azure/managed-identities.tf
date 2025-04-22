@@ -2,7 +2,7 @@
 # This is the identity used by the medplum server to access Azure resources like KeyVault and storage
 resource "azurerm_user_assigned_identity" "medplum-server-identity" {
   location            = var.location
-  name                = "${var.resource-naming-prefix}-server-${random_id.prefix.hex}"
+  name                = "${var.resource_naming_prefix}-server-${random_id.prefix.hex}"
   resource_group_name = var.resource-group-name
 }
 

@@ -69,7 +69,7 @@ module "medplum-aks" {
 }
 
 resource "azurerm_log_analytics_workspace" "main" {
-  name                = "${var.resource-naming-prefix}-log-analytics"
+  name                = "${var.resource_naming_prefix}-log-analytics"
   location            = var.location
   resource_group_name = var.resource-group-name
   sku                 = "PerGB2018"

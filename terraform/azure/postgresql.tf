@@ -11,7 +11,7 @@ resource "azurerm_private_dns_zone" "db" {
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "db-medplum-vnet" {
-  name                  = "${var.resource-naming-prefix}-db"
+  name                  = "${var.resource_naming_prefix}-db"
   private_dns_zone_name = azurerm_private_dns_zone.db.name
   resource_group_name   = var.resource-group-name
   virtual_network_id    = azurerm_virtual_network.medplum-vnet.id
@@ -31,7 +31,7 @@ resource "azurerm_postgresql_flexible_server" "db" {
   location                      = var.location
   private_dns_zone_id           = azurerm_private_dns_zone.db.id
   public_network_access_enabled = false
-  name                          = "${var.resource-naming-prefix}-db-${random_id.db-random-id.hex}"
+  name                          = "${var.resource_naming_prefix}-db-${random_id.db-random-id.hex}"
   resource_group_name           = var.resource-group-name
   sku_name                      = "B_Standard_B1ms" # "GP_Standard_D2s_v3"
   storage_mb                    = 32768

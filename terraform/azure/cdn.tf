@@ -87,7 +87,7 @@ resource "azurerm_cdn_frontdoor_route" "fd-route" {
 resource "azurerm_cdn_frontdoor_custom_domain" "fd-custom-domain" {
   name                     = "${azurerm_storage_account.sa.name}-domain"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd-profile.id
-  host_name                = var.app-domain
+  host_name                = var.app_domain
 
   tls {
     certificate_type        = "CustomerCertificate"
@@ -101,7 +101,7 @@ resource "azurerm_cdn_frontdoor_custom_domain" "fd-custom-domain" {
 
 #   secret {
 #     customer_certificate {
-#       key_vault_certificate_id = var.app-certificate-secret-id
+#       key_vault_certificate_id = var.app_certificate_secret_id
 #     }
 #   }
 # }
