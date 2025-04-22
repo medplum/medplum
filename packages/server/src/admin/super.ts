@@ -397,7 +397,9 @@ superAdminRouter.post(
       return;
     }
 
-    let action = (req.body.vacuum ?? true) ? 'VACUUM' : '';
+    const vacuum = req.body.vacuum ?? true;
+
+    let action = vacuum ? 'VACUUM' : '';
     action += req.body.analyze ? ' ANALYZE' : '';
     if (!action) {
       throw new OperationOutcomeError(badRequest('At least one of vacuum or analyze must be true'));
@@ -411,13 +413,17 @@ superAdminRouter.post(
       await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
+        vacuum,
         analyze: req.body.analyze,
         query,
         durationMs: Date.now() - startTime,
       });
       return {
         resourceType: 'Parameters',
-        parameter: [{ name: 'outcome', resource: allOk }],
+        parameter: [
+          { name: 'outcome', resource: allOk },
+          { name: 'query', valueString: query },
+        ],
       };
     });
   })
