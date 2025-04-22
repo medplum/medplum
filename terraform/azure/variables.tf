@@ -2,7 +2,7 @@ variable "location" {
   default = "eastus"
 }
 
-variable "resource-group-name" {
+variable "resource_group_name" {
   type    = string
   default = null
 }

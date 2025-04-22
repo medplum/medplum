@@ -1,18 +1,18 @@
-resource "azurerm_public_ip" "medplum-app" {
+resource "azurerm_public_ip" "medplum_app" {
   name                = "${var.resource_naming_prefix}-app-ip"
-  resource_group_name = var.resource-group-name
+  resource_group_name = var.resource_group_name
   location            = var.location
   allocation_method   = "Static"
   sku                 = "Standard"
 }
 
 output "api-ip" {
-  value = azurerm_public_ip.medplum-app.ip_address
+  value = azurerm_public_ip.medplum_app.ip_address
 }
 
-resource "azurerm_application_gateway" "medplum-appgw" {
+resource "azurerm_application_gateway" "medplum_appgw" {
   name                = "${var.resource_naming_prefix}-appgateway"
-  resource_group_name = var.resource-group-name
+  resource_group_name = var.resource_group_name
   location            = var.location
 
   sku {
@@ -23,7 +23,7 @@ resource "azurerm_application_gateway" "medplum-appgw" {
 
   gateway_ip_configuration {
     name      = "${var.resource_naming_prefix}-gateway-ip-configuration"
-    subnet_id = azurerm_subnet.medplum-appgw-subnet.id
+    subnet_id = azurerm_subnet.medplum_appgw_subnet.id
   }
 
   frontend_port {
@@ -33,7 +33,7 @@ resource "azurerm_application_gateway" "medplum-appgw" {
 
   frontend_ip_configuration {
     name                 = "${var.resource_naming_prefix}-frontend-ip"
-    public_ip_address_id = azurerm_public_ip.medplum-app.id
+    public_ip_address_id = azurerm_public_ip.medplum_app.id
   }
 
   backend_address_pool {

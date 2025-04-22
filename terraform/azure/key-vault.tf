@@ -1,16 +1,16 @@
 data "azurerm_client_config" "current" {}
 
-resource "random_string" "key-vault-subfix" {
+resource "random_string" "key_vault_subfix" {
   length  = 3
   numeric = false
   special = false
   upper   = false
 }
 
-resource "azurerm_key_vault" "des-vault" {
+resource "azurerm_key_vault" "des_vault" {
   location                      = var.location
-  name                          = "${var.resource_naming_prefix}-des-keyvault-${random_string.key-vault-subfix.result}"
-  resource_group_name           = var.resource-group-name
+  name                          = "${var.resource_naming_prefix}-des-keyvault-${random_string.key_vault_subfix.result}"
+  resource_group_name           = var.resource_group_name
   sku_name                      = "premium"
   tenant_id                     = data.azurerm_client_config.current.tenant_id
   enabled_for_disk_encryption   = true
@@ -25,8 +25,8 @@ resource "azurerm_key_vault" "des-vault" {
   #   }
 }
 
-resource "azurerm_key_vault_access_policy" "current-user" {
-  key_vault_id = azurerm_key_vault.des-vault.id
+resource "azurerm_key_vault_access_policy" "current_user" {
+  key_vault_id = azurerm_key_vault.des_vault.id
   object_id    = coalesce(var.managed_identity_principal_id, data.azurerm_client_config.current.object_id)
   tenant_id    = data.azurerm_client_config.current.tenant_id
   key_permissions = [
@@ -39,10 +39,10 @@ resource "azurerm_key_vault_access_policy" "current-user" {
 }
 
 
-resource "azurerm_key_vault" "medplum-vault" {
+resource "azurerm_key_vault" "medplum_vault" {
   location                      = var.location
-  name                          = "${random_string.key-vault-subfix.result}-medplum-keyvault"
-  resource_group_name           = var.resource-group-name
+  name                          = "${random_string.key_vault_subfix.result}-medplum-keyvault"
+  resource_group_name           = var.resource_group_name
   sku_name                      = "premium"
   tenant_id                     = data.azurerm_client_config.current.tenant_id
   enabled_for_disk_encryption   = true
@@ -57,8 +57,8 @@ resource "azurerm_key_vault" "medplum-vault" {
   #   }
 }
 
-resource "azurerm_key_vault_access_policy" "current-user-medplum-vault" {
-  key_vault_id = azurerm_key_vault.medplum-vault.id
+resource "azurerm_key_vault_access_policy" "current_user-medplum_vault" {
+  key_vault_id = azurerm_key_vault.medplum_vault.id
   object_id    = coalesce(var.managed_identity_principal_id, data.azurerm_client_config.current.object_id)
   tenant_id    = data.azurerm_client_config.current.tenant_id
   secret_permissions = [
@@ -71,9 +71,9 @@ resource "azurerm_key_vault_access_policy" "current-user-medplum-vault" {
   ]
 }
 
-resource "azurerm_key_vault_access_policy" "medplum-server" {
-  key_vault_id = azurerm_key_vault.medplum-vault.id
-  object_id    = azurerm_user_assigned_identity.medplum-server-identity.principal_id
+resource "azurerm_key_vault_access_policy" "medplum_server" {
+  key_vault_id = azurerm_key_vault.medplum_vault.id
+  object_id    = azurerm_user_assigned_identity.medplum_server_identity.principal_id
   tenant_id    = data.azurerm_client_config.current.tenant_id
   secret_permissions = [
     "Get",
