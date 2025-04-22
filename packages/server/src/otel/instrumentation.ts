@@ -71,11 +71,7 @@ export function initOpenTelemetry(): void {
         span.setAttribute('medplum.db.rowCount', data.rowCount);
       },
     }),
-    new IORedisInstrumentation({
-      responseHook(span, { length }) {
-        span.setAttribute('medplum.redis.responseLength', length);
-      },
-    }),
+    new IORedisInstrumentation(),
 
     new ExpressInstrumentation({
       ignoreLayers: [
