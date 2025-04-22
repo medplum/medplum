@@ -1,7 +1,3 @@
-resource "random_id" "prefix" {
-  byte_length = 8
-}
-
 resource "azurerm_user_assigned_identity" "aks_identity" {
   location            = var.location
   name                = "medplum-${var.environment}-${var.deployment_id}-identity"
