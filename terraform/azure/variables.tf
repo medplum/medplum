@@ -28,7 +28,14 @@ variable "app_certificate_secret_id" {
   default     = null
 }
 
-variable "resource_naming_prefix" {
-  type    = string
-  default = "medplum"
+variable "environment" {
+  description = "values: dev, test, prod"
+  type        = string
+  default     = "dev"
+}
+
+variable "deployment_id" {
+  description = "The deployment ID for the current deployment"
+  type        = string
+  default     = null
 }

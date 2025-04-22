@@ -18,7 +18,7 @@ resource "azurerm_storage_account" "app_storage_account" {
 }
 
 resource "azurerm_storage_container" "app_storage_container" {
-  name                  = "app-container"
+  name                  = "medplum-${var.environment}-${var.deployment_id}-app-container"
   storage_account_name  = azurerm_storage_account.app_storage_account.name
   container_access_type = "private"
 }

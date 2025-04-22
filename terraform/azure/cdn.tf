@@ -1,10 +1,6 @@
-resource "random_id" "cdn_random_id" {
-  byte_length = 2
-}
-
 # Storage Account to host static content
 resource "azurerm_storage_account" "sa" {
-  name                     = "medplumapp${random_id.cdn_random_id.hex}"
+  name                     = "medplum-${var.environment}-${var.deployment_id}-sa"
   resource_group_name      = var.resource_group_name
   location                 = var.location
   account_tier             = "Standard"

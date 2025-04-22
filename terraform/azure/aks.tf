@@ -4,7 +4,7 @@ resource "random_id" "prefix" {
 
 resource "azurerm_user_assigned_identity" "aks_identity" {
   location            = var.location
-  name                = "${random_id.prefix.hex}-identity"
+  name                = "medplum-${var.environment}-${var.deployment_id}-identity"
   resource_group_name = var.resource_group_name
 }
 
@@ -12,11 +12,11 @@ module "medplum-aks" {
   source  = "Azure/aks/azurerm"
   version = "9.2.0"
 
-  prefix                               = "medplum-aks"
+  prefix                               = "medplum-${var.environment}-${var.deployment_id}-aks"
   resource_group_name                  = var.resource_group_name
   admin_username                       = null
-  cluster_log_analytics_workspace_name = "medplum-aks"
-  cluster_name                         = "medplum-aks"
+  cluster_log_analytics_workspace_name = "medplum-${var.environment}-${var.deployment_id}-aks"
+  cluster_name                         = "medplum-${var.environment}-${var.deployment_id}-aks"
   disk_encryption_set_id               = azurerm_disk_encryption_set.des_disk_encryption_set.id
   identity_ids                         = [azurerm_user_assigned_identity.aks_identity.id]
   identity_type                        = "UserAssigned"
@@ -69,7 +69,7 @@ module "medplum-aks" {
 }
 
 resource "azurerm_log_analytics_workspace" "main" {
-  name                = "${var.resource_naming_prefix}-log-analytics"
+  name                = "medplum-${var.environment}-${var.deployment_id}-log-analytics"
   location            = var.location
   resource_group_name = var.resource_group_name
   sku                 = "PerGB2018"
