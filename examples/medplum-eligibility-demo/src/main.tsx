@@ -11,7 +11,6 @@ import { createBrowserRouter, RouterProvider } from 'react-router';
 import { App } from './App';
 import { getConfig } from './config';
 
-
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
   baseUrl: getConfig().baseUrl,

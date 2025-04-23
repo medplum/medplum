@@ -12,7 +12,7 @@ const config: MedplumAppConfig = {
   googleClientId: import.meta.env?.GOOGLE_CLIENT_ID,
   clientId: import.meta.env?.MEDPLUM_CLIENT_ID,
   photonClientId: import.meta.env?.PHOTON_CLIENT_ID,
-  photonOrgId: import.meta.env?.PHOTON_ORG_ID
+  photonOrgId: import.meta.env?.PHOTON_ORG_ID,
 };
 
 export function getConfig(): MedplumAppConfig {

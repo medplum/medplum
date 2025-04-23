@@ -13,7 +13,8 @@ import { getConfig } from './config';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
-  baseUrl: getConfig().baseUrl});
+  baseUrl: getConfig().baseUrl,
+});
 
 const theme = createTheme({
   headings: {
