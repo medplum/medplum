@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import {
-  Task,
-  ClinicalImpression,
-  Practitioner,
-  Encounter,
-  ChargeItem,
-  Claim,
-} from '@medplum/fhirtypes';
+import { Task, ClinicalImpression, Practitioner, Encounter, ChargeItem, Claim } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { getReferenceString } from '@medplum/core';
 import { showErrorNotification } from '../utils/notifications';
@@ -85,7 +78,6 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
 
     const result = clinicalImpressionResult?.[0];
     setClinicalImpression(result);
-
   }, [medplum, encounter]);
 
   // Fetch claim related to the encounter

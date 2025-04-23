@@ -168,8 +168,8 @@ export const EncounterChart = (): JSX.Element => {
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
-    } 
-    
+    }
+
     saveTimeoutRef.current = setTimeout(async () => {
       if (!clinicalImpression) {
         return;
@@ -177,10 +177,10 @@ export const EncounterChart = (): JSX.Element => {
 
       try {
         const updatedClinicalImpression: ClinicalImpression = {
-            ...clinicalImpression,
-            note: [{ text: e.target.value }],
-          };  
-          await medplum.updateResource(updatedClinicalImpression);
+          ...clinicalImpression,
+          note: [{ text: e.target.value }],
+        };
+        await medplum.updateResource(updatedClinicalImpression);
       } catch (err) {
         showErrorNotification(err);
       }
@@ -269,9 +269,10 @@ export const EncounterChart = (): JSX.Element => {
     if (activeTab === 'notes') {
       return (
         <Stack gap="md">
-        
           <Card withBorder shadow="sm" mt="md">
-            <Text fw={600} size="lg" mb="md">Fill chart note</Text>
+            <Text fw={600} size="lg" mb="md">
+              Fill chart note
+            </Text>
             <Textarea
               defaultValue={clinicalImpression.note?.[0]?.text}
               value={chartNote}
