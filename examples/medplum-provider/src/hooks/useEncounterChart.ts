@@ -101,19 +101,15 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     if (!patientId || !encounter?.id || !practitioner?.id || chargeItems.length === 0) {
       return;
     }
-    console.log('Fetching claim', patientId, encounter.id, practitioner.id);
     const response = await medplum.searchResources('Claim', `encounter=${getReferenceString(encounter)}`);
     // If no claims exist for this encounter, create one
-    console.log('Response', response);
     if (response.length !== 0) {
-      console.log('Claim found', response[0]);
       setClaim(response[0]);
     } else {
       try {
         const newClaim = await createClaimFromEncounter(medplum, patientId, encounter.id, practitioner.id, chargeItems);
         if (newClaim) {
           setClaim(newClaim);
-          console.log('Claim created', newClaim);
         }
       } catch (err) {
         showErrorNotification(err);
@@ -124,10 +120,8 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
   // Fetch data on component mount or when encounter changes
   useEffect(() => {
     if (encounter) {
-      console.log('Fetching data', encounter);
       fetchTasks().catch((err) => showErrorNotification(err));
       fetchClinicalImpressions().catch((err) => showErrorNotification(err));
-      // fetchChargeItems().catch((err) => showErrorNotification(err));
     }
   }, [encounter, fetchTasks, fetchClinicalImpressions]);
 
