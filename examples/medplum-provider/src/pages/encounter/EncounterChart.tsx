@@ -1,9 +1,7 @@
-import { Stack, Box, Card, Text, Group, Flex, TextInput, Button, Menu } from '@mantine/core';
+import { Stack, Box, Card, Text, Group, Flex, TextInput, Button, Menu, Textarea } from '@mantine/core';
 import {
   Task,
   ClinicalImpression,
-  QuestionnaireResponse,
-  Questionnaire,
   Encounter,
   ChargeItem,
   Coverage,
@@ -11,9 +9,9 @@ import {
   Practitioner,
   Claim,
 } from '@medplum/fhirtypes';
-import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
+import { Loading, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router';
-import { IconCircleCheck, IconCircleOff, IconDownload, IconFileText } from '@tabler/icons-react';
+import { IconCircleCheck, IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { usePatient } from '../../hooks/usePatient';
@@ -24,8 +22,9 @@ import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './EncounterChart.module.css';
-import { deepEquals, getReferenceString } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { calculateTotalPrice, createClaimFromEncounter, fetchAndApplyChargeItemDefinitions } from '../../utils/claims';
+import { showNotification } from '@mantine/notifications';
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
@@ -41,16 +40,14 @@ export const EncounterChart = (): JSX.Element => {
     practitioner,
     tasks,
     clinicalImpression,
-    questionnaireResponse,
     chargeItems,
     setEncounter,
     setClaim,
     setPractitioner,
     setTasks,
-    setClinicalImpression,
-    setQuestionnaireResponse,
     setChargeItems,
   } = useEncounterChart(patientId, encounterId);
+  const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
@@ -76,56 +73,6 @@ export const EncounterChart = (): JSX.Element => {
 
     fetchOrganization().catch((err) => showErrorNotification(err));
   }, [coverage, medplum]);
-
-  const saveQuestionnaireResponse = async (response: QuestionnaireResponse): Promise<void> => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        if (!response.id) {
-          const savedResponse = await medplum.createResource(response);
-          setQuestionnaireResponse(savedResponse);
-
-          if (clinicalImpression) {
-            const updatedClinicalImpression: ClinicalImpression = {
-              ...clinicalImpression,
-              supportingInfo: [{ reference: `QuestionnaireResponse/${savedResponse.id}` }],
-            };
-            await medplum.updateResource(updatedClinicalImpression);
-            setClinicalImpression(updatedClinicalImpression);
-          }
-        } else {
-          const updatedResponse = await medplum.updateResource(response);
-          setQuestionnaireResponse(updatedResponse);
-        }
-      } catch (err) {
-        showErrorNotification(err);
-      }
-    }, SAVE_TIMEOUT_MS);
-  };
-
-  const onChange = (response: QuestionnaireResponse): void => {
-    if (!questionnaireResponse) {
-      const updatedResponse: QuestionnaireResponse = { ...response, status: 'in-progress' };
-      saveQuestionnaireResponse(updatedResponse).catch((err) => {
-        showErrorNotification(err);
-      });
-    } else {
-      const equals = deepEquals(response.item, questionnaireResponse?.item);
-      if (!equals) {
-        const updatedResponse: QuestionnaireResponse = {
-          ...questionnaireResponse,
-          item: response.item,
-          status: 'in-progress',
-        };
-        saveQuestionnaireResponse(updatedResponse).catch((err) => {
-          showErrorNotification(err);
-        });
-      }
-    }
-  };
 
   const updateTaskList = useCallback(
     (updatedTask: Task): void => {
@@ -216,6 +163,30 @@ export const EncounterChart = (): JSX.Element => {
     setActiveTab(tab);
   };
 
+  const handleChartNoteChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
+    setChartNote(e.target.value);
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    } 
+    
+    saveTimeoutRef.current = setTimeout(async () => {
+      if (!clinicalImpression) {
+        return;
+      }
+
+      try {
+        const updatedClinicalImpression: ClinicalImpression = {
+            ...clinicalImpression,
+            note: [{ text: e.target.value }],
+          };  
+          await medplum.updateResource(updatedClinicalImpression);
+      } catch (err) {
+        showErrorNotification(err);
+      }
+    }, SAVE_TIMEOUT_MS);
+  };
+
   const handleEncounterChange = (updatedEncounter: Encounter): void => {
     if (!updatedEncounter) {
       return;
@@ -290,7 +261,7 @@ export const EncounterChart = (): JSX.Element => {
     }
   };
 
-  if (!patient || !encounter) {
+  if (!patient || !encounter || !clinicalImpression) {
     return <Loading />;
   }
 
@@ -298,16 +269,18 @@ export const EncounterChart = (): JSX.Element => {
     if (activeTab === 'notes') {
       return (
         <Stack gap="md">
-          {clinicalImpression && (
-            <Card withBorder shadow="sm">
-              <QuestionnaireForm
-                questionnaire={questionnaire}
-                questionnaireResponse={questionnaireResponse}
-                excludeButtons={true}
-                onChange={onChange}
-              />
-            </Card>
-          )}
+        
+          <Card withBorder shadow="sm" mt="md">
+            <Text fw={600} size="lg" mb="md">Fill chart note</Text>
+            <Textarea
+              defaultValue={clinicalImpression.note?.[0]?.text}
+              value={chartNote}
+              onChange={handleChartNoteChange}
+              autosize
+              minRows={4}
+              maxRows={8}
+            />
+          </Card>
 
           {tasks.map((task: Task) => (
             <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
@@ -319,7 +292,7 @@ export const EncounterChart = (): JSX.Element => {
         <Stack gap="md">
           {claim && (
             <Card withBorder shadow="sm">
-              <Box display="inline-block">
+              <Flex justify="space-between">
                 <Menu shadow="md" width={200}>
                   <Menu.Target>
                     <Button variant="outline" leftSection={<IconDownload size={16} />}>
@@ -339,19 +312,38 @@ export const EncounterChart = (): JSX.Element => {
                       CMS 1500 Form
                     </Menu.Item>
 
-                    <Menu.Item leftSection={<IconFileText size={14} />} onClick={() => console.log('EDI X12 selected')}>
+                    <Menu.Item
+                      leftSection={<IconFileText size={14} />}
+                      onClick={() => {
+                        showNotification({
+                          title: 'EDI X12',
+                          message: 'Please contact sales to enable EDI X12 export',
+                          color: 'blue',
+                        });
+                      }}
+                    >
                       EDI X12
                     </Menu.Item>
 
                     <Menu.Item
                       leftSection={<IconFileText size={14} />}
-                      onClick={() => console.log('NUCC Crosswalk selected')}
+                      onClick={() => {
+                        showNotification({
+                          title: 'NUCC Crosswalk',
+                          message: 'Please contact sales to enable NUCC Crosswalk export',
+                          color: 'blue',
+                        });
+                      }}
                     >
                       NUCC Crosswalk CSV
                     </Menu.Item>
                   </Menu.Dropdown>
                 </Menu>
-              </Box>
+
+                <Button variant="outline" leftSection={<IconSend size={16} />}>
+                  Request to connect a billing service
+                </Button>
+              </Flex>
             </Card>
           )}
 
@@ -492,42 +484,4 @@ export const EncounterChart = (): JSX.Element => {
       </Stack>
     </>
   );
-};
-
-const questionnaire: Questionnaire = {
-  resourceType: 'Questionnaire',
-  identifier: [
-    {
-      value: 'SOAPNOTE',
-    },
-  ],
-  name: 'Fill chart note',
-  title: 'Fill chart note',
-  status: 'active',
-  item: [
-    {
-      id: 'id-1',
-      linkId: 'q1',
-      type: 'text',
-      text: 'Subjective evaluation',
-    },
-    {
-      id: 'id-2',
-      linkId: 'q2',
-      type: 'text',
-      text: 'Objective evaluation',
-    },
-    {
-      id: 'id-3',
-      linkId: 'q3',
-      type: 'text',
-      text: 'Assessment',
-    },
-    {
-      id: 'id-4',
-      linkId: 'q4',
-      type: 'text',
-      text: 'Treatment plan',
-    },
-  ],
 };

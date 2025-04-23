@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react';
 import {
   Task,
   ClinicalImpression,
-  QuestionnaireResponse,
   Practitioner,
   Encounter,
   ChargeItem,
@@ -20,7 +19,6 @@ export interface EncounterChartHook {
   practitioner: Practitioner | undefined;
   tasks: Task[];
   clinicalImpression: ClinicalImpression | undefined;
-  questionnaireResponse: QuestionnaireResponse | undefined;
   chargeItems: ChargeItem[];
   // State setters
   setEncounter: React.Dispatch<React.SetStateAction<Encounter | undefined>>;
@@ -28,7 +26,6 @@ export interface EncounterChartHook {
   setPractitioner: React.Dispatch<React.SetStateAction<Practitioner | undefined>>;
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
   setClinicalImpression: React.Dispatch<React.SetStateAction<ClinicalImpression | undefined>>;
-  setQuestionnaireResponse: React.Dispatch<React.SetStateAction<QuestionnaireResponse | undefined>>;
   setChargeItems: React.Dispatch<React.SetStateAction<ChargeItem[]>>;
 }
 
@@ -41,7 +38,6 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [clinicalImpression, setClinicalImpression] = useState<ClinicalImpression | undefined>();
-  const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>();
   const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
 
   // Load encounter data
@@ -90,10 +86,6 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     const result = clinicalImpressionResult?.[0];
     setClinicalImpression(result);
 
-    if (result?.supportingInfo?.[0]?.reference) {
-      const response = await medplum.readReference({ reference: result.supportingInfo[0].reference });
-      setQuestionnaireResponse(response as QuestionnaireResponse);
-    }
   }, [medplum, encounter]);
 
   // Fetch claim related to the encounter
@@ -152,7 +144,6 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     practitioner,
     tasks,
     clinicalImpression,
-    questionnaireResponse,
     chargeItems,
 
     // State setters
@@ -161,7 +152,6 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     setPractitioner,
     setTasks,
     setClinicalImpression,
-    setQuestionnaireResponse,
     setChargeItems,
   };
 }
