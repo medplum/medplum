@@ -248,20 +248,8 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
           createCheckmark(item.category?.coding?.[0].code === 'EMG', 172, y),
 
           // 24D. Procedures, services, or supplies
-          createText(
-            item.productOrService?.coding
-              ?.map((code) => code.code)
-              .join(', '),
-            194,
-            y
-          ),
-          createText(
-            item.modifier?.[0]?.coding
-              ?.map((code) => code.code)
-              .join(', '),
-            246,
-            y
-          ),
+          createText(item.productOrService?.coding?.map((code) => code.code).join(', '), 194, y),
+          createText(item.modifier?.[0]?.coding?.map((code) => code.code).join(', '), 246, y),
 
           // 24E. Diagnosis pointer
           createText('', 335, y),
