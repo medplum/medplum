@@ -58,7 +58,6 @@ export const EncounterChart = (): JSX.Element => {
       }
       const coverageResult = await medplum.searchResources('Coverage', `patient=${getReferenceString(patient)}`);
       if (coverageResult.length > 0) {
-        console.log('coverageResult', coverageResult);
         setCoverage(coverageResult[0] as Coverage);
       }
     };
@@ -70,7 +69,6 @@ export const EncounterChart = (): JSX.Element => {
     const fetchOrganization = async (): Promise<void> => {
       if (coverage?.payor?.[0]?.reference && !coverage.payor[0].reference.includes('Patient/')) { 
         const organizationResult = await medplum.readReference({ reference: coverage.payor[0].reference });
-        console.log('organizationResult', organizationResult);
         setOrganization(organizationResult as Organization);
       }
     };
