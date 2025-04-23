@@ -345,3 +345,24 @@ export async function moveToDelayed(job: Job, reason: string): Promise<void> {
   // given the way we use bullmq.
   throw new Error('Cannot delay Post-deploy migration job since job.token is not available');
 }
+/**
+ * Returns a promise that resolves when `getIsWorkerClosing()` is true which is polled every second
+ * Optionally, the promise resolves `delay` milliseconds after `getIsWorkerClosing()` first returns true.
+ * @param name - The name of the queue to wait for.
+ * @param delay - Optional delay in milliseconds before resolving. Default 10,000 (10 seconds).
+ * @returns Promise that resolves when `getIsWorkerClosing()` is true
+ */
+export async function waitForQueueClosing(name: string, delay: number = 10_000): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const interval = setInterval(() => {
+      if (queueRegistry.isClosing(name)) {
+        clearInterval(interval);
+        if (delay > 0) {
+          setTimeout(() => resolve(), delay);
+        } else {
+          resolve();
+        }
+      }
+    }, 1000);
+  });
+}

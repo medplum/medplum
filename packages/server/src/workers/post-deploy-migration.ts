@@ -160,6 +160,7 @@ export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): Custo
   const { requestId, traceId } = getRequestContext();
   return {
     type: 'custom',
+    completedSteps: [],
     asyncJobId: asyncJob.id,
     requestId,
     traceId,

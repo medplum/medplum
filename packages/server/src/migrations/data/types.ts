@@ -37,6 +37,7 @@ export type CustomMigrationAction = { name: string; durationMs: number };
 export type CustomMigrationResult = { actions: CustomMigrationAction[] };
 export interface CustomPostDeployMigrationJobData extends PostDeployJobData {
   readonly type: 'custom';
+  readonly completedSteps: string[];
 }
 
 export interface CustomPostDeployMigration extends PostDeployMigration<CustomPostDeployMigrationJobData> {

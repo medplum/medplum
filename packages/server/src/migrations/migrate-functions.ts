@@ -2,6 +2,11 @@ import { Pool, PoolClient } from 'pg';
 import { globalLogger } from '../logger';
 
 export type MigrationAction = { name: string; durationMs: number };
+export type MigrationFunctionContext = {
+  client: Pool | PoolClient;
+  actions: MigrationAction[];
+  completedSteps: string[];
+};
 
 export async function query(client: PoolClient, actions: MigrationAction[], queryStr: string): Promise<void> {
   const start = Date.now();
@@ -16,17 +21,19 @@ export async function query(client: PoolClient, actions: MigrationAction[], quer
  * index that could take many minutes to complete is interrupted due to a server deployment or the worker
  * performing the migration is interrupted/crashes for any other reason.
  *
- * @param client - The database client or pool.
- * @param actions - The list of actions to push operations performed.
+ * @param ctx - The migration function context.
+ * @param stepId - The ID of the step to track.
  * @param indexName - The name of the index to create.
  * @param createIndexSql - The SQL to create the index.
  */
 export async function idempotentCreateIndex(
-  client: Pool | PoolClient,
-  actions: MigrationAction[],
+  ctx: MigrationFunctionContext,
+  stepId: string,
   indexName: string,
   createIndexSql: string
 ): Promise<void> {
+  const { client, actions, completedSteps } = ctx;
+
   const existsResult = await client.query<{ exists: boolean; live: boolean; invalid: boolean }>(
     `SELECT 
        EXISTS(SELECT 1 FROM pg_class WHERE relname = $1) AS exists,
@@ -65,16 +72,21 @@ export async function idempotentCreateIndex(
     globalLogger.info('Created index', { indexName, durationMs });
     actions.push({ name: createIndexSql, durationMs });
   }
+
+  if (stepId) {
+    completedSteps.push(stepId);
+  }
 }
 
-export async function analyzeTable(
-  client: Pool | PoolClient,
-  actions: MigrationAction[],
-  tableName: string
-): Promise<void> {
+export async function analyzeTable(ctx: MigrationFunctionContext, stepId: string, tableName: string): Promise<void> {
+  const { client, actions, completedSteps } = ctx;
+
   const start = Date.now();
   await client.query(`ANALYZE "${tableName}"`);
   const durationMs = Date.now() - start;
   globalLogger.info('Analyzed table', { tableName, durationMs });
   actions.push({ name: `ANALYZE "${tableName}"`, durationMs });
+  if (stepId) {
+    completedSteps.push(stepId);
+  }
 }
