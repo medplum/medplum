@@ -98,7 +98,7 @@ export async function main(): Promise<void> {
   DRY_RUN = process.argv.includes('--dryRun');
   ALLOW_POST_DEPLOY_ACTIONS = process.argv.includes('--allowPostDeploy');
   SKIP_POST_DEPLOY_ACTIONS = process.argv.includes('--skipPostDeploy');
-  ADD_ANALYZE_RESOURCE_TABLES = process.argv.includes('--addAnalyzeTables');
+  ADD_ANALYZE_RESOURCE_TABLES = process.argv.includes('--addAnalyzeResourceTables');
   indexStructureDefinitionsAndSearchParameters();
 
   const dbClient = new Client({
