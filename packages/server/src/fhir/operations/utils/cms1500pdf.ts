@@ -257,9 +257,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
           ),
           createText(
             item.modifier?.[0]?.coding
-              ?.map((code) => {
-                return code.code;
-              })
+              ?.map((code) => code.code)
               .join(', '),
             246,
             y
