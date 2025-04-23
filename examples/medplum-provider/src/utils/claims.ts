@@ -98,17 +98,13 @@ export async function fetchAndApplyChargeItemDefinitions(
   return hasUpdates ? updatedItems : chargeItems;
 }
 
-// Define the function outside your component (if possible)
 export async function getChargeItemsForEncounter(medplum: MedplumClient, encounter: Encounter): Promise<ChargeItem[]> {
-  console.log('Getting charge items', encounter);
   if (!encounter) {
     return [];
   }
 
   const chargeItems = await medplum.searchResources('ChargeItem', `context=${getReferenceString(encounter)}`);
-
   const updatedChargeItems = await fetchAndApplyChargeItemDefinitions(medplum, chargeItems);
-
   return updatedChargeItems;
 }
 
