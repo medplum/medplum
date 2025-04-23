@@ -184,10 +184,9 @@ export const EncounterChart = (): JSX.Element => {
           const updatedClinicalImpression: ClinicalImpression = {
             ...clinicalImpression,
             note: [{ text: e.target.value }],
-          };  
+          };
           await medplum.updateResource(updatedClinicalImpression);
         }
-       
       } catch (err) {
         showErrorNotification(err);
       }
