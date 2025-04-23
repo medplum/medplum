@@ -66,3 +66,15 @@ export async function idempotentCreateIndex(
     actions.push({ name: createIndexSql, durationMs });
   }
 }
+
+export async function analyzeTable(
+  client: Pool | PoolClient,
+  actions: MigrationAction[],
+  tableName: string
+): Promise<void> {
+  const start = Date.now();
+  await client.query(`ANALYZE "${tableName}"`);
+  const durationMs = Date.now() - start;
+  globalLogger.info('Analyzed table', { tableName, durationMs });
+  actions.push({ name: `ANALYZE "${tableName}"`, durationMs });
+}
