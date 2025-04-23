@@ -269,7 +269,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
 
           // 24E. Diagnosis pointer
           createText('', 335, y),
-          
+
           // 24F. Charges
           createText(formatMoney(item.net), 373, y),
 
