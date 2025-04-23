@@ -67,7 +67,7 @@ export const EncounterChart = (): JSX.Element => {
 
   useEffect(() => {
     const fetchOrganization = async (): Promise<void> => {
-      if (coverage?.payor?.[0]?.reference && !coverage.payor[0].reference.includes('Patient/')) { 
+      if (coverage?.payor?.[0]?.reference && !coverage.payor[0].reference.includes('Patient/')) {
         const organizationResult = await medplum.readReference({ reference: coverage.payor[0].reference });
         setOrganization(organizationResult as Organization);
       }
@@ -110,14 +110,24 @@ export const EncounterChart = (): JSX.Element => {
         setChargeItems(updatedChargeItems);
 
         if (claim?.id) {
-          const updatedClaim = {
+          const updatedClaim: Claim = {
             ...claim,
-            item: updatedChargeItems.map((chargeItem: ChargeItem, index: number) => ({
-              sequence: index + 1,
-              encounter: claim.item?.[0]?.encounter || [],
-              productOrService: chargeItem.code,
-              net: chargeItem.priceOverride,
-            })),
+            item: updatedChargeItems.map((chargeItem: ChargeItem, index: number) => {
+              const modifiers = chargeItem.extension
+                ?.filter((ext) => ext.url === 'http://hl7.org/fhir/StructureDefinition/chargeitem-modifier')
+                .map((ext) => {
+                  return ext.valueCodeableConcept;
+                })
+                .filter((modifier) => modifier !== undefined);
+
+              return {
+                sequence: index + 1,
+                encounter: claim.item?.[0]?.encounter || [],
+                productOrService: chargeItem.code,
+                net: chargeItem.priceOverride,
+                ...(modifiers && modifiers.length > 0 ? { modifier: modifiers } : {}),
+              };
+            }),
             total: { value: calculateTotalPrice(updatedChargeItems) },
           };
           const savedClaim = await medplum.updateResource(updatedClaim);
@@ -392,11 +402,10 @@ export const EncounterChart = (): JSX.Element => {
                         </Group>
                       )}
 
-                       
-                        <Text fw={600} size="lg">
-                          {organization.name}
-                        </Text>
-                        <Stack gap={0}>
+                      <Text fw={600} size="lg">
+                        {organization.name}
+                      </Text>
+                      <Stack gap={0}>
                         {coverage && (
                           <>
                             {coverage.class?.map((coverageClass, index) => (
