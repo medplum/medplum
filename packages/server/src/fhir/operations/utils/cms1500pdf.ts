@@ -250,9 +250,7 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
           // 24D. Procedures, services, or supplies
           createText(
             item.productOrService?.coding
-              ?.map((code) => {
-                return code.code;
-              })
+              ?.map((code) => code.code)
               .join(', '),
             194,
             y
