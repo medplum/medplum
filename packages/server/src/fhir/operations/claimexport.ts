@@ -5,6 +5,7 @@ import { getAuthenticatedContext } from '../../context';
 import { createPdf } from '../../util/pdf';
 import { getClaimPDFDocDefinition } from './utils/cms1500pdf';
 import { getBinaryStorage } from '../../storage/loader';
+import { Readable } from 'stream';
 
 /**
  * Operation definition for the Claim $export operation.
