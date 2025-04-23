@@ -23,8 +23,10 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './EncounterChart.module.css';
 import { getReferenceString } from '@medplum/core';
-import { calculateTotalPrice, createClaimFromEncounter, fetchAndApplyChargeItemDefinitions } from '../../utils/claims';
+import { createClaimFromEncounter } from '../../utils/claims';
 import { showNotification } from '@mantine/notifications';
+import { calculateTotalPrice, fetchAndApplyChargeItemDefinitions } from '../../utils/chargeitems';
+import { createSelfPayCoverage } from '../../utils/coverage';
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
@@ -56,6 +58,7 @@ export const EncounterChart = (): JSX.Element => {
       }
       const coverageResult = await medplum.searchResources('Coverage', `patient=${getReferenceString(patient)}`);
       if (coverageResult.length > 0) {
+        console.log('coverageResult', coverageResult);
         setCoverage(coverageResult[0] as Coverage);
       }
     };
@@ -65,8 +68,9 @@ export const EncounterChart = (): JSX.Element => {
 
   useEffect(() => {
     const fetchOrganization = async (): Promise<void> => {
-      if (coverage?.payor?.[0]?.reference) {
+      if (coverage?.payor?.[0]?.reference && !coverage.payor[0].reference.includes('Patient/')) { 
         const organizationResult = await medplum.readReference({ reference: coverage.payor[0].reference });
+        console.log('organizationResult', organizationResult);
         setOrganization(organizationResult as Organization);
       }
     };
@@ -110,7 +114,7 @@ export const EncounterChart = (): JSX.Element => {
         if (claim?.id) {
           const updatedClaim = {
             ...claim,
-            item: updatedChargeItems.map((chargeItem, index) => ({
+            item: updatedChargeItems.map((chargeItem: ChargeItem, index: number) => ({
               sequence: index + 1,
               encounter: claim.item?.[0]?.encounter || [],
               productOrService: chargeItem.code,
@@ -184,10 +188,9 @@ export const EncounterChart = (): JSX.Element => {
           const updatedClinicalImpression: ClinicalImpression = {
             ...clinicalImpression,
             note: [{ text: e.target.value }],
-          };  
+          };
           await medplum.updateResource(updatedClinicalImpression);
         }
-       
       } catch (err) {
         showErrorNotification(err);
       }
@@ -243,8 +246,26 @@ export const EncounterChart = (): JSX.Element => {
   };
 
   const exportClaimAsCMS1500 = async (): Promise<void> => {
-    if (!claim?.id || !coverage) {
+    if (!claim?.id || !patient?.id) {
       return;
+    }
+
+    let coverageForClaim = coverage;
+    if (!coverageForClaim) {
+      const coverageResults = await medplum.searchResources(
+        'Coverage',
+        `patient=${getReferenceString(patient)}&status=active`
+      );
+      if (coverageResults === undefined) {
+        showErrorNotification('Failed to fetch coverage information');
+        return;
+      }
+
+      if (coverageResults.length > 0) {
+        coverageForClaim = coverageResults[0];
+      } else {
+        coverageForClaim = await createSelfPayCoverage(medplum, patient.id);
+      }
     }
 
     await medplum.updateResource({
@@ -253,7 +274,7 @@ export const EncounterChart = (): JSX.Element => {
         {
           sequence: 1,
           focal: true,
-          coverage: { reference: getReferenceString(coverage) },
+          coverage: { reference: getReferenceString(coverageForClaim) },
         },
       ],
     });
@@ -373,10 +394,11 @@ export const EncounterChart = (): JSX.Element => {
                         </Group>
                       )}
 
-                      <Stack gap={0}>
+                       
                         <Text fw={600} size="lg">
                           {organization.name}
                         </Text>
+                        <Stack gap={0}>
                         {coverage && (
                           <>
                             {coverage.class?.map((coverageClass, index) => (
@@ -414,10 +436,19 @@ export const EncounterChart = (): JSX.Element => {
                       )}
                     </>
                   ) : (
-                    <Text c="dimmed">
-                      <IconCircleOff size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
-                      No insurance information available
-                    </Text>
+                    <>
+                      {coverage?.payor?.[0]?.reference?.includes('Patient/') ? (
+                        <Text c="dimmed">
+                          <IconCircleOff size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                          Self Pay
+                        </Text>
+                      ) : (
+                        <Text c="dimmed">
+                          <IconCircleOff size={16} style={{ marginRight: 8, verticalAlign: 'middle' }} />
+                          No insurance information available
+                        </Text>
+                      )}
+                    </>
                   )}
                 </Stack>
 
@@ -430,7 +461,7 @@ export const EncounterChart = (): JSX.Element => {
                     href={`/Coverage/${coverage.id}`}
                     target="_blank"
                   >
-                    View Insurance Information
+                    View Coverage Information
                   </Button>
                 )}
               </Card>

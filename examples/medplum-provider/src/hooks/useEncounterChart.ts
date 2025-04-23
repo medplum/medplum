@@ -3,7 +3,8 @@ import { Task, ClinicalImpression, Practitioner, Encounter, ChargeItem, Claim } 
 import { useMedplum } from '@medplum/react';
 import { getReferenceString } from '@medplum/core';
 import { showErrorNotification } from '../utils/notifications';
-import { createClaimFromEncounter, getChargeItemsForEncounter } from '../utils/claims';
+import { createClaimFromEncounter } from '../utils/claims';
+import { getChargeItemsForEncounter } from '../utils/chargeitems';
 
 export interface EncounterChartHook {
   // State values
