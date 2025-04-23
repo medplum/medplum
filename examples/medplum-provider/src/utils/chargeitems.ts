@@ -1,5 +1,5 @@
-import { Encounter, ChargeItem } from "@medplum/fhirtypes";
-import { getReferenceString, MedplumClient } from "@medplum/core";
+import { Encounter, ChargeItem } from '@medplum/fhirtypes';
+import { getReferenceString, MedplumClient } from '@medplum/core';
 
 /**
  * Standalone function to fetch and apply charge item definitions to charge items

@@ -10,7 +10,6 @@ export async function createClaimFromEncounter(
   practitionerId: string,
   chargeItems: ChargeItem[]
 ): Promise<Claim | undefined> {
-
   const coverageResults = await medplum.searchResources('Coverage', `patient=Patient/${patientId}&status=active`);
   let coverage: Coverage = coverageResults[0];
   if (!coverage) {

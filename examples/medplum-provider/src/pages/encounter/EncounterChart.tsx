@@ -67,7 +67,7 @@ export const EncounterChart = (): JSX.Element => {
 
   useEffect(() => {
     const fetchOrganization = async (): Promise<void> => {
-      if (coverage?.payor?.[0]?.reference && !coverage.payor[0].reference.includes('Patient/')) { 
+      if (coverage?.payor?.[0]?.reference && !coverage.payor[0].reference.includes('Patient/')) {
         const organizationResult = await medplum.readReference({ reference: coverage.payor[0].reference });
         setOrganization(organizationResult as Organization);
       }
@@ -392,11 +392,10 @@ export const EncounterChart = (): JSX.Element => {
                         </Group>
                       )}
 
-                       
-                        <Text fw={600} size="lg">
-                          {organization.name}
-                        </Text>
-                        <Stack gap={0}>
+                      <Text fw={600} size="lg">
+                        {organization.name}
+                      </Text>
+                      <Stack gap={0}>
                         {coverage && (
                           <>
                             {coverage.class?.map((coverageClass, index) => (
