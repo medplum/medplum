@@ -85,12 +85,11 @@ export async function fetchAndApplyChargeItemDefinitions(
             }
           } catch (err) {
             console.error('Error applying ChargeItemDefinition:', err);
-            // You can choose to throw or handle errors differently in a standalone function
           }
         }
       } catch (err) {
         console.error('Error fetching ChargeItemDefinition:', err);
-        throw err; // Propagate the error to the caller
+        throw err;
       }
     }
   }

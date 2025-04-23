@@ -176,11 +176,18 @@ export const EncounterChart = (): JSX.Element => {
       }
 
       try {
-        const updatedClinicalImpression: ClinicalImpression = {
+        if (!e.target.value || e.target.value === '') {
+          const { note: _, ...restOfClinicalImpression } = clinicalImpression;
+          const updatedClinicalImpression: ClinicalImpression = restOfClinicalImpression;
+          await medplum.updateResource(updatedClinicalImpression);
+        } else {
+          const updatedClinicalImpression: ClinicalImpression = {
             ...clinicalImpression,
             note: [{ text: e.target.value }],
           };  
           await medplum.updateResource(updatedClinicalImpression);
+        }
+       
       } catch (err) {
         showErrorNotification(err);
       }
