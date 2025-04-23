@@ -647,7 +647,7 @@ export const fullAnswer: Bundle = {
               coding: [{ system: 'http://example.org/claim-item-category', code: 'EMG', display: 'Emergency' }],
             },
             modifier: [
-              { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/modifiers', code: 'x', display: 'None' }] },
+              { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/modifiers', code: 'XT', display: 'None' }] },
             ],
             diagnosisSequence: [1, 2],
             net: {
@@ -670,7 +670,7 @@ export const fullAnswer: Bundle = {
             servicedDate: '2024-05-15',
             sequence: 1,
             productOrService: {
-              coding: [{ system: 'http://hl7.org/fhir/ValueSet/service-uscls', code: '1201', display: 'Exam, recall' }],
+              coding: [{ system: 'http://hl7.org/fhir/ValueSet/service-uscls', code: '1200', display: 'Exam, recall' }],
             },
             locationAddress: {
               line: ['289 Johnson Street'],
@@ -681,7 +681,7 @@ export const fullAnswer: Bundle = {
               coding: [{ system: 'http://example.org/claim-item-category', code: 'EMG', display: 'Emergency' }],
             },
             modifier: [
-              { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/modifiers', code: 'x', display: 'None' }] },
+              { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/modifiers', code: 'XY', display: 'None' }] },
             ],
             diagnosisSequence: [1, 2],
             net: {
