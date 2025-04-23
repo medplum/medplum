@@ -92,6 +92,13 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
   return pool;
 }
 
+export function getDefaultStatementTimeout(config: MedplumDatabaseConfig): number | 'DEFAULT' {
+  if (config.disableConnectionConfiguration) {
+    return 'DEFAULT';
+  }
+  return config.queryTimeout ?? 60000;
+}
+
 export async function closeDatabase(): Promise<void> {
   if (pool) {
     await pool.end();

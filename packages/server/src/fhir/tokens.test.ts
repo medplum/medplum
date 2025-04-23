@@ -2,6 +2,7 @@ import { createReference, getReferenceString, getSearchParameter, Operator, SNOM
 import {
   Bundle,
   Condition,
+  Identifier,
   MedicationRequest,
   Patient,
   Reference,
@@ -14,8 +15,14 @@ import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { getSearchParameterImplementation } from './searchparameter';
+import { loadStructureDefinitions } from './structure';
 import { TokenQueryOperators } from './token-column';
-import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
+import {
+  buildTokensForSearchParameter,
+  isLegacyTokenColumnSearchParameter,
+  Token,
+  TokenColumnsFeature,
+} from './tokens';
 
 describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'])(
   'Token searching using %s',
@@ -1454,6 +1461,46 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
     });
   }
 );
+
+describe('buildTokens', () => {
+  beforeAll(() => {
+    loadStructureDefinitions();
+  });
+
+  test('empty resource', () => {
+    const identifierSearchParam = getSearchParameter('Patient', 'identifier');
+    if (!identifierSearchParam) {
+      throw new Error('Could not find identifier search parameter');
+    }
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      identifier: undefined,
+    };
+    const result1: Token[] = [];
+    buildTokensForSearchParameter(result1, r1, identifierSearchParam);
+    expect(result1).toStrictEqual([]);
+
+    const validIdentifiers: Identifier[] = [
+      {},
+      { system: 'http://example.com', value: '123' },
+      { system: 'http://example.com', value: '123' },
+      { system: 'http://example.com', value: '456' },
+      { use: 'official' },
+    ];
+    const r2: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '2',
+      identifier: [null, undefined, ...validIdentifiers] as unknown as Identifier[],
+    };
+    const result2: Token[] = [];
+    buildTokensForSearchParameter(result2, r2, identifierSearchParam);
+    expect(result2).toStrictEqual([
+      { code: 'identifier', system: 'http://example.com', value: '123' },
+      { code: 'identifier', system: 'http://example.com', value: '456' },
+    ]);
+  });
+});
 
 function toIdentifierValues(bundle: Bundle<Condition | Patient>): string[] {
   return bundle.entry?.map((e) => e.resource?.identifier?.[0].value as string) ?? [];

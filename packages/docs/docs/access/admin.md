@@ -19,7 +19,7 @@ Project Admins have the following privileges:
   - [`Project`](/docs/api/fhir/medplum/project) - used to adjust [Project settings](/docs/access/projects#settings)
   - [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) - used to manage user registration and privileges (see: [User Management Guide](/docs/auth/user-management-guide))
   - [`UserSecurityRequest`](/docs/api/fhir/medplum/usersecurityrequest) - used to [send custom emails](/docs/auth/custom-emails#password-change-request-bot)
-  - [`User`](/docs/api/fhir/medplum/user) - only for [project scoped users](/docs/auth/user-management-guide#project-scoped-users)
+  - [`User`](/docs/api/fhir/medplum/user) - only for [project scoped users](/docs/auth/project-vs-server-scoped-users#project-scoped-users)
 - **Impersonate users** - Project Admins are allowed to make API calls [on behalf of other users](/docs/auth/methods/on-behalf-of)
 
 :::note Applying Access Policies to Admins
