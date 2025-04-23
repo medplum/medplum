@@ -69,7 +69,6 @@ import {
   ValuesQuery,
 } from './sql';
 import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-column';
-import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -962,19 +961,9 @@ function buildSearchFilterExpression(
 
   const impl = getSearchParameterImplementation(resourceType, param);
 
-  if (readFromTokenColumns(repo) && impl.searchStrategy === 'token-column') {
-    // Use the token-column strategy only if the read feature flag is enabled
+  if (impl.searchStrategy === 'token-column') {
     return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
-  } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
-    // otherwise, if it's a token-column but the read flag is not enabled, use the search param's
-    // previous lookup-table implementation
-
-    if (isLegacyTokenColumnSearchParameter(param, resourceType)) {
-      // legacy token search params should be treated as 'column' strategy; once the token-column read
-      // feature flag is enabled, this check goes away since all legacy search params will be token-column
-      const columnImpl = getSearchParameterImplementation(resourceType, param, true);
-      return buildNormalSearchFilterExpression(resourceType, table, param, columnImpl, filter);
-    }
+  } else if (impl.searchStrategy === 'lookup-table') {
     return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
   }
 
@@ -1420,15 +1409,10 @@ function addOrderByClause(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (readFromTokenColumns(repo) && impl.searchStrategy === 'token-column') {
+  if (impl.searchStrategy === 'token-column') {
     addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
-  } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
-    if (isLegacyTokenColumnSearchParameter(param, resourceType)) {
-      const columnImpl = getSearchParameterImplementation(resourceType, param, true);
-      builder.orderBy(columnImpl.columnName, !!sortRule.descending);
-    } else {
-      impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
-    }
+  } else if (impl.searchStrategy === 'lookup-table') {
+    impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
   } else {
     impl satisfies ColumnSearchParameterImplementation;
     builder.orderBy(impl.columnName, !!sortRule.descending);
@@ -1759,11 +1743,4 @@ function splitChainedSearch(chain: string): string[] {
 
 function getCanonicalUrl(resource: Resource): string | undefined {
   return (resource as Resource & { url?: string }).url;
-}
-
-export function readFromTokenColumns(repo: Repository): boolean {
-  const project = repo.currentProject();
-  const maybeSystemSettingBoolean = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns')?.valueBoolean;
-  // If the Project.systemSetting exists, return its value. Otherwise, fallback to global setting
-  return maybeSystemSettingBoolean ?? TokenColumnsFeature.read;
 }

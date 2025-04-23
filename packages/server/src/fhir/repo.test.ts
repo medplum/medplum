@@ -37,7 +37,7 @@ import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
@@ -803,55 +803,6 @@ describe('FHIR Repo', () => {
         count: 0,
       });
       expect(bundle.total).toStrictEqual(0);
-    }));
-
-  test('Duplicate :text tokens', () =>
-    withTestContext(async () => {
-      const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
-
-      const obs1 = await systemRepo.createResource<Observation>({
-        resourceType: 'Observation',
-        status: 'final',
-        code: {
-          coding: [
-            {
-              system: 'https://example.com',
-              code: 'HDL',
-              display: 'HDL',
-            },
-          ],
-          text: 'HDL',
-        },
-        subject: createReference(patient),
-      });
-
-      const result = await getDatabasePool(DatabaseMode.READER).query(
-        'SELECT "code", "system", "value" FROM "Observation_Token" WHERE "resourceId"=$1',
-        [obs1.id]
-      );
-
-      expect(result.rows).toMatchObject([
-        {
-          code: 'code',
-          system: 'text',
-          value: 'HDL',
-        },
-        {
-          code: 'code',
-          system: 'https://example.com',
-          value: 'HDL',
-        },
-        {
-          code: 'combo-code',
-          system: 'text',
-          value: 'HDL',
-        },
-        {
-          code: 'combo-code',
-          system: 'https://example.com',
-          value: 'HDL',
-        },
-      ]);
     }));
 
   test('Malformed client assigned ID', async () => {
