@@ -1009,9 +1009,10 @@ function buildSearchFilterExpression(
 
   const impl = getSearchParameterImplementation(resourceType, param);
 
-  if (readFromTokenColumns(repo) && impl.searchStrategy === 'token-column') {
+  const readFromTokenColumnsVal = readFromTokenColumns(repo);
+  if (readFromTokenColumnsVal && impl.searchStrategy === 'token-column') {
     // Use the token-column strategy only if the read feature flag is enabled
-    return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
+    return buildTokenColumnsSearchFilter(resourceType, table, param, filter, readFromTokenColumnsVal);
   } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
     // otherwise, if it's a token-column but the read flag is not enabled, use the search param's
     // previous lookup-table implementation
@@ -1808,26 +1809,38 @@ function getCanonicalUrl(resource: Resource): string | undefined {
   return (resource as Resource & { url?: string }).url;
 }
 
-export function readFromTokenColumns(repo: Repository): boolean {
+export function readFromTokenColumns(repo: Repository): typeof TokenColumnsFeature.read {
   const project = repo.currentProject();
-  const maybeSystemSettingBoolean = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns')?.valueBoolean;
+  const maybeSystemSetting = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns');
+
+  let configValue: string | undefined;
 
   // If the Project.systemSetting exists, return its value
-  if (maybeSystemSettingBoolean !== undefined) {
-    return maybeSystemSettingBoolean;
+  if (maybeSystemSetting) {
+    // `searchTokenColumns` is a string setting where 'unified-tokens-column' and 'column-per-code' are valid values
+    if (maybeSystemSetting.valueString !== undefined) {
+      configValue = maybeSystemSetting.valueString;
+    }
+
+    // Previously, `searchTokenColumns` was a boolean setting where true was equivalent to 'unified-tokens-column'
+    else if (maybeSystemSetting.valueBoolean !== undefined) {
+      configValue = maybeSystemSetting.valueBoolean ? 'unified-tokens-column' : 'token-tables';
+    }
   }
 
   // If the project is undefined, it is a system repository
   if (project === undefined) {
     const systemRepositoryTokenReadStrategy = getConfig().systemRepositoryTokenReadStrategy;
-    // If specified, translate the config value to a boolean
-    if (systemRepositoryTokenReadStrategy === 'unified-tokens-column') {
-      return true;
-    } else if (systemRepositoryTokenReadStrategy === 'token-tables') {
-      return false;
-    }
+    configValue = systemRepositoryTokenReadStrategy;
   }
 
-  // fallback to the global default
+  // If the config value is valid, return it
+  if (configValue === 'unified-tokens-column' || configValue === 'column-per-code') {
+    return configValue;
+  } else if (configValue === 'token-tables') {
+    return false;
+  }
+
+  // otherwise, fallback to the global default
   return TokenColumnsFeature.read;
 }
