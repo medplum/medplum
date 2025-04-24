@@ -962,9 +962,10 @@ function buildSearchFilterExpression(
 
   const impl = getSearchParameterImplementation(resourceType, param);
 
-  if (readFromTokenColumns(repo) && impl.searchStrategy === 'token-column') {
+  const readFromTokenColumnsVal = readFromTokenColumns(repo);
+  if (readFromTokenColumnsVal && impl.searchStrategy === 'token-column') {
     // Use the token-column strategy only if the read feature flag is enabled
-    return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
+    return buildTokenColumnsSearchFilter(resourceType, table, param, filter, readFromTokenColumnsVal);
   } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
     // otherwise, if it's a token-column but the read flag is not enabled, use the search param's
     // previous lookup-table implementation
@@ -1761,9 +1762,20 @@ function getCanonicalUrl(resource: Resource): string | undefined {
   return (resource as Resource & { url?: string }).url;
 }
 
-export function readFromTokenColumns(repo: Repository): boolean {
+export function readFromTokenColumns(repo: Repository): typeof TokenColumnsFeature.read {
   const project = repo.currentProject();
-  const maybeSystemSettingBoolean = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns')?.valueBoolean;
-  // If the Project.systemSetting exists, return its value. Otherwise, fallback to global setting
-  return maybeSystemSettingBoolean ?? TokenColumnsFeature.read;
+  const systemSetting = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns');
+  if (!systemSetting) {
+    return TokenColumnsFeature.read;
+  }
+
+  if (systemSetting.valueBoolean !== undefined) {
+    return systemSetting.valueBoolean ? 'one-column' : false;
+  }
+
+  if (systemSetting.valueString === 'one-column' || systemSetting.valueString === 'per-code') {
+    return systemSetting.valueString;
+  }
+
+  return TokenColumnsFeature.read;
 }
