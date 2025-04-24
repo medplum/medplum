@@ -32,6 +32,19 @@ describe('Generator', () => {
       const table = result.tables.find((t) => t.name === 'Patient') as TableDefinition;
       expect(table).toBeDefined();
 
+      const tokenCodes = [
+        '_compartmentIdentifier',
+        '_security',
+        '_tag',
+        'email',
+        'generalPractitionerIdentifier',
+        'identifier',
+        'language',
+        'linkIdentifier',
+        'organizationIdentifier',
+        'phone',
+        'telecom',
+      ];
       const expectedColumns: ColumnDefinition[] = [
         {
           name: 'id',
@@ -144,50 +157,30 @@ describe('Generator', () => {
           name: '__tokensText',
           type: 'TEXT[]',
         },
-        {
-          name: '___securitySort',
-          type: 'TEXT',
-        },
-        {
-          name: '___tagSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__emailSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__identifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__languageSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__phoneSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__telecomSort',
-          type: 'TEXT',
-        },
-        {
-          name: '___compartmentIdentifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__generalPractitionerIdentifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__linkIdentifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__organizationIdentifierSort',
-          type: 'TEXT',
-        },
+        ...tokenCodes.flatMap((code) => {
+          return [
+            {
+              name: `__${code}Sys`,
+              type: 'TEXT[]',
+            },
+            {
+              name: `__${code}Code`,
+              type: 'TEXT[]',
+            },
+            {
+              name: `__${code}SysCode`,
+              type: 'TEXT[]',
+            },
+            {
+              name: `__${code}Sort`,
+              type: 'TEXT',
+            },
+            {
+              name: `__${code}Text`,
+              type: 'TEXT[]',
+            },
+          ];
+        }),
       ];
 
       const sortFn = (a: { name: string }, b: { name: string }): number => a.name.localeCompare(b.name);
