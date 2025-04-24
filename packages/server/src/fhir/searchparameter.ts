@@ -27,7 +27,11 @@ export interface LookupTableSearchParameterImplementation extends SearchParamete
 
 export interface TokenColumnSearchParameterImplementation extends SearchParameterDetails {
   readonly searchStrategy: typeof SearchStrategies.TOKEN_COLUMN;
-  readonly columnName: string;
+  readonly legacyColumnName: string;
+  readonly legacyTextSearchColumnName: string;
+  readonly systemColumnName: string;
+  readonly valueColumnName: string;
+  readonly systemValueColumnName: string;
   readonly sortColumnName: string;
   readonly textSearchColumnName: string;
   readonly lookupTable: LookupTable;
@@ -146,9 +150,16 @@ function buildSearchParameterImplementation(
     writeable.searchStrategy = 'token-column';
     writeable.lookupTable = lookupTable;
 
-    writeable.columnName = '__tokens';
-    writeable.sortColumnName = '__' + convertCodeToColumnName(code) + 'Sort';
-    writeable.textSearchColumnName = '__tokensText';
+    const baseName = convertCodeToColumnName(code);
+    writeable.systemColumnName = '__' + baseName + 'System';
+    writeable.valueColumnName = '__' + baseName + 'Value';
+    writeable.systemValueColumnName = '__' + baseName + 'SystemValue';
+    writeable.sortColumnName = '__' + baseName + 'Sort';
+    writeable.textSearchColumnName = '__' + baseName + 'Text';
+
+    writeable.legacyColumnName = '__tokens';
+    writeable.legacyTextSearchColumnName = '__tokensText';
+
     writeable.caseInsensitive = tokenTable.isCaseInsensitive(searchParam, resourceType);
     writeable.textSearch = ContainsSupportSearchParameterIds.includes(searchParam.id as string);
     return impl;
