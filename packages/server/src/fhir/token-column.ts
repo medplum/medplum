@@ -175,17 +175,21 @@ export function buildTokenColumnsSearchFilter(
     }
     case FhirOperator.MISSING:
     case FhirOperator.PRESENT: {
-      // TODO{mattlong} figure this out
-      const cond = new TypedCondition(
-        new Column(tableName, impl.systemValueColumnName),
-        'ARRAY_CONTAINS',
-        filter.code,
-        'TEXT[]'
-      );
-      if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
-        return new Negation(cond);
+      if (shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+        return new TypedCondition(
+          new Column(tableName, impl.systemValueColumnName),
+          'ARRAY_NOT_EMPTY',
+          undefined,
+          'TEXT[]'
+        );
+      } else {
+        return new TypedCondition(
+          new Column(tableName, impl.systemValueColumnName),
+          'ARRAY_EMPTY',
+          undefined,
+          'TEXT[]'
+        );
       }
-      return cond;
     }
     case FhirOperator.IN:
     case FhirOperator.NOT_IN:
@@ -257,7 +261,7 @@ function buildTokenColumnsWhereCondition(
       // this regex looks for an entry from the format described above:
       // `ARRAY_DELIM + <code> + DELIM + DELIM` followed by any number of characters that are not `ARRAY_DELIM`
       // and then the query string
-      const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
+      const regexStr = ARRAY_DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       const textSearchCol = new Column(tableName, impl.textSearchColumnName);
       const regexCond = new TypedCondition(textSearchCol, 'TOKEN_ARRAY_IREGEX', regexStr, 'TEXT[]');
 
