@@ -35,7 +35,7 @@ Move into the `medplum-photon-integration` directory
 cd examples/medplum-photon-integration
 ```
 
-If you want to change any environent variables from the defaults, copy the `.env.defaults` file to `.env`
+If you want to change any environment variables from the defaults, copy the `.env.defaults` file to `.env`
 
 ```bash
 cp .env.defaults .env

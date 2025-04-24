@@ -38,7 +38,7 @@ Move into the `medplum-chat-demo` directory.
 cd examples/medplum-chat-demo
 ```
 
-If you want to change any environent variables from the defaults, copy the `.env.defaults` file to `.env`
+If you want to change any environment variables from the defaults, copy the `.env.defaults` file to `.env`
 
 ```bash
 cp .env.defaults .env
