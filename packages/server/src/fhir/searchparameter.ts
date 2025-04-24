@@ -151,9 +151,9 @@ function buildSearchParameterImplementation(
     writeable.lookupTable = lookupTable;
 
     const baseName = convertCodeToColumnName(code);
-    writeable.systemColumnName = '__' + baseName + 'System';
-    writeable.valueColumnName = '__' + baseName + 'Value';
-    writeable.systemValueColumnName = '__' + baseName + 'SystemValue';
+    writeable.systemColumnName = '__' + baseName + 'Sys';
+    writeable.valueColumnName = '__' + baseName + 'Code';
+    writeable.systemValueColumnName = '__' + baseName + 'SysCode';
     writeable.sortColumnName = '__' + baseName + 'Sort';
     writeable.textSearchColumnName = '__' + baseName + 'Text';
 
