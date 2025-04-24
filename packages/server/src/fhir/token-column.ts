@@ -145,7 +145,8 @@ export function buildTokenColumnsSearchFilter(
   resourceType: ResourceType,
   tableName: string,
   param: SearchParameter,
-  filter: Filter
+  filter: Filter,
+  strategy: 'unified-tokens-column' | 'column-per-code'
 ): Expression {
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy !== 'token-column') {
@@ -164,7 +165,13 @@ export function buildTokenColumnsSearchFilter(
       // https://www.hl7.org/fhir/r4/search.html#combining
       const expressions: Expression[] = [];
       for (const searchValue of splitSearchOnComma(filter.value)) {
-        expressions.push(buildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue));
+        if (strategy === 'unified-tokens-column') {
+          expressions.push(
+            buildTokenColumnsWhereConditionOneColumn(impl, tableName, filter.code, filter.operator, searchValue)
+          );
+        } else {
+          expressions.push(buildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue));
+        }
       }
 
       const expression = new Disjunction(expressions);
@@ -175,6 +182,19 @@ export function buildTokenColumnsSearchFilter(
     }
     case FhirOperator.MISSING:
     case FhirOperator.PRESENT: {
+      if (strategy === 'unified-tokens-column') {
+        const cond = new TypedCondition(
+          new Column(tableName, impl.legacyColumnName),
+          'ARRAY_CONTAINS',
+          filter.code,
+          'TEXT[]'
+        );
+        if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+          return new Negation(cond);
+        }
+        return cond;
+      }
+
       if (shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
         return new TypedCondition(
           new Column(tableName, impl.systemValueColumnName),

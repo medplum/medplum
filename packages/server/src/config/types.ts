@@ -80,7 +80,7 @@ export interface MedplumServerConfig {
   maxBotLogLengthForLogs?: number;
 
   /** Search strategy system repositories use when using token search parameters. */
-  systemRepositoryTokenReadStrategy?: 'unified-tokens-column' | 'token-tables';
+  systemRepositoryTokenReadStrategy?: 'unified-tokens-column' | 'column-per-code' | 'token-tables';
 
   /** Number of attempts for transactions that fail due to retry-able transaction errors */
   transactionAttempts?: number;
