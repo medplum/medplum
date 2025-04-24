@@ -541,9 +541,14 @@ function getSearchParameterColumns(
         throw new Error('Expected SearchParameterDetails.type to be TEXT but got ' + impl.type);
       }
       const columns = [
-        { name: impl.columnName, type: 'TEXT[]' },
+        { name: impl.systemColumnName, type: 'TEXT[]' },
+        { name: impl.valueColumnName, type: 'TEXT[]' },
+        { name: impl.systemValueColumnName, type: 'TEXT[]' },
         { name: impl.textSearchColumnName, type: 'TEXT[]' },
         { name: impl.sortColumnName, type: 'TEXT' },
+
+        { name: impl.legacyColumnName, type: 'TEXT[]' },
+        { name: impl.legacyTextSearchColumnName, type: 'TEXT[]' },
       ];
 
       if (legacyColumnImpl) {
@@ -565,12 +570,24 @@ function getSearchParameterIndexes(
   switch (impl.searchStrategy) {
     case 'token-column': {
       const columns: IndexDefinition[] = [
-        { columns: [impl.columnName], indexType: 'gin' },
+        { columns: [impl.systemColumnName], indexType: 'gin' },
+        { columns: [impl.valueColumnName], indexType: 'gin' },
+        { columns: [impl.systemValueColumnName], indexType: 'gin' },
         {
           columns: [
             {
               expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.textSearchColumnName)}) gin_trgm_ops`,
-              name: impl.columnName + 'Trgm',
+              name: impl.textSearchColumnName + 'Trgm',
+            },
+          ],
+          indexType: 'gin',
+        },
+        { columns: [impl.legacyColumnName], indexType: 'gin' },
+        {
+          columns: [
+            {
+              expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.legacyTextSearchColumnName)}) gin_trgm_ops`,
+              name: impl.legacyColumnName + 'Trgm',
             },
           ],
           indexType: 'gin',
