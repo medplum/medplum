@@ -10,7 +10,7 @@ import {
 } from '@medplum/core';
 import { CodeableConcept, Coding, ContactPoint, Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
 
-export const TokenColumnsFeature = {
+export const TokenColumnsFeature: { write: boolean; read: false | 'unified-tokens-column' | 'column-per-code' } = {
   write: true,
   read: false,
 };

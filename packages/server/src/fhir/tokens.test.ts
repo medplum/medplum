@@ -24,13 +24,13 @@ import {
   TokenColumnsFeature,
 } from './tokens';
 
-describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'])(
+describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tokens-column', 'column-per-code', false])(
   'Token searching using %s',
   (tokenColumnsOrLookupTable) => {
     const systemRepo = getSystemRepo();
 
     beforeAll(async () => {
-      TokenColumnsFeature.read = tokenColumnsOrLookupTable === 'token columns';
+      TokenColumnsFeature.read = tokenColumnsOrLookupTable;
       const config = await loadTestConfig();
       await initAppServices(config);
     });
@@ -996,7 +996,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             sortRules: [{ code: 'identifier', descending: true }],
           });
 
-          if (tokenColumnsOrLookupTable === 'token columns') {
+          if (tokenColumnsOrLookupTable) {
             // Ideally ASC and DESC would have the same sort order since
             // ascending should use "AAA" and descending should use "ZZZ",
             // but a simpler sort implementation is used
@@ -1302,8 +1302,8 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
               ],
             });
             if (
-              (tokenColumnsOrLookupTable === 'token columns' && shouldBeFoundForTokenColumns) ||
-              (tokenColumnsOrLookupTable === 'lookup table' && shouldBeFoundForLookupTables)
+              (tokenColumnsOrLookupTable && shouldBeFoundForTokenColumns) ||
+              (tokenColumnsOrLookupTable === false && shouldBeFoundForLookupTables)
             ) {
               expect(res.entry?.length).toBe(1);
               expect(res.entry?.[0].resource?.id).toBe(condWithSpecialChars.id);
@@ -1371,7 +1371,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             },
           ],
         });
-        if (tokenColumnsOrLookupTable === 'token columns') {
+        if (tokenColumnsOrLookupTable) {
           expect(searchResult.entry?.length).toStrictEqual(2);
           expect(searchResult.entry?.map((e) => e.resource?.id)).toContain(mr1.id);
           expect(searchResult.entry?.map((e) => e.resource?.id)).toContain(mr2.id);
@@ -1406,7 +1406,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             },
           ],
         });
-        if (tokenColumnsOrLookupTable === 'token columns') {
+        if (tokenColumnsOrLookupTable) {
           expect(searchResult.entry?.length).toStrictEqual(1);
           expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(mr1.id);
         } else {
