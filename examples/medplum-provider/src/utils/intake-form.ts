@@ -30,7 +30,6 @@ export async function onboardPatient(
   questionnaire: Questionnaire,
   response: QuestionnaireResponse
 ): Promise<Patient> {
-
   const answers = getQuestionnaireAnswers(response);
 
   let patient: Patient = {
