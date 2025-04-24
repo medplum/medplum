@@ -17,5 +17,8 @@
   },
   "v6": {
     "serverVersion": "4.1.1"
+  },
+  "v7": {
+    "serverVersion": "4.1.2"
   }
 }
