@@ -10,11 +10,6 @@ import {
 } from '@medplum/core';
 import { CodeableConcept, Coding, ContactPoint, Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
 
-export const TokenColumnsFeature = {
-  write: true,
-  read: false,
-};
-
 export interface Token {
   readonly code: string;
   readonly system: string | undefined;
@@ -256,81 +251,4 @@ export function shouldTokenExistForMissingOrPresent(
     }
   }
   return true;
-}
-
-/**
- * The following search parameters are affected by a change in FHIRpath's toString() method.
- * Each entry is in the format "<resourceType>|<SearchParameter.code>". SearchParameter.id is
- * not precise enough. E.g. `MedicationRequest|code` is included, but `Observation|code` is not
- * and both of those share the SearchParameter.id `clinical-code`.
- *
- * Background:
- *
- * PR #6266 fixed parentheses in infix operators' toString() methods. This revealed that
- * Atom.toString() is used in getSearchParameterDetails() when finding ElementDefinitions,
- * causing repo.ts to use different search strategies.
- *
- * These parameters previously used the "column" strategy but should use the "lookup-table" strategy.
- * To maintain backward compatibility during migration:
- * 1. We've added special case handling for these parameters (current state)
- * 2. We'll implement double-writing to both strategies (see GitHub issue https://github.com/medplum/medplum/issues/6271)
- * 3. We'll complete the transition during the token-table cleanup project
- *
- * Critical parameters to watch:
- * - MedicationRequest-code
- * - Observation-value-concept
- *
- * Most others are rarely-used "usageContext" parameters.
- *
- * DO NOT MODIFY THIS LIST without coordinating with the team responsible for search parameter
- * implementation. Any changes may require database reindexing.
- *
- * See follow-up issue: https://github.com/medplum/medplum/issues/6271
- */
-const legacyTokenColumnSearchParamResourceTypeAndCodes = new Set([
-  'ActivityDefinition|context',
-  'CapabilityStatement|context',
-  'ChargeItemDefinition|context',
-  'CodeSystem|context',
-  'CompartmentDefinition|context',
-  'Composition|related-id',
-  'ConceptMap|context',
-  'DeviceRequest|code',
-  'EffectEvidenceSynthesis|context',
-  'EventDefinition|context',
-  'Evidence|context',
-  'EvidenceVariable|context',
-  'ExampleScenario|context',
-  'GraphDefinition|context',
-  'Group|value',
-  'ImplementationGuide|context',
-  'Library|context',
-  'Measure|context',
-  'Medication|ingredient-code',
-  'MedicationAdministration|code',
-  'MedicationDispense|code',
-  'MedicationKnowledge|ingredient-code',
-  'MedicationRequest|code',
-  'MedicationStatement|code',
-  'MessageDefinition|context',
-  'NamingSystem|context',
-  'Observation|combo-value-concept',
-  'Observation|component-value-concept',
-  'Observation|value-concept',
-  'OperationDefinition|context',
-  'PlanDefinition|context',
-  'Questionnaire|context',
-  'ResearchDefinition|context',
-  'ResearchElementDefinition|context',
-  'RiskEvidenceSynthesis|context',
-  'SearchParameter|context',
-  'StructureDefinition|context',
-  'StructureMap|context',
-  'TerminologyCapabilities|context',
-  'TestScript|context',
-  'ValueSet|context',
-]);
-
-export function isLegacyTokenColumnSearchParameter(searchParam: SearchParameter, resourceType: string): boolean {
-  return legacyTokenColumnSearchParamResourceTypeAndCodes.has(`${resourceType}|${searchParam.code}`);
 }
