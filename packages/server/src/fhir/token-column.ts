@@ -181,17 +181,21 @@ export function buildTokenColumnsSearchFilter(
     }
     case FhirOperator.MISSING:
     case FhirOperator.PRESENT: {
-      // TODO{mattlong} figure this out
-      const cond = new TypedCondition(
-        new Column(tableName, impl.systemValueColumnName),
-        'ARRAY_CONTAINS',
-        filter.code,
-        'TEXT[]'
-      );
-      if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
-        return new Negation(cond);
+      if (shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+        return new TypedCondition(
+          new Column(tableName, impl.systemValueColumnName),
+          'ARRAY_NOT_EMPTY',
+          undefined,
+          'TEXT[]'
+        );
+      } else {
+        return new TypedCondition(
+          new Column(tableName, impl.systemValueColumnName),
+          'ARRAY_EMPTY',
+          undefined,
+          'TEXT[]'
+        );
       }
-      return cond;
     }
     case FhirOperator.STARTS_WITH:
     case FhirOperator.GREATER_THAN:
@@ -268,7 +272,7 @@ function buildTokenColumnsWhereCondition(
       // this regex looks for an entry from the format described above:
       // `ARRAY_DELIM + <code> + DELIM + DELIM` followed by any number of characters that are not `ARRAY_DELIM`
       // and then the query string
-      const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
+      const regexStr = ARRAY_DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       const textSearchCol = new Column(tableName, impl.textSearchColumnName);
       const regexCond = new TypedCondition(textSearchCol, 'TOKEN_ARRAY_IREGEX', regexStr, 'TEXT[]');
 
@@ -325,18 +329,25 @@ function buildInValueSetCondition(
   tableName: string,
   query: string
 ): Expression {
-  const valueSetQ = new SelectQuery('ValueSet').raw('unnest(reference) as reference').where('url', '=', query).limit(1);
   // ValueSet.reference serves as the system of the token
-  const withCodeQ = new SelectQuery('withCode', valueSetQ).raw(`e'${code + DELIM}' || reference as code_and_url`);
-  const aggregatedQ = new SelectQuery('aggregated', withCodeQ).raw('array_agg(code_and_url) as code_and_urls');
-  const cond = new TypedCondition(
+  // const valueSetQ = new SelectQuery('ValueSet').raw('unnest(reference) as reference').where('url', '=', query).limit(1);
+  // const withCodeQ = new SelectQuery('withCode', valueSetQ).raw(`e'${code + DELIM}' || reference as code_and_url`);
+  // const aggregatedQ = new SelectQuery('aggregated', withCodeQ).raw('array_agg(code_and_url) as code_and_urls');
+  // const valueSetQ = new SelectQuery('ValueSet').raw('unnest(reference) as reference').where('url', '=', query).limit(1);
+  // const cond = new TypedCondition(
+  //   new Column(tableName, impl.systemColumnName),
+  //   'ARRAY_CONTAINS_SUBQUERY',
+  //   aggregatedQ,
+  //   'TEXT[]'
+  // );
+  // return cond;
+
+  return new TypedCondition(
     new Column(tableName, impl.systemColumnName),
     'ARRAY_CONTAINS_SUBQUERY',
-    aggregatedQ,
+    new SelectQuery('ValueSet').column('reference').where('url', '=', query).limit(1),
     'TEXT[]'
   );
-
-  return cond;
 }
 
 export function escapeRegexString(str: string): string {
