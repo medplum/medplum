@@ -13,6 +13,8 @@ export function asyncWrap(callback: (req: Request, res: Response, next: NextFunc
   const fn = function (req: Request, res: Response, next: NextFunction): void {
     callback(req, res, next).catch(next);
   };
+  // Preserve the function name for the Express middleware by overwriting the "read-only" name property
+  // This name is reported in traces for observability
   Object.defineProperty(fn, 'name', { writable: false, value: callback.name });
   return fn;
 }

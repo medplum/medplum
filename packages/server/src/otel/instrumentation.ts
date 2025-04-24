@@ -74,6 +74,9 @@ export function initOpenTelemetry(): void {
     new IORedisInstrumentation(),
 
     new ExpressInstrumentation({
+      // In order to reduce the number of spans in traces sent to the backend, we omit
+      // some common middleware that don't contribute interesting information to the
+      // request timeline.  These generally take ~zero time to run and don't fail specifically
       ignoreLayers: [
         'expressInit',
         'query',
