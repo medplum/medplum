@@ -1,0 +1,14 @@
+version: 3
+projects:
+  - name: demo
+    dir: .infra/terraform
+    workflow: demo
+
+workflows:
+  demo:
+    plan:
+      steps:
+        - init:
+            extra_args: [-backend-config=env/demo.backend.tfvars, -reconfigure]
+        - plan:
+            extra_args: [-var-file=env/demo.tfvars]
