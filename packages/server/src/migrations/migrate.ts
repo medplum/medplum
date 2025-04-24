@@ -1047,7 +1047,7 @@ function writeDropIndex(b: FileBuilder, indexName: string): void {
 }
 
 function getIndexName(tableName: string, index: IndexDefinition): string {
-  let indexName = applyAbbreviations(tableName, TableAbbrieviations) + '_';
+  let indexName = applyAbbreviations(tableName, TableNameAbbreviations) + '_';
   indexName += index.columns
     .map((c) => (typeof c === 'string' ? c : c.name))
     .map((c) => applyAbbreviations(c, ColumnNameAbbreviations))
@@ -1160,16 +1160,24 @@ export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition)
   return deepEquals(a, b);
 }
 
-const TableAbbrieviations: Record<string, string | undefined> = {
+const TableNameAbbreviations: Record<string, string | undefined> = {
+  BiologicallyDerivedProduct: 'BDP',
+  CoverageEligibilityRequest: 'CEReq',
+  CoverageEligibilityResponse: 'CEResp',
+  FamilyMemberHistory: 'FMH',
   MedicinalProductAuthorization: 'MPA',
   MedicinalProductContraindication: 'MPC',
+  MedicinalProductInteraction: 'MPI',
+  MedicinalProductManufactured: 'MPM',
   MedicinalProductPharmaceutical: 'MPP',
   MedicinalProductUndesirableEffect: 'MPUE',
+  SubstanceReferenceInformation: 'SRI',
 };
 
 const ColumnNameAbbreviations: Record<string, string | undefined> = {
   participatingOrganization: 'partOrg',
   primaryOrganization: 'primOrg',
+  immunizationEvent: 'immEvent',
 };
 
 function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
