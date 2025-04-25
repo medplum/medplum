@@ -78,8 +78,8 @@ export class FhirRateLimiter {
     }
   }
 
-  async recordRead(num?: number): Promise<void> {
-    return this.consume(Math.min(num ?? 1, 1));
+  async recordRead(num = 1): Promise<void> {
+    return this.consume(Math.max(num, 1));
   }
 
   async recordHistory(): Promise<void> {
@@ -99,6 +99,6 @@ export class FhirRateLimiter {
   }
 
   private getKey(authState: AuthState): string {
-    return 'fhir:' + authState.membership.id;
+    return authState.membership.id;
   }
 }
