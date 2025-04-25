@@ -100,7 +100,7 @@ describe('Main', () => {
     expect(process.exit).not.toHaveBeenCalled();
   });
 
-  test('Agent should retry connect when network is down', async () => {
+  test('Agent should retry client login when network is down', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(async () => {
       throw new Error('Fetch failed');
     });
@@ -109,7 +109,7 @@ describe('Main', () => {
     const appPromise = agentMain(['node', 'index.js', 'http://example.com', 'clientId', 'clientSecret', 'agentId']);
 
     while (fetchSpy.mock.calls.length !== 3) {
-      await sleep(50);
+      await sleep(100);
     }
 
     // fetchWithRetry tries to fetch 3 times per attempt before throwing
@@ -169,57 +169,5 @@ describe('Main', () => {
 
     consoleErrorSpy.mockRestore();
     fetchSpy.mockRestore();
-  });
-
-  test('Agent should not crash when App.start throws', async () => {
-    let shouldThrow = true;
-    const mockedAppStart = jest.spyOn(App.prototype, 'start').mockImplementation(async () => {
-      if (shouldThrow) {
-        throw new Error('Failed to start!');
-      }
-    });
-    const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(jest.fn());
-
-    const appPromise = agentMain(['node', 'index.js', 'http://example.com', 'clientId', 'clientSecret', 'agentId']);
-
-    while (!mockedAppStart.mock.calls.length) {
-      await sleep(100);
-    }
-
-    expect(mockedAppStart).toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Failed to start agent app',
-      expect.objectContaining({ err: expect.any(String) })
-    );
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Retrying startup'));
-    mockedAppStart.mockClear();
-    consoleErrorSpy.mockClear();
-    (console.log as jest.Mock).mockClear();
-
-    while (!mockedAppStart.mock.calls.length) {
-      await sleep(100);
-    }
-
-    // Let it try and fail again
-    expect(mockedAppStart).toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Failed to start agent app',
-      expect.objectContaining({ err: expect.any(String) })
-    );
-    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Retrying startup'));
-    mockedAppStart.mockClear();
-    consoleErrorSpy.mockClear();
-    (console.log as jest.Mock).mockClear();
-
-    // Finally stop throwing
-    shouldThrow = false;
-
-    // Await so we get any errors here
-    await appPromise;
-
-    expect(consoleErrorSpy).not.toHaveBeenCalled();
-    expect(console.log).not.toHaveBeenCalledWith('Retrying startup');
-
-    consoleErrorSpy.mockRestore();
   });
 });

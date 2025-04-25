@@ -61,18 +61,7 @@ export async function agentMain(argv: string[]): Promise<App> {
   }
 
   const app = new App(medplum, agentId, parseLogLevel(args.logLevel ?? 'INFO'));
-
-  let started = false;
-  while (!started) {
-    try {
-      await app.start();
-      started = true;
-    } catch (err) {
-      console.error('Failed to start agent app', { err: normalizeErrorString(err) });
-      console.log('Retrying startup in 10 seconds...');
-      await sleep(RETRY_WAIT_DURATION_MS);
-    }
-  }
+  await app.start();
 
   process.on('SIGINT', async () => {
     console.log('Gracefully shutting down from SIGINT (Ctrl-C)');
