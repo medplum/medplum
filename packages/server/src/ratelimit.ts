@@ -34,6 +34,7 @@ export function getRateLimiter(config: MedplumServerConfig): RateLimitRequestHan
       message: tooManyRequests,
       skip: (_req) => config.defaultRateLimit === -1,
     });
+    Object.defineProperty(handler, 'name', { writable: false, value: 'rateLimit' }); // Name middleware for stack trace
   }
   return handler;
 }
