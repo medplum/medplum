@@ -1348,9 +1348,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
    * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
    * 3. 04/09/25 - Added columns for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
+   * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
    *
    */
-  static readonly VERSION: number = 3;
+  static readonly VERSION: number = 4;
 
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
