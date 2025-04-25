@@ -22,6 +22,7 @@ import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
+import { globalLogger, systemLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
 import {
   addReindexJob,
@@ -33,7 +34,6 @@ import {
   ReindexJobData,
 } from './reindex';
 import { queueRegistry } from './utils';
-import { globalLogger, systemLogger } from '../logger';
 
 describe('Reindex Worker', () => {
   let repo: Repository;
