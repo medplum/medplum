@@ -6,7 +6,7 @@ import { loadTestConfig } from '../../config/loader';
 import { withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { PoolClient } from 'pg';
-import { AddressTable } from './address';
+import { AddressTable, AddressTableRow } from './address';
 
 describe('Address Lookup Table', () => {
   const systemRepo = getSystemRepo();
@@ -330,6 +330,75 @@ describe('Address Lookup Table', () => {
         postalCode: 'Postal 1',
         state: 'State 1',
         use: 'work',
+      },
+    ]);
+  });
+
+  test('extractValues multiple patients with identical address', () => {
+    const table = new AddressTable();
+
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      address: [
+        {
+          line: ['500 Jefferson Street'],
+          city: 'San Francisco',
+          state: 'CA',
+          postalCode: '94109',
+        },
+        {
+          line: ['500 Jefferson Street'],
+          city: 'San Francisco',
+          state: 'CA',
+          postalCode: '94109',
+        },
+      ],
+    };
+
+    const r2: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '2',
+      name: [{ given: ['Bob'], family: 'Smith' }],
+      address: [
+        {
+          line: ['500 Jefferson Street'],
+          city: 'San Francisco',
+          state: 'CA',
+          postalCode: '94109',
+        },
+        {
+          line: ['500 Jefferson Street'],
+          city: 'San Francisco',
+          state: 'CA',
+          postalCode: '94109',
+        },
+      ] as unknown as Address[],
+    };
+
+    const result: AddressTableRow[] = [];
+    table.extractValues(result, r1);
+    table.extractValues(result, r2);
+
+    expect(result).toStrictEqual([
+      {
+        resourceId: '1',
+        address: '500 Jefferson Street, San Francisco, CA, 94109',
+        city: 'San Francisco',
+        country: undefined,
+        postalCode: '94109',
+        state: 'CA',
+        use: undefined,
+      },
+      {
+        resourceId: '2',
+        address: '500 Jefferson Street, San Francisco, CA, 94109',
+        city: 'San Francisco',
+        country: undefined,
+        postalCode: '94109',
+        state: 'CA',
+        use: undefined,
       },
     ]);
   });

@@ -18,7 +18,7 @@ const resourceTypeSet = new Set(resourceTypes);
 type HumanNameResourceType = (typeof resourceTypes)[number];
 type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
 
-interface HumanNameTableRow extends LookupTableRow {
+export interface HumanNameTableRow extends LookupTableRow {
   name: string | undefined;
   given: string | undefined;
   family: string | undefined;
