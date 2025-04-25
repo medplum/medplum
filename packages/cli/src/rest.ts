@@ -32,11 +32,15 @@ patch.arguments('<url> <body>').action(async (url, body, options) => {
   prettyPrint(await medplum.patch(cleanUrl(medplum, url), parseBody(body)));
 });
 
-post.arguments('<url> <body>').action(async (url, body, options) => {
-  const medplum = await createMedplumClient(options);
+post
+  .arguments('<url> <body>')
+  .option('--prefer-async', 'Sets the Prefer header to "respond-async"')
+  .action(async (url, body, options) => {
+    const medplum = await createMedplumClient(options);
 
-  prettyPrint(await medplum.post(cleanUrl(medplum, url), parseBody(body)));
-});
+    const headers = options.preferAsync ? { Prefer: 'respond-async' } : undefined;
+    prettyPrint(await medplum.post(cleanUrl(medplum, url), parseBody(body), undefined, { headers }));
+  });
 
 put.arguments('<url> <body>').action(async (url, body, options) => {
   const medplum = await createMedplumClient(options);

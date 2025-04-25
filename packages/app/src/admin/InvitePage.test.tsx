@@ -173,6 +173,36 @@ describe('InvitePage', () => {
     expect(screen.getByTestId('success')).toBeInTheDocument();
   });
 
+  test('Invite project scoped user', async () => {
+    await setup('/admin/invite');
+    expect(await screen.findByText('Invite')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Role'), {
+        target: { value: 'Practitioner' },
+      });
+      fireEvent.change(screen.getByLabelText('First Name *'), {
+        target: { value: 'Patty' },
+      });
+      fireEvent.change(screen.getByLabelText('Last Name *'), {
+        target: { value: 'Practitioner' },
+      });
+      fireEvent.change(screen.getByLabelText('Email *'), {
+        target: { value: 'pattypractitioner@example.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Project scoped'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Invite'));
+    });
+
+    expect(screen.getByTestId('success')).toBeInTheDocument();
+  });
+
   test('Do not send email', async () => {
     await setup('/admin/invite');
     expect(await screen.findByText('Invite')).toBeInTheDocument();

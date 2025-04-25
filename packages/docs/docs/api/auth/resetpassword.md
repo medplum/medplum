@@ -22,7 +22,7 @@ Please note that you may need to specify _projectId_ if your User is project sco
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | email | string | Yes | User's email address (3-72 characters) |
-| projectId | string | No | Project ID for project-scoped users. See [project scoped users](/docs/auth/user-management-guide#project-scoped-users) Omit for system-level users |
+| projectId | string | No | Project ID for project-scoped users. See [project scoped users](/docs/auth/project-vs-server-scoped-users#project-scoped-users) Omit for system-level users |
 | sendEmail | boolean | No | Whether to send Medplum labeled reset email (defaults to true) |
 | redirectUri | string | No | URI to redirect after password reset |
 | recaptchaSiteKey | string | No | reCAPTCHA site key for verification |

@@ -99,6 +99,24 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
+  function getDatabaseInvalidIndexes(): void {
+    medplum
+      .post('fhir/R4/$db-invalid-indexes')
+      .then((params: Parameters) => {
+        setModalTitle('Database Invalid Indexes');
+        setModalContent(
+          <pre>
+            {params.parameter
+              ?.filter((p) => p.name === 'invalidIndex')
+              .map((p) => p.valueString)
+              .join('\n')}
+          </pre>
+        );
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
   function getSchemaDiff(): void {
     medplum
       .post('fhir/R4/$db-schema-diff')
@@ -221,6 +239,14 @@ export function SuperAdminPage(): JSX.Element {
             <TextInput id="tableNames" name="tableNames" placeholder="Observation,Observation_History" />
           </FormSection>
           <Button type="submit">Get Database Stats</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Database Invalid Indexes</Title>
+      <p>Query invalid indexes from the database.</p>
+      <Form onSubmit={getDatabaseInvalidIndexes}>
+        <Stack>
+          <Button type="submit">Get Database Invalid Indexes</Button>
         </Stack>
       </Form>
       <Divider my="lg" />
