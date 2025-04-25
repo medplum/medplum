@@ -18,7 +18,7 @@ const resourceTypeSet = new Set(resourceTypes);
 type HumanNameResourceType = (typeof resourceTypes)[number];
 type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
 
-interface HumanNameTableRow extends LookupTableRow {
+export interface HumanNameTableRow extends LookupTableRow {
   name: string | undefined;
   given: string | undefined;
   family: string | undefined;
@@ -92,7 +92,13 @@ export class HumanNameTable extends LookupTable {
 
       if (
         (extracted.name || extracted.given || extracted.family) &&
-        !result.some((n) => n.name === extracted.name && n.given === extracted.given && n.family === extracted.family)
+        !result.some(
+          (n) =>
+            n.resourceId === extracted.resourceId &&
+            n.name === extracted.name &&
+            n.given === extracted.given &&
+            n.family === extracted.family
+        )
       ) {
         result.push(extracted);
       }

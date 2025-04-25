@@ -22,7 +22,7 @@ import {
 import { LookupTable, LookupTableRow } from './lookuptable';
 import { getStandardAndDerivedSearchParameters } from './util';
 
-interface TokenTableRow extends LookupTableRow {
+export interface TokenTableRow extends LookupTableRow {
   code: string;
   system: string | undefined;
   value: string | undefined;
