@@ -92,7 +92,13 @@ export class HumanNameTable extends LookupTable {
 
       if (
         (extracted.name || extracted.given || extracted.family) &&
-        !result.some((n) => n.name === extracted.name && n.given === extracted.given && n.family === extracted.family)
+        !result.some(
+          (n) =>
+            n.resourceId === extracted.resourceId &&
+            n.name === extracted.name &&
+            n.given === extracted.given &&
+            n.family === extracted.family
+        )
       ) {
         result.push(extracted);
       }

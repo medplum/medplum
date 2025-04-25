@@ -128,6 +128,7 @@ export class AddressTable extends LookupTable {
           extracted.use) &&
         !result.some(
           (a) =>
+            a.resourceId === extracted.resourceId &&
             a.address === extracted.address &&
             a.city === extracted.city &&
             a.country === extracted.country &&
