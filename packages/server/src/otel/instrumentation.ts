@@ -1,6 +1,6 @@
 import { BullMQInstrumentation } from '@appsignal/opentelemetry-instrumentation-bullmq';
 import { MEDPLUM_VERSION } from '@medplum/core';
-import { diag, DiagConsoleLogger, DiagLogLevel, SpanStatusCode } from '@opentelemetry/api';
+import { diag, DiagConsoleLogger, DiagLogLevel, Span, SpanStatusCode } from '@opentelemetry/api';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { DataloaderInstrumentation } from '@opentelemetry/instrumentation-dataloader';
@@ -8,13 +8,14 @@ import { ExpressInstrumentation, ExpressLayerType } from '@opentelemetry/instrum
 import { GraphQLInstrumentation } from '@opentelemetry/instrumentation-graphql';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
-import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
+import { PgInstrumentation, PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
 import { Resource } from '@opentelemetry/resources';
 import { MetricReader, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { SpanExporter } from '@opentelemetry/sdk-trace-base';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
+import { ClientRequest, IncomingMessage, ServerResponse } from 'http';
 
 // This file includes OpenTelemetry instrumentation.
 // Note that this file is related but separate from the OpenTelemetry helpers in otel.ts.
@@ -56,20 +57,13 @@ export function initOpenTelemetry(): void {
   const instrumentations = [
     new RuntimeNodeInstrumentation(),
     new HttpInstrumentation({
-      applyCustomAttributesOnSpan(span, req, res) {
-        // All error traces are kept, but others may be sampled
-        const code = res.statusCode && res.statusCode < 500 ? SpanStatusCode.OK : SpanStatusCode.ERROR;
-        span.setStatus({ code });
-        span.setAttribute('http.method', req.method ?? 'unknown');
-      },
+      applyCustomAttributesOnSpan: httpResponseHook,
     }),
 
     new PgInstrumentation({
       enhancedDatabaseReporting: true,
       requireParentSpan: true,
-      responseHook(span, { data }) {
-        span.setAttribute('medplum.db.rowCount', data.rowCount);
-      },
+      responseHook: pgResponseHook,
     }),
     new IORedisInstrumentation(),
 
@@ -100,6 +94,21 @@ export function initOpenTelemetry(): void {
 
   sdk = new NodeSDK({ resource, instrumentations, metricReader, traceExporter });
   sdk.start();
+}
+
+export function httpResponseHook(
+  span: Span,
+  req: IncomingMessage | ClientRequest,
+  res: ServerResponse | IncomingMessage
+): void {
+  // All error traces are kept, but others may be sampled
+  const code = res.statusCode && res.statusCode < 500 ? SpanStatusCode.OK : SpanStatusCode.ERROR;
+  span.setStatus({ code });
+  span.setAttribute('http.method', req.method ?? 'unknown');
+}
+
+export function pgResponseHook(span: Span, { data }: PgResponseHookInformation): void {
+  span.setAttribute('medplum.db.rowCount', data.rowCount);
 }
 
 export async function shutdownOpenTelemetry(): Promise<void> {

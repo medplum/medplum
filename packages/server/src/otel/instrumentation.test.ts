@@ -1,9 +1,8 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { initOpenTelemetry, shutdownOpenTelemetry } from './instrumentation';
-import { initApp } from '../app';
-import { loadTestConfig } from '../config/loader';
-import express from 'express';
-import request from 'supertest';
+import { Span, SpanStatusCode } from '@opentelemetry/api';
+import { httpResponseHook, initOpenTelemetry, pgResponseHook, shutdownOpenTelemetry } from './instrumentation';
+import { IncomingMessage, ServerResponse } from 'http';
+import { PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
 
 describe('Instrumentation', () => {
   const OLD_ENV = process.env;
@@ -47,18 +46,29 @@ describe('Instrumentation', () => {
     expect(sdkSpy).toHaveBeenCalled();
   });
 
-  test('Both metrics and traces', async () => {
-    process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
-    process.env.OTLP_TRACE_ENDPOINT = 'http://localhost:4318/v1/traces';
-    initOpenTelemetry();
+  test('HTTP response hook', async () => {
+    const span = {
+      setAttribute: jest.fn(),
+      setStatus: jest.fn(),
+    } as unknown as Span;
 
-    const app = express();
-    const config = await loadTestConfig();
-    await initApp(app, config);
+    httpResponseHook(
+      span,
+      { method: 'PUT' } as unknown as IncomingMessage,
+      { statusCode: 500 } as unknown as ServerResponse
+    );
 
-    await request(app).get('/healthcheck').send();
+    expect(span.setAttribute).toHaveBeenCalledWith('http.method', 'PUT');
+    expect(span.setStatus).toHaveBeenCalledWith({ code: SpanStatusCode.ERROR });
+  });
 
-    await shutdownOpenTelemetry();
-    expect(sdkSpy).toHaveBeenCalled();
+  test('Postgres response hook', async () => {
+    const span = {
+      setAttribute: jest.fn(),
+    } as unknown as Span;
+
+    pgResponseHook(span, { data: { rowCount: 21 } } as unknown as PgResponseHookInformation);
+
+    expect(span.setAttribute).toHaveBeenCalledWith('medplum.db.rowCount', 21);
   });
 });
