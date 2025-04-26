@@ -26,9 +26,7 @@ export function buildTokenColumns(
   buildTokensForSearchParameter(allTokens, resource, searchParam);
 
   // search parameters may share columns, so add any existing tokens to the set
-  const systemTokens = new Set<string>(columns[impl.systemColumnName]);
-  const valueTokens = new Set<string>(columns[impl.valueColumnName]);
-  const systemValueTokens = new Set<string>(columns[impl.systemValueColumnName]);
+  const tokens = new Set<string>(columns[impl.tokenColumnName]);
   const textSearchTokens = new Set<string>(columns[impl.textSearchColumnName]);
 
   const legacyTokens = new Set<string>(columns[impl.legacyColumnName]);
@@ -59,12 +57,12 @@ export function buildTokenColumns(
     if (system) {
       // [parameter]=[system]|
       legacyTokens.add(code + DELIM + system);
-      systemTokens.add(system);
+      tokens.add(system);
 
       if (value) {
         // [parameter]=[system]|[code]
         legacyTokens.add(code + DELIM + system + DELIM + value);
-        systemValueTokens.add(system + DELIM + value);
+        tokens.add(system + DELIM + value);
       }
     }
 
@@ -73,12 +71,12 @@ export function buildTokenColumns(
 
       // [parameter]=[code]
       legacyTokens.add(code + DELIM + DELIM + value);
-      valueTokens.add(value);
+      tokens.add(DELIM + value);
 
       if (!system) {
         // [parameter]=|[code]
         legacyTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
-        systemValueTokens.add(NULL_SYSTEM + DELIM + value);
+        tokens.add(NULL_SYSTEM + DELIM + value);
       }
 
       // text search
@@ -89,9 +87,7 @@ export function buildTokenColumns(
     }
   }
 
-  columns[impl.systemColumnName] = Array.from(systemTokens);
-  columns[impl.valueColumnName] = Array.from(valueTokens);
-  columns[impl.systemValueColumnName] = Array.from(systemValueTokens);
+  columns[impl.tokenColumnName] = Array.from(tokens);
   columns[impl.textSearchColumnName] = Array.from(textSearchTokens);
   columns[impl.sortColumnName] = sortColumnValue;
   columns[impl.legacyColumnName] = Array.from(legacyTokens);
@@ -202,19 +198,9 @@ export function buildTokenColumnsSearchFilter(
       }
 
       if (shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
-        return new TypedCondition(
-          new Column(tableName, impl.systemValueColumnName),
-          'ARRAY_NOT_EMPTY',
-          undefined,
-          'TEXT[]'
-        );
+        return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_NOT_EMPTY', undefined, 'TEXT[]');
       } else {
-        return new TypedCondition(
-          new Column(tableName, impl.systemValueColumnName),
-          'ARRAY_EMPTY',
-          undefined,
-          'TEXT[]'
-        );
+        return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_EMPTY', undefined, 'TEXT[]');
       }
     }
     case FhirOperator.STARTS_WITH:
@@ -299,7 +285,7 @@ function buildTokenColumnsWhereCondition(
       // For :text (but not :contains), also check that the token column contains `<code> + DELIM + 'text'`,
       // where 'text' is the system value specified for token values that should be text-searchable
       if (operator === FhirOperator.TEXT) {
-        const systemCol = new Column(tableName, impl.systemColumnName);
+        const systemCol = new Column(tableName, impl.tokenColumnName);
         return new Conjunction([regexCond, new TypedCondition(systemCol, 'ARRAY_CONTAINS', 'text', 'TEXT[]')]);
       }
 
@@ -321,19 +307,19 @@ function buildTokenColumnsWhereCondition(
         if (value) {
           value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
           return new TypedCondition(
-            new Column(tableName, impl.systemValueColumnName),
+            new Column(tableName, impl.tokenColumnName),
             'ARRAY_CONTAINS',
             system + DELIM + value,
             'TEXT[]'
           );
         } else {
-          return new TypedCondition(new Column(tableName, impl.systemColumnName), 'ARRAY_CONTAINS', system, 'TEXT[]');
+          return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_CONTAINS', system, 'TEXT[]');
         }
       } else {
         value = query;
-        columnName = impl.valueColumnName;
+        columnName = impl.tokenColumnName;
         value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
-        return new TypedCondition(new Column(tableName, columnName), 'ARRAY_CONTAINS', value, 'TEXT[]');
+        return new TypedCondition(new Column(tableName, columnName), 'ARRAY_CONTAINS', DELIM + value, 'TEXT[]');
       }
     }
     default: {
@@ -440,7 +426,7 @@ function buildInValueSetCondition(
   // ValueSet.reference serves as the system of the token
 
   return new TypedCondition(
-    new Column(tableName, impl.systemColumnName),
+    new Column(tableName, impl.tokenColumnName),
     'ARRAY_CONTAINS_SUBQUERY',
     new SelectQuery('ValueSet').column('reference').where('url', '=', query).limit(1),
     'TEXT[]'
