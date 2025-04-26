@@ -1,10 +1,7 @@
 import { Encounter, ChargeItem, Reference, ClaimItem } from '@medplum/fhirtypes';
 import { getReferenceString, MedplumClient } from '@medplum/core';
 
-export function getCptChargeItems(
-  chargeItems: ChargeItem[], 
-  encounter: Reference<Encounter>
-): ClaimItem[] {
+export function getCptChargeItems(chargeItems: ChargeItem[], encounter: Reference<Encounter>): ClaimItem[] {
   const cptChargeItems = chargeItems.filter((item) =>
     item.code?.coding?.some((coding) => coding.system === 'http://www.ama-assn.org/go/cpt')
   );

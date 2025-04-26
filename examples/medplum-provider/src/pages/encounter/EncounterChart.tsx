@@ -62,7 +62,7 @@ export const EncounterChart = (): JSX.Element => {
         }
         return acc;
       }, []);
-      
+
       setDiagnosis(mergedCoding.length > 0 ? { coding: mergedCoding } : undefined);
     }
   }, [claim]);
@@ -126,13 +126,10 @@ export const EncounterChart = (): JSX.Element => {
         setChargeItems(updatedChargeItems);
 
         // Filter charge items that have CPT codes
-        const cptChargeItems = updatedChargeItems.filter(
-          (item) => 
-            item.code?.coding?.some(
-              (coding) => coding.system === 'http://www.ama-assn.org/go/cpt'
-            )
+        const cptChargeItems = updatedChargeItems.filter((item) =>
+          item.code?.coding?.some((coding) => coding.system === 'http://www.ama-assn.org/go/cpt')
         );
-        
+
         if (claim?.id && cptChargeItems.length > 0 && encounter) {
           const updatedClaim: Claim = {
             ...claim,
@@ -276,22 +273,20 @@ export const EncounterChart = (): JSX.Element => {
 
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-
-        const diagnosisArray = value?.coding ? value.coding.map((coding, index) => ({
-          diagnosisCodeableConcept: {
-            coding: [coding]
-          },
-          sequence: index + 1,
-          type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }]
-        })) : undefined;
-
+        const diagnosisArray = value?.coding
+          ? value.coding.map((coding, index) => ({
+              diagnosisCodeableConcept: {
+                coding: [coding],
+              },
+              sequence: index + 1,
+              type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }],
+            }))
+          : undefined;
 
         console.log(diagnosisArray);
-        
-        const savedClaim = await medplum.updateResource({...claim, diagnosis: diagnosisArray});
-        setClaim(savedClaim as Claim);
 
-        
+        const savedClaim = await medplum.updateResource({ ...claim, diagnosis: diagnosisArray });
+        setClaim(savedClaim as Claim);
       } catch (err) {
         showErrorNotification(err);
       }
@@ -526,8 +521,6 @@ export const EncounterChart = (): JSX.Element => {
             />
           </Group>
 
-          
-
           {diagnosis && (
             <Stack gap={0}>
               <Text fw={600} size="lg" mb="md">
@@ -535,15 +528,15 @@ export const EncounterChart = (): JSX.Element => {
               </Text>
 
               <Card withBorder shadow="sm">
-                  <CodeableConceptInput 
-                    binding="http://hl7.org/fhir/ValueSet/icd-10"
-                    placeholder='Search to add a diagnosis'
-                    name="diagnosis"
-                    path="diagnosis"
-                    clearable
-                    defaultValue={diagnosis}
-                    onChange={handleDiagnosisChange}
-                  />
+                <CodeableConceptInput
+                  binding="http://hl7.org/fhir/ValueSet/icd-10"
+                  placeholder="Search to add a diagnosis"
+                  name="diagnosis"
+                  path="diagnosis"
+                  clearable
+                  defaultValue={diagnosis}
+                  onChange={handleDiagnosisChange}
+                />
               </Card>
             </Stack>
           )}
