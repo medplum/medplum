@@ -541,12 +541,9 @@ function getSearchParameterColumns(
         throw new Error('Expected SearchParameterDetails.type to be TEXT but got ' + impl.type);
       }
       const columns = [
-        { name: impl.systemColumnName, type: 'TEXT[]' },
-        { name: impl.valueColumnName, type: 'TEXT[]' },
-        { name: impl.systemValueColumnName, type: 'TEXT[]' },
+        { name: impl.tokenColumnName, type: 'TEXT[]' },
         { name: impl.textSearchColumnName, type: 'TEXT[]' },
         { name: impl.sortColumnName, type: 'TEXT' },
-
         { name: impl.legacyColumnName, type: 'TEXT[]' },
         { name: impl.legacyTextSearchColumnName, type: 'TEXT[]' },
       ];
@@ -570,9 +567,7 @@ function getSearchParameterIndexes(
   switch (impl.searchStrategy) {
     case 'token-column': {
       const columns: IndexDefinition[] = [
-        { columns: [impl.systemColumnName], indexType: 'gin' },
-        { columns: [impl.valueColumnName], indexType: 'gin' },
-        { columns: [impl.systemValueColumnName], indexType: 'gin' },
+        { columns: [impl.tokenColumnName], indexType: 'gin' },
         {
           columns: [
             {
