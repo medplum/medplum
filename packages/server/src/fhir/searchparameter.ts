@@ -29,9 +29,7 @@ export interface TokenColumnSearchParameterImplementation extends SearchParamete
   readonly searchStrategy: typeof SearchStrategies.TOKEN_COLUMN;
   readonly legacyColumnName: string;
   readonly legacyTextSearchColumnName: string;
-  readonly systemColumnName: string;
-  readonly valueColumnName: string;
-  readonly systemValueColumnName: string;
+  readonly tokenColumnName: string;
   readonly sortColumnName: string;
   readonly textSearchColumnName: string;
   readonly lookupTable: LookupTable;
@@ -151,9 +149,7 @@ function buildSearchParameterImplementation(
     writeable.lookupTable = lookupTable;
 
     const baseName = convertCodeToColumnName(code);
-    writeable.systemColumnName = '__' + baseName + 'Sys';
-    writeable.valueColumnName = '__' + baseName + 'Code';
-    writeable.systemValueColumnName = '__' + baseName + 'SysCode';
+    writeable.tokenColumnName = '__' + baseName;
     writeable.sortColumnName = '__' + baseName + 'Sort';
     writeable.textSearchColumnName = '__' + baseName + 'Text';
 
