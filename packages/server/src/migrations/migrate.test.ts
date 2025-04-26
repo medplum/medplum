@@ -160,15 +160,7 @@ describe('Generator', () => {
         ...tokenCodes.flatMap((code) => {
           return [
             {
-              name: `__${code}Sys`,
-              type: 'TEXT[]',
-            },
-            {
-              name: `__${code}Code`,
-              type: 'TEXT[]',
-            },
-            {
-              name: `__${code}SysCode`,
+              name: `__${code}`,
               type: 'TEXT[]',
             },
             {
