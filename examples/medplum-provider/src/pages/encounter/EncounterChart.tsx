@@ -64,6 +64,8 @@ export const EncounterChart = (): JSX.Element => {
       }, []);
       
       setDiagnosis(mergedCoding.length > 0 ? { coding: mergedCoding } : undefined);
+    } else {
+      setDiagnosis({ coding: [] });
     }
   }, [claim]);
 
@@ -264,7 +266,6 @@ export const EncounterChart = (): JSX.Element => {
 
   const handleDiagnosisChange = (value: CodeableConcept | undefined): void => {
     setDiagnosis(value);
-    console.log(value);
 
     if (!claim) {
       return;
@@ -285,9 +286,6 @@ export const EncounterChart = (): JSX.Element => {
           type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }]
         })) : undefined;
 
-
-        console.log(diagnosisArray);
-        
         const savedClaim = await medplum.updateResource({...claim, diagnosis: diagnosisArray});
         setClaim(savedClaim as Claim);
 
@@ -525,8 +523,6 @@ export const EncounterChart = (): JSX.Element => {
               onEncounterChange={handleEncounterChange}
             />
           </Group>
-
-          
 
           {diagnosis && (
             <Stack gap={0}>
