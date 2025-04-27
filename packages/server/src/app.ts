@@ -40,6 +40,7 @@ import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
+import { webhookRouter } from './webhook/routes';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
@@ -195,6 +196,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/storage/', storageRouter);
+  apiRouter.use('/webhook/', webhookRouter);
 
   app.use('/api/', apiRouter);
   app.use('/', apiRouter);
