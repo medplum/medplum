@@ -45,7 +45,7 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
   }
 
   const bot = await systemRepo.readReference<Bot>(runAs.profile as Reference<Bot>);
-  const defaultHeaders = req.headers as Record<string, string>;
+  const headers = req.headers as Record<string, string>;
 
   // Execute the bot
   // If the request is HTTP POST, then the body is the input
@@ -55,7 +55,7 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
     runAs,
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
-    defaultHeaders,
+    headers,
   });
 
   // Unlike normal Bot $execute operations, we don't want to return the result
