@@ -62,7 +62,7 @@ export const EncounterChart = (): JSX.Element => {
         }
         return acc;
       }, []);
-      
+
       setDiagnosis(mergedCoding.length > 0 ? { coding: mergedCoding } : undefined);
     } else {
       setDiagnosis({ coding: [] });
@@ -269,12 +269,9 @@ export const EncounterChart = (): JSX.Element => {
 
     saveTimeoutRef.current = setTimeout(async () => {
       try {
-
         const diagnosisArray = createDiagnosisArray(value);
-        const savedClaim = await medplum.updateResource({...claim, diagnosis: diagnosisArray});
+        const savedClaim = await medplum.updateResource({ ...claim, diagnosis: diagnosisArray });
         setClaim(savedClaim as Claim);
-
-        
       } catch (err) {
         showErrorNotification(err);
       }
@@ -328,13 +325,15 @@ export const EncounterChart = (): JSX.Element => {
   };
 
   const createDiagnosisArray = (value?: CodeableConcept): any[] | undefined => {
-    return value?.coding ? value.coding.map((coding, index) => ({
-      diagnosisCodeableConcept: {
-        coding: [coding]
-      },
-      sequence: index + 1,
-      type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }]
-    })) : undefined;
+    return value?.coding
+      ? value.coding.map((coding, index) => ({
+          diagnosisCodeableConcept: {
+            coding: [coding],
+          },
+          sequence: index + 1,
+          type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }],
+        }))
+      : undefined;
   };
 
   if (!patient || !encounter || !clinicalImpression) {
@@ -528,15 +527,15 @@ export const EncounterChart = (): JSX.Element => {
               </Text>
 
               <Card withBorder shadow="sm">
-                  <CodeableConceptInput 
-                    binding="http://hl7.org/fhir/ValueSet/icd-10"
-                    placeholder='Search to add a diagnosis'
-                    name="diagnosis"
-                    path="diagnosis"
-                    clearable
-                    defaultValue={diagnosis}
-                    onChange={handleDiagnosisChange}
-                  />
+                <CodeableConceptInput
+                  binding="http://hl7.org/fhir/ValueSet/icd-10"
+                  placeholder="Search to add a diagnosis"
+                  name="diagnosis"
+                  path="diagnosis"
+                  clearable
+                  defaultValue={diagnosis}
+                  onChange={handleDiagnosisChange}
+                />
               </Card>
             </Stack>
           )}
