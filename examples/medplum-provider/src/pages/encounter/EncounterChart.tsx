@@ -8,8 +8,11 @@ import {
   Organization,
   Practitioner,
   Claim,
+  CodeableConcept,
+  Coding,
+  ClaimDiagnosis,
 } from '@medplum/fhirtypes';
-import { Loading, useMedplum } from '@medplum/react';
+import { CodeableConceptInput, Loading, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router';
 import { IconCircleCheck, IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import { TaskPanel } from '../components/Task/TaskPanel';
@@ -25,7 +28,7 @@ import classes from './EncounterChart.module.css';
 import { getReferenceString } from '@medplum/core';
 import { createClaimFromEncounter } from '../../utils/claims';
 import { showNotification } from '@mantine/notifications';
-import { calculateTotalPrice, fetchAndApplyChargeItemDefinitions } from '../../utils/chargeitems';
+import { calculateTotalPrice, fetchAndApplyChargeItemDefinitions, getCptChargeItems } from '../../utils/chargeitems';
 import { createSelfPayCoverage } from '../../utils/coverage';
 
 export const EncounterChart = (): JSX.Element => {
@@ -36,6 +39,7 @@ export const EncounterChart = (): JSX.Element => {
   const [activeTab, setActiveTab] = useState<string>('notes');
   const [coverage, setCoverage] = useState<Coverage | undefined>();
   const [organization, setOrganization] = useState<Organization | undefined>();
+  const [diagnosis, setDiagnosis] = useState<CodeableConcept | undefined>();
   const {
     encounter,
     claim,
@@ -50,6 +54,21 @@ export const EncounterChart = (): JSX.Element => {
     setChargeItems,
   } = useEncounterChart(patientId, encounterId);
   const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
+
+  useEffect(() => {
+    if (claim?.diagnosis) {
+      const mergedCoding = claim.diagnosis.reduce<Coding[]>((acc, diag) => {
+        if (diag.diagnosisCodeableConcept?.coding) {
+          return [...acc, ...diag.diagnosisCodeableConcept.coding];
+        }
+        return acc;
+      }, []);
+
+      setDiagnosis(mergedCoding.length > 0 ? { coding: mergedCoding } : undefined);
+    } else {
+      setDiagnosis({ coding: [] });
+    }
+  }, [claim]);
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
@@ -109,25 +128,10 @@ export const EncounterChart = (): JSX.Element => {
         );
         setChargeItems(updatedChargeItems);
 
-        if (claim?.id) {
+        if (claim?.id && updatedChargeItems.length > 0 && encounter) {
           const updatedClaim: Claim = {
             ...claim,
-            item: updatedChargeItems.map((chargeItem: ChargeItem, index: number) => {
-              const modifiers = chargeItem.extension
-                ?.filter((ext) => ext.url === 'http://hl7.org/fhir/StructureDefinition/chargeitem-modifier')
-                .map((ext) => {
-                  return ext.valueCodeableConcept;
-                })
-                .filter((modifier) => modifier !== undefined);
-
-              return {
-                sequence: index + 1,
-                encounter: claim.item?.[0]?.encounter || [],
-                productOrService: chargeItem.code,
-                net: chargeItem.priceOverride,
-                ...(modifiers && modifiers.length > 0 ? { modifier: modifiers } : {}),
-              };
-            }),
+            item: getCptChargeItems(updatedChargeItems, { reference: getReferenceString(encounter) }),
             total: { value: calculateTotalPrice(updatedChargeItems) },
           };
           const savedClaim = await medplum.updateResource(updatedClaim);
@@ -135,7 +139,7 @@ export const EncounterChart = (): JSX.Element => {
         }
       }, SAVE_TIMEOUT_MS);
     },
-    [chargeItems, saveChargeItem, setChargeItems, medplum, claim, setClaim]
+    [chargeItems, saveChargeItem, setChargeItems, medplum, claim, setClaim, encounter]
   );
 
   const handleEncounterStatusChange = useCallback(
@@ -253,6 +257,28 @@ export const EncounterChart = (): JSX.Element => {
     }, SAVE_TIMEOUT_MS);
   };
 
+  const handleDiagnosisChange = (value: CodeableConcept | undefined): void => {
+    setDiagnosis(value ? value : { coding: [] });
+
+    if (!claim) {
+      return;
+    }
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        const diagnosisArray = createDiagnosisArray(value);
+        const savedClaim = await medplum.updateResource({ ...claim, diagnosis: diagnosisArray });
+        setClaim(savedClaim as Claim);
+      } catch (err) {
+        showErrorNotification(err);
+      }
+    }, SAVE_TIMEOUT_MS);
+  };
+
   const exportClaimAsCMS1500 = async (): Promise<void> => {
     if (!claim?.id || !patient?.id) {
       return;
@@ -276,6 +302,7 @@ export const EncounterChart = (): JSX.Element => {
       }
     }
 
+    const diagnosisArray = createDiagnosisArray(diagnosis);
     await medplum.updateResource({
       ...claim,
       insurance: [
@@ -285,6 +312,7 @@ export const EncounterChart = (): JSX.Element => {
           coverage: { reference: getReferenceString(coverageForClaim) },
         },
       ],
+      diagnosis: diagnosisArray,
     });
 
     const response = await medplum.get(medplum.fhirUrl('Claim', claim.id, '$export'));
@@ -295,6 +323,18 @@ export const EncounterChart = (): JSX.Element => {
     } else {
       showErrorNotification('Failed to download PDF');
     }
+  };
+
+  const createDiagnosisArray = (value?: CodeableConcept): ClaimDiagnosis[] | undefined => {
+    return value?.coding
+      ? value.coding.map((coding, index) => ({
+          diagnosisCodeableConcept: {
+            coding: [coding],
+          },
+          sequence: index + 1,
+          type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }],
+        }))
+      : undefined;
   };
 
   if (!patient || !encounter || !clinicalImpression) {
@@ -480,6 +520,26 @@ export const EncounterChart = (): JSX.Element => {
               onEncounterChange={handleEncounterChange}
             />
           </Group>
+
+          {diagnosis && (
+            <Stack gap={0}>
+              <Text fw={600} size="lg" mb="md">
+                Diagnosis
+              </Text>
+
+              <Card withBorder shadow="sm">
+                <CodeableConceptInput
+                  binding="http://hl7.org/fhir/ValueSet/icd-10"
+                  placeholder="Search to add a diagnosis"
+                  name="diagnosis"
+                  path="diagnosis"
+                  clearable
+                  defaultValue={diagnosis}
+                  onChange={handleDiagnosisChange}
+                />
+              </Card>
+            </Stack>
+          )}
 
           <Stack gap={0}>
             <Text fw={600} size="lg" mb="md">
