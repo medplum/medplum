@@ -19,7 +19,7 @@ export function rateLimitHandler(config: MedplumServerConfig): Handler {
     if (config.defaultRateLimit === -1) {
       handler = (_req, _res, next) => next(); // Disable rate limiter
     } else {
-      handler = async function rateLimitMiddleware(req, res, next) {
+      handler = async function rateLimiter(req, res, next) {
         try {
           const result = await getRateLimiter(req, config).consume(getRateLimitKey(req), 1);
           addRateLimitHeader(result, res);

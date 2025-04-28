@@ -1,6 +1,6 @@
 import { Claim, ChargeItem, Coverage } from '@medplum/fhirtypes';
 import { getReferenceString, MedplumClient } from '@medplum/core';
-import { calculateTotalPrice } from './chargeitems';
+import { calculateTotalPrice, getCptChargeItems } from './chargeitems';
 import { createSelfPayCoverage } from './coverage';
 
 export async function createClaimFromEncounter(
@@ -32,12 +32,7 @@ export async function createClaimFromEncounter(
         coverage: { reference: getReferenceString(coverage) },
       },
     ],
-    item: chargeItems.map((chargeItem, index) => ({
-      sequence: index + 1,
-      encounter: [{ reference: `Encounter/${encounterId}` }],
-      productOrService: chargeItem.code,
-      net: chargeItem.priceOverride,
-    })),
+    item: getCptChargeItems(chargeItems, { reference: `Encounter/${encounterId}` }),
     total: { value: calculateTotalPrice(chargeItems) },
   };
   return medplum.createResource(claim);

@@ -1,12 +1,12 @@
 import { Operator, WithId } from '@medplum/core';
 import { HumanName, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { bundleContains, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
-import { PoolClient } from 'pg';
-import { HumanNameTable } from './humanname';
+import { HumanNameTable, HumanNameTableRow } from './humanname';
 
 describe('HumanName Lookup Table', () => {
   const systemRepo = getSystemRepo();
@@ -284,6 +284,41 @@ describe('HumanName Lookup Table', () => {
         name: 'Family',
         given: undefined,
         family: 'Family',
+      },
+    ]);
+  });
+
+  test('extractValues multiple resources with identical name', () => {
+    const table = new HumanNameTable();
+
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      name: [{ given: ['Alice'], family: 'Smith', use: 'official', prefix: ['Ms'] }],
+    };
+
+    const r2: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '2',
+      name: [{ given: ['Alice'], family: 'Smith', use: 'official', prefix: ['Ms'] }],
+    };
+
+    const result: HumanNameTableRow[] = [];
+    table.extractValues(result, r1);
+    table.extractValues(result, r2);
+
+    expect(result).toStrictEqual([
+      {
+        resourceId: '1',
+        name: 'Ms Alice Smith',
+        given: 'Alice',
+        family: 'Smith',
+      },
+      {
+        resourceId: '2',
+        name: 'Ms Alice Smith',
+        given: 'Alice',
+        family: 'Smith',
       },
     ]);
   });
