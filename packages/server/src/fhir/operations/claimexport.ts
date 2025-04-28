@@ -65,6 +65,11 @@ export async function claimExportHandler(req: FhirRequest): Promise<FhirResponse
   try {
     const params = parseInputParameters<ClaimExportParameters>(operation, req);
     const claim: Claim = params.resource;
+
+    if (!claim) {
+      return [badRequest('The resource must be a Claim')];
+    }
+
     const docDefinition = await getClaimPDFDocDefinition(claim);
     const pdfBuffer = await createPdf(docDefinition);
     const binary = await repo.createResource<Binary>({
