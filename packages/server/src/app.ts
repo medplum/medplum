@@ -33,7 +33,7 @@ import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
 import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
-import { closeRateLimiter, getRateLimiter } from './ratelimit';
+import { closeRateLimiter, rateLimitHandler } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
@@ -159,7 +159,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(cors(corsOptions));
   app.use(compression());
   app.use(attachRequestContext);
-  app.use(getRateLimiter(config));
+  app.use(rateLimitHandler(config));
   app.use('/fhir/R4/Binary', binaryRouter);
 
   // Handle async batch by enqueueing job
@@ -203,9 +203,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 }
 
 export function initAppServices(config: MedplumServerConfig): Promise<void> {
+  loadStructureDefinitions();
+  initRedis(config.redis);
+
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
-    loadStructureDefinitions();
-    initRedis(config.redis);
     await initDatabase(config);
     await seedDatabase();
     await initKeys(config);
