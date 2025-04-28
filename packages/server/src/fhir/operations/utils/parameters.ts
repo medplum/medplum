@@ -160,6 +160,7 @@ function parseParams(
   for (const param of params) {
     // FHIR spec-compliant case: Parameters resource e.g.
     // { resourceType: 'Parameters', parameter: [{ name: 'message', valueString: 'Hello!' }] }
+    // except for Resource parameters, where the value is a whole resource.
     const inParams = inputParameters.filter((p) => p.name === param.name);
     let value: unknown;
     if (param.part?.length) {
