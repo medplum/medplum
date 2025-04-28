@@ -4,9 +4,7 @@ import { getReferenceString, MedplumClient } from '@medplum/core';
 export const CPT = 'http://www.ama-assn.org/go/cpt';
 
 export function getCptChargeItems(chargeItems: ChargeItem[], encounter: Reference<Encounter>): ClaimItem[] {
-  const cptChargeItems = chargeItems.filter((item) =>
-    item.code?.coding?.some((coding) => coding.system === CPT)
-  );
+  const cptChargeItems = chargeItems.filter((item) => item.code?.coding?.some((coding) => coding.system === CPT));
 
   return cptChargeItems.map((chargeItem: ChargeItem, index: number) => {
     const modifiers = chargeItem.extension
