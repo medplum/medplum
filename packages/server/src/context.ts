@@ -213,7 +213,7 @@ function write(msg: string): void {
 
 function getFhirRateLimiter(authState: AuthState): FhirRateLimiter | undefined {
   const projectLimit = authState.project?.systemSetting?.find(
-    (s) => s.name === 'defaultFhirInteractionLimit'
+    (s) => s.name === 'userFhirInteractionLimit'
   )?.valueInteger;
   const limit = projectLimit ?? getConfig().defaultFhirInteractionLimit;
 
