@@ -211,11 +211,11 @@ function write(msg: string): void {
   process.stdout.write(msg + '\n');
 }
 
-function getFhirRateLimiter(authState: AuthState): FhirRateLimiter | undefined {
+function getFhirRateLimiter(authState: AuthState, logger: Logger): FhirRateLimiter | undefined {
   const projectLimit = authState.project?.systemSetting?.find(
     (s) => s.name === 'userFhirInteractionLimit'
   )?.valueInteger;
   const limit = projectLimit ?? getConfig().defaultFhirInteractionLimit;
 
-  return authState.membership ? new FhirRateLimiter(getRedis(), authState, limit) : undefined;
+  return authState.membership ? new FhirRateLimiter(getRedis(), authState, limit, logger) : undefined;
 }

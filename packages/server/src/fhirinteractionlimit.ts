@@ -15,7 +15,7 @@ export class FhirRateLimiter {
 
   private readonly logger: Logger;
 
-  constructor(redis: Redis, authState: AuthState, limit: number, remainingUnits = limit, logger = globalLogger) {
+  constructor(redis: Redis, authState: AuthState, limit: number, logger = globalLogger) {
     this.limiter = new RateLimiterRedis({
       keyPrefix: 'medplum:rl:fhir:',
       storeClient: redis,
@@ -24,7 +24,7 @@ export class FhirRateLimiter {
     });
     this.key = this.getKey(authState);
 
-    this.unitsRemaining = remainingUnits;
+    this.unitsRemaining = limit;
     this.delta = 0;
 
     this.logger = logger;
