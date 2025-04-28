@@ -1,9 +1,11 @@
 import { Encounter, ChargeItem, Reference, ClaimItem } from '@medplum/fhirtypes';
 import { getReferenceString, MedplumClient } from '@medplum/core';
 
+export const CPT = 'http://www.ama-assn.org/go/cpt';
+
 export function getCptChargeItems(chargeItems: ChargeItem[], encounter: Reference<Encounter>): ClaimItem[] {
   const cptChargeItems = chargeItems.filter((item) =>
-    item.code?.coding?.some((coding) => coding.system === 'http://www.ama-assn.org/go/cpt')
+    item.code?.coding?.some((coding) => coding.system === CPT)
   );
 
   return cptChargeItems.map((chargeItem: ChargeItem, index: number) => {
@@ -18,7 +20,7 @@ export function getCptChargeItems(chargeItems: ChargeItem[], encounter: Referenc
       sequence: index + 1,
       encounter: [encounter],
       productOrService: {
-        coding: chargeItem.code.coding?.filter((coding) => coding.system === 'http://www.ama-assn.org/go/cpt'),
+        coding: chargeItem.code.coding?.filter((coding) => coding.system === CPT),
         text: chargeItem.code.text,
       },
       net: chargeItem.priceOverride,

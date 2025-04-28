@@ -10,6 +10,7 @@ import {
   Claim,
   CodeableConcept,
   Coding,
+  ClaimDiagnosis,
 } from '@medplum/fhirtypes';
 import { CodeableConceptInput, Loading, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router';
@@ -324,7 +325,7 @@ export const EncounterChart = (): JSX.Element => {
     }
   };
 
-  const createDiagnosisArray = (value?: CodeableConcept): any[] | undefined => {
+  const createDiagnosisArray = (value?: CodeableConcept): ClaimDiagnosis[] | undefined => {
     return value?.coding
       ? value.coding.map((coding, index) => ({
           diagnosisCodeableConcept: {
