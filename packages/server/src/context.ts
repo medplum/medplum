@@ -51,7 +51,7 @@ export class AuthenticatedRequestContext extends RequestContext {
     if (repo.currentProject()?.id) {
       loggerMetadata = { projectId: repo.currentProject()?.id };
     }
-    super(requestId, traceId, logger, loggerMetadata, getFhirRateLimiter(authState));
+    super(requestId, traceId, logger, loggerMetadata, getFhirRateLimiter(authState, logger));
 
     this.authState = authState;
     this.repo = repo;
@@ -211,7 +211,7 @@ function write(msg: string): void {
   process.stdout.write(msg + '\n');
 }
 
-function getFhirRateLimiter(authState: AuthState, logger: Logger): FhirRateLimiter | undefined {
+function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimiter | undefined {
   const projectLimit = authState.project?.systemSetting?.find(
     (s) => s.name === 'userFhirInteractionLimit'
   )?.valueInteger;
