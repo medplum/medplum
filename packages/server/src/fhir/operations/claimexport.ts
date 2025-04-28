@@ -27,7 +27,7 @@ export const operation: OperationDefinition = {
     {
       use: 'in',
       name: 'resource',
-      type: "Resource",
+      type: 'Resource',
       min: 1,
       max: '1',
       documentation: 'The claim to export',

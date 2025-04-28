@@ -37,7 +37,6 @@ describe('FHIR Parameters parsing', () => {
     const result = parseParameters(input);
     expect(result).toMatchObject(input);
   });
-  
 });
 
 const opDef: OperationDefinition = {

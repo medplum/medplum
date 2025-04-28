@@ -50,9 +50,9 @@ describe('CMS 1500 PDF Bot', () => {
         parameter: [
           {
             name: 'resource',
-            resource: claim
-          }
-        ]
+            resource: claim,
+          },
+        ],
       });
 
     expect(response).toBeDefined();
@@ -68,7 +68,7 @@ describe('CMS 1500 PDF Bot', () => {
       .set('Accept', 'application/fhir+json')
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'resource'}],
+        parameter: [{ name: 'resource' }],
       });
 
     expect(response.status).toBe(400);
