@@ -127,19 +127,11 @@ export const EncounterChart = (): JSX.Element => {
         );
         setChargeItems(updatedChargeItems);
 
-        // Filter charge items that have CPT codes
-        const cptChargeItems = updatedChargeItems.filter(
-          (item) => 
-            item.code?.coding?.some(
-              (coding) => coding.system === 'http://www.ama-assn.org/go/cpt'
-            )
-        );
-        
-        if (claim?.id && cptChargeItems.length > 0 && encounter) {
+        if (claim?.id && updatedChargeItems.length > 0 && encounter) {
           const updatedClaim: Claim = {
             ...claim,
-            item: getCptChargeItems(cptChargeItems, { reference: getReferenceString(encounter) }),
-            total: { value: calculateTotalPrice(cptChargeItems) },
+            item: getCptChargeItems(updatedChargeItems, { reference: getReferenceString(encounter) }),
+            total: { value: calculateTotalPrice(updatedChargeItems) },
           };
           const savedClaim = await medplum.updateResource(updatedClaim);
           setClaim(savedClaim);
@@ -265,7 +257,7 @@ export const EncounterChart = (): JSX.Element => {
   };
 
   const handleDiagnosisChange = (value: CodeableConcept | undefined): void => {
-    setDiagnosis(value);
+    setDiagnosis(value ? value : { coding: [] });
 
     if (!claim) {
       return;
@@ -278,14 +270,7 @@ export const EncounterChart = (): JSX.Element => {
     saveTimeoutRef.current = setTimeout(async () => {
       try {
 
-        const diagnosisArray = value?.coding ? value.coding.map((coding, index) => ({
-          diagnosisCodeableConcept: {
-            coding: [coding]
-          },
-          sequence: index + 1,
-          type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }]
-        })) : undefined;
-
+        const diagnosisArray = createDiagnosisArray(value);
         const savedClaim = await medplum.updateResource({...claim, diagnosis: diagnosisArray});
         setClaim(savedClaim as Claim);
 
@@ -319,6 +304,7 @@ export const EncounterChart = (): JSX.Element => {
       }
     }
 
+    const diagnosisArray = createDiagnosisArray(diagnosis);
     await medplum.updateResource({
       ...claim,
       insurance: [
@@ -328,6 +314,7 @@ export const EncounterChart = (): JSX.Element => {
           coverage: { reference: getReferenceString(coverageForClaim) },
         },
       ],
+      diagnosis: diagnosisArray,
     });
 
     const response = await medplum.get(medplum.fhirUrl('Claim', claim.id, '$export'));
@@ -338,6 +325,16 @@ export const EncounterChart = (): JSX.Element => {
     } else {
       showErrorNotification('Failed to download PDF');
     }
+  };
+
+  const createDiagnosisArray = (value?: CodeableConcept): any[] | undefined => {
+    return value?.coding ? value.coding.map((coding, index) => ({
+      diagnosisCodeableConcept: {
+        coding: [coding]
+      },
+      sequence: index + 1,
+      type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }]
+    })) : undefined;
   };
 
   if (!patient || !encounter || !clinicalImpression) {
