@@ -6,6 +6,7 @@ import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { createPdf } from '../../util/pdf';
 import { getClaimPDFDocDefinition } from './utils/cms1500pdf';
+import { parseInputParameters } from './utils/parameters';
 
 /**
  * Operation definition for the Claim $export operation.
@@ -24,6 +25,14 @@ export const operation: OperationDefinition = {
   instance: true,
   parameter: [
     {
+      use: 'in',
+      name: 'resource',
+      type: "Resource",
+      min: 1,
+      max: '1',
+      documentation: 'The claim to export',
+    },
+    {
       use: 'out',
       name: 'return',
       type: 'Media',
@@ -33,6 +42,10 @@ export const operation: OperationDefinition = {
     },
   ],
 };
+
+interface ClaimExportParameters {
+  readonly resource: Claim;
+}
 
 /**
  * Handles HTTP requests for the Claim $export operation.
@@ -48,13 +61,10 @@ export const operation: OperationDefinition = {
  */
 export async function claimExportHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
-  const claimId = req.params.id;
-  if (!claimId) {
-    return [badRequest('Claim ID is required')];
-  }
 
   try {
-    const claim = await repo.readResource<Claim>('Claim', claimId);
+    const params = parseInputParameters<ClaimExportParameters>(operation, req);
+    const claim: Claim = params.resource;
     const docDefinition = await getClaimPDFDocDefinition(claim);
     const pdfBuffer = await createPdf(docDefinition);
     const binary = await repo.createResource<Binary>({

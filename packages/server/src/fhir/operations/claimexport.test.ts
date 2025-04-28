@@ -42,37 +42,26 @@ describe('CMS 1500 PDF Bot', () => {
     expect(claim.identifier?.some((id) => id.value === 'example-claim-cms1500')).toBe(true);
 
     const response = await request(app)
-      .get(`/fhir/R4/Claim/${claim.id}/$export`)
+      .post(`/fhir/R4/Claim/$export`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Accept', 'application/fhir+json');
+      .set('Accept', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'resource',
+            resource: claim
+          }
+        ]
+      });
 
+    console.log(JSON.stringify(response.body, null, 2));
     expect(response).toBeDefined();
     expect(response.status).toBe(200);
     expect(response.body.resourceType).toBe('Media');
     expect(response.body.content.contentType).toBe('application/pdf');
   });
 
-  test('Bad request - missing claim ID', async () => {
-    const response = await request(app)
-      .get(`/fhir/R4/Claim/$export`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Accept', 'application/fhir+json');
-
-    expect(response.status).toBe(404);
-    expect(response.body.resourceType).toBe('OperationOutcome');
-    expect(response.body.issue[0].severity).toBe('error');
-  });
-
-  test('Bad request - claim not found', async () => {
-    const response = await request(app)
-      .get(`/fhir/R4/Claim/non-existent-id/$export`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Accept', 'application/fhir+json');
-
-    expect(response.status).toBe(400);
-    expect(response.body.resourceType).toBe('OperationOutcome');
-    expect(response.body.issue[0].severity).toBe('error');
-  });
 });
 
 export const fullAnswer: Bundle = {

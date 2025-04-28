@@ -165,9 +165,15 @@ function parseParams(
     if (param.part?.length) {
       value = inParams.map((input) => parseParams(param.part as [], input.part ?? []));
     } else {
-      value = inParams?.map((v) => v[('value' + capitalize(param.type ?? 'string')) as keyof ParametersParameter]);
+      value = inParams?.map((v) => {
+        const paramType = param.type ?? 'string';
+        if (paramType === 'Resource') {
+          return v.resource;
+        } else {
+          return v[('value' + capitalize(paramType)) as keyof ParametersParameter];
+        }
+      });
     }
-
     parsed[param.name] = validateInputParam(param, value);
   }
 

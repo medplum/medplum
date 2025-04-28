@@ -254,7 +254,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
   // Claim $export operation
-  router.add('GET', '/Claim/:id/$export', claimExportHandler);
+  router.add('POST', '/Claim/$export', claimExportHandler);
 
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
