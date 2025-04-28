@@ -72,5 +72,4 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
 });
 
 export const webhookRouter = Router();
-webhookRouter.get('/:id', webhookHandler);
 webhookRouter.post('/:id', webhookHandler);
