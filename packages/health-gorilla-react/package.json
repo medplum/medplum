@@ -73,7 +73,7 @@
     "jsdom": "26.1.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router": "7.5.2",
+    "react-router": "7.5.0",
     "vitest": "3.1.2"
   },
   "peerDependencies": {
