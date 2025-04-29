@@ -69,7 +69,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       linkId: response?.linkId,
       text: item.text,
       answer: updatedAnswers,
-      // extension: response.extension,
     });
   }
 
@@ -93,7 +92,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
 
   const renderValidationError = (): JSX.Element | null => {
     if (validationError?.valueString) {
-      console.log('validationError', validationError);
       return (
         <Text c="red" size="lg" mt={4}>
           {validationError.valueString}
