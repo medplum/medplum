@@ -64,11 +64,11 @@ jest.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
-describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'])(
+describe.each<'one-column' | 'per-code' | false>(['one-column', 'per-code', false])(
   'FHIR Search using %s',
   (tokenColumnsOrLookupTable) => {
     beforeAll(() => {
-      TokenColumnsFeature.read = tokenColumnsOrLookupTable === 'token columns';
+      TokenColumnsFeature.read = tokenColumnsOrLookupTable;
     });
 
     describe('project-scoped Repository', () => {
@@ -94,14 +94,10 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
       test('readFromTokenColumns without systemSetting', () => {
         expect(repo.currentProject()).toBeDefined();
         expect(repo.currentProject()?.systemSetting).toBeUndefined();
-        if (tokenColumnsOrLookupTable === 'token columns') {
-          expect(readFromTokenColumns(repo)).toBe(true);
-        } else {
-          expect(readFromTokenColumns(repo)).toBe(false);
-        }
+        expect(readFromTokenColumns(repo)).toBe(tokenColumnsOrLookupTable);
       });
 
-      test('readFromTokenColumns with systemSetting', async () => {
+      test('readFromTokenColumns with systemSetting.valueBoolean', async () => {
         const { project: projectWithTrue } = await createTestProject({
           project: { systemSetting: [{ name: 'searchTokenColumns', valueBoolean: true }] },
         });
@@ -111,7 +107,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
           currentProject: projectWithTrue,
           author: { reference: 'User/' + randomUUID() },
         });
-        expect(readFromTokenColumns(repoWithTrue)).toBe(true);
+        expect(readFromTokenColumns(repoWithTrue)).toBe('one-column');
 
         const { project: projectWithFalse } = await createTestProject({
           project: { systemSetting: [{ name: 'searchTokenColumns', valueBoolean: false }] },
@@ -123,6 +119,44 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
           author: { reference: 'User/' + randomUUID() },
         });
         expect(readFromTokenColumns(repoWithFalse)).toBe(false);
+      });
+
+      test('readFromTokenColumns with systemSetting.valueString', async () => {
+        const { project: projectWithTrue } = await createTestProject({
+          project: { systemSetting: [{ name: 'searchTokenColumns', valueString: 'one-column' }] },
+        });
+        const repoWithTrue = new Repository({
+          strictMode: true,
+          projects: [projectWithTrue.id],
+          currentProject: projectWithTrue,
+          author: { reference: 'User/' + randomUUID() },
+        });
+        expect(readFromTokenColumns(repoWithTrue)).toBe('one-column');
+
+        const { project: projectWithFalse } = await createTestProject({
+          project: { systemSetting: [{ name: 'searchTokenColumns', valueString: 'per-code' }] },
+        });
+        const repoWithFalse = new Repository({
+          strictMode: true,
+          projects: [projectWithFalse.id],
+          currentProject: projectWithFalse,
+          author: { reference: 'User/' + randomUUID() },
+        });
+        expect(readFromTokenColumns(repoWithFalse)).toBe('per-code');
+      });
+
+      test('readFromTokenColumns with invalid systemSetting.valueString', async () => {
+        const { project: projectWithTrue } = await createTestProject({
+          project: { systemSetting: [{ name: 'searchTokenColumns', valueString: 'invalid' }] },
+        });
+        const repoWithTrue = new Repository({
+          strictMode: true,
+          projects: [projectWithTrue.id],
+          currentProject: projectWithTrue,
+          author: { reference: 'User/' + randomUUID() },
+        });
+        // should fallback to the default value
+        expect(readFromTokenColumns(repoWithTrue)).toBe(tokenColumnsOrLookupTable);
       });
 
       test('Search total', async () =>
@@ -4787,11 +4821,8 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
       });
 
       test('readFromTokenColumns', () => {
-        if (tokenColumnsOrLookupTable === 'token columns') {
-          expect(readFromTokenColumns(systemRepo)).toBe(true);
-        } else {
-          expect(readFromTokenColumns(systemRepo)).toBe(false);
-        }
+        // system repo always uses the default value
+        expect(readFromTokenColumns(systemRepo)).toBe(tokenColumnsOrLookupTable);
       });
 
       test('Filter by _project', () =>
