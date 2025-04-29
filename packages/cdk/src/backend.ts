@@ -17,7 +17,7 @@ import {
   aws_wafv2 as wafv2,
 } from 'aws-cdk-lib';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
-import { ClusterInstance, ParameterGroup } from 'aws-cdk-lib/aws-rds';
+import { ClusterInstance, DBClusterStorageType, ParameterGroup } from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 import { buildWafConfig } from './waf';
 
@@ -188,6 +188,11 @@ export class BackEnd extends Construct {
         credentials,
         defaultDatabaseName: 'medplum',
         storageEncrypted: true,
+        // Instances with attached NVMe SSD (db.*d* instance classes) should utilize I/O optimized storage
+        // to unlock additional performance improvements (e.g. tiered caching between memory and SSD)
+        storageType: writerInstanceType.match(/^db\.\w+d\w*\./i)
+          ? DBClusterStorageType.AURORA_IOPT1
+          : DBClusterStorageType.AURORA,
         vpc: this.vpc,
         vpcSubnets: {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
