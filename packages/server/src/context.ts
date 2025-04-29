@@ -41,8 +41,14 @@ export class AuthenticatedRequestContext extends RequestContext {
 
   constructor(requestId: string, traceId: string, authState: Readonly<AuthState>, repo: Repository, logger?: Logger) {
     let loggerMetadata: Record<string, any> | undefined;
-    if (repo.currentProject()?.id) {
-      loggerMetadata = { projectId: repo.currentProject()?.id };
+    const projectId = repo.currentProject()?.id;
+    if (projectId) {
+      let profile = authState.membership.profile.reference;
+      const asUserProfile = authState.onBehalfOfMembership?.profile.reference;
+      if (asUserProfile && asUserProfile !== profile) {
+        profile += ` (as ${asUserProfile})`;
+      }
+      loggerMetadata = { projectId, profile };
     }
     super(requestId, traceId, logger, loggerMetadata);
 
