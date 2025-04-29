@@ -1501,5 +1501,42 @@ describe('isQuestionEnabled', () => {
         },
       ]);
     });
+
+    test('Failed to evaluate expression', () => {
+      const items: QuestionnaireItem[] = [
+        {
+          id: 'q5',
+          linkId: 'q5',
+          type: 'string',
+          text: 'Full Name',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+              valueExpression: {
+                expression: "%fail",
+                language: 'text/fhirpath',
+              },
+            },
+          ],
+        },
+      ];
+
+      const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'in-progress' };
+      const result = evaluateCalculatedExpressionsInQuestionnaire(items, response);
+      expect(result).toEqual([
+        {
+          id: 'q5',
+          linkId: 'q5',
+          text: 'Full Name',
+          answer: [],
+          extension: [
+            {
+              url: "http://hl7.org/fhir/StructureDefinition/questionnaire-validationError",
+              valueString: "Expression evaluation failed: FhirPathError on \"%fail\": Error: Undefined variable %fail",
+            },
+          ]
+        },
+      ]);
+    });
   });
 });
