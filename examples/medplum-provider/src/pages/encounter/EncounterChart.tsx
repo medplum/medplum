@@ -313,8 +313,8 @@ export const EncounterChart = (): JSX.Element => {
         },
       ],
       diagnosis: diagnosisArray,
-    }
-    const response = await medplum.post(medplum.fhirUrl('Claim','$export'), {
+    };
+    const response = await medplum.post(medplum.fhirUrl('Claim', '$export'), {
       resourceType: 'Parameters',
       parameter: [{ name: 'resource', resource: claimToExport }],
     });
