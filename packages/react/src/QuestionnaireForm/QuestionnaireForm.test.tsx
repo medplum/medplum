@@ -2036,8 +2036,7 @@ describe('QuestionnaireForm', () => {
                 url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
                 valueExpression: {
                   language: 'text/fhirpath',
-                  expression:
-                    "%fail",
+                  expression: '%fail',
                 },
               },
             ],
@@ -2051,7 +2050,9 @@ describe('QuestionnaireForm', () => {
       fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '125' } });
     });
 
-    expect(screen.getByText('Expression evaluation failed: FhirPathError on "%fail": Error: Undefined variable %fail')).toBeInTheDocument();
+    expect(
+      screen.getByText('Expression evaluation failed: FhirPathError on "%fail": Error: Undefined variable %fail')
+    ).toBeInTheDocument();
   });
 
   test('Questionnaire CalculatedExpression with nested groups', async () => {

@@ -1513,7 +1513,7 @@ describe('isQuestionEnabled', () => {
             {
               url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
               valueExpression: {
-                expression: "%fail",
+                expression: '%fail',
                 language: 'text/fhirpath',
               },
             },
@@ -1531,10 +1531,10 @@ describe('isQuestionEnabled', () => {
           answer: [],
           extension: [
             {
-              url: "http://hl7.org/fhir/StructureDefinition/questionnaire-validationError",
-              valueString: "Expression evaluation failed: FhirPathError on \"%fail\": Error: Undefined variable %fail",
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-validationError',
+              valueString: 'Expression evaluation failed: FhirPathError on "%fail": Error: Undefined variable %fail',
             },
-          ]
+          ],
         },
       ]);
     });

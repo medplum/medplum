@@ -1,4 +1,14 @@
-import { Checkbox, ComboboxItem, Group, MultiSelect, NativeSelect, Radio, Textarea, TextInput, Text } from '@mantine/core';
+import {
+  Checkbox,
+  ComboboxItem,
+  Group,
+  MultiSelect,
+  NativeSelect,
+  Radio,
+  Textarea,
+  TextInput,
+  Text,
+} from '@mantine/core';
 import {
   capitalize,
   deepEquals,
@@ -85,7 +95,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
   const defaultValue = getCurrentAnswer(response, props.index) ?? getItemInitialValue(initial);
 
-
   const validationError = response.extension?.find(
     (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-validationError`
   );
@@ -100,7 +109,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     }
     return null;
   };
-
 
   let formComponent: JSX.Element | null = null;
 
@@ -129,7 +137,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
-          onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber })}
+          onChange={(e) =>
+            onChangeAnswer({ valueDecimal: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber })
+          }
         />
       );
       break;
@@ -142,7 +152,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
-          onChange={(e) => onChangeAnswer({ valueInteger:e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber })}
+          onChange={(e) =>
+            onChangeAnswer({ valueInteger: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber })
+          }
         />
       );
       break;
@@ -283,7 +295,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return null;
   }
 
-
   if (type === QuestionnaireItemType.display) {
     return formComponent;
   }
@@ -295,7 +306,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     </>
   );
 }
-
 
 interface QuestionnaireChoiceInputProps {
   readonly name: string;
