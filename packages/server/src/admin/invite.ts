@@ -105,7 +105,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     });
     profile = await createProfile(project, request.resourceType, request.firstName, request.lastName, email);
 
-    logger.info('Profile  created', { profile: getReferenceString(profile) });
+    logger.info('Profile  created', { reference: getReferenceString(profile) });
   }
 
   const membershipTemplate = request.membership ?? {};

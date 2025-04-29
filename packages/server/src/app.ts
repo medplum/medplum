@@ -250,25 +250,11 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
   res.on('close', () => {
     const duration = Date.now() - start;
 
-    let userProfile: string | undefined;
-    let projectId: string | undefined;
-    if (ctx instanceof AuthenticatedRequestContext) {
-      const underlyingProfile = ctx.authState.membership.profile;
-      if (ctx.profile.reference === underlyingProfile.reference) {
-        userProfile = ctx.profile.reference;
-      } else {
-        userProfile = `${underlyingProfile.reference} (as ${ctx.profile.reference})`;
-      }
-      projectId = ctx.project.id;
-    }
-
     ctx.logger.info('Request served', {
       durationMs: duration,
       ip: req.ip,
       method: req.method,
       path: req.originalUrl,
-      profile: userProfile,
-      projectId,
       receivedAt: start,
       // If the response did not emit the 'finish' event, the client timed out and disconnected before it could be sent
       status: res.writableFinished ? res.statusCode : 408,
