@@ -49,30 +49,30 @@ interface ClaimExportParameters {
 
 /**
  * Common function to handle claim export operations.
- * 
+ *
  * @param claim - The FHIR Claim resource.
  * @returns The FHIR response with a Media resource containing PDF reference.
  */
 async function handleClaimExport(claim: Claim): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
-  
+
   try {
     // Generate PDF from claim
     const docDefinition = await getClaimPDFDocDefinition(claim);
     const pdfBuffer = await createPdf(docDefinition);
-    
+
     // Create Binary resource
     const binary = await repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType: 'application/pdf',
     });
-    
+
     // Write PDF to binary storage
     const readableStream = new Readable();
     readableStream.push(pdfBuffer);
     readableStream.push(null);
     await getBinaryStorage().writeBinary(binary, 'cms-1500.pdf', 'application/pdf', readableStream);
-    
+
     // Create Media resource
     const media: Media = {
       resourceType: 'Media',
@@ -90,7 +90,7 @@ async function handleClaimExport(claim: Claim): Promise<FhirResponse> {
         title: 'cms-1500.pdf',
       },
     };
-    
+
     return [allOk, media];
   } catch (error) {
     return [badRequest(normalizeErrorString(error))];
@@ -99,23 +99,26 @@ async function handleClaimExport(claim: Claim): Promise<FhirResponse> {
 
 /**
  * Handles HTTP GET requests for the Claim $export operation.
- * 
+ *
  * Fetches the claim from the database and generates a PDF document based on its contents.
- * 
+ *
+ * Reads the claim and generates a PDF document based on its contents.
+ * Returns a Binary resource containing the PDF document directly.
+ *
  * Endpoint:
- * [fhir base]/Claim/{id}/$export
- * 
+ *   [fhir base]/Claim/{id}/$export
+ *
  * @param req - The FHIR request.
  * @returns The FHIR response with a Media resource containing PDF reference.
  */
 export async function claimExportGetHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
   const claimId = req.params.id;
-  
+
   if (!claimId) {
     return [badRequest('Claim ID is required')];
   }
-  
+
   try {
     const claim = await repo.readResource<Claim>('Claim', claimId);
     return await handleClaimExport(claim);
@@ -126,12 +129,14 @@ export async function claimExportGetHandler(req: FhirRequest): Promise<FhirRespo
 
 /**
  * Handles HTTP POST requests for the Claim $export operation.
- * 
+ *
  * Reads the claim and generates a PDF document based on its contents.
- * 
+ *
+ * Returns a Binary resource containing the PDF document directly.
+ *
  * Endpoint:
- * [fhir base]/Claim/$export
- * 
+ *   [fhir base]/Claim/$export
+ *
  * @param req - The FHIR request.
  * @returns The FHIR response with a Media resource containing PDF reference.
  */
@@ -139,11 +144,11 @@ export async function claimExportPostHandler(req: FhirRequest): Promise<FhirResp
   try {
     const params = parseInputParameters<ClaimExportParameters>(operation, req);
     const claim: Claim = params.resource;
-    
+
     if (!claim) {
       return [badRequest('The resource Claim is required')];
     }
-    
+
     return await handleClaimExport(claim);
   } catch (error) {
     return [badRequest(normalizeErrorString(error))];
