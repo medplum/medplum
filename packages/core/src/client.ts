@@ -490,6 +490,8 @@ export interface BotEvent<T = Resource | Hl7Message | string | Record<string, an
   readonly input: T;
   readonly secrets: Record<string, ProjectSetting>;
   readonly traceId?: string;
+  /** Headers from the original request, when invoked by HTTP request */
+  readonly headers?: Record<string, string | string[] | undefined>;
 }
 
 export interface InviteRequest {
