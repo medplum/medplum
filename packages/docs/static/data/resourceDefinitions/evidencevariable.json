@@ -1330,19 +1330,19 @@
       "name": "composed-of",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "EvidenceVariable.relatedArtifact.where(type = 'composed-of').resource"
+      "expression": "EvidenceVariable.relatedArtifact.where((type = 'composed-of')).resource"
     },
     {
       "name": "context",
       "type": "token",
       "description": "A use context assigned to the evidence variable",
-      "expression": "EvidenceVariable.useContext.value as CodeableConcept"
+      "expression": "(EvidenceVariable.useContext.value as CodeableConcept)"
     },
     {
       "name": "context-quantity",
       "type": "quantity",
       "description": "A quantity- or range-valued use context assigned to the evidence variable",
-      "expression": "EvidenceVariable.useContext.value as Quantity | EvidenceVariable.useContext.value as Range"
+      "expression": "(EvidenceVariable.useContext.value as Quantity) | (EvidenceVariable.useContext.value as Range)"
     },
     {
       "name": "context-type",
@@ -1360,13 +1360,13 @@
       "name": "depends-on",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "EvidenceVariable.relatedArtifact.where(type = 'depends-on').resource"
+      "expression": "EvidenceVariable.relatedArtifact.where((type = 'depends-on')).resource"
     },
     {
       "name": "derived-from",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "EvidenceVariable.relatedArtifact.where(type = 'derived-from').resource"
+      "expression": "EvidenceVariable.relatedArtifact.where((type = 'derived-from')).resource"
     },
     {
       "name": "description",
@@ -1402,7 +1402,7 @@
       "name": "predecessor",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "EvidenceVariable.relatedArtifact.where(type = 'predecessor').resource"
+      "expression": "EvidenceVariable.relatedArtifact.where((type = 'predecessor')).resource"
     },
     {
       "name": "publisher",
@@ -1420,7 +1420,7 @@
       "name": "successor",
       "type": "reference",
       "description": "What resource is being referenced",
-      "expression": "EvidenceVariable.relatedArtifact.where(type = 'successor').resource"
+      "expression": "EvidenceVariable.relatedArtifact.where((type = 'successor')).resource"
     },
     {
       "name": "title",

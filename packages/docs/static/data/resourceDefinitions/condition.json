@@ -753,7 +753,7 @@
       "name": "patient",
       "type": "reference",
       "description": " Who has the condition?\r",
-      "expression": "Condition.subject.where(resolve() is Patient)"
+      "expression": "Condition.subject.where((resolve() is Patient))"
     },
     {
       "name": "abatement-age",

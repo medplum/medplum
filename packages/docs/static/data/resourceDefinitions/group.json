@@ -663,7 +663,7 @@
       "name": "value",
       "type": "token",
       "description": "Value held by characteristic",
-      "expression": "Group.characteristic.value as CodeableConcept | Group.characteristic.value as boolean"
+      "expression": "(Group.characteristic.value as CodeableConcept) | (Group.characteristic.value as boolean)"
     },
     {
       "name": "characteristic-value",
@@ -682,6 +682,12 @@
       "type": "quantity",
       "description": "The name of the client application",
       "expression": "Group.characteristic.value.ofType(Range)"
+    },
+    {
+      "name": "characteristic-reference",
+      "type": "reference",
+      "description": "An entity referenced in a characteristic",
+      "expression": "Group.characteristic.value.ofType(Reference)"
     }
   ]
 }
