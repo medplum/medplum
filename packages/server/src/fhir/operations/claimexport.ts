@@ -100,14 +100,13 @@ async function handleClaimExport(claim: Claim): Promise<FhirResponse> {
 /**
  * Handles HTTP GET requests for the Claim $export operation.
  * 
- * Reads the claim and generates a PDF document based on its contents.
- * Returns a Binary resource containing the PDF document directly.
+ * Fetches the claim from the database and generates a PDF document based on its contents.
  * 
  * Endpoint:
  * [fhir base]/Claim/{id}/$export
  * 
  * @param req - The FHIR request.
- * @returns The FHIR response with a Binary resource containing the PDF.
+ * @returns The FHIR response with a Media resource containing PDF reference.
  */
 export async function claimExportGetHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
@@ -129,13 +128,12 @@ export async function claimExportGetHandler(req: FhirRequest): Promise<FhirRespo
  * Handles HTTP POST requests for the Claim $export operation.
  * 
  * Reads the claim and generates a PDF document based on its contents.
- * Returns a Binary resource containing the PDF document directly.
  * 
  * Endpoint:
  * [fhir base]/Claim/$export
  * 
  * @param req - The FHIR request.
- * @returns The FHIR response with a Binary resource containing the PDF.
+ * @returns The FHIR response with a Media resource containing PDF reference.
  */
 export async function claimExportPostHandler(req: FhirRequest): Promise<FhirResponse> {
   try {
