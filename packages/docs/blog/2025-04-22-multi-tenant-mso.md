@@ -7,11 +7,11 @@ tags: [mso, tenant, access-control]
 
 # A step by step guide to building a Multi-Tenant Managed Service Organization with Medplum
 
-A common pattern in the Medplum community is to build a platform that **serves multiple clinics** in the form of a Managed Service Organization (MSO).
+In the Medplum community of implementors, a common use case is to building an application that **serves multiple clinics** in the form of a Managed Service Organization (MSO). An MSO is a separate business entity that provides non-clinical services—e.g., revenue-cycle management, HR, IT, compliance, facilities, and purchasing—to physician groups or other provider organizations.
 
-In this post, we'll explore how to build a robust MSO platform using Medplum, focusing on [multi-tenancy](#tenant-management-with-organizations), [access control](#access-control), [patient consent management](#additional-access-control-patient-consent), and [project-scoped users](#user-management-strategy).
+In this post, we'll focus on some key features of an MSO application using Medplum: [multi-tenancy](#tenant-management-with-organizations), [access control](#access-control), [patient consent management](#additional-access-control-patient-consent), and [project-scoped users](#user-management-strategy). The application also supports FHIR, C-CDA and HL7v2 interfacing making it well suited to interface with record-keeping solutions across multiple practices.
 
-If you haven't checked out the **MSO Demo App** yet, you can view the code [here](https://github.com/medplum/medplum-mso-demo) or watch our demo video below.
+If you haven't checked out the **MSO Demo App** yet, you can view the code [here](https://github.com/medplum/medplum-mso-demo) or watch our demo video below. The demo app is an example implementation for how to build the enrollment workflows and user management console for clinicians and patients across different clinics of an MSO provider network. 
 
 <div className="responsive-iframe-wrapper">
   <iframe src="https://www.youtube.com/embed/FJIZTI9_fBc?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
@@ -25,6 +25,7 @@ At its core, an MSO usually needs to handle the following requirements:
 - Multiple clinics (tenants) sharing the same platform
 - [Enrollment workflows](https://github.com/medplum/medplum-mso-demo/blob/main/src/operations/enrollment.ts) that allow Practitioners and Patients to be added and removed from one or more clinics
 - Customizable access control which Users have access to which resources. This can built with varying levels of sophistication depending on how restrictive the MSO wants to be.
+- [Provider directory](/docs/administration/provider-directory) to group and display clinicians from across the MSO.
 
 
 ## Core Implementation
@@ -34,7 +35,7 @@ At its core, an MSO usually needs to handle the following requirements:
 To achieve multi-tenancy with Medplum while allowing for some level of coordination between tenants, the recommended pattern is to represent each healthcare clinic as an [Organization](/docs/api/fhir/resources/organization) resource, all within a single Medplum [Project](/docs/api/fhir/medplum/project).
 
 
-```typescript
+```ts
 const clinic = await medplum.createResource<Organization>({
  resourceType: 'Organization',
  name: 'Kings Landing Health Center',
@@ -56,7 +57,7 @@ Imposing these restrictions on Practitioner users is done via Medplum's [AccessP
 
 **Enrollment of a Practitioner into an Organization** is done by adding a Organization reference to the Practitioner ProjectMembership's **access** field. Here is an example for a Practitioner enrolled in one Organization:
 
-```json
+```ts
 {
  "resourceType": "ProjectMembership",
  //...
@@ -81,7 +82,7 @@ Imposing these restrictions on Practitioner users is done via Medplum's [AccessP
 
 **Enrollment of a Patient into an Organization** uses [Compartments](/docs/access/access-policies#compartments), which provide a way to tag Patient resources with the Organization references that it belongs to. So for example, a Patient enrolled in two Organizations might look like this:
 
-```json
+```ts
 {
  "resourceType": "Patient",
  //...
@@ -105,7 +106,7 @@ Because of the Patient's [compartment definition](https://build.fhir.org/compart
 
 For example, say you want to enroll *Patient/123* into two Organizations, *Organization/789* and *Organization/456*. You can do this by making the following request:
 
-```typescript
+```ts
 const response = await medplum.post('/fhir/Patient/123/$set-accounts', {
   "resourceType": "Parameters",
   "parameter": [
@@ -131,7 +132,7 @@ Then, the [AccessPolicy](/docs/access/access-policies) can be configured to rest
 The `%organization` value is replaced at runtime with one or more of the Organization references from the Practitioner's ProjectMembership.access array
 :::
 
-```json
+```ts
 {
  "resourceType": "AccessPolicy",
  "name": "Managed Service Organization Access Policy",
@@ -172,7 +173,7 @@ To do this, we can create a universal [Consent](/docs/api/fhir/resources/consent
 
 Then, your access policy will look like this:
 
-```json
+```ts
 {
   "resourceType": "AccessPolicy",
   "name": "Managed Service Organization Access Policy with Patient Consent",
@@ -236,7 +237,7 @@ along with this AccessPolicy:
 The `%profile` value does not need to be explicitly added to the Practitioner's ProjectMembership like the Organization references are. `%profile` is a special variable that, in this case, is replaced with a reference to the Practitioner.
 :::
 
-```json
+```ts
 {
  "resourceType": "AccessPolicy",
  "name": "Managed Service Organization Access Policy with Patient Consent",
@@ -282,12 +283,7 @@ As you can see in the [MSO Demo App](https://github.com/medplum/medplum-mso-demo
 
 For reference, [here](https://github.com/medplum/medplum/blob/4e7955ffc9daba354ee2fe502b8f8c919916b0c7/examples/medplum-mso-demo/src/pages/NewClinicianPage.tsx#L96) is the code that the MSO Demo App uses to invite clinicians as project-scoped users.
 
-## Need Additional Help?
+## MSO Demo Links
 
-If you have any questions or need to impose additional restrictions on Users for your MSO
-
-- Join our [Discord community](https://discord.gg/medplum) for real-time support
-- Check our [documentation](https://www.medplum.com/docs)
-- Explore the [MSO Demo App](https://github.com/medplum/medplum-mso-demo)
-- Open an issue on our [GitHub repository](https://github.com/medplum/medplum)
-- Contact us directly at support@medplum.com
+- [MSO Demo App Video](https://www.youtube.com/watch?v=FJIZTI9_fBc)
+- [MSO Demo App Code](https://github.com/medplum/medplum-mso-demo)
