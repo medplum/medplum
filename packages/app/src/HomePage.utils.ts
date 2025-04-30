@@ -52,7 +52,7 @@ export function getDefaultFields(resourceType: string): string[] {
       fields.push('name', 'birthDate', 'gender');
       break;
     case 'AsyncJob':
-      fields.push('status');
+      fields.push('status', 'dataVersion');
       break;
     case 'AccessPolicy':
     case 'Bot':
