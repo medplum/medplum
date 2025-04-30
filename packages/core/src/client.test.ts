@@ -2335,6 +2335,8 @@ describe('Client', () => {
             return badRequest('The request is not good');
           case 401:
             return unauthorized;
+          case 403:
+            return forbidden;
           case 404:
             return notFound;
           default:
@@ -2350,6 +2352,11 @@ describe('Client', () => {
         case 401:
           await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow(
             new OperationOutcomeError(unauthorized)
+          );
+          break;
+        case 403:
+          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow(
+            new OperationOutcomeError(forbidden)
           );
           break;
         case 404:
