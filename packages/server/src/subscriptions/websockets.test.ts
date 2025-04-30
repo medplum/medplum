@@ -691,24 +691,20 @@ describe('WebSocket Subscription', () => {
           await sleep(0);
         });
 
-      let shouldFail = false;
-      const failTimer = setTimeout(() => {
-        shouldFail = true;
-      }, 5000);
-
+      const startTime = Date.now();
       let success = false;
-      while (!success) {
+
+      while (Date.now() - startTime < 5000 && !success) {
         try {
           expect(globalLoggerErrorSpy).toHaveBeenCalledWith('[WS] Error occurred while rewriting attachments', {
             err: expect.any(Error),
           });
           success = true;
-          clearTimeout(failTimer);
         } catch (err) {
-          if (shouldFail) {
+          await sleep(100);
+          if (Date.now() - startTime >= 5000) {
             throw err;
           }
-          await sleep(100);
         }
       }
 
