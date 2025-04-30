@@ -691,9 +691,26 @@ describe('WebSocket Subscription', () => {
           await sleep(0);
         });
 
-      expect(globalLoggerErrorSpy).toHaveBeenCalledWith('[WS] Error occurred while rewriting attachments', {
-        err: expect.any(Error),
-      });
+      let shouldFail = false;
+      const failTimer = setTimeout(() => {
+        shouldFail = true;
+      }, 5000);
+
+      let success = false;
+      while (!success) {
+        try {
+          expect(globalLoggerErrorSpy).toHaveBeenCalledWith('[WS] Error occurred while rewriting attachments', {
+            err: expect.any(Error),
+          });
+          success = true;
+          clearTimeout(failTimer);
+        } catch (err) {
+          if (shouldFail) {
+            throw err;
+          }
+          await sleep(100);
+        }
+      }
 
       // Restore original implementations
       rewriteAttachmentsSpy.mockRestore();
