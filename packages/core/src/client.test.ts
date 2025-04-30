@@ -2328,7 +2328,7 @@ describe('Client', () => {
       expect(fetch).toHaveBeenCalledTimes(1);
     });
 
-    test.each([400, 401, 404])('%d status code is not retried', async (statusCode) => {
+    test.each([400, 401, 403, 404])('%d status code is not retried', async (statusCode) => {
       const fetch = mockFetch(statusCode, (): OperationOutcome => {
         switch (statusCode) {
           case 400:
