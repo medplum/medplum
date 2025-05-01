@@ -23,7 +23,11 @@ import { conceptMapTranslate } from './conceptmaptranslate';
  * It is used to store and retrieve imported StructureMaps and ConceptMaps by URL.
  */
 export class TransformMapCollection {
-  constructor(readonly resources: (StructureMap | ConceptMap)[] = []) {}
+  readonly resources: (StructureMap | ConceptMap)[];
+
+  constructor(resources: (StructureMap | ConceptMap)[] = []) {
+    this.resources = resources;
+  }
 
   get<K extends ResourceType>(resourceType: K, url: string): ExtractResource<K>[] {
     const result = [];

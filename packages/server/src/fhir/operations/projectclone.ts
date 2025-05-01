@@ -2,8 +2,8 @@ import { created, forbidden, getResourceTypes, isResourceType, Operator } from '
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { getBinaryStorage } from '../../storage/loader';
 import { Repository } from '../repo';
-import { getBinaryStorage } from '../storage';
 import { buildBinaryIds } from './utils/binary';
 
 /**
@@ -27,15 +27,31 @@ export async function projectCloneHandler(req: FhirRequest): Promise<FhirRespons
 }
 
 class ProjectCloner {
+  readonly repo: Repository;
+  readonly projectId: string;
+  readonly projectName: string;
+  readonly allowedResourceTypes: string[];
+  readonly includeIds: string[];
+  readonly excludeIds: string[];
+  readonly idMap: Map<string, string>;
+
   constructor(
-    readonly repo: Repository,
-    readonly projectId: string,
-    readonly projectName: string = '',
-    readonly allowedResourceTypes: string[] = [],
-    readonly includeIds: string[] = [],
-    readonly excludeIds: string[] = [],
-    readonly idMap: Map<string, string> = new Map()
-  ) {}
+    repo: Repository,
+    projectId: string,
+    projectName: string = '',
+    allowedResourceTypes: string[] = [],
+    includeIds: string[] = [],
+    excludeIds: string[] = [],
+    idMap = new Map<string, string>()
+  ) {
+    this.repo = repo;
+    this.projectId = projectId;
+    this.projectName = projectName;
+    this.allowedResourceTypes = allowedResourceTypes;
+    this.includeIds = includeIds;
+    this.excludeIds = excludeIds;
+    this.idMap = idMap;
+  }
 
   async cloneProject(): Promise<Project> {
     const repo = this.repo;

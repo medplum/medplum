@@ -1,14 +1,16 @@
-import { Logger, ProfileResource, isUUID, parseLogLevel, WithId } from '@medplum/core';
+import { Logger, ProfileResource, WithId, isUUID, parseLogLevel } from '@medplum/core';
 import { Bot, ClientApplication, Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
+import { systemLogger } from './logger';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { IRequestContext, requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
-import { systemLogger } from './logger';
+import { getRedis } from './redis';
+import { FhirRateLimiter } from './fhirinteractionlimit';
 
 export class RequestContext implements IRequestContext {
   readonly requestId: string;
@@ -33,18 +35,27 @@ export class RequestContext implements IRequestContext {
 }
 
 export class AuthenticatedRequestContext extends RequestContext {
-  constructor(
-    requestId: string,
-    traceId: string,
-    readonly authState: Readonly<AuthState>,
-    readonly repo: Repository,
-    logger?: Logger
-  ) {
+  readonly authState: Readonly<AuthState>;
+  readonly repo: Repository;
+  readonly fhirRateLimiter?: FhirRateLimiter;
+
+  constructor(requestId: string, traceId: string, authState: Readonly<AuthState>, repo: Repository, logger?: Logger) {
     let loggerMetadata: Record<string, any> | undefined;
-    if (repo.currentProject()?.id) {
-      loggerMetadata = { projectId: repo.currentProject()?.id };
+    const projectId = repo.currentProject()?.id;
+    if (projectId) {
+      let profile = authState.membership.profile.reference;
+      const asUserProfile = authState.onBehalfOfMembership?.profile.reference;
+      if (asUserProfile && asUserProfile !== profile) {
+        profile += ` (as ${asUserProfile})`;
+      }
+      loggerMetadata = { projectId, profile };
     }
     super(requestId, traceId, logger, loggerMetadata);
+
+    this.fhirRateLimiter = getFhirRateLimiter(authState, this.logger);
+
+    this.authState = authState;
+    this.repo = repo;
   }
 
   get project(): WithId<Project> {
@@ -199,4 +210,13 @@ function requestIds(req: Request): { requestId: string; traceId: string } {
 
 function write(msg: string): void {
   process.stdout.write(msg + '\n');
+}
+
+function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimiter | undefined {
+  const projectLimit = authState.project?.systemSetting?.find(
+    (s) => s.name === 'userFhirInteractionLimit'
+  )?.valueInteger;
+  const limit = projectLimit ?? getConfig().defaultFhirInteractionLimit;
+
+  return authState.membership ? new FhirRateLimiter(getRedis(), authState, limit, logger) : undefined;
 }

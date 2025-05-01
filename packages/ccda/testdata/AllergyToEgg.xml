@@ -28,6 +28,8 @@
                     <given>Katherine</given>
                     <family>Madison</family>
                 </name>
+                <raceCode nullFlavor="UNK"/>
+                <ethnicGroupCode nullFlavor="UNK"/>
             </patient>
         </patientRole>
     </recordTarget>
@@ -36,6 +38,7 @@
             <component>
                 <section>
                     <templateId root="2.16.840.1.113883.10.20.22.2.6.1" extension="2015-08-01" />
+                    <templateId root="2.16.840.1.113883.10.20.22.2.6.1" />
                     <code code="48765-2" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
                     <title>Allergies, Adverse Reactions and Alerts</title>
                     <text>

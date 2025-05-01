@@ -7,7 +7,7 @@ import 'aws-sdk-client-mock-jest';
 import { Request } from 'express';
 import internal, { Readable } from 'stream';
 import { loadTestConfig } from '../../config/loader';
-import { getBinaryStorage, initBinaryStorage } from '../../fhir/storage';
+import { getBinaryStorage, initBinaryStorage } from '../../storage/loader';
 
 describe('Storage', () => {
   let mockS3Client: AwsClientStub<S3Client>;

@@ -3,6 +3,7 @@ import {
   ContentType,
   createReference,
   Filter,
+  forbidden,
   getDateProperty,
   getReferenceString,
   isString,
@@ -12,7 +13,6 @@ import {
   ProfileResource,
   resolveId,
   tooManyRequests,
-  unauthorized,
   WithId,
 } from '@medplum/core';
 import {
@@ -36,6 +36,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
+import { parseSmartScopes, SmartScope } from '../fhir/smart';
 import { getLogger } from '../logger';
 import {
   AuditEventOutcome,
@@ -489,12 +490,22 @@ function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean 
   return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(ruleValue);
 }
 
-function matchesScope(existing: string, candidate: string): boolean {
-  if (!candidate.startsWith(existing)) {
-    // Must be at least prefix match
+function matchesScope(existing: SmartScope, candidate: SmartScope): boolean {
+  // Ensure types match
+  if (candidate.permissionType !== existing.permissionType || candidate.resourceType !== existing.resourceType) {
     return false;
   }
-  return candidate.length === existing.length || candidate[existing.length] === '?';
+  // Scopes granted must be a subset
+  if (
+    candidate.scope.length > existing.scope.length ||
+    candidate.scope.split('').some((s) => !existing.scope.includes(s))
+  ) {
+    return false;
+  }
+  if (existing.criteria && candidate.criteria !== existing.criteria) {
+    return false;
+  }
+  return true;
 }
 
 /**
@@ -508,16 +519,12 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
   if (login.revoked) {
     throw new OperationOutcomeError(badRequest('Login revoked'));
   }
-
   if (login.granted) {
     throw new OperationOutcomeError(badRequest('Login granted'));
   }
 
-  // Get existing scope
-  const existingScopes = login.scope?.split(' ') || [];
-
-  // Get submitted scope
-  const submittedScopes = scope.split(' ');
+  const existingScopes = parseSmartScopes(login.scope);
+  const submittedScopes = parseSmartScopes(scope);
 
   // If user requests any scope that is not in existing scope, then reject
   for (const candidate of submittedScopes) {
@@ -528,10 +535,7 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
 
   // Otherwise update scope
   const systemRepo = getSystemRepo();
-  return systemRepo.updateResource<Login>({
-    ...login,
-    scope: submittedScopes.join(' '),
-  });
+  return systemRepo.updateResource<Login>({ ...login, scope });
 }
 
 export async function getAuthTokens(
@@ -939,7 +943,7 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
   }
 
   if (!authState.membership.admin) {
-    throw new OperationOutcomeError(unauthorized);
+    throw new OperationOutcomeError(forbidden);
   }
 
   let onBehalfOfMembership: WithId<ProjectMembership> | undefined = undefined;
@@ -957,7 +961,7 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
       ],
     });
     if (!onBehalfOfMembership) {
-      throw new OperationOutcomeError(unauthorized);
+      throw new OperationOutcomeError(forbidden);
     }
   }
 

@@ -93,7 +93,8 @@ fi
 # eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
 # jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-MAJOR_EXCLUDE="@types/express @types/node @types/react @types/react-dom commander eslint jose node-fetch"
+# express - version 5 is now latest and has some breaking changes -- we need to make sure middleware and other related deps work with new version
+MAJOR_EXCLUDE="@types/express @types/node @types/react @types/react-dom commander eslint jose node-fetch express"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions

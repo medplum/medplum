@@ -17,14 +17,21 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
   const idToUuid: Record<string, string> = {};
   bundle = deepClone(bundle);
   for (const entry of bundle.entry || []) {
-    if (entry.resource?.meta !== undefined) {
-      delete entry.resource.meta.author;
-      delete entry.resource.meta.compartment;
-      delete entry.resource.meta.lastUpdated;
-      delete entry.resource.meta.project;
-      delete entry.resource.meta.versionId;
+    const resource = entry.resource;
+    if (!resource) {
+      continue;
     }
-    const id = entry.resource?.id;
+    if (resource.meta !== undefined) {
+      delete resource.meta.author;
+      delete resource.meta.compartment;
+      delete resource.meta.lastUpdated;
+      delete resource.meta.project;
+      delete resource.meta.versionId;
+      if (Object.keys(resource.meta).length === 0) {
+        delete resource.meta;
+      }
+    }
+    const id = resource?.id;
     if (id) {
       idToUuid[id] = generateId();
 
@@ -37,9 +44,9 @@ export function convertToTransactionBundle(bundle: Bundle): Bundle {
     {
       resourceType: 'Bundle',
       type: 'transaction',
-      entry: input?.map((entry: any) => ({
+      entry: input?.map((entry: BundleEntry) => ({
         fullUrl: entry.fullUrl,
-        request: { method: 'POST', url: entry.resource.resourceType },
+        request: { method: 'POST', url: entry.resource?.resourceType },
         resource: entry.resource,
       })),
     },
@@ -113,11 +120,12 @@ export function reorderBundle(bundle: Bundle): Bundle {
 
 type AdjacencyList = Record<string, string[]>;
 
-enum VertexState {
-  NotVisited,
-  Visiting,
-  Visited,
-}
+const VertexState = {
+  NotVisited: 'NotVisited',
+  Visiting: 'Visiting',
+  Visited: 'Visited',
+} as const;
+type VertexState = (typeof VertexState)[keyof typeof VertexState];
 
 function topologicalSortWithCycles(graph: AdjacencyList): { sorted: string[]; cycles: string[][] } {
   const sorted: string[] = [];

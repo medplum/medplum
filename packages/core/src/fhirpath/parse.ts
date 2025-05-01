@@ -29,6 +29,7 @@ import {
 import { parseDateString } from './date';
 import { tokenize } from './tokenize';
 import { toTypedValue } from './utils';
+import { LRUCache } from '../cache';
 
 /**
  * Operator precedence
@@ -233,11 +234,11 @@ export function parseFhirPath(input: string): FhirPathAtom {
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param expression - The FHIRPath expression to parse.
+ * @param expression - The FHIRPath expression to evaluate.
  * @param input - The resource or object to evaluate the expression against.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
-export function evalFhirPath(expression: string, input: unknown): unknown[] {
+export function evalFhirPath(expression: string | FhirPathAtom, input: unknown): unknown[] {
   // eval requires a TypedValue array
   // As a convenience, we can accept array or non-array, and TypedValue or unknown value
   const array = Array.isArray(input) ? input : [input];
@@ -252,17 +253,28 @@ export function evalFhirPath(expression: string, input: unknown): unknown[] {
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param expression - The FHIRPath expression to parse.
+ * @param expression - The FHIRPath expression to evaluate.
  * @param input - The resource or object to evaluate the expression against.
  * @param variables - A map of variables for eval input.
+ * @param cache - Cache for parsed ASTs.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPathTyped(
-  expression: string,
+  expression: string | FhirPathAtom,
   input: TypedValue[],
-  variables: Record<string, TypedValue> = {}
+  variables: Record<string, TypedValue> = {},
+  cache: LRUCache<FhirPathAtom> | undefined = undefined
 ): TypedValue[] {
-  const ast = parseFhirPath(expression);
+  let ast: FhirPathAtom;
+  if (typeof expression === 'string') {
+    const cachedAst = cache?.get(expression);
+    ast = cachedAst ?? parseFhirPath(expression);
+    if (cache && !cachedAst) {
+      cache.set(expression, ast);
+    }
+  } else {
+    ast = expression;
+  }
   return ast.eval({ variables }, input).map((v) => ({
     type: v.type,
     value: v.value?.valueOf(),

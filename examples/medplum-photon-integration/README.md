@@ -35,6 +35,14 @@ Move into the `medplum-photon-integration` directory
 cd examples/medplum-photon-integration
 ```
 
+If you want to change any environment variables from the defaults, copy the `.env.defaults` file to `.env`
+
+```bash
+cp .env.defaults .env
+```
+
+And make the changes you need. You should add your PHOTON_CLIENT_ID and PHOTON_ORG_ID to the `.env` file.
+
 Next, install the dependencies
 
 ```bash

@@ -68,6 +68,7 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
           ...expandParams,
           url: binding,
           filter: input,
+          count: 10,
         },
         { signal }
       );

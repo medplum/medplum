@@ -76,7 +76,6 @@ async function initiateEhrLaunch(params: URLSearchParams): Promise<never> {
     state,
     aud: iss,
     launch: launch as string,
-    prompt: 'none',
   });
 
   const url = new URL(config.authorization_endpoint);

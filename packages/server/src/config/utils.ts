@@ -3,32 +3,69 @@ import { MedplumServerConfig } from './types';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
+export type ServerConfig = MedplumServerConfig & Required<Pick<MedplumServerConfig, DefaultConfigKeys>>;
+
 /**
  * Adds default values to the config.
  * @param config - The input config as loaded from the config file.
  * @returns The config with default values added.
  */
-export function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
-  config.port = config.port || 8103;
-  config.issuer = config.issuer || config.baseUrl;
-  config.jwksUrl = config.jwksUrl || concatUrls(config.baseUrl, '/.well-known/jwks.json');
-  config.authorizeUrl = config.authorizeUrl || concatUrls(config.baseUrl, '/oauth2/authorize');
-  config.tokenUrl = config.tokenUrl || concatUrls(config.baseUrl, '/oauth2/token');
-  config.userInfoUrl = config.userInfoUrl || concatUrls(config.baseUrl, '/oauth2/userinfo');
-  config.storageBaseUrl = config.storageBaseUrl || concatUrls(config.baseUrl, '/storage');
-  config.maxJsonSize = config.maxJsonSize || '1mb';
-  config.maxBatchSize = config.maxBatchSize || '50mb';
-  config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
-  config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
-  config.bcryptHashSalt = config.bcryptHashSalt || 10;
-  config.bullmq = { concurrency: 10, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
-  config.shutdownTimeoutMilliseconds = config.shutdownTimeoutMilliseconds ?? 30000;
-  config.accurateCountThreshold = config.accurateCountThreshold ?? 1000000;
-  config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
-  config.defaultProjectFeatures = config.defaultProjectFeatures ?? [];
-  config.emailProvider = config.emailProvider || (config.smtp ? 'smtp' : 'awsses');
-  return config;
+export function addDefaults(config: MedplumServerConfig): ServerConfig {
+  config.port ||= 8103;
+  config.issuer ||= config.baseUrl;
+  config.jwksUrl ||= concatUrls(config.baseUrl, '/.well-known/jwks.json');
+  config.authorizeUrl ||= concatUrls(config.baseUrl, '/oauth2/authorize');
+  config.tokenUrl ||= concatUrls(config.baseUrl, '/oauth2/token');
+  config.userInfoUrl ||= concatUrls(config.baseUrl, '/oauth2/userinfo');
+  config.introspectUrl ||= concatUrls(config.baseUrl, '/oauth2/introspect');
+  config.storageBaseUrl ||= concatUrls(config.baseUrl, '/storage');
+  config.maxJsonSize ||= '1mb';
+  config.maxBatchSize ||= '50mb';
+  config.awsRegion ||= DEFAULT_AWS_REGION;
+  config.botLambdaLayerName ||= 'medplum-bot-layer';
+  config.bcryptHashSalt ||= 10;
+  config.bullmq = { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
+  config.shutdownTimeoutMilliseconds ??= 30_000;
+  config.accurateCountThreshold ??= 1_000_000;
+  config.defaultBotRuntimeVersion ??= 'awslambda';
+  config.defaultProjectFeatures ??= [];
+  config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
+
+  // History:
+  // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
+  // That meant that the rate limit was per server instance, rather than per server cluster
+  // The value was primarily tuned for one particular cluster with 6 server instances
+  // Therefore, to maintain parity, the new default "auth rate limit" is 1200 per 15 minutes
+  config.defaultRateLimit ??= 60_000;
+  config.defaultAuthRateLimit ??= 160;
+
+  config.defaultFhirInteractionLimit ??= 50_000;
+  return config as ServerConfig;
 }
+
+type DefaultConfigKeys =
+  | 'port'
+  | 'issuer'
+  | 'jwksUrl'
+  | 'authorizeUrl'
+  | 'tokenUrl'
+  | 'userInfoUrl'
+  | 'introspectUrl'
+  | 'storageBaseUrl'
+  | 'maxJsonSize'
+  | 'maxBatchSize'
+  | 'awsRegion'
+  | 'botLambdaLayerName'
+  | 'bcryptHashSalt'
+  | 'bullmq'
+  | 'shutdownTimeoutMilliseconds'
+  | 'accurateCountThreshold'
+  | 'defaultBotRuntimeVersion'
+  | 'defaultProjectFeatures'
+  | 'emailProvider'
+  | 'defaultRateLimit'
+  | 'defaultAuthRateLimit'
+  | 'defaultFhirInteractionLimit';
 
 const integerKeys = ['port', 'accurateCountThreshold'];
 
@@ -45,6 +82,8 @@ const booleanKeys = [
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
   'database.disableConnectionConfiguration',
+  'database.disableRunPostDeployMigrations',
+  'database.runMigrations',
   'readonlyDatabase.ssl.rejectUnauthorized',
   'readonlyDatabase.ssl.require',
   'readonlyDatabase.disableConnectionConfiguration',

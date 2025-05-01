@@ -7,6 +7,7 @@ import {
   Operator,
   WithId,
   createReference,
+  deepClone,
   getExtension,
   getExtensionValue,
   getReferenceString,
@@ -23,17 +24,24 @@ import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Sub
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch, { HeadersInit } from 'node-fetch';
 import { createHmac } from 'node:crypto';
-import { MedplumServerConfig } from '../config/types';
 import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
 import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
+import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
 import { getLogger, globalLogger } from '../logger';
+import { recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
+import { WorkerInitializer, createAuditEvent, findProjectMembership, isJobSuccessful, queueRegistry } from './utils';
+
+/**
+ * The timeout for outbound rest-hook subscription HTTP requests.
+ * This is passed into fetch and will make fetch abort the request after REQUEST_TIMEOUT milliseconds.
+ */
+const REQUEST_TIMEOUT = 120_000; // 120 seconds, 2 mins
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -70,21 +78,13 @@ export interface SubscriptionJobData {
 
 const queueName = 'SubscriptionQueue';
 const jobName = 'SubscriptionJobData';
-let queue: Queue<SubscriptionJobData> | undefined = undefined;
-let worker: Worker<SubscriptionJobData> | undefined = undefined;
 
-/**
- * Initializes the subscription worker.
- * Sets up the BullMQ job queue.
- * Sets up the BullMQ worker.
- * @param config - The Medplum server config to use.
- */
-export function initSubscriptionWorker(config: MedplumServerConfig): void {
+export const initSubscriptionWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<SubscriptionJobData>(queueName, {
+  const queue = new Queue<SubscriptionJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: MAX_JOB_ATTEMPTS, // 1 second * 2^18 = 73 hours
@@ -95,7 +95,7 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
     },
   });
 
-  worker = new Worker<SubscriptionJobData>(
+  const worker = new Worker<SubscriptionJobData>(
     queueName,
     (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
     {
@@ -103,26 +103,35 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
       ...config.bullmq,
     }
   );
-  worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
-  worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
-}
+  worker.on('active', (job) => {
+    // Only record queuedDuration on the first attempt
+    if (job.attemptsMade === 0) {
+      recordHistogramValue('medplum.subscription.queuedDuration', (Date.now() - (job.timestamp as number)) / 1000);
+    }
+  });
+  worker.on('completed', (job) => {
+    globalLogger.info(`Completed job ${job.id} successfully`);
+    recordHistogramValue(
+      'medplum.subscription.executionDuration',
+      ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+    );
+    recordHistogramValue(
+      'medplum.subscription.totalDuration',
+      ((job.finishedOn as number) - (job.timestamp as number)) / 1000
+    );
+  });
+  worker.on('failed', (job, err) => {
+    globalLogger.info(`Failed job ${job?.id} with ${err}`);
+    if (job) {
+      recordHistogramValue(
+        'medplum.subscription.failedExecutionDuration',
+        ((job.finishedOn as number) - (job.processedOn as number)) / 1000
+      );
+    }
+  });
 
-/**
- * Shuts down the subscription worker.
- * Closes the BullMQ job queue.
- * Clsoes the BullMQ worker.
- */
-export async function closeSubscriptionWorker(): Promise<void> {
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-}
+  return { queue, worker, name: queueName };
+};
 
 /**
  * Returns the subscription queue instance.
@@ -130,7 +139,7 @@ export async function closeSubscriptionWorker(): Promise<void> {
  * @returns The subscription queue (if available).
  */
 export function getSubscriptionQueue(): Queue<SubscriptionJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 /**
@@ -248,7 +257,6 @@ export async function addSubscriptionJobs(
   logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
-
   for (const subscription of subscriptions) {
     if (options?.subscription && options.subscription !== getReferenceString(subscription)) {
       logFn('Subscription does not match options.subscription');
@@ -315,6 +323,7 @@ async function matchesCriteria(
  * @param job - The subscription job details.
  */
 async function addSubscriptionJobData(job: SubscriptionJobData): Promise<void> {
+  const queue = queueRegistry.get(queueName);
   if (queue) {
     await queue.add(jobName, job);
   }
@@ -420,13 +429,20 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
 
   try {
     const versionedResource = await systemRepo.readVersion(resourceType, id, versionId);
+    // We use the resource with rewritten attachments here since we want subscribers to get the resource with the same attachment URLs
+    // They would get if they did a search
+    const rewrittenResource = await rewriteAttachments(
+      RewriteMode.PRESIGNED_URL,
+      systemRepo,
+      deepClone(versionedResource)
+    );
     const channelType = subscription.channel?.type;
     switch (channelType) {
       case 'rest-hook':
         if (subscription.channel?.endpoint?.startsWith('Bot/')) {
-          await execBot(subscription, versionedResource, interaction, requestTime);
+          await execBot(subscription, rewrittenResource, interaction, requestTime);
         } else {
-          await sendRestHook(job, subscription, versionedResource, interaction, requestTime);
+          await sendRestHook(job, subscription, rewrittenResource, interaction, requestTime);
         }
         break;
       default:
@@ -504,10 +520,13 @@ async function sendRestHook(
   const body = interaction === 'delete' ? '{}' : stringify(resource);
   let error: Error | undefined = undefined;
 
+  const fetchStartTime = Date.now();
+  let fetchEndTime: number;
   try {
     log.info('Sending rest hook to: ' + url);
     log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
-    const response = await fetch(url, { method: 'POST', headers, body });
+    const response = await fetch(url, { method: 'POST', headers, body, timeout: REQUEST_TIMEOUT });
+    fetchEndTime = Date.now();
     log.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
@@ -522,6 +541,7 @@ async function sendRestHook(
       error = new Error('Received status ' + response.status);
     }
   } catch (ex) {
+    fetchEndTime = Date.now();
     log.info('Subscription exception: ' + ex);
     await createAuditEvent(
       resource,
@@ -532,6 +552,14 @@ async function sendRestHook(
     );
     error = ex as Error;
   }
+
+  const fetchDurationMs = fetchEndTime - fetchStartTime;
+  recordHistogramValue('medplum.subscription.restHookFetchDuration', fetchDurationMs / 1000);
+  log.info('Subscription rest hook fetch duration', {
+    fetchDurationMs,
+    subscription: subscription.id,
+    project: subscription?.meta?.project,
+  });
 
   if (error) {
     throw error;

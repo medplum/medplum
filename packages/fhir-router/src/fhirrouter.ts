@@ -44,6 +44,7 @@ export type FhirRequestConfig = {
 
 export type FhirResponseOptions = {
   contentType?: string;
+  forceRawBinaryResponse?: boolean;
 };
 
 export type FhirResponse =

@@ -4,6 +4,7 @@ import {
   AsAtom,
   BooleanInfixOperatorAtom,
   DotAtom,
+  FhirPathAtom,
   FunctionAtom,
   IndexerAtom,
   IsAtom,
@@ -14,22 +15,24 @@ import { PropertyType, getElementDefinition, globalSchema } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { lazy } from '../utils';
 
-export enum SearchParameterType {
-  BOOLEAN = 'BOOLEAN',
-  NUMBER = 'NUMBER',
-  QUANTITY = 'QUANTITY',
-  TEXT = 'TEXT',
-  REFERENCE = 'REFERENCE',
-  CANONICAL = 'CANONICAL',
-  DATE = 'DATE',
-  DATETIME = 'DATETIME',
-  PERIOD = 'PERIOD',
-  UUID = 'UUID',
-}
+export const SearchParameterType = {
+  BOOLEAN: 'BOOLEAN',
+  NUMBER: 'NUMBER',
+  QUANTITY: 'QUANTITY',
+  TEXT: 'TEXT',
+  REFERENCE: 'REFERENCE',
+  CANONICAL: 'CANONICAL',
+  DATE: 'DATE',
+  DATETIME: 'DATETIME',
+  PERIOD: 'PERIOD',
+  UUID: 'UUID',
+} as const;
+export type SearchParameterType = (typeof SearchParameterType)[keyof typeof SearchParameterType];
 
 export interface SearchParameterDetails {
   readonly type: SearchParameterType;
   readonly elementDefinitions?: InternalSchemaElement[];
+  readonly parsedExpression: FhirPathAtom;
   readonly array?: boolean;
 }
 
@@ -120,6 +123,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
   const result: SearchParameterDetails = {
     type: getSearchParameterType(searchParam, builder.propertyTypes),
     elementDefinitions: builder.elementDefinitions,
+    parsedExpression: getParsedExpressionForResourceType(resourceType, searchParam.expression as string),
     array: builder.array,
   };
   setSearchParameterDetails(resourceType, code, result);
@@ -157,8 +161,18 @@ function crawlSearchParameterDetails(
     nextIndex++;
   }
 
+  const nextAtom = atoms[nextIndex];
+
   if (elementDefinition.isArray && !hasArrayIndex) {
     details.array = true;
+  }
+
+  if (nextIndex === atoms.length - 1 && nextAtom instanceof AsAtom) {
+    // This is the 2nd to last atom in the expression
+    // And the last atom is an "as" expression
+    details.elementDefinitions.push(elementDefinition);
+    details.propertyTypes.add(nextAtom.right.toString());
+    return;
   }
 
   if (nextIndex >= atoms.length) {
@@ -258,13 +272,29 @@ export function getExpressionForResourceType(resourceType: string, expression: s
   return atoms.map((atom) => atom.toString()).join(' | ');
 }
 
+export function getParsedExpressionForResourceType(resourceType: string, expression: string): FhirPathAtom {
+  const atoms: Atom[] = [];
+  const fhirPathExpression = parseFhirPath(expression);
+  buildExpressionsForResourceType(resourceType, fhirPathExpression.child, atoms);
+
+  if (atoms.length === 0) {
+    return fhirPathExpression;
+  }
+
+  let result: Atom = atoms[0];
+  for (let i = 1; i < atoms.length; i++) {
+    result = new UnionAtom(result, atoms[i]);
+  }
+  return new FhirPathAtom('<original-not-available>', result);
+}
+
 function buildExpressionsForResourceType(resourceType: string, atom: Atom, result: Atom[]): void {
   if (atom instanceof UnionAtom) {
     buildExpressionsForResourceType(resourceType, atom.left, result);
     buildExpressionsForResourceType(resourceType, atom.right, result);
   } else {
     const str = atom.toString();
-    if (str.startsWith(resourceType + '.')) {
+    if (str.includes(resourceType + '.')) {
       result.push(atom);
     }
   }

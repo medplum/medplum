@@ -9,6 +9,16 @@
 # Echo commands
 set -x
 
+# Initialize FORCE flag to false
+FORCE=false
+
+# Parse command line arguments
+for arg in "$@"; do
+  if [[ "$arg" == "--force" ]]; then
+    FORCE=true
+  fi
+done
+
 COMMIT_MESSAGE=$(git log -1 --pretty=%B)
 echo "$COMMIT_MESSAGE"
 
@@ -45,6 +55,10 @@ if [[ "$FILES_CHANGED" =~ packages/app ]]; then
   DEPLOY_APP=true
 fi
 
+if [[ "$FILES_CHANGED" =~ packages/ccda ]]; then
+  DEPLOY_SERVER=true
+fi
+
 if [[ "$FILES_CHANGED" =~ packages/core ]]; then
   DEPLOY_APP=true
   DEPLOY_SERVER=true
@@ -74,6 +88,12 @@ fi
 
 if [[ "$FILES_CHANGED" =~ packages/react ]]; then
   DEPLOY_APP=true
+fi
+
+if [[ "$FORCE" = true ]]; then
+  DEPLOY_APP=true
+  DEPLOY_GRAPHIQL=true
+  DEPLOY_SERVER=true
 fi
 
 #

@@ -1893,24 +1893,32 @@ describe('AccessPolicy', () => {
 
       const repo2 = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project });
 
+      // Read Patient - allowed by AccessPolicy
       const check1 = await repo2.readResource<Patient>('Patient', patient.id);
       expect(check1.id).toBe(patient.id);
 
+      // Read Project - added to synthetic AccessPolicy
       const check2 = await repo2.readResource<Project>('Project', project.id);
       expect(check2.id).toStrictEqual(project.id);
 
+      // Read ProjectMembership - added to synthetic AccessPolicy
       const check3 = await repo2.readResource<ProjectMembership>('ProjectMembership', membership.id);
       expect(check3.id).toStrictEqual(membership.id);
 
-      const check4 = await repo2.searchResources<User>({ resourceType: 'User' });
-      expect(check4.find((u) => u.id === inviteResult.user.id)).toBeDefined();
-
-      await expect(repo2.readResource<Task>('Task', task.id)).rejects.toThrow('Forbidden');
-
-      // Update the project membership
+      // Update ProjectMembership - added to synthetic AccessPolicy
       const check6 = await repo2.updateResource<ProjectMembership>({ ...check3, externalId: randomUUID() });
       expect(check6.id).toStrictEqual(check3.id);
       expect(check6.meta?.versionId).not.toStrictEqual(check3.meta?.versionId);
+
+      // Search (Project-scoped) Users - added to synthetic AccessPolicy
+      const check4 = await repo2.searchResources<User>({ resourceType: 'User' });
+      expect(check4).toHaveLength(2);
+      expect(check4.map((u) => u.id)).toStrictEqual(
+        expect.arrayContaining([inviteResult.user.id, adminInviteResult.user.id])
+      );
+
+      // Read Task - not permitted by AccessPolicy
+      await expect(repo2.readResource<Task>('Task', task.id)).rejects.toThrow('Forbidden');
     }));
 
   test('Project admin cannot modify protected fields', () =>
@@ -1991,6 +1999,76 @@ describe('AccessPolicy', () => {
       }
     }));
 
+  test('Project admin cannot override synthetic access policy for admin types', () =>
+    withTestContext(async () => {
+      const { project, login, membership } = await createTestProject({
+        withAccessToken: true,
+        withClient: true,
+        project: {
+          name: 'Test Project',
+          systemSecret: [{ name: 'mySecret', valueString: 'foo' }],
+        },
+        membership: { admin: true },
+        accessPolicy: {
+          resource: [{ resourceType: '*' }, { resourceType: 'Project' }, { resourceType: 'ProjectMembership' }],
+        },
+      });
+      const repo = await getRepoForLogin({ login, project, membership }, true);
+
+      const check1 = await repo.readResource<Project>('Project', project.id);
+      expect(check1.id).toStrictEqual(project.id);
+
+      // Try to change the project name
+      // This should succeed
+      const check2 = await repo.updateResource<Project>({ ...check1, name: 'Updated name' });
+      expect(check2.id).toStrictEqual(project.id);
+      expect(check2.name).toStrictEqual('Updated name');
+      expect(check2.meta?.versionId).not.toStrictEqual(project.meta?.versionId);
+      expect(check2.meta?.compartment?.find((c) => c.reference === getReferenceString(project))).toBeTruthy();
+
+      // Try to change protected fields
+      // This should be a no-op
+      const check3 = await repo.updateResource<Project>({
+        ...check2,
+        superAdmin: true,
+        features: ['bots'],
+        systemSetting: [{ name: 'rateLimit', valueInteger: 1000000 }],
+        systemSecret: [{ name: 'mySecret', valueString: 'bar' }],
+      });
+      expect(check3.id).toStrictEqual(project.id);
+      expect(check3.meta?.versionId).toStrictEqual(check2.meta?.versionId);
+      expect(check3.superAdmin).toBeUndefined();
+      expect(check3.features).toStrictEqual(project.features);
+      expect(check3.systemSetting).toBeUndefined();
+      expect(check3.systemSecret).toBeUndefined();
+
+      const check4 = await repo.readResource<ProjectMembership>('ProjectMembership', membership.id);
+      expect(check4.id).toStrictEqual(membership.id);
+
+      // Try to change the membership
+      // This should succeed
+      const check5 = await repo.updateResource<ProjectMembership>({
+        ...check4,
+        profile: { reference: 'Practitioner/' + randomUUID() },
+      });
+      expect(check5.id).toStrictEqual(check4.id);
+      expect(check5.meta?.versionId).not.toStrictEqual(check4.meta?.versionId);
+      expect(check5.meta?.compartment?.find((c) => c.reference === getReferenceString(project))).toBeTruthy();
+
+      // Try to change protected fields
+      // This should be a no-op
+      const check6 = await repo.updateResource<ProjectMembership>({
+        ...check5,
+        project: { reference: 'Project/' + randomUUID() },
+      });
+      expect(check6.id).toStrictEqual(check4.id);
+      expect(check6.meta?.versionId).toStrictEqual(check5.meta?.versionId);
+      expect(check6.project?.reference).toStrictEqual(check4.project?.reference);
+
+      // Creating a new Project should fail
+      await expect(repo.createResource({ resourceType: 'Project', name: 'Test Project' })).rejects.toThrow('Forbidden');
+    }));
+
   test('Project admin can modify meta.account', () =>
     withTestContext(async () => {
       const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
@@ -2059,6 +2137,18 @@ describe('AccessPolicy', () => {
       expect(patient3.meta?.account?.reference).toStrictEqual(account2);
       expect(patient3.meta?.accounts).toHaveLength(1);
       expect(patient3.meta?.accounts).toContainEqual({ reference: account2 });
+
+      // Remove patient accounts as project admin
+      // Project admin should be allowed to clear accounts
+      const clearedPatient = await adminRepo.updateResource<Patient>({
+        ...patient2,
+        meta: {
+          accounts: undefined,
+          account: undefined,
+        },
+      });
+      expect(clearedPatient.meta?.account).toBeUndefined();
+      expect(clearedPatient.meta?.accounts).toBeUndefined();
     }));
 
   test('Project admin can set multiple accounts', () =>
@@ -2146,6 +2236,87 @@ describe('AccessPolicy', () => {
       expect(patient4.meta?.accounts).toHaveLength(2);
       expect(patient4.meta?.accounts).toContainEqual({ reference: account1 });
       expect(patient4.meta?.accounts).toContainEqual({ reference: account2 });
+    }));
+
+  test('Super Admin with access policy', () =>
+    withTestContext(async () => {
+      const { project, membership } = await createTestProject({ superAdmin: true, withClient: true });
+
+      const adminRepo = new Repository({
+        author: { reference: 'Practitioner/' + randomUUID() },
+        projects: [project.id],
+        strictMode: true,
+        extendedMode: true,
+        superAdmin: true,
+      });
+
+      const patient = await adminRepo.createResource<Patient>({ resourceType: 'Patient' });
+      const task = await adminRepo.createResource<Task>({ resourceType: 'Task', status: 'accepted', intent: 'order' });
+
+      const accessPolicy: AccessPolicy = await adminRepo.createResource<AccessPolicy>({
+        resourceType: 'AccessPolicy',
+        resource: [
+          { resourceType: 'Patient' },
+          { resourceType: 'User', criteria: 'User?_compartment=' + getReferenceString(project) },
+          { resourceType: 'ProjectMembership', criteria: 'ProjectMembership?_id:not=' + membership.id },
+        ],
+      });
+
+      // Create an admin user with access policy
+      const adminInviteResult = await inviteUser({
+        resourceType: 'Practitioner',
+        project,
+        externalId: randomUUID(),
+        firstName: 'X',
+        lastName: 'Y',
+        sendEmail: false,
+        membership: { accessPolicy: createReference(accessPolicy) },
+      });
+
+      const miniAdminMembership = adminInviteResult.membership;
+      const miniAdminRepo = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership: miniAdminMembership,
+        project,
+      });
+
+      // Read Patient - explicitly allowed by AccessPolicy
+      const check1 = await miniAdminRepo.readResource<Patient>('Patient', patient.id);
+      expect(check1.id).toBe(patient.id);
+
+      // Read Project - added to synthetic AccessPolicy for super admin
+      const check2 = await miniAdminRepo.readResource<Project>('Project', project.id);
+      expect(check2.id).toStrictEqual(project.id);
+
+      // Read specific ProjectMembership - allowed by AccessPolicy
+      const check3 = await miniAdminRepo.readResource('ProjectMembership', miniAdminMembership.id);
+      expect(check3.id).toStrictEqual(miniAdminMembership.id);
+
+      // Update the ProjectMembership - allowed by AccessPolicy
+      const check6 = await miniAdminRepo.updateResource({ ...check3, externalId: randomUUID() });
+      expect(check6.id).toStrictEqual(check3.id);
+      expect(check6.meta?.versionId).not.toStrictEqual(check3.meta?.versionId);
+
+      // Read other ProjectMembership - not permitted by AccessPolicy
+      await expect(miniAdminRepo.readResource('ProjectMembership', membership.id)).rejects.toThrow('Not found');
+
+      // Create a project-scoped user
+      const inviteResult = await inviteUser({
+        resourceType: 'Patient',
+        project,
+        externalId: randomUUID(),
+        firstName: 'X',
+        lastName: 'Y',
+        sendEmail: false,
+      });
+
+      // Search for Users - allowed and scoped by AccessPolicy
+      const check4 = await miniAdminRepo.searchResources<User>({ resourceType: 'User' });
+      expect(check4).toHaveLength(2);
+      expect(check4.find((u) => u.id === inviteResult.user.id)).toBeDefined();
+
+      // Read Task - not permitted by AccessPolicy
+      await expect(miniAdminRepo.readResource<Task>('Task', task.id)).rejects.toThrow('Forbidden');
     }));
 
   test('Mutex resource type policies with hidden fields', () =>

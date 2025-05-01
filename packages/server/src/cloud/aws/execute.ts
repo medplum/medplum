@@ -11,7 +11,7 @@ import { BotExecutionContext, BotExecutionResult } from '../../fhir/operations/e
  * @returns The bot execution result.
  */
 export async function runInLambda(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, accessToken, secrets, input, contentType, traceId } = request;
+  const { bot, accessToken, secrets, input, contentType, traceId, headers } = request;
   const config = getConfig();
   const client = new LambdaClient({ region: config.awsRegion });
   const name = getLambdaFunctionName(bot);
@@ -23,6 +23,7 @@ export async function runInLambda(request: BotExecutionContext): Promise<BotExec
     contentType,
     secrets,
     traceId,
+    headers,
   };
 
   // Build the command

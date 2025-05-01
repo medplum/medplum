@@ -2,11 +2,12 @@ import { Box, Button, Card, Grid, Modal, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import {
+  ChargeItem,
+  ClinicalImpression,
   Coding,
   Encounter,
-  Patient,
   PlanDefinition,
-  Questionnaire,
+  ServiceRequest,
   Task,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
@@ -26,6 +27,7 @@ export const EncounterModal = (): JSX.Element => {
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [status, setStatus] = useState<Encounter['status'] | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCreateEncounter = async (): Promise<void> => {
     if (!patient || !encounterClass || !serviceType || !status) {
@@ -33,10 +35,12 @@ export const EncounterModal = (): JSX.Element => {
         color: 'yellow',
         icon: <IconAlertSquareRounded />,
         title: 'Error',
-        message: 'Fill up mandatory fields.',
+        message: 'Please fill out required fields.',
       });
       return;
     }
+
+    setIsLoading(true);
 
     const encounterData: Encounter = {
       resourceType: 'Encounter',
@@ -50,7 +54,16 @@ export const EncounterModal = (): JSX.Element => {
 
     try {
       const encounter = await medplum.createResource(encounterData);
-      await createQuestionnaireAndTask(encounter, patient);
+      const clinicalImpressionData: ClinicalImpression = {
+        resourceType: 'ClinicalImpression',
+        status: 'completed',
+        description: 'Initial clinical impression',
+        subject: createReference(patient),
+        encounter: createReference(encounter),
+        date: new Date().toISOString(),
+      };
+
+      await medplum.createResource(clinicalImpressionData);
 
       if (planDefinitionData) {
         await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinitionData.id as string, '$apply'), {
@@ -62,43 +75,106 @@ export const EncounterModal = (): JSX.Element => {
         });
       }
 
+      await handleChargeItemsFromTasks(encounter);
+
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
-
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/checkin`)?.catch(console.error);
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`)?.catch(console.error);
     } catch (err) {
       showNotification({ color: 'red', icon: <IconCircleOff />, title: 'Error', message: normalizeErrorString(err) });
     }
   };
 
-  const createQuestionnaireAndTask = async (encounter: Encounter, patient: Patient): Promise<void> => {
+  const handleChargeItemsFromTasks = async (encounter: Encounter): Promise<void> => {
     try {
-      const savedQuestionnaire: Questionnaire = await medplum.createResource(questionnaire);
-      const taskData: Task = {
-        resourceType: 'Task',
-        status: 'ready',
-        intent: 'order',
-        authoredOn: new Date().toISOString(),
-        focus: createReference(encounter),
-        for: createReference(patient),
-        encounter: createReference(encounter),
-        input: [
-          {
-            type: {
-              text: 'Questionnaire',
-            },
-            valueReference: {
-              reference: getReferenceString(savedQuestionnaire),
-              display: savedQuestionnaire.title,
-            },
-          },
-        ],
-      };
+      const tasks = await medplum.search('Task', {
+        encounter: getReferenceString(encounter),
+      });
 
-      await medplum.createResource(taskData);
-    } catch (err) {
-      showNotification({ color: 'red', icon: <IconCircleOff />, title: 'Error', message: normalizeErrorString(err) });
+      if (!tasks.entry?.length) {
+        return;
+      }
+
+      await Promise.all(
+        tasks.entry.map(async (entry) => {
+          const task = entry.resource as Task;
+          const serviceRequestRef = task.focus?.reference;
+
+          if (!serviceRequestRef?.startsWith('ServiceRequest/')) {
+            return;
+          }
+
+          try {
+            const serviceRequest: ServiceRequest = await medplum.readReference({
+              reference: serviceRequestRef,
+            });
+            await createChargeItemFromServiceRequest(serviceRequest);
+          } catch (err) {
+            console.error(`Error processing ServiceRequest ${serviceRequestRef}:`, err);
+          }
+        })
+      );
+    } catch (error) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(error),
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  async function createChargeItemFromServiceRequest(serviceRequest: ServiceRequest): Promise<void> {
+    if (!patient) {
+      showNotification({
+        color: 'yellow',
+        icon: <IconAlertSquareRounded />,
+        title: 'Error',
+        message: 'Patient not found.',
+      });
+      return;
+    }
+
+    // Look for ChargeItemDefinition
+    let definitionCanonical: string[] = [];
+    const chargeDefinitionExtension = serviceRequest.extension?.find(
+      (ext) => ext.url === 'http://medplum.com/fhir/StructureDefinition/applicable-charge-definition'
+    );
+    if (chargeDefinitionExtension?.valueCanonical) {
+      const canonicalUrl = chargeDefinitionExtension.valueCanonical;
+      definitionCanonical = [canonicalUrl];
+    }
+
+    const chargeItem: ChargeItem = {
+      resourceType: 'ChargeItem',
+      status: 'planned',
+      supportingInformation: [
+        {
+          reference: `ServiceRequest/${serviceRequest.id}`,
+        },
+      ],
+      subject: createReference(patient),
+      context: serviceRequest.encounter,
+      occurrenceDateTime: serviceRequest.occurrenceDateTime || new Date().toISOString(),
+      code: serviceRequest.code || { coding: [] },
+      quantity: {
+        value: 1,
+      },
+      definitionCanonical: definitionCanonical,
+    };
+
+    try {
+      await medplum.createResource(chargeItem);
+    } catch (error) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(error),
+      });
+    }
+  }
 
   return (
     <Modal
@@ -183,49 +259,11 @@ export const EncounterModal = (): JSX.Element => {
         </Box>
 
         <Box className={classes.footer} h={70} p="md">
-          <Button fullWidth={false} onClick={handleCreateEncounter}>
+          <Button fullWidth={false} onClick={handleCreateEncounter} loading={isLoading} disabled={isLoading}>
             Create Encounter
           </Button>
         </Box>
       </Stack>
     </Modal>
   );
-};
-
-const questionnaire: Questionnaire = {
-  resourceType: 'Questionnaire',
-  identifier: [
-    {
-      value: 'SOAPNOTE',
-    },
-  ],
-  name: 'Fill chart note',
-  title: 'Fill chart note',
-  status: 'active',
-  item: [
-    {
-      id: 'id-1',
-      linkId: 'q1',
-      type: 'text',
-      text: 'Subjective evaluation',
-    },
-    {
-      id: 'id-2',
-      linkId: 'q2',
-      type: 'text',
-      text: 'Objective evaluation',
-    },
-    {
-      id: 'id-3',
-      linkId: 'q3',
-      type: 'text',
-      text: 'Assessment',
-    },
-    {
-      id: 'id-4',
-      linkId: 'q4',
-      type: 'text',
-      text: 'Treatment plan',
-    },
-  ],
 };

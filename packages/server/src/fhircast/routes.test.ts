@@ -1,12 +1,14 @@
 import {
   ContentType,
+  CurrentContext,
   FhircastEventContext,
   FhircastEventPayload,
+  WithId,
   createFhircastMessagePayload,
   generateId,
   isOperationOutcome,
 } from '@medplum/core';
-import { Project } from '@medplum/fhirtypes';
+import { DiagnosticReport, Project } from '@medplum/fhirtypes';
 import express from 'express';
 import { ChainableCommander } from 'ioredis';
 import { randomUUID } from 'node:crypto';
@@ -17,6 +19,7 @@ import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
+import { setTopicCurrentContext } from './utils';
 
 const STU2_BASE_ROUTE = '/fhircast/STU2';
 const STU3_BASE_ROUTE = '/fhircast/STU3';
@@ -43,7 +46,7 @@ describe('FHIRCast routes', () => {
   let app: express.Express;
   let config: MedplumServerConfig;
   let server: Server;
-  let project: Project;
+  let project: WithId<Project>;
   let accessToken: string;
   let tokenForAnotherProject: string;
 
@@ -414,7 +417,7 @@ describe('FHIRCast routes', () => {
             ],
           },
         });
-      expect(res.status).toBe(201);
+      expect(res.status).toBe(202);
     }
   });
 
@@ -456,7 +459,7 @@ describe('FHIRCast routes', () => {
             ],
           },
         });
-      expect(res.status).toBe(201);
+      expect(res.status).toBe(202);
     }
   });
 
@@ -596,13 +599,16 @@ describe('FHIRCast routes', () => {
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(payload);
-    expect(publishRes.status).toBe(201);
+    expect(publishRes.status).toBe(202);
 
     contextRes = await request(server)
       .get(`${STU2_BASE_ROUTE}/${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(contextRes.status).toBe(200);
-    expect(contextRes.body).toStrictEqual(payload.event.context);
+    expect(contextRes.body).toStrictEqual([
+      ...payload.event.context,
+      { key: 'content', resource: { id: expect.any(String), resourceType: 'Bundle', type: 'collection' } },
+    ]);
 
     contextRes = await request(server)
       .get(`${STU3_BASE_ROUTE}/${topic}`)
@@ -611,7 +617,10 @@ describe('FHIRCast routes', () => {
     expect(contextRes.body).toMatchObject({
       'context.type': 'DiagnosticReport',
       'context.versionId': expect.any(String),
-      context: payload.event.context,
+      context: [
+        ...payload.event.context,
+        { key: 'content', resource: { id: expect.any(String), resourceType: 'Bundle', type: 'collection' } },
+      ],
     });
   });
 
@@ -639,7 +648,7 @@ describe('FHIRCast routes', () => {
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(payload1);
-    expect(publishRes.status).toBe(201);
+    expect(publishRes.status).toBe(202);
 
     let contextRes = await request(server)
       .get(`${STU3_BASE_ROUTE}/${topic}`)
@@ -648,7 +657,10 @@ describe('FHIRCast routes', () => {
     expect(contextRes.body).toMatchObject({
       'context.type': 'DiagnosticReport',
       'context.versionId': expect.any(String),
-      context: payload1.event.context,
+      context: [
+        ...payload1.event.context,
+        { key: 'content', resource: { id: expect.any(String), resourceType: 'Bundle', type: 'collection' } },
+      ],
     });
 
     // Users from other projects should not be able to see the context from the original project
@@ -664,7 +676,7 @@ describe('FHIRCast routes', () => {
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + tokenForAnotherProject)
       .send(payload2);
-    expect(publishRes.status).toBe(201);
+    expect(publishRes.status).toBe(202);
 
     // Context for project 1 should still be the same as before
     contextRes = await request(server)
@@ -674,7 +686,10 @@ describe('FHIRCast routes', () => {
     expect(contextRes.body).toMatchObject({
       'context.type': 'DiagnosticReport',
       'context.versionId': expect.any(String),
-      context: payload1.event.context,
+      context: [
+        ...payload1.event.context,
+        { key: 'content', resource: { id: expect.any(String), resourceType: 'Bundle', type: 'collection' } },
+      ],
     });
 
     // Context for project 2 should not be the same as the last published event
@@ -685,7 +700,10 @@ describe('FHIRCast routes', () => {
     expect(contextRes.body).toMatchObject({
       'context.type': 'DiagnosticReport',
       'context.versionId': expect.any(String),
-      context: payload2.event.context,
+      context: [
+        ...payload2.event.context,
+        { key: 'content', resource: { id: expect.any(String), resourceType: 'Bundle', type: 'collection' } },
+      ],
     });
   });
 
@@ -706,14 +724,26 @@ describe('FHIRCast routes', () => {
     const payload = createFhircastMessagePayload(topic, 'DiagnosticReport-open', context);
     payload.event['context.versionId'] = generateId();
 
+    const contentBundleId = generateId();
+
     // Setup the key as if we have already opened this resource
-    await getRedis().set(`medplum:fhircast:project:${project.id}:topic:${topic}:latest`, JSON.stringify(payload));
+    await setTopicCurrentContext(project.id, topic, {
+      'context.type': 'DiagnosticReport',
+      'context.versionId': generateId(),
+      context: [
+        ...context,
+        { key: 'content', resource: { id: contentBundleId, resourceType: 'Bundle', type: 'collection' } },
+      ],
+    });
 
     beforeContextRes = await request(server)
       .get(`${STU2_BASE_ROUTE}/${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(beforeContextRes.status).toBe(200);
-    expect(beforeContextRes.body).toStrictEqual(context);
+    expect(beforeContextRes.body).toStrictEqual([
+      ...context,
+      { key: 'content', resource: { id: contentBundleId, resourceType: 'Bundle', type: 'collection' } },
+    ]);
 
     beforeContextRes = await request(server)
       .get(`${STU3_BASE_ROUTE}/${topic}`)
@@ -722,7 +752,10 @@ describe('FHIRCast routes', () => {
     expect(beforeContextRes.body).toStrictEqual({
       'context.type': 'DiagnosticReport',
       'context.versionId': expect.any(String),
-      context,
+      context: [
+        ...context,
+        { key: 'content', resource: { id: contentBundleId, resourceType: 'Bundle', type: 'collection' } },
+      ],
     });
 
     const publishRes = await request(server)
@@ -730,7 +763,7 @@ describe('FHIRCast routes', () => {
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(createFhircastMessagePayload(topic, 'DiagnosticReport-close', context));
-    expect(publishRes.status).toBe(201);
+    expect(publishRes.status).toBe(202);
 
     afterContextRes = await request(server)
       .get(`${STU2_BASE_ROUTE}/${topic}`)
@@ -764,31 +797,60 @@ describe('FHIRCast routes', () => {
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(payload);
-    expect(publishRes.status).toBe(201);
+    expect(publishRes.status).toBe(202);
+    expect(publishRes.body.event?.event?.['context.versionId']).toBeDefined();
 
-    const latestEventStr = (await getRedis().get(
+    const latestContextStr = (await getRedis().get(
       `medplum:fhircast:project:${project.id}:topic:${topic}:latest`
     )) as string;
-    expect(latestEventStr).toBeTruthy();
-    const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'DiagnosticReport-open'>;
-    expect(latestEvent).toMatchObject({
-      ...payload,
-      event: { ...payload.event, 'context.versionId': expect.any(String) },
-    });
+    expect(latestContextStr).toBeTruthy();
+    const latestContext = JSON.parse(latestContextStr) as CurrentContext<'DiagnosticReport'>;
+    expect(publishRes.body.event?.event?.['context.versionId']).toStrictEqual(latestContext['context.versionId']);
   });
 
   test('`DiagnosticReport-update`: `context.priorVersionId` matches prior `context.versionId`', async () => {
     const topic = randomUUID();
+    const contentBundleId = generateId();
+    const versionId = generateId();
+
+    // Setup the key as if we have already opened this resource
+    await setTopicCurrentContext(project.id as string, topic, {
+      'context.type': 'DiagnosticReport',
+      'context.versionId': versionId,
+      context: [
+        {
+          key: 'report',
+          resource: {
+            id: '123',
+            resourceType: 'DiagnosticReport',
+            status: 'preliminary',
+            code: {
+              coding: [
+                {
+                  system: 'http://loinc.org',
+                  code: '19005-8',
+                  display: 'Radiology Imaging study [Impression] (narrative)',
+                },
+              ],
+            },
+          } satisfies DiagnosticReport,
+        },
+        { key: 'content', resource: { id: contentBundleId, resourceType: 'Bundle', type: 'collection' } },
+      ],
+    });
 
     const context = [
       {
         key: 'report',
         reference: { reference: 'DiagnosticReport/123' },
       },
+      {
+        key: 'patient',
+        reference: { reference: 'Patient/123' },
+      },
       { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle', type: 'transaction' } },
     ] satisfies FhircastEventContext<'DiagnosticReport-update'>[];
 
-    const versionId = randomUUID();
     const payload = createFhircastMessagePayload(topic, 'DiagnosticReport-update', context, versionId);
 
     const publishRes = await request(server)
@@ -796,20 +858,18 @@ describe('FHIRCast routes', () => {
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(payload);
-    expect(publishRes.status).toBe(201);
-
-    const latestEventStr = (await getRedis().get(
-      `medplum:fhircast:project:${project.id}:topic:${topic}:latest`
-    )) as string;
-    expect(latestEventStr).toBeTruthy();
-    const latestEvent = JSON.parse(latestEventStr) as FhircastEventPayload<'DiagnosticReport-update'>;
-    expect(latestEvent).toMatchObject({
+    expect(publishRes.status).toBe(202);
+    expect(publishRes.body.event).toMatchObject({
       ...payload,
       event: {
         ...payload.event,
-        'context.priorVersionId': versionId,
+        'context.priorVersionId': payload.event['context.versionId'],
         'context.versionId': expect.any(String),
       },
     });
+
+    expect(
+      (publishRes.body.event.event as FhircastEventPayload<'DiagnosticReport-update'>)['context.priorVersionId']
+    ).toStrictEqual(versionId);
   });
 });

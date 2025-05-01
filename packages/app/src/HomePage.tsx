@@ -2,12 +2,11 @@ import { Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { formatSearchQuery, normalizeErrorString, parseSearchRequest, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
-import { Loading, SearchControl, useMedplum } from '@medplum/react';
+import { exportJsonFile, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import classes from './HomePage.module.css';
 import { addSearchValues, getTransactionBundle, RESOURCE_TYPE_CREATION_PATHS, saveLastSearch } from './HomePage.utils';
-import { exportJsonFile } from './utils';
 
 export function HomePage(): JSX.Element {
   const medplum = useMedplum();

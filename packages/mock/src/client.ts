@@ -245,11 +245,20 @@ export class MockClient extends MedplumClient {
       onProgress({ loaded: 100, total: 100, lengthComputable: true } as ProgressEvent);
     }
 
-    return {
+    let data: string | undefined;
+    if (typeof createBinaryOptions.data === 'string') {
+      data = base64Encode(createBinaryOptions.data);
+    }
+
+    const binary = await this.repo.createResource<Binary>({
       resourceType: 'Binary',
-      id: 'mock-binary',
       contentType,
-      url: 'https://example.com/binary/123',
+      data,
+    });
+
+    return {
+      ...binary,
+      url: `https://example.com/binary/${binary.id}`,
     };
   }
 
@@ -323,15 +332,19 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
 }
 
 export class MockFetchClient {
+  readonly router: FhirRouter;
+  readonly repo: MemoryRepository;
+  readonly baseUrl: string;
+  readonly debug: boolean;
   initialized = false;
   initPromise?: Promise<void>;
 
-  constructor(
-    readonly router: FhirRouter,
-    readonly repo: MemoryRepository,
-    readonly baseUrl: string,
-    readonly debug = false
-  ) {}
+  constructor(router: FhirRouter, repo: MemoryRepository, baseUrl: string, debug = false) {
+    this.router = router;
+    this.repo = repo;
+    this.baseUrl = baseUrl;
+    this.debug = debug;
+  }
 
   async mockFetch(url: string, options: any): Promise<Partial<Response>> {
     if (!this.initialized) {

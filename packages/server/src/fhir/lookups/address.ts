@@ -1,8 +1,17 @@
-import { formatAddress } from '@medplum/core';
+import { formatAddress, WithId } from '@medplum/core';
 import { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import { Column, DeleteQuery } from '../sql';
-import { LookupTable } from './lookuptable';
+import { LookupTable, LookupTableRow } from './lookuptable';
+
+export interface AddressTableRow extends LookupTableRow {
+  address: string | undefined;
+  city: string | undefined;
+  country: string | undefined;
+  postalCode: string | undefined;
+  state: string | undefined;
+  use: string | undefined;
+}
 
 /**
  * The AddressTable class is used to index and search Address properties.
@@ -93,41 +102,56 @@ export class AddressTable extends LookupTable {
     return AddressTable.knownParams.has(searchParam.id as string);
   }
 
-  /**
-   * Indexes a resource Address values.
-   * Attempts to reuse existing Addresses if they are correct.
-   * @param client - The database client.
-   * @param resource - The resource to index.
-   * @param create - True if the resource should be created (vs updated).
-   * @returns Promise on completion.
-   */
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (!AddressTable.hasAddress(resource.resourceType)) {
-      return;
-    }
-
-    if (!create) {
-      await this.deleteValuesForResource(client, resource);
-    }
-
+  extractValues(result: AddressTableRow[], resource: WithId<Resource>): void {
     const addresses = this.getIncomingAddresses(resource);
-    if (!addresses || !Array.isArray(addresses)) {
+    if (!Array.isArray(addresses)) {
       return;
     }
 
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id;
-    const values = addresses.map((address) => ({
-      resourceId,
-      address: formatAddress(address),
-      city: address.city?.trim(),
-      country: address.country?.trim(),
-      postalCode: address.postalCode?.trim(),
-      state: address.state?.trim(),
-      use: address.use?.trim(),
-    }));
+    for (const address of addresses) {
+      const extracted = {
+        resourceId: resource.id,
+        // logical OR coalesce to ensure that empty strings are inserted as NULL
+        address: formatAddress(address) || undefined, // formatAddress can return the empty string
+        city: address.city?.trim() || undefined,
+        country: address.country?.trim() || undefined,
+        postalCode: address.postalCode?.trim() || undefined,
+        state: address.state?.trim() || undefined,
+        use: address.use?.trim() || undefined,
+      };
+      if (
+        (extracted.address ||
+          extracted.city ||
+          extracted.country ||
+          extracted.postalCode ||
+          extracted.state ||
+          extracted.use) &&
+        !result.some(
+          (a) =>
+            a.resourceId === extracted.resourceId &&
+            a.address === extracted.address &&
+            a.city === extracted.city &&
+            a.country === extracted.country &&
+            a.postalCode === extracted.postalCode &&
+            a.state === extracted.state &&
+            a.use === extracted.use
+        )
+      ) {
+        result.push(extracted);
+      }
+    }
+  }
 
-    await this.insertValuesForResource(client, resourceType, values);
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    if (!resources[0] || !AddressTable.hasAddress(resources[0].resourceType)) {
+      return;
+    }
+
+    await super.batchIndexResources(client, resources, create);
   }
 
   private getIncomingAddresses(resource: Resource): Address[] | undefined {
@@ -135,21 +159,28 @@ export class AddressTable extends LookupTable {
       return undefined;
     }
 
+    let addresses: (Address | undefined | null)[] | undefined;
+
     switch (resource.resourceType) {
       case 'Patient':
       case 'Person':
       case 'Practitioner':
       case 'RelatedPerson':
       case 'Organization':
-        return resource.address;
+        addresses = resource.address;
+        break;
       case 'InsurancePlan':
-        return resource.contact?.map((contact) => contact.address).filter((address) => !!address);
+        addresses = resource.contact?.map((contact) => contact.address);
+        break;
       case 'Location':
-        return resource.address ? [resource.address] : undefined;
+        addresses = resource.address ? [resource.address] : undefined;
+        break;
       default:
         resource.resourceType satisfies never;
         return undefined;
     }
+
+    return addresses?.filter((a) => !!a);
   }
 
   /**

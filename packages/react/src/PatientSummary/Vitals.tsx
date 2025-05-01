@@ -1,10 +1,11 @@
-import { Anchor, Button, Grid, Group, Modal, SimpleGrid, Text, Textarea, TextInput, Tooltip } from '@mantine/core';
+import { Anchor, Grid, Group, Modal, SimpleGrid, Text, Textarea, TextInput, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { Fragment, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { killEvent } from '../utils/dom';
 import { ConceptBadge } from './ConceptBadge';
 import {
@@ -175,7 +176,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
           + Add
         </Anchor>
       </Group>
-      <Grid>
+      <Grid align="center">
         {LOINC_CODES.map((meta) => {
           const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
           return (
@@ -187,17 +188,15 @@ export function Vitals(props: VitalsProps): JSX.Element {
                   </Text>
                 </Tooltip>
               </Grid.Col>
-              <Grid.Col span={4}>
-                <Text size="xs">
-                  {obs && (
-                    <ConceptBadge<Observation>
-                      key={meta.name}
-                      resource={obs}
-                      display={formatQuantity(getObservationValue(obs, meta.component))}
-                      onClick={props.onClickResource}
-                    />
-                  )}
-                </Text>
+              <Grid.Col span={4} p={1}>
+                {obs && (
+                  <ConceptBadge<Observation>
+                    key={meta.name}
+                    resource={obs}
+                    display={formatQuantity(getObservationValue(obs, meta.component))}
+                    onClick={props.onClickResource}
+                  />
+                )}
               </Grid.Col>
             </Fragment>
           );
@@ -219,7 +218,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
           </SimpleGrid>
           <Textarea name="notes" label="Notes" />
           <Group justify="flex-end" gap={4} mt="md">
-            <Button type="submit">Save</Button>
+            <SubmitButton>Save</SubmitButton>
           </Group>
         </Form>
       </Modal>
