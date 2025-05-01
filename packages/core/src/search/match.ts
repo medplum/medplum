@@ -222,7 +222,11 @@ function matchesDateFilter(resource: Resource, filter: Filter, searchParam: Sear
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
-      const match = matchesDateValue(resourceValue as string, filter.operator, filterValue);
+      const match = matchesDateValue(
+        buildDateTimeColumn(resourceValue),
+        filter.operator,
+        buildDateTimeColumn(filterValue) as string
+      );
       if (match) {
         return !negated;
       }
@@ -233,7 +237,10 @@ function matchesDateFilter(resource: Resource, filter: Filter, searchParam: Sear
   return negated;
 }
 
-function matchesDateValue(resourceValue: string, operator: Operator, filterValue: string): boolean {
+function matchesDateValue(resourceValue: string | undefined, operator: Operator, filterValue: string): boolean {
+  if (!resourceValue) {
+    return false;
+  }
   switch (operator) {
     case Operator.STARTS_AFTER:
     case Operator.GREATER_THAN:
@@ -251,6 +258,36 @@ function matchesDateValue(resourceValue: string, operator: Operator, filterValue
     default:
       return false;
   }
+}
+
+/**
+ * Builds the column value for a date/time parameter.
+ * Tries to parse the date string.
+ * Silently ignores failure.
+ * @param value - The FHIRPath result.
+ * @returns The date/time string if parsed; undefined otherwise.
+ */
+function buildDateTimeColumn(value: unknown): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  if (typeof value === 'string') {
+    try {
+      const date = new Date(value);
+      return date.toISOString();
+    } catch (_err) {
+      // Silent ignore
+    }
+  } else if (typeof value === 'object') {
+    // Can be a Period
+    if ('start' in value) {
+      return buildDateTimeColumn(value.start);
+    }
+    if ('end' in value) {
+      return buildDateTimeColumn(value.end);
+    }
+  }
+  return undefined;
 }
 
 function isNegated(operator: Operator): boolean {
