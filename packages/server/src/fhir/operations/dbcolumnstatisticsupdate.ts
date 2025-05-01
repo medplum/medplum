@@ -1,9 +1,10 @@
 import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition } from '@medplum/fhirtypes';
-import { isValidTableName, requireSuperAdmin } from '../../admin/super';
+import { requireSuperAdmin } from '../../admin/super';
 import { getSystemRepo } from '../repo';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { isValidColumnName, isValidTableName } from '../sql';
 
 const UpdateOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -58,27 +59,19 @@ export async function updateDbColumnStatisticsHandler(req: FhirRequest): Promise
   requireSuperAdmin();
   const params = parseInputParameters<{
     tableName: string;
-    columnNames?: string[];
+    columnNames: string[];
     resetToDefault: boolean;
     newStatisticsTarget?: number;
   }>(UpdateOperation, req);
-
-  if (!params.tableName) {
-    throw new OperationOutcomeError(badRequest('Missing tableName'));
-  }
 
   if (!isValidTableName(params.tableName)) {
     throw new OperationOutcomeError(badRequest('Invalid tableName'));
   }
 
-  if (!params.columnNames?.length) {
-    throw new OperationOutcomeError(badRequest('Missing columnNames'));
-  }
-
-  const columnNames = params.columnNames;
-
-  if (!params.resetToDefault && !params.newStatisticsTarget) {
-    throw new OperationOutcomeError(badRequest('Missing resetToDefault or newStatisticsTarget'));
+  for (const columnName of params.columnNames) {
+    if (!isValidColumnName(columnName)) {
+      throw new OperationOutcomeError(badRequest('Invalid columnName'));
+    }
   }
 
   let newStatisticsTarget: number;
@@ -101,7 +94,7 @@ export async function updateDbColumnStatisticsHandler(req: FhirRequest): Promise
 
   const systemRepo = getSystemRepo();
   await systemRepo.withTransaction(async (client) => {
-    for (const columnName of columnNames) {
+    for (const columnName of params.columnNames) {
       await client.query(
         'ALTER TABLE "' + params.tableName + '" ALTER COLUMN "' + columnName + '" SET STATISTICS ' + newStatisticsTarget
       );

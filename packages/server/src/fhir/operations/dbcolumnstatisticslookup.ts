@@ -2,9 +2,10 @@ import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import { Client, Pool } from 'pg';
-import { isValidTableName, requireSuperAdmin } from '../../admin/super';
+import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { parseInputParameters } from './utils/parameters';
+import { isValidTableName } from '../sql';
 
 const LookupOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
