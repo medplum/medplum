@@ -8,13 +8,14 @@ import {
   SearchRequest,
   WithId,
 } from '@medplum/core';
-import { AsyncJob, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
-import { DelayedError, Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { AsyncJob, Bundle, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
+import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { getConfig } from '../config/loader';
 import { getRequestContext, tryRunInRequestContext } from '../context';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
-import { getLogger, globalLogger } from '../logger';
+import { globalLogger } from '../logger';
 import { getPostDeployVersion } from '../migration-sql';
 import { PostDeployJobData, PostDeployMigration } from '../migrations/data/types';
 import { MigrationVersion } from '../migrations/migration-versions';
@@ -22,6 +23,7 @@ import {
   addVerboseQueueLogging,
   isJobActive,
   isJobCompatible,
+  moveToDelayed,
   queueRegistry,
   updateAsyncJobOutput,
   WorkerInitializer,
@@ -35,6 +37,7 @@ import {
 export interface ReindexJobData extends PostDeployJobData {
   readonly type: 'reindex';
   readonly resourceTypes: ResourceType[];
+  readonly minReindexWorkerVersion?: number;
   readonly maxResourceVersion?: number;
   readonly cursor?: string;
   readonly endTimestamp: string;
@@ -45,8 +48,8 @@ export interface ReindexJobData extends PostDeployJobData {
 }
 
 export type ReindexResult =
-  | { count: number; cursor: string; nextTimestamp: string; err?: Error }
-  | { count: number; duration: number };
+  | { count: number; cursor: string; nextTimestamp: string; err?: Error; errSearchRequest?: SearchRequest }
+  | { count: number; durationMs: number };
 
 export interface ReindexPostDeployMigration extends PostDeployMigration<ReindexJobData> {
   type: 'reindex';
@@ -56,6 +59,10 @@ const ReindexQueueName = 'ReindexQueue';
 
 const defaultBatchSize = 500;
 const defaultProgressLogThreshold = 50_000;
+
+// Version that can be bumped when the worker code changes, typically for bug fixes,
+// to prevent workers running older versions of the reindex worker from processing jobs
+export const REINDEX_WORKER_VERSION = 2;
 
 export const initReindexWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
@@ -75,15 +82,7 @@ export const initReindexWorker: WorkerInitializer = (config) => {
 
   const worker = new Worker<ReindexJobData>(
     ReindexQueueName,
-    (job) =>
-      tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => {
-        const result = await new ReindexJob(undefined, 500, 5_000).execute(job, job.data);
-        if (result === 'ineligible') {
-          // Since we can't handle this ourselves, re-enqueue the job for another worker that can
-          const queue = queueRegistry.get(job.queueName);
-          await queue?.add(job.name, job.data, job.opts);
-        }
-      }),
+    async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
     {
       ...defaultOptions,
       ...config.bullmq,
@@ -97,15 +96,27 @@ export const initReindexWorker: WorkerInitializer = (config) => {
   return { queue, worker, name: ReindexQueueName };
 };
 
+export async function jobProcessor(job: Job<ReindexJobData>): Promise<void> {
+  const result = await new ReindexJob().execute(job, job.data);
+  if (result === 'ineligible') {
+    await moveToDelayed(job, 'Reindex job delayed since worker is not eligible to execute it');
+  }
+}
+
+export type ReindexExecuteResult = 'finished' | 'ineligible' | 'interrupted';
+
 export class ReindexJob {
   private readonly systemRepo: Repository;
   private readonly batchSize: number;
   private readonly progressLogThreshold: number;
+  private readonly logger = globalLogger;
+  private readonly defaultStatementTimeout: number | 'DEFAULT';
 
   constructor(systemRepo?: Repository, batchSize?: number, progressLogThreshold?: number) {
     this.systemRepo = systemRepo ?? getSystemRepo();
     this.batchSize = batchSize ?? defaultBatchSize;
     this.progressLogThreshold = progressLogThreshold ?? defaultProgressLogThreshold;
+    this.defaultStatementTimeout = getDefaultStatementTimeout(getConfig());
   }
 
   private async refreshAsyncJob(repo: Repository, asyncJobOrId: string | WithId<AsyncJob>): Promise<WithId<AsyncJob>> {
@@ -115,7 +126,7 @@ export class ReindexJob {
   private async maybeSkipJob(asyncJob: WithId<AsyncJob>): Promise<boolean> {
     const postDeployVersion = await getPostDeployVersion(getDatabasePool(DatabaseMode.WRITER));
     if (Boolean(asyncJob.dataVersion) && postDeployVersion === MigrationVersion.FIRST_BOOT) {
-      globalLogger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
+      this.logger.info('Skipping reindex post-deploy migration since server is in firstBoot mode', {
         asyncJob: getReferenceString(asyncJob),
         version: `v${asyncJob.dataVersion}`,
       });
@@ -128,11 +139,32 @@ export class ReindexJob {
     return false;
   }
 
-  async execute(
+  private async checkForQueueClosing(
     job: Job<ReindexJobData> | undefined,
-    inputJobData: ReindexJobData
-  ): Promise<'finished' | 'ineligible' | 'interrupted'> {
-    let asyncJob = await this.refreshAsyncJob(this.systemRepo, inputJobData.asyncJobId);
+    asyncJob: WithId<AsyncJob>,
+    nextJobData: ReindexJobData
+  ): Promise<void> {
+    if (queueRegistry.isClosing(job?.queueName ?? '')) {
+      this.logger.info('Reindex job detected queue is closing', {
+        queueName: job?.queueName,
+        token: job?.token,
+        asyncJob: getReferenceString(asyncJob),
+        jobData: JSON.stringify(nextJobData),
+      });
+
+      if (job) {
+        await job.updateData(nextJobData);
+        await moveToDelayed(job, 'ReindexJob delayed since queue is closing');
+      }
+    }
+  }
+
+  async execute(job: Job<ReindexJobData> | undefined, inputJobData: ReindexJobData): Promise<ReindexExecuteResult> {
+    const asyncJob = await this.refreshAsyncJob(this.systemRepo, inputJobData.asyncJobId);
+
+    if (inputJobData.minReindexWorkerVersion && inputJobData.minReindexWorkerVersion > REINDEX_WORKER_VERSION) {
+      return 'ineligible';
+    }
 
     if (!isJobCompatible(asyncJob)) {
       return 'ineligible';
@@ -147,31 +179,17 @@ export class ReindexJob {
       return 'finished';
     }
 
+    return this.executeMainLoop(job, asyncJob, inputJobData);
+  }
+
+  private async executeMainLoop(
+    job: Job<ReindexJobData> | undefined,
+    asyncJob: WithId<AsyncJob>,
+    inputJobData: ReindexJobData
+  ): Promise<ReindexExecuteResult> {
     let nextJobData: ReindexJobData | undefined = inputJobData;
     while (nextJobData) {
-      if (queueRegistry.isClosing(job?.queueName ?? '')) {
-        getLogger().info('Reindex job detected queue is closing', {
-          queueName: job?.queueName,
-          token: job?.token,
-          asyncJob: getReferenceString(asyncJob),
-        });
-        if (job?.token) {
-          getLogger().info('Reindex job delaying self', {
-            queueName: job.queueName,
-            token: job.token,
-            asyncJob: getReferenceString(asyncJob),
-            jobData: JSON.stringify(nextJobData),
-          });
-          await job.updateData(nextJobData);
-          await job.moveToDelayed(Date.now() + 60_000, job.token);
-          getLogger().info('Reindex job delayed', {
-            queueName: job.queueName,
-            token: job.token,
-            asyncJob: getReferenceString(asyncJob),
-          });
-          throw new DelayedError('Reindex job delayed since queue is closing');
-        }
-      }
+      await this.checkForQueueClosing(job, asyncJob, nextJobData);
       const result = await this.processIteration(this.systemRepo, nextJobData);
       const resourceType = nextJobData.resourceTypes[0];
       nextJobData.results[resourceType] = result;
@@ -212,7 +230,30 @@ export class ReindexJob {
     let nextTimestamp = new Date(0).toISOString();
     try {
       await systemRepo.withTransaction(async (conn) => {
-        const bundle = await systemRepo.search(searchRequest, { maxResourceVersion });
+        /*
+        When a ReindexJob needs to scan a very large table for resources to reindex,
+        but most/all have already been reindexed, the search will scan the most/all of table
+        before finding any results with a query such as the following. Depending on factors
+        such as the size of the table, the number of rows that have already been reindexed,
+        and the performance of the database, this can take a long time.
+
+        ```sql
+        SELECT "Task"."id", "Task"."lastUpdated", "Task"."content"
+        FROM "Task"
+        WHERE (
+          ("Task"."__version" <= 2 OR "Task"."__version" IS NULL)
+          AND "Task"."deleted" = false
+          AND "Task"."lastUpdated" < '2025-04-19'
+        ORDER BY "Task"."lastUpdated" LIMIT 501
+        ```
+        */
+        let bundle: Bundle<WithId<Resource>>;
+        try {
+          await conn.query(`SET statement_timeout TO 3600000`); // 1 hour
+          bundle = await systemRepo.search(searchRequest, { maxResourceVersion });
+        } finally {
+          await conn.query(`SET statement_timeout TO ${this.defaultStatementTimeout}`);
+        }
         if (bundle.entry?.length) {
           const resources = bundle.entry.map((e) => e.resource as WithId<Resource>);
           await systemRepo.reindexResources(conn, resources);
@@ -226,7 +267,7 @@ export class ReindexJob {
         }
       });
     } catch (err: any) {
-      return { count: newCount, cursor, nextTimestamp, err };
+      return { count: newCount, cursor, nextTimestamp, err, errSearchRequest: searchRequest };
     }
 
     if (cursor) {
@@ -234,17 +275,17 @@ export class ReindexJob {
     } else if (resourceTypes.length > 1) {
       // Completed reindex for this resource type
       const elapsedTime = Date.now() - jobData.startTime;
-      getLogger().info('Reindex completed', {
+      this.logger.info('Reindex completed for resourceType', {
         resourceType,
         count: newCount,
-        duration: `${elapsedTime} ms`,
+        durationMs: elapsedTime,
       });
 
-      return { count: newCount, duration: elapsedTime };
+      return { count: newCount, durationMs: elapsedTime };
     } else {
       const elapsedTime = Date.now() - jobData.startTime;
-      getLogger().info('Reindex completed', { resourceType, count, duration: `${elapsedTime} ms` });
-      return { count: newCount, duration: elapsedTime };
+      this.logger.info('Reindex completed', { resourceType, count, durationMs: elapsedTime });
+      return { count: newCount, durationMs: elapsedTime };
     }
   }
 
@@ -262,7 +303,7 @@ export class ReindexJob {
       }
 
       // Log periodic progress updates for the job
-      globalLogger.info('Reindex in progress', {
+      this.logger.info('Reindex in progress', {
         resourceType: jobData.resourceTypes[0],
         cursor: result.cursor,
         currentCount: result.count,
@@ -338,7 +379,7 @@ export class ReindexJob {
 }
 
 function isResultComplete(result: ReindexResult): boolean {
-  return 'duration' in result || 'err' in result;
+  return 'durationMs' in result || 'err' in result;
 }
 
 function isResultInProgress(
@@ -378,9 +419,13 @@ function formatReindexResult(result: ReindexResult, resourceType: string): Param
     const parts: ParametersParameter[] = [
       { name: 'resourceType', valueCode: resourceType },
       { name: 'error', valueString: normalizeErrorString(result.err) },
+      { name: 'stack', valueString: result.err.stack },
     ];
     if (result.nextTimestamp) {
       parts.push({ name: 'nextTimestamp', valueDateTime: result.nextTimestamp });
+    }
+    if (result.errSearchRequest) {
+      parts.push({ name: 'errSearchRequest', valueString: JSON.stringify(result.errSearchRequest) });
     }
     return {
       name: 'result',
@@ -402,7 +447,7 @@ function formatReindexResult(result: ReindexResult, resourceType: string): Param
       part: [
         { name: 'resourceType', valueCode: resourceType },
         { name: 'count', valueInteger: result.count },
-        { name: 'elapsedTime', valueQuantity: { value: result.duration, code: 'ms' } },
+        { name: 'elapsedTime', valueQuantity: { value: result.durationMs, code: 'ms' } },
       ],
     };
   }
@@ -447,6 +492,7 @@ export function prepareReindexJobData(
 
   return {
     type: 'reindex',
+    minReindexWorkerVersion: REINDEX_WORKER_VERSION,
     resourceTypes,
     endTimestamp,
     asyncJobId,

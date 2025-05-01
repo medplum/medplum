@@ -4,12 +4,12 @@
 set -e
 
 # Defaults taken from .env.defaults in Medplum monorepo packages/app
-${MEDPLUM_BASE_URL:="http://localhost:8103/"}
-${MEDPLUM_CLIENT_ID:=""}
-${GOOGLE_CLIENT_ID:=""}
-${RECAPTCHA_SITE_KEY:="6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq"}
-${MEDPLUM_REGISTER_ENABLED:="true"}
-${MEDPLUM_AWS_TEXTRACT_ENABLED:="true"}
+: ${MEDPLUM_BASE_URL:="http://localhost:8103/"}
+: ${MEDPLUM_CLIENT_ID:=""}
+: ${GOOGLE_CLIENT_ID:=""}
+: ${RECAPTCHA_SITE_KEY:="6LfHdsYdAAAAAC0uLnnRrDrhcXnziiUwKd8VtLNq"}
+: ${MEDPLUM_REGISTER_ENABLED:="true"}
+: ${MEDPLUM_AWS_TEXTRACT_ENABLED:="true"}
 
 # Find all JS files in the assets directory
 # Update the app config

@@ -1,6 +1,7 @@
 import { Title } from '@mantine/core';
 import { Logo, SignInForm } from '@medplum/react';
 import { useNavigate } from 'react-router';
+import { getConfig } from '../config';
 
 /**
  * SignInPage component for the MSO demo.
@@ -13,8 +14,8 @@ export function SignInPage(): JSX.Element {
   return (
     <SignInForm
       // Configure according to your settings
-      googleClientId="921088377005-3j1sa10vr6hj86jgmdfh2l53v3mp7lfi.apps.googleusercontent.com" // use this one to run against prod
-      // googleClientId="397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com" // use this one for localhost
+      googleClientId={getConfig().googleClientId}
+      clientId={getConfig().clientId}
       onSuccess={() => navigate('/')}
     >
       <Logo size={32} />

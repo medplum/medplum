@@ -100,6 +100,11 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('User not found'));
       return;
     }
+    if (getConfig().registerEnabled === false && (!projectId || projectId === 'new')) {
+      // Explicitly check for "false" because the config value may be undefined
+      sendOutcome(res, badRequest('Registration is disabled'));
+      return;
+    }
     const systemRepo = getSystemRepo();
     await systemRepo.createResource<User>({
       resourceType: 'User',

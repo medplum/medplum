@@ -28,6 +28,7 @@ import { platform } from 'node:os';
 import process from 'node:process';
 import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
+import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import { checkProcessExists, createPidFile, getPidFilePath, removePidFile } from './pid';
@@ -45,9 +46,6 @@ async function execAsync(command: string, options: ExecOptions): Promise<{ stdou
     });
   });
 }
-
-export const DEFAULT_PING_TIMEOUT = 3600;
-export const MAX_MISSED_HEARTBEATS = 1;
 
 export class App {
   static instance: App;
@@ -293,13 +291,10 @@ export class App {
       }
     });
 
-    return new Promise<void>((resolve, reject) => {
-      const connectTimeout = setTimeout(
-        () => reject(new Error('Timeout when attempting to connect to server WebSocket')),
-        10000
-      );
+    return new Promise<void>((resolve) => {
+      const connectInterval = setInterval(() => this.webSocket?.reconnect(), RETRY_WAIT_DURATION_MS);
       this.webSocket?.addEventListener('open', () => {
-        clearTimeout(connectTimeout);
+        clearInterval(connectInterval);
         resolve();
       });
     });

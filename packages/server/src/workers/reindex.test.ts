@@ -1,4 +1,10 @@
-import { createReference, OperationOutcomeError, parseSearchRequest, preconditionFailed } from '@medplum/core';
+import {
+  createReference,
+  LogLevel,
+  OperationOutcomeError,
+  parseSearchRequest,
+  preconditionFailed,
+} from '@medplum/core';
 import {
   AsyncJob,
   ImmunizationEvaluation,
@@ -9,14 +15,25 @@ import {
   ResourceType,
   User,
 } from '@medplum/fhirtypes';
+import { DelayedError, Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
+import { globalLogger, systemLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
-import { addReindexJob, getReindexQueue, prepareReindexJobData, ReindexJob, ReindexJobData } from './reindex';
+import {
+  addReindexJob,
+  getReindexQueue,
+  jobProcessor,
+  prepareReindexJobData,
+  REINDEX_WORKER_VERSION,
+  ReindexJob,
+  ReindexJobData,
+} from './reindex';
+import { queueRegistry } from './utils';
 
 describe('Reindex Worker', () => {
   let repo: Repository;
@@ -213,7 +230,10 @@ describe('Reindex Worker', () => {
       const systemRepo = getSystemRepo();
       const reindexJob = new ReindexJob(systemRepo);
       jest.spyOn(systemRepo, 'search').mockRejectedValueOnce(new Error('Failed to search systemRepo'));
+      const originalLevel = systemLogger.level;
+      systemLogger.level = LogLevel.NONE;
       await expect(reindexJob.execute(undefined, jobData)).resolves.toBe('finished');
+      systemLogger.level = originalLevel;
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id);
       expect(asyncJob.status).toStrictEqual('error');
@@ -229,6 +249,8 @@ describe('Reindex Worker', () => {
               name: 'error',
               valueString: 'Failed to search systemRepo',
             },
+            { name: 'stack', valueString: expect.stringContaining('Failed to search systemRepo') },
+            { name: 'errSearchRequest', valueString: expect.stringContaining('"resourceType":"ValueSet"') },
           ]),
         },
       ]);
@@ -351,21 +373,30 @@ describe('Reindex Worker', () => {
         request: '/admin/super/reindex',
       });
 
-      // Create two patients, one with lastUpdated before the filter and one after
+      // lastUpdated before the greater than or equal filter should NOT be reindexed
       await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         meta: { lastUpdated: '1999-12-31T00:00:00Z' },
         identifier: [{ system: idSystem, value: mrn }],
       });
+
+      // lastUpdated matching the greater than or equal filter should be reindexed
       await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
-        meta: { lastUpdated: '2001-12-31T00:00:00Z' },
+        meta: { lastUpdated: '2000-01-01T00:00:00Z' },
+        identifier: [{ system: idSystem, value: mrn }],
+      });
+
+      // lastUpdated matching the less than filter should NOT be reindexed
+      await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { lastUpdated: '2001-01-01T00:00:00Z' },
         identifier: [{ system: idSystem, value: mrn }],
       });
 
       const resourceTypes = ['Patient'] as ResourceType[];
       const searchFilter = parseSearchRequest(
-        `Patient?identifier=${idSystem}|${mrn}&_lastUpdated=gt2000-01-01T00:00:00Z`
+        `Patient?identifier=${idSystem}|${mrn}&_lastUpdated=ge2000-01-01T00:00:00Z&_lastUpdated=lt2001-01-01T00:00:00Z`
       );
 
       const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, searchFilter);
@@ -579,6 +610,143 @@ describe('Job cancellation', () => {
       expect(finalJob.status).toStrictEqual('cancelled');
       expect(finalJob.output).toBeUndefined();
     }));
+
+  test.each(['some-token', undefined])('Job handles queue closing with job.token %s', async (jobToken) =>
+    withTestContext(async () => {
+      const originalJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const queueName = 'ReindexQueue';
+      const queue = queueRegistry.get(queueName);
+      if (!queue) {
+        throw new Error('Could not find queue');
+      }
+
+      const isClosingSpy = jest.spyOn(queueRegistry, 'isClosing').mockReturnValue(true);
+      const globalErrorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => {});
+
+      const jobData = prepareReindexJobData(['MedicinalProductContraindication'], originalJob.id);
+      const job = new Job(queue, 'ReindexJob', jobData, { attempts: 55 });
+      // job.token generally gets set deep in the internals of bullmq, but we mock the module
+      job.token = jobToken;
+
+      // DelayedError is part of the mocked bullmq module. Something about that causes
+      // the usual `expect(...).rejects.toThrow(...)`; it seems to be becuase DelayedError
+      // is no longer an `Error`. So instead, we manually check that it threw
+      let threw = undefined;
+      let manuallyThrownError = undefined;
+      try {
+        await new ReindexJob().execute(job, jobData);
+        manuallyThrownError = new Error(
+          jobToken ? 'Expected job to throw DelayedError' : 'Expected job to throw Error'
+        );
+        throw manuallyThrownError;
+      } catch (err) {
+        threw = err;
+      }
+      expect(threw).toBeDefined();
+      expect(threw).not.toBe(manuallyThrownError);
+      expect(threw).toBeInstanceOf(jobToken ? DelayedError : Error);
+
+      expect(isClosingSpy).toHaveBeenCalledTimes(1);
+      isClosingSpy.mockRestore();
+
+      if (jobToken) {
+        expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
+        expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), jobToken);
+        expect(globalErrorSpy).not.toHaveBeenCalled();
+      } else {
+        expect(job.moveToDelayed).not.toHaveBeenCalled();
+        expect(globalErrorSpy).toHaveBeenCalledTimes(1);
+      }
+
+      globalErrorSpy.mockRestore();
+    })
+  );
+
+  test.each([
+    [undefined, 'some-token'], // can process job
+    [REINDEX_WORKER_VERSION, 'some-token'], // can process job
+    [REINDEX_WORKER_VERSION + 1, 'some-token'], // cannot process job
+    [REINDEX_WORKER_VERSION + 1, undefined], // cannot process job
+  ])(
+    'Handles insufficient reindex worker version with minReindexWorkerVersion %s and job.token %s',
+    async (minReindexWorkerVersion, jobToken) => {
+      const originalJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const queueName = 'ReindexQueue';
+      const queue = queueRegistry.get(queueName);
+      if (!queue) {
+        throw new Error('Could not find queue');
+      }
+      // temporarily set to {} to appease typescript since it gets set within the withTestContext callback
+      let jobData: ReindexJobData = {} as unknown as ReindexJobData;
+      await withTestContext(async () => {
+        jobData = prepareReindexJobData(['MedicinalProductContraindication'], originalJob.id);
+      });
+
+      // `as any` since it's a readonly property
+      (jobData as any).minReindexWorkerVersion = minReindexWorkerVersion;
+
+      const job = new Job(queue, 'ReindexJob', jobData, { attempts: 55 });
+      // Since the Job class is fully mocked, we need to set the data property manually
+      job.data = jobData;
+      job.token = jobToken;
+
+      const isIneligible = minReindexWorkerVersion && REINDEX_WORKER_VERSION < minReindexWorkerVersion;
+
+      const globalErrorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => {});
+
+      const result = await new ReindexJob().execute(job, jobData);
+      expect(result).toBe(isIneligible ? 'ineligible' : 'finished');
+
+      // DelayedError is part of the mocked bullmq module. Something about that causes
+      // the usual `expect(...).rejects.toThrow(...)`; it seems to be becuase DelayedError
+      // is no longer an `Error`. So instead, we manually check that it threw
+      let threw = undefined;
+      let manuallyThrownError = undefined;
+      try {
+        await jobProcessor(job);
+        if (isIneligible) {
+          manuallyThrownError = new Error(
+            jobToken ? 'Expected job to throw DelayedError' : 'Expected job to throw Error'
+          );
+          throw manuallyThrownError;
+        }
+      } catch (err) {
+        threw = err;
+      }
+
+      if (isIneligible) {
+        expect(threw).toBeDefined();
+        expect(threw).not.toBe(manuallyThrownError);
+        expect(threw).toBeInstanceOf(jobToken ? DelayedError : Error);
+
+        if (jobToken) {
+          expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
+          expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), jobToken);
+          expect(globalErrorSpy).not.toHaveBeenCalled();
+        } else {
+          expect(job.moveToDelayed).not.toHaveBeenCalled();
+          expect(globalErrorSpy).toHaveBeenCalledTimes(1);
+        }
+      } else {
+        expect(threw).toBeUndefined();
+        expect(job.moveToDelayed).not.toHaveBeenCalled();
+        expect(globalErrorSpy).not.toHaveBeenCalled();
+      }
+      globalErrorSpy.mockRestore();
+    }
+  );
 
   test('Ensure updates from job do not clobber cancellation status', () =>
     withTestContext(async () => {

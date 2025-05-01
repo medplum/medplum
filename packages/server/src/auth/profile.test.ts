@@ -16,9 +16,9 @@ let profile1: ProfileResource;
 let profile2: ProfileResource;
 
 describe('Profile', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       await initApp(app, config);
 
       // Create a user with multiple profiles
@@ -42,8 +42,8 @@ describe('Profile', () => {
       });
 
       profile2 = registerResult2.profile;
-    })
-  );
+    });
+  });
 
   afterAll(async () => {
     await shutdownApp();

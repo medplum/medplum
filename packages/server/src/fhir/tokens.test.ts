@@ -2,6 +2,7 @@ import { createReference, getReferenceString, getSearchParameter, Operator, SNOM
 import {
   Bundle,
   Condition,
+  Identifier,
   MedicationRequest,
   Patient,
   Reference,
@@ -14,8 +15,14 @@ import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { getSearchParameterImplementation } from './searchparameter';
+import { loadStructureDefinitions } from './structure';
 import { TokenQueryOperators } from './token-column';
-import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
+import {
+  buildTokensForSearchParameter,
+  isLegacyTokenColumnSearchParameter,
+  Token,
+  TokenColumnsFeature,
+} from './tokens';
 
 describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'])(
   'Token searching using %s',
@@ -88,7 +95,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         expect(badTextResult.entry?.length).toStrictEqual(0);
       }));
 
-    test.only.each(TokenQueryOperators)('%s with empty value does not throw errors', async (operator) => {
+    test.each(TokenQueryOperators)('%s with empty value does not throw errors', async (operator) => {
       const search = systemRepo.search({
         resourceType: 'Patient',
         filters: [
@@ -994,11 +1001,25 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             sortRules: [{ code: 'identifier', descending: true }],
           });
 
-          // Ideally ASC and DESC would have the same sort order since
-          // ascending should use "AAA" and descending should use "ZZZ",
-          // but a simpler sort implementation is used
-          expect(ascending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['First', 'Second']);
-          expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['Second', 'First']);
+          if (tokenColumnsOrLookupTable === 'token columns') {
+            // Ideally ASC and DESC would have the same sort order since
+            // ascending should use "AAA" and descending should use "ZZZ",
+            // but a simpler sort implementation is used
+            expect(ascending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['First', 'Second']);
+            expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['Second', 'First']);
+          } else {
+            // sorting by a token value when using lookup tables is not deterministic
+            // for resources having more than one tokens values for the queried code.
+            // This is because of the lack of an ORDER BY clause in the inner-joined SELECT DISTINCT ON
+            // subquery.
+            expect(ascending.entry?.map((e) => e.resource?.name?.[0]?.family)).toHaveLength(2);
+            expect(ascending.entry?.map((e) => e.resource?.name?.[0]?.family)).toContain('First');
+            expect(ascending.entry?.map((e) => e.resource?.name?.[0]?.family)).toContain('Second');
+
+            expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toHaveLength(2);
+            expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toContain('Second');
+            expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toContain('First');
+          }
         }));
 
       test.each<[string, Conditions[]]>([
@@ -1440,6 +1461,46 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
     });
   }
 );
+
+describe('buildTokens', () => {
+  beforeAll(() => {
+    loadStructureDefinitions();
+  });
+
+  test('empty resource', () => {
+    const identifierSearchParam = getSearchParameter('Patient', 'identifier');
+    if (!identifierSearchParam) {
+      throw new Error('Could not find identifier search parameter');
+    }
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      identifier: undefined,
+    };
+    const result1: Token[] = [];
+    buildTokensForSearchParameter(result1, r1, identifierSearchParam);
+    expect(result1).toStrictEqual([]);
+
+    const validIdentifiers: Identifier[] = [
+      {},
+      { system: 'http://example.com', value: '123' },
+      { system: 'http://example.com', value: '123' },
+      { system: 'http://example.com', value: '456' },
+      { use: 'official' },
+    ];
+    const r2: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '2',
+      identifier: [null, undefined, ...validIdentifiers] as unknown as Identifier[],
+    };
+    const result2: Token[] = [];
+    buildTokensForSearchParameter(result2, r2, identifierSearchParam);
+    expect(result2).toStrictEqual([
+      { code: 'identifier', system: 'http://example.com', value: '123' },
+      { code: 'identifier', system: 'http://example.com', value: '456' },
+    ]);
+  });
+});
 
 function toIdentifierValues(bundle: Bundle<Condition | Patient>): string[] {
   return bundle.entry?.map((e) => e.resource?.identifier?.[0].value as string) ?? [];

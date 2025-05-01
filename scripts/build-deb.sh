@@ -42,7 +42,7 @@ rm -rf "$TMP_DIR"
 rm -rf "$SERVICE_NAME-$VERSION.deb"
 
 # Copy package files
-PACKAGES=("app" "core" "definitions" "fhir-router" "react" "react-hooks" "server")
+PACKAGES=("app" "ccda" "core" "definitions" "fhirtypes" "fhir-router" "react" "react-hooks" "server")
 for package in ${PACKAGES[@]}; do
   echo "Copy $package"
   mkdir -p "$LIB_DIR/packages/$package"

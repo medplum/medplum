@@ -33,13 +33,14 @@ import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
 import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
-import { closeRateLimiter, getRateLimiter } from './ratelimit';
+import { closeRateLimiter, rateLimitHandler } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
+import { webhookRouter } from './webhook/routes';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
@@ -159,22 +160,14 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(cors(corsOptions));
   app.use(compression());
   app.use(attachRequestContext);
-  app.use(getRateLimiter(config));
+  app.use(rateLimitHandler(config));
   app.use('/fhir/R4/Binary', binaryRouter);
 
   // Handle async batch by enqueueing job
   app.post('/fhir/R4', authenticateRequest, asyncWrap(asyncBatchHandler(config)));
 
-  app.use(
-    urlencoded({
-      extended: false,
-    })
-  );
-  app.use(
-    text({
-      type: [ContentType.TEXT, ContentType.HL7_V2],
-    })
-  );
+  app.use(urlencoded({ extended: false }));
+  app.use(text({ type: [ContentType.TEXT, ContentType.HL7_V2] }));
   app.use(json({ type: JSON_TYPE, limit: config.maxJsonSize }));
   app.use(
     hl7BodyParser({
@@ -203,6 +196,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/oauth2/', oauthRouter);
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/storage/', storageRouter);
+  apiRouter.use('/webhook/', webhookRouter);
 
   app.use('/api/', apiRouter);
   app.use('/', apiRouter);
@@ -211,9 +205,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
 }
 
 export function initAppServices(config: MedplumServerConfig): Promise<void> {
+  loadStructureDefinitions();
+  initRedis(config.redis);
+
   return requestContextStore.run(AuthenticatedRequestContext.system(), async () => {
-    loadStructureDefinitions();
-    initRedis(config.redis);
     await initDatabase(config);
     await seedDatabase();
     await initKeys(config);
@@ -255,25 +250,11 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
   res.on('close', () => {
     const duration = Date.now() - start;
 
-    let userProfile: string | undefined;
-    let projectId: string | undefined;
-    if (ctx instanceof AuthenticatedRequestContext) {
-      const underlyingProfile = ctx.authState.membership.profile;
-      if (ctx.profile.reference === underlyingProfile.reference) {
-        userProfile = ctx.profile.reference;
-      } else {
-        userProfile = `${underlyingProfile.reference} (as ${ctx.profile.reference})`;
-      }
-      projectId = ctx.project.id;
-    }
-
     ctx.logger.info('Request served', {
       durationMs: duration,
       ip: req.ip,
       method: req.method,
       path: req.originalUrl,
-      profile: userProfile,
-      projectId,
       receivedAt: start,
       // If the response did not emit the 'finish' event, the client timed out and disconnected before it could be sent
       status: res.writableFinished ? res.statusCode : 408,

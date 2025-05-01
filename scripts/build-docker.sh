@@ -33,7 +33,8 @@ tar \
   packages/fhir-router/package.json \
   packages/fhir-router/dist \
   packages/server/package.json \
-  packages/server/dist
+  packages/server/dist \
+  packages/server/static
 
 # Build app tarball
 # The -C flag rewrites the base path from packages/app/dist/ to ./

@@ -33,9 +33,9 @@ let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
 
 describe('External', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       await initApp(app, config);
 
       // Create a new project
@@ -87,8 +87,8 @@ describe('External', () => {
         firstName: 'External',
         lastName: 'User',
       });
-    })
-  );
+    });
+  });
 
   afterAll(async () => {
     await shutdownApp();

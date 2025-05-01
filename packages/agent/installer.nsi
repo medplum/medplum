@@ -180,6 +180,11 @@ Function UpgradeApp
     ExecWait "sc.exe config $\"${SERVICE_NAME}$\" start= auto" $1
     DetailPrint "Exit code $1"
 
+    # Set service to restart on failure
+    DetailPrint "Setting service to restart on failure..."
+    ExecWait "sc.exe failure $\"${SERVICE_NAME}$\" reset= 0 actions= restart/0/restart/0/restart/0"
+    DetailPrint "Exit code $1"
+
     # Check if there is an upgrade manifest already, if not, add one without a callback
     # This is to activate the "maybeFinalizeUpgrade" path in the agent, which will make sure we delete the upgrade manifest
     # Which we use as a signal to continue after the agent has either bound or started its loop to attempt to bind to all the server ports
@@ -282,6 +287,11 @@ Function InstallApp
     # Set service to start automatically
     DetailPrint "Setting service to start automatically..."
     ExecWait "sc.exe config $\"${SERVICE_NAME}$\" start= auto" $1
+    DetailPrint "Exit code $1"
+
+    # Set service to restart on failure
+    DetailPrint "Setting service to restart on failure..."
+    ExecWait "sc.exe failure $\"${SERVICE_NAME}$\" reset= 0 actions= restart/0/restart/0/restart/0"
     DetailPrint "Exit code $1"
 
     # Start the service

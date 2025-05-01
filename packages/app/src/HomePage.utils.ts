@@ -51,6 +51,9 @@ export function getDefaultFields(resourceType: string): string[] {
     case 'Patient':
       fields.push('name', 'birthDate', 'gender');
       break;
+    case 'AsyncJob':
+      fields.push('status', 'dataVersion');
+      break;
     case 'AccessPolicy':
     case 'Bot':
     case 'ClientApplication':

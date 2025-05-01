@@ -67,6 +67,9 @@ export interface BotExecutionRequest {
   readonly forwardedFor?: string;
   readonly requestTime?: string;
   readonly traceId?: string;
+  /** Headers from the original request, when invoked by HTTP request */
+  readonly headers?: Record<string, string | string[] | undefined>;
+  /** Default headers to add to MedplumClient, such as HTTP cookies */
   readonly defaultHeaders?: Record<string, string>;
 }
 
@@ -153,6 +156,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
     runAs,
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
+    headers: req.headers,
     defaultHeaders,
   });
 
@@ -365,7 +369,7 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
  * @returns The bot execution result.
  */
 async function runInVmContext(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, input, contentType, traceId } = request;
+  const { bot, input, contentType, traceId, headers } = request;
 
   const config = getConfig();
   if (!config.vmContextBotsEnabled) {
@@ -404,6 +408,7 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
       contentType,
       secrets: request.secrets,
       traceId,
+      headers,
       defaultHeaders: request.defaultHeaders,
     },
   };
@@ -422,7 +427,7 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
   // End user code
 
   (async () => {
-    const { bot, baseUrl, accessToken, contentType, secrets, traceId, defaultHeaders } = event;
+    const { bot, baseUrl, accessToken, contentType, secrets, traceId, headers, defaultHeaders } = event;
     const medplum = new MedplumClient({
       baseUrl,
       defaultHeaders,
@@ -439,7 +444,7 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      let result = await exports.handler(medplum, { bot, input, contentType, secrets, traceId });
+      let result = await exports.handler(medplum, { bot, input, contentType, secrets, traceId, headers });
       if (contentType === ContentType.HL7_V2 && result) {
         result = result.toString();
       }

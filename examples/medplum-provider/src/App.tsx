@@ -21,8 +21,9 @@ import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
+import './index.css';
 import { HomePage } from './pages/HomePage';
-import { OnboardingPage } from './pages/OnboardingPage';
+import { SchedulePage } from './pages/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
 import { EncounterChart } from './pages/encounter/EncounterChart';
@@ -42,6 +43,7 @@ import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { TaskDetails } from './pages/tasks/TaskDetails';
+import { IntakeFormPage } from './pages/patient/IntakeFormPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -66,6 +68,7 @@ export function App(): JSX.Element | null {
         {
           title: 'Scheduling',
           links: [
+            { icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' },
             { icon: <IconTimeDuration0 />, label: 'New Appointment', href: '/Appointment/new' },
             {
               icon: <IconTimeDuration15 />,
@@ -152,7 +155,8 @@ export function App(): JSX.Element | null {
                 <Route index element={<TaskTab />} />
                 <Route path="*" element={<TaskTab />} />
               </Route>
-              <Route path="/onboarding" element={<OnboardingPage />} />
+              <Route path="/onboarding" element={<IntakeFormPage />} />
+              <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/dosespot" element={<DoseSpotTab />} />
               <Route path="/:resourceType" element={<SearchPage />} />

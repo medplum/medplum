@@ -13,7 +13,7 @@ let endpoint: Endpoint;
 describe('DICOM', () => {
   beforeAll(async () => {
     console.log = jest.fn();
-    dimse.log.transports.forEach((t) => (t.silent = true));
+    dimse.log.disableAll(false);
 
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];

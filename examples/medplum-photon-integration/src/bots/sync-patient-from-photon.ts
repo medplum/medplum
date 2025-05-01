@@ -199,8 +199,16 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     }
   }
 
+  if (batch.entry?.length === 0) {
+    throw new Error('No patients to sync');
+  }
+
   // execute the bundle
-  await medplum.executeBatch(batch);
+  try {
+    await medplum.executeBatch(batch);
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
 }
 
 /**
@@ -315,13 +323,15 @@ export async function createPrescriptions(
   medplum: MedplumClient,
   photonPrescriptions?: PhotonPrescription[]
 ): Promise<MedicationRequest[] | undefined> {
+  console.log(patientReference);
   if (!photonPrescriptions || photonPrescriptions.length === 0) {
     return undefined;
   }
 
   const prescriptions: MedicationRequest[] = [];
   for (const photonPrescription of photonPrescriptions) {
-    if (await checkForExistingPrescription(medplum, photonPrescription)) {
+    console.log(photonPrescription);
+    if ((await checkForExistingPrescription(medplum, photonPrescription)) || !photonPrescription) {
       continue;
     }
 
@@ -374,6 +384,9 @@ async function checkForExistingPrescription(
   medplum: MedplumClient,
   photonPrescription: PhotonPrescription
 ): Promise<boolean> {
+  if (!photonPrescription?.externalId || !photonPrescription?.id) {
+    return false;
+  }
   let prescription: MedicationRequest | undefined;
   if (photonPrescription.externalId) {
     prescription = await medplum.readResource('MedicationRequest', photonPrescription.externalId);
@@ -397,7 +410,13 @@ export async function getPrescriber(
   const prescriberMedplumId = photonProvider.externalId;
 
   if (prescriberMedplumId) {
-    return medplum.readResource('Practitioner', prescriberMedplumId);
+    const practitioner = await medplum.searchOne('Practitioner', {
+      _id: prescriberMedplumId,
+    });
+
+    if (practitioner) {
+      return practitioner;
+    }
   }
 
   const trackedPractitioner = await medplum.searchOne('Practitioner', {

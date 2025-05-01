@@ -2328,13 +2328,15 @@ describe('Client', () => {
       expect(fetch).toHaveBeenCalledTimes(1);
     });
 
-    test.each([400, 401, 404])('%d status code is not retried', async (statusCode) => {
+    test.each([400, 401, 403, 404])('%d status code is not retried', async (statusCode) => {
       const fetch = mockFetch(statusCode, (): OperationOutcome => {
         switch (statusCode) {
           case 400:
             return badRequest('The request is not good');
           case 401:
             return unauthorized;
+          case 403:
+            return forbidden;
           case 404:
             return notFound;
           default:
@@ -2350,6 +2352,11 @@ describe('Client', () => {
         case 401:
           await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow(
             new OperationOutcomeError(unauthorized)
+          );
+          break;
+        case 403:
+          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow(
+            new OperationOutcomeError(forbidden)
           );
           break;
         case 404:

@@ -3,6 +3,7 @@ import {
   ContentType,
   createReference,
   Filter,
+  forbidden,
   getDateProperty,
   getReferenceString,
   isString,
@@ -12,7 +13,6 @@ import {
   ProfileResource,
   resolveId,
   tooManyRequests,
-  unauthorized,
   WithId,
 } from '@medplum/core';
 import {
@@ -36,6 +36,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
+import { parseSmartScopes, SmartScope } from '../fhir/smart';
 import { getLogger } from '../logger';
 import {
   AuditEventOutcome,
@@ -53,7 +54,6 @@ import {
   verifyJwt,
 } from './keys';
 import { AuthState } from './middleware';
-import { parseSmartScopes, SmartScope } from '../fhir/smart';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 
@@ -943,7 +943,7 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
   }
 
   if (!authState.membership.admin) {
-    throw new OperationOutcomeError(unauthorized);
+    throw new OperationOutcomeError(forbidden);
   }
 
   let onBehalfOfMembership: WithId<ProjectMembership> | undefined = undefined;
@@ -961,7 +961,7 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
       ],
     });
     if (!onBehalfOfMembership) {
-      throw new OperationOutcomeError(unauthorized);
+      throw new OperationOutcomeError(forbidden);
     }
   }
 

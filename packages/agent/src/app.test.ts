@@ -9,6 +9,7 @@ import {
   Hl7Message,
   LogLevel,
   MEDPLUM_VERSION,
+  ReconnectingWebSocket,
   allOk,
   createReference,
   getReferenceString,
@@ -27,6 +28,11 @@ import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
 import { AgentHl7Channel } from './hl7';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
+
+jest.mock('./constants', () => ({
+  ...jest.requireActual('./constants'),
+  RETRY_WAIT_DURATION_MS: 200,
+}));
 
 jest.mock('node:process', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -118,6 +124,67 @@ describe('App', () => {
     });
 
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Unknown message type: unknown'));
+    console.log = originalConsoleLog;
+  });
+
+  test('Keeps trying to connect on startup', async () => {
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
+    const state = {
+      maxReconnectAttempts: 2,
+      shouldConnect: false,
+    };
+
+    const originalDispatchEvent = ReconnectingWebSocket.prototype.dispatchEvent;
+    const reconnectSpy = jest.spyOn(ReconnectingWebSocket.prototype, 'reconnect');
+    const mockDispatchEvent = jest.spyOn(ReconnectingWebSocket.prototype, 'dispatchEvent').mockImplementation(function (
+      this: ReconnectingWebSocket,
+      event: Event
+    ) {
+      state.shouldConnect = reconnectSpy.mock.calls.length >= state.maxReconnectAttempts;
+      // Only allow open events through when we should connect
+      if (event.type === 'open' && !state.shouldConnect) {
+        return;
+      }
+      // eslint-disable-next-line no-invalid-this
+      originalDispatchEvent.call(this, event);
+    });
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        }
+      });
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    app.heartbeatPeriod = 5000;
+    await app.start();
+
+    while (reconnectSpy.mock.calls.length < state.maxReconnectAttempts) {
+      await sleep(100);
+    }
+
+    // Verify the number of reconnect attempts
+    expect(reconnectSpy).toHaveBeenCalledTimes(state.maxReconnectAttempts);
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+
+    // Restore the original ReconnectingWebSocket
+    mockDispatchEvent.mockRestore();
+    reconnectSpy.mockRestore();
     console.log = originalConsoleLog;
   });
 

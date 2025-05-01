@@ -13,7 +13,7 @@ import { Pool, PoolClient } from 'pg';
 import { LookupTable, LookupTableRow } from './lookuptable';
 import { InsertQuery } from '../sql';
 
-interface ReferenceTableRow extends LookupTableRow {
+export interface ReferenceTableRow extends LookupTableRow {
   resourceId: string;
   targetId: string;
   code: string;

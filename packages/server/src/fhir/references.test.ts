@@ -1,4 +1,4 @@
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference, normalizeErrorString, WithId } from '@medplum/core';
 import { Login, Patient, Project, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
@@ -8,6 +8,7 @@ import { AuthState } from '../oauth/middleware';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo } from './repo';
+import { ReferenceTable, ReferenceTableRow } from './lookups/reference';
 
 describe('Reference checks', () => {
   beforeAll(async () => {
@@ -229,4 +230,40 @@ describe('Reference checks', () => {
 
       await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
     }));
+
+  test('Resources with identical references', () => {
+    const table = new ReferenceTable();
+
+    const orgId = randomUUID();
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      managingOrganization: { reference: `Organization/${orgId}` },
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    };
+
+    const r2: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '2',
+      managingOrganization: { reference: `Organization/${orgId}` },
+      name: [{ given: ['Bob'], family: 'Smith' }],
+    };
+
+    const result: ReferenceTableRow[] = [];
+    table.extractValues(result, r1);
+    table.extractValues(result, r2);
+
+    expect(result).toStrictEqual([
+      {
+        code: 'organization',
+        resourceId: '1',
+        targetId: orgId,
+      },
+      {
+        code: 'organization',
+        resourceId: '2',
+        targetId: orgId,
+      },
+    ]);
+  });
 });

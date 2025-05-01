@@ -35,6 +35,7 @@ const SCHEMA_DIR = resolve(__dirname, 'schema');
 let DRY_RUN = false;
 let ALLOW_POST_DEPLOY_ACTIONS = false;
 let SKIP_POST_DEPLOY_ACTIONS = false;
+let ADD_ANALYZE_RESOURCE_TABLES = false;
 
 export interface SchemaDefinition {
   tables: TableDefinition[];
@@ -97,6 +98,7 @@ export async function main(): Promise<void> {
   DRY_RUN = process.argv.includes('--dryRun');
   ALLOW_POST_DEPLOY_ACTIONS = process.argv.includes('--allowPostDeploy');
   SKIP_POST_DEPLOY_ACTIONS = process.argv.includes('--skipPostDeploy');
+  ADD_ANALYZE_RESOURCE_TABLES = process.argv.includes('--addAnalyzeResourceTables');
   indexStructureDefinitionsAndSearchParameters();
 
   const dbClient = new Client({
@@ -387,6 +389,7 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: string
       { columns: ['projectId'], indexType: 'btree' },
       { columns: ['_source'], indexType: 'btree' },
       { columns: ['_profile'], indexType: 'gin' },
+      { columns: ['__version'], indexType: 'btree' },
     ],
   };
 
@@ -837,6 +840,15 @@ function writeMigrations(
   for (const targetTable of targetDefinition.tables) {
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
     migrateTable(b, startTable, targetTable, options);
+  }
+
+  if (ADD_ANALYZE_RESOURCE_TABLES) {
+    for (const [resourceType, fhirType] of Object.entries(getAllDataTypes())) {
+      if (!isResourceTypeSchema(fhirType)) {
+        continue;
+      }
+      b.appendNoWrap(`await fns.analyzeTable(client, actions, '${resourceType}');`);
+    }
   }
 
   b.indentCount--;
