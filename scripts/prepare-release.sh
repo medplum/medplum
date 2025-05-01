@@ -12,13 +12,15 @@ CURR_VERSION=$(node -p "require('./package.json').version")
 # Convert version string to array using '.' as delimiter
 IFS='.' read -ra CURR_VERSION_PARTS <<< "$CURR_VERSION"
 
-# Check if there have been any data migrations since the last release
-DATA_MIGRATIONS=$(git diff v$CURR_VERSION --name-only -- packages/server/src/migrations/data)
-if [ -z "$DATA_MIGRATIONS" ]; then
-    echo "No data migrations since v$CURR_VERSION, increasing patch version"
+# Check if a new requiredBefore entry has been added to the data migration manifest
+DIFF_OUTPUT=$(git diff v$CURR_VERSION -- packages/server/src/migrations/data/data-version-manifest.json)
+ADDED_REQUIRED_BEFORE=$(echo "$DIFF_OUTPUT" | grep -e '^\+.*"requiredBefore"')
+
+if [ -z "$ADDED_REQUIRED_BEFORE" ]; then
+    echo "No added requiredBefore entry since v$CURR_VERSION, increasing patch version"
     ((CURR_VERSION_PARTS[2]++)) || true
 else
-    echo "New data migrations since v$CURR_VERSION, increasing minor version"
+    echo "New requiredBefore entry since v$CURR_VERSION, increasing minor version"
     ((CURR_VERSION_PARTS[1]++)) || true
     CURR_VERSION_PARTS[2]=0
 fi
