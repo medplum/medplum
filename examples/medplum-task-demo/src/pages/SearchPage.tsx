@@ -2,7 +2,7 @@ import { Tabs } from '@mantine/core';
 import { Operator, SearchRequest, formatSearchQuery, getReferenceString, parseSearchRequest } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router';
 import { CreateTaskModal } from '../components/actions/CreateTaskModal';
 import { getPopulatedSearch } from '../utils/search-control';
 
@@ -21,7 +21,7 @@ export function SearchPage(): JSX.Element {
     // Parse the search definition from the url and get the correct fields for the resource type
     const parsedSearch = parseSearchRequest(location.pathname + location.search);
     if (!parsedSearch.resourceType) {
-      navigate('/Task');
+      navigate('/Task')?.catch(console.error);
       return;
     }
 
@@ -35,7 +35,7 @@ export function SearchPage(): JSX.Element {
       setSearch(populatedSearch);
     } else {
       // If it doesn't, navigate to the correct URL
-      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`);
+      navigate(`/${populatedSearch.resourceType}${formatSearchQuery(populatedSearch)}`)?.catch(console.error);
     }
   }, [medplum, navigate, location]);
 
@@ -46,7 +46,7 @@ export function SearchPage(): JSX.Element {
 
     const updatedSearch = updateSearch(newTab ?? 'active', search);
     const updatedSearchQuery = formatSearchQuery(updatedSearch);
-    navigate(`/Task${updatedSearchQuery}`);
+    navigate(`/Task${updatedSearchQuery}`)?.catch(console.error);
   };
 
   if (!search?.resourceType || !search.fields || search.fields.length === 0) {
@@ -67,24 +67,24 @@ export function SearchPage(): JSX.Element {
           <Tabs.Panel value="active">
             <SearchControl
               search={search}
-              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
               hideFilters={true}
               onChange={(e) => {
-                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
               }}
             />
           </Tabs.Panel>
           <Tabs.Panel value="completed">
             <SearchControl
               search={search}
-              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+              onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
               hideToolbar={false}
               onNew={() => setIsNewOpen(true)}
               hideFilters={true}
               onChange={(e) => {
-                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+                navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
               }}
             />
           </Tabs.Panel>
@@ -92,11 +92,11 @@ export function SearchPage(): JSX.Element {
       ) : (
         <SearchControl
           search={search}
-          onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
+          onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)?.catch(console.error)}
           hideToolbar={false}
           hideFilters={true}
           onChange={(e) => {
-            navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
+            navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`)?.catch(console.error);
           }}
         />
       )}

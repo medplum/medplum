@@ -1,10 +1,9 @@
-import { Loader, Tabs } from '@mantine/core';
+import { Loader, Paper, Tabs } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/react';
+import { PatientHeader, useResource } from '@medplum/react';
 import { Fragment } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
-import { PatientHeader } from './PatientHeader';
+import { Outlet, useNavigate, useParams } from 'react-router';
 
 export function PatientPage(): JSX.Element {
   const navigate = useNavigate();
@@ -16,14 +15,16 @@ export function PatientPage(): JSX.Element {
 
   return (
     <Fragment key={getReferenceString(patient)}>
-      <PatientHeader patient={patient} />
-      <Tabs onChange={(t) => navigate(`./${t}`)}>
-        <Tabs.List bg="white">
-          <Tabs.Tab value="overview">Overview</Tabs.Tab>
-          <Tabs.Tab value="timeline">Timeline</Tabs.Tab>
-          <Tabs.Tab value="history">History</Tabs.Tab>
-        </Tabs.List>
-      </Tabs>
+      <Paper>
+        <PatientHeader patient={patient} />
+        <Tabs onChange={(t) => navigate(`./${t}`)?.catch(console.error)}>
+          <Tabs.List>
+            <Tabs.Tab value="overview">Overview</Tabs.Tab>
+            <Tabs.Tab value="timeline">Timeline</Tabs.Tab>
+            <Tabs.Tab value="history">History</Tabs.Tab>
+          </Tabs.List>
+        </Tabs>
+      </Paper>
       <Outlet />
     </Fragment>
   );

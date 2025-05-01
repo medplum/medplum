@@ -28,6 +28,8 @@
           <given>Katherine</given>
           <family>Madison</family>
         </name>
+        <raceCode nullFlavor="UNK"/>
+        <ethnicGroupCode nullFlavor="UNK"/>
       </patient>
     </patientRole>
   </recordTarget>

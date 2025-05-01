@@ -25,6 +25,7 @@ import {
   deepClone,
   deepEquals,
   deepIncludes,
+  escapeHtml,
   findObservationInterval,
   findObservationReferenceRange,
   findObservationReferenceRanges,
@@ -676,6 +677,9 @@ describe('Core Utils', () => {
 
     // Make sure we preserve "false", even though falsy
     expect(stringify({ low: false, high: true })).toStrictEqual('{"low":false,"high":true}');
+
+    // empty objects within arrays should be translated to null, but NOT removed
+    expect(stringify({ address: [{}, { use: 'home' }, {}] })).toStrictEqual('{"address":[null,{"use":"home"},null]}');
   });
 
   test('Deep equals', () => {
@@ -1612,4 +1616,18 @@ describe('singularize', () => {
     expect(singularize([false])).toStrictEqual(false);
     expect(singularize([])).toBeUndefined();
   });
+});
+
+describe('escapeHtml', () => {
+  test('Escapes &', () => expect(escapeHtml('&')).toStrictEqual('&amp;'));
+  test('Escapes <', () => expect(escapeHtml('<')).toStrictEqual('&lt;'));
+  test('Escapes >', () => expect(escapeHtml('>')).toStrictEqual('&gt;'));
+  test('Escapes "', () => expect(escapeHtml('"')).toStrictEqual('&quot;'));
+  test('Escapes “', () => expect(escapeHtml('“')).toStrictEqual('&ldquo;'));
+  test('Escapes ”', () => expect(escapeHtml('”')).toStrictEqual('&rdquo;'));
+  test('Escapes ‘', () => expect(escapeHtml('‘')).toStrictEqual('&lsquo;'));
+  test('Escapes ’', () => expect(escapeHtml('’')).toStrictEqual('&rsquo;'));
+  test('Escapes …', () => expect(escapeHtml('…')).toStrictEqual('&hellip;'));
+
+  test('Escapes tag', () => expect(escapeHtml('<foo>')).toStrictEqual('&lt;foo&gt;'));
 });

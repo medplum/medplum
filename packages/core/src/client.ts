@@ -490,6 +490,8 @@ export interface BotEvent<T = Resource | Hl7Message | string | Record<string, an
   readonly input: T;
   readonly secrets: Record<string, ProjectSetting>;
   readonly traceId?: string;
+  /** Headers from the original request, when invoked by HTTP request */
+  readonly headers?: Record<string, string | string[] | undefined>;
 }
 
 export interface InviteRequest {
@@ -498,6 +500,7 @@ export interface InviteRequest {
   lastName: string;
   email?: string;
   externalId?: string;
+  scope?: 'project' | 'server';
   password?: string;
   sendEmail?: boolean;
   membership?: Partial<ProjectMembership>;
@@ -669,51 +672,55 @@ interface RequestState {
  * JWT bearer extension: https://datatracker.ietf.org/doc/html/rfc7523
  * Token exchange extension: https://datatracker.ietf.org/doc/html/rfc8693
  */
-export enum OAuthGrantType {
-  ClientCredentials = 'client_credentials',
-  AuthorizationCode = 'authorization_code',
-  RefreshToken = 'refresh_token',
-  JwtBearer = 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-  TokenExchange = 'urn:ietf:params:oauth:grant-type:token-exchange',
-}
+export const OAuthGrantType = {
+  ClientCredentials: 'client_credentials',
+  AuthorizationCode: 'authorization_code',
+  RefreshToken: 'refresh_token',
+  JwtBearer: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+  TokenExchange: 'urn:ietf:params:oauth:grant-type:token-exchange',
+} as const;
+export type OAuthGrantType = (typeof OAuthGrantType)[keyof typeof OAuthGrantType];
 
 /**
  * OAuth 2.0 Token Type Identifiers
  * See: https://datatracker.ietf.org/doc/html/rfc8693#name-token-type-identifiers
  */
-export enum OAuthTokenType {
+export const OAuthTokenType = {
   /** Indicates that the token is an OAuth 2.0 access token issued by the given authorization server. */
-  AccessToken = 'urn:ietf:params:oauth:token-type:access_token',
+  AccessToken: 'urn:ietf:params:oauth:token-type:access_token',
   /** Indicates that the token is an OAuth 2.0 refresh token issued by the given authorization server. */
-  RefreshToken = 'urn:ietf:params:oauth:token-type:refresh_token',
+  RefreshToken: 'urn:ietf:params:oauth:token-type:refresh_token',
   /** Indicates that the token is an ID Token as defined in Section 2 of [OpenID.Core]. */
-  IdToken = 'urn:ietf:params:oauth:token-type:id_token',
+  IdToken: 'urn:ietf:params:oauth:token-type:id_token',
   /** Indicates that the token is a base64url-encoded SAML 1.1 [OASIS.saml-core-1.1] assertion. */
-  Saml1Token = 'urn:ietf:params:oauth:token-type:saml1',
+  Saml1Token: 'urn:ietf:params:oauth:token-type:saml1',
   /** Indicates that the token is a base64url-encoded SAML 2.0 [OASIS.saml-core-2.0-os] assertion. */
-  Saml2Token = 'urn:ietf:params:oauth:token-type:saml2',
-}
+  Saml2Token: 'urn:ietf:params:oauth:token-type:saml2',
+} as const;
+export type OAuthTokenType = (typeof OAuthTokenType)[keyof typeof OAuthTokenType];
 
 /**
  * OAuth 2.0 Client Authentication Methods
  * See: https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication
  */
-export enum OAuthTokenAuthMethod {
-  ClientSecretBasic = 'client_secret_basic',
-  ClientSecretPost = 'client_secret_post',
-  ClientSecretJwt = 'client_secret_jwt',
-  PrivateKeyJwt = 'private_key_jwt',
-  None = 'none',
-}
+export const OAuthTokenAuthMethod = {
+  ClientSecretBasic: 'client_secret_basic',
+  ClientSecretPost: 'client_secret_post',
+  ClientSecretJwt: 'client_secret_jwt',
+  PrivateKeyJwt: 'private_key_jwt',
+  None: 'none',
+} as const;
+export type OAuthTokenAuthMethod = (typeof OAuthTokenAuthMethod)[keyof typeof OAuthTokenAuthMethod];
 
 /**
  * OAuth 2.0 Client Authentication Methods
  * See: https://datatracker.ietf.org/doc/html/rfc7523#section-2.2
  */
-export enum OAuthClientAssertionType {
+export const OAuthClientAssertionType = {
   /** Using JWTs for Client Authentication */
-  JwtBearer = 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
-}
+  JwtBearer: 'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+} as const;
+export type OAuthClientAssertionType = (typeof OAuthClientAssertionType)[keyof typeof OAuthClientAssertionType];
 
 interface SessionDetails {
   project: Project;
@@ -4009,7 +4016,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
     // Make sure sessionDetails.profile.id matches the ID in the profile reference we are checking against
     // Otherwise return false if no profile reference in login
-    return login.profile?.reference?.endsWith(this.sessionDetails.profile.id as string) ?? false;
+    return login.profile?.reference?.endsWith(this.sessionDetails.profile.id) ?? false;
   }
 
   /**

@@ -1,4 +1,4 @@
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes } from 'react-router';
 import { BatchPage } from './BatchPage';
 import { BulkAppPage } from './BulkAppPage';
 import { ChangePasswordPage } from './ChangePasswordPage';

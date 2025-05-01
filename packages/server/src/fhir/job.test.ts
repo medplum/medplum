@@ -29,7 +29,7 @@ describe('Job status', () => {
     accessToken = testProject.accessToken;
     asyncJobManager = new AsyncJobExecutor(
       new Repository({
-        projects: [testProject.project.id as string],
+        projects: [testProject.project.id],
         author: { reference: 'User/' + randomUUID() },
       })
     );
@@ -103,7 +103,7 @@ describe('Job status', () => {
 
       // Check if AsyncJob.status === 'cancelled'
       const res3 = await request(app)
-        .get(`/fhir/R4/AsyncJob/${job.id as string}`)
+        .get(`/fhir/R4/AsyncJob/${job.id}`)
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON);
 

@@ -20,7 +20,7 @@ describe('Medplum Custom Search Parameters', () => {
     const { project } = await createTestProject();
     repo = new Repository({
       strictMode: true,
-      projects: [project.id as string],
+      projects: [project.id],
       author: { reference: 'User/' + randomUUID() },
     });
   });
@@ -294,7 +294,7 @@ describe('Medplum Custom Search Parameters', () => {
 
       expect(results.entry).toHaveLength(1);
       expect(results.entry?.[0].resource?.resourceType).toStrictEqual('Flag');
-      expect(results.entry?.[0].resource?.id as string).toStrictEqual(flag1.id as string);
+      expect(results.entry?.[0].resource?.id).toStrictEqual(flag1.id);
     }));
 
   test('Search by AsyncJob.type and AsyncJob.status', () =>
@@ -326,5 +326,46 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(result.entry).toHaveLength(1);
+    }));
+
+  test('Search for Practitioner by qualification-code', () =>
+    withTestContext(async () => {
+      const practitioner1 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Alice'], family: 'A' }],
+        qualification: [
+          {
+            code: {
+              coding: [
+                { code: 'MD', system: 'http://terminology.hl7.org/CodeSystem/v2-0360', display: 'Doctor of Medicine' },
+              ],
+            },
+          },
+        ],
+      });
+      expect(practitioner1).toBeDefined();
+
+      const practitioner2 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Bob'], family: 'B' }],
+        qualification: [
+          {
+            code: {
+              coding: [
+                { code: 'RN', system: 'http://terminology.hl7.org/CodeSystem/v2-0360', display: 'Registered Nurse' },
+              ],
+            },
+          },
+        ],
+      });
+      expect(practitioner2).toBeDefined();
+
+      const result = await repo.search({
+        resourceType: 'Practitioner',
+        filters: [{ code: 'qualification-code', operator: Operator.EQUALS, value: 'MD' }],
+      });
+
+      expect(result.entry).toHaveLength(1);
+      expect(result.entry?.[0]?.resource).toMatchObject(practitioner1);
     }));
 });

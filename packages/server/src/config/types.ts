@@ -8,6 +8,7 @@ export interface MedplumServerConfig {
   authorizeUrl: string;
   tokenUrl: string;
   userInfoUrl: string;
+  introspectUrl: string;
   appBaseUrl: string;
   logLevel?: string;
   binaryStorage?: string;
@@ -61,8 +62,11 @@ export interface MedplumServerConfig {
     | 'graphql-introspection'
     | 'websocket-subscriptions'
   )[];
+  /** Number of HTTP requests per minute users can make by default; overridable by Project settings */
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
+  /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
+  defaultFhirInteractionLimit?: number;
 
   /** Max length of Bot AuditEvent.outcomeDesc when creating a FHIR Resource */
   maxBotLogLengthForResource?: number;
@@ -101,6 +105,11 @@ export interface MedplumDatabaseConfig {
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
   runMigrations?: boolean;
+  /**
+   * Prevent post-deploy migrations from being automatically run after server startup.
+   * Setting this to `true` is not recommended except for advanced use cases.
+   */
+  disableRunPostDeployMigrations?: boolean;
   maxConnections?: number;
   disableConnectionConfiguration?: boolean;
 }

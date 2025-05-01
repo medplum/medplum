@@ -2,10 +2,9 @@ import { Button, Paper, ScrollArea, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
-import { Document, OperationOutcomeAlert, useMedplum, useResource } from '@medplum/react';
+import { Document, OperationOutcomeAlert, PatientHeader, useMedplum, useResource } from '@medplum/react';
 import { useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
-import { PatientHeader } from '../components/PatientHeader';
+import { Outlet, useNavigate, useParams } from 'react-router';
 import { QuickServiceRequests } from '../components/QuickServiceRequests';
 import { QuickStatus } from '../components/QuickStatus';
 import { ResourceHeader } from '../components/ResourceHeader';
@@ -112,7 +111,7 @@ export function ResourcePage(): JSX.Element | null {
       newTabName = tabs[0].toLowerCase();
     }
     setCurrentTab(newTabName);
-    navigate(`/${resourceType}/${id}/${newTabName}`);
+    navigate(`/${resourceType}/${id}/${newTabName}`)?.catch(console.error);
   }
 
   function onStatusChange(status: string): void {

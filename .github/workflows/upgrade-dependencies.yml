@@ -2,6 +2,11 @@ name: Upgrade dependencies
 
 on:
   workflow_dispatch:
+    inputs:
+      excludes:
+        description: 'Additional packages to exclude from upgrades (space separated)'
+        required: false
+        type: string
   schedule:
     # Every Monday at 9:00 AM UTC
     # Every Monday at 1:00 AM PST (2:00 AM PDT)
@@ -25,6 +30,13 @@ jobs:
           git config --global user.email "${{ secrets.MEDPLUM_BOT_EMAIL }}"
           git config --global user.name "${{ secrets.MEDPLUM_BOT_NAME }}"
       - name: Upgrade dependencies
-        run: ./scripts/upgrade.sh
+        run: |
+          if [ -n "${{ inputs.excludes }}" ]; then
+            echo "Running upgrade with excludes: ${{ inputs.excludes }}"
+            ./scripts/upgrade.sh --exclude="${{ inputs.excludes }}"
+          else
+            echo "Running upgrade with default excludes"
+            ./scripts/upgrade.sh
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}

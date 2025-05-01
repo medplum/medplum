@@ -41,7 +41,7 @@ import {
 } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
-import { ProfileResource, createReference, sleep } from './utils';
+import { ProfileResource, WithId, createReference, sleep } from './utils';
 
 const EXAMPLE_XML = `
 <note>
@@ -2089,7 +2089,7 @@ describe('Client', () => {
   test('Execute bot by ID', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const bot: Bot = {
+    const bot: WithId<Bot> = {
       resourceType: 'Bot',
       id: '123',
       name: 'Test Bot',
@@ -2097,7 +2097,7 @@ describe('Client', () => {
       code: 'export async function handler() {}',
     };
 
-    const result1 = await client.executeBot(bot.id as string, {});
+    const result1 = await client.executeBot(bot.id, {});
     expect(result1).toBeDefined();
     expect(fetch).toHaveBeenCalledWith('https://api.medplum.com/fhir/R4/Bot/123/$execute', expect.objectContaining({}));
   });
@@ -2328,13 +2328,15 @@ describe('Client', () => {
       expect(fetch).toHaveBeenCalledTimes(1);
     });
 
-    test.each([400, 401, 404])('%d status code is not retried', async (statusCode) => {
+    test.each([400, 401, 403, 404])('%d status code is not retried', async (statusCode) => {
       const fetch = mockFetch(statusCode, (): OperationOutcome => {
         switch (statusCode) {
           case 400:
             return badRequest('The request is not good');
           case 401:
             return unauthorized;
+          case 403:
+            return forbidden;
           case 404:
             return notFound;
           default:
@@ -2350,6 +2352,11 @@ describe('Client', () => {
         case 401:
           await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow(
             new OperationOutcomeError(unauthorized)
+          );
+          break;
+        case 403:
+          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow(
+            new OperationOutcomeError(forbidden)
           );
           break;
         case 404:

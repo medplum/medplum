@@ -1,7 +1,6 @@
 import { tooManyRequests } from '@medplum/core';
-import { Request } from 'express';
-import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
-import RedisStore from 'rate-limit-redis';
+import { Request, Response, Handler } from 'express';
+import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRedis } from './redis';
 import { MedplumServerConfig } from './config/types';
@@ -14,35 +13,54 @@ import { MedplumServerConfig } from './config/types';
 const DEFAULT_RATE_LIMIT_PER_MINUTE = 60_000;
 const DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE = 160;
 
-let handler: RateLimitRequestHandler | undefined = undefined;
-let store: RedisStore | undefined = undefined;
-
-export function getRateLimiter(config: MedplumServerConfig): RateLimitRequestHandler {
+let handler: Handler | undefined;
+export function rateLimitHandler(config: MedplumServerConfig): Handler {
   if (!handler) {
-    const client = getRedis();
-    store = new RedisStore({
-      // See: https://www.npmjs.com/package/rate-limit-redis#:~:text=//%20%40ts%2Dexpect%2Derror%20%2D%20Known%20issue%3A
-      // @ts-expect-error - The ioredis call function expects structured string arguments
-      sendCommand: (...args: string[]): unknown => client.call(...args),
-    });
-    handler = rateLimit({
-      windowMs: 60 * 1000, // 1 minute
-      limit: getRateLimitForRequest(config),
-      keyGenerator: (req, _res) => (req.ip as string) + (isAuthRequest(req) ? ':auth' : ''),
-      validate: true, // Enable setup checks on first incoming request
-      store,
-      message: tooManyRequests,
-      skip: (_req) => config.defaultRateLimit === -1,
-    });
+    if (config.defaultRateLimit === -1) {
+      handler = (_req, _res, next) => next(); // Disable rate limiter
+    } else {
+      handler = async function rateLimiter(req, res, next) {
+        try {
+          const result = await getRateLimiter(req, config).consume(getRateLimitKey(req), 1);
+          addRateLimitHeader(result, res);
+          next();
+        } catch (err: unknown) {
+          if (err instanceof Error) {
+            next(err);
+            return;
+          }
+
+          const result = err as RateLimiterRes;
+          addRateLimitHeader(result, res);
+          res.status(429).json(tooManyRequests).end();
+        }
+      };
+    }
   }
   return handler;
 }
 
+export function getRateLimiter(req: Request, config?: MedplumServerConfig): RateLimiterRedis {
+  const client = getRedis();
+  return new RateLimiterRedis({
+    keyPrefix: 'medplum:rl:',
+    storeClient: client,
+    points: getRateLimitForRequest(req, config), // Number of points
+    duration: 60, // Per minute
+  });
+}
+
+function getRateLimitKey(req: Request): string {
+  return (req.ip as string) + (isAuthRequest(req) ? ':auth' : '');
+}
+
+function addRateLimitHeader(result: RateLimiterRes, res: Response): void {
+  const { remainingPoints, msBeforeNext } = result;
+  res.append('RateLimit', `"requests";r=${remainingPoints};t=${Math.ceil(msBeforeNext / 1000)}`);
+}
+
 export function closeRateLimiter(): void {
-  if (handler) {
-    store = undefined;
-    handler = undefined;
-  }
+  handler = undefined;
 }
 
 function isAuthRequest(req: Request): boolean {
@@ -54,25 +72,23 @@ function isAuthRequest(req: Request): boolean {
   return req.originalUrl.startsWith('/auth/') || req.originalUrl.startsWith('/oauth2/');
 }
 
-function getRateLimitForRequest(config?: MedplumServerConfig): (req: Request) => Promise<number> {
-  return async function getRateLimitForRequest(req: Request): Promise<number> {
-    const isAuthUrl = isAuthRequest(req);
-    let limit: number;
-    if (isAuthUrl) {
-      limit = config?.defaultAuthRateLimit ?? DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE;
-    } else {
-      limit = config?.defaultRateLimit ?? DEFAULT_RATE_LIMIT_PER_MINUTE;
-    }
+function getRateLimitForRequest(req: Request, config?: MedplumServerConfig): number {
+  const isAuthUrl = isAuthRequest(req);
+  let limit: number;
+  if (isAuthUrl) {
+    limit = config?.defaultAuthRateLimit ?? DEFAULT_AUTH_RATE_LIMIT_PER_MINUTE;
+  } else {
+    limit = config?.defaultRateLimit ?? DEFAULT_RATE_LIMIT_PER_MINUTE;
+  }
 
-    const ctx = getRequestContext();
-    if (ctx instanceof AuthenticatedRequestContext) {
-      const systemSettingName = isAuthUrl ? 'authRateLimit' : 'rateLimit';
-      const systemSetting = ctx.project.systemSetting?.find((s) => s.name === systemSettingName);
-      if (systemSetting?.valueInteger) {
-        limit = systemSetting.valueInteger;
-      }
+  const ctx = getRequestContext();
+  if (ctx instanceof AuthenticatedRequestContext) {
+    const systemSettingName = isAuthUrl ? 'authRateLimit' : 'rateLimit';
+    const systemSetting = ctx.project.systemSetting?.find((s) => s.name === systemSettingName);
+    if (systemSetting?.valueInteger) {
+      limit = systemSetting.valueInteger;
     }
+  }
 
-    return limit;
-  };
+  return limit;
 }

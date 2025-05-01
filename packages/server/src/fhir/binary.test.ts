@@ -6,8 +6,8 @@ import request from 'supertest';
 import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { getBinaryStorage } from '../storage/loader';
 import { initTestAuth, streamToString } from '../test.setup';
-import { getBinaryStorage } from './storage';
 
 const app = express();
 let accessToken: string;

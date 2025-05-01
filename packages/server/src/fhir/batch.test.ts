@@ -1155,4 +1155,45 @@ describe('Batch and Transaction processing', () => {
       reference: 'Organization/4640af05-8f7b-4abb-905d-ee56b0aef229',
     });
   });
+
+  test('_include regression test', async () => {
+    const transaction: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Observation',
+          },
+          resource: {
+            resourceType: 'Observation',
+            status: 'final',
+            subject: { display: 'Mr. Patient' },
+            code: { coding: [{ system: 'http://snomed.info/sct', code: '1234567890' }] },
+          },
+        },
+      ],
+    };
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(transaction);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toStrictEqual('Bundle');
+
+    const results = res.body as Bundle;
+    expect(results.entry).toHaveLength(1);
+    expect(results.type).toStrictEqual('transaction-response');
+
+    const query = await request(app)
+      .get(`/fhir/R4/Observation?_id=${results.entry?.[0].resource?.id}&_include=Observation:subject`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send();
+
+    expect(query.status).toBe(200);
+    expect(query.body.entry).toHaveLength(1);
+  });
 });

@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router';
 import { AccountPage } from './pages/account';
 import { MembershipAndBilling } from './pages/account/MembershipAndBilling';
 import { Profile } from './pages/account/Profile';
@@ -13,19 +13,19 @@ import { LabResults } from './pages/health-record/LabResults';
 import { Measurement } from './pages/health-record/Measurement';
 import { Medication } from './pages/health-record/Medication';
 import { Medications } from './pages/health-record/Medications';
-import { Responses } from './pages/health-record/Responses';
 import { Response } from './pages/health-record/Response';
+import { Responses } from './pages/health-record/Responses';
 import { Vaccine } from './pages/health-record/Vaccine';
 import { Vaccines } from './pages/health-record/Vaccines';
 import { Vitals } from './pages/health-record/Vitals';
 import { HomePage } from './pages/HomePage';
-import { MessageTable } from './pages/MessageTablePage';
 import { Messages } from './pages/MessagesPage';
-import { QuestionnairePage } from './pages/QuestionnairePage';
+import { MessageTable } from './pages/MessageTablePage';
 import { ObservationPage } from './pages/ObservationPage';
-import { SignOutPage } from './pages/SignOutPage';
-import { ScreeningQuestionnairePage } from './pages/ScreeningQuestionnairePage';
 import { PatientIntakeQuestionnairePage } from './pages/PatientIntakeQuestionnairePage';
+import { QuestionnairePage } from './pages/QuestionnairePage';
+import { ScreeningQuestionnairePage } from './pages/ScreeningQuestionnairePage';
+import { SignOutPage } from './pages/SignOutPage';
 
 export function Router(): JSX.Element {
   return (
@@ -36,9 +36,9 @@ export function Router(): JSX.Element {
       <Route path="Questionnaire/:questionnaireId" element={<QuestionnairePage />} />
       <Route path="screening-questionnaire" element={<ScreeningQuestionnairePage />} />
       <Route path="patient-intake-questionnaire" element={<PatientIntakeQuestionnairePage />} />
-      <Route path="health-record/*" element={<HealthRecord />}>
+      <Route path="health-record" element={<HealthRecord />}>
         <Route index element={<Navigate replace to="/health-record/lab-results" />} />
-        <Route path="lab-results/*" element={<LabResults />} />
+        <Route path="lab-results" element={<LabResults />} />
         <Route path="lab-results/:resultId" element={<LabResult />} />
         <Route path="medications" element={<Medications />} />
         <Route path="medications/:medicationId" element={<Medication />} />
@@ -50,16 +50,16 @@ export function Router(): JSX.Element {
         <Route path="vitals/:measurementId" element={<Measurement />} />
       </Route>
       <Route path="Observation/:observationId" element={<ObservationPage />} />
-      <Route path="care-plan/*" element={<CarePlanPage />}>
+      <Route path="care-plan" element={<CarePlanPage />}>
         <Route index element={<Navigate replace to="/care-plan/action-items" />} />
         <Route path="action-items" element={<ActionItems />} />
         <Route path="action-items/:itemId" element={<ActionItem />} />
       </Route>
-      <Route path="get-care/*" element={<GetCare />} />
-      <Route path="account/*" element={<AccountPage />}>
+      <Route path="get-care" element={<GetCare />} />
+      <Route path="account" element={<AccountPage />}>
         <Route index element={<Navigate replace to="/account/profile" />} />
         <Route path="profile" element={<Profile />} />
-        <Route path="provider/*" element={<Provider />} />
+        <Route path="provider" element={<Provider />} />
         <Route path="membership-and-billing" element={<MembershipAndBilling />} />
       </Route>
       <Route path="signout" element={<SignOutPage />} />

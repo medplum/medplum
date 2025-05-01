@@ -9,7 +9,7 @@ import {
   normalizeErrorString,
 } from '@medplum/core';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 
 import { showNotification } from '@mantine/notifications';
 import { Bot, Bundle, BundleEntry, Coding, Practitioner, ValueSet } from '@medplum/fhirtypes';

@@ -12,7 +12,7 @@ import {
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 interface CreateEncounterProps {
   readonly opened: boolean;
@@ -81,7 +81,7 @@ export function CreateEncounter({ opened, handlers }: CreateEncounterProps): JSX
           title: 'Success',
           message: 'Encounter created',
         });
-        navigate(`/Encounter/${encounter.id}`);
+        navigate(`/Encounter/${encounter.id}`)?.catch(console.error);
       })
       .catch((err) => {
         showNotification({

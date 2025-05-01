@@ -3,6 +3,7 @@ import {
   CurrentContext,
   FhircastEventContext,
   FhircastEventPayload,
+  WithId,
   createFhircastMessagePayload,
   generateId,
   isOperationOutcome,
@@ -45,7 +46,7 @@ describe('FHIRCast routes', () => {
   let app: express.Express;
   let config: MedplumServerConfig;
   let server: Server;
-  let project: Project;
+  let project: WithId<Project>;
   let accessToken: string;
   let tokenForAnotherProject: string;
 
@@ -726,7 +727,7 @@ describe('FHIRCast routes', () => {
     const contentBundleId = generateId();
 
     // Setup the key as if we have already opened this resource
-    await setTopicCurrentContext(project.id as string, topic, {
+    await setTopicCurrentContext(project.id, topic, {
       'context.type': 'DiagnosticReport',
       'context.versionId': generateId(),
       context: [
@@ -800,7 +801,7 @@ describe('FHIRCast routes', () => {
     expect(publishRes.body.event?.event?.['context.versionId']).toBeDefined();
 
     const latestContextStr = (await getRedis().get(
-      `medplum:fhircast:project:${project.id as string}:topic:${topic}:latest`
+      `medplum:fhircast:project:${project.id}:topic:${topic}:latest`
     )) as string;
     expect(latestContextStr).toBeTruthy();
     const latestContext = JSON.parse(latestContextStr) as CurrentContext<'DiagnosticReport'>;

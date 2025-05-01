@@ -2,10 +2,10 @@ import { getQuestionnaireAnswers } from '@medplum/core';
 import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '../test-utils/render';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
@@ -768,7 +768,7 @@ describe('QuestionnaireForm', () => {
               valueAttachment: {
                 title: 'hello.txt',
                 contentType: 'text/plain',
-                url: 'https://example.com/binary/123',
+                url: expect.stringContaining('https://example.com/binary/'),
               },
             },
           ],
@@ -2006,7 +2006,7 @@ describe('QuestionnaireForm', () => {
     const response3 = onSubmit.mock.calls[2][0];
     const answers3 = getQuestionnaireAnswers(response3);
 
-    expect(answers3['q1']).toMatchObject({ valueString: '' });
+    expect(answers3['q1']).toMatchObject({ valueString: undefined });
     expect(answers3['q2']).toMatchObject({ valueBoolean: false });
   });
 

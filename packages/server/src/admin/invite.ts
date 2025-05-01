@@ -58,7 +58,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 }
 
 export interface ServerInviteRequest extends InviteRequest {
-  project: Project;
+  project: WithId<Project>;
 }
 
 export interface ServerInviteResponse {
@@ -75,8 +75,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     request.email = request.email.toLowerCase();
   }
 
-  const project = request.project as WithId<Project>;
-  const email = request.email;
+  const { project, email } = request;
   let user = undefined;
   let existingUser = true;
   let passwordResetUrl = undefined;
@@ -106,7 +105,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     });
     profile = await createProfile(project, request.resourceType, request.firstName, request.lastName, email);
 
-    logger.info('Profile  created', { profile: getReferenceString(profile) });
+    logger.info('Profile  created', { reference: getReferenceString(profile) });
   }
 
   const membershipTemplate = request.membership ?? {};
@@ -140,13 +139,13 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 }
 
 async function createUser(request: ServerInviteRequest): Promise<WithId<User>> {
-  const { firstName, lastName, externalId } = request;
+  const { firstName, lastName, externalId, scope } = request;
   const email = request.email?.toLowerCase();
   const password = request.password ?? generateSecret(16);
   const passwordHash = await bcryptHashPassword(password);
 
   let project: Reference<Project> | undefined = undefined;
-  if (request.resourceType === 'Patient' || externalId) {
+  if (request.resourceType === 'Patient' || externalId || scope === 'project') {
     // Users can optionally be scoped to a project.
     // We force users to be scoped to a project if:
     // 1) They are a patient
@@ -188,7 +187,7 @@ async function searchForExistingProfile(request: ServerInviteRequest): Promise<W
         {
           code: '_project',
           operator: Operator.EQUALS,
-          value: project.id as string,
+          value: project.id,
         },
         {
           code: 'email',

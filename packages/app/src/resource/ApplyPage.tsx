@@ -1,6 +1,6 @@
 import { PlanDefinition, ResourceType } from '@medplum/fhirtypes';
 import { Document, useResource } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { PlanDefinitionApplyForm } from './PlanDefinitionApplyForm';
 
 export function ApplyPage(): JSX.Element | null {

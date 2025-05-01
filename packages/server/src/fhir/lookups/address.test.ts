@@ -1,12 +1,12 @@
-import { Operator } from '@medplum/core';
-import { InsurancePlan, Patient, Location, ResourceType, Resource } from '@medplum/fhirtypes';
+import { Operator, WithId } from '@medplum/core';
+import { InsurancePlan, Patient, Location, ResourceType, Resource, Address } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { PoolClient } from 'pg';
-import { AddressTable } from './address';
+import { AddressTable, AddressTableRow } from './address';
 
 describe('Address Lookup Table', () => {
   const systemRepo = getSystemRepo();
@@ -226,5 +226,180 @@ describe('Address Lookup Table', () => {
     await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');
 
     expect(db.query).not.toHaveBeenCalled();
+  });
+
+  test('extractValues defensive against nullish and empty string values', () => {
+    const table = new AddressTable();
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      address: undefined,
+    };
+    const result1: any[] = [];
+    table.extractValues(result1, r1);
+    expect(result1).toStrictEqual([]);
+
+    const r2: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '2',
+      address: [
+        {},
+        null,
+        undefined,
+        {
+          use: 'work',
+          line: ['Line 1'],
+          city: 'City 1',
+          country: 'Country 1',
+          postalCode: 'Postal 1',
+          state: 'State 1',
+        },
+        { line: ['Line 1', 'Line 2'], city: '' }, // empty city should be ignored
+        { line: ['Line 1', 'Line 2'] },
+        { use: 'home' },
+      ] as unknown as Address[],
+    };
+
+    const result2: any[] = [];
+    table.extractValues(result2, r2);
+    expect(result2).toStrictEqual([
+      {
+        resourceId: '2',
+        address: 'Line 1, City 1, State 1, Postal 1',
+        city: 'City 1',
+        country: 'Country 1',
+        postalCode: 'Postal 1',
+        state: 'State 1',
+        use: 'work',
+      },
+      {
+        address: 'Line 1, Line 2',
+        city: undefined,
+        country: undefined,
+        postalCode: undefined,
+        resourceId: '2',
+        state: undefined,
+        use: undefined,
+      },
+      {
+        address: undefined,
+        city: undefined,
+        country: undefined,
+        postalCode: undefined,
+        resourceId: '2',
+        state: undefined,
+        use: 'home',
+      },
+    ]);
+
+    const r3: WithId<InsurancePlan> = {
+      resourceType: 'InsurancePlan',
+      id: '3',
+      contact: [
+        {
+          address: {
+            use: 'work',
+            line: ['Line 1'],
+            city: 'City 1',
+            country: 'Country 1',
+            postalCode: 'Postal 1',
+            state: 'State 1',
+          },
+        },
+        {
+          address: {
+            use: 'work',
+            line: ['Line 1'],
+            city: 'City 1',
+            country: 'Country 1',
+            postalCode: 'Postal 1',
+            state: 'State 1',
+          },
+        },
+      ],
+    };
+
+    const result3: any[] = [];
+    table.extractValues(result3, r3);
+    expect(result3).toStrictEqual([
+      {
+        resourceId: '3',
+        address: 'Line 1, City 1, State 1, Postal 1',
+        city: 'City 1',
+        country: 'Country 1',
+        postalCode: 'Postal 1',
+        state: 'State 1',
+        use: 'work',
+      },
+    ]);
+  });
+
+  test('extractValues multiple patients with identical address', () => {
+    const table = new AddressTable();
+
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      address: [
+        {
+          line: ['500 Jefferson Street'],
+          city: 'San Francisco',
+          state: 'CA',
+          postalCode: '94109',
+        },
+        {
+          line: ['500 Jefferson Street'],
+          city: 'San Francisco',
+          state: 'CA',
+          postalCode: '94109',
+        },
+      ],
+    };
+
+    const r2: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '2',
+      name: [{ given: ['Bob'], family: 'Smith' }],
+      address: [
+        {
+          line: ['500 Jefferson Street'],
+          city: 'San Francisco',
+          state: 'CA',
+          postalCode: '94109',
+        },
+        {
+          line: ['500 Jefferson Street'],
+          city: 'San Francisco',
+          state: 'CA',
+          postalCode: '94109',
+        },
+      ] as unknown as Address[],
+    };
+
+    const result: AddressTableRow[] = [];
+    table.extractValues(result, r1);
+    table.extractValues(result, r2);
+
+    expect(result).toStrictEqual([
+      {
+        resourceId: '1',
+        address: '500 Jefferson Street, San Francisco, CA, 94109',
+        city: 'San Francisco',
+        country: undefined,
+        postalCode: '94109',
+        state: 'CA',
+        use: undefined,
+      },
+      {
+        resourceId: '2',
+        address: '500 Jefferson Street, San Francisco, CA, 94109',
+        city: 'San Francisco',
+        country: undefined,
+        postalCode: '94109',
+        state: 'CA',
+        use: undefined,
+      },
+    ]);
   });
 });

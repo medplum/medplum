@@ -168,7 +168,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
   const topic = req.body['hub.topic'];
   let subscriptionEndpoint: string;
   try {
-    const topicEndpointKey = `medplum:fhircast:project:${ctx.project.id as string}:topic:${topic}:endpoint`;
+    const topicEndpointKey = `medplum:fhircast:project:${ctx.project.id}:topic:${topic}:endpoint`;
     const results = await getRedis()
       // Multi allows for multiple commands to be executed in a transaction
       .multi()
@@ -191,7 +191,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
     }
     subscriptionEndpoint = result as string;
     const endpointTopicKey = `medplum:fhircast:endpoint:${subscriptionEndpoint}:topic`;
-    await getRedis().setnx(endpointTopicKey, `${ctx.project.id as string}:${topic}`);
+    await getRedis().setnx(endpointTopicKey, `${ctx.project.id}:${topic}`);
   } catch (err) {
     sendOutcome(res, serverError(new Error('Failed to get endpoint for topic')));
     getLogger().error(`[FHIRcast]: Received error while retrieving endpoint for topic`, {
@@ -214,7 +214,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
       });
       getRedis()
         .publish(
-          `${ctx.project.id as string}:${topic}`,
+          `${ctx.project.id}:${topic}`,
           JSON.stringify({
             'hub.mode': 'denied',
             'hub.topic': topic,
@@ -500,7 +500,7 @@ protectedSTU2Routes.get(
   '/:topic',
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const currentContext = await getCurrentContext(ctx.project.id as string, req.params.topic);
+    const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
     if (!currentContext) {
       res.status(200).json([]);
@@ -514,7 +514,7 @@ protectedSTU3Routes.get(
   '/:topic',
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
-    const currentContext = await getCurrentContext(ctx.project.id as string, req.params.topic);
+    const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
     if (!currentContext) {
       // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
       res.status(200).json({

@@ -2,7 +2,7 @@ import { Notifications } from '@mantine/notifications';
 import { allOk } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { PatientExportForm, PatientExportFormProps } from './PatientExportForm';
 
@@ -54,7 +54,7 @@ describe('PatientExportForm', () => {
   test('Submit', async () => {
     // Mock the patient everything endpoint
     const medplum = new MockClient();
-    medplum.router.add('GET', '/Patient/:id/$everything', async () => [
+    medplum.router.add('POST', '/Patient/:id/$everything', async () => [
       allOk,
       { resourceType: 'Bundle', type: 'document' },
     ]);
@@ -78,7 +78,7 @@ describe('PatientExportForm', () => {
   test('Submit with start and end', async () => {
     // Mock the patient everything endpoint
     const medplum = new MockClient();
-    medplum.router.add('GET', '/Patient/:id/$everything', async () => [
+    medplum.router.add('POST', '/Patient/:id/$everything', async () => [
       allOk,
       { resourceType: 'Bundle', type: 'document' },
     ]);

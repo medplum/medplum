@@ -4,7 +4,7 @@ import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mo
 // @ts-expect-error _subscriptionController is not exported from module normally
 import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../../test-utils/render';
 import { ThreadChat, ThreadChatProps } from './ThreadChat';
 

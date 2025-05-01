@@ -773,7 +773,7 @@ export function deepClone<T>(input: T): T {
  * @returns True if the input string matches the UUID format.
  */
 export function isUUID(input: string): input is string {
-  return !!/^\w{8}-\w{4}-\w{4}-\w{4}-\w{12}$/i.exec(input);
+  return /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i.test(input);
 }
 
 /**
@@ -1403,4 +1403,22 @@ export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: nu
     }
   }
   return result;
+}
+
+/**
+ * Returns the escaped HTML string of the input string.
+ * @param unsafe - The unsafe HTML string to escape.
+ * @returns The escaped HTML string.
+ */
+export function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/“/g, '&ldquo;')
+    .replace(/”/g, '&rdquo;')
+    .replace(/‘/g, '&lsquo;')
+    .replace(/’/g, '&rsquo;')
+    .replace(/…/g, '&hellip;');
 }

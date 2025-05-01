@@ -25,9 +25,9 @@ import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config/loader';
 import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
+import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
-import { getBinaryStorage } from '../storage';
 
 const botCodes = [
   [
@@ -102,7 +102,7 @@ const botDefinitions: { name: BotName; system: boolean; code: [string, string] }
 
 describe('Execute', () => {
   let app: express.Express;
-  let project1: Project;
+  let project1: WithId<Project>;
   let accessToken1: string;
   const bots = {} as Record<BotName, WithId<Bot>>;
 
@@ -572,7 +572,7 @@ describe('Execute', () => {
   });
 
   describe('linked project', () => {
-    let project2: Project;
+    let project2: WithId<Project>;
     let accessToken2: string;
 
     beforeAll(async () => {
@@ -697,7 +697,7 @@ describe('Execute', () => {
       const auditEvent = await systemRepo.searchOne<AuditEvent>({
         resourceType: 'AuditEvent',
         filters: [
-          { code: '_project', operator: Operator.EQUALS, value: project.id as string },
+          { code: '_project', operator: Operator.EQUALS, value: project.id },
           { code: 'entity', operator: Operator.EQUALS, value: getReferenceString(bot) },
         ],
       });

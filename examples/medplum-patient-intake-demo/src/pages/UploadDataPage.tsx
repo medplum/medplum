@@ -5,12 +5,12 @@ import { Bot, Bundle, BundleEntry, Practitioner, Questionnaire, Resource } from 
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useContext, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 
 import exampleBotData from '../../data/core/example-bots.json';
-import exampleData from '../../data/example/example-organization-data.json';
 import patientIntakeQuestionnaireData from '../../data/core/patient-intake-questionnaire.json';
 import valuesetsData from '../../data/core/valuesets.json';
+import exampleData from '../../data/example/example-organization-data.json';
 
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 

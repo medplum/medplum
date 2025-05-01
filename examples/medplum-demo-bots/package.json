@@ -1,6 +1,6 @@
 {
   "name": "medplum-demo-bots",
-  "version": "4.0.1",
+  "version": "4.1.2",
   "description": "Medplum Demo Bots",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
@@ -12,7 +12,8 @@
     "prettier": "prettier --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest watch"
   },
   "prettier": {
     "printWidth": 120,
@@ -29,27 +30,27 @@
     "root": true
   },
   "devDependencies": {
-    "@medplum/bot-layer": "4.0.1",
-    "@medplum/cli": "4.0.1",
-    "@medplum/core": "4.0.1",
-    "@medplum/eslint-config": "4.0.1",
-    "@medplum/fhirtypes": "4.0.1",
-    "@medplum/mock": "4.0.1",
-    "@types/node": "20.17.19",
+    "@medplum/bot-layer": "4.1.2",
+    "@medplum/cli": "4.1.2",
+    "@medplum/core": "4.1.2",
+    "@medplum/eslint-config": "4.1.2",
+    "@medplum/fhirtypes": "4.1.2",
+    "@medplum/mock": "4.1.2",
+    "@types/node": "20.17.30",
     "@types/node-fetch": "2.6.12",
     "@types/ssh2-sftp-client": "9.0.4",
-    "@vitest/coverage-v8": "3.0.7",
-    "@vitest/ui": "3.0.7",
-    "esbuild": "0.25.0",
+    "@vitest/coverage-v8": "3.1.1",
+    "@vitest/ui": "3.1.1",
+    "esbuild": "0.25.2",
     "fast-glob": "3.3.3",
-    "fast-xml-parser": "5.0.7",
+    "fast-xml-parser": "5.2.0",
     "form-data": "4.0.2",
     "node-fetch": "2.7.0",
     "pdfmake": "0.2.18",
-    "rimraf": "5.0.10",
-    "ssh2-sftp-client": "11.0.0",
-    "stripe": "17.7.0",
-    "typescript": "5.7.3",
-    "vitest": "3.0.7"
+    "rimraf": "6.0.1",
+    "ssh2-sftp-client": "12.0.0",
+    "stripe": "18.0.0",
+    "typescript": "5.8.3",
+    "vitest": "3.1.1"
   }
 }

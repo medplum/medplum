@@ -283,10 +283,12 @@ describe('MockClient', () => {
   });
 
   test('Debug mode', async () => {
+    const originalConsoleLog = console.log;
     console.log = jest.fn();
     const client = new MockClient({ debug: true });
     await client.get('not-found');
     expect(console.log).toHaveBeenCalled();
+    console.log = originalConsoleLog;
   });
 
   test('mockFetchOverride -- Missing one of router, repo, or client throws', () => {
@@ -424,7 +426,7 @@ describe('MockClient', () => {
     const client = new MockClient();
     const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
     expect(resource1).toBeDefined();
-    const resource2 = await client.readResource('Patient', resource1.id as string);
+    const resource2 = await client.readResource('Patient', resource1.id);
     expect(resource2).toBeDefined();
     expect(resource2).toStrictEqual(resource1);
     expect(resource2).not.toBe(resource1);
@@ -444,7 +446,7 @@ describe('MockClient', () => {
   test('Read resource after delete', async () => {
     const client = new MockClient();
     const patient = await client.createResource<Patient>({ resourceType: 'Patient' });
-    await client.deleteResource('Patient', patient.id as string);
+    await client.deleteResource('Patient', patient.id);
     try {
       await client.readResource('Patient', randomUUID());
       fail('Expected error');
@@ -458,7 +460,7 @@ describe('MockClient', () => {
     const client = new MockClient();
     const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
     expect(resource1).toBeDefined();
-    const resource2 = await client.readHistory('Patient', resource1.id as string);
+    const resource2 = await client.readHistory('Patient', resource1.id);
     expect(resource2).toBeDefined();
     expect(resource2.resourceType).toStrictEqual('Bundle');
   });
@@ -478,7 +480,7 @@ describe('MockClient', () => {
     const client = new MockClient();
     const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
     expect(resource1).toBeDefined();
-    const resource2 = await client.readVersion('Patient', resource1.id as string, resource1.meta?.versionId as string);
+    const resource2 = await client.readVersion('Patient', resource1.id, resource1.meta?.versionId as string);
     expect(resource2).toBeDefined();
     expect(resource2).toStrictEqual(resource1);
     expect(resource2).not.toBe(resource1);
@@ -489,7 +491,7 @@ describe('MockClient', () => {
     const resource1 = await client.createResource<Patient>({ resourceType: 'Patient' });
     expect(resource1).toBeDefined();
     try {
-      await client.readVersion('Patient', resource1.id as string, randomUUID());
+      await client.readVersion('Patient', resource1.id, randomUUID());
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -519,7 +521,7 @@ describe('MockClient', () => {
     });
     expect(resource1).toBeDefined();
 
-    const resource2 = await client.patchResource('Patient', resource1.id as string, [
+    const resource2 = await client.patchResource('Patient', resource1.id, [
       {
         op: 'add',
         path: '/active',
@@ -540,7 +542,7 @@ describe('MockClient', () => {
     });
     expect(resource1).toBeDefined();
 
-    const resource2 = await client.patchResource('Patient', resource1.id as string, [
+    const resource2 = await client.patchResource('Patient', resource1.id, [
       {
         op: 'replace',
         path: '/name/0/given/0',
@@ -563,7 +565,7 @@ describe('MockClient', () => {
     expect(resource1).toBeDefined();
 
     try {
-      await client.patchResource('Patient', resource1.id as string, [
+      await client.patchResource('Patient', resource1.id, [
         {
           op: 'test',
           path: '/name/0/given/0',
@@ -600,7 +602,7 @@ describe('MockClient', () => {
     expect(resource2.id).toStrictEqual(resource1.id);
     expect(resource2.meta?.versionId).not.toStrictEqual(resource1.meta?.versionId);
 
-    const history = await client.readHistory('ServiceRequest', resource1.id as string);
+    const history = await client.readHistory('ServiceRequest', resource1.id);
     expect(history).toBeDefined();
     expect(history.entry).toHaveLength(2);
     expect((history.entry?.[0]?.resource as ServiceRequest).orderDetail?.[0]?.text).toStrictEqual('bar');
@@ -615,14 +617,14 @@ describe('MockClient', () => {
     });
     expect(resource1).toBeDefined();
 
-    const resource2 = await client.readResource('Patient', resource1.id as string);
+    const resource2 = await client.readResource('Patient', resource1.id);
     expect(resource2).toBeDefined();
     expect(resource2.id).toStrictEqual(resource1.id);
 
-    await client.deleteResource('Patient', resource1.id as string);
+    await client.deleteResource('Patient', resource1.id);
 
     try {
-      await client.readResource('Patient', resource1.id as string);
+      await client.readResource('Patient', resource1.id);
       fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -896,6 +898,16 @@ describe('MockClient', () => {
     medplum.unsubscribeFromCriteria('Communication');
     medplum.unsubscribeFromCriteria('Communication');
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toStrictEqual(0);
+  });
+
+  test('createAttachment', async () => {
+    const medplum = new MockClient();
+    const attachment = await medplum.createAttachment({
+      contentType: ContentType.TEXT,
+      data: 'Hello World',
+    });
+    expect(attachment).toBeDefined();
+    expect(attachment.url).toBeDefined();
   });
 });
 

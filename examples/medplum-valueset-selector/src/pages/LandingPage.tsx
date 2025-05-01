@@ -1,6 +1,6 @@
 import { Button, Stack, Text, Title } from '@mantine/core';
 import { Document } from '@medplum/react';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 export function LandingPage(): JSX.Element {
   return (

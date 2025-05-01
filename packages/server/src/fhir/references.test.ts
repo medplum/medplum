@@ -1,4 +1,4 @@
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference, normalizeErrorString, WithId } from '@medplum/core';
 import { Login, Patient, Project, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
@@ -8,6 +8,7 @@ import { AuthState } from '../oauth/middleware';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo } from './repo';
+import { ReferenceTable, ReferenceTableRow } from './lookups/reference';
 
 describe('Reference checks', () => {
   beforeAll(async () => {
@@ -152,7 +153,7 @@ describe('Reference checks', () => {
       await systemRepo.updateResource(project1);
 
       const repo = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project: project1 });
-      let project = await repo.readResource<Project>('Project', project1.id as string);
+      let project = await repo.readResource<Project>('Project', project1.id);
 
       // Checking the name change is ancillary; mostly confirming that the update
       // doesn't throw due to reference validation failure
@@ -188,7 +189,10 @@ describe('Reference checks', () => {
 
   test('Check references with non-literal reference', () =>
     withTestContext(async () => {
-      const { repo } = await createTestProject({ project: { checkReferencesOnWrite: true }, withRepo: true });
+      const { repo } = await createTestProject({
+        project: { checkReferencesOnWrite: true },
+        withRepo: true,
+      });
       const patient: Patient = {
         resourceType: 'Patient',
         link: [
@@ -201,4 +205,65 @@ describe('Reference checks', () => {
 
       await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
     }));
+
+  test('Check references with reference placeholder', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        project: { checkReferencesOnWrite: true },
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          compartment: { reference: '%patient' },
+          resource: [{ resourceType: '*' }],
+        },
+      });
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        link: [
+          {
+            type: 'refer',
+            other: { reference: '%patient' },
+          },
+        ],
+      };
+
+      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
+    }));
+
+  test('Resources with identical references', () => {
+    const table = new ReferenceTable();
+
+    const orgId = randomUUID();
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      managingOrganization: { reference: `Organization/${orgId}` },
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    };
+
+    const r2: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '2',
+      managingOrganization: { reference: `Organization/${orgId}` },
+      name: [{ given: ['Bob'], family: 'Smith' }],
+    };
+
+    const result: ReferenceTableRow[] = [];
+    table.extractValues(result, r1);
+    table.extractValues(result, r2);
+
+    expect(result).toStrictEqual([
+      {
+        code: 'organization',
+        resourceId: '1',
+        targetId: orgId,
+      },
+      {
+        code: 'organization',
+        resourceId: '2',
+        targetId: orgId,
+      },
+    ]);
+  });
 });

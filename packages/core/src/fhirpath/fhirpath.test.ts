@@ -1,9 +1,10 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
-import { indexStructureDefinitionBundle } from '../typeschema/types';
-import { evalFhirPath } from './parse';
 import { LOINC, SNOMED, UCUM } from '../constants';
 import { PropertyType, TypedValue } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
+import { evalFhirPath, evalFhirPathTyped } from './parse';
+import { toTypedValue } from './utils';
 
 const observation = {
   resourceType: 'Observation',
@@ -954,7 +955,7 @@ describe('FHIRPath Test Suite', () => {
       ]);
     });
 
-    test.skip('testLiteralUnicode', () => {
+    test('testLiteralUnicode', () => {
       expect(evalFhirPath("Patient.name.given.first() = 'P\\u0065ter'", patient)).toStrictEqual([true]);
     });
 
@@ -1082,7 +1083,7 @@ describe('FHIRPath Test Suite', () => {
       expect(evalFhirPath('1.is(Integer)', patient)).toStrictEqual([true]);
     });
 
-    test.skip('testIntegerLiteralIsSystemInteger', () => {
+    test('testIntegerLiteralIsSystemInteger', () => {
       expect(evalFhirPath('1.is(System.Integer)', patient)).toStrictEqual([true]);
     });
 
@@ -3431,23 +3432,38 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testVariables', () => {
+  describe('testVariables', () => {
+    const typedPatient = [toTypedValue(patient)];
+    const typedTrue = [toTypedValue(true)];
+    const variables = {
+      '%sct': toTypedValue('http://snomed.info/sct'),
+      '%loinc': toTypedValue('http://loinc.org'),
+      '%ucum': toTypedValue('http://unitsofmeasure.org'),
+      '%`vs-administrative-gender`': toTypedValue('http://hl7.org/fhir/ValueSet/administrative-gender'),
+    };
+
     test('testVariables1', () => {
-      expect(evalFhirPath("%sct = 'http://snomed.info/sct'", patient)).toStrictEqual([true]);
+      expect(evalFhirPathTyped("%sct = 'http://snomed.info/sct'", typedPatient, variables)).toStrictEqual(typedTrue);
     });
 
     test('testVariables2', () => {
-      expect(evalFhirPath("%loinc = 'http://loinc.org'", patient)).toStrictEqual([true]);
+      expect(evalFhirPathTyped("%loinc = 'http://loinc.org'", typedPatient, variables)).toStrictEqual(typedTrue);
     });
 
     test('testVariables3', () => {
-      expect(evalFhirPath("%ucum = 'http://unitsofmeasure.org'", patient)).toStrictEqual([true]);
+      expect(evalFhirPathTyped("%ucum = 'http://unitsofmeasure.org'", typedPatient, variables)).toStrictEqual(
+        typedTrue
+      );
     });
 
     test('testVariables4', () => {
       expect(
-        evalFhirPath("%`vs-administrative-gender` = 'http://hl7.org/fhir/ValueSet/administrative-gender'", patient)
-      ).toStrictEqual([true]);
+        evalFhirPathTyped(
+          "%`vs-administrative-gender` = 'http://hl7.org/fhir/ValueSet/administrative-gender'",
+          typedPatient,
+          variables
+        )
+      ).toStrictEqual(typedTrue);
     });
   });
 
@@ -3589,30 +3605,49 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  // a more "real-world" test of using FHIRPath to evaluate a hypothetical constraint on AccessPolicy
-  describe('testAccessPolicyConstraints', () => {
-    const validResource: TypedValue = {
-      type: PropertyType.BackboneElement,
-      value: { resourceType: 'Patient', hiddenFields: ['name.use', 'name.given'], readonlyFields: ['name'] },
-    };
-
-    const invalidResource: TypedValue = {
-      type: PropertyType.BackboneElement,
-      value: {
-        resourceType: 'Observation',
-        hiddenFields: ['category', 'component.code'],
-        // readonlyFields: ['component'], // this would make it valid
-      },
-    };
-
+  // more "real-world" tests using FHIRPath to evaluate hypothetical constraints on AccessPolicy or Subscription resources
+  describe('testRealWorldConstraints', () => {
     const RESOURCE_CONSTRAINT = "hiddenFields.select(substring(0, indexOf('.'))).distinct().subsetOf(readonlyFields)";
 
     test('testAccessPolicyResourceConstraint positive', () => {
+      const validResource: TypedValue = {
+        type: PropertyType.BackboneElement,
+        value: { resourceType: 'Patient', hiddenFields: ['name.use', 'name.given'], readonlyFields: ['name'] },
+      };
       expect(evalFhirPath(RESOURCE_CONSTRAINT, validResource)).toStrictEqual([true]);
     });
 
     test('testAccessPolicyResourceConstraint negative', () => {
+      const invalidResource: TypedValue = {
+        type: PropertyType.BackboneElement,
+        value: {
+          resourceType: 'Observation',
+          hiddenFields: ['category', 'component.code'],
+          // readonlyFields: ['component'], // this would make it valid
+        },
+      };
       expect(evalFhirPath(RESOURCE_CONSTRAINT, invalidResource)).toStrictEqual([false]);
+    });
+
+    test.each<[unknown, unknown, boolean]>([
+      [undefined, observation, true],
+      [observation, observation, false],
+      [observation, { ...observation, status: 'amended' }, true],
+    ])('criteria including resource creation %#', (previous, current, result) => {
+      const criteria = '%previous.exists() implies %previous.status != %current.status';
+      const variables = { '%previous': toTypedValue(previous), '%current': toTypedValue(current) };
+      expect(evalFhirPathTyped(criteria, [], variables)).toStrictEqual([toTypedValue(result)]);
+    });
+
+    test.each<[unknown, unknown, boolean]>([
+      [undefined, patient, false],
+      [patient, patient, false],
+      [patient, { ...patient, name: [...patient.name, { text: 'The Patient' }] }, false],
+      [{ ...patient, name: [...patient.name, { text: 'The Patient' }] }, patient, true],
+    ])('comparison of array field elements %#', (previous, current, result) => {
+      const criteria = '%previous.name.where( ($this in %current.name).not() ).exists()';
+      const variables = { '%previous': toTypedValue(previous), '%current': toTypedValue(current) };
+      expect(evalFhirPathTyped(criteria, [], variables)).toStrictEqual([toTypedValue(result)]);
     });
   });
 });

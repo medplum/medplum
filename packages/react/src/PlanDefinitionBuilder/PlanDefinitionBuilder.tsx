@@ -1,13 +1,12 @@
 import {
-  ActionIcon,
   Anchor,
   Box,
   Button,
   CloseButton,
   Flex,
   Group,
+  NativeSelect,
   Paper,
-  Radio,
   Stack,
   Text,
   TextInput,
@@ -18,6 +17,7 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
 import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { killEvent } from '../utils/dom';
 import classes from './PlanDefinitionBuilder.module.css';
@@ -91,7 +91,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
           setHoverKey={setHoverKey}
           onChange={(x) => changeProperty('action', x)}
         />
-        <Button type="submit">Save</Button>
+        <SubmitButton>Save</SubmitButton>
       </Form>
     </div>
   );
@@ -228,19 +228,14 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
           placeholder="Title"
           onChange={(e) => changeProperty('title', e.currentTarget.value)}
         />
-
-        <ActionIcon variant="subtle" color="gray" onClick={props.onRemove}>
-          <CloseButton data-testid="close-button" />
-        </ActionIcon>
+        <CloseButton data-testid="close-button" onClick={props.onRemove} />
       </Flex>
 
       {editing && (
         <Stack gap="xl" p="md">
           <Box>
-            <Text fw={600} mb="xs">
-              Task Description
-            </Text>
             <TextInput
+              label="Task Description"
               placeholder="Enter task description"
               name={`actionDescription-${action.id}`}
               defaultValue={action.description}
@@ -249,24 +244,28 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
           </Box>
 
           <Box>
-            <Text fw={600} mb="xs">
-              Type
-            </Text>
-            <Radio.Group value={actionType} onChange={setActionType}>
-              <Stack gap="sm">
-                <Radio
-                  value="standard"
-                  label="Standard task"
-                  onChange={() => props.onChange({ ...props.action, definitionCanonical: undefined })}
-                />
-                <Radio value="questionnaire" label="Task with Questionnaire" />
-              </Stack>
-            </Radio.Group>
+            <NativeSelect
+              label="Type of Action"
+              value={actionType}
+              onChange={(e) => {
+                const value = e.currentTarget.value === 'standard' ? undefined : e.currentTarget.value;
+                setActionType(value);
+                props.onChange({
+                  ...props.action,
+                  definitionCanonical: value === 'standard' ? undefined : props.action.definitionCanonical,
+                });
+              }}
+              data={[
+                { value: 'standard', label: 'Standard task' },
+                { value: 'questionnaire', label: 'Task with Questionnaire' },
+                { value: 'activitydefinition', label: 'Task with Activity Definition' },
+              ]}
+            />
           </Box>
 
           {actionType === 'questionnaire' && (
-            <Box>
-              <Group gap="xs" mb="xs">
+            <Stack gap={0}>
+              <Group gap={0} mb="xs">
                 <Text fw={600}>Select questionnaire</Text>
                 <Text c="red">*</Text>
               </Group>
@@ -277,7 +276,23 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                 </Anchor>
               </Text>
               <ActionResourceTypeBuilder resourceType="Questionnaire" action={action} onChange={props.onChange} />
-            </Box>
+            </Stack>
+          )}
+
+          {actionType === 'activitydefinition' && (
+            <Stack gap={0}>
+              <Group gap={0} mb="xs">
+                <Text fw={600}>Select activity definition</Text>
+                <Text c="red">*</Text>
+              </Group>
+              <Text size="sm" c="dimmed" mb="sm">
+                ActivityDefinition.kind resource to be shown in the task in Encounter view. You can create new one from{' '}
+                <Anchor href="/ActivityDefinition" target="_blank" c="blue">
+                  activity definitions list
+                </Anchor>
+              </Text>
+              <ActionResourceTypeBuilder resourceType="ActivityDefinition" action={action} onChange={props.onChange} />
+            </Stack>
           )}
         </Stack>
       )}
@@ -315,6 +330,10 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
 function getInitialActionType(action: PlanDefinitionAction): string | undefined {
   if (action.definitionCanonical?.startsWith('Questionnaire')) {
     return 'questionnaire';
+  }
+
+  if (action.definitionCanonical?.startsWith('ActivityDefinition')) {
+    return 'activitydefinition';
   }
 
   return 'standard';

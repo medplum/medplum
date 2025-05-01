@@ -20,6 +20,7 @@ import {
   getPropertyDisplayName,
   isReference,
   isResource,
+  isTypedValue,
   stringifyTypedValue,
 } from './types';
 
@@ -86,6 +87,15 @@ describe('Type Utils', () => {
 
     // shoudl NOT be found
     expect(getElementDefinitionFromElements(elements, 'notreal')).toBeUndefined();
+  });
+
+  test('isTypedValue', () => {
+    expect(isTypedValue(undefined)).toBe(false);
+    expect(isTypedValue(null)).toBe(false);
+    expect(isTypedValue('Patient')).toBe(false);
+    expect(isTypedValue({})).toBe(false);
+    expect(isTypedValue({ type: 'string', value: 'foo' })).toBe(true);
+    expect(isTypedValue({ type: 'string' })).toBe(false);
   });
 
   test('isResource', () => {

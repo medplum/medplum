@@ -1,6 +1,6 @@
 import { Grid, Loader } from '@mantine/core';
 import { Document, PatientSummary, useResource } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { PatientDetails } from '../components/PatientDetails';
 import { PatientActions } from '../components/actions/PatientActions';
 import { Patient } from '@medplum/fhirtypes';

@@ -384,6 +384,12 @@ describe('Search Utils', () => {
     ).toStrictEqual('?code:not=x');
   });
 
+  test('Format types', () => {
+    expect(formatSearchQuery({ resourceType: 'Patient', types: ['Patient', 'Practitioner', 'Organization'] })).toEqual(
+      '?_type=Patient,Practitioner,Organization'
+    );
+  });
+
   const maritalStatus = 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus';
   test('Format _include', () => {
     expect(

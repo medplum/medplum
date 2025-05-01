@@ -1,11 +1,20 @@
-import { useNavigate } from 'react-router-dom';
-import { Button, Modal, Text, Card, Grid, Box, Stack } from '@mantine/core';
-import { useState } from 'react';
-import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
+import { Box, Button, Card, Grid, Modal, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { IconCircleCheck, IconCircleOff, IconAlertSquareRounded } from '@tabler/icons-react';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Coding, Encounter, PlanDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import {
+  ChargeItem,
+  ClinicalImpression,
+  Coding,
+  Encounter,
+  PlanDefinition,
+  ServiceRequest,
+  Task,
+  ValueSetExpansionContains,
+} from '@medplum/fhirtypes';
+import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
+import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './EncounterModal.module.css';
 
@@ -18,6 +27,7 @@ export const EncounterModal = (): JSX.Element => {
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [status, setStatus] = useState<Encounter['status'] | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCreateEncounter = async (): Promise<void> => {
     if (!patient || !encounterClass || !serviceType || !status) {
@@ -25,10 +35,12 @@ export const EncounterModal = (): JSX.Element => {
         color: 'yellow',
         icon: <IconAlertSquareRounded />,
         title: 'Error',
-        message: 'Fill up mandatory fields.',
+        message: 'Please fill out required fields.',
       });
       return;
     }
+
+    setIsLoading(true);
 
     const encounterData: Encounter = {
       resourceType: 'Encounter',
@@ -42,6 +54,16 @@ export const EncounterModal = (): JSX.Element => {
 
     try {
       const encounter = await medplum.createResource(encounterData);
+      const clinicalImpressionData: ClinicalImpression = {
+        resourceType: 'ClinicalImpression',
+        status: 'completed',
+        description: 'Initial clinical impression',
+        subject: createReference(patient),
+        encounter: createReference(encounter),
+        date: new Date().toISOString(),
+      };
+
+      await medplum.createResource(clinicalImpressionData);
 
       if (planDefinitionData) {
         await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinitionData.id as string, '$apply'), {
@@ -53,19 +75,112 @@ export const EncounterModal = (): JSX.Element => {
         });
       }
 
-      showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
+      await handleChargeItemsFromTasks(encounter);
 
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`);
+      showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`)?.catch(console.error);
     } catch (err) {
       showNotification({ color: 'red', icon: <IconCircleOff />, title: 'Error', message: normalizeErrorString(err) });
     }
   };
 
+  const handleChargeItemsFromTasks = async (encounter: Encounter): Promise<void> => {
+    try {
+      const tasks = await medplum.search('Task', {
+        encounter: getReferenceString(encounter),
+      });
+
+      if (!tasks.entry?.length) {
+        return;
+      }
+
+      await Promise.all(
+        tasks.entry.map(async (entry) => {
+          const task = entry.resource as Task;
+          const serviceRequestRef = task.focus?.reference;
+
+          if (!serviceRequestRef?.startsWith('ServiceRequest/')) {
+            return;
+          }
+
+          try {
+            const serviceRequest: ServiceRequest = await medplum.readReference({
+              reference: serviceRequestRef,
+            });
+            await createChargeItemFromServiceRequest(serviceRequest);
+          } catch (err) {
+            console.error(`Error processing ServiceRequest ${serviceRequestRef}:`, err);
+          }
+        })
+      );
+    } catch (error) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(error),
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  async function createChargeItemFromServiceRequest(serviceRequest: ServiceRequest): Promise<void> {
+    if (!patient) {
+      showNotification({
+        color: 'yellow',
+        icon: <IconAlertSquareRounded />,
+        title: 'Error',
+        message: 'Patient not found.',
+      });
+      return;
+    }
+
+    // Look for ChargeItemDefinition
+    let definitionCanonical: string[] = [];
+    const chargeDefinitionExtension = serviceRequest.extension?.find(
+      (ext) => ext.url === 'http://medplum.com/fhir/StructureDefinition/applicable-charge-definition'
+    );
+    if (chargeDefinitionExtension?.valueCanonical) {
+      const canonicalUrl = chargeDefinitionExtension.valueCanonical;
+      definitionCanonical = [canonicalUrl];
+    }
+
+    const chargeItem: ChargeItem = {
+      resourceType: 'ChargeItem',
+      status: 'planned',
+      supportingInformation: [
+        {
+          reference: `ServiceRequest/${serviceRequest.id}`,
+        },
+      ],
+      subject: createReference(patient),
+      context: serviceRequest.encounter,
+      occurrenceDateTime: serviceRequest.occurrenceDateTime || new Date().toISOString(),
+      code: serviceRequest.code || { coding: [] },
+      quantity: {
+        value: 1,
+      },
+      definitionCanonical: definitionCanonical,
+    };
+
+    try {
+      await medplum.createResource(chargeItem);
+    } catch (error) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(error),
+      });
+    }
+  }
+
   return (
     <Modal
       opened={isOpen}
       onClose={() => {
-        navigate(-1);
+        navigate(-1)?.catch(console.error);
         setIsOpen(false);
       }}
       size="60%"
@@ -144,7 +259,7 @@ export const EncounterModal = (): JSX.Element => {
         </Box>
 
         <Box className={classes.footer} h={70} p="md">
-          <Button fullWidth={false} onClick={handleCreateEncounter}>
+          <Button fullWidth={false} onClick={handleCreateEncounter} loading={isLoading} disabled={isLoading}>
             Create Encounter
           </Button>
         </Box>

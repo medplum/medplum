@@ -1,4 +1,4 @@
-import { OAuthTokenAuthMethod } from '@medplum/core';
+import { OAuthTokenAuthMethod, WithId } from '@medplum/core';
 import { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -28,14 +28,14 @@ const identityProvider = {
   clientSecret: '456',
 };
 
-let project: Project;
+let project: WithId<Project>;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
 
 describe('External', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       await initApp(app, config);
 
       // Create a new project
@@ -87,8 +87,8 @@ describe('External', () => {
         firstName: 'External',
         lastName: 'User',
       });
-    })
-  );
+    });
+  });
 
   afterAll(async () => {
     await shutdownApp();

@@ -1,8 +1,8 @@
 import { getReferenceString, WithId } from '@medplum/core';
 import { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
-import { Repository, getSystemRepo } from '../../repo';
-import { getBinaryStorage } from '../../storage';
+import { getBinaryStorage } from '../../../storage/loader';
+import { getSystemRepo, Repository } from '../../repo';
 
 const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 
@@ -92,7 +92,7 @@ export class BulkExporter {
 
     // Update the AsyncJob
     const systemRepo = getSystemRepo();
-    const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', this.resource.id as string);
+    const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', this.resource.id);
     if (asyncJob.status !== 'cancelled') {
       return systemRepo.updateResource<AsyncJob>({
         ...this.resource,

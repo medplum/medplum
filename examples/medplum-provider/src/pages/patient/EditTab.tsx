@@ -4,7 +4,7 @@ import { deepClone, normalizeErrorString, normalizeOperationOutcome } from '@med
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { ResourceFormWithRequiredProfile } from '../../components/ResourceFormWithRequiredProfile';
 import { RESOURCE_PROFILE_URLS } from '../resource/utils';
 
@@ -40,7 +40,7 @@ export function EditTab(): JSX.Element | null {
       medplum
         .updateResource(newResource)
         .then(() => {
-          navigate(`/Patient/${patientId}/timeline`);
+          navigate(`/Patient/${patientId}/timeline`)?.catch(console.error);
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {

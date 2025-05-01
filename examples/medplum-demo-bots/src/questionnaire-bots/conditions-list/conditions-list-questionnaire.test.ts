@@ -1,4 +1,4 @@
-import { SNOMED, createReference, getReferenceString } from '@medplum/core';
+import { SNOMED, createReference } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
@@ -10,6 +10,7 @@ test('Success', async () => {
   const medplum = new MockClient();
   const quesionnaire: Questionnaire = {
     resourceType: 'Questionnaire',
+    url: 'https://medplum.com/Questionnaire/conditions-list-or-problem-list',
     name: 'Conditions List or Problem List',
     title: 'A Questionnaire for collecting a list of conditions or problems',
     status: 'active',
@@ -102,7 +103,7 @@ test('Success', async () => {
         ],
       },
     ],
-    questionnaire: getReferenceString(questionnaire),
+    questionnaire: questionnaire.url,
     subject: createReference(HomerSimpson),
     encounter: createReference(encounter),
     source: createReference(DrAliceSmith),

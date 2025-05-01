@@ -1,12 +1,14 @@
 import { Table } from '@mantine/core';
-import { ResourceDiffRow, ResourceDiffRowProps } from './ResourceDiffRow';
 import { act, render, screen } from '../test-utils/render';
+import { ResourceDiffRow, ResourceDiffRowProps } from './ResourceDiffRow';
 
 describe('ResourceDiffRow', () => {
   function setup(props: ResourceDiffRowProps): void {
     render(
       <Table>
-        <ResourceDiffRow {...props} />
+        <Table.Tbody>
+          <ResourceDiffRow {...props} />
+        </Table.Tbody>
       </Table>
     );
   }

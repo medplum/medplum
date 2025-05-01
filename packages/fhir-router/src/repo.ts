@@ -29,10 +29,11 @@ export type UpdateResourceOptions = {
   ifMatch?: string;
 };
 
-export enum RepositoryMode {
-  READER = 'reader',
-  WRITER = 'writer',
-}
+export const RepositoryMode = {
+  READER: 'reader',
+  WRITER: 'writer',
+} as const;
+export type RepositoryMode = (typeof RepositoryMode)[keyof typeof RepositoryMode];
 
 /**
  * The FhirRepository abstract class defines the methods that are required to implement a FHIR repository.
@@ -304,7 +305,7 @@ export abstract class FhirRepository<TClient = unknown> {
       }
 
       const resource = matches[0];
-      await this.deleteResource(resource.resourceType, resource.id as string);
+      await this.deleteResource(resource.resourceType, resource.id);
     });
   }
 }

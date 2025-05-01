@@ -6,6 +6,24 @@ set -e
 # Echo commands
 set -x
 
+# Initialize additional exclusions variable
+ADDITIONAL_EXCLUDES=""
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --exclude=*)
+            ADDITIONAL_EXCLUDES="${1#*=}"
+            shift
+            ;;
+        *)
+            echo "Error: Unknown argument '$1'"
+            echo "Usage: $0 [--exclude=\"package1 package2 package3\"]"
+            exit 1
+            ;;
+    esac
+done
+
 # Use the Github gh tool to make sure the user is logged in
 gh auth status
 
@@ -62,17 +80,21 @@ echo "Last completed step: $LAST_STEP"
 # storybook-addon-mantine - 4.1.0 seems to accidentally backported requirement for React 19 from v5: https://github.com/josiahayres/storybook-addon-mantine/issues/18
 EXCLUDE="react react-dom @tabler/icons-react react-native storybook-addon-mantine"
 
+# Append any additional excludes from the command line
+if [ -n "$ADDITIONAL_EXCLUDES" ]; then
+    echo "Adding additional excludes: $ADDITIONAL_EXCLUDES"
+    EXCLUDE="$EXCLUDE $ADDITIONAL_EXCLUDES"
+fi
+
 # @types/express - version 5+ incompatible with express 4, waiting for express 5 upgrade
 # @types/node - We specifically don't want to increment major version for Node types since we need to make sure we satisfy backwards compat with the minimum version of Node that we support
 # @types/react - version 19+ incompatible with react 18, waiting for fix
 # commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
 # eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
 # jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
-# react-router-dom - version 7+ has breaking changes, will fix separately
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
-# rimraf - version 6+ requires Node 20+, holding back until Medplum v4
-# supertest - version 7+ incompatible with superwstest, waiting for fix
-MAJOR_EXCLUDE="@types/express @types/node @types/react @types/react-dom commander eslint jose react-router-dom node-fetch rimraf supertest"
+# express - version 5 is now latest and has some breaking changes -- we need to make sure middleware and other related deps work with new version
+MAJOR_EXCLUDE="@types/express @types/node @types/react @types/react-dom commander eslint jose node-fetch express"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
