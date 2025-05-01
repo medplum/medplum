@@ -37,10 +37,6 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
     setSearch(addFilter(searchRef.current, filter.code, filter.operator, filter.value));
   }
 
-  if (!props.visible) {
-    return null;
-  }
-
   const resourceType = props.search.resourceType;
   const searchParams = getSearchParameters(resourceType) ?? {};
   const filters = search.filters || [];
@@ -149,6 +145,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {operators && (
           <NativeSelect
+            key={`${props.id}-filter-value-${props.value.code}`}
             data-testid={`${props.id}-filter-operation`}
             defaultValue={value.operator}
             onChange={(e) => setFilterOperator(e.currentTarget.value as Operator)}
@@ -159,6 +156,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {searchParam && value.operator && (
           <SearchFilterValueInput
+            key={`${props.id}-filter-value-${props.value.code}-${props.value.operator}`}
             name={`${props.id}-filter-value`}
             resourceType={props.resourceType}
             searchParam={searchParam}
