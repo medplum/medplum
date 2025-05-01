@@ -141,17 +141,15 @@ export async function lookupDbColumnStatisticsHandler(req: FhirRequest): Promise
 
   const params = parseInputParameters<{ tableName?: string }>(LookupOperation, req);
 
-  const tableName = params.tableName;
-
-  if (tableName && !isValidTableName(tableName)) {
+  if (params.tableName && !isValidTableName(params.tableName)) {
     throw new OperationOutcomeError(badRequest('Invalid tableName'));
   }
 
   const defaultStatisticsTarget = await getDefaultStatisticsTarget();
   const client = getDatabasePool(DatabaseMode.WRITER);
   let columns: ColumnInfo[] | undefined;
-  if (tableName) {
-    columns = await getTableColumns(client, tableName);
+  if (params.tableName) {
+    columns = await getTableColumns(client, params.tableName);
   }
 
   return [allOk, buildOutput(defaultStatisticsTarget, columns)];
@@ -261,10 +259,8 @@ interface ColumnInfo {
 }
 
 async function getTableColumns(db: Client | Pool, tableName: string): Promise<ColumnInfo[]> {
-  // https://stackoverflow.com/questions/8146448/get-the-default-values-of-table-columns-in-postgres
   const rs = await db.query(
-    `
-    SELECT
+    `SELECT
       n.nspname as "schemaName",
       c.relname as "tableName",
       a.attname as "name",
