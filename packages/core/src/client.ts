@@ -3907,7 +3907,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns A Promise which resolves to the `CurrentContext` for the given topic.
    */
   async fhircastGetContext(topic: string): Promise<CurrentContext> {
-    return this.get(`${this.fhircastHubUrl}/${topic}`);
+    return this.get(`${this.fhircastHubUrl}/${topic}`, { cache: 'no-cache' });
   }
 
   /**
