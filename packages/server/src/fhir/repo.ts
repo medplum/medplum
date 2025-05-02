@@ -1172,6 +1172,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(db);
       await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
     });
+    incrementCounter(
+      `medplum.fhir.interaction.delete.count`,
+      { attributes: { resourceType, result: 'success' } },
+      ids.length
+    );
   }
 
   /**
