@@ -16,6 +16,7 @@ IFS='.' read -ra CURR_VERSION_PARTS <<< "$CURR_VERSION"
 DIFF_OUTPUT=$(git diff v$CURR_VERSION -- packages/server/src/migrations/data/data-version-manifest.json) || true
 ADDED_REQUIRED_BEFORE=$(echo "$DIFF_OUTPUT" | grep -e '^\+.*"requiredBefore"' || true)
 
+# `-z "$(true)"` oddly evaluates to empty, so this still works as intended even when $ADDED_REQUIRED_BEFORE is true
 if [ -z "$ADDED_REQUIRED_BEFORE" ]; then
     echo "No added requiredBefore entry since v$CURR_VERSION, increasing patch version"
     ((CURR_VERSION_PARTS[2]++)) || true
