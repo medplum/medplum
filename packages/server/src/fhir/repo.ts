@@ -70,6 +70,7 @@ import { Operation } from 'rfc6902';
 import { v7 } from 'uuid';
 import { getConfig } from '../config/loader';
 import { r4ProjectId } from '../constants';
+import { tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
@@ -94,6 +95,7 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { TokenTable } from './lookups/token';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
@@ -112,12 +114,10 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
-import { tryGetRequestContext } from '../context';
 import { buildTokenColumns } from './token-column';
-import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
-import { TokenTable } from './lookups/token';
+import { TokenColumnsFeature, isLegacyTokenColumnSearchParameter } from './tokens';
 
-const transactionAttempts = 2;
+const defaultTransactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
 
 /**
@@ -2351,6 +2351,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     callback: (client: PoolClient) => Promise<TResult>,
     options?: { serializable: boolean }
   ): Promise<TResult> {
+    const transactionAttempts = getConfig().transactionAttempts ?? defaultTransactionAttempts;
     let error: OperationOutcomeError | undefined;
     for (let i = 0; i < transactionAttempts; i++) {
       try {
