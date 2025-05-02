@@ -80,7 +80,7 @@ export interface MedplumServerConfig {
   /** Number of attempts for transactions that fail due to retry-able transaction errors */
   transactionAttempts?: number;
 
-  /** Number of milliseconds to use as a base for exponential backoff */
+  /** Number of milliseconds to use as a base for exponential backoff in transaction retries */
   transactionExpBackoffBaseDelayMs?: number;
 
   /** @deprecated */
