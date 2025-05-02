@@ -604,6 +604,20 @@ describe('FHIR Repo', () => {
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
+
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+
+    try {
+      await repo.withTransaction(async (conn) => {
+        await repo.reindexResources(conn, [patient]);
+      });
+      fail('Expected error');
+    } catch (err) {
+      expect(isOk(err as OperationOutcome)).toBe(false);
+    }
   });
 
   test('Reindex resource not found', async () => {
