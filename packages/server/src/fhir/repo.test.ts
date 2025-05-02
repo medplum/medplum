@@ -42,6 +42,8 @@ import { bundleContains, createTestProject, withTestContext } from '../test.setu
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
 import { SelectQuery } from './sql';
+import { lookupTables } from './searchparameter';
+import { TokenTable } from './lookups/token';
 
 jest.mock('hibp');
 
@@ -1371,6 +1373,55 @@ describe('FHIR Repo', () => {
       );
       expect(patient.id).toStrictEqual(nonconformantUuid);
     }));
+
+  test('Project.systemSetting without disableTokenTableWrites', async () => {
+    const { project, repo } = await createTestProject({ withRepo: true });
+
+    const tokenTable = lookupTables.find((t) => t instanceof TokenTable);
+    if (tokenTable === undefined) {
+      throw new Error('TokenTable not found');
+    }
+
+    const indexResourceSpy = jest.spyOn(tokenTable, 'indexResource');
+
+    await withTestContext(async () => {
+      expect(project.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')).toBeUndefined();
+      expect(indexResourceSpy).toHaveBeenCalledTimes(0);
+      await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com', value: '123' }],
+      });
+      expect(indexResourceSpy).toHaveBeenCalledTimes(1);
+    });
+    indexResourceSpy.mockRestore();
+  });
+
+  test.each([true, false])('Project.systemSetting with disableTokenTableWrites %s', async (disableTokenTableWrites) => {
+    const { project, repo } = await createTestProject({
+      withRepo: true,
+      project: { systemSetting: [{ name: 'disableTokenTableWrites', valueBoolean: disableTokenTableWrites }] },
+    });
+
+    const tokenTable = lookupTables.find((t) => t instanceof TokenTable);
+    if (tokenTable === undefined) {
+      throw new Error('TokenTable not found');
+    }
+
+    const indexResourceSpy = jest.spyOn(tokenTable, 'indexResource');
+
+    await withTestContext(async () => {
+      expect(project.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')?.valueBoolean).toStrictEqual(
+        disableTokenTableWrites
+      );
+      indexResourceSpy.mockClear();
+      await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com', value: '123' }],
+      });
+      expect(indexResourceSpy).toHaveBeenCalledTimes(disableTokenTableWrites ? 0 : 1);
+    });
+    indexResourceSpy.mockRestore();
+  });
 });
 
 function shuffleString(s: string): string {

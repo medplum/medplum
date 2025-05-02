@@ -115,6 +115,7 @@ import {
 import { tryGetRequestContext } from '../context';
 import { buildTokenColumns } from './token-column';
 import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
+import { TokenTable } from './lookups/token';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -1774,6 +1775,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return undefined;
   }
 
+  private disableTokenTableWrites: boolean | undefined;
   /**
    * Writes resources values to the lookup tables.
    * @param client - The database client inside the transaction.
@@ -1781,7 +1783,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param create - If true, then the resource is being created.
    */
   private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
+    if (this.disableTokenTableWrites === undefined) {
+      const project = this.currentProject();
+      const maybeWriteBoolean = project?.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')?.valueBoolean;
+      // If the Project.systemSetting exists, use its value. Otherwise, default to false
+      this.disableTokenTableWrites = maybeWriteBoolean ?? false;
+    }
+
     for (const lookupTable of lookupTables) {
+      if (this.disableTokenTableWrites && lookupTable instanceof TokenTable) {
+        continue;
+      }
       await lookupTable.indexResource(client, resource, create);
     }
   }
