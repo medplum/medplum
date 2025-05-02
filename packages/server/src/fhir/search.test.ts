@@ -51,7 +51,7 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
@@ -4787,11 +4787,26 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
       });
 
       test('readFromTokenColumns', () => {
+        expect(getConfig().enableSystemRepoReadTokenColumns).toBeUndefined();
+
         if (tokenColumnsOrLookupTable === 'token columns') {
           expect(readFromTokenColumns(systemRepo)).toBe(true);
         } else {
           expect(readFromTokenColumns(systemRepo)).toBe(false);
         }
+      });
+
+      test('readFromTokenColumns with enableSystemRepoReadTokenColumns', () => {
+        const config = getConfig();
+        const originalValue = config.enableSystemRepoReadTokenColumns;
+
+        config.enableSystemRepoReadTokenColumns = true;
+        expect(readFromTokenColumns(systemRepo)).toBe(true);
+
+        config.enableSystemRepoReadTokenColumns = false;
+        expect(readFromTokenColumns(systemRepo)).toBe(false);
+
+        config.enableSystemRepoReadTokenColumns = originalValue;
       });
 
       test('Filter by _project', () =>
