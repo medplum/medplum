@@ -50,9 +50,9 @@ export function buildTokenColumns(
       throw new Error(`Invalid token code ${code} for search parameter with code ${searchParam.code}`);
     }
 
-    // :missing/:present
+    // :missing/:present - in a token column per search parameter, the presence of any elements
+    // in the main token column, `impl.tokenColumnName`, is sufficient.
     legacyTokens.add(code);
-    // TODO{mattlong} -- how to handle missing/present
 
     if (system) {
       // [parameter]=[system]|
