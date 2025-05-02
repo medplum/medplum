@@ -70,6 +70,7 @@ import { Operation } from 'rfc6902';
 import { v7 } from 'uuid';
 import { getConfig } from '../config/loader';
 import { r4ProjectId } from '../constants';
+import { tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
@@ -94,6 +95,7 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { TokenTable } from './lookups/token';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
@@ -112,12 +114,11 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
-import { tryGetRequestContext } from '../context';
 import { buildTokenColumns } from './token-column';
-import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
-import { TokenTable } from './lookups/token';
+import { TokenColumnsFeature, isLegacyTokenColumnSearchParameter } from './tokens';
 
-const transactionAttempts = 2;
+const defaultTransactionAttempts = 2;
+const defaultExpBackoffBaseDelayMs = 50;
 const retryableTransactionErrorCodes = ['40001'];
 
 /**
@@ -2351,8 +2352,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     callback: (client: PoolClient) => Promise<TResult>,
     options?: { serializable: boolean }
   ): Promise<TResult> {
+    const config = getConfig();
+    const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
     let error: OperationOutcomeError | undefined;
-    for (let i = 0; i < transactionAttempts; i++) {
+    for (let attempt = 0; attempt < transactionAttempts; attempt++) {
       try {
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
         const result = await callback(client);
@@ -2370,6 +2373,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       } finally {
         this.endTransaction();
+      }
+
+      if (attempt + 1 < transactionAttempts) {
+        const baseDelayMs = config.transactionExpBackoffBaseDelayMs ?? defaultExpBackoffBaseDelayMs;
+        // Attempts are 0-indexed, so first wait after first attempt will be somewhere between 75% and 100% of baseDelayMs
+        // This calculation results in something like this for the default values:
+        // Attempt 1: 50 * (2^0) = 50 * [0.75, 1] = **[37.5, 50] ms**
+        // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
+        // etc...
+        const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.25));
+        await sleep(delayMs);
       }
     }
 

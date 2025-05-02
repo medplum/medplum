@@ -77,6 +77,12 @@ export interface MedplumServerConfig {
   /** Search strategy system repositories use when using token search parameters. */
   systemRepositoryTokenReadStrategy?: 'unified-tokens-column' | 'token-tables';
 
+  /** Number of attempts for transactions that fail due to retry-able transaction errors */
+  transactionAttempts?: number;
+
+  /** Number of milliseconds to use as a base for exponential backoff in transaction retries */
+  transactionExpBackoffBaseDelayMs?: number;
+
   /** @deprecated */
   auditEventLogGroup?: string;
 
