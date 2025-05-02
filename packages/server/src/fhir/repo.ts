@@ -2375,14 +2375,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         this.endTransaction();
       }
 
-      const baseDelayMs = config.transactionExpBackoffBaseDelayMs ?? defaultExpBackoffBaseDelayMs;
-      // Attempts are 0-indexed, so first wait after first attempt will be somewhere between 75% and 100% of baseDelayMs
-      // This calculation results in something like this for the default values:
-      // Attempt 1: 50 * (2^0) = 50 * [0.75, 1] = **[37.5, 50] ms**
-      // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
-      // etc...
-      const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.25));
-      await sleep(delayMs);
+      if (attempt + 1 < transactionAttempts) {
+        const baseDelayMs = config.transactionExpBackoffBaseDelayMs ?? defaultExpBackoffBaseDelayMs;
+        // Attempts are 0-indexed, so first wait after first attempt will be somewhere between 75% and 100% of baseDelayMs
+        // This calculation results in something like this for the default values:
+        // Attempt 1: 50 * (2^0) = 50 * [0.75, 1] = **[37.5, 50] ms**
+        // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
+        // etc...
+        const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.25));
+        await sleep(delayMs);
+      }
     }
 
     // Cannot be undefined: either the function returns normally from the `try` block,
