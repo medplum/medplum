@@ -118,6 +118,7 @@ import { buildTokenColumns } from './token-column';
 import { TokenColumnsFeature, isLegacyTokenColumnSearchParameter } from './tokens';
 
 const defaultTransactionAttempts = 2;
+const defaultExpBackoffBaseDelayMs = 25;
 const retryableTransactionErrorCodes = ['40001'];
 
 /**
@@ -2351,9 +2352,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     callback: (client: PoolClient) => Promise<TResult>,
     options?: { serializable: boolean }
   ): Promise<TResult> {
-    const transactionAttempts = getConfig().transactionAttempts ?? defaultTransactionAttempts;
+    const config = getConfig();
+    const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
     let error: OperationOutcomeError | undefined;
-    for (let i = 0; i < transactionAttempts; i++) {
+    for (let attempt = 0; attempt < transactionAttempts; attempt++) {
       try {
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
         const result = await callback(client);
@@ -2372,6 +2374,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       } finally {
         this.endTransaction();
       }
+
+      const baseDelayMs = config.transactionExpBackoffBaseDelayMs ?? defaultExpBackoffBaseDelayMs;
+      // Attempts are 0-indexed, so first wait after first attempt will be somewhere between baseDelayMs 75% and 100%
+      // This calculation results in something like this for the default values:
+      // Attempt 1: 50 * (2^0) = 50 * [0.75, 1] = **[37.5, 50] ms**
+      // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
+      // etc...
+      const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.25));
+      await sleep(delayMs);
     }
 
     // Cannot be undefined: either the function returns normally from the `try` block,
