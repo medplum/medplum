@@ -1386,7 +1386,7 @@ describe('FHIR Repo', () => {
 
     await withTestContext(async () => {
       expect(project.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')).toBeUndefined();
-      expect(indexResourceSpy).toHaveBeenCalledTimes(0);
+      indexResourceSpy.mockClear();
       await repo.createResource<Patient>({
         resourceType: 'Patient',
         identifier: [{ system: 'http://example.com', value: '123' }],
@@ -1422,6 +1422,39 @@ describe('FHIR Repo', () => {
     });
     indexResourceSpy.mockRestore();
   });
+
+  test.each([true, false])(
+    'Reindex resources with Project.systemSetting disableTokenTableWrites %s',
+    async (disableTokenTableWrites) => {
+      const { project, repo } = await createTestProject({
+        withRepo: true,
+        superAdmin: true,
+        project: { systemSetting: [{ name: 'disableTokenTableWrites', valueBoolean: disableTokenTableWrites }] },
+      });
+
+      const tokenTable = lookupTables.find((t) => t instanceof TokenTable);
+      if (tokenTable === undefined) {
+        throw new Error('TokenTable not found');
+      }
+
+      const batchIndexResourcesSpy = jest.spyOn(tokenTable, 'batchIndexResources');
+
+      await withTestContext(async () => {
+        expect(project.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')?.valueBoolean).toStrictEqual(
+          disableTokenTableWrites
+        );
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ system: 'http://example.com', value: '123' }],
+        });
+
+        batchIndexResourcesSpy.mockClear();
+        await repo.reindexResource('Patient', patient.id);
+        expect(batchIndexResourcesSpy).toHaveBeenCalledTimes(disableTokenTableWrites ? 0 : 1);
+      });
+      batchIndexResourcesSpy.mockRestore();
+    }
+  );
 });
 
 function shuffleString(s: string): string {
