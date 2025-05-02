@@ -118,7 +118,7 @@ import { buildTokenColumns } from './token-column';
 import { TokenColumnsFeature, isLegacyTokenColumnSearchParameter } from './tokens';
 
 const defaultTransactionAttempts = 2;
-const defaultExpBackoffBaseDelayMs = 25;
+const defaultExpBackoffBaseDelayMs = 50;
 const retryableTransactionErrorCodes = ['40001'];
 
 /**
