@@ -155,10 +155,12 @@ SectionEnd
 # It does not modify the existing configuration settings.
 Function UpgradeApp
     # Copy the new files to the installation directory
+    SetOverwrite ifdiff
     File dist\shawl-v1.5.0-legal.txt
     File dist\shawl-v1.5.0-win64.exe
     File dist\${SERVICE_FILE_NAME}
     File README.md
+    SetOverwrite on
 
     # Create the service
     DetailPrint "Creating service..."
@@ -215,8 +217,6 @@ Function UpgradeApp
         ${EndIf}
     ${Loop}
 
-    Sleep 2000
-
     ; # TODO: Stop all running MedplumAgent services that are not the new service and delete them
     ; DetailPrint "Stopping and deleting all old MedplumAgent services..."
     ; # Get a list of services, pipe to findstr to find MedplumAgent services
@@ -225,11 +225,10 @@ Function UpgradeApp
     ; ; ExecWait 'cmd.exe /c "for /f "tokens=2 delims=: " %s in (''sc query state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent"'') do (if not "%s"=="${SERVICE_NAME}" (echo Stopping and deleting service: %s & net stop %s && sc delete %s))"' $1
     ; DetailPrint "Exit code $1"
     DetailPrint "Stopping old Medplum Agent service..."
-    Sleep 2000
-    ExecWait "net stop MedplumAgent" $1
+    nsExec::Exec '"$SYSDIR\cmd.exe" /c "for /f "tokens=2 delims=: " %i in (\'sc query type^= service state^= all ^| findstr /i "MedplumAgent\') do @net stop %i"'
     DetailPrint "Exit code $1"
     DetailPrint "Deleting old Medplum Agent service..."
-    ExecWait "sc delete MedplumAgent" $1
+    nsExec::Exec '"$SYSDIR\cmd.exe" /c "for /f "tokens=2 delims=: " %i in (\'sc query type^= service state^= all ^| findstr /i "MedplumAgent\') do @sc delete %i"'
     DetailPrint "Exit code $1"
 
 FunctionEnd
