@@ -2376,7 +2376,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
 
       const baseDelayMs = config.transactionExpBackoffBaseDelayMs ?? defaultExpBackoffBaseDelayMs;
-      // Attempts are 0-indexed, so first wait after first attempt will be somewhere between baseDelayMs 75% and 100%
+      // Attempts are 0-indexed, so first wait after first attempt will be somewhere between 75% and 100% of baseDelayMs
       // This calculation results in something like this for the default values:
       // Attempt 1: 50 * (2^0) = 50 * [0.75, 1] = **[37.5, 50] ms**
       // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
