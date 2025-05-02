@@ -1768,23 +1768,39 @@ function getCanonicalUrl(resource: Resource): string | undefined {
 
 export function readFromTokenColumns(repo: Repository): typeof TokenColumnsFeature.read {
   const project = repo.currentProject();
+
+  // If the project is undefined, it is a system repository
+  if (project === undefined) {
+    const systemRepositoryTokenReadStrategy = getConfig().systemRepositoryTokenReadStrategy;
+    if (
+      systemRepositoryTokenReadStrategy === 'unified-tokens-column' ||
+      systemRepositoryTokenReadStrategy === 'column-per-code'
+    ) {
+      return systemRepositoryTokenReadStrategy;
+    }
+
+    if (systemRepositoryTokenReadStrategy === 'token-tables') {
+      return false;
+    }
+  }
+
   const systemSetting = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns');
+  if (systemSetting) {
+    // Previously `searchTokenColumns` was a boolean setting where true was equivalent to 'unified-tokens-column'
+    if (systemSetting.valueBoolean !== undefined) {
+      return systemSetting.valueBoolean ? 'unified-tokens-column' : false;
+    }
 
-  // If the setting doesn't exist, return the default
-  if (!systemSetting) {
-    return TokenColumnsFeature.read;
+    // Now `searchTokenColumns` is a string setting
+    // with 'unified-tokens-column', 'column-per-code', and 'token-tables' as valid values
+    if (systemSetting.valueString === 'token-tables') {
+      return false;
+    }
+    if (systemSetting.valueString === 'unified-tokens-column' || systemSetting.valueString === 'column-per-code') {
+      return systemSetting.valueString;
+    }
   }
 
-  // Previously `searchTokenColumns` was a boolean setting where true was equivalent to 'one-column'
-  if (systemSetting.valueBoolean !== undefined) {
-    return systemSetting.valueBoolean ? 'one-column' : false;
-  }
-
-  // Now `searchTokenColumns` is a string setting where 'one-column' and 'per-code' are valid values
-  if (systemSetting.valueString === 'one-column' || systemSetting.valueString === 'per-code') {
-    return systemSetting.valueString;
-  }
-
-  // If neither a valueBoolean nor valid valueString is set, return the default
+  // finally, fallback to the default
   return TokenColumnsFeature.read;
 }

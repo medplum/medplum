@@ -74,6 +74,9 @@ export interface MedplumServerConfig {
   /** Max length of Bot AuditEvent.outcomeDesc when logging to logger */
   maxBotLogLengthForLogs?: number;
 
+  /** Search strategy system repositories use when using token search parameters. */
+  systemRepositoryTokenReadStrategy?: 'column-per-code' | 'unified-tokens-column' | 'token-tables';
+
   /** @deprecated */
   auditEventLogGroup?: string;
 

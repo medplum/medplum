@@ -115,6 +115,7 @@ import {
 import { tryGetRequestContext } from '../context';
 import { buildTokenColumns } from './token-column';
 import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
+import { TokenTable } from './lookups/token';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -981,6 +982,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resources - The resource(s) to reindex.
    */
   async reindexResources<T extends Resource>(conn: PoolClient, resources: WithId<T>[]): Promise<void> {
+    if (!this.isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+
     // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < resources.length; i++) {
@@ -1172,6 +1177,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(db);
       await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
     });
+    incrementCounter(
+      `medplum.fhir.interaction.delete.count`,
+      { attributes: { resourceType, result: 'success' } },
+      ids.length
+    );
   }
 
   /**
@@ -1776,6 +1786,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return undefined;
   }
 
+  private disableTokenTableWrites: boolean | undefined;
+  private skipTokenTableWrite(): boolean {
+    if (this.disableTokenTableWrites === undefined) {
+      const project = this.currentProject();
+      const maybeWriteBoolean = project?.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')?.valueBoolean;
+      // If the Project.systemSetting exists, use its value. Otherwise, default to false
+      this.disableTokenTableWrites = maybeWriteBoolean ?? false;
+    }
+    return this.disableTokenTableWrites;
+  }
+
   /**
    * Writes resources values to the lookup tables.
    * @param client - The database client inside the transaction.
@@ -1784,6 +1805,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
+      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
+        continue;
+      }
       await lookupTable.indexResource(client, resource, create);
     }
   }
@@ -1794,6 +1818,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     create: boolean
   ): Promise<void> {
     for (const lookupTable of lookupTables) {
+      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
+        continue;
+      }
       await lookupTable.batchIndexResources(client, resources, create);
     }
   }

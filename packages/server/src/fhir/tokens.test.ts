@@ -24,7 +24,7 @@ import {
   TokenColumnsFeature,
 } from './tokens';
 
-describe.each<'one-column' | 'per-code' | false>(['one-column', 'per-code', false])(
+describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tokens-column', 'column-per-code', false])(
   'Token searching using %s',
   (tokenColumnsOrLookupTable) => {
     const systemRepo = getSystemRepo();

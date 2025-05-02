@@ -142,7 +142,7 @@ export function buildTokenColumnsSearchFilter(
   tableName: string,
   param: SearchParameter,
   filter: Filter,
-  strategy: 'one-column' | 'per-code'
+  strategy: 'unified-tokens-column' | 'column-per-code'
 ): Expression {
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy !== 'token-column') {
@@ -163,7 +163,7 @@ export function buildTokenColumnsSearchFilter(
       // https://www.hl7.org/fhir/r4/search.html#combining
       const expressions: Expression[] = [];
       for (const searchValue of splitSearchOnComma(filter.value)) {
-        if (strategy === 'one-column') {
+        if (strategy === 'unified-tokens-column') {
           expressions.push(
             buildTokenColumnsWhereConditionOneColumn(impl, tableName, filter.code, filter.operator, searchValue)
           );
@@ -184,7 +184,7 @@ export function buildTokenColumnsSearchFilter(
     }
     case FhirOperator.MISSING:
     case FhirOperator.PRESENT: {
-      if (strategy === 'one-column') {
+      if (strategy === 'unified-tokens-column') {
         const cond = new TypedCondition(
           new Column(tableName, impl.legacyColumnName),
           'ARRAY_CONTAINS',

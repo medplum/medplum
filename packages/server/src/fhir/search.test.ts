@@ -51,7 +51,7 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
@@ -64,11 +64,11 @@ jest.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
-describe.each<'one-column' | 'per-code' | false>(['one-column', 'per-code', false])(
+describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tokens-column', 'column-per-code', false])(
   'FHIR Search using %s',
-  (tokenColumnsOrLookupTable) => {
+  (tokenColumnsFeatureRead) => {
     beforeAll(() => {
-      TokenColumnsFeature.read = tokenColumnsOrLookupTable;
+      TokenColumnsFeature.read = tokenColumnsFeatureRead;
     });
 
     describe('project-scoped Repository', () => {
@@ -94,7 +94,7 @@ describe.each<'one-column' | 'per-code' | false>(['one-column', 'per-code', fals
       test('readFromTokenColumns without systemSetting', () => {
         expect(repo.currentProject()).toBeDefined();
         expect(repo.currentProject()?.systemSetting).toBeUndefined();
-        expect(readFromTokenColumns(repo)).toBe(tokenColumnsOrLookupTable);
+        expect(readFromTokenColumns(repo)).toBe(tokenColumnsFeatureRead);
       });
 
       test('readFromTokenColumns with systemSetting.valueBoolean', async () => {
@@ -107,7 +107,7 @@ describe.each<'one-column' | 'per-code' | false>(['one-column', 'per-code', fals
           currentProject: projectWithTrue,
           author: { reference: 'User/' + randomUUID() },
         });
-        expect(readFromTokenColumns(repoWithTrue)).toBe('one-column');
+        expect(readFromTokenColumns(repoWithTrue)).toBe('unified-tokens-column');
 
         const { project: projectWithFalse } = await createTestProject({
           project: { systemSetting: [{ name: 'searchTokenColumns', valueBoolean: false }] },
@@ -123,7 +123,7 @@ describe.each<'one-column' | 'per-code' | false>(['one-column', 'per-code', fals
 
       test('readFromTokenColumns with systemSetting.valueString', async () => {
         const { project: projectWithTrue } = await createTestProject({
-          project: { systemSetting: [{ name: 'searchTokenColumns', valueString: 'one-column' }] },
+          project: { systemSetting: [{ name: 'searchTokenColumns', valueString: 'unified-tokens-column' }] },
         });
         const repoWithTrue = new Repository({
           strictMode: true,
@@ -131,10 +131,10 @@ describe.each<'one-column' | 'per-code' | false>(['one-column', 'per-code', fals
           currentProject: projectWithTrue,
           author: { reference: 'User/' + randomUUID() },
         });
-        expect(readFromTokenColumns(repoWithTrue)).toBe('one-column');
+        expect(readFromTokenColumns(repoWithTrue)).toBe('unified-tokens-column');
 
         const { project: projectWithFalse } = await createTestProject({
-          project: { systemSetting: [{ name: 'searchTokenColumns', valueString: 'per-code' }] },
+          project: { systemSetting: [{ name: 'searchTokenColumns', valueString: 'column-per-code' }] },
         });
         const repoWithFalse = new Repository({
           strictMode: true,
@@ -142,7 +142,7 @@ describe.each<'one-column' | 'per-code' | false>(['one-column', 'per-code', fals
           currentProject: projectWithFalse,
           author: { reference: 'User/' + randomUUID() },
         });
-        expect(readFromTokenColumns(repoWithFalse)).toBe('per-code');
+        expect(readFromTokenColumns(repoWithFalse)).toBe('column-per-code');
       });
 
       test('readFromTokenColumns with invalid systemSetting.valueString', async () => {
@@ -156,7 +156,7 @@ describe.each<'one-column' | 'per-code' | false>(['one-column', 'per-code', fals
           author: { reference: 'User/' + randomUUID() },
         });
         // should fallback to the default value
-        expect(readFromTokenColumns(repoWithTrue)).toBe(tokenColumnsOrLookupTable);
+        expect(readFromTokenColumns(repoWithTrue)).toBe(tokenColumnsFeatureRead);
       });
 
       test('Search total', async () =>
@@ -4821,8 +4821,24 @@ describe.each<'one-column' | 'per-code' | false>(['one-column', 'per-code', fals
       });
 
       test('readFromTokenColumns', () => {
-        // system repo always uses the default value
-        expect(readFromTokenColumns(systemRepo)).toBe(tokenColumnsOrLookupTable);
+        expect(getConfig().systemRepositoryTokenReadStrategy).toBeUndefined();
+        expect(readFromTokenColumns(systemRepo)).toBe(tokenColumnsFeatureRead);
+      });
+
+      test('readFromTokenColumns with systemRepositoryTokenReadStrategy', () => {
+        const config = getConfig();
+        const originalValue = config.systemRepositoryTokenReadStrategy;
+
+        config.systemRepositoryTokenReadStrategy = 'unified-tokens-column';
+        expect(readFromTokenColumns(systemRepo)).toBe('unified-tokens-column');
+
+        config.systemRepositoryTokenReadStrategy = 'column-per-code';
+        expect(readFromTokenColumns(systemRepo)).toBe('column-per-code');
+
+        config.systemRepositoryTokenReadStrategy = 'token-tables';
+        expect(readFromTokenColumns(systemRepo)).toBe(false);
+
+        config.systemRepositoryTokenReadStrategy = originalValue;
       });
 
       test('Filter by _project', () =>
