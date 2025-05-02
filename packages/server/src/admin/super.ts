@@ -3,6 +3,7 @@ import {
   allOk,
   badRequest,
   forbidden,
+  getQueryString,
   getResourceTypes,
   OperationOutcomeError,
   parseSearchRequest,
@@ -22,6 +23,7 @@ import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/as
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
+import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
@@ -29,7 +31,6 @@ import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import { addReindexJob } from '../workers/reindex';
-import { markPostDeployMigrationCompleted } from '../migration-sql';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_scale_factor: 'float',
@@ -154,8 +155,21 @@ superAdminRouter.post(
         return;
     }
 
+    // construct a representation of the inputs/parameters for the reindex job
+    // for human consumption in `AsyncJob.request`
+    const queryForUrl: Record<string, string> = {
+      resourceType: req.body.resourceType,
+      filter: req.body.filter,
+      reindexType,
+      maxResourceVersion: maxResourceVersion?.toString() ?? '',
+    };
+
+    const asyncJobUrl = new URL(`${req.protocol}://${req.get('host') + req.originalUrl}`);
+    // replace the search, if any, with queryForUrl
+    asyncJobUrl.search = getQueryString(queryForUrl);
+
     const exec = new AsyncJobExecutor(systemRepo);
-    await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
+    await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
       await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter, maxResourceVersion);
     });
