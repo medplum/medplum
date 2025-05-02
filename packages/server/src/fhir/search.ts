@@ -1776,10 +1776,12 @@ export function readFromTokenColumns(repo: Repository): boolean {
 
   // If the project is undefined, it is a system repository
   if (project === undefined) {
-    // If enableSystemRepoReadTokenColumns is explicitly set to true/false in the config, return its value
-    const enableSystemRepoReadTokenColumns = getConfig().enableSystemRepoReadTokenColumns;
-    if (enableSystemRepoReadTokenColumns !== undefined) {
-      return enableSystemRepoReadTokenColumns;
+    const systemRepositoryTokenReadStrategy = getConfig().systemRepositoryTokenReadStrategy;
+    // If specified, translate the config value to a boolean
+    if (systemRepositoryTokenReadStrategy === 'unified-tokens-column') {
+      return true;
+    } else if (systemRepositoryTokenReadStrategy === 'token-tables') {
+      return false;
     }
   }
 

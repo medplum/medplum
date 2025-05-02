@@ -92,7 +92,6 @@ const booleanKeys = [
   'registerEnabled',
   'require',
   'rejectUnauthorized',
-  'enableSystemRepoReadTokenColumns',
 ];
 
 export function isBooleanConfig(key: string): boolean {

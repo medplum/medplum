@@ -4787,7 +4787,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
       });
 
       test('readFromTokenColumns', () => {
-        expect(getConfig().enableSystemRepoReadTokenColumns).toBeUndefined();
+        expect(getConfig().systemRepositoryTokenReadStrategy).toBeUndefined();
 
         if (tokenColumnsOrLookupTable === 'token columns') {
           expect(readFromTokenColumns(systemRepo)).toBe(true);
@@ -4796,17 +4796,17 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         }
       });
 
-      test('readFromTokenColumns with enableSystemRepoReadTokenColumns', () => {
+      test('readFromTokenColumns with systemRepositoryTokenReadStrategy', () => {
         const config = getConfig();
-        const originalValue = config.enableSystemRepoReadTokenColumns;
+        const originalValue = config.systemRepositoryTokenReadStrategy;
 
-        config.enableSystemRepoReadTokenColumns = true;
+        config.systemRepositoryTokenReadStrategy = 'unified-tokens-column';
         expect(readFromTokenColumns(systemRepo)).toBe(true);
 
-        config.enableSystemRepoReadTokenColumns = false;
+        config.systemRepositoryTokenReadStrategy = 'token-tables';
         expect(readFromTokenColumns(systemRepo)).toBe(false);
 
-        config.enableSystemRepoReadTokenColumns = originalValue;
+        config.systemRepositoryTokenReadStrategy = originalValue;
       });
 
       test('Filter by _project', () =>
