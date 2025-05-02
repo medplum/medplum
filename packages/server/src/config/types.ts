@@ -74,6 +74,9 @@ export interface MedplumServerConfig {
   /** Max length of Bot AuditEvent.outcomeDesc when logging to logger */
   maxBotLogLengthForLogs?: number;
 
+  /** If system repositories should read from inlined token columns. */
+  enableSystemRepoReadTokenColumns?: boolean;
+
   /** @deprecated */
   auditEventLogGroup?: string;
 
