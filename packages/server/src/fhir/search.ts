@@ -1768,6 +1768,23 @@ function getCanonicalUrl(resource: Resource): string | undefined {
 export function readFromTokenColumns(repo: Repository): boolean {
   const project = repo.currentProject();
   const maybeSystemSettingBoolean = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns')?.valueBoolean;
-  // If the Project.systemSetting exists, return its value. Otherwise, fallback to global setting
-  return maybeSystemSettingBoolean ?? TokenColumnsFeature.read;
+
+  // If the Project.systemSetting exists, return its value
+  if (maybeSystemSettingBoolean !== undefined) {
+    return maybeSystemSettingBoolean;
+  }
+
+  // If the project is undefined, it is a system repository
+  if (project === undefined) {
+    const systemRepositoryTokenReadStrategy = getConfig().systemRepositoryTokenReadStrategy;
+    // If specified, translate the config value to a boolean
+    if (systemRepositoryTokenReadStrategy === 'unified-tokens-column') {
+      return true;
+    } else if (systemRepositoryTokenReadStrategy === 'token-tables') {
+      return false;
+    }
+  }
+
+  // fallback to the global default
+  return TokenColumnsFeature.read;
 }
