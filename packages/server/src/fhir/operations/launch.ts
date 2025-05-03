@@ -1,10 +1,10 @@
 import { badRequest, concatUrls, redirect } from '@medplum/core';
-import { ClientApplication, OperationDefinition, SmartAppLaunch } from '@medplum/fhirtypes';
-import { getSystemRepo } from '../repo';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { ClientApplication, OperationDefinition, SmartAppLaunch } from '@medplum/fhirtypes';
 import { getConfig } from '../../config/loader';
-import { parseInputParameters } from './utils/parameters';
 import { getAuthenticatedContext } from '../../context';
+import { getSystemRepo } from '../repo';
+import { parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',

@@ -1,7 +1,7 @@
 import { WithId } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
-import { TokenTable, TokenTableRow } from './token';
 import { loadStructureDefinitions } from '../structure';
+import { TokenTable, TokenTableRow } from './token';
 
 describe('Token lookup table', () => {
   beforeAll(() => {

@@ -1,5 +1,5 @@
-import { createPdf } from './pdf';
 import { TDocumentDefinitions } from 'pdfmake/interfaces';
+import { createPdf } from './pdf';
 
 describe('createPdf', () => {
   test('creates a basic PDF with default fonts', async () => {

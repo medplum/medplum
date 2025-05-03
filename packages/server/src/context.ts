@@ -5,12 +5,12 @@ import { NextFunction, Request, Response } from 'express';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
+import { FhirRateLimiter } from './fhirinteractionlimit';
 import { systemLogger } from './logger';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
+import { getRedis } from './redis';
 import { IRequestContext, requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
-import { getRedis } from './redis';
-import { FhirRateLimiter } from './fhirinteractionlimit';
 
 export class RequestContext implements IRequestContext {
   readonly requestId: string;

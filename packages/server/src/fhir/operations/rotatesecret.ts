@@ -1,10 +1,10 @@
+import { allOk, badRequest, forbidden, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { ClientApplication, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { generateSecret } from '../../oauth/keys';
-import { allOk, badRequest, forbidden, OperationOutcomeError } from '@medplum/core';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { getSystemRepo } from '../repo';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',

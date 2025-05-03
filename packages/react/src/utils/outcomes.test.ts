@@ -1,6 +1,6 @@
 import { allOk, badRequest, gone } from '@medplum/core';
-import { getErrorsForInput, getIssuesForExpression } from './outcomes';
 import { OperationOutcome } from '@medplum/fhirtypes';
+import { getErrorsForInput, getIssuesForExpression } from './outcomes';
 
 const MISSING_PROP = 'Missing required property';
 function missingProp(expression: string): OperationOutcome {

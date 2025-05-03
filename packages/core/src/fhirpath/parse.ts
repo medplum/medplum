@@ -1,4 +1,5 @@
 import { Quantity } from '@medplum/fhirtypes';
+import { LRUCache } from '../cache';
 import { Atom, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer/parse';
 import { PropertyType, TypedValue } from '../types';
 import {
@@ -29,7 +30,6 @@ import {
 import { parseDateString } from './date';
 import { tokenize } from './tokenize';
 import { toTypedValue } from './utils';
-import { LRUCache } from '../cache';
 
 /**
  * Operator precedence

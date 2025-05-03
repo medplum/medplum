@@ -1,5 +1,7 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { LRUCache } from '../cache';
 import { HTTP_HL7_ORG, UCUM } from '../constants';
+import { FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import {
@@ -23,8 +25,6 @@ import {
   getDataType,
   parseStructureDefinition,
 } from './types';
-import { LRUCache } from '../cache';
-import { FhirPathAtom } from '../fhirpath/atoms';
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.

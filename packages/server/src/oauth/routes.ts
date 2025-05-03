@@ -1,11 +1,11 @@
 import cookieParser from 'cookie-parser';
 import { Router } from 'express';
 import { authorizeGetHandler, authorizePostHandler } from './authorize';
+import { tokenIntrospectHandler } from './introspect';
 import { logoutHandler } from './logout';
 import { authenticateRequest } from './middleware';
 import { tokenHandler } from './token';
 import { userInfoHandler } from './userinfo';
-import { tokenIntrospectHandler } from './introspect';
 
 export const oauthRouter = Router();
 oauthRouter.get('/authorize', cookieParser(), authorizeGetHandler);

@@ -1,12 +1,12 @@
-import express, { Express } from 'express';
-import { loadTestConfig } from './config/loader';
-import { initApp, shutdownApp } from './app';
-import { getRedis } from './redis';
-import request from 'supertest';
-import { createTestProject } from './test.setup';
-import { MedplumServerConfig } from './config/types';
-import { Bundle } from '@medplum/fhirtypes';
 import { sleep } from '@medplum/core';
+import { Bundle } from '@medplum/fhirtypes';
+import express, { Express } from 'express';
+import request from 'supertest';
+import { initApp, shutdownApp } from './app';
+import { loadTestConfig } from './config/loader';
+import { MedplumServerConfig } from './config/types';
+import { getRedis } from './redis';
+import { createTestProject } from './test.setup';
 
 describe('FHIR Rate Limits', () => {
   let app: Express;

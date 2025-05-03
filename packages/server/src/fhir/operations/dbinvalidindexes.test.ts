@@ -3,8 +3,8 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { initTestAuth } from '../../test.setup';
-import { getDatabasePool, DatabaseMode } from '../../database';
 
 describe('$db-invalid-indexes', () => {
   const app = express();

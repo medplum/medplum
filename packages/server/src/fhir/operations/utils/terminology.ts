@@ -1,8 +1,8 @@
 import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
-import { getAuthenticatedContext } from '../../../context';
 import { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
-import { SelectQuery, Conjunction, Condition, Column, Union, Operator as SqlOperator, SqlFunction } from '../../sql';
+import { getAuthenticatedContext } from '../../../context';
 import { getSystemRepo } from '../../repo';
+import { Column, Condition, Conjunction, SelectQuery, SqlFunction, Operator as SqlOperator, Union } from '../../sql';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 export const childProperty = 'http://hl7.org/fhir/concept-properties#child';

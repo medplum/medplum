@@ -1,9 +1,9 @@
+import { buildElementsContext } from '@medplum/core';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
-import { QuantityInput } from './QuantityInput';
-import { buildElementsContext } from '@medplum/core';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { QuantityInput } from './QuantityInput';
 
 export default {
   title: 'Medplum/QuantityInput',

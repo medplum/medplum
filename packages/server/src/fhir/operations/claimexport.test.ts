@@ -1,9 +1,9 @@
 import { Bundle, Claim } from '@medplum/fhirtypes';
+import express from 'express';
+import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
-import express from 'express';
-import request from 'supertest';
 
 const app = express();
 let accessToken: string;

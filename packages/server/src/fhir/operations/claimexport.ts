@@ -1,11 +1,11 @@
 import { allOk, badRequest, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Claim, Media, OperationDefinition } from '@medplum/fhirtypes';
+import { Readable } from 'stream';
 import { getAuthenticatedContext } from '../../context';
+import { getBinaryStorage } from '../../storage/loader';
 import { createPdf } from '../../util/pdf';
 import { getClaimPDFDocDefinition } from './utils/cms1500pdf';
-import { getBinaryStorage } from '../../storage/loader';
-import { Readable } from 'stream';
 
 /**
  * Operation definition for the Claim $export operation.

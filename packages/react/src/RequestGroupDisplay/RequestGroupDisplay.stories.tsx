@@ -12,8 +12,8 @@ import {
   Covid19RequestGroup,
   Covid19ReviewLabsTask,
 } from '../stories/covid19';
-import { RequestGroupDisplay } from './RequestGroupDisplay';
 import { withMockedDate } from '../stories/decorators';
+import { RequestGroupDisplay } from './RequestGroupDisplay';
 
 export default {
   title: 'Medplum/RequestGroupDisplay',

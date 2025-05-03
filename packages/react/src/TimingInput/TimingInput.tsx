@@ -3,9 +3,9 @@ import { formatTiming } from '@medplum/core';
 import { Timing, TimingRepeat } from '@medplum/fhirtypes';
 import { useContext, useMemo, useRef, useState } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
-import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 
 const daysOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
