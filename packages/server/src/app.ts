@@ -44,6 +44,7 @@ import { webhookRouter } from './webhook/routes';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
+import { cleanupReadFromTokenColumnsHeartbeat, initReadFromTokenColumnsHeartbeat } from './fhir/tokens';
 
 let server: http.Server | undefined = undefined;
 
@@ -216,11 +217,13 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     initWorkers(config);
     initHeartbeat(config);
     initOtelHeartbeat();
+    initReadFromTokenColumnsHeartbeat();
     await maybeAutoRunPendingPostDeployMigration();
   });
 }
 
 export async function shutdownApp(): Promise<void> {
+  cleanupReadFromTokenColumnsHeartbeat();
   cleanupOtelHeartbeat();
   cleanupHeartbeat();
   await closeWebSockets();
