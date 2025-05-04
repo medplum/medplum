@@ -7,6 +7,7 @@ import {
   getExtension,
   getReferenceString,
   getTypedPropertyValueWithoutSchema,
+  normalizeErrorString,
   splitN,
   toJsBoolean,
   toTypedValue,
@@ -108,23 +109,35 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
           item: evaluateCalculatedExpressionsInQuestionnaire(item.item, response),
         };
       } else {
-        const calculatedValue = evaluateCalculatedExpression(item, response);
-        if (!calculatedValue) {
-          return null;
+        try {
+          const calculatedValue = evaluateCalculatedExpression(item, response);
+          if (!calculatedValue) {
+            return null;
+          }
+          const answer = typedValueToResponseItem(item, calculatedValue);
+          if (!answer) {
+            return null;
+          }
+          return {
+            id: item?.id,
+            linkId: item?.linkId,
+            text: item.text,
+            answer: [answer],
+          };
+        } catch (error) {
+          return {
+            id: item?.id,
+            linkId: item?.linkId,
+            text: item.text,
+            answer: [],
+            extension: [
+              {
+                url: `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-validationError`,
+                valueString: `Expression evaluation failed: ${normalizeErrorString(error)}`,
+              },
+            ],
+          };
         }
-
-        const answer = typedValueToResponseItem(item, calculatedValue);
-
-        if (!answer) {
-          return null;
-        }
-
-        return {
-          id: item?.id,
-          linkId: item?.linkId,
-          text: item.text,
-          answer: [answer],
-        };
       }
     })
     .filter((item): item is QuestionnaireResponseItem => item !== null);
@@ -206,6 +219,7 @@ export function mergeUpdatedItems(
         ...mergedItem,
         item: updatedItem.item ? mergeUpdatedItems(mergedItem.item || [], updatedItem.item) : mergedItem.item,
         answer: updatedItem.answer || mergedItem.answer,
+        extension: updatedItem.extension || mergedItem.extension,
       };
     }
     return mergedItem;
