@@ -7,20 +7,6 @@ describe('Integration Tests for GoogleCloudStorage', () => {
   let storage: GoogleCloudStorage;
 
   beforeEach(() => {
-    jest.mock('@google-cloud/storage', () => {
-      return {
-        Storage: jest.fn().mockImplementation(() => ({
-          bucket: jest.fn().mockReturnValue({
-            file: jest.fn().mockReturnValue({
-              createWriteStream: jest.fn().mockReturnValue(new PassThrough()),
-              createReadStream: jest.fn().mockReturnValue(new PassThrough()),
-              getSignedUrl: jest.fn().mockResolvedValue(['https://mock-signed-url.com']),
-            }),
-          }),
-        })),
-      };
-    });
-
     storage = new GoogleCloudStorage(testStorageString);
   });
 
