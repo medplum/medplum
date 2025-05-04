@@ -78,27 +78,27 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   // Then, validate all other parameters.
   // If these are invalid, redirect back to the redirect URI.
   if (!params.scope) {
-    sendErrorRedirect(res, redirectUri, 'invalid_request', state);
+    sendErrorRedirect(res, redirectUri, 'invalid_request', 'Missing scope', state);
     return false;
   }
   if (params.response_type !== 'code') {
-    sendErrorRedirect(res, redirectUri, 'unsupported_response_type', state);
+    sendErrorRedirect(res, redirectUri, 'unsupported_response_type', 'Invalid response type', state);
     return false;
   }
   if (params.request) {
-    sendErrorRedirect(res, redirectUri, 'request_not_supported', state);
+    sendErrorRedirect(res, redirectUri, 'request_not_supported', 'Missing request', state);
     return false;
   }
   if (!isValidAudience(params.aud)) {
-    sendErrorRedirect(res, redirectUri, 'invalid_request', state);
+    sendErrorRedirect(res, redirectUri, 'invalid_request', 'Invalid audience', state);
     return false;
   }
   if (params.code_challenge && !params.code_challenge_method) {
-    sendErrorRedirect(res, redirectUri, 'invalid_request', state);
+    sendErrorRedirect(res, redirectUri, 'invalid_request', 'Invalid code challenge', state);
     return false;
   }
   if (params.launch && !(await isValidLaunch(params.launch))) {
-    sendErrorRedirect(res, redirectUri, 'invalid_request', state);
+    sendErrorRedirect(res, redirectUri, 'invalid_request', 'Invalid launch', state);
     return false;
   }
 
@@ -106,7 +106,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
 
   const prompt = params.prompt as string | undefined;
   if (prompt === 'none' && !existingLogin) {
-    sendErrorRedirect(res, redirectUri, 'login_required', state);
+    sendErrorRedirect(res, redirectUri, 'login_required', 'Login required', state);
     return false;
   }
 
@@ -265,11 +265,19 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
  * @param res - The response.
  * @param redirectUri - The client redirect URI.  This URI may already have query string parameters.
  * @param error - The OAuth/OpenID error code.
+ * @param errorDescription - The error description.
  * @param state - The client state.
  */
-function sendErrorRedirect(res: Response, redirectUri: string, error: string, state: string): void {
+function sendErrorRedirect(
+  res: Response,
+  redirectUri: string,
+  error: string,
+  errorDescription: string,
+  state: string
+): void {
   const url = new URL(redirectUri);
   url.searchParams.append('error', error);
+  url.searchParams.append('error_description', errorDescription);
   url.searchParams.append('state', state);
   res.redirect(url.toString());
 }
