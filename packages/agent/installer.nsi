@@ -33,6 +33,11 @@ InstallDir "$PROGRAMFILES64\${APP_NAME}"
 !include "LogicLib.nsh"
 !include "StrFunc.nsh"
 
+# Initialize string functions
+${StrLoc}
+${StrTok}
+${StrTrimNewLines}
+
 RequestExecutionLevel admin
 
 Var WelcomeDialog
