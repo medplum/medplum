@@ -33,12 +33,6 @@ InstallDir "$PROGRAMFILES64\${APP_NAME}"
 !include "LogicLib.nsh"
 !include "StrFunc.nsh"
 
-# Initialize string functions
-${UsingStrFunc} StrLoc
-${UsingStrFunc} StrTok
-${UsingStrFunc} StrTrim
-${UsingStrFunc} StrTrimNewLines
-
 RequestExecutionLevel admin
 
 Var WelcomeDialog
@@ -278,7 +272,6 @@ Function StopAndDeleteOldMedplumServices
 
     # Trim spaces from the service name
     ${StrTrimNewLines} $CurrentLine $ServiceName
-    ${StrTrim} $ServiceName $ServiceName " "
 
     DetailPrint "Processing service: $ServiceName"
 
