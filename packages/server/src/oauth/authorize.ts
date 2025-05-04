@@ -86,7 +86,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     return false;
   }
   if (params.request) {
-    sendErrorRedirect(res, redirectUri, 'request_not_supported', 'Missing request', state);
+    sendErrorRedirect(res, redirectUri, 'request_not_supported', 'Unsupported request parameter', state);
     return false;
   }
   if (!isValidAudience(params.aud)) {
@@ -94,7 +94,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     return false;
   }
   if (params.code_challenge && !params.code_challenge_method) {
-    sendErrorRedirect(res, redirectUri, 'invalid_request', 'Invalid code challenge', state);
+    sendErrorRedirect(res, redirectUri, 'invalid_request', 'Missing code challenge method', state);
     return false;
   }
   if (params.launch && !(await isValidLaunch(params.launch))) {
