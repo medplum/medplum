@@ -1,9 +1,11 @@
+import { WithId } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { BundleEntry, SearchParameter } from '@medplum/fhirtypes';
 import { r4ProjectId } from '../constants';
 import { DatabaseMode } from '../database';
 import { Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
+import { getDbClientFromRepo } from './utils';
 
 /**
  * Creates all SearchParameter resources.
@@ -13,23 +15,30 @@ export async function rebuildR4SearchParameters(systemRepo: Repository): Promise
   const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
   await client.query('DELETE FROM "SearchParameter" WHERE "projectId" = $1', [r4ProjectId]);
 
+  const searchParams: WithId<SearchParameter>[] = [];
   for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-    for (const entry of readJson(filename).entry as BundleEntry[]) {
-      await createParameter(systemRepo, entry.resource as SearchParameter);
+    for (const entry of readJson(filename).entry as BundleEntry<SearchParameter>[]) {
+      const param = entry.resource as SearchParameter;
+      globalLogger.debug('SearchParameter: ' + param.name);
+      const cleanParam = {
+        ...param,
+        meta: {
+          ...param.meta,
+          project: r4ProjectId,
+          lastUpdated: new Date().toISOString(),
+          versionId: systemRepo.generateId(),
+          author: {
+            reference: 'system',
+          },
+        },
+        text: undefined,
+        id: systemRepo.generateId(),
+      };
+      searchParams.push(cleanParam);
     }
   }
-}
 
-async function createParameter(systemRepo: Repository, param: SearchParameter): Promise<void> {
-  globalLogger.debug('SearchParameter: ' + param.name);
-  await systemRepo.createResource<SearchParameter>({
-    ...param,
-    meta: {
-      ...param.meta,
-      project: r4ProjectId,
-      lastUpdated: undefined,
-      versionId: undefined,
-    },
-    text: undefined,
-  });
+  const [dbClient, cleanupDbClient] = await getDbClientFromRepo(systemRepo);
+  await systemRepo.reindexResources(dbClient, searchParams);
+  cleanupDbClient();
 }

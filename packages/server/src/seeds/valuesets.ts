@@ -1,14 +1,16 @@
 import { Operator, WithId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, CodeSystem, Resource, ValueSet } from '@medplum/fhirtypes';
 import { r4ProjectId } from '../constants';
 import { Repository } from '../fhir/repo';
+import { getDbClientFromRepo } from './utils';
 
 /**
  * Imports all built-in ValueSets and CodeSystems into the database.
  * @param systemRepo - The system repository to use
+ * @param firstBoot - Whether this is the first boot of the server
  */
-export async function rebuildR4ValueSets(systemRepo: Repository): Promise<void> {
+export async function rebuildR4ValueSets(systemRepo: Repository, firstBoot = false): Promise<void> {
   const files = [
     'v2-tables.json',
     'v3-codesystems.json',
@@ -18,19 +20,41 @@ export async function rebuildR4ValueSets(systemRepo: Repository): Promise<void> 
   ];
   for (const file of files) {
     const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
+    const codeSystems: WithId<CodeSystem>[] = [];
+    const valueSets: WithId<ValueSet>[] = [];
     for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
       const resource = entry.resource as CodeSystem | ValueSet;
-      await deleteExisting(systemRepo, resource, r4ProjectId);
-      await systemRepo.createResource({
+      if (!firstBoot) {
+        await deleteExisting(systemRepo, resource, r4ProjectId);
+      }
+      const cleanResource = {
         ...resource,
         meta: {
           ...resource.meta,
           project: r4ProjectId,
-          lastUpdated: undefined,
-          versionId: undefined,
+          lastUpdated: new Date().toISOString(),
+          versionId: systemRepo.generateId(),
+          author: {
+            reference: 'system',
+          },
         },
-      });
+        id: systemRepo.generateId(),
+      };
+      if (cleanResource.resourceType === 'CodeSystem') {
+        codeSystems.push(cleanResource);
+      } else if (cleanResource.resourceType === 'ValueSet') {
+        valueSets.push(cleanResource);
+      } else {
+        throw new Error(
+          `Invalid resource of type '${(cleanResource as Resource).resourceType ?? 'undefined'}' in '${file}'. Only CodeSystem or ValueSet resources are allowed in this file`
+        );
+      }
     }
+
+    const [dbClient, cleanupDbClient] = await getDbClientFromRepo(systemRepo);
+    await systemRepo.reindexResources(dbClient, codeSystems);
+    await systemRepo.reindexResources(dbClient, valueSets);
+    cleanupDbClient();
   }
 }
 
