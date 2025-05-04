@@ -8,13 +8,7 @@ import {
   useMedplumNavigate,
   useMedplumProfile,
 } from '@medplum/react';
-import {
-  IconClipboardCheck,
-  IconMail,
-  IconPencil,
-  IconTimeDuration0,
-  IconUser,
-} from '@tabler/icons-react';
+import { IconClipboardCheck, IconMail, IconPencil, IconTimeDuration0, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
@@ -65,9 +59,7 @@ export function App(): JSX.Element | null {
         },
         {
           title: 'Scheduling',
-          links: [
-            { icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' },
-          ],
+          links: [{ icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' }],
         },
         {
           title: 'Onboarding',
