@@ -303,7 +303,7 @@ export const EncounterChart = (): JSX.Element => {
     }
 
     const diagnosisArray = createDiagnosisArray(diagnosis);
-    await medplum.updateResource({
+    const claimToExport: Claim = {
       ...claim,
       insurance: [
         {
@@ -313,9 +313,11 @@ export const EncounterChart = (): JSX.Element => {
         },
       ],
       diagnosis: diagnosisArray,
+    };
+    const response = await medplum.post(medplum.fhirUrl('Claim', '$export'), {
+      resourceType: 'Parameters',
+      parameter: [{ name: 'resource', resource: claimToExport }],
     });
-
-    const response = await medplum.get(medplum.fhirUrl('Claim', claim.id, '$export'));
 
     if (response.resourceType === 'Media' && response.content?.url) {
       const url = response.content.url;

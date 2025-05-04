@@ -19,7 +19,7 @@ import { agentUpgradeHandler } from './operations/agentupgrade';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
-import { claimExportHandler } from './operations/claimexport';
+import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -254,7 +254,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
   // Claim $export operation
-  router.add('GET', '/Claim/:id/$export', claimExportHandler);
+  router.add('POST', '/Claim/$export', claimExportPostHandler);
+  router.add('GET', '/Claim/:id/$export', claimExportGetHandler);
 
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);

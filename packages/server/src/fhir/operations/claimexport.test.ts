@@ -8,7 +8,7 @@ import { initTestAuth } from '../../test.setup';
 const app = express();
 let accessToken: string;
 
-describe('CMS 1500 PDF Bot', () => {
+describe('CMS 1500 PDF', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -19,7 +19,49 @@ describe('CMS 1500 PDF Bot', () => {
     await shutdownApp();
   });
 
-  test('Fully answered CMS1500 pdf', async () => {
+  test('Post Request - Fully answered CMS1500 pdf', async () => {
+    const bundleRes = await request(app)
+      .post(`/fhir/R4`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(fullAnswer);
+    expect(bundleRes.status).toBe(200);
+    expect(bundleRes.body.resourceType).toBe('Bundle');
+    expect(bundleRes.body.type).toBe('transaction-response');
+
+    const searchRes = await request(app)
+      .get(`/fhir/R4/Claim?identifier=example-claim-cms1500`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', 'application/fhir+json');
+    expect(searchRes.status).toBe(200);
+    expect(searchRes.body.resourceType).toBe('Bundle');
+    expect(searchRes.body.entry.length).toBeGreaterThan(0);
+
+    const claim = searchRes.body.entry[0].resource as Claim;
+    expect(claim.resourceType).toBe('Claim');
+    expect(claim.identifier?.some((id) => id.value === 'example-claim-cms1500')).toBe(true);
+
+    const response = await request(app)
+      .post(`/fhir/R4/Claim/$export`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'resource',
+            resource: claim,
+          },
+        ],
+      });
+
+    expect(response).toBeDefined();
+    expect(response.status).toBe(200);
+    expect(response.body.resourceType).toBe('Media');
+    expect(response.body.content.contentType).toBe('application/pdf');
+  });
+
+  test('Get Request - Fully answered CMS1500 pdf', async () => {
     const bundleRes = await request(app)
       .post(`/fhir/R4`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -52,22 +94,26 @@ describe('CMS 1500 PDF Bot', () => {
     expect(response.body.content.contentType).toBe('application/pdf');
   });
 
-  test('Bad request - missing claim ID', async () => {
+  test('Bad request - claim not found', async () => {
     const response = await request(app)
-      .get(`/fhir/R4/Claim/$export`)
+      .get(`/fhir/R4/Claim/non-existent-id/$export`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', 'application/fhir+json');
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(400);
     expect(response.body.resourceType).toBe('OperationOutcome');
     expect(response.body.issue[0].severity).toBe('error');
   });
 
   test('Bad request - claim not found', async () => {
     const response = await request(app)
-      .get(`/fhir/R4/Claim/non-existent-id/$export`)
+      .post(`/fhir/R4/Claim/$export`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Accept', 'application/fhir+json');
+      .set('Accept', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'resource' }],
+      });
 
     expect(response.status).toBe(400);
     expect(response.body.resourceType).toBe('OperationOutcome');
