@@ -31,6 +31,11 @@ InstallDir "$PROGRAMFILES64\${APP_NAME}"
 !include "nsDialogs.nsh"
 !include "x64.nsh"
 !include "LogicLib.nsh"
+!include "StrFunc.nsh"
+
+# Initialize string functions
+${StrLoc}
+${StrTok}
 
 RequestExecutionLevel admin
 
@@ -42,6 +47,13 @@ Var baseUrl
 Var clientId
 Var clientSecret
 Var agentId
+
+# Vars for Section StopAndDeleteOldMedplumServices
+Var ServicesList
+Var ServiceName
+Var LinePos
+Var NextLinePos
+Var CurrentLine
 
 # The onInit handler is called when the installer is nearly finished initializing.
 # See: https://nsis.sourceforge.io/Reference/.onInit
@@ -224,13 +236,71 @@ Function UpgradeApp
     ; # We use net stop specifically because it waits for the service to gracefully stop before returning
     ; ; ExecWait 'cmd.exe /c "for /f "tokens=2 delims=: " %s in (''sc query state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent"'') do (if not "%s"=="${SERVICE_NAME}" (echo Stopping and deleting service: %s & net stop %s && sc delete %s))"' $1
     ; DetailPrint "Exit code $1"
-    DetailPrint "Stopping old Medplum Agent service..."
-    nsExec::Exec '"$SYSDIR\cmd.exe" /c "for /f "tokens=2 delims=: " %i in (\'sc query type^= service state^= all ^| findstr /i "MedplumAgent\') do @net stop %i"'
-    DetailPrint "Exit code $1"
-    DetailPrint "Deleting old Medplum Agent service..."
-    nsExec::Exec '"$SYSDIR\cmd.exe" /c "for /f "tokens=2 delims=: " %i in (\'sc query type^= service state^= all ^| findstr /i "MedplumAgent\') do @sc delete %i"'
-    DetailPrint "Exit code $1"
+    DetailPrint "Stopping and deleting old Medplum Agent service..."
+    Call StopAndDeleteOldMedplumServices
 
+FunctionEnd
+
+Function StopAndDeleteOldMedplumServices
+  # Get list of services
+  nsExec::ExecToStack 'sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent"'
+  Pop $0 # Return value
+  Pop $ServicesList # Command output
+
+  DetailPrint "Found services: $ServicesList"
+
+  # Process all lines in the output
+  StrCpy $LinePos 0
+
+  ${Do}
+    # Find the next occurrence of "SERVICE_NAME:"
+    ${StrLoc} $0 $ServicesList "SERVICE_NAME:" $LinePos
+    ${If} $0 == ""
+      # No more services found
+      ${Break}
+    ${EndIf}
+
+    ; Update position for next iteration
+    IntOp $LinePos $0 + 13
+
+    # Find the next newline
+    ${StrLoc} $NextLinePos $ServicesList "$\r$\n" $LinePos
+    ${If} $NextLinePos == ""
+      # If we can't find a newline, we're at the last line
+      StrCpy $CurrentLine $ServicesList $LinePos ""
+    ${Else}
+      # Extract the current line
+      IntOp $1 $NextLinePos - $LinePos
+      StrCpy $CurrentLine $ServicesList $1 $LinePos
+    ${EndIf}
+
+    # Trim spaces from the service name
+    ${StrTrimNewLines} $CurrentLine $ServiceName
+    ${StrTrim} $ServiceName $ServiceName " "
+
+    DetailPrint "Processing service: $ServiceName"
+
+    # Stop the service
+    DetailPrint "Stopping service: $ServiceName"
+    nsExec::ExecToStack 'net stop "$ServiceName"'
+    Pop $0 # Return value
+    Pop $1 # Output
+    DetailPrint "Stop result: $0"
+
+    # Delete the service
+    DetailPrint "Deleting service: $ServiceName"
+    nsExec::ExecToStack 'sc delete "$ServiceName"'
+    Pop $0 # Return value
+    Pop $1 # Output
+    DetailPrint "Delete result: $0"
+
+    # Update position for next iteration
+    ${If} $NextLinePos == ""
+      ${Break}
+    ${Else}
+      IntOp $LinePos $NextLinePos + 2
+    ${EndIf}
+  ${Loop}
 FunctionEnd
 
 # Do the actual installation.
