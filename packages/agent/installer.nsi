@@ -34,8 +34,10 @@ InstallDir "$PROGRAMFILES64\${APP_NAME}"
 !include "StrFunc.nsh"
 
 # Initialize string functions
-${StrLoc}
-${StrTok}
+${UsingStrFunc} StrLoc
+${UsingStrFunc} StrTok
+${UsingStrFunc} StrTrim
+${UsingStrFunc} StrTrimNewLines
 
 RequestExecutionLevel admin
 
@@ -275,8 +277,8 @@ Function StopAndDeleteOldMedplumServices
     ${EndIf}
 
     # Trim spaces from the service name
-    ${Using:StrFunc} ${StrTrimNewLines} $CurrentLine $ServiceName
-    ${Using:StrFunc} ${StrTrim} $ServiceName $ServiceName " "
+    ${StrTrimNewLines} $CurrentLine $ServiceName
+    ${StrTrim} $ServiceName $ServiceName " "
 
     DetailPrint "Processing service: $ServiceName"
 
