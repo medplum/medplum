@@ -5,15 +5,16 @@ import {
   MultiSelect,
   NativeSelect,
   Radio,
+  Text,
   Textarea,
   TextInput,
-  Text,
 } from '@mantine/core';
 import {
   capitalize,
   deepEquals,
   formatCoding,
   getElementDefinition,
+  getExtension,
   HTTP_HL7_ORG,
   stringify,
   TypedValue,
@@ -94,21 +95,10 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
 
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
   const defaultValue = getCurrentAnswer(response, props.index) ?? getItemInitialValue(initial);
-
-  const validationError = response.extension?.find(
-    (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-validationError`
+  const validationError = getExtension(
+    response,
+    `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-validationError`
   );
-
-  const renderValidationError = (): JSX.Element | null => {
-    if (validationError?.valueString) {
-      return (
-        <Text c="red" size="lg" mt={4}>
-          {validationError.valueString}
-        </Text>
-      );
-    }
-    return null;
-  };
 
   let formComponent: JSX.Element | null = null;
 
@@ -295,14 +285,14 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       return null;
   }
 
-  if (type === QuestionnaireItemType.display) {
-    return formComponent;
-  }
-
   return (
     <>
       {formComponent}
-      {renderValidationError()}
+      {validationError?.valueString && (
+        <Text c="red" size="lg" mt={4}>
+          {validationError.valueString}
+        </Text>
+      )}
     </>
   );
 }

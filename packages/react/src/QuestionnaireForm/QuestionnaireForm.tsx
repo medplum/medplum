@@ -204,6 +204,7 @@ function updateResponseItems(
 
   const updatedItems = evaluateCalculatedExpressionsInQuestionnaire(questionnaire?.item ?? [], tempResponse);
   tempResponse.item = mergeUpdatedItems(mergedItems, updatedItems);
+
   return evaluateAndMergeResponseItems(tempResponse, questionnaire);
 }
 
