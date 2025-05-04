@@ -1,11 +1,11 @@
 import { Title } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { CodeChallengeMethod, normalizeErrorString } from '@medplum/core';
+import { ClientApplicationSignInForm } from '@medplum/fhirtypes';
 import { Logo, SignInForm, useMedplum } from '@medplum/react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { getConfig } from './config';
-import { useEffect, useState } from 'react';
-import { showNotification } from '@mantine/notifications';
-import { ClientApplicationSignInForm } from '@medplum/fhirtypes';
 
 export function OAuthPage(): JSX.Element | null {
   const navigate = useNavigate();

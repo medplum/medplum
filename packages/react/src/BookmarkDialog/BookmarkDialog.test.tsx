@@ -1,10 +1,10 @@
 import { showNotification } from '@mantine/notifications';
+import { WithId } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { BookmarkDialog } from './BookmarkDialog';
-import { WithId } from '@medplum/core';
 
 jest.mock('@mantine/notifications');
 

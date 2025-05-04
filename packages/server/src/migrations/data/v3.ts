@@ -1,6 +1,6 @@
 import { getResourceTypes, WithId } from '@medplum/core';
-import { prepareReindexJobData, ReindexJob, ReindexPostDeployMigration } from '../../workers/reindex';
 import { AsyncJob } from '@medplum/fhirtypes';
+import { prepareReindexJobData, ReindexJob, ReindexPostDeployMigration } from '../../workers/reindex';
 
 // Repository.VERSION was bumped to 3 for token-column search parameters,
 // so reindex all resources with a lower version.

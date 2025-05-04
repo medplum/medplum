@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { asyncWrap } from '../async';
 import { authenticateRequest } from '../oauth/middleware';
 import { changePasswordHandler, changePasswordValidator } from './changepassword';
+import { clientInfoHandler } from './clientinfo';
 import { exchangeHandler, exchangeValidator } from './exchange';
 import { externalCallbackHandler } from './external';
 import { googleHandler, googleValidator } from './google';
@@ -22,7 +23,6 @@ import { setPasswordHandler, setPasswordValidator } from './setpassword';
 import { statusHandler, statusValidator } from './status';
 import { validateRecaptcha } from './utils';
 import { verifyEmailHandler, verifyEmailValidator } from './verifyemail';
-import { clientInfoHandler } from './clientinfo';
 
 export const authRouter = Router();
 authRouter.use('/mfa', mfaRouter);

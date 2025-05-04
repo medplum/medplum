@@ -1,5 +1,5 @@
 import { createReference } from '@medplum/core';
-import { Bundle, Observation, Organization, Patient, DiagnosticReport } from '@medplum/fhirtypes';
+import { Bundle, DiagnosticReport, Observation, Organization, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';

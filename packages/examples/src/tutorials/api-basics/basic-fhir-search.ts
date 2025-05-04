@@ -1,6 +1,6 @@
 // start-block core-imports
-import fetch from 'node-fetch';
 import { MedplumClient } from '@medplum/core';
+import fetch from 'node-fetch';
 
 // end-block core-imports
 

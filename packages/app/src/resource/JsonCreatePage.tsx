@@ -1,5 +1,5 @@
-import { stringify } from '@medplum/core';
 import { Button, Group, JsonInput } from '@mantine/core';
+import { stringify } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, OperationOutcomeAlert } from '@medplum/react';
 import { useCallback, useState } from 'react';

@@ -11,8 +11,8 @@ import { Readable } from 'stream';
 import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { Repository } from '../../fhir/repo';
-import { getBinaryStorage } from '../../storage/loader';
 import { getLogger } from '../../logger';
+import { getBinaryStorage } from '../../storage/loader';
 import { S3Storage } from './storage';
 
 export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse> {

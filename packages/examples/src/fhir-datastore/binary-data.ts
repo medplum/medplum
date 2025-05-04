@@ -1,6 +1,6 @@
 // start-block imports
 import { MedplumClient } from '@medplum/core';
-import { Patient, Media } from '@medplum/fhirtypes';
+import { Media, Patient } from '@medplum/fhirtypes';
 // end-block imports
 
 const medplum = new MedplumClient();

@@ -1,7 +1,7 @@
 import { WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
-import { Repository } from '../../fhir/repo';
 import { Job } from 'bullmq';
+import { Repository } from '../../fhir/repo';
 
 export interface PostDeployJobData {
   readonly type: 'reindex' | 'custom';

@@ -7,8 +7,8 @@ import { loadTestConfig } from '../config/loader';
 import { AuthState } from '../oauth/middleware';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { getSystemRepo } from './repo';
 import { ReferenceTable, ReferenceTableRow } from './lookups/reference';
+import { getSystemRepo } from './repo';
 
 describe('Reference checks', () => {
   beforeAll(async () => {

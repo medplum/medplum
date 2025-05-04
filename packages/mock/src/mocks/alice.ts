@@ -1,4 +1,4 @@
-import { lazy, ContentType, createReference, WithId } from '@medplum/core';
+import { ContentType, createReference, lazy, WithId } from '@medplum/core';
 import { Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 
 export const TestOrganization: WithId<Organization> = {

@@ -10,8 +10,8 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
+import { Column, DeleteQuery } from '../sql';
 import { LookupTable, LookupTableRow } from './lookuptable';
-import { DeleteQuery, Column } from '../sql';
 
 const resourceTypes = ['Patient', 'Person', 'Practitioner', 'RelatedPerson'] as const;
 const resourceTypeSet = new Set(resourceTypes);

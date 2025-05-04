@@ -40,10 +40,10 @@ import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
-import { SelectQuery } from './sql';
-import { lookupTables } from './searchparameter';
 import { TokenTable } from './lookups/token';
+import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
+import { lookupTables } from './searchparameter';
+import { SelectQuery } from './sql';
 
 jest.mock('hibp');
 
