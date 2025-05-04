@@ -9,12 +9,10 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import {
-  IconCalendar,
   IconClipboardCheck,
   IconMail,
   IconPencil,
   IconTimeDuration0,
-  IconTimeDuration15,
   IconUser,
 } from '@tabler/icons-react';
 import { Suspense } from 'react';
@@ -69,17 +67,6 @@ export function App(): JSX.Element | null {
           title: 'Scheduling',
           links: [
             { icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' },
-            { icon: <IconTimeDuration0 />, label: 'New Appointment', href: '/Appointment/new' },
-            {
-              icon: <IconTimeDuration15 />,
-              label: 'Appointment Requests',
-              href: '/Appointment?_count=20&_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_offset=0&_sort=-_lastUpdated&status=proposed',
-            },
-            {
-              icon: <IconCalendar />,
-              label: 'Upcoming Appointments',
-              href: '/Appointment?_count=20&_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_offset=0&_sort=-_lastUpdated&status=booked',
-            },
           ],
         },
         {
