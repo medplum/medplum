@@ -275,8 +275,8 @@ Function StopAndDeleteOldMedplumServices
     ${EndIf}
 
     # Trim spaces from the service name
-    ${StrTrimNewLines} $CurrentLine $ServiceName
-    ${StrTrim} $ServiceName $ServiceName " "
+    ${Using:StrFunc} ${StrTrimNewLines} $CurrentLine $ServiceName
+    ${Using:StrFunc} ${StrTrim} $ServiceName $ServiceName " "
 
     DetailPrint "Processing service: $ServiceName"
 
