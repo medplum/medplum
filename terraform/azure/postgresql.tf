@@ -1,7 +1,3 @@
-resource "random_id" "db_random_id" {
-  byte_length = 2
-}
-
 resource "azurerm_private_dns_zone" "db" {
   name                = "db.private.postgres.database.azure.com"
   resource_group_name = var.resource_group_name
@@ -10,8 +6,8 @@ resource "azurerm_private_dns_zone" "db" {
   ]
 }
 
-resource "azurerm_private_dns_zone_virtual_network_link" "db-medplum-vnet" {
-  name                  = "medplum-db"
+resource "azurerm_private_dns_zone_virtual_network_link" "db_medplum_vnet" {
+  name                  = "medplum-${var.environment}-${var.deployment_id}-postgres-db"
   private_dns_zone_name = azurerm_private_dns_zone.db.name
   resource_group_name   = var.resource_group_name
   virtual_network_id    = azurerm_virtual_network.medplum_vnet.id
@@ -22,7 +18,7 @@ resource "random_password" "postgresql_password" {
   special          = true
   override_special = "!#$%&*()-_=+[]{}<>:?"
 }
-
+# 
 resource "azurerm_postgresql_flexible_server" "db" {
   auto_grow_enabled             = true
   backup_retention_days         = 30
@@ -31,7 +27,7 @@ resource "azurerm_postgresql_flexible_server" "db" {
   location                      = var.location
   private_dns_zone_id           = azurerm_private_dns_zone.db.id
   public_network_access_enabled = false
-  name                          = "medplum-db-${random_id.db_random_id.hex}"
+  name                          = "medplum-${var.environment}-${var.deployment_id}-postgres-db"
   resource_group_name           = var.resource_group_name
   sku_name                      = "B_Standard_B1ms" # "GP_Standard_D2s_v3"
   storage_mb                    = 32768
