@@ -402,8 +402,8 @@ describe('MedplumProvider', () => {
       expect(screen.getByText('Loading...')).toBeInTheDocument();
       expect(medplum.isLoading()).toEqual(true);
 
-      await expect(screen.findByText('Parent count: 2')).resolves.toBeInTheDocument();
-      expect(screen.getByText('Child count: 1')).toBeInTheDocument();
+      expect(await screen.findByText('Parent count: 2')).toBeInTheDocument();
+      expect(await screen.findByText('Child count: 1')).toBeInTheDocument();
       expect(medplum.isLoading()).toEqual(false);
       expect(mockFetchSpy).toHaveBeenCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
       expect(dispatchEventSpy).toHaveBeenCalledWith({ type: 'profileRefreshed' });
