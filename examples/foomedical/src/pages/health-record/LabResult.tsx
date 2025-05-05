@@ -1,6 +1,7 @@
 import { Box } from '@mantine/core';
 import { DiagnosticReport } from '@medplum/fhirtypes';
 import { DiagnosticReportDisplay, useMedplum } from '@medplum/react';
+import { JSX } from 'react';
 import { useParams } from 'react-router';
 import { InfoSection } from '../../components/InfoSection';
 

@@ -1,6 +1,6 @@
-import { MantineProvider, createTheme } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { createTheme, MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
+import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';

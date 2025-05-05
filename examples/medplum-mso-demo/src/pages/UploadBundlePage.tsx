@@ -1,12 +1,12 @@
-import { Button, Code, Stack, Text, Title, Box, ActionIcon, Alert, CopyButton } from '@mantine/core';
+import { ActionIcon, Alert, Box, Button, Code, CopyButton, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { Document, useMedplum } from '@medplum/react';
-import { normalizeErrorString } from '@medplum/core';
-import { useState } from 'react';
 import '@mantine/notifications/styles.css';
-import { IconCopy, IconCheck, IconAlertCircle } from '@tabler/icons-react';
-import { useAdminStatus } from '../utils/admin';
+import { normalizeErrorString } from '@medplum/core';
+import { Document, useMedplum } from '@medplum/react';
+import { IconAlertCircle, IconCheck, IconCopy } from '@tabler/icons-react';
+import { JSX, useState } from 'react';
 import { RESOURCES_BUNDLE } from '../data/core/sample-bundle';
+import { useAdminStatus } from '../utils/admin';
 
 /**
  * This page allows you to upload sample FHIR resources including 3 patients (A, B, and C) along with their

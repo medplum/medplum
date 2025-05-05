@@ -2,6 +2,7 @@ import { createReference } from '@medplum/core';
 import { Annotation } from '@medplum/fhirtypes';
 import { DrAliceSmith } from '@medplum/mock';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { AnnotationInput } from './AnnotationInput';
 

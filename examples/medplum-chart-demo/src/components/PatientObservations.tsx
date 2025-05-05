@@ -3,7 +3,7 @@ import { formatSearchQuery, Operator, SearchRequest } from '@medplum/core';
 import { Coding, Patient } from '@medplum/fhirtypes';
 import { SearchControl } from '@medplum/react';
 import { IconMenu2 } from '@tabler/icons-react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ObservationGraph } from './graphs/ObservationGraph';
 

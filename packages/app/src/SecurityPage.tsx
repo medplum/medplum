@@ -9,7 +9,7 @@ import {
 } from '@medplum/core';
 import { HumanName, UserConfiguration } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, Document, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 
 interface UserSession {

@@ -1,7 +1,8 @@
-import { Stack, Text, Card } from '@mantine/core';
+import { Card, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import { Practitioner, Encounter, CodeableConcept } from '@medplum/fhirtypes';
-import { ResourceInput, CodeableConceptInput, DateTimeInput } from '@medplum/react';
+import { CodeableConcept, Encounter, Practitioner } from '@medplum/fhirtypes';
+import { CodeableConceptInput, DateTimeInput, ResourceInput } from '@medplum/react';
+import { JSX } from 'react';
 
 interface VisitDetailsPanelProps {
   practitioner?: Practitioner;

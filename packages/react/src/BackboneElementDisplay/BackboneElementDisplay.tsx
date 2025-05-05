@@ -7,7 +7,7 @@ import {
   TypedValue,
 } from '@medplum/core';
 import { AccessPolicyResource } from '@medplum/fhirtypes';
-import { useContext, useMemo } from 'react';
+import { JSX, useContext, useMemo } from 'react';
 import { DEFAULT_IGNORED_NON_NESTED_PROPERTIES, DEFAULT_IGNORED_PROPERTIES } from '../constants';
 import { DescriptionList, DescriptionListEntry } from '../DescriptionList/DescriptionList';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';

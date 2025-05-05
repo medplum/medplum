@@ -1,41 +1,41 @@
-import { Stack, Box, Card, Text, Group, Flex, TextInput, Button, Menu, Textarea } from '@mantine/core';
+import { Box, Button, Card, Flex, Group, Menu, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { getReferenceString } from '@medplum/core';
 import {
-  Task,
-  ClinicalImpression,
-  Encounter,
   ChargeItem,
-  Coverage,
-  Organization,
-  Practitioner,
   Claim,
+  ClaimDiagnosis,
+  ClinicalImpression,
   CodeableConcept,
   Coding,
-  ClaimDiagnosis,
+  Coverage,
+  Encounter,
+  Organization,
+  Practitioner,
+  Task,
 } from '@medplum/fhirtypes';
 import { CodeableConceptInput, Loading, useMedplum } from '@medplum/react';
-import { Outlet, useParams } from 'react-router';
 import { IconCircleCheck, IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
-import { TaskPanel } from '../components/Task/TaskPanel';
-import { EncounterHeader } from '../components/Encounter/EncounterHeader';
-import { usePatient } from '../../hooks/usePatient';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
+import { Outlet, useParams } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
-import ChageItemPanel from '../components/ChargeItem/ChageItemPanel';
-import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { showErrorNotification } from '../../utils/notifications';
-import classes from './EncounterChart.module.css';
-import { getReferenceString } from '@medplum/core';
-import { createClaimFromEncounter } from '../../utils/claims';
-import { showNotification } from '@mantine/notifications';
+import { usePatient } from '../../hooks/usePatient';
 import { calculateTotalPrice, fetchAndApplyChargeItemDefinitions, getCptChargeItems } from '../../utils/chargeitems';
+import { createClaimFromEncounter } from '../../utils/claims';
 import { createSelfPayCoverage } from '../../utils/coverage';
+import { showErrorNotification } from '../../utils/notifications';
+import ChageItemPanel from '../components/ChargeItem/ChageItemPanel';
+import { EncounterHeader } from '../components/Encounter/EncounterHeader';
+import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
+import { TaskPanel } from '../components/Task/TaskPanel';
+import classes from './EncounterChart.module.css';
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
   const medplum = useMedplum();
   const patient = usePatient();
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [activeTab, setActiveTab] = useState<string>('notes');
   const [coverage, setCoverage] = useState<Coverage | undefined>();
   const [organization, setOrganization] = useState<Organization | undefined>();

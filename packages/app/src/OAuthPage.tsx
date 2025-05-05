@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { CodeChallengeMethod, normalizeErrorString } from '@medplum/core';
 import { ClientApplicationSignInForm } from '@medplum/fhirtypes';
 import { Logo, SignInForm, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
 import { getConfig } from './config';
 

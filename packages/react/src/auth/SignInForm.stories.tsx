@@ -1,5 +1,6 @@
 import { Title } from '@mantine/core';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Logo } from '../Logo/Logo';
 import { SignInForm } from './SignInForm';
 

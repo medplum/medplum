@@ -1,7 +1,7 @@
-import { useState } from 'react';
 import { getQuestionnaireAnswers } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm } from '@medplum/react';
+import { JSX, useState } from 'react';
 
 export function ScreeningQuestionnairePage(): JSX.Element {
   const [isSubmitted, setIsSubmitted] = useState(false);

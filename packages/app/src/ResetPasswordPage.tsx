@@ -12,7 +12,7 @@ import {
   OperationOutcomeAlert,
   useMedplum,
 } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { getConfig } from './config';
 

@@ -8,7 +8,7 @@ import {
   isEmpty,
   isPopulated,
 } from '@medplum/core';
-import { MouseEvent, useContext, useMemo, useState } from 'react';
+import { JSX, MouseEvent, useContext, useMemo, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
 import classes from '../ResourceArrayInput/ResourceArrayInput.module.css';

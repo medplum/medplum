@@ -9,7 +9,7 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum, usePrevious, useResource } from '@medplum/react-hooks';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import {
   buildInitialResponse,

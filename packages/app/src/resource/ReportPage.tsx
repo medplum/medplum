@@ -1,5 +1,6 @@
 import { DiagnosticReport, MeasureReport, ResourceType } from '@medplum/fhirtypes';
 import { DiagnosticReportDisplay, Document, MeasureReportDisplay, useResource } from '@medplum/react';
+import { JSX } from 'react';
 import { useParams } from 'react-router';
 
 export function ReportPage(): JSX.Element | null {

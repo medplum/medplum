@@ -1,13 +1,12 @@
-
 .completed {
-  background-color: var(--mantine-color-green-0) !important
+  background-color: var(--mantine-color-green-0) !important;
 }
 
 .ready {
-  background-color: var(--mantine-color-blue-0) !important
+  background-color: var(--mantine-color-blue-0) !important;
 }
 
-.menu { 
+.menu {
   padding: 8px;
   margin: -8px;
   cursor: pointer;
@@ -25,16 +24,15 @@
   min-width: 150px;
 }
 
-[data-mantine-color-scheme="dark"] .ready,
-[data-mantine-color-scheme="dark"] .completed {
+[data-mantine-color-scheme='dark'] .ready,
+[data-mantine-color-scheme='dark'] .completed {
   color: var(--mantine-color-dark-8);
 }
 
-
-[data-mantine-color-scheme="dark"] .panel {
+[data-mantine-color-scheme='dark'] .panel {
   background-color: var(--mantine-color-dark-8);
 }
 
-[data-mantine-color-scheme="light"] .panel {
+[data-mantine-color-scheme='light'] .panel {
   background-color: var(--mantine-color-gray-1);
 }

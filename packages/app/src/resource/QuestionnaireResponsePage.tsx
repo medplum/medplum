@@ -1,7 +1,7 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { Questionnaire } from '@medplum/fhirtypes';
 import { Document, SearchControl, useMedplum } from '@medplum/react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 export function QuestionnaireResponsePage(): JSX.Element {

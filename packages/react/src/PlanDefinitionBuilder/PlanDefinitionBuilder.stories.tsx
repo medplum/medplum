@@ -1,6 +1,6 @@
 import { useMedplum } from '@medplum/react-hooks';
 import { Meta } from '@storybook/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
   Covid19AssessmentQuestionnaire,

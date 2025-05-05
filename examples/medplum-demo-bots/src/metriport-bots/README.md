@@ -14,20 +14,20 @@ This folder contains a set of bots that integrate Medplum with Metriport. The in
 
 1. Create your [Medplum Access Policy](https://www.medplum.com/docs/access/access-policies#resource-type). An Access Policy is important because you want to make sure that the system sending webhooks only has the minimal set of permissions needed to function. Example below.
 
-    > [!NOTE]
-    > The following example grants access to create all resources using `\*`. For production environments, you might want to specify only a subset of resources (e.g., "Patient", "Observation") relevant to the data received from Metriport.
+   > [!NOTE]
+   > The following example grants access to create all resources using `\*`. For production environments, you might want to specify only a subset of resources (e.g., "Patient", "Observation") relevant to the data received from Metriport.
 
-    ```json
-    {
-      "resourceType": "AccessPolicy",
-      "name": "Metriport Webhook Access Policy",
-      "resource": [
-        {
-          "resourceType": "*"
-        }
-      ]
-    }
-    ```
+   ```json
+   {
+     "resourceType": "AccessPolicy",
+     "name": "Metriport Webhook Access Policy",
+     "resource": [
+       {
+         "resourceType": "*"
+       }
+     ]
+   }
+   ```
 
 2. Create a [ClientApplication](https://www.medplum.com/docs/auth/methods/client-credentials) in the [Admin Panel](https://app.medplum.com/admin/project) and apply the access policy created above. This ClientApplication will be used by Metriport to authenticate when sending webhooks.
 

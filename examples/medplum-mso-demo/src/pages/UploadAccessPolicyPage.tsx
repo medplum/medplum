@@ -1,12 +1,12 @@
-import { Button, Code, Stack, Text, Title, Box, ActionIcon, Alert, CopyButton } from '@mantine/core';
+import { ActionIcon, Alert, Box, Button, Code, CopyButton, Stack, Text, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
+import '@mantine/notifications/styles.css';
+import { normalizeErrorString } from '@medplum/core';
 import { AccessPolicy } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
-import { normalizeErrorString } from '@medplum/core';
-import { useEffect, useState } from 'react';
+import { IconAlertCircle, IconCheck, IconCopy } from '@tabler/icons-react';
+import { JSX, useEffect, useState } from 'react';
 import { MSO_ACCESS_POLICY } from '../data/core/access-policy';
-import '@mantine/notifications/styles.css';
-import { IconCopy, IconCheck, IconAlertCircle } from '@tabler/icons-react';
 import { useAdminStatus } from '../utils/admin';
 
 /**

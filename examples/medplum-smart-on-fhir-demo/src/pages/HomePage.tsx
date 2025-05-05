@@ -1,4 +1,5 @@
-import { Container, Title, Text, Button, Stack } from '@mantine/core';
+import { Button, Container, Stack, Text, Title } from '@mantine/core';
+import { JSX } from 'react';
 import {
   FHIR_SCOPE,
   MEDPLUM_AUTH_URL,

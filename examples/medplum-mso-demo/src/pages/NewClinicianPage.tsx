@@ -1,13 +1,13 @@
-import { Button, TextInput, Title, Stack, PasswordInput, MultiSelect, Alert, Text } from '@mantine/core';
-import { useMedplum, Document } from '@medplum/react';
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
-import { Organization, AccessPolicy } from '@medplum/fhirtypes';
+import { Alert, Button, MultiSelect, PasswordInput, Stack, Text, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
 import '@mantine/notifications/styles.css';
-import { useAdminStatus } from '../utils/admin';
+import { normalizeErrorString } from '@medplum/core';
+import { AccessPolicy, Organization } from '@medplum/fhirtypes';
+import { Document, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
+import { JSX, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { useAdminStatus } from '../utils/admin';
 
 interface NewClinicianForm {
   firstName: string;

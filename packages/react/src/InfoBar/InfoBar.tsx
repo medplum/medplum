@@ -1,5 +1,5 @@
 import { ScrollArea } from '@mantine/core';
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import classes from './InfoBar.module.css';
 
 export interface InfoBarProps {

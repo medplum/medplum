@@ -1,6 +1,6 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { ContactPoint } from '@medplum/fhirtypes';
-import { useContext, useMemo, useRef, useState } from 'react';
+import { JSX, useContext, useMemo, useRef, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
@@ -14,7 +14,7 @@ export function ContactPointInput(props: ContactPointInputProps): JSX.Element {
   const { elementsByPath, getExtendedProps } = useContext(ElementsContext);
   const [contactPoint, setContactPoint] = useState(props.defaultValue);
 
-  const ref = useRef<ContactPoint>();
+  const ref = useRef<ContactPoint>(contactPoint);
   ref.current = contactPoint;
 
   const [systemElement, useElement, valueElement] = useMemo(

@@ -1,5 +1,6 @@
 import { HumanName } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { HumanNameDisplay } from './HumanNameDisplay';
 

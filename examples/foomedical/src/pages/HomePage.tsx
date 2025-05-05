@@ -20,6 +20,7 @@ import { formatHumanName } from '@medplum/core';
 import { Patient, Practitioner } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react';
 import { IconChecklist, IconGift, IconSquareCheck } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import DoctorImage from '../img/homePage/doctor.svg';
 import HealthRecordImage from '../img/homePage/health-record.svg';

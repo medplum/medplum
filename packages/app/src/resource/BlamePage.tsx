@@ -1,5 +1,6 @@
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceBlame, useMedplum } from '@medplum/react';
+import { JSX } from 'react';
 import { useParams } from 'react-router';
 
 export function BlamePage(): JSX.Element | null {

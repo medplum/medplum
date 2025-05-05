@@ -1,5 +1,6 @@
 import { MedplumClient } from '@medplum/core';
 import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { ResourceTimeline, ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
 
 export interface DefaultResourceTimelineProps extends Pick<ResourceTimelineProps<Resource>, 'getMenu'> {

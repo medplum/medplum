@@ -1,6 +1,5 @@
 // Sets up MantineProvider for all tests
 // See: https://mantine.dev/guides/jest/
-
 import { MantineProvider } from '@mantine/core';
 import {
   RenderResult,
@@ -12,7 +11,7 @@ import {
   within,
 } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 
 export { act, fireEvent, screen, userEvent, waitFor, within };
 

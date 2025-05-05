@@ -1,8 +1,8 @@
 import {
-  indexSearchParameterBundle,
-  indexStructureDefinitionBundle,
   ContentType,
   getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, Encounter, Patient, SearchParameter } from '@medplum/fhirtypes';
@@ -11,9 +11,9 @@ import { randomUUID } from 'crypto';
 
 import { convertToTransactionBundle, handler } from './metriport-consolidated-data-webhook';
 import {
-  MetriportConsolidatedDataBundle,
   JaneSmithMedplumPatient,
   JaneSmithMetriportPatient,
+  MetriportConsolidatedDataBundle,
 } from './metriport-test-data';
 
 describe('Metriport Consolidated Data Webhook', () => {

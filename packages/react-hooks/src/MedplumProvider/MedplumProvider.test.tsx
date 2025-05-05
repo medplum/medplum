@@ -10,7 +10,7 @@ import {
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
 import { MockClient, MockFetchClient, createFakeJwt } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
-import { useEffect, useRef, useState } from 'react';
+import { JSX, useEffect, useRef, useState } from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { useMedplum, useMedplumContext, useMedplumNavigate, useMedplumProfile } from './MedplumProvider.context';
 

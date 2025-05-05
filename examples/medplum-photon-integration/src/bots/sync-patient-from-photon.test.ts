@@ -6,10 +6,10 @@ import { vi } from 'vitest';
 import { PhotonPatient, PhotonPatientAllergy, PhotonPrescription, PhotonProvider } from '../photon-types';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
 import {
-  getExistingPatient,
   createAllergies,
   createPatientResource,
   createPrescriptions,
+  getExistingPatient,
   getPrescriber,
   getStatusFromPhotonState,
   handler,

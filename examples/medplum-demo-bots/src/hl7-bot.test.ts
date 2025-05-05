@@ -1,9 +1,9 @@
 import { Hl7Message, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bot, Bundle, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
 import { handler } from './hl7-bot';
-import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 
 //To run these tests from the command line
 //npm t src/hl7-bot.test.ts

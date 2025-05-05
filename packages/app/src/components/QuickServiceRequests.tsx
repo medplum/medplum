@@ -3,7 +3,7 @@ import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@medplum/react';
 import cx from 'clsx';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { getPatient } from '../utils';
 import classes from './QuickServiceRequests.module.css';
 

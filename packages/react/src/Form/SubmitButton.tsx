@@ -1,5 +1,5 @@
 import { Button, ButtonProps } from '@mantine/core';
-import { useContext } from 'react';
+import { JSX, useContext } from 'react';
 import { FormContext } from './Form.context';
 
 export type SubmitButtonProps = Omit<ButtonProps, 'type' | 'loading'>;

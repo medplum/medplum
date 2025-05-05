@@ -26,14 +26,14 @@
     "@medplum/fhirtypes": "4.1.4",
     "@medplum/react-hooks": "4.1.4",
     "expo": "52.0.44",
-    "expo-status-bar": "2.2.0",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
+    "expo-status-bar": "2.2.3",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
     "react-native": "0.75.4",
     "react-native-web": "0.20.0"
   },
   "devDependencies": {
-    "@babel/core": "7.26.10",
+    "@babel/core": "7.27.1",
     "babel-preset-expo": "12.0.11",
     "typescript": "5.8.3"
   }

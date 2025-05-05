@@ -13,7 +13,7 @@ import {
 } from '@medplum/fhirtypes';
 import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
 import { IconAlertSquareRounded, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './EncounterModal.module.css';

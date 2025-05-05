@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Text, Group, Paper, Flex, ActionIcon, Button, Menu, Box, SegmentedControl } from '@mantine/core';
+import { ActionIcon, Box, Button, Flex, Group, Menu, Paper, SegmentedControl, Text } from '@mantine/core';
 import { Encounter, Practitioner } from '@medplum/fhirtypes';
-import { IconTrash, IconChevronDown, IconLock } from '@tabler/icons-react';
+import { IconChevronDown, IconLock, IconTrash } from '@tabler/icons-react';
+import { JSX, useState } from 'react';
 
 interface EncounterHeaderProps {
   encounter: Encounter;

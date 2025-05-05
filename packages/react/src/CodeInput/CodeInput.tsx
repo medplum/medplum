@@ -1,5 +1,5 @@
 import { ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 export interface CodeInputProps extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange'> {

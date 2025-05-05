@@ -4,7 +4,7 @@ import { ContentType, MedplumClient, PatchOperation, isUUID, normalizeErrorStrin
 import { Bot } from '@medplum/fhirtypes';
 import { sendCommand, useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
-import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { JSX, SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import classes from './BotEditor.module.css';
 import { BotRunner } from './BotRunner';
