@@ -33,6 +33,9 @@ InstallDir "$PROGRAMFILES64\${APP_NAME}"
 !include "LogicLib.nsh"
 !include "StrFunc.nsh"
 
+# Init StrStr fn
+${StrStr}
+
 RequestExecutionLevel admin
 
 ; Trim
