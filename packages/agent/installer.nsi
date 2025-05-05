@@ -249,6 +249,7 @@ Function StopAndDeleteOldMedplumServices
   Pop $ServicesList # Command output
 
   DetailPrint "Found services: $ServicesList"
+  Sleep 10000
 
   # Process all lines in the output
   StrCpy $LinePos 0
