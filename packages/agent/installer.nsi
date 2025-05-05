@@ -244,7 +244,7 @@ FunctionEnd
 
 Function StopAndDeleteOldMedplumServices
   # Get list of services
-  nsExec::ExecToStack 'sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent"'
+  nsExec::ExecToStack 'sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent" | findstr /v /i "SERVICE_NAME.*${SERVICE_NAME}"'
   Pop $0 # Return value
   Pop $ServicesList # Command output
 
