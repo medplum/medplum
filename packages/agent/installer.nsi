@@ -101,6 +101,7 @@ Var ProcessedList
 Var CurrentLine
 Var WorkingList
 Var TempStr
+Var PrefixPos
 Var LineLen
 Var TempLen
 Var CurrentLen
