@@ -31,6 +31,7 @@ InstallDir "$PROGRAMFILES64\${APP_NAME}"
 !include "nsDialogs.nsh"
 !include "x64.nsh"
 !include "LogicLib.nsh"
+!include "StrFunc.nsh"
 
 RequestExecutionLevel admin
 
