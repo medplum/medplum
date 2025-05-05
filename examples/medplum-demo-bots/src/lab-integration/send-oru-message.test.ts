@@ -155,179 +155,185 @@ describe('Send ORU Message to Partner', () => {
 
     // Create observations (lab results)
     const observations = [];
-    
+
     // Glucose observation
-    observations.push(await medplum.createResource({
-      resourceType: 'Observation',
-      status: 'final',
-      subject: createReference(patient),
-      basedOn: [createReference(serviceRequest)],
-      specimen: createReference(specimen),
-      category: [
-        {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-              code: 'laboratory',
-              display: 'Laboratory',
-            },
-          ],
-        },
-      ],
-      code: {
-        coding: [
+    observations.push(
+      await medplum.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        subject: createReference(patient),
+        basedOn: [createReference(serviceRequest)],
+        specimen: createReference(specimen),
+        category: [
           {
-            system: LOINC,
-            code: '2339-0',
-            display: 'Glucose',
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+                code: 'laboratory',
+                display: 'Laboratory',
+              },
+            ],
           },
         ],
-        text: 'Glucose',
-      },
-      valueQuantity: {
-        value: 95,
-        unit: 'mg/dL',
-        system: UCUM,
-        code: 'mg/dL',
-      },
-      referenceRange: [
-        {
-          low: {
-            value: 70,
-            unit: 'mg/dL',
-            system: UCUM,
-            code: 'mg/dL',
-          },
-          high: {
-            value: 99,
-            unit: 'mg/dL',
-            system: UCUM,
-            code: 'mg/dL',
-          },
-          text: '70 - 99 mg/dL',
+        code: {
+          coding: [
+            {
+              system: LOINC,
+              code: '2339-0',
+              display: 'Glucose',
+            },
+          ],
+          text: 'Glucose',
         },
-      ],
-      issued: '2023-04-16T10:00:00Z',
-    }));
+        valueQuantity: {
+          value: 95,
+          unit: 'mg/dL',
+          system: UCUM,
+          code: 'mg/dL',
+        },
+        referenceRange: [
+          {
+            low: {
+              value: 70,
+              unit: 'mg/dL',
+              system: UCUM,
+              code: 'mg/dL',
+            },
+            high: {
+              value: 99,
+              unit: 'mg/dL',
+              system: UCUM,
+              code: 'mg/dL',
+            },
+            text: '70 - 99 mg/dL',
+          },
+        ],
+        issued: '2023-04-16T10:00:00Z',
+      })
+    );
 
     // BUN observation
-    observations.push(await medplum.createResource({
-      resourceType: 'Observation',
-      status: 'final',
-      subject: createReference(patient),
-      basedOn: [createReference(serviceRequest)],
-      specimen: createReference(specimen),
-      category: [
-        {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-              code: 'laboratory',
-              display: 'Laboratory',
-            },
-          ],
-        },
-      ],
-      code: {
-        coding: [
+    observations.push(
+      await medplum.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        subject: createReference(patient),
+        basedOn: [createReference(serviceRequest)],
+        specimen: createReference(specimen),
+        category: [
           {
-            system: LOINC,
-            code: '3094-0',
-            display: 'BUN',
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+                code: 'laboratory',
+                display: 'Laboratory',
+              },
+            ],
           },
         ],
-        text: 'BUN',
-      },
-      valueQuantity: {
-        value: 18,
-        unit: 'mg/dL',
-        system: UCUM,
-        code: 'mg/dL',
-      },
-      referenceRange: [
-        {
-          low: {
-            value: 7,
-            unit: 'mg/dL',
-            system: UCUM,
-            code: 'mg/dL',
-          },
-          high: {
-            value: 20,
-            unit: 'mg/dL',
-            system: UCUM,
-            code: 'mg/dL',
-          },
-          text: '7 - 20 mg/dL',
+        code: {
+          coding: [
+            {
+              system: LOINC,
+              code: '3094-0',
+              display: 'BUN',
+            },
+          ],
+          text: 'BUN',
         },
-      ],
-      issued: '2023-04-16T10:00:00Z',
-    }));
+        valueQuantity: {
+          value: 18,
+          unit: 'mg/dL',
+          system: UCUM,
+          code: 'mg/dL',
+        },
+        referenceRange: [
+          {
+            low: {
+              value: 7,
+              unit: 'mg/dL',
+              system: UCUM,
+              code: 'mg/dL',
+            },
+            high: {
+              value: 20,
+              unit: 'mg/dL',
+              system: UCUM,
+              code: 'mg/dL',
+            },
+            text: '7 - 20 mg/dL',
+          },
+        ],
+        issued: '2023-04-16T10:00:00Z',
+      })
+    );
 
     // Cholesterol observation with high value
-    observations.push(await medplum.createResource({
-      resourceType: 'Observation',
-      status: 'final',
-      subject: createReference(patient),
-      basedOn: [createReference(serviceRequest)],
-      specimen: createReference(specimen),
-      category: [
-        {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
-              code: 'laboratory',
-              display: 'Laboratory',
-            },
-          ],
-        },
-      ],
-      code: {
-        coding: [
+    observations.push(
+      await medplum.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        subject: createReference(patient),
+        basedOn: [createReference(serviceRequest)],
+        specimen: createReference(specimen),
+        category: [
           {
-            system: LOINC,
-            code: '2093-3',
-            display: 'Cholesterol',
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+                code: 'laboratory',
+                display: 'Laboratory',
+              },
+            ],
           },
         ],
-        text: 'Cholesterol',
-      },
-      valueQuantity: {
-        value: 220,
-        unit: 'mg/dL',
-        system: UCUM,
-        code: 'mg/dL',
-      },
-      interpretation: [
-        {
+        code: {
           coding: [
             {
-              system: 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
-              code: 'H',
-              display: 'High',
+              system: LOINC,
+              code: '2093-3',
+              display: 'Cholesterol',
             },
           ],
-          text: 'High',
+          text: 'Cholesterol',
         },
-      ],
-      referenceRange: [
-        {
-          high: {
-            value: 200,
-            unit: 'mg/dL',
-            system: UCUM,
-            code: 'mg/dL',
+        valueQuantity: {
+          value: 220,
+          unit: 'mg/dL',
+          system: UCUM,
+          code: 'mg/dL',
+        },
+        interpretation: [
+          {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v3-ObservationInterpretation',
+                code: 'H',
+                display: 'High',
+              },
+            ],
+            text: 'High',
           },
-          text: '< 200 mg/dL',
-        },
-      ],
-      issued: '2023-04-16T10:00:00Z',
-      note: [
-        {
-          text: 'Levels above 200 mg/dL may indicate increased risk of heart disease.',
-        },
-      ],
-    }));
+        ],
+        referenceRange: [
+          {
+            high: {
+              value: 200,
+              unit: 'mg/dL',
+              system: UCUM,
+              code: 'mg/dL',
+            },
+            text: '< 200 mg/dL',
+          },
+        ],
+        issued: '2023-04-16T10:00:00Z',
+        note: [
+          {
+            text: 'Levels above 200 mg/dL may indicate increased risk of heart disease.',
+          },
+        ],
+      })
+    );
 
     // Create diagnostic report
     const diagnosticReport = await medplum.createResource({
@@ -361,14 +367,14 @@ describe('Send ORU Message to Partner', () => {
       ],
     });
 
-    Object.assign(ctx, { 
-      medplum, 
-      patient, 
-      orderer, 
-      specimen, 
-      serviceRequest, 
-      observations, 
-      diagnosticReport 
+    Object.assign(ctx, {
+      medplum,
+      patient,
+      orderer,
+      specimen,
+      serviceRequest,
+      observations,
+      diagnosticReport,
     });
   });
 
@@ -403,20 +409,13 @@ describe('Send ORU Message to Partner', () => {
     const specimen = ctx.specimen as Specimen;
     const orderer = ctx.orderer as Practitioner;
 
-    const oruMessage = createOruMessage(
-      diagnosticReport,
-      serviceRequest,
-      observations,
-      specimen,
-      patient,
-      orderer
-    );
+    const oruMessage = createOruMessage(diagnosticReport, serviceRequest, observations, specimen, patient, orderer);
 
     // Verify message exists
     expect(oruMessage).toBeDefined();
-    
+
     const messageString = oruMessage?.toString() || '';
-    
+
     expect(messageString).toBe(TEST_MESSAGE);
   });
 
@@ -452,4 +451,4 @@ OBR|1|ORD98765||PANEL-CHEM^Comprehensive Chemistry Panel^https://lab.medplum.com
 OBX|1|NM|2339-0^Glucose^http://loinc.org||95|mg/dL|70-99||||F|||20230416100000|||
 OBX|2|NM|3094-0^BUN^http://loinc.org||18|mg/dL|7-20||||F|||20230416100000|||
 OBX|3|NM|2093-3^Cholesterol^http://loinc.org||220|mg/dL|<200|H|||F|||20230416100000|||
-NTE|1||Levels above 200 mg/dL may indicate increased risk of heart disease.`
+NTE|1||Levels above 200 mg/dL may indicate increased risk of heart disease.`;
