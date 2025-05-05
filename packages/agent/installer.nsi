@@ -31,12 +31,10 @@ InstallDir "$PROGRAMFILES64\${APP_NAME}"
 !include "nsDialogs.nsh"
 !include "x64.nsh"
 !include "LogicLib.nsh"
-!include "StrFunc.nsh"
+!include "TextFunc.nsh"
 
-# Initialize string functions
-${StrLoc}
-${StrTok}
-${StrTrimNewLines}
+# From TextFunc
+!insertmacro Trim
 
 RequestExecutionLevel admin
 
@@ -51,10 +49,14 @@ Var agentId
 
 # Vars for Section StopAndDeleteOldMedplumServices
 Var ServicesList
-Var ServiceName
-Var LinePos
-Var NextLinePos
+Var ProcessedList
 Var CurrentLine
+Var WorkingList
+Var TempStr
+Var LineLen
+Var TempLen
+Var CurrentLen
+Var CurrentServiceName
 
 # The onInit handler is called when the installer is nearly finished initializing.
 # See: https://nsis.sourceforge.io/Reference/.onInit
@@ -243,65 +245,115 @@ Function UpgradeApp
 FunctionEnd
 
 Function StopAndDeleteOldMedplumServices
-  # Get list of services
-  nsExec::ExecToStack 'sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent" | findstr /v /i "SERVICE_NAME.*${SERVICE_NAME}"'
-  Pop $0 # Return value
-  Pop $ServicesList # Command output
-
-  DetailPrint "Found services: $ServicesList"
-  Sleep 10000
-
-  # Process all lines in the output
-  StrCpy $LinePos 0
-
-  ${Do}
-    # Find the next occurrence of "SERVICE_NAME:"
-    ${StrLoc} $0 $ServicesList "SERVICE_NAME:" $LinePos
-    ${If} $0 == ""
-      # No more services found
-      ${Break}
-    ${EndIf}
-
-    ; Update position for next iteration
-    IntOp $LinePos $0 + 13
-
-    # Find the next newline
-    ${StrLoc} $NextLinePos $ServicesList "$\r$\n" $LinePos
-    ${If} $NextLinePos == ""
-      # If we can't find a newline, we're at the last line
-      StrCpy $CurrentLine $ServicesList $LinePos ""
-    ${Else}
-      # Extract the current line
-      IntOp $1 $NextLinePos - $LinePos
-      StrCpy $CurrentLine $ServicesList $1 $LinePos
-    ${EndIf}
-
-    # Trim spaces from the service name
-    ${StrTrimNewLines} $CurrentLine $ServiceName
-
-    DetailPrint "Processing service: $ServiceName"
-
-    # Stop the service
-    DetailPrint "Stopping service: $ServiceName"
-    nsExec::ExecToStack 'net stop "$ServiceName"'
+    # Get list of services - simplified command without filtering
+    nsExec::ExecToStack 'cmd.exe -c "sc query type= service state= all | findstr /i \"SERVICE_NAME.MedplumAgent\" | findstr /v /i \"SERVICE_NAME.${SERVICE_NAME}\""'
     Pop $0 # Return value
-    Pop $1 # Output
-    DetailPrint "Stop result: $0"
+    Pop $ServicesList # Command output
 
-    # Delete the service
-    DetailPrint "Deleting service: $ServiceName"
-    nsExec::ExecToStack 'sc delete "$ServiceName"'
-    Pop $0 # Return value
-    Pop $1 # Output
-    DetailPrint "Delete result: $0"
+    DetailPrint "Raw services output: $ServicesList"
+    
+    # Create empty list for processed service names
+    StrCpy $ProcessedList ""
+    StrCpy $CurrentLine ""
+    StrCpy $WorkingList "$ServicesList"
+    
+    # Process the output line by line to remove SERVICE_NAME: prefix
+    ${Do}
+        # If no more text to process, exit loop
+        ${If} $WorkingList == ""
+            ${Break}
+        ${EndIf}
 
-    # Update position for next iteration
-    ${If} $NextLinePos == ""
-      ${Break}
-    ${Else}
-      IntOp $LinePos $NextLinePos + 2
-    ${EndIf}
-  ${Loop}
+        # Find position of next line break
+        ${StrStr} $TempStr "$WorkingList" "$\r$\n"
+
+        # If no more line breaks, process remaining text as the last line
+        ${If} $TempStr == ""
+            StrCpy $CurrentLine "$WorkingList"
+            StrCpy $WorkingList "" # Clear remaining text to exit after this iteration
+        ${Else}
+            # Extract current line (up to line break)
+            StrLen $LineLen "$WorkingList"
+            StrLen $TempLen "$TempStr"
+            IntOp $CurrentLen $LineLen - $TempLen
+            StrCpy $CurrentLine "$WorkingList" $CurrentLen
+            
+            # Remove processed line from working list
+            StrCpy $WorkingList "$TempStr" "" 2 # Skip the \r\n
+        ${EndIf}
+
+        # Skip empty lines
+        ${If} $CurrentLine == ""
+            ${Continue}
+        ${EndIf}
+
+        # Remove SERVICE_NAME: prefix if present
+        ${StrStr} $PrefixPos "$CurrentLine" "SERVICE_NAME:"
+        ${If} $PrefixPos != ""
+            StrCpy $CurrentLine "$CurrentLine" "" 12 # Skip "SERVICE_NAME:"
+        ${EndIf}
+
+        # Trim any leading/trailing spaces
+        ${Trim} $CurrentLine $CurrentLine
+
+        # Add to processed list if not empty
+        ${If} $CurrentLine != ""
+            ${If} $ProcessedList == ""
+                StrCpy $ProcessedList "$CurrentLine"
+            ${Else}
+                StrCpy $ProcessedList "$ProcessedList$\r$\n$CurrentLine"
+            ${EndIf}
+        ${EndIf}
+    ${Loop}
+
+    DetailPrint "Processed services: $ProcessedList"
+    StrCpy $WorkingList "$ProcessedList"
+
+    # Process each service in the filtered list
+    ${Do}
+        # If no more services to process, exit loop
+        ${If} $WorkingList == ""
+            DetailPrint "Finished cleaning up all old Medplum services"
+            ${Break}
+        ${EndIf}
+
+        # Find position of next line break
+        ${StrStr} $TempStr "$WorkingList" "$\r$\n"
+
+        # If no more line breaks, process remaining text as the last service
+        ${If} $TempStr == ""
+            StrCpy $CurrentServiceName "$WorkingList"
+            StrCpy $WorkingList "" # Clear remaining list to exit after this iteration
+        ${Else}
+            # Extract current service name
+            StrLen $LineLen "$WorkingList"
+            StrLen $TempLen "$TempStr"
+            IntOp $CurrentLen $LineLen - $TempLen
+            StrCpy $CurrentServiceName "$WorkingList" $CurrentLen
+            
+            # Remove processed service from working list
+            StrCpy $WorkingList "$TempStr" "" 2 # Skip the \r\n
+        ${EndIf}
+
+        # Skip empty service names
+        ${If} $CurrentServiceName == ""
+            ${Continue}
+        ${EndIf}
+
+        # Stop the service
+        DetailPrint "Stopping service: $CurrentServiceName"
+        nsExec::ExecToStack 'net stop "$CurrentServiceName"'
+        Pop $0 # Return value
+        Pop $1 # Output
+        DetailPrint "Stop result: $0"
+
+        # Delete the service
+        DetailPrint "Deleting service: $CurrentServiceName"
+        nsExec::ExecToStack 'sc delete "$CurrentServiceName"'
+        Pop $0 # Return value
+        Pop $1 # Output
+        DetailPrint "Delete result: $0"
+    ${Loop}
 FunctionEnd
 
 # Do the actual installation.
