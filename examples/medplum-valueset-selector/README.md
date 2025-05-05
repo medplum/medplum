@@ -7,6 +7,35 @@ This demo project showcases how to work with FHIR ValueSets in a React applicati
 
 ![ValueSet Search Demo](./assets/value-set.gif)
 
+## Getting Started
+
+If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
+
+[Fork](https://github.com/medplum/medplum-valueset-selector/fork) and clone the repo to your local machine.
+
+If you want to change any environment variables from the defaults, copy the `.env.defaults` file to `.env`
+
+```bash
+cp .env.defaults .env
+```
+
+And make the changes you need.
+
+Next, install the dependencies
+
+```bash
+npm install
+```
+
+Then, run the app
+
+```bash
+npm run dev
+```
+
+This app should run on `http://localhost:3000/`
+
+
 ## Features
 
 ### ValueSet Search

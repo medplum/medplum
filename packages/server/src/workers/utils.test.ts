@@ -1,11 +1,16 @@
 import { Subscription } from '@medplum/fhirtypes';
-import { addVerboseQueueLogging, DefaultQueueRegistry, isJobSuccessful } from './utils';
-import { withTestContext } from '../test.setup';
 import { Job, Queue, Worker } from 'bullmq';
 import EventEmitter from 'node:events';
+import { loadTestConfig } from '../config/loader';
 import { globalLogger } from '../logger';
+import { withTestContext } from '../test.setup';
+import { addVerboseQueueLogging, DefaultQueueRegistry, isJobSuccessful } from './utils';
 
 describe('worker utils', () => {
+  beforeAll(async () => {
+    await loadTestConfig();
+  });
+
   describe('isJobSuccessful', () => {
     test('Successful job with no custom codes', () => {
       const subscription: Subscription = {

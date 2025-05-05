@@ -1,7 +1,7 @@
 import {
-  SliceDefinitionWithTypes,
-  InternalSchemaElement,
   ElementsContextType,
+  InternalSchemaElement,
+  SliceDefinitionWithTypes,
   buildElementsContext,
   isPopulated,
 } from '@medplum/core';

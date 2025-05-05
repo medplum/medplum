@@ -6,8 +6,8 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
-import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
 
 const app = express();
 let accessToken: string;

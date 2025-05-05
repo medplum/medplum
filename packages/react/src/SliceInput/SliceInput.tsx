@@ -1,7 +1,7 @@
 import { Group, Stack, Text } from '@mantine/core';
 import {
-  ExtendedInternalSchemaElement,
   ElementsContextType,
+  ExtendedInternalSchemaElement,
   SliceDefinitionWithTypes,
   buildElementsContext,
   getPropertyDisplayName,

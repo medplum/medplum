@@ -1,5 +1,5 @@
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import sinon from 'sinon';
-import { ReactNode, useEffect, useMemo, useState, useRef } from 'react';
 import { MockDateContext, createGlobalTimer } from './MockDateWrapper.utils';
 
 export function MockDateWrapper({ children }: { children: ReactNode }): JSX.Element | null {

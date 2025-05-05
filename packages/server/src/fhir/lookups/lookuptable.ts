@@ -7,12 +7,12 @@ import {
   Conjunction,
   DeleteQuery,
   Disjunction,
+  escapeLikeString,
   Expression,
   InsertQuery,
   Negation,
   SelectQuery,
   SqlFunction,
-  escapeLikeString,
 } from '../sql';
 
 const lookupTableBatchSize = 5_000;

@@ -4,7 +4,7 @@ import { Pool, PoolClient } from 'pg';
 import { Column, DeleteQuery } from '../sql';
 import { LookupTable, LookupTableRow } from './lookuptable';
 
-interface AddressTableRow extends LookupTableRow {
+export interface AddressTableRow extends LookupTableRow {
   address: string | undefined;
   city: string | undefined;
   country: string | undefined;
@@ -128,6 +128,7 @@ export class AddressTable extends LookupTable {
           extracted.use) &&
         !result.some(
           (a) =>
+            a.resourceId === extracted.resourceId &&
             a.address === extracted.address &&
             a.city === extracted.city &&
             a.country === extracted.country &&

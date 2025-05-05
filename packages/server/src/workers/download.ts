@@ -14,8 +14,8 @@ import { Readable } from 'stream';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
-import { getBinaryStorage } from '../storage/loader';
 import { getLogger, globalLogger } from '../logger';
+import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
 import { queueRegistry, WorkerInitializer } from './utils';
 

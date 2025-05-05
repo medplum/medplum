@@ -19,6 +19,14 @@ It is recommended that you create a new Medplum project to run this demo. Follow
 
 Clone the repo to your local machine.
 
+If you want to change any environment variables from the defaults, copy the `.env.defaults` file to `.env`
+
+```bash
+cp .env.defaults .env
+```
+
+And make the changes you need.
+
 Next, install the dependencies.
 
 ```bash

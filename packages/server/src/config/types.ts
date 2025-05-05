@@ -62,14 +62,26 @@ export interface MedplumServerConfig {
     | 'graphql-introspection'
     | 'websocket-subscriptions'
   )[];
+  /** Number of HTTP requests per minute users can make by default; overridable by Project settings */
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
+  /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
+  defaultFhirInteractionLimit?: number;
 
   /** Max length of Bot AuditEvent.outcomeDesc when creating a FHIR Resource */
   maxBotLogLengthForResource?: number;
 
   /** Max length of Bot AuditEvent.outcomeDesc when logging to logger */
   maxBotLogLengthForLogs?: number;
+
+  /** Search strategy system repositories use when using token search parameters. */
+  systemRepositoryTokenReadStrategy?: 'unified-tokens-column' | 'token-tables';
+
+  /** Number of attempts for transactions that fail due to retry-able transaction errors */
+  transactionAttempts?: number;
+
+  /** Number of milliseconds to use as a base for exponential backoff in transaction retries */
+  transactionExpBackoffBaseDelayMs?: number;
 
   /** @deprecated */
   auditEventLogGroup?: string;

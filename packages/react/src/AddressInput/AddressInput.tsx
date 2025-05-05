@@ -1,8 +1,8 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Address } from '@medplum/fhirtypes';
 import { useContext, useMemo, useRef, useState } from 'react';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 function getLine(address: Address, index: number): string {
   return address.line && address.line.length > index ? address.line[index] : '';

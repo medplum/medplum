@@ -194,8 +194,10 @@ export function SchedulePage(): JSX.Element | null {
     return null;
   }
 
+  const height = window.innerHeight - 60;
+
   return (
-    <Box pos="relative" bg="white" p="md">
+    <Box pos="relative" bg="white" p="md" style={{ height }}>
       <Title order={1} mb="lg">
         My Schedule
       </Title>
@@ -218,7 +220,7 @@ export function SchedulePage(): JSX.Element | null {
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleSelectEvent}
         scrollToTime={new Date()} // Default scroll to current time
-        style={{ height: '100%' }}
+        style={{ height: height - 150 }}
         selectable
       />
 

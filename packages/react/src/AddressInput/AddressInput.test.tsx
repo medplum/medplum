@@ -1,7 +1,7 @@
 import { Address } from '@medplum/fhirtypes';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 import { AddressInput } from './AddressInput';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 const defaultProps: ComplexTypeInputProps<Address> = {
   name: 'a',

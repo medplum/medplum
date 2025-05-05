@@ -1,14 +1,14 @@
 import { Bundle, Claim } from '@medplum/fhirtypes';
+import express from 'express';
+import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
-import express from 'express';
-import request from 'supertest';
 
 const app = express();
 let accessToken: string;
 
-describe('CMS 1500 PDF Bot', () => {
+describe('CMS 1500 PDF', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -19,7 +19,49 @@ describe('CMS 1500 PDF Bot', () => {
     await shutdownApp();
   });
 
-  test('Fully answered CMS1500 pdf', async () => {
+  test('Post Request - Fully answered CMS1500 pdf', async () => {
+    const bundleRes = await request(app)
+      .post(`/fhir/R4`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send(fullAnswer);
+    expect(bundleRes.status).toBe(200);
+    expect(bundleRes.body.resourceType).toBe('Bundle');
+    expect(bundleRes.body.type).toBe('transaction-response');
+
+    const searchRes = await request(app)
+      .get(`/fhir/R4/Claim?identifier=example-claim-cms1500`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', 'application/fhir+json');
+    expect(searchRes.status).toBe(200);
+    expect(searchRes.body.resourceType).toBe('Bundle');
+    expect(searchRes.body.entry.length).toBeGreaterThan(0);
+
+    const claim = searchRes.body.entry[0].resource as Claim;
+    expect(claim.resourceType).toBe('Claim');
+    expect(claim.identifier?.some((id) => id.value === 'example-claim-cms1500')).toBe(true);
+
+    const response = await request(app)
+      .post(`/fhir/R4/Claim/$export`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Accept', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'resource',
+            resource: claim,
+          },
+        ],
+      });
+
+    expect(response).toBeDefined();
+    expect(response.status).toBe(200);
+    expect(response.body.resourceType).toBe('Media');
+    expect(response.body.content.contentType).toBe('application/pdf');
+  });
+
+  test('Get Request - Fully answered CMS1500 pdf', async () => {
     const bundleRes = await request(app)
       .post(`/fhir/R4`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -52,22 +94,26 @@ describe('CMS 1500 PDF Bot', () => {
     expect(response.body.content.contentType).toBe('application/pdf');
   });
 
-  test('Bad request - missing claim ID', async () => {
+  test('Bad request - claim not found', async () => {
     const response = await request(app)
-      .get(`/fhir/R4/Claim/$export`)
+      .get(`/fhir/R4/Claim/non-existent-id/$export`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', 'application/fhir+json');
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(400);
     expect(response.body.resourceType).toBe('OperationOutcome');
     expect(response.body.issue[0].severity).toBe('error');
   });
 
   test('Bad request - claim not found', async () => {
     const response = await request(app)
-      .get(`/fhir/R4/Claim/non-existent-id/$export`)
+      .post(`/fhir/R4/Claim/$export`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Accept', 'application/fhir+json');
+      .set('Accept', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'resource' }],
+      });
 
     expect(response.status).toBe(400);
     expect(response.body.resourceType).toBe('OperationOutcome');
@@ -647,7 +693,7 @@ export const fullAnswer: Bundle = {
               coding: [{ system: 'http://example.org/claim-item-category', code: 'EMG', display: 'Emergency' }],
             },
             modifier: [
-              { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/modifiers', code: 'x', display: 'None' }] },
+              { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/modifiers', code: 'XT', display: 'None' }] },
             ],
             diagnosisSequence: [1, 2],
             net: {
@@ -670,7 +716,7 @@ export const fullAnswer: Bundle = {
             servicedDate: '2024-05-15',
             sequence: 1,
             productOrService: {
-              coding: [{ system: 'http://hl7.org/fhir/ValueSet/service-uscls', code: '1201', display: 'Exam, recall' }],
+              coding: [{ system: 'http://hl7.org/fhir/ValueSet/service-uscls', code: '1200', display: 'Exam, recall' }],
             },
             locationAddress: {
               line: ['289 Johnson Street'],
@@ -681,7 +727,7 @@ export const fullAnswer: Bundle = {
               coding: [{ system: 'http://example.org/claim-item-category', code: 'EMG', display: 'Emergency' }],
             },
             modifier: [
-              { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/modifiers', code: 'x', display: 'None' }] },
+              { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/modifiers', code: 'XY', display: 'None' }] },
             ],
             diagnosisSequence: [1, 2],
             net: {

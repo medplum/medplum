@@ -1,9 +1,9 @@
 import { allOk, evalFhirPathTyped, toJsBoolean, toTypedValue } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
+import { ChargeItem, ChargeItemDefinition, Money, Reference } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
-import { ChargeItem, ChargeItemDefinition, Money, Reference } from '@medplum/fhirtypes';
 
 const operation = getOperationDefinition('ChargeItemDefinition', 'apply');
 

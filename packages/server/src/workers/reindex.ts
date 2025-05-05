@@ -48,7 +48,7 @@ export interface ReindexJobData extends PostDeployJobData {
 }
 
 export type ReindexResult =
-  | { count: number; cursor: string; nextTimestamp: string; err?: Error }
+  | { count: number; cursor: string; nextTimestamp: string; err?: Error; errSearchRequest?: SearchRequest }
   | { count: number; durationMs: number };
 
 export interface ReindexPostDeployMigration extends PostDeployMigration<ReindexJobData> {
@@ -149,21 +149,13 @@ export class ReindexJob {
         queueName: job?.queueName,
         token: job?.token,
         asyncJob: getReferenceString(asyncJob),
+        jobData: JSON.stringify(nextJobData),
       });
-      if (job?.token) {
-        this.logger.info('Reindex job delaying self', {
-          queueName: job.queueName,
-          token: job.token,
-          asyncJob: getReferenceString(asyncJob),
-          jobData: JSON.stringify(nextJobData),
-        });
+
+      if (job) {
         await job.updateData(nextJobData);
         await moveToDelayed(job, 'ReindexJob delayed since queue is closing');
       }
-
-      // This is one of those "this should never happen" errors. job.token is expected to always be set
-      // given the way we use bullmq.
-      throw new Error('Reindex job detected queue is closing, but job.token not available to delay the job');
     }
   }
 
@@ -260,7 +252,6 @@ export class ReindexJob {
           await conn.query(`SET statement_timeout TO 3600000`); // 1 hour
           bundle = await systemRepo.search(searchRequest, { maxResourceVersion });
         } finally {
-          console.log(`Setting statement timeout to ${this.defaultStatementTimeout}`);
           await conn.query(`SET statement_timeout TO ${this.defaultStatementTimeout}`);
         }
         if (bundle.entry?.length) {
@@ -276,7 +267,7 @@ export class ReindexJob {
         }
       });
     } catch (err: any) {
-      return { count: newCount, cursor, nextTimestamp, err };
+      return { count: newCount, cursor, nextTimestamp, err, errSearchRequest: searchRequest };
     }
 
     if (cursor) {
@@ -428,9 +419,13 @@ function formatReindexResult(result: ReindexResult, resourceType: string): Param
     const parts: ParametersParameter[] = [
       { name: 'resourceType', valueCode: resourceType },
       { name: 'error', valueString: normalizeErrorString(result.err) },
+      { name: 'stack', valueString: result.err.stack },
     ];
     if (result.nextTimestamp) {
       parts.push({ name: 'nextTimestamp', valueDateTime: result.nextTimestamp });
+    }
+    if (result.errSearchRequest) {
+      parts.push({ name: 'errSearchRequest', valueString: JSON.stringify(result.errSearchRequest) });
     }
     return {
       name: 'result',

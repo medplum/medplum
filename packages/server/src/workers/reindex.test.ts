@@ -22,6 +22,7 @@ import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { SelectQuery } from '../fhir/sql';
+import { globalLogger, systemLogger } from '../logger';
 import { createTestProject, withTestContext } from '../test.setup';
 import {
   addReindexJob,
@@ -33,7 +34,6 @@ import {
   ReindexJobData,
 } from './reindex';
 import { queueRegistry } from './utils';
-import { systemLogger } from '../logger';
 
 describe('Reindex Worker', () => {
   let repo: Repository;
@@ -249,6 +249,8 @@ describe('Reindex Worker', () => {
               name: 'error',
               valueString: 'Failed to search systemRepo',
             },
+            { name: 'stack', valueString: expect.stringContaining('Failed to search systemRepo') },
+            { name: 'errSearchRequest', valueString: expect.stringContaining('"resourceType":"ValueSet"') },
           ]),
         },
       ]);
@@ -371,21 +373,30 @@ describe('Reindex Worker', () => {
         request: '/admin/super/reindex',
       });
 
-      // Create two patients, one with lastUpdated before the filter and one after
+      // lastUpdated before the greater than or equal filter should NOT be reindexed
       await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         meta: { lastUpdated: '1999-12-31T00:00:00Z' },
         identifier: [{ system: idSystem, value: mrn }],
       });
+
+      // lastUpdated matching the greater than or equal filter should be reindexed
       await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
-        meta: { lastUpdated: '2001-12-31T00:00:00Z' },
+        meta: { lastUpdated: '2000-01-01T00:00:00Z' },
+        identifier: [{ system: idSystem, value: mrn }],
+      });
+
+      // lastUpdated matching the less than filter should NOT be reindexed
+      await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { lastUpdated: '2001-01-01T00:00:00Z' },
         identifier: [{ system: idSystem, value: mrn }],
       });
 
       const resourceTypes = ['Patient'] as ResourceType[];
       const searchFilter = parseSearchRequest(
-        `Patient?identifier=${idSystem}|${mrn}&_lastUpdated=gt2000-01-01T00:00:00Z`
+        `Patient?identifier=${idSystem}|${mrn}&_lastUpdated=ge2000-01-01T00:00:00Z&_lastUpdated=lt2001-01-01T00:00:00Z`
       );
 
       const jobData = prepareReindexJobData(resourceTypes, asyncJob.id, searchFilter);
@@ -616,6 +627,8 @@ describe('Job cancellation', () => {
       }
 
       const isClosingSpy = jest.spyOn(queueRegistry, 'isClosing').mockReturnValue(true);
+      const globalErrorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => {});
+
       const jobData = prepareReindexJobData(['MedicinalProductContraindication'], originalJob.id);
       const job = new Job(queue, 'ReindexJob', jobData, { attempts: 55 });
       // job.token generally gets set deep in the internals of bullmq, but we mock the module
@@ -645,9 +658,13 @@ describe('Job cancellation', () => {
       if (jobToken) {
         expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
         expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), jobToken);
+        expect(globalErrorSpy).not.toHaveBeenCalled();
       } else {
         expect(job.moveToDelayed).not.toHaveBeenCalled();
+        expect(globalErrorSpy).toHaveBeenCalledTimes(1);
       }
+
+      globalErrorSpy.mockRestore();
     })
   );
 
@@ -687,6 +704,8 @@ describe('Job cancellation', () => {
 
       const isIneligible = minReindexWorkerVersion && REINDEX_WORKER_VERSION < minReindexWorkerVersion;
 
+      const globalErrorSpy = jest.spyOn(globalLogger, 'error').mockImplementation(() => {});
+
       const result = await new ReindexJob().execute(job, jobData);
       expect(result).toBe(isIneligible ? 'ineligible' : 'finished');
 
@@ -715,13 +734,17 @@ describe('Job cancellation', () => {
         if (jobToken) {
           expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
           expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), jobToken);
+          expect(globalErrorSpy).not.toHaveBeenCalled();
         } else {
           expect(job.moveToDelayed).not.toHaveBeenCalled();
+          expect(globalErrorSpy).toHaveBeenCalledTimes(1);
         }
       } else {
         expect(threw).toBeUndefined();
         expect(job.moveToDelayed).not.toHaveBeenCalled();
+        expect(globalErrorSpy).not.toHaveBeenCalled();
       }
+      globalErrorSpy.mockRestore();
     }
   );
 

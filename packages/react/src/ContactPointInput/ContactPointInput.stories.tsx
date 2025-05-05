@@ -1,10 +1,10 @@
+import { buildElementsContext } from '@medplum/core';
 import { ContactPoint } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
-import { ContactPointInput } from './ContactPointInput';
-import { buildElementsContext } from '@medplum/core';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { ContactPointInput } from './ContactPointInput';
 
 export default {
   title: 'Medplum/ContactPointInput',

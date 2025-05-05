@@ -14,7 +14,7 @@ import {
   initDatabase,
   releaseAdvisoryLock,
 } from './database';
-import { GetVersionSql, GetDataVersionSql } from './migration-sql';
+import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 
 describe('Database config', () => {
   let poolSpy: jest.SpyInstance<pg.Pool, [config?: pg.PoolConfig | undefined]>;

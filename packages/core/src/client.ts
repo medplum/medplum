@@ -490,6 +490,8 @@ export interface BotEvent<T = Resource | Hl7Message | string | Record<string, an
   readonly input: T;
   readonly secrets: Record<string, ProjectSetting>;
   readonly traceId?: string;
+  /** Headers from the original request, when invoked by HTTP request */
+  readonly headers?: Record<string, string | string[] | undefined>;
 }
 
 export interface InviteRequest {
@@ -3905,7 +3907,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns A Promise which resolves to the `CurrentContext` for the given topic.
    */
   async fhircastGetContext(topic: string): Promise<CurrentContext> {
-    return this.get(`${this.fhircastHubUrl}/${topic}`);
+    return this.get(`${this.fhircastHubUrl}/${topic}`, { cache: 'no-cache' });
   }
 
   /**

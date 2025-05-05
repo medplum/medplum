@@ -1,4 +1,4 @@
-import { ContentType, getReferenceString, unauthorized } from '@medplum/core';
+import { ContentType, forbidden, getReferenceString } from '@medplum/core';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -246,7 +246,7 @@ describe('On Behalf Of', () => {
       expect(res6.status).toBe(404);
     }));
 
-  test('Unauthorized for non-admin', () =>
+  test('Forbidden for non-admin', () =>
     withTestContext(async () => {
       // Create a project with a non-admin user
       const testAccount1 = await createTestProject({
@@ -267,11 +267,11 @@ describe('On Behalf Of', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount2.profile))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
-      expect(res1.status).toBe(401);
-      expect(res1.body).toMatchObject(unauthorized);
+      expect(res1.status).toBe(403);
+      expect(res1.body).toMatchObject(forbidden);
     }));
 
-  test('Unauthorized for cross project', () =>
+  test('Forbidden for cross project', () =>
     withTestContext(async () => {
       const adminAccount1 = await createTestProject({
         withClient: true,
@@ -297,7 +297,7 @@ describe('On Behalf Of', () => {
         .set('X-Medplum-On-Behalf-Of', getReferenceString(adminAccount2.client))
         .set('Content-Type', ContentType.FHIR_JSON)
         .send({ resourceType: 'Patient' });
-      expect(res1.status).toBe(401);
-      expect(res1.body).toMatchObject(unauthorized);
+      expect(res1.status).toBe(403);
+      expect(res1.body).toMatchObject(forbidden);
     }));
 });

@@ -7,9 +7,9 @@ import {
   HTTP_HL7_ORG,
 } from '@medplum/core';
 import { Address, Claim, HumanName, Practitioner, RelatedPerson } from '@medplum/fhirtypes';
+import path from 'path';
 import { Content, TDocumentDefinitions } from 'pdfmake/interfaces';
 import { getAuthenticatedContext } from '../../../context';
-import path from 'path';
 
 const PAGE_WIDTH = 612;
 const PAGE_HEIGHT = 792;
@@ -248,8 +248,8 @@ export async function getClaimPDFDocDefinition(claim: Claim): Promise<TDocumentD
           createCheckmark(item.category?.coding?.[0].code === 'EMG', 172, y),
 
           // 24D. Procedures, services, or supplies
-          createText(formatCodeableConcept(item.productOrService), 194, y),
-          createText(formatCodeableConcept(item.modifier?.[0]), 246, y),
+          createText(item.productOrService?.coding?.map((code) => code.code).join(', '), 194, y),
+          createText(item.modifier?.[0]?.coding?.map((code) => code.code).join(', '), 246, y),
 
           // 24E. Diagnosis pointer
           createText('', 335, y),

@@ -1,10 +1,10 @@
+import { ContentType } from '@medplum/core';
+import { ClientApplication, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
+import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject } from '../../test.setup';
-import { ContentType } from '@medplum/core';
-import request from 'supertest';
-import { ClientApplication, Parameters } from '@medplum/fhirtypes';
 
 describe('ClientApplication $rotate-secret', () => {
   const app = express();

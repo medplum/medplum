@@ -9,10 +9,10 @@ import {
   SearchRequest,
 } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { SearchControlField } from './SearchControlField';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 const searchParamToOperators: Record<string, Operator[]> = {
   string: [Operator.EQUALS, Operator.NOT, Operator.CONTAINS, Operator.EXACT],
@@ -244,6 +244,18 @@ function addDayFilter(definition: SearchRequest, field: string, delta: number): 
   endTime.setTime(endTime.getTime() - 1);
 
   return addDateFilterBetween(definition, field, startTime, endTime);
+}
+
+/**
+ * Adds a filter that constrains the specified field to "next 24 hours".
+ * @param definition - The original search request.
+ * @param field - The field key name.
+ * @returns The updated search request.
+ */
+export function addNext24HoursFilter(definition: SearchRequest, field: string): SearchRequest {
+  const now = new Date();
+  const endTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  return addDateFilterBetween(definition, field, now, endTime);
 }
 
 /**

@@ -1,9 +1,9 @@
+import { buildElementsContext } from '@medplum/core';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
-import { PeriodInput } from './PeriodInput';
-import { buildElementsContext } from '@medplum/core';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { PeriodInput } from './PeriodInput';
 
 export default {
   title: 'Medplum/PeriodInput',

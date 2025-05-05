@@ -27,6 +27,7 @@ export const EncounterModal = (): JSX.Element => {
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [status, setStatus] = useState<Encounter['status'] | undefined>();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleCreateEncounter = async (): Promise<void> => {
     if (!patient || !encounterClass || !serviceType || !status) {
@@ -38,6 +39,8 @@ export const EncounterModal = (): JSX.Element => {
       });
       return;
     }
+
+    setIsLoading(true);
 
     const encounterData: Encounter = {
       resourceType: 'Encounter',
@@ -117,6 +120,8 @@ export const EncounterModal = (): JSX.Element => {
         title: 'Error',
         message: normalizeErrorString(error),
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -254,7 +259,7 @@ export const EncounterModal = (): JSX.Element => {
         </Box>
 
         <Box className={classes.footer} h={70} p="md">
-          <Button fullWidth={false} onClick={handleCreateEncounter}>
+          <Button fullWidth={false} onClick={handleCreateEncounter} loading={isLoading} disabled={isLoading}>
             Create Encounter
           </Button>
         </Box>

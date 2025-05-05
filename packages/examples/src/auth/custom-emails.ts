@@ -1,6 +1,6 @@
 // start-block customEmails
 import { BotEvent, getDisplayString, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
-import { UserSecurityRequest, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { ProjectMembership, Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<UserSecurityRequest>): Promise<any> {
   // This Bot executes on every new UserSecurityRequest resource.
