@@ -241,8 +241,8 @@ export abstract class FhirRepository<TClient = unknown> {
           throw new OperationOutcomeError(multipleMatches);
         }
 
-        resource = await this.createResource(resource, options);
-        return { resource, outcome: created };
+        const createdResource = await this.createResource(resource, options);
+        return { resource: createdResource, outcome: created };
       },
       { serializable: true } // Requires strong transactional guarantees to ensure unique resource creation
     );
@@ -270,8 +270,8 @@ export abstract class FhirRepository<TClient = unknown> {
               badRequest('Cannot perform create as update with client-assigned ID', resource.resourceType + '.id')
             );
           }
-          resource = await this.createResource(resource, options);
-          return { resource, outcome: created };
+          const createdResource = await this.createResource(resource, options);
+          return { resource: createdResource, outcome: created };
         } else if (matches.length > 1) {
           throw new OperationOutcomeError(multipleMatches);
         }
@@ -283,9 +283,8 @@ export abstract class FhirRepository<TClient = unknown> {
           );
         }
 
-        resource.id = existing.id;
-        resource = await this.updateResource(resource, options);
-        return { resource, outcome: allOk };
+        const updated = await this.updateResource({ ...resource, id: existing.id }, options);
+        return { resource: updated, outcome: allOk };
       },
       { serializable: true }
     );

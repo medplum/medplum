@@ -43,10 +43,6 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
     });
   }, [props.visible, props.search.resourceType]);
 
-  if (!props.visible) {
-    return null;
-  }
-
   function handleChange(newFields: string[]): void {
     setState({ search: { ...state.search, fields: newFields } });
   }

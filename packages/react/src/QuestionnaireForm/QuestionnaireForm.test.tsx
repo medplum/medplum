@@ -2010,6 +2010,51 @@ describe('QuestionnaireForm', () => {
     expect(answers3['q2']).toMatchObject({ valueBoolean: false });
   });
 
+  test('Questionnaire CalculatedExpression failed to evaluate expression', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'temperature-threshold',
+        title: 'Temperature Threshold Check',
+        item: [
+          {
+            id: 'id-1',
+            linkId: 'q1',
+            type: 'string',
+            text: 'Fahrenheit',
+          },
+          {
+            id: 'id-2',
+            linkId: 'q2',
+            type: 'boolean',
+            text: 'Is temperature over 120?',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                valueExpression: {
+                  language: 'text/fhirpath',
+                  expression: '%fail',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '125' } });
+    });
+
+    expect(
+      screen.getByText('Expression evaluation failed: FhirPathError on "%fail": Error: Undefined variable %fail')
+    ).toBeInTheDocument();
+  });
+
   test('Questionnaire CalculatedExpression with nested groups', async () => {
     const onSubmit = jest.fn();
 

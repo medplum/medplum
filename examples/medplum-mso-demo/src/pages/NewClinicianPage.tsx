@@ -104,6 +104,7 @@ export function NewClinicianPage(): JSX.Element {
           access,
           accessPolicy,
         },
+        scope: 'project',
       });
 
       showNotification({

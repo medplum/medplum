@@ -1,10 +1,10 @@
+import { buildElementsContext } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
 import { Document } from '../Document/Document';
-import { HumanNameInput } from './HumanNameInput';
-import { buildElementsContext } from '@medplum/core';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { HumanNameInput } from './HumanNameInput';
 
 export default {
   title: 'Medplum/HumanNameInput',

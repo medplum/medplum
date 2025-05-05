@@ -1,11 +1,11 @@
 import { Operator, WithId } from '@medplum/core';
-import { InsurancePlan, Patient, Location, ResourceType, Resource, Address } from '@medplum/fhirtypes';
+import { Address, InsurancePlan, Location, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
-import { PoolClient } from 'pg';
 import { AddressTable, AddressTableRow } from './address';
 
 describe('Address Lookup Table', () => {

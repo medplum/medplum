@@ -5,8 +5,8 @@ import { sendEmailViaSes } from '../cloud/aws/email';
 import { getConfig } from '../config/loader';
 import { MedplumSmtpConfig } from '../config/types';
 import { Repository } from '../fhir/repo';
-import { getBinaryStorage } from '../storage/loader';
 import { globalLogger } from '../logger';
+import { getBinaryStorage } from '../storage/loader';
 import { getFromAddress } from './utils';
 
 /**

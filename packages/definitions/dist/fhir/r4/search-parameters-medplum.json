@@ -1286,6 +1286,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Flag-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Flag-status",
+        "url": "https://medplum.com/fhir/SearchParameter/Flag-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "active | inactive | entered-in-error",
+        "code": "status",
+        "base": ["Flag"],
+        "type": "token",
+        "expression": "Flag.status"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/AsyncJob-type",
       "resource": {
         "resourceType": "SearchParameter",
@@ -1309,7 +1326,7 @@
         "id": "AsyncJob-status",
         "url": "https://medplum.com/fhir/SearchParameter/AsyncJob-status",
         "version": "4.0.1",
-        "name": "type",
+        "name": "status",
         "status": "draft",
         "publisher": "Medplum",
         "description": "Search for AsyncJob by status",

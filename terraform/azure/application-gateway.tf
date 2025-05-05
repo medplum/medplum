@@ -1,17 +1,17 @@
 resource "azurerm_public_ip" "medplum_app" {
-  name                = "medplum-app-ip"
+  name                = "medplum-${var.environment}-${var.deployment_id}-app-ip"
   resource_group_name = var.resource_group_name
   location            = var.location
   allocation_method   = "Static"
   sku                 = "Standard"
 }
 
-output "api_ip" {
+output "api-ip" {
   value = azurerm_public_ip.medplum_app.ip_address
 }
 
 resource "azurerm_application_gateway" "medplum_appgw" {
-  name                = "medplum-appgateway"
+  name                = "medplum-${var.environment}-${var.deployment_id}-appgateway"
   resource_group_name = var.resource_group_name
   location            = var.location
 
@@ -22,26 +22,26 @@ resource "azurerm_application_gateway" "medplum_appgw" {
   }
 
   gateway_ip_configuration {
-    name      = "my-gateway-ip-configuration"
+    name      = "medplum-${var.environment}-${var.deployment_id}-gateway-ip-configuration"
     subnet_id = azurerm_subnet.medplum_appgw_subnet.id
   }
 
   frontend_port {
-    name = "medplum-frontend-port"
+    name = "medplum-${var.environment}-${var.deployment_id}-frontend-port"
     port = 80
   }
 
   frontend_ip_configuration {
-    name                 = "medplum-frontend-ip"
+    name                 = "medplum-${var.environment}-${var.deployment_id}-frontend-ip"
     public_ip_address_id = azurerm_public_ip.medplum_app.id
   }
 
   backend_address_pool {
-    name = "medplum-backend-pool"
+    name = "medplum-${var.environment}-${var.deployment_id}-backend-pool"
   }
 
   backend_http_settings {
-    name                  = "medplum-http-settings"
+    name                  = "medplum-${var.environment}-${var.deployment_id}-http-settings"
     cookie_based_affinity = "Enabled"
     # path                  = "/path1/"
     port            = 80
@@ -50,19 +50,19 @@ resource "azurerm_application_gateway" "medplum_appgw" {
   }
 
   http_listener {
-    name                           = "medplum-listener"
-    frontend_ip_configuration_name = "medplum-frontend-ip"
-    frontend_port_name             = "medplum-frontend-port"
+    name                           = "medplum-${var.environment}-${var.deployment_id}-listener"
+    frontend_ip_configuration_name = "medplum-${var.environment}-${var.deployment_id}-frontend-ip"
+    frontend_port_name             = "medplum-${var.environment}-${var.deployment_id}-frontend-port"
     protocol                       = "Http"
   }
 
   request_routing_rule {
-    name                       = "medplum-rule"
+    name                       = "medplum-${var.environment}-${var.deployment_id}-rule"
     priority                   = 9
     rule_type                  = "Basic"
-    http_listener_name         = "medplum-listener"
-    backend_address_pool_name  = "medplum-backend-pool"
-    backend_http_settings_name = "medplum-http-settings"
+    http_listener_name         = "medplum-${var.environment}-${var.deployment_id}-listener"
+    backend_address_pool_name  = "medplum-${var.environment}-${var.deployment_id}-backend-pool"
+    backend_http_settings_name = "medplum-${var.environment}-${var.deployment_id}-http-settings"
   }
 
   lifecycle {

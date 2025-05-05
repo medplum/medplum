@@ -2,7 +2,6 @@ import { createReference } from '@medplum/core';
 import { DiagnosticReport, Observation } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen } from '../test-utils/render';
 import { MemoryRouter } from 'react-router';
 import {
   HealthGorillaDiagnosticReport,
@@ -12,6 +11,7 @@ import {
   HealthGorillaObservationGroup2,
 } from '../stories/healthgorilla';
 import { CreatinineObservation, ExampleReport } from '../stories/referenceLab';
+import { act, render, screen } from '../test-utils/render';
 import { DiagnosticReportDisplay, DiagnosticReportDisplayProps } from './DiagnosticReportDisplay';
 
 const syntheaReport: DiagnosticReport = {

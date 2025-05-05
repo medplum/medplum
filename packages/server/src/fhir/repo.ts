@@ -70,6 +70,7 @@ import { Operation } from 'rfc6902';
 import { v7 } from 'uuid';
 import { getConfig } from '../config/loader';
 import { r4ProjectId } from '../constants';
+import { tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
@@ -94,6 +95,7 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { TokenTable } from './lookups/token';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
@@ -112,11 +114,11 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
-import { tryGetRequestContext } from '../context';
 import { buildTokenColumns } from './token-column';
-import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
+import { TokenColumnsFeature, isLegacyTokenColumnSearchParameter } from './tokens';
 
-const transactionAttempts = 2;
+const defaultTransactionAttempts = 2;
+const defaultExpBackoffBaseDelayMs = 50;
 const retryableTransactionErrorCodes = ['40001'];
 
 /**
@@ -981,6 +983,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resources - The resource(s) to reindex.
    */
   async reindexResources<T extends Resource>(conn: PoolClient, resources: WithId<T>[]): Promise<void> {
+    if (!this.isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+
     // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < resources.length; i++) {
@@ -1172,6 +1178,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(db);
       await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
     });
+    incrementCounter(
+      `medplum.fhir.interaction.delete.count`,
+      { attributes: { resourceType, result: 'success' } },
+      ids.length
+    );
   }
 
   /**
@@ -1365,9 +1376,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
    * 3. 04/09/25 - Added columns for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
    * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
-   *
+   * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
    */
-  static readonly VERSION: number = 4;
+  static readonly VERSION: number = 5;
 
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
@@ -1774,6 +1785,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return undefined;
   }
 
+  private disableTokenTableWrites: boolean | undefined;
+  private skipTokenTableWrite(): boolean {
+    if (this.disableTokenTableWrites === undefined) {
+      const project = this.currentProject();
+      const maybeWriteBoolean = project?.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')?.valueBoolean;
+      // If the Project.systemSetting exists, use its value. Otherwise, default to false
+      this.disableTokenTableWrites = maybeWriteBoolean ?? false;
+    }
+    return this.disableTokenTableWrites;
+  }
+
   /**
    * Writes resources values to the lookup tables.
    * @param client - The database client inside the transaction.
@@ -1782,6 +1804,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
+      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
+        continue;
+      }
       await lookupTable.indexResource(client, resource, create);
     }
   }
@@ -1792,6 +1817,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     create: boolean
   ): Promise<void> {
     for (const lookupTable of lookupTables) {
+      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
+        continue;
+      }
       await lookupTable.batchIndexResources(client, resources, create);
     }
   }
@@ -2324,8 +2352,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     callback: (client: PoolClient) => Promise<TResult>,
     options?: { serializable: boolean }
   ): Promise<TResult> {
+    const config = getConfig();
+    const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
     let error: OperationOutcomeError | undefined;
-    for (let i = 0; i < transactionAttempts; i++) {
+    for (let attempt = 0; attempt < transactionAttempts; attempt++) {
       try {
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
         const result = await callback(client);
@@ -2343,6 +2373,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       } finally {
         this.endTransaction();
+      }
+
+      if (attempt + 1 < transactionAttempts) {
+        const baseDelayMs = config.transactionExpBackoffBaseDelayMs ?? defaultExpBackoffBaseDelayMs;
+        // Attempts are 0-indexed, so first wait after first attempt will be somewhere between 75% and 100% of baseDelayMs
+        // This calculation results in something like this for the default values:
+        // Attempt 1: 50 * (2^0) = 50 * [0.75, 1] = **[37.5, 50] ms**
+        // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
+        // etc...
+        const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.25));
+        await sleep(delayMs);
       }
     }
 

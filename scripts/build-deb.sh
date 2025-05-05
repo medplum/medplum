@@ -52,6 +52,7 @@ done
 
 # Copy root package.json
 cp package.json "$LIB_DIR"
+cp package-lock.json "$LIB_DIR"
 
 # Create the server config
 mkdir -p "$ETC_DIR"
@@ -66,7 +67,7 @@ echo "Medplum data files" > "$VAR_DIR/README.txt"
 pushd "$LIB_DIR"
 
 # Install dependencies
-npm i --omit=dev --omit=optional --omit=peer --maxsockets 1
+npm ci --omit=dev --omit=optional --omit=peer --maxsockets 1
 
 # Move back to the original directory
 popd

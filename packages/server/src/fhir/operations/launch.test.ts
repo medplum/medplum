@@ -1,11 +1,11 @@
+import { createReference } from '@medplum/core';
+import { ClientApplication, Encounter, Patient, SmartAppLaunch } from '@medplum/fhirtypes';
 import express from 'express';
+import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { withTestContext, createTestProject } from '../../test.setup';
-import { ClientApplication, Encounter, Patient, SmartAppLaunch } from '@medplum/fhirtypes';
-import request from 'supertest';
+import { createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
-import { createReference } from '@medplum/core';
 
 const app = express();
 

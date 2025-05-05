@@ -1,8 +1,8 @@
-import { NodeSDK } from '@opentelemetry/sdk-node';
 import { Span, SpanStatusCode } from '@opentelemetry/api';
-import { httpResponseHook, initOpenTelemetry, pgResponseHook, shutdownOpenTelemetry } from './instrumentation';
-import { IncomingMessage, ServerResponse } from 'http';
 import { PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { IncomingMessage, ServerResponse } from 'http';
+import { httpResponseHook, initOpenTelemetry, pgResponseHook, shutdownOpenTelemetry } from './instrumentation';
 
 describe('Instrumentation', () => {
   const OLD_ENV = process.env;

@@ -1,4 +1,4 @@
-import { MemoizedFhirPathTable, FhirPathTableField } from '@medplum/react';
+import { FhirPathTableField, MemoizedFhirPathTable } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 

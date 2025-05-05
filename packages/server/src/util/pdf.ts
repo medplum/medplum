@@ -1,5 +1,5 @@
-import { TDocumentDefinitions, TFontDictionary, CustomTableLayout } from 'pdfmake/interfaces';
 import PdfPrinter from 'pdfmake';
+import { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
 
 /**
  * Generates a PDF buffer from a document definition.

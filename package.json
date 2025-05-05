@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "4.1.2",
+  "version": "4.1.4",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -20,7 +20,10 @@
   "prettier": {
     "printWidth": 120,
     "singleQuote": true,
-    "trailingComma": "es5"
+    "trailingComma": "es5",
+    "plugins": [
+      "prettier-plugin-organize-imports"
+    ]
   },
   "eslintConfig": {
     "parserOptions": {
@@ -51,6 +54,7 @@
     "npm-check-updates": "17.1.18",
     "nyc": "17.1.0",
     "prettier": "3.5.3",
+    "prettier-plugin-organize-imports": "4.1.0",
     "rimraf": "6.0.1",
     "sort-package-json": "3.0.0",
     "source-map-explorer": "2.5.3",

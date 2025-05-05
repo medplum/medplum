@@ -1,10 +1,10 @@
 import { HTTP_HL7_ORG, loadDataType, tryGetProfile } from '@medplum/core';
-import { act, render, screen } from '../test-utils/render';
-import { ExtensionDisplay, ExtensionDisplayProps } from './ExtensionDisplay';
-import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react-hooks';
 import { readJson } from '@medplum/definitions';
 import { StructureDefinition } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { act, render, screen } from '../test-utils/render';
+import { ExtensionDisplay, ExtensionDisplayProps } from './ExtensionDisplay';
 
 const medplum = new MockClient();
 

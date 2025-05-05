@@ -1,11 +1,11 @@
 import { getReferenceString, Operator, ProfileResource, WithId } from '@medplum/core';
 import { Login, Project, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
+import Bowser from 'bowser';
 import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import Bowser from 'bowser';
 
 interface UserSession {
   id: string;
