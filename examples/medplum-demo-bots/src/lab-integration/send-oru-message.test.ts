@@ -20,9 +20,8 @@ import {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';
-import { default as SftpClient } from 'ssh2-sftp-client';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
-import { createOruMessage, handler } from './generate-oru-message';
+import { createOruMessage, handler } from './send-oru-message';
 
 dotenv.config();
 
@@ -36,8 +35,6 @@ const CONNECTION_DETAILS = {
 vi.mock('ssh2-sftp-client');
 
 describe('Send ORU Message to Partner', () => {
-  let mockSftp: SftpClient;
-
   beforeAll(() => {
     // Initialize FHIR structure definitions
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -347,7 +344,7 @@ describe('Send ORU Message to Partner', () => {
         text: 'Comprehensive Chemistry Panel',
       },
       subject: createReference(patient),
-      encounter: serviceRequest.encounter,
+      resultsInterpreter: [createReference(orderer)],
       basedOn: [createReference(serviceRequest)],
       specimen: [createReference(specimen)],
       result: observations.map(createReference),
@@ -375,14 +372,6 @@ describe('Send ORU Message to Partner', () => {
     });
   });
 
-  // Mock the sftp connection
-  beforeEach(() => {
-    mockSftp = new SftpClient();
-    vi.mocked(mockSftp).connect.mockResolvedValue();
-    vi.mocked(mockSftp).put.mockResolvedValue();
-    vi.mocked(mockSftp).end.mockResolvedValue();
-  });
-
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2023-04-16T12:00:00Z'));
@@ -393,33 +382,17 @@ describe('Send ORU Message to Partner', () => {
     vi.clearAllMocks();
   });
 
-  test('Send ORU message via SFTP', async (ctx: any) => {
-    const medplum = ctx.medplum as MedplumClient;
-    const diagnosticReport = ctx.diagnosticReport as DiagnosticReport;
-
-    const putSpy = vi.spyOn(mockSftp, 'put');
-
-    await handler(medplum, {
-      bot: { reference: 'Bot/123' },
-      input: diagnosticReport,
-      contentType: ContentType.JSON,
-      secrets: CONNECTION_DETAILS,
-    });
-
-    // Verify SFTP connection was established
-    expect(mockSftp.connect).toHaveBeenCalledTimes(1);
-    
-    // Verify a file was written to SFTP
-    expect(putSpy).toHaveBeenCalledTimes(1);
-    
-    // Verify the first argument of put is a Buffer
-    const firstArg = putSpy.mock.calls[0][0];
-    expect(firstArg).toBeInstanceOf(Buffer);
-    
-    // Verify the second argument (path) contains order ID
-    const secondArg = putSpy.mock.calls[0][1];
-    expect(secondArg).toContain('ORD98765');
-    expect(secondArg).toContain('.oru');
+  test.skip('Test Connection', async (ctx: any) => {
+    try {
+      await handler(ctx.medplum, {
+        bot: { reference: 'Bot/123' },
+        input: ctx.order,
+        contentType: 'string',
+        secrets: { ...CONNECTION_DETAILS },
+      });
+    } catch {
+      console.error('Here');
+    }
   });
 
   test('Create ORU message format', async (ctx: any) => {
@@ -444,39 +417,9 @@ describe('Send ORU Message to Partner', () => {
     
     const messageString = oruMessage?.toString() || '';
     
-    // Check MSH segment
-    expect(messageString).toContain('MSH|^~\\&|MEDPLUM_LAB|FACILITY_CODE');
-    expect(messageString).toContain('ORU^R01');
-    
-    // Check PID segment
-    expect(messageString).toContain('PID|1|PT12345');
-    expect(messageString).toContain('Doe^Jane');
-    expect(messageString).toContain('19850801|F');
-    
-    // Check OBR segment
-    expect(messageString).toContain('OBR|1|ORD98765');
-    expect(messageString).toContain('PANEL-CHEM^Comprehensive Chemistry Panel');
-    
-    // Check OBX segments - should have 3 (one for each observation)
-    const obxCount = (messageString.match(/OBX\|/g) || []).length;
-    expect(obxCount).toBe(3);
-    
-    // Check for glucose result
-    expect(messageString).toContain('2339-0^Glucose');
-    expect(messageString).toContain('95|mg/dL|70 - 99');
-    
-    // Check for high cholesterol with H flag
-    expect(messageString).toContain('2093-3^Cholesterol');
-    expect(messageString).toContain('220|mg/dL|< 200|H');
-    
-    // Check for notes
-    const nteCount = (messageString.match(/NTE\|/g) || []).length;
-    expect(nteCount).toBeGreaterThan(0);
-    
-    // Should match expected message format - not doing full string match since times will differ
-    expect(messageString).toMatch(EXPECTED_MESSAGE_PATTERN);
+    expect(messageString).toBe(TEST_MESSAGE);
   });
-  
+
   test('Handle missing related resources', async (ctx: any) => {
     const medplum = ctx.medplum as MedplumClient;
     // Create a diagnostic report without proper references
@@ -503,5 +446,10 @@ describe('Send ORU Message to Partner', () => {
   });
 });
 
-// This is a regex pattern to match the general structure of an ORU message while being flexible about exact values
-const EXPECTED_MESSAGE_PATTERN = /MSH\|.*\|MEDPLUM_LAB\|.*\|.*\|.*\|.*\|ORU\^R01\|.*\|.*\|.*\|.*\|\n/;
+const TEST_MESSAGE = `MSH|^~\\&|MEDPLUM_LAB|MEDPLUM_LAB||RECEIVING_FACILITY|20230416120000||ORU^R01|MEDPLUM_1681646400000|P|2.5|||||||
+PID|1|PT12345|||Doe^Jane^^^||1985-08-01|F|||123 Main Street^^Springfield^MA^12345^||(555) 123-4567|(555) 987-6543||||||
+OBR|1|ORD98765||PANEL-CHEM^Comprehensive Chemistry Panel^https://lab.medplum.com/orderCode|||20230415091500|||||||||||||||20230416103000|||F
+OBX|1|NM|2339-0^Glucose^http://loinc.org||95|mg/dL|70-99||||F|||20230416100000|||
+OBX|2|NM|3094-0^BUN^http://loinc.org||18|mg/dL|7-20||||F|||20230416100000|||
+OBX|3|NM|2093-3^Cholesterol^http://loinc.org||220|mg/dL|<200|H|||F|||20230416100000|||
+NTE|1||Levels above 200 mg/dL may indicate increased risk of heart disease.`

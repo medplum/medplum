@@ -58,7 +58,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Diagnostic
     const diagnosticReport = event.input;
     
     // Get the related resources
-    const { serviceRequest, observations, specimen, patient, orderer } = await fetchRelatedResources(diagnosticReport, medplum);
+    const { serviceRequest, observations, specimen, patient, interpreter } = await fetchRelatedResources(diagnosticReport, medplum);
     
     if (!serviceRequest || !patient) {
       throw new Error('Could not find required resources for ORU message');
@@ -77,7 +77,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Diagnostic
       observations,
       specimen,
       patient,
-      orderer
+      interpreter,
     );
 
     if (oruMessage) {
@@ -108,7 +108,7 @@ async function fetchRelatedResources(
   observations: Observation[];
   specimen?: Specimen;
   patient?: Patient;
-  orderer?: Practitioner;
+  interpreter?: Practitioner;
 }> {
   // Get the ServiceRequest from the basedOn reference
   let serviceRequest: ServiceRequest | undefined;
@@ -155,17 +155,17 @@ async function fetchRelatedResources(
     }
   }
 
-  // Get the Orderer (Practitioner)
-  let orderer: Practitioner | undefined;
-  if (serviceRequest?.requester) {
+  // Get the Interpreter (Practitioner)
+  let interpreter: Practitioner | undefined;
+  if (diagnosticReport?.resultsInterpreter?.[0]) {
     try {
-      orderer = await medplum.readReference(serviceRequest.requester as Reference<Practitioner>);
+      interpreter = await medplum.readReference(diagnosticReport.resultsInterpreter[0] as Reference<Practitioner>);
     } catch (err) {
-      console.warn('Could not find Orderer', err);
+      console.warn('Could not find Interpreter', err);
     }
   }
 
-  return { serviceRequest, observations, specimen, patient, orderer };
+  return { serviceRequest, observations, specimen, patient, interpreter };
 }
 
 /**
@@ -185,7 +185,7 @@ export function createOruMessage(
   observations: Observation[],
   specimen?: Specimen,
   patient?: Patient,
-  orderer?: Practitioner
+  interpreter?: Practitioner,
 ): Hl7Message | undefined {
   if (!patient) {
     console.error('Patient resource is required for ORU message');
@@ -223,11 +223,11 @@ export function createOruMessage(
   );
 
   // Patient Identification (PID)
-  segments.push(createPidSegment(patient, orderId));
+  segments.push(createPidSegment(patient));
 
-  // Patient Visit (PV1) - Optional but common
+  // Patient Visit (PV1) 
   if (serviceRequest.encounter) {
-    segments.push(createPv1Segment(serviceRequest, orderer));
+    segments.push(createPv1Segment(serviceRequest, interpreter));
   }
 
   // Order Observation (OBR)
@@ -255,16 +255,15 @@ export function createOruMessage(
  * Creates a PID (Patient Identification) segment
  * 
  * @param patient - The Patient resource
- * @param orderId - The order ID
  * @returns An HL7 PID segment
  */
-function createPidSegment(patient: Patient, orderId: string): Hl7Segment {
+function createPidSegment(patient: Patient): Hl7Segment {
   const patientIdentifier = getIdentifier(patient, FACILITY_PATIENT_ID) || '';
   
   return new Hl7Segment([
     'PID',                                    // PID
     '1',                                      // Set ID
-    patientIdentifier || orderId,             // Patient ID (External ID)
+    patientIdentifier,                        // Patient ID (External ID)
     '',                                       // Patient ID (Internal ID)
     '',                                       // Alternate Patient ID
     formatHl7Name(patient.name?.[0]),         // Patient Name
@@ -293,7 +292,7 @@ function createPidSegment(patient: Patient, orderId: string): Hl7Segment {
  * @param orderer - The ordering Practitioner
  * @returns An HL7 PV1 segment
  */
-function createPv1Segment(serviceRequest: ServiceRequest, orderer?: Practitioner): Hl7Segment {
+function createPv1Segment(serviceRequest: ServiceRequest, interpreter?: Practitioner): Hl7Segment {
   return new Hl7Segment([
     'PV1',                                 // PV1
     '1',                                   // Set ID
@@ -302,7 +301,7 @@ function createPv1Segment(serviceRequest: ServiceRequest, orderer?: Practitioner
     '',                                    // Admission Type
     '',                                    // Preadmit Number
     '',                                    // Prior Patient Location
-    orderer ? formatHl7Provider(orderer) : '', // Attending Doctor
+    interpreter ? formatHl7Provider(interpreter) : '', // Attending Doctor
     '',                                    // Referring Doctor
     '',                                    // Consulting Doctor
     '',                                    // Hospital Service
@@ -471,7 +470,7 @@ function formatHl7Name(name: any): string {
   const suffix = name.suffix?.[0] || '';
   
   // Format: last^first^middle^suffix^prefix
-  return new Hl7Field([family, given, middle, suffix, prefix]).toString();
+  return new Hl7Field([[family, given, middle, suffix, prefix]]).toString();
 }
 
 /**
@@ -493,7 +492,7 @@ function formatHl7Address(address: any): string {
   const country = address.country || '';
   
   // Format: street^otherStreet^city^state^zip^country
-  return new Hl7Field([street, otherStreet, city, state, zip, country]).toString();
+  return new Hl7Field([[street, otherStreet, city, state, zip, country]]).toString();
 }
 
 /**
@@ -545,7 +544,7 @@ function formatHl7CodeableConcept(concept: any): string {
   const system = coding.system || '';
   
   // Format: code^text^coding system
-  return new Hl7Field([code, display, system]).toString();
+  return new Hl7Field([[code, display, system]]).toString();
 }
 
 /**
