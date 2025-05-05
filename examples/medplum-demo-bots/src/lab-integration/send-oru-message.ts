@@ -172,7 +172,7 @@ async function fetchRelatedResources(
  * @param observations - The Observation resources
  * @param specimen - The Specimen resource (optional)
  * @param patient - The Patient resource
- * @param orderer - The ordering Practitioner (optional)
+ * @param interpreter - The ordering Practitioner (optional)
  * @returns The HL7 ORU message
  */
 export function createOruMessage(
@@ -223,7 +223,7 @@ export function createOruMessage(
 
   // Patient Visit (PV1)
   if (serviceRequest.encounter) {
-    segments.push(createPv1Segment(serviceRequest, interpreter));
+    segments.push(createPv1Segment(interpreter));
   }
 
   // Order Observation (OBR)
@@ -285,10 +285,10 @@ function createPidSegment(patient: Patient): Hl7Segment {
  * Creates a PV1 (Patient Visit) segment
  *
  * @param serviceRequest - The ServiceRequest resource
- * @param orderer - The ordering Practitioner
+ * @param interpreter - The ordering Practitioner
  * @returns An HL7 PV1 segment
  */
-function createPv1Segment(serviceRequest: ServiceRequest, interpreter?: Practitioner): Hl7Segment {
+function createPv1Segment(interpreter?: Practitioner): Hl7Segment {
   return new Hl7Segment([
     'PV1', // PV1
     '1', // Set ID
