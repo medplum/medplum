@@ -253,7 +253,7 @@ Function StopAndDeleteOldMedplumServices
     # We filter each line and only take the lines giving the service names specifically containing MedplumAgent
     # We then filter each of those lines and remove any lines matching SERVICE_NAME: ${SERVICE_NAME} to filter out the current version of the service
     # Finally, in the outer for loop we go through all the remaining output lines and re-output them without the "SERVICE_NAME: " prefix
-    nsExec::ExecToStack `cmd.exe /c "for /f "tokens=2 delims=: " %i in ('sc query type^= service state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent" ^| findstr /v /i \"SERVICE_NAME.*${SERVICE_NAME}"') do @echo %i"`
+    nsExec::ExecToStack `cmd.exe /c "for /f "tokens=2 delims=: " %i in ('sc query type^= service state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent" ^| findstr /v /i "SERVICE_NAME.*${SERVICE_NAME}"') do @echo %i"`
     Pop $0 # Return value
     Pop $ServicesList # Command output
 
