@@ -295,7 +295,7 @@ FunctionEnd
 
 Function StopAndDeleteOldMedplumServices
     # Get list of services - simplified command without filtering
-    nsExec::ExecToStack 'cmd.exe -c "sc query type= service state= all | findstr /i \"SERVICE_NAME.MedplumAgent\" | findstr /v /i \"SERVICE_NAME.${SERVICE_NAME}\""'
+    nsExec::ExecToStack 'cmd.exe /C "sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent" | findstr /v /i "SERVICE_NAME.${SERVICE_NAME}""'
     Pop $0 # Return value
     Pop $ServicesList # Command output
 
