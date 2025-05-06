@@ -120,10 +120,10 @@ else
 fi
 
 # Generate the installer checksum
-sha256sum "medplum-agent-installer-$MEDPLUM_VERSION.exe" > "medplum-agent-installer-$MEDPLUM_VERSION.exe.sha256"
+sha256sum "medplum-agent-installer-$MEDPLUM_VERSION-$MEDPLUM_GIT_SHORTHASH.exe" > "medplum-agent-installer-$MEDPLUM_VERSION-$MEDPLUM_GIT_SHORTHASH.exe.sha256"
 
 # Check the installer checksum
-sha256sum --check "medplum-agent-installer-$MEDPLUM_VERSION.exe.sha256"
+sha256sum --check "medplum-agent-installer-$MEDPLUM_VERSION-$MEDPLUM_GIT_SHORTHASH.exe.sha256"
 
 # Check the build output
 ls -la
