@@ -38,54 +38,6 @@ ${StrStr}
 
 RequestExecutionLevel admin
 
-; Trim
-;   Removes leading & trailing whitespace from a string
-; Usage:
-;   Push 
-;   Call Trim
-;   Pop 
-Function Trim
-	Exch $R1 ; Original string
-	Push $R2
- 
-Loop:
-	StrCpy $R2 "$R1" 1
-	StrCmp "$R2" " " TrimLeft
-	StrCmp "$R2" "$\r" TrimLeft
-	StrCmp "$R2" "$\n" TrimLeft
-	StrCmp "$R2" "$\t" TrimLeft
-	GoTo Loop2
-TrimLeft:	
-	StrCpy $R1 "$R1" "" 1
-	Goto Loop
- 
-Loop2:
-	StrCpy $R2 "$R1" 1 -1
-	StrCmp "$R2" " " TrimRight
-	StrCmp "$R2" "$\r" TrimRight
-	StrCmp "$R2" "$\n" TrimRight
-	StrCmp "$R2" "$\t" TrimRight
-	GoTo Done
-TrimRight:	
-	StrCpy $R1 "$R1" -1
-	Goto Loop2
- 
-Done:
-	Pop $R2
-	Exch $R1
-FunctionEnd
-
-; Usage:
-; ${Trim} $trimmedString $originalString
- 
-!define Trim "!insertmacro Trim"
- 
-!macro Trim ResultVar String
-  Push "${String}"
-  Call Trim
-  Pop "${ResultVar}"
-!macroend
-
 Var WelcomeDialog
 Var WelcomeLabel
 Var alreadyInstalled
@@ -97,11 +49,8 @@ Var agentId
 
 # Vars for Section StopAndDeleteOldMedplumServices
 Var ServicesList
-Var ProcessedList
-Var CurrentLine
 Var WorkingList
 Var TempStr
-Var PrefixPos
 Var LineLen
 Var TempLen
 Var CurrentLen
@@ -295,70 +244,15 @@ FunctionEnd
 
 Function StopAndDeleteOldMedplumServices
     # Get list of services - simplified command without filtering
-    nsExec::ExecToStack 'cmd.exe /C "sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent" | findstr /v /i "SERVICE_NAME.${SERVICE_NAME}""'
+    nsExec::ExecToStack 'cmd.exe /c "for /f "tokens=2 delims=: " %i in ('sc query type^= service state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent" ^| findstr /v /i \"SERVICE_NAME.*${SERVICE_NAME}"') do @echo %i"'
     Pop $0 # Return value
     Pop $ServicesList # Command output
 
-    DetailPrint "Raw services output: $ServicesList"
-    
-    # Create empty list for processed service names
-    StrCpy $ProcessedList ""
-    StrCpy $CurrentLine ""
-    StrCpy $WorkingList "$ServicesList"
-    
-    # Process the output line by line to remove SERVICE_NAME: prefix
-    ${Do}
-        # If no more text to process, exit loop
-        ${If} $WorkingList == ""
-            ${Break}
-        ${EndIf}
-
-        # Find position of next line break
-        ${StrStr} $TempStr "$WorkingList" "$\r$\n"
-
-        # If no more line breaks, process remaining text as the last line
-        ${If} $TempStr == ""
-            StrCpy $CurrentLine "$WorkingList"
-            StrCpy $WorkingList "" # Clear remaining text to exit after this iteration
-        ${Else}
-            # Extract current line (up to line break)
-            StrLen $LineLen "$WorkingList"
-            StrLen $TempLen "$TempStr"
-            IntOp $CurrentLen $LineLen - $TempLen
-            StrCpy $CurrentLine "$WorkingList" $CurrentLen
-            
-            # Remove processed line from working list
-            StrCpy $WorkingList "$TempStr" "" 2 # Skip the \r\n
-        ${EndIf}
-
-        # Skip empty lines
-        ${If} $CurrentLine == ""
-            ${Continue}
-        ${EndIf}
-
-        # Remove SERVICE_NAME: prefix if present
-        ${StrStr} $PrefixPos "$CurrentLine" "SERVICE_NAME:"
-        ${If} $PrefixPos != ""
-            StrCpy $CurrentLine "$CurrentLine" "" 12 # Skip "SERVICE_NAME:"
-        ${EndIf}
-
-        # Trim any leading/trailing spaces
-        ${Trim} $CurrentLine $CurrentLine
-
-        # Add to processed list if not empty
-        ${If} $CurrentLine != ""
-            ${If} $ProcessedList == ""
-                StrCpy $ProcessedList "$CurrentLine"
-            ${Else}
-                StrCpy $ProcessedList "$ProcessedList$\r$\n$CurrentLine"
-            ${EndIf}
-        ${EndIf}
-    ${Loop}
-
-    DetailPrint "Processed services: $ProcessedList"
-    StrCpy $WorkingList "$ProcessedList"
+    DetailPrint "Filtered services: $ServicesList"
 
     # Process each service in the filtered list
+    StrCpy $WorkingList "$ServicesList"
+
     ${Do}
         # If no more services to process, exit loop
         ${If} $WorkingList == ""
@@ -389,6 +283,8 @@ Function StopAndDeleteOldMedplumServices
             ${Continue}
         ${EndIf}
 
+        DetailPrint "Processing service: $CurrentServiceName"
+
         # Stop the service
         DetailPrint "Stopping service: $CurrentServiceName"
         nsExec::ExecToStack 'net stop "$CurrentServiceName"'
@@ -403,6 +299,7 @@ Function StopAndDeleteOldMedplumServices
         Pop $1 # Output
         DetailPrint "Delete result: $0"
     ${Loop}
+
 FunctionEnd
 
 # Do the actual installation.
