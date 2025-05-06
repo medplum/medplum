@@ -7,8 +7,8 @@
 !define BASE_SERVICE_NAME        "MedplumAgent"
 !define SERVICE_NAME             "${BASE_SERVICE_NAME}_$%MEDPLUM_VERSION%-$%MEDPLUM_GIT_SHORTHASH%"
 !define SERVICE_DESCRIPTION      "Securely connects local devices to ${COMPANY_NAME} cloud"
-!define SERVICE_FILE_NAME        "medplum-agent-$%MEDPLUM_VERSION%-win64.exe"
-!define INSTALLER_FILE_NAME      "medplum-agent-installer-$%MEDPLUM_VERSION%.exe"
+!define SERVICE_FILE_NAME        "medplum-agent-$%MEDPLUM_VERSION%-$%MEDPLUM_GIT_SHORTHASH%-win64.exe"
+!define INSTALLER_FILE_NAME      "medplum-agent-installer-$%MEDPLUM_VERSION%-$%MEDPLUM_GIT_SHORTHASH%.exe"
 !define PRODUCT_VERSION          "$%MEDPLUM_VERSION%.0"
 !define DEFAULT_BASE_URL         "https://api.medplum.com/"
 
