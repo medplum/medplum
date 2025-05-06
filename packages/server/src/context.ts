@@ -6,7 +6,7 @@ import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
 import { FhirRateLimiter } from './fhirinteractionlimit';
-import { systemLogger } from './logger';
+import { globalLogger, systemLogger } from './logger';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { getRedis } from './redis';
 import { IRequestContext, requestContextStore } from './request-context-store';
@@ -213,10 +213,17 @@ function write(msg: string): void {
 }
 
 function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimiter | undefined {
-  const projectLimit = authState.project?.systemSetting?.find(
+  const defaultUserLimit = authState.project?.systemSetting?.find(
     (s) => s.name === 'userFhirInteractionLimit'
   )?.valueInteger;
-  const limit = projectLimit ?? getConfig().defaultFhirInteractionLimit;
+  const userLimit = defaultUserLimit ?? getConfig().defaultFhirInteractionLimit;
 
-  return authState.membership ? new FhirRateLimiter(getRedis(), authState, limit, logger) : undefined;
+  const perProjectLimit = authState.project?.systemSetting?.find(
+    (s) => s.name === 'totalFhirInteractionLimit'
+  )?.valueInteger;
+  const projectLimit = perProjectLimit ?? userLimit * 10;
+
+  return authState.membership
+    ? new FhirRateLimiter(getRedis(), authState, userLimit, projectLimit, logger ?? globalLogger)
+    : undefined;
 }
