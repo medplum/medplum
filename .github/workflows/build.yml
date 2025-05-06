@@ -335,7 +335,7 @@ jobs:
           npm run start &
           popd
           pushd packages/app
-          npm run dev &
+          npm run preview &
           popd
         env:
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
