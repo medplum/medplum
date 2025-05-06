@@ -91,7 +91,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          echo "MEDPLUM_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Build Agent installer
         shell: bash
