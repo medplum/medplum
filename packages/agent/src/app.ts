@@ -31,7 +31,7 @@ import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from '.
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import { checkProcessExists, createPidFile, getPidFilePath, removePidFile } from './pid';
+import { createPidFile, removePidFile } from './pid';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -436,27 +436,6 @@ export class App {
     if (channel) {
       await channel.reloadConfig(definition, endpoint);
       return;
-    }
-
-    // Only check PID files if we're not in the middle of an upgrade
-    if (!existsSync(UPGRADE_MANIFEST_PATH)) {
-      const pidFilePath = getPidFilePath(definition.name);
-      if (existsSync(pidFilePath)) {
-        const existingPid = Number.parseInt(readFileSync(pidFilePath, 'utf8').trim(), 10);
-        if (checkProcessExists(existingPid)) {
-          this.log.info(
-            `Found existing process with PID ${existingPid} for channel ${definition.name}, stopping it...`
-          );
-          try {
-            process.kill(existingPid);
-            // Wait a bit for the process to die
-            await sleep(1000);
-          } catch (err) {
-            this.log.error(`Error stopping existing process: ${normalizeErrorString(err)}`);
-          }
-        }
-        removePidFile(pidFilePath);
-      }
     }
 
     switch (getChannelType(endpoint)) {
