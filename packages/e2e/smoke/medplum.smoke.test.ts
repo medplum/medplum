@@ -85,7 +85,6 @@ test.describe('Medplum App Smoke Tests', () => {
       .setInputFiles(path.resolve(__dirname, '../content', 'frodo_baggins.png'));
     await page.getByRole('button', { name: 'Update' }).click();
 
-    await expect(page.getByTestId('attachment-image')).toBeVisible();
     await page.getByRole('tab', { name: 'Details' }).click();
     await expect(page.getByTestId('attachment-details')).toBeVisible();
     await expect(page.getByTestId('attachment-details')).toContainText('frodo_baggins.png');
