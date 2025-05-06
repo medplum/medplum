@@ -83,6 +83,7 @@ test.describe('Medplum App Smoke Tests', () => {
     await page
       .getByTestId('upload-file-input')
       .setInputFiles(path.resolve(__dirname, '../content', 'frodo_baggins.png'));
+    await expect(page.getByTestId('attachment-image')).toBeVisible();
     await page.getByRole('button', { name: 'Update' }).click();
 
     await page.getByRole('tab', { name: 'Details' }).click();
