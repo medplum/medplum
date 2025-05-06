@@ -1,6 +1,6 @@
 import { BotEvent, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Organization, Patient } from '@medplum/fhirtypes';
-import { MetriportMedicalApi, PatientDTO, USState, Demographics, PatientCreate } from '@metriport/api-sdk';
+import { Demographics, MetriportMedicalApi, PatientCreate, PatientDTO, USState } from '@metriport/api-sdk';
 
 /**
  * This bot is used to request medical records from the Metriport Medical API for a given Medplum

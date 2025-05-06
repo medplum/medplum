@@ -4,7 +4,7 @@ import { capitalize, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import exampleDataSet from '../../data/example/example-data.json';
 

@@ -1,13 +1,13 @@
+import { createReference, getReferenceString, MedplumClient, normalizeErrorString, resolveId } from '@medplum/core';
 import {
+  AccessPolicy,
   Organization,
   Patient,
   Practitioner,
-  Reference,
   ProjectMembership,
-  AccessPolicy,
   ProjectMembershipAccessParameter,
+  Reference,
 } from '@medplum/fhirtypes';
-import { createReference, MedplumClient, normalizeErrorString, getReferenceString, resolveId } from '@medplum/core';
 
 /**
  * Enrolls a practitioner in an organization by adding the organization to the access array of the practitioner's project membership.

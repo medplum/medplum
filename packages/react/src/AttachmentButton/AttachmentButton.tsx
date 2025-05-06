@@ -1,7 +1,7 @@
 import { normalizeOperationOutcome } from '@medplum/core';
 import { Attachment, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ChangeEvent, MouseEvent, ReactNode, useRef } from 'react';
+import { ChangeEvent, JSX, MouseEvent, ReactNode, useRef } from 'react';
 import { killEvent } from '../utils/dom';
 
 export interface AttachmentButtonProps {

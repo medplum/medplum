@@ -1,6 +1,6 @@
 import { Button } from '@mantine/core';
 import { Attachment, Reference } from '@medplum/fhirtypes';
-import { MouseEvent, useState } from 'react';
+import { JSX, MouseEvent, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';

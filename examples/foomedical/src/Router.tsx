@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { AccountPage } from './pages/account';
 import { MembershipAndBilling } from './pages/account/MembershipAndBilling';

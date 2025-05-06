@@ -1,5 +1,6 @@
 import { Box, Button, Stack, Text } from '@mantine/core';
 import { Task } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 
 interface SimpleTaskProps {
   task: Task;

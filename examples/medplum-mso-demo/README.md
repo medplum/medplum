@@ -41,17 +41,18 @@ npm run dev
 
 This app will run on `http://localhost:3000` and connect to a hosted Medplum project at `https://api.medplum.com/` by default. The server url can be changed in [main.tsx](./src/main.tsx)
 
-
 ## Background
+
 What is a Managed Service Organization (MSO)?
 
-A Managed Service Organization (MSO) is a healthcare organization that provides services to multiple different healthcare organizations. 
+A Managed Service Organization (MSO) is a healthcare organization that provides services to multiple different healthcare organizations.
 
 <img src="./public/mso-diagram.png" alt="MSO Diagram" />
 
 For Managed Service Organizations (MSOs), complexity stems from practitioners potentially working across multiple tenants and patients potentially receiving care from multiple healthcare partners.
 
 This demo implements a solution where:
+
 - Tenants are separated as Organizations (clinics) within a single Medplum Project
 - Patients and clinicians can each be enrolled in multiple clinics
 - AccessPolicy controls limit clinician access to resources only within shared clinics
@@ -61,6 +62,7 @@ This demo implements a solution where:
 ## Features
 
 ### Admin Features
+
 - Create new clinics (Organizations)
 - Create new clinicians (Practitioners)
 - Enroll practitioners in one or more clinics
@@ -68,8 +70,8 @@ This demo implements a solution where:
 - Manage access policies
 
 ### Clinician Features
-- View patients, observations, diagnostic reports, encounters, and communications affiliated with their clinics - simulating what they would see in their EHR
 
+- View patients, observations, diagnostic reports, encounters, and communications affiliated with their clinics - simulating what they would see in their EHR
 
 ## Code Organization
 
@@ -91,6 +93,7 @@ This repo is organized into several main directories:
 ## Resources Used
 
 This demo uses the following FHIR and Medplum resources:
+
 - **AccessPolicy**: Defines the access rules for clinicians to resources across the project
 - **Organization**: Represents a clinic
 - **Practitioner**: Represents a clinician
@@ -109,4 +112,4 @@ Medplum supports self-hosting and provides a [hosted service](https://app.medplu
 
 - Read our [documentation](https://www.medplum.com/docs)
 - Browse our [react component library](https://storybook.medplum.com/)
-- Join our [Discord](https://discord.gg/medplum) 
+- Join our [Discord](https://discord.gg/medplum)

@@ -1,15 +1,15 @@
-import { Title, Tabs, Alert, Text } from '@mantine/core';
+import { Alert, Tabs, Text, Title } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import '@mantine/notifications/styles.css';
+import { normalizeErrorString } from '@medplum/core';
 import { Organization } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
-import { useParams } from 'react-router';
-import { useEffect, useState } from 'react';
-import { showNotification } from '@mantine/notifications';
-import { normalizeErrorString } from '@medplum/core';
-import '@mantine/notifications/styles.css';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { useAdminStatus } from '../utils/admin';
+import { JSX, useEffect, useState } from 'react';
+import { useParams } from 'react-router';
 import { ClinicianList } from '../components/ClinicianList';
 import { PatientList } from '../components/PatientList';
+import { useAdminStatus } from '../utils/admin';
 
 /**
  * A page component for managing a specific clinic and its members.

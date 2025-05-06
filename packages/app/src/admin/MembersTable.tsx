@@ -1,7 +1,7 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { SearchControl, useMedplum } from '@medplum/react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { getProjectId } from '../utils';
 

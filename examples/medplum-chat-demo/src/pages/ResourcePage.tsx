@@ -11,7 +11,7 @@ import {
   useMedplum,
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { cleanResource, shouldShowPatientSummary } from '../utils';
 

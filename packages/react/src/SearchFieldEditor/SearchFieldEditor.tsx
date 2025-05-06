@@ -8,7 +8,7 @@ import {
   stringify,
 } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { JSX, useEffect, useMemo, useRef, useState } from 'react';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
 export interface SearchFieldEditorProps {

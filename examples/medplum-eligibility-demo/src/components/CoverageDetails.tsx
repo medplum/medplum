@@ -2,6 +2,7 @@ import { Paper, ScrollArea, Tabs, Title } from '@mantine/core';
 import { getReferenceString, Operator, SearchRequest } from '@medplum/core';
 import { Coverage } from '@medplum/fhirtypes';
 import { ResourceHistoryTable, ResourceTable, SearchControl } from '@medplum/react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 
 interface CoverageDetailsProps {

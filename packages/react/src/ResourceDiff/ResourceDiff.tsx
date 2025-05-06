@@ -1,5 +1,6 @@
 import { stringify } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { Delta, diff } from '../utils/diff';
 import classes from './ResourceDiff.module.css';
 

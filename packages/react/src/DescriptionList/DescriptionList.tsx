@@ -1,5 +1,5 @@
 import cx from 'clsx';
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import classes from './DescriptionList.module.css';
 
 export interface DescriptionListProps {

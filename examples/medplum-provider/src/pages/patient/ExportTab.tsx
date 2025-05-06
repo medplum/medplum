@@ -1,4 +1,5 @@
 import { Document, PatientExportForm } from '@medplum/react';
+import { JSX } from 'react';
 import { useParams } from 'react-router';
 
 export function ExportTab(): JSX.Element | null {

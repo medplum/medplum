@@ -1,6 +1,7 @@
 import { resolveId } from '@medplum/core';
 import { RequestGroup, ResourceType } from '@medplum/fhirtypes';
 import { Document, RequestGroupDisplay, useResource } from '@medplum/react';
+import { JSX } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 export function ChecklistPage(): JSX.Element | null {

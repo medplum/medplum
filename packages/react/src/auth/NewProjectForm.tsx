@@ -2,7 +2,7 @@ import { Anchor, Center, Group, Stack, Text, TextInput, Title } from '@mantine/c
 import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { Logo } from '../Logo/Logo';

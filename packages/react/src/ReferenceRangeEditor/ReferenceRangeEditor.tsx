@@ -2,7 +2,7 @@ import { ActionIcon, Divider, Group, NativeSelect, Stack, Text, TextInput } from
 import { formatRange, getCodeBySystem } from '@medplum/core';
 import { CodeableConcept, ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
-import { MouseEvent, useEffect, useState } from 'react';
+import { JSX, MouseEvent, useEffect, useState } from 'react';
 import { Container } from '../Container/Container';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';

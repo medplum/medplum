@@ -1,6 +1,6 @@
 import { AppShell, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconDatabaseImport, IconFileCheck, IconFileImport, IconRobot, IconUser } from '@tabler/icons-react';
-import { Suspense } from 'react';
+import { JSX, Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import { CoveragePage } from './pages/CoveragePage';
 import { LandingPage } from './pages/LandingPage';

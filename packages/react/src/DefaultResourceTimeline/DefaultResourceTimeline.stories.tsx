@@ -1,7 +1,7 @@
 import { DiagnosticReport } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { Meta } from '@storybook/react';
-import { useContext, useEffect, useState } from 'react';
+import { JSX, useContext, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import { withMockedDate } from '../stories/decorators';
 import { MockDateContext } from '../stories/MockDateWrapper.utils';

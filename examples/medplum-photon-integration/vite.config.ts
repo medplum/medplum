@@ -1,8 +1,8 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
 import dns from 'dns';
-import { existsSync, copyFileSync } from 'fs';
+import { copyFileSync, existsSync } from 'fs';
 import path from 'path';
+import { defineConfig } from 'vite';
 
 dns.setDefaultResultOrder('verbatim');
 

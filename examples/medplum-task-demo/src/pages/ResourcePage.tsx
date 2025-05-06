@@ -9,6 +9,7 @@ import {
   useMedplumNavigate,
   useResource,
 } from '@medplum/react';
+import { JSX } from 'react';
 import { useParams } from 'react-router';
 import { ResourceHistoryTab } from '../components/ResourceHistoryTab';
 

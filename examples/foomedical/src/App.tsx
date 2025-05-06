@@ -1,6 +1,6 @@
 import { AppShell } from '@mantine/core';
 import { ErrorBoundary, useMedplum } from '@medplum/react';
-import { Suspense } from 'react';
+import { JSX, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { Router } from './Router';
 import { Footer } from './components/Footer';

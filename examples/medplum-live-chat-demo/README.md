@@ -29,6 +29,7 @@ cp .env.defaults .env
 And make the changes you need.
 
 Next, install the dependencies
+
 ```bash
 npm install
 ```
@@ -40,7 +41,6 @@ npm run dev
 ```
 
 This app should run on `http://localhost:3000/`
-
 
 > [!NOTE]
 > Because `WebSocket Subscriptions` are currently experimental, the `websocket-subscriptions` feature flag needs to be enabled on your `Project` resource for this demo to work.

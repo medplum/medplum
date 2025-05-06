@@ -5,6 +5,7 @@ import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconAlertCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { NavigateFunction, useNavigate } from 'react-router';
 
 interface DeleteTaskProps {

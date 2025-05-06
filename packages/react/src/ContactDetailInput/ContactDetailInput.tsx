@@ -1,6 +1,6 @@
 import { Group, TextInput } from '@mantine/core';
 import { ContactDetail, ContactPoint } from '@medplum/fhirtypes';
-import { useContext, useMemo, useRef, useState } from 'react';
+import { JSX, useContext, useMemo, useRef, useState } from 'react';
 import { ContactPointInput } from '../ContactPointInput/ContactPointInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
@@ -10,7 +10,7 @@ export type ContactDetailInputProps = ComplexTypeInputProps<ContactDetail>;
 export function ContactDetailInput(props: ContactDetailInputProps): JSX.Element {
   const [contactDetail, setContactDetail] = useState(props.defaultValue);
 
-  const ref = useRef<ContactDetail>();
+  const ref = useRef<ContactDetail>(contactDetail);
   ref.current = contactDetail;
 
   const { getExtendedProps } = useContext(ElementsContext);

@@ -2,7 +2,7 @@ import { Anchor, Box, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState } from 'react';
+import { JSX, useCallback, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import { ConceptBadge } from './ConceptBadge';
 import { MedicationDialog } from './MedicationDialog';

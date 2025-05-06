@@ -1,4 +1,5 @@
 import Layout from '@theme/Layout';
+import { JSX } from 'react';
 import { Container } from '../components/Container';
 import styles from './pricing.module.css';
 

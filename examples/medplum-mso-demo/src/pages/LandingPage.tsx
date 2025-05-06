@@ -1,7 +1,8 @@
-import { Badge, Stack, Text, Title, List, Anchor } from '@mantine/core';
-import { Document, useMedplumProfile } from '@medplum/react';
-import { Link } from 'react-router';
+import { Anchor, Badge, List, Stack, Text, Title } from '@mantine/core';
 import { Practitioner } from '@medplum/fhirtypes';
+import { Document, useMedplumProfile } from '@medplum/react';
+import { JSX } from 'react';
+import { Link } from 'react-router';
 import { useAdminStatus } from '../utils/admin';
 
 /**

@@ -1,5 +1,5 @@
 import { AppShell, Loading, Logo, useMedplum } from '@medplum/react';
-import { Suspense } from 'react';
+import { JSX, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { HomePage } from './HomePage';
 import { SignInPage } from './SignInPage';

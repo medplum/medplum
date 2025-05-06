@@ -2,7 +2,7 @@ import { Grid, Paper } from '@mantine/core';
 import { normalizeErrorString, resolveId } from '@medplum/core';
 import { Coverage, Patient } from '@medplum/fhirtypes';
 import { Loading, PatientSummary, useMedplum, useMedplumNavigate } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { CoverageActions } from '../components/actions/CoverageActions';
 import { CoverageDetails } from '../components/CoverageDetails';

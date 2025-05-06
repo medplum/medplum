@@ -46,27 +46,31 @@ export function useSubscription(
   const [memoizedSubProps, setMemoizedSubProps] = useState(options?.subscriptionProps);
 
   const listeningRef = useRef(false);
-  const unsubTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const unsubTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const prevCriteriaRef = useRef<string | undefined>();
-  const prevMemoizedSubPropsRef = useRef<UseSubscriptionOptions['subscriptionProps']>();
+  const prevCriteriaRef = useRef<string | undefined>(undefined);
+  const prevMemoizedSubPropsRef = useRef<UseSubscriptionOptions['subscriptionProps']>(undefined);
 
-  const callbackRef = useRef<typeof callback>();
+  const callbackRef = useRef<typeof callback>(callback);
   callbackRef.current = callback;
 
-  const onWebSocketOpenRef = useRef<UseSubscriptionOptions['onWebSocketOpen']>();
+  const onWebSocketOpenRef = useRef<UseSubscriptionOptions['onWebSocketOpen']>(options?.onWebSocketOpen);
   onWebSocketOpenRef.current = options?.onWebSocketOpen;
 
-  const onWebSocketCloseRef = useRef<UseSubscriptionOptions['onWebSocketClose']>();
+  const onWebSocketCloseRef = useRef<UseSubscriptionOptions['onWebSocketClose']>(options?.onWebSocketClose);
   onWebSocketCloseRef.current = options?.onWebSocketClose;
 
-  const onSubscriptionConnectRef = useRef<UseSubscriptionOptions['onSubscriptionConnect']>();
+  const onSubscriptionConnectRef = useRef<UseSubscriptionOptions['onSubscriptionConnect']>(
+    options?.onSubscriptionConnect
+  );
   onSubscriptionConnectRef.current = options?.onSubscriptionConnect;
 
-  const onSubscriptionDisconnectRef = useRef<UseSubscriptionOptions['onSubscriptionDisconnect']>();
+  const onSubscriptionDisconnectRef = useRef<UseSubscriptionOptions['onSubscriptionDisconnect']>(
+    options?.onSubscriptionDisconnect
+  );
   onSubscriptionDisconnectRef.current = options?.onSubscriptionDisconnect;
 
-  const onErrorRef = useRef<UseSubscriptionOptions['onError']>();
+  const onErrorRef = useRef<UseSubscriptionOptions['onError']>(options?.onError);
   onErrorRef.current = options?.onError;
 
   useEffect(() => {

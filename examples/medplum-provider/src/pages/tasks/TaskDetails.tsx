@@ -4,7 +4,7 @@ import { createReference, formatHumanName, getReferenceString, normalizeErrorStr
 import { HumanName, Practitioner, Reference, Task } from '@medplum/fhirtypes';
 import { CodeInput, DateTimeInput, Loading, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './TaskDetails.module.css';

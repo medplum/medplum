@@ -19,7 +19,7 @@ import {
   useMedplum,
   ValueSetAutocomplete,
 } from '@medplum/react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { CoverageInput } from '../components/CoverageInput';
 import { PerformingLabInput } from '../components/PerformingLabInput';
 import { TestMetadataCardInput } from '../components/TestMetadataCardInput';

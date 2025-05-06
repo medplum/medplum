@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode, SyntheticEvent, useState } from 'react';
+import { CSSProperties, JSX, ReactNode, SyntheticEvent, useState } from 'react';
 import { FormContext } from './Form.context';
 import { parseForm } from './FormUtils';
 

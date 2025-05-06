@@ -9,7 +9,7 @@ import {
   IconRobot,
   IconUser,
 } from '@tabler/icons-react';
-import { Suspense, useEffect, useState } from 'react';
+import { JSX, Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { AppointmentDetailPage } from './pages/AppointmentDetailPage';
 import { AppointmentsPage } from './pages/AppointmentsPage';

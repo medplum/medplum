@@ -1,6 +1,6 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Quantity } from '@medplum/fhirtypes';
-import { useContext, useMemo, useState, WheelEvent } from 'react';
+import { JSX, useContext, useMemo, useState, WheelEvent } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 

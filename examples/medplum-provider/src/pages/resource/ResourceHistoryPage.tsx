@@ -1,5 +1,6 @@
 import { ResourceType } from '@medplum/fhirtypes';
 import { ResourceHistoryTable } from '@medplum/react';
+import { JSX } from 'react';
 import { useParams } from 'react-router';
 
 export function ResourceHistoryPage(): JSX.Element | null {

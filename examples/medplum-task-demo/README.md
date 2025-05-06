@@ -46,6 +46,7 @@ npm install
 ```
 
 Then, build the bots
+
 ```bash
 npm run build:bots
 ```

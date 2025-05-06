@@ -14,7 +14,7 @@ import {
 } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState, useEffect } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { getAttenders } from '../../utils';
 

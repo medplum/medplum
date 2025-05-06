@@ -1,6 +1,6 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Address } from '@medplum/fhirtypes';
-import { useContext, useMemo, useRef, useState } from 'react';
+import { JSX, useContext, useMemo, useRef, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
@@ -22,7 +22,7 @@ export type AddressInputProps = ComplexTypeInputProps<Address>;
 export function AddressInput(props: AddressInputProps): JSX.Element {
   const [value, setValue] = useState<Address>(props.defaultValue || {});
 
-  const valueRef = useRef<Address>();
+  const valueRef = useRef<Address>(value);
   valueRef.current = value;
 
   const { getExtendedProps } = useContext(ElementsContext);

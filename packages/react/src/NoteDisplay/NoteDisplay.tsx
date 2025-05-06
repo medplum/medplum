@@ -1,5 +1,6 @@
 import { Blockquote, Stack } from '@mantine/core';
 import { Annotation } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import classes from './NoteDisplay.module.css';
 
 export interface NoteDisplayProps {

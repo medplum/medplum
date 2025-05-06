@@ -1,6 +1,7 @@
 import { Paper, Tabs, Title } from '@mantine/core';
 import { Communication } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, ResourceHistoryTable, ResourceTable } from '@medplum/react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 
 interface CommunicationDetailsProps {
