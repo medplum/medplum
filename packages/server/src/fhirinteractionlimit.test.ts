@@ -1,7 +1,9 @@
 import { sleep } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import express, { Express } from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
+import { inviteUser } from './admin/invite';
 import { initApp, shutdownApp } from './app';
 import { loadTestConfig } from './config/loader';
 import { MedplumServerConfig } from './config/types';
@@ -117,7 +119,7 @@ describe('FHIR Rate Limits', () => {
 
     ({ accessToken } = await createTestProject({
       withAccessToken: true,
-      project: { systemSetting: [{ name: 'defaultFhirInteractionLimit', valueInteger: 10 }] },
+      project: { systemSetting: [{ name: 'userFhirInteractionLimit', valueInteger: 1000 }] },
     }));
 
     const res = await request(app)
@@ -125,5 +127,49 @@ describe('FHIR Rate Limits', () => {
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
     expect(res.status).toBe(201);
+  });
+
+  test.skip('Respects Project level limit', async () => {
+    config.defaultFhirInteractionLimit = 100;
+    await initApp(app, config);
+
+    const { accessToken, project } = await createTestProject({
+      withAccessToken: true,
+      project: { systemSetting: [{ name: 'totalFhirInteractionLimit', valueInteger: 100 }] },
+    });
+
+    const email = `${randomUUID()}@example.com`;
+    const password = randomUUID();
+    await inviteUser({ project, resourceType: 'Practitioner', firstName: 'A.', lastName: 'Zee', email, password });
+
+    const loginRes = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      scope: 'openid offline',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(loginRes.status).toBe(200);
+
+    const tokenRes = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: loginRes.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(tokenRes.status).toBe(200);
+    expect(tokenRes.body.access_token).toBeDefined();
+    const otherToken = tokenRes.body.access_token;
+
+    const res = await request(app)
+      .post('/fhir/R4/Patient')
+      .auth(accessToken, { type: 'bearer' })
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+
+    const res2 = await request(app)
+      .post('/fhir/R4/Patient')
+      .auth(otherToken, { type: 'bearer' })
+      .send({ resourceType: 'Patient' });
+    expect(res2.status).toBe(429);
   });
 });

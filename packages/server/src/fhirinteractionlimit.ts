@@ -79,7 +79,6 @@ export class FhirRateLimiter {
       }
       const projectResult = await this.projectLimiter.consume(this.projectKey, points);
       this.setState(result, projectResult);
-      // return result;
     } catch (err: unknown) {
       if (err instanceof Error) {
         // throw err;
