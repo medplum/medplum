@@ -26,8 +26,11 @@ export function buildTokenColumns(
   buildTokensForSearchParameter(allTokens, resource, searchParam);
 
   // search parameters may share columns, so add any existing tokens to the set
-  const tokens = new Set<string>(columns[impl.columnName]);
+  const tokens = new Set<string>(columns[impl.tokenColumnName]);
   const textSearchTokens = new Set<string>(columns[impl.textSearchColumnName]);
+
+  const legacyTokens = new Set<string>(columns[impl.legacyColumnName]);
+  const legacyTextSearchTokens = new Set<string>(columns[impl.legacyTextSearchColumnName]);
 
   let sortColumnValue: string | null = null;
   for (const t of allTokens) {
@@ -47,16 +50,19 @@ export function buildTokenColumns(
       throw new Error(`Invalid token code ${code} for search parameter with code ${searchParam.code}`);
     }
 
-    // :missing/:present
-    tokens.add(code);
+    // :missing/:present - in a token column per search parameter, the presence of any elements
+    // in the main token column, `impl.tokenColumnName`, is sufficient.
+    legacyTokens.add(code);
 
     if (system) {
       // [parameter]=[system]|
-      tokens.add(code + DELIM + system);
+      legacyTokens.add(code + DELIM + system);
+      tokens.add(system);
 
       if (value) {
         // [parameter]=[system]|[code]
-        tokens.add(code + DELIM + system + DELIM + value);
+        legacyTokens.add(code + DELIM + system + DELIM + value);
+        tokens.add(system + DELIM + value);
       }
     }
 
@@ -64,22 +70,28 @@ export function buildTokenColumns(
       sortColumnValue = sortColumnValue && sortColumnValue.localeCompare(value) <= 0 ? sortColumnValue : value;
 
       // [parameter]=[code]
-      tokens.add(code + DELIM + DELIM + value);
+      legacyTokens.add(code + DELIM + DELIM + value);
+      tokens.add(DELIM + value);
 
       if (!system) {
         // [parameter]=|[code]
-        tokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
+        legacyTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
+        tokens.add(NULL_SYSTEM + DELIM + value);
       }
 
       // text search
       if (system === 'text' || impl.textSearch) {
-        textSearchTokens.add(code + DELIM + DELIM + value);
+        legacyTextSearchTokens.add(code + DELIM + DELIM + value);
+        textSearchTokens.add(value);
       }
     }
   }
-  columns[impl.columnName] = Array.from(tokens);
+
+  columns[impl.tokenColumnName] = Array.from(tokens);
   columns[impl.textSearchColumnName] = Array.from(textSearchTokens);
   columns[impl.sortColumnName] = sortColumnValue;
+  columns[impl.legacyColumnName] = Array.from(legacyTokens);
+  columns[impl.legacyTextSearchColumnName] = Array.from(legacyTextSearchTokens);
 }
 
 /**
@@ -110,12 +122,12 @@ export function addTokenColumnsOrderBy(
     in the instance.
 
     Current behavior:
-    Sorts by the first value found in the token array for the given sort code which can result
-    in incorrect result ordering when a resource has multiple token values for the same code.
+    Sorts by the alphabetically first value found in the token array. This can result
+    in possibly unexpected/surprising result ordering when a resource has multiple token
+    values for the same code.
 
-    To achieve the correct behavior, it would be "best" to precompute and store in additional columns,
-    e.g. "codeAsc" and "codeDesc" for each token column in the token table. Writes are a little slower,
-    but searching would be quick.
+    To avoid the surprising behavior, we could store both the alphabetically first and last
+    values for each search parameter.
   */
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy !== 'token-column') {
@@ -129,7 +141,8 @@ export function buildTokenColumnsSearchFilter(
   resourceType: ResourceType,
   tableName: string,
   param: SearchParameter,
-  filter: Filter
+  filter: Filter,
+  strategy: 'unified-tokens-column' | 'column-per-code'
 ): Expression {
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy !== 'token-column') {
@@ -150,7 +163,13 @@ export function buildTokenColumnsSearchFilter(
       // https://www.hl7.org/fhir/r4/search.html#combining
       const expressions: Expression[] = [];
       for (const searchValue of splitSearchOnComma(filter.value)) {
-        expressions.push(buildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue));
+        if (strategy === 'unified-tokens-column') {
+          expressions.push(
+            buildTokenColumnsWhereConditionOneColumn(impl, tableName, filter.code, filter.operator, searchValue)
+          );
+        } else {
+          expressions.push(buildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue));
+        }
       }
 
       const expression = new Disjunction(expressions);
@@ -165,11 +184,24 @@ export function buildTokenColumnsSearchFilter(
     }
     case FhirOperator.MISSING:
     case FhirOperator.PRESENT: {
-      const cond = new TypedCondition(new Column(tableName, impl.columnName), 'ARRAY_CONTAINS', filter.code, 'TEXT[]');
-      if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
-        return new Negation(cond);
+      if (strategy === 'unified-tokens-column') {
+        const cond = new TypedCondition(
+          new Column(tableName, impl.legacyColumnName),
+          'ARRAY_CONTAINS',
+          filter.code,
+          'TEXT[]'
+        );
+        if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+          return new Negation(cond);
+        }
+        return cond;
       }
-      return cond;
+
+      if (shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+        return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_NOT_EMPTY', undefined, 'TEXT[]');
+      } else {
+        return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_EMPTY', undefined, 'TEXT[]');
+      }
     }
     case FhirOperator.STARTS_WITH:
     case FhirOperator.GREATER_THAN:
@@ -228,14 +260,109 @@ function buildTokenColumnsWhereCondition(
   query: string
 ): Expression {
   query = query.trim();
-  const tokenCol = new Column(tableName, impl.columnName);
-  const textSearchCol = new Column(tableName, impl.textSearchColumnName);
 
   switch (operator) {
     case FhirOperator.IN:
     case FhirOperator.NOT_IN: {
       // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
       return buildInValueSetCondition(code, impl, tableName, query);
+    }
+    case FhirOperator.TEXT:
+    case FhirOperator.CONTAINS: {
+      // perform a regex search on the string generated by the token_array_to_text function
+      // the array entries are of the form `value` and are joined by ARRAY_DELIM
+      // as well as having an ARRAY_DELIM prefix and suffix on the entire string:
+      // Overall, the string being searched by regex is of the form:
+      // ARRAY_DELIM + <value1> + ARRAY_DELIM + <value2> + ... + ARRAY_DELIM
+
+      // this regex looks for an entry from the format described above:
+      //   - `ARRAY_DELIM`
+      //   - any number of characters that are not `ARRAY_DELIM` (to support infix search)
+      //   - the query string
+      const regexStr = ARRAY_DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
+      const textSearchCol = new Column(tableName, impl.textSearchColumnName);
+      const regexCond = new TypedCondition(textSearchCol, 'TOKEN_ARRAY_IREGEX', regexStr, 'TEXT[]');
+
+      // For :text (but not :contains), also check that the token column contains `'text'`,
+      // where 'text' is the system value specified for token values that should be text-searchable
+      if (operator === FhirOperator.TEXT) {
+        const systemCol = new Column(tableName, impl.tokenColumnName);
+        return new Conjunction([regexCond, new TypedCondition(systemCol, 'ARRAY_CONTAINS', 'text', 'TEXT[]')]);
+      }
+
+      return regexCond;
+    }
+    case FhirOperator.EQUALS:
+    case FhirOperator.EXACT:
+    case FhirOperator.NOT:
+    case FhirOperator.NOT_EQUALS: {
+      /*
+      exact matches on the formats:
+        <system>|
+        <system>|<value>
+        |<value>
+        <value>
+      */
+
+      let system: string;
+      let value: string;
+      let columnName: string;
+      const parts = splitN(query, '|', 2);
+      if (parts.length === 2) {
+        system = parts[0] || NULL_SYSTEM; // If query is "|foo", searching for "foo" values without a system, aka NULL_SYSTEM
+        value = parts[1];
+        if (value) {
+          value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
+          return new TypedCondition(
+            new Column(tableName, impl.tokenColumnName),
+            'ARRAY_CONTAINS',
+            system + DELIM + value,
+            'TEXT[]'
+          );
+        } else {
+          return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_CONTAINS', system, 'TEXT[]');
+        }
+      } else {
+        value = query;
+        columnName = impl.tokenColumnName;
+        value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
+        return new TypedCondition(new Column(tableName, columnName), 'ARRAY_CONTAINS', DELIM + value, 'TEXT[]');
+      }
+    }
+    default: {
+      operator satisfies never;
+      throw new OperationOutcomeError(badRequest(`Unexpected search operator '${operator}'`));
+    }
+  }
+}
+
+/**
+ * Build a filter for each comma-separated query value. Negation should NOT be handled here;
+ * the calling function is responsible for negating the disjunction of the expressions returned
+ * by this function.
+ * @param impl - The search parameter implementation.
+ * @param tableName - The table name.
+ * @param code - The search parameter code.
+ * @param operator - The search operator.
+ * @param query - The query value.
+ * @returns The filter expression for the search parameter without negation.
+ */
+function buildTokenColumnsWhereConditionOneColumn(
+  impl: TokenColumnSearchParameterImplementation,
+  tableName: string,
+  code: string,
+  operator: TokenQueryOperator,
+  query: string
+): Expression {
+  query = query.trim();
+  const tokenCol = new Column(tableName, impl.legacyColumnName);
+  const textSearchCol = new Column(tableName, impl.legacyTextSearchColumnName);
+
+  switch (operator) {
+    case FhirOperator.IN:
+    case FhirOperator.NOT_IN: {
+      // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
+      return buildInValueSetConditionOneColumn(code, impl, tableName, query);
     }
     case FhirOperator.TEXT:
     case FhirOperator.CONTAINS: {
@@ -303,11 +430,29 @@ function buildInValueSetCondition(
   tableName: string,
   query: string
 ): Expression {
+  // ValueSet.reference serves as the system of the token
+
+  return new TypedCondition(
+    new Column(tableName, impl.tokenColumnName),
+    'ARRAY_CONTAINS_SUBQUERY',
+    new SelectQuery('ValueSet').column('reference').where('url', '=', query).limit(1),
+    'TEXT[]'
+  );
+}
+
+function buildInValueSetConditionOneColumn(
+  code: string,
+  impl: TokenColumnSearchParameterImplementation,
+  tableName: string,
+  query: string
+): Expression {
+  // ValueSet.reference serves as the system of the token
+
   const valueSetQ = new SelectQuery('ValueSet').raw('unnest(reference) as reference').where('url', '=', query).limit(1);
   const withCodeQ = new SelectQuery('withCode', valueSetQ).raw(`e'${code + DELIM}' || reference as code_and_url`);
   const aggregatedQ = new SelectQuery('aggregated', withCodeQ).raw('array_agg(code_and_url) as code_and_urls');
   const cond = new TypedCondition(
-    new Column(tableName, impl.columnName),
+    new Column(tableName, impl.legacyColumnName),
     'ARRAY_CONTAINS_SUBQUERY',
     aggregatedQ,
     'TEXT[]'
