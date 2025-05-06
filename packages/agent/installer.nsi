@@ -168,11 +168,14 @@ SectionEnd
 # It does not modify the existing configuration settings.
 Function UpgradeApp
     # Copy the new files to the installation directory
+    # We temporarily set overwrite to "ifdiff" so that we don't try to overwrite files that may already exist from a previous installation
+    # This should prevent us from trying to overwrite shawl which could still be running, but shouldn't be different if it's the same version
     SetOverwrite ifdiff
     File dist\shawl-v1.5.0-legal.txt
     File dist\shawl-v1.5.0-win64.exe
     File dist\${SERVICE_FILE_NAME}
     File README.md
+    # We set overwrite back to the default value, "on"
     SetOverwrite on
 
     # Create the service
