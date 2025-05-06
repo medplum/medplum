@@ -240,12 +240,14 @@ Function UpgradeApp
     ; # We use net stop specifically because it waits for the service to gracefully stop before returning
     ; ; ExecWait 'cmd.exe /c "for /f "tokens=2 delims=: " %s in (''sc query state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent"'') do (if not "%s"=="${SERVICE_NAME}" (echo Stopping and deleting service: %s & net stop %s && sc delete %s))"' $1
     ; DetailPrint "Exit code $1"
-    DetailPrint "Stopping and deleting old Medplum Agent service..."
+    DetailPrint "Stopping and deleting old Medplum Agent services..."
     Call StopAndDeleteOldMedplumServices
 
 FunctionEnd
 
 Function StopAndDeleteOldMedplumServices
+    DetailPrint "Service Name to filter out: ${SERVICE_NAME}"
+
     # Get list of services
     # We use "nsExec:ExecToStack" so that another CMD window is not opened
     # Here's the processing this command does:
