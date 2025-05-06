@@ -8,10 +8,10 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { createTheme, MantineProvider } from '@mantine/core';
 import { createBrowserRouter, RouterProvider } from 'react-router';
+import { getConfig } from './config';
 
 const medplum = new MedplumClient({
-  // Uncomment this line to use a local Medplum server
-  // baseUrl: 'http://localhost:8103/',
+  baseUrl: getConfig().baseUrl,
   cacheTime: 60000,
   autoBatchTime: 100,
   onUnauthenticated: () => {
