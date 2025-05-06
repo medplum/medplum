@@ -362,7 +362,7 @@ jobs:
           npm run test:smoke
           popd
       - name: Upload test results
-        if: ${{ always() && matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
+        if: ${{ failure() || (matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7) }}
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-results
