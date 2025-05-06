@@ -87,6 +87,12 @@ jobs:
             const path = await getSigntoolLocation();
             return path.replace(' ', '\ ');
 
+      - name: Set repo hash
+        shell: bash
+        run: |
+          set -e
+          echo "MEDPLUM_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Build Agent installer
         shell: bash
         run: ./scripts/build-agent-installer-win64.sh
