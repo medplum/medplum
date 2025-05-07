@@ -1,5 +1,5 @@
-import { sleep } from '@medplum/core';
-import { Bundle } from '@medplum/fhirtypes';
+import { createReference, sleep } from '@medplum/core';
+import { Bundle, ProjectMembership, UserConfiguration } from '@medplum/fhirtypes';
 import express, { Express } from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
@@ -121,6 +121,32 @@ describe('FHIR Rate Limits', () => {
       withAccessToken: true,
       project: { systemSetting: [{ name: 'userFhirInteractionLimit', valueInteger: 1000 }] },
     }));
+
+    const res = await request(app)
+      .post('/fhir/R4/Patient')
+      .auth(accessToken, { type: 'bearer' })
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+  });
+
+  test('Respects ProjectMembership setting override', async () => {
+    config.defaultFhirInteractionLimit = 1;
+    await initApp(app, config);
+
+    const { accessToken, repo, membership } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      withClient: true,
+    });
+
+    const userConfig = await repo.createResource<UserConfiguration>({
+      resourceType: 'UserConfiguration',
+      option: [{ id: 'fhirQuota', valueInteger: 1000 }],
+    });
+    await repo.updateResource<ProjectMembership>({
+      ...membership,
+      userConfiguration: createReference(userConfig),
+    });
 
     const res = await request(app)
       .post('/fhir/R4/Patient')

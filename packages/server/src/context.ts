@@ -82,7 +82,7 @@ export class AuthenticatedRequestContext extends RequestContext {
     return new AuthenticatedRequestContext(
       ctx?.requestId ?? '',
       ctx?.traceId ?? '',
-      {} as unknown as AuthState,
+      { userConfig: {} } as unknown as AuthState,
       getSystemRepo(),
       systemLogger
     );
@@ -213,14 +213,11 @@ function write(msg: string): void {
 }
 
 function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimiter | undefined {
-  const defaultUserLimit = authState.project?.systemSetting?.find(
-    (s) => s.name === 'userFhirInteractionLimit'
-  )?.valueInteger;
-  const userLimit = defaultUserLimit ?? getConfig().defaultFhirInteractionLimit;
+  const defaultUserLimit = authState.project?.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
+  const userSpecificLimit = authState.userConfig.option?.find((o) => o.id === 'fhirQuota')?.valueInteger;
+  const userLimit = userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirInteractionLimit;
 
-  const perProjectLimit = authState.project?.systemSetting?.find(
-    (s) => s.name === 'totalFhirInteractionLimit'
-  )?.valueInteger;
+  const perProjectLimit = authState.project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
   const projectLimit = perProjectLimit ?? userLimit * 10;
 
   return authState.membership
