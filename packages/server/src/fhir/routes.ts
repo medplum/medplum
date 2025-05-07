@@ -25,6 +25,8 @@ import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
+import { lookupDbColumnStatisticsHandler } from './operations/dbcolumnstatisticslookup';
+import { updateDbColumnStatisticsHandler } from './operations/dbcolumnstatisticsupdate';
 import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
 import { dbSchemaDiffHandler } from './operations/dbschemadiff';
 import { dbStatsHandler } from './operations/dbstats';
@@ -335,6 +337,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$db-stats', dbStatsHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
+  router.add('GET', '/$db-column-statistics', lookupDbColumnStatisticsHandler);
+  router.add('POST', '/$db-column-statistics', updateDbColumnStatisticsHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();

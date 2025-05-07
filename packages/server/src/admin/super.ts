@@ -22,6 +22,7 @@ import { DatabaseMode, getDatabasePool, maybeStartPostDeployMigration } from '..
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo, Repository } from '../fhir/repo';
+import { isValidTableName } from '../fhir/sql';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { authenticateRequest } from '../oauth/middleware';
@@ -40,10 +41,6 @@ export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_cost_limit: 'int',
   autovacuum_vacuum_cost_delay: 'float',
 } as const satisfies Record<string, 'float' | 'int'>;
-
-export function isValidTableName(tableName: string): boolean {
-  return /^[\w_]+$/.test(tableName);
-}
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
