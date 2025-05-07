@@ -1,4 +1,4 @@
-import { Logger } from '@medplum/core';
+import { Logger, OperationOutcomeError, tooManyRequests } from '@medplum/core';
 import { Response } from 'express';
 import Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
@@ -13,6 +13,7 @@ export class FhirRateLimiter {
   private current?: RateLimiterRes;
   private delta: number;
   private logThreshold: number;
+  private readonly enabled: boolean;
 
   private readonly logger: Logger;
 
@@ -23,19 +24,21 @@ export class FhirRateLimiter {
       points: userLimit,
       duration: 60, // Per minute
     });
+    this.userKey = authState.membership.id;
+
     this.projectLimiter = new RateLimiterRedis({
       keyPrefix: 'medplum:rl:fhir:project:',
       storeClient: redis,
       points: projectLimit,
       duration: 60, // Per minute
     });
-    this.userKey = authState.membership.id;
     this.projectKey = authState.project.id;
 
     this.delta = 0;
 
     this.logger = logger;
     this.logThreshold = Math.floor(userLimit * 0.1); // Log requests that consume at least 10% of the user's total limit
+    this.enabled = Boolean(authState.project.systemSetting?.find((s) => s.name === 'enableFhirQuota')?.valueBoolean);
   }
 
   private setState(result: RateLimiterRes, ...others: RateLimiterRes[]): void {
@@ -62,8 +65,8 @@ export class FhirRateLimiter {
    */
   async consume(points: number): Promise<void> {
     // If user is already over the limit, just block
-    if (this.current && this.current.remainingPoints <= 0) {
-      // throw new OperationOutcomeError(tooManyRequests);
+    if (this.current && this.current.remainingPoints <= 0 && this.enabled) {
+      throw new OperationOutcomeError(tooManyRequests);
     }
 
     this.delta += points;
@@ -80,8 +83,8 @@ export class FhirRateLimiter {
       const projectResult = await this.projectLimiter.consume(this.projectKey, points);
       this.setState(result, projectResult);
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        // throw err;
+      if (err instanceof Error && this.enabled) {
+        throw err;
       }
       const result = err as RateLimiterRes;
       this.setState(result);
@@ -90,7 +93,9 @@ export class FhirRateLimiter {
         used: result.consumedPoints,
         msToReset: result.msBeforeNext,
       });
-      // throw new OperationOutcomeError(tooManyRequests);
+      if (this.enabled) {
+        throw new OperationOutcomeError(tooManyRequests);
+      }
     }
   }
 

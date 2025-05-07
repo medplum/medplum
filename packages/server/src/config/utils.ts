@@ -39,7 +39,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
 
-  config.defaultFhirInteractionLimit ??= 50_000;
+  config.defaultFhirQuota ??= 50_000;
   return config as ServerConfig;
 }
 
@@ -65,9 +65,9 @@ type DefaultConfigKeys =
   | 'emailProvider'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
-  | 'defaultFhirInteractionLimit';
+  | 'defaultFhirQuota';
 
-const integerKeys = ['port', 'accurateCountThreshold'];
+const integerKeys = ['port', 'accurateCountThreshold', 'defaultRateLimit', 'defaultAuthRateLimit', 'defaultFhirQuota'];
 
 export function isIntegerConfig(key: string): boolean {
   return integerKeys.includes(key);

@@ -30,11 +30,14 @@ describe('FHIR Rate Limits', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
-  test.skip('Blocks request that would exceed limit', async () => {
-    config.defaultFhirInteractionLimit = 1;
+  test('Blocks request that would exceed limit', async () => {
+    config.defaultFhirQuota = 100;
     await initApp(app, config);
 
-    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+    ({ accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: { systemSetting: [{ name: 'enableFhirQuota', valueBoolean: true }] },
+    }));
 
     const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res.status).toBe(200);
@@ -45,11 +48,14 @@ describe('FHIR Rate Limits', () => {
     expect(res2.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
   });
 
-  test.skip('Blocks single too-expensive request', async () => {
-    config.defaultFhirInteractionLimit = 1;
+  test('Blocks single too-expensive request', async () => {
+    config.defaultFhirQuota = 1;
     await initApp(app, config);
 
-    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+    ({ accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: { systemSetting: [{ name: 'enableFhirQuota', valueBoolean: true }] },
+    }));
 
     const res = await request(app)
       .post('/fhir/R4/Patient')
@@ -59,10 +65,13 @@ describe('FHIR Rate Limits', () => {
   });
 
   test('Allows batch under limit', async () => {
-    config.defaultFhirInteractionLimit = 1;
+    config.defaultFhirQuota = 1;
     await initApp(app, config);
 
-    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+    ({ accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: { systemSetting: [{ name: 'enableFhirQuota', valueBoolean: true }] },
+    }));
 
     const res = await request(app)
       .post('/fhir/R4/')
@@ -75,13 +84,13 @@ describe('FHIR Rate Limits', () => {
     expect(res.status).toBe(200);
   });
 
-  test.skip('Blocks oversized transaction bundle', async () => {
-    config.defaultFhirInteractionLimit = 1;
+  test('Blocks oversized transaction bundle', async () => {
+    config.defaultFhirQuota = 1;
     await initApp(app, config);
 
     ({ accessToken } = await createTestProject({
       withAccessToken: true,
-      project: { features: ['transaction-bundles'] },
+      project: { features: ['transaction-bundles'], systemSetting: [{ name: 'enableFhirQuota', valueBoolean: true }] },
     }));
 
     const res = await request(app)
@@ -96,7 +105,7 @@ describe('FHIR Rate Limits', () => {
   });
 
   test('Reports multiple, in-progress rate limits', async () => {
-    config.defaultFhirInteractionLimit = 500;
+    config.defaultFhirQuota = 500;
     config.defaultRateLimit = 100;
     await initApp(app, config);
 
@@ -114,12 +123,17 @@ describe('FHIR Rate Limits', () => {
   });
 
   test('Respects Project setting override', async () => {
-    config.defaultFhirInteractionLimit = 1;
+    config.defaultFhirQuota = 1;
     await initApp(app, config);
 
     ({ accessToken } = await createTestProject({
       withAccessToken: true,
-      project: { systemSetting: [{ name: 'userFhirInteractionLimit', valueInteger: 1000 }] },
+      project: {
+        systemSetting: [
+          { name: 'userFhirQuota', valueInteger: 1000 },
+          { name: 'enableFhirQuota', valueBoolean: true },
+        ],
+      },
     }));
 
     const res = await request(app)
@@ -130,13 +144,14 @@ describe('FHIR Rate Limits', () => {
   });
 
   test('Respects ProjectMembership setting override', async () => {
-    config.defaultFhirInteractionLimit = 1;
+    config.defaultFhirQuota = 1;
     await initApp(app, config);
 
     const { accessToken, repo, membership } = await createTestProject({
       withAccessToken: true,
       withRepo: true,
       withClient: true,
+      project: { systemSetting: [{ name: 'enableFhirQuota', valueBoolean: true }] },
     });
 
     const userConfig = await repo.createResource<UserConfiguration>({
@@ -155,13 +170,18 @@ describe('FHIR Rate Limits', () => {
     expect(res.status).toBe(201);
   });
 
-  test.skip('Respects Project level limit', async () => {
-    config.defaultFhirInteractionLimit = 100;
+  test('Respects Project level limit', async () => {
+    config.defaultFhirQuota = 100;
     await initApp(app, config);
 
     const { accessToken, project } = await createTestProject({
       withAccessToken: true,
-      project: { systemSetting: [{ name: 'totalFhirInteractionLimit', valueInteger: 100 }] },
+      project: {
+        systemSetting: [
+          { name: 'enableFhirQuota', valueBoolean: true },
+          { name: 'totalFhirQuota', valueInteger: 100 },
+        ],
+      },
     });
 
     const email = `${randomUUID()}@example.com`;

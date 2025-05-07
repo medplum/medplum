@@ -215,7 +215,7 @@ function write(msg: string): void {
 function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimiter | undefined {
   const defaultUserLimit = authState.project?.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
   const userSpecificLimit = authState.userConfig.option?.find((o) => o.id === 'fhirQuota')?.valueInteger;
-  const userLimit = userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirInteractionLimit;
+  const userLimit = userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirQuota;
 
   const perProjectLimit = authState.project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
   const projectLimit = perProjectLimit ?? userLimit * 10;
