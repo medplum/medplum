@@ -399,11 +399,15 @@ Function InstallApp
 
 FunctionEnd
 
-# Start the uninstaller
-Section Uninstall
+Function un.StopAndDeleteMedplumServices
     # Call stop and delete with empty string to single that all Medplum services should be stopped and deleted
     Push ""
     Call StopAndDeleteOldMedplumServices
+FunctionEnd
+
+# Start the uninstaller
+Section Uninstall
+    Call un.StopAndDeleteMedplumServices
 
     # Get out of the service directory so we can delete it
     SetOutPath "$PROGRAMFILES64"
