@@ -234,12 +234,14 @@ Function UpgradeApp
     ${Loop}
 
     DetailPrint "Stopping and deleting old Medplum Agent services..."
+    Push "${SERVICE_NAME}"
     Call StopAndDeleteOldMedplumServices
 
 FunctionEnd
 
 Function StopAndDeleteOldMedplumServices
-    DetailPrint "Service name to filter out: ${SERVICE_NAME}"
+    # Get the service name to filter out from function args
+    Pop $0
 
     # Get list of services
     # We use "nsExec:ExecToStack" so that another CMD window is not opened
@@ -248,11 +250,17 @@ Function StopAndDeleteOldMedplumServices
     # We filter each line and only take the lines giving the service names specifically containing MedplumAgent
     # We then filter each of those lines and remove any lines matching SERVICE_NAME: ${SERVICE_NAME} to filter out the current version of the service
     # Finally, in the outer for loop we go through all the remaining output lines and re-output them without the "SERVICE_NAME: " prefix
-    nsExec::ExecToStack `cmd.exe /c "for /f "tokens=2 delims=: " %i in ('sc query type^= service state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent" ^| findstr /v /i "SERVICE_NAME.*${SERVICE_NAME}"') do @echo %i"`
+    ${If} $0 == ""
+        DetailPrint "No service name given to filter out. Querying for all Medplum agent services..."
+        nsExec::ExecToStack `cmd.exe /c "for /f "tokens=2 delims=: " %i in ('sc query type^= service state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent"') do @echo %i"`
+    ${Else}
+        DetailPrint "Service name to filter out: $0"
+        nsExec::ExecToStack `cmd.exe /c "for /f "tokens=2 delims=: " %i in ('sc query type^= service state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent" ^| findstr /v /i "SERVICE_NAME.*$0"') do @echo %i"`
+    ${EndIf}
     Pop $0 # Return value
     Pop $ServicesList # Command output
 
-    DetailPrint "Filtered services: $ServicesList"
+    DetailPrint "Services to be stopped and removed: $ServicesList"
 
     # Process each service in the filtered list
     StrCpy $WorkingList "$ServicesList"
@@ -334,8 +342,6 @@ Function InstallApp
     File dist\${SERVICE_FILE_NAME}
     File README.md
 
-
-
     # Create the agent.properties config file
     FileOpen $9 agent.properties w
     FileWrite $9 "baseUrl=$baseUrl$\r$\n"
@@ -395,21 +401,9 @@ FunctionEnd
 
 # Start the uninstaller
 Section Uninstall
-
-    # Stop the service
-    DetailPrint "Stopping service..."
-    ExecWait "sc.exe stop ${SERVICE_NAME}" $1
-    DetailPrint "Exit code $1"
-
-    # Sleep for 3 seconds to let the service fully stop
-    # We cannot delete the file until the service is fully stopped
-    DetailPrint "Sleeping..."
-    Sleep 3000
-
-    # Deleting the service
-    DetailPrint "Deleting service..."
-    ExecWait "sc.exe delete ${SERVICE_NAME}" $1
-    DetailPrint "Exit code $1"
+    # Call stop and delete with empty string to single that all Medplum services should be stopped and deleted
+    Push ""
+    Call StopAndDeleteOldMedplumServices
 
     # Get out of the service directory so we can delete it
     SetOutPath "$PROGRAMFILES64"
@@ -421,7 +415,6 @@ Section Uninstall
     RMDir /r /REBOOTOK "$INSTDIR"
 
     # Unregister the program
-    DeleteRegKey HKLM "SYSTEM\CurrentControlSet\Services\${SERVICE_NAME}"
     DeleteRegKey HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\${BASE_SERVICE_NAME}"
 
 SectionEnd
