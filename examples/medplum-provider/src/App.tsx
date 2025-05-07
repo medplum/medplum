@@ -9,7 +9,7 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconClipboardCheck, IconMail, IconPencil, IconTimeDuration0, IconUser } from '@tabler/icons-react';
-import { Suspense } from 'react';
+import { JSX, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
@@ -25,6 +25,7 @@ import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
+import { IntakeFormPage } from './pages/patient/IntakeFormPage';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { TaskTab } from './pages/patient/TaskTab';
@@ -35,7 +36,6 @@ import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { TaskDetails } from './pages/tasks/TaskDetails';
-import { IntakeFormPage } from './pages/patient/IntakeFormPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();

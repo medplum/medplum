@@ -1,6 +1,7 @@
 import { Stack, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import { ResourceTable, useResource } from '@medplum/react';
+import { JSX } from 'react';
 import { useParams } from 'react-router';
 
 /**

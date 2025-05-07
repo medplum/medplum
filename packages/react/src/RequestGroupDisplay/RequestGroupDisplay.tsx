@@ -3,7 +3,7 @@ import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, RequestGroup, Resource, Task } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconCheckbox, IconSquare } from '@tabler/icons-react';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, JSX, useEffect, useState } from 'react';
 import { ResourceName } from '../ResourceName/ResourceName';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 

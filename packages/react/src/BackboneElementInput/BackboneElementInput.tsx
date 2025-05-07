@@ -1,6 +1,6 @@
 import { ElementsContextType, buildElementsContext, tryGetDataType } from '@medplum/core';
 import { AccessPolicyResource } from '@medplum/fhirtypes';
-import { useContext, useMemo, useState } from 'react';
+import { JSX, useContext, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';

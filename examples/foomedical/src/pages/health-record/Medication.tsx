@@ -2,7 +2,7 @@ import { Anchor, Box, Button, Modal, Stack, Text, Title } from '@mantine/core';
 import { formatDateTime, formatHumanName, formatTiming } from '@medplum/core';
 import { HumanName, MedicationRequest } from '@medplum/fhirtypes';
 import { ResourceTable, useMedplum } from '@medplum/react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { useParams } from 'react-router';
 import { InfoSection } from '../../components/InfoSection';
 

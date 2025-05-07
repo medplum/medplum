@@ -4,6 +4,7 @@ import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '
 import { Questionnaire, QuestionnaireResponse, Schedule } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 
 interface BlockAvailabilityProps {
   readonly schedule: Schedule;

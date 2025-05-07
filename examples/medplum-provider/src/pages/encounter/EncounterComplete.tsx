@@ -1,14 +1,14 @@
-import { Text, Stack, Box, Button } from '@mantine/core';
-import { Practitioner, Task } from '@medplum/fhirtypes';
-import { Loading, useMedplum } from '@medplum/react';
-import { Outlet } from 'react-router';
-import { useCallback, useEffect, useState } from 'react';
+import { Box, Button, Stack, Text } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { Practitioner, Task } from '@medplum/fhirtypes';
+import { Loading, useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
-import { TaskQuestionnaireResponseSummaryPanel } from '../components/Task/TaskQuestionnaireResponseSummaryPanel';
-import { EncounterHeader } from '../components/Encounter/EncounterHeader';
+import { JSX, useCallback, useEffect, useState } from 'react';
+import { Outlet } from 'react-router';
 import { useEncounter } from '../../hooks/useEncounter';
+import { EncounterHeader } from '../components/Encounter/EncounterHeader';
+import { TaskQuestionnaireResponseSummaryPanel } from '../components/Task/TaskQuestionnaireResponseSummaryPanel';
 
 export const EncounterComplete = (): JSX.Element => {
   const medplum = useMedplum();

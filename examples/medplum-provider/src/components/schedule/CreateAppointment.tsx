@@ -15,6 +15,7 @@ import {
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconEdit, IconTrash } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { Event } from 'react-big-calendar';
 import { useNavigate } from 'react-router';
 import { CreateUpdateSlot } from './CreateUpdateSlot';

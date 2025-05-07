@@ -3,7 +3,7 @@ import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { IconDots } from '@tabler/icons-react';
 import cx from 'clsx';
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import { Container } from '../Container/Container';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { MedplumLink } from '../MedplumLink/MedplumLink';

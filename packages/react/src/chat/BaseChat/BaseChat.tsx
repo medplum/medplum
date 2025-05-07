@@ -17,7 +17,7 @@ import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight } from '@tabler/icons-react';
 import cx from 'clsx';
-import { LegacyRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { JSX, LegacyRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';

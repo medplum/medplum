@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { Filter, formatSearchQuery, parseSearchRequest, SearchRequest, SortRule } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { CreateEncounter } from '../components/actions/CreateEncounter';
 import classes from './SearchPage.module.css';

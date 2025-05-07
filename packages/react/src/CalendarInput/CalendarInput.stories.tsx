@@ -1,5 +1,6 @@
 import { Slot } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { withMockedDate } from '../stories/decorators';
 import { CalendarInput } from './CalendarInput';

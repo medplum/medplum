@@ -1,5 +1,6 @@
 import { Title } from '@mantine/core';
 import { Logo, SignInForm } from '@medplum/react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { getConfig } from '../config';
 

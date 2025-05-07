@@ -3,7 +3,7 @@ import { getReferenceString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconEye } from '@tabler/icons-react';
-import { useContext } from 'react';
+import { JSX, useContext } from 'react';
 import { useNavigate } from 'react-router';
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 

@@ -1,5 +1,6 @@
 import { formatQuantity } from '@medplum/core';
 import { Quantity } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 
 export interface QuantityDisplayProps {
   readonly value?: Quantity;

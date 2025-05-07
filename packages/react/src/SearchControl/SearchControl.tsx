@@ -31,7 +31,7 @@ import {
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import { ChangeEvent, MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, JSX, MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';

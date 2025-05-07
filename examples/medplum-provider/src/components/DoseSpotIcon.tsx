@@ -2,7 +2,7 @@ import { ActionIcon, Indicator, Tooltip } from '@mantine/core';
 import { useDoseSpotNotifications } from '@medplum/dosespot-react';
 import { useMedplumNavigate } from '@medplum/react';
 import { IconPrescription } from '@tabler/icons-react';
-import { useCallback } from 'react';
+import { JSX, useCallback } from 'react';
 
 export function DoseSpotIcon(): JSX.Element {
   const navigate = useMedplumNavigate();

@@ -17,12 +17,12 @@ npm ci
 In [`App.tsx`](./src/App.tsx#L6-L20):
 
 1. Update your `baseUrl`. If you are testing this out against a server on your localhost, you will need to put your computer's local IP address here, for example: `baseUrl: 'http://192.168.x.x:8103`
-Metro will usually emit this address in the line: 'Metro waiting on exp://192.168.1.216:8081'
-but you will need to change the protocol to 'http://' and the port to 8103 (the Medplum server's default) or whatever port your server is using
+   Metro will usually emit this address in the line: 'Metro waiting on exp://192.168.1.216:8081'
+   but you will need to change the protocol to 'http://' and the port to 8103 (the Medplum server's default) or whatever port your server is using
 2. Add your Medplum Client ID
 
-
 ### Web
+
 ```bash
 npm run web
 ```
@@ -35,7 +35,6 @@ npm run web
    npm run android
    ```
 
-
 ### iOS Emulator
 
 1. Follow [these instructions](https://docs.expo.dev/workflow/ios-simulator/) to download Xcode and set up an emulated device
@@ -45,7 +44,6 @@ npm run web
    npm run ios
    ```
 
-
 ## Medplum Login
 
 This app includes a very basic sign-in form that only supports email and password. Medplum authentication supports many additional features, which are out of scope of this project (multiple profiles, SMART scopes, federated identities, external auth providers, etc).
@@ -54,7 +52,7 @@ This app includes a very basic sign-in form that only supports email and passwor
 
 First, we setup `MedplumClient` which is the Medplum API client:
 
-```js
+````js
 import { getDisplayString, MedplumClient } from '@medplum/core';
 
 const medplum = new MedplumClient();
@@ -93,7 +91,7 @@ return (
     <Button onPress={startLogin} title="Sign in" />
   </>
 );
-```
+````
 
 ### Sign in button
 

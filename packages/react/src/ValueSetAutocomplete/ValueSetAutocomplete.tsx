@@ -3,7 +3,7 @@ import { ValueSetExpandParams } from '@medplum/core';
 import { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { IconCheck } from '@tabler/icons-react';
-import { forwardRef, useCallback } from 'react';
+import { forwardRef, JSX, useCallback } from 'react';
 import {
   AsyncAutocomplete,
   AsyncAutocompleteOption,

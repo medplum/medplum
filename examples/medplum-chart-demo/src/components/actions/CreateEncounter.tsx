@@ -12,6 +12,7 @@ import {
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 
 interface CreateEncounterProps {

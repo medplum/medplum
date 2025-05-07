@@ -1,5 +1,5 @@
 import { Button } from '@mantine/core';
-import { useEffect, useRef, useState } from 'react';
+import { JSX, useEffect, useRef, useState } from 'react';
 import { exportJsonFile, sendCommand } from '../utils/dom';
 
 const CCDA_VIEWER_URL = 'https://ccda.medplum.com';

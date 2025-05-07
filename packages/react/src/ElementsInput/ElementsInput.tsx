@@ -1,6 +1,6 @@
 import { Stack } from '@mantine/core';
 import { TypedValue, getPathDisplayName } from '@medplum/core';
-import { useContext, useMemo, useState } from 'react';
+import { JSX, useContext, useMemo, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { FormSection } from '../FormSection/FormSection';
 import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';

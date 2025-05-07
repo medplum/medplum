@@ -5,7 +5,7 @@ import { normalizeErrorString } from '@medplum/core';
 import { Appointment, Encounter, Patient } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import { IconCancel, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { CreateEncounter } from './CreateEncounter';
 import { RescheduleAppointment } from './RescheduleAppointment';

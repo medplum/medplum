@@ -1,15 +1,15 @@
-import { Annotation, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
-import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
-import { SimpleTask } from './SimpleTask';
 import { Card, Stack } from '@mantine/core';
-import { TaskStatusPanel } from './TaskStatusPanel';
-import { useRef } from 'react';
-import { useNavigate } from 'react-router';
-import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
-import { IconCircleOff } from '@tabler/icons-react';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { Annotation, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconCircleOff } from '@tabler/icons-react';
+import { JSX, useRef } from 'react';
+import { useNavigate } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../../config/constants';
+import { SimpleTask } from './SimpleTask';
+import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
+import { TaskStatusPanel } from './TaskStatusPanel';
 
 interface TaskPanelProps {
   task: Task;
@@ -21,7 +21,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const author = useMedplumProfile();
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const onActionButtonClicked = async (): Promise<void> => {
     if (task.status === 'ready' || task.status === 'requested') {

@@ -11,7 +11,7 @@ import {
   getErrorsForInput,
   useMedplum,
 } from '@medplum/react';
-import { useCallback, useState } from 'react';
+import { JSX, useCallback, useState } from 'react';
 import { AccessPolicyInput } from './AccessPolicyInput';
 
 export function InvitePage(): JSX.Element {

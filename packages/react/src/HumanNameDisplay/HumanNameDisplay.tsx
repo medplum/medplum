@@ -1,5 +1,6 @@
 import { formatHumanName, HumanNameFormatOptions } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 
 export interface HumanNameDisplayProps {
   readonly value?: HumanName;

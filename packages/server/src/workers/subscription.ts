@@ -516,8 +516,8 @@ async function sendRestHook(
     return;
   }
 
-  const headers = buildRestHookHeaders(job, subscription, resource, interaction);
   const body = interaction === 'delete' ? '{}' : stringify(resource);
+  const headers = buildRestHookHeaders(job, subscription, resource, interaction, body);
   let error: Error | undefined = undefined;
 
   const fetchStartTime = Date.now();
@@ -572,13 +572,15 @@ async function sendRestHook(
  * @param subscription - The subscription resource.
  * @param resource - The trigger resource.
  * @param interaction - The interaction type.
+ * @param body - The request body.
  * @returns The HTTP request headers.
  */
 function buildRestHookHeaders(
   job: Job<SubscriptionJobData>,
   subscription: WithId<Subscription>,
   resource: Resource,
-  interaction: BackgroundJobInteraction
+  interaction: BackgroundJobInteraction,
+  body: string
 ): HeadersInit {
   const headers: Record<string, string> = {
     'Content-Type': ContentType.FHIR_JSON,
@@ -604,7 +606,6 @@ function buildRestHookHeaders(
     getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret') ||
     getExtensionValue(subscription, 'https://www.medplum.com/fhir/StructureDefinition-subscriptionSecret');
   if (secret && isString(secret)) {
-    const body = stringify(resource);
     headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
   }
 

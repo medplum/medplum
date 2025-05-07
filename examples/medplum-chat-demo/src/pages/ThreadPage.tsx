@@ -2,7 +2,7 @@ import { Anchor, Grid, GridCol, List, Paper, Stack, Title } from '@mantine/core'
 import { resolveId } from '@medplum/core';
 import { Communication, Patient } from '@medplum/fhirtypes';
 import { PatientSummary, ThreadChat, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { CommunicationActions } from '../components/actions/CommunicationActions';
 

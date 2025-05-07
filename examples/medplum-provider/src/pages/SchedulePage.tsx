@@ -4,7 +4,7 @@ import { createReference, getReferenceString } from '@medplum/core';
 import { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useState } from 'react';
 import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router';

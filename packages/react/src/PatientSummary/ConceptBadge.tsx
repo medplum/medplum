@@ -2,7 +2,7 @@ import { ActionIcon, Badge } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { IconPencil } from '@tabler/icons-react';
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { killEvent } from '../utils/dom';
 

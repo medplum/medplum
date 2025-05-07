@@ -2,6 +2,7 @@ import { Anchor } from '@mantine/core';
 import { ContentType } from '@medplum/core';
 import { Attachment } from '@medplum/fhirtypes';
 import { useCachedBinaryUrl } from '@medplum/react-hooks';
+import { JSX } from 'react';
 import { CcdaDisplay } from '../CcdaDisplay/CcdaDisplay';
 
 export interface AttachmentDisplayProps {

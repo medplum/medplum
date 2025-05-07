@@ -4,7 +4,7 @@ import { normalizeErrorString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { PatientSummary, useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useParams } from 'react-router';
 import { PatientDetails } from '../components/PatientDetails';
 

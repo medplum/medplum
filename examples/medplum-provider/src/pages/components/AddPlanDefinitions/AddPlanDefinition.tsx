@@ -1,25 +1,25 @@
-import { useState, useEffect, useCallback } from 'react';
 import {
+  Box,
   Button,
+  Card,
+  Grid,
+  Loader,
+  Modal,
+  Paper,
+  ScrollArea,
   Stack,
   Text,
-  Modal,
-  Box,
-  ScrollArea,
-  Card,
   TextInput,
   Title,
-  Loader,
-  Paper,
-  Grid,
 } from '@mantine/core';
-import { useMedplum } from '@medplum/react';
-import { PlanDefinition } from '@medplum/fhirtypes';
 import { showNotification } from '@mantine/notifications';
-import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
-import classes from './AddPlanDefinition.module.css';
+import { PlanDefinition } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import cx from 'clsx';
+import { JSX, useCallback, useEffect, useState } from 'react';
+import classes from './AddPlanDefinition.module.css';
 
 interface AddPlanDefinitionProps {
   encounterId: string;

@@ -1,6 +1,6 @@
 import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName, isPopulated } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { JSX, useContext, useEffect, useMemo, useState } from 'react';
 import { DescriptionListEntry } from '../DescriptionList/DescriptionList';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { assignValuesIntoSlices, prepareSlices } from '../ResourceArrayInput/ResourceArrayInput.utils';

@@ -10,7 +10,7 @@ import {
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
 import { MockClient, MockFetchClient, createFakeJwt } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
-import { useEffect, useRef, useState } from 'react';
+import { JSX, useEffect, useRef, useState } from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { useMedplum, useMedplumContext, useMedplumNavigate, useMedplumProfile } from './MedplumProvider.context';
 
@@ -402,8 +402,8 @@ describe('MedplumProvider', () => {
       expect(screen.getByText('Loading...')).toBeInTheDocument();
       expect(medplum.isLoading()).toEqual(true);
 
-      await expect(screen.findByText('Parent count: 2')).resolves.toBeInTheDocument();
-      expect(screen.getByText('Child count: 1')).toBeInTheDocument();
+      expect(await screen.findByText('Parent count: 2')).toBeInTheDocument();
+      expect(await screen.findByText('Child count: 1')).toBeInTheDocument();
       expect(medplum.isLoading()).toEqual(false);
       expect(mockFetchSpy).toHaveBeenCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
       expect(dispatchEventSpy).toHaveBeenCalledWith({ type: 'profileRefreshed' });

@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import { Container, Stack, Title } from '@mantine/core';
 import { Practitioner } from '@medplum/fhirtypes';
 import {

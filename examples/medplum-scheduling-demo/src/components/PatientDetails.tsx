@@ -2,7 +2,7 @@ import { Tabs } from '@mantine/core';
 import { Filter, Operator, SearchRequest } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { Document, ResourceTable, SearchControl } from '@medplum/react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 interface PatientDetailsProps {

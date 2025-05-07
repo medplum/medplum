@@ -4,10 +4,11 @@ import { normalizeErrorString } from '@medplum/core';
 import { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { PatientConsents } from './PatientConsents';
-import { PatientObservations } from './PatientObservations';
 import { PatientImmunizations } from './PatientImmunizations';
+import { PatientObservations } from './PatientObservations';
 
 interface PatientDetailsProps {
   patient: Patient;

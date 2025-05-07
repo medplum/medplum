@@ -9,6 +9,7 @@ import {
   SearchRequest,
 } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';

@@ -5,6 +5,7 @@ import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@
 import { CodeableConcept, Coding, Encounter, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 
 interface EditTypeProps {
   encounter: Encounter;

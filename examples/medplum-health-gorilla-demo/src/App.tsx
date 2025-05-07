@@ -1,12 +1,13 @@
-import { AppShell, Container, Logo, Panel, useMedplum } from '@medplum/react';
-import { Link, Route, Routes } from 'react-router';
-import { SignInPage } from './SignInPage';
-import { HomePage } from './HomePage';
 import { Title } from '@mantine/core';
+import { AppShell, Container, Logo, Panel, useMedplum, useMedplumProfile } from '@medplum/react';
+import { JSX } from 'react';
+import { Link, Route, Routes } from 'react-router';
+import { HomePage } from './pages/HomePage';
+import { SignInPage } from './pages/SignInPage';
 
 export function App(): JSX.Element {
   const medplum = useMedplum();
-
+  const profile = useMedplumProfile();
   if (medplum.isLoading()) {
     return <div>Loading...</div>;
   }
@@ -14,7 +15,7 @@ export function App(): JSX.Element {
   return (
     <AppShell logo={<Logo size={24} />}>
       <Routes>
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={profile ? <HomePage /> : <SignInPage />} />
         <Route path="/signin" element={<SignInPage />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

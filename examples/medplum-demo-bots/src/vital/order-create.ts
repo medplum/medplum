@@ -1,15 +1,15 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import {
-  Resource,
-  ServiceRequest,
   Bundle,
-  Reference,
-  QuestionnaireResponse,
   Coverage,
+  Organization,
   Patient,
   Practitioner,
   ProjectSetting,
-  Organization,
+  QuestionnaireResponse,
+  Reference,
+  Resource,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
 
 /**

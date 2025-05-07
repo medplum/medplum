@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { HTTP_HL7_ORG, LOINC, SNOMED, createReference, formatCodeableConcept } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState } from 'react';
+import { JSX, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { killEvent } from '../utils/dom';

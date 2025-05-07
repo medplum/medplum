@@ -10,7 +10,7 @@ import {
 } from '@medplum/core';
 import { Patient, Reference, Resource, UserConfiguration } from '@medplum/fhirtypes';
 import { Loading, SearchControl, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useResourceType } from './resource/useResourceType';
 import classes from './SearchPage.module.css';

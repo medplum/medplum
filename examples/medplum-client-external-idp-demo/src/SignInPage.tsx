@@ -1,6 +1,6 @@
 import { Button, Stack, Title } from '@mantine/core';
 import { Document, useMedplum, useMedplumNavigate } from '@medplum/react';
-import { useCallback, useEffect } from 'react';
+import { JSX, useCallback, useEffect } from 'react';
 
 /**
  * The Medplum API server URL.

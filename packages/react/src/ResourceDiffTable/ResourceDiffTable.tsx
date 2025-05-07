@@ -10,7 +10,7 @@ import {
 } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useEffect, useMemo, useState } from 'react';
+import { JSX, useEffect, useMemo, useState } from 'react';
 import { Operation, createPatch } from 'rfc6902';
 import { ResourceDiffRow } from '../ResourceDiffRow/ResourceDiffRow';
 import classes from './ResourceDiffTable.module.css';
@@ -81,9 +81,10 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {diffTable.map((row) => (
-          <ResourceDiffRow {...row} />
-        ))}
+        {diffTable.map((row) => {
+          const { key, ...rest } = row;
+          return <ResourceDiffRow key={key} {...rest} />;
+        })}
       </Table.Tbody>
     </Table>
   );

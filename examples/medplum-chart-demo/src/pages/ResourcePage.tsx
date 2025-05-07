@@ -4,7 +4,7 @@ import { getDisplayString, getReferenceString, normalizeErrorString } from '@med
 import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { cleanResource } from '../utils';
 

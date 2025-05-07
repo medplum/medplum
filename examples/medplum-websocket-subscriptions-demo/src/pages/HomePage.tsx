@@ -3,7 +3,7 @@ import { createReference, getReferenceString } from '@medplum/core';
 import { Bundle, Communication, Parameters, Patient, Practitioner, Subscription } from '@medplum/fhirtypes';
 import { HomerSimpson, MargeSimpson } from '@medplum/mock';
 import { Document, ResourceName, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { BundleDisplay } from '../components/BundleDisplay';
 
 /**
