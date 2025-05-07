@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Request } from 'express';
 import { loadTestConfig } from './config/loader';
 import {
@@ -7,6 +8,7 @@ import {
   getAuthenticatedContext,
   getRequestContext,
   getTraceId,
+  isValidTraceId,
   tryGetRequestContext,
   tryRunInRequestContext,
 } from './context';
@@ -55,6 +57,36 @@ describe('RequestContext', () => {
 
     const tpid = '00-12345678901234567890123456789012-3456789012345678-01';
     expect(getTraceId(mockRequest({ traceparent: tpid }))).toStrictEqual(tpid);
+  });
+
+  test('isValidTraceId', () => {
+    // Invalid cases
+    expect(isValidTraceId(undefined as unknown as string)).toBe(false);
+    expect(isValidTraceId(null as unknown as string)).toBe(false);
+    expect(isValidTraceId('')).toBe(false);
+    expect(isValidTraceId('foo')).toBe(false); // Too short
+    expect(isValidTraceId('1234567')).toBe(false); // Too short (7 chars)
+    expect(isValidTraceId('0000000000')).toBe(false); // All zeros
+    expect(isValidTraceId('0-0-0-0-0-0')).toBe(false); // All zeros with separators
+    expect(isValidTraceId('0_0_0_0_0_0_0')).toBe(false); // All zeros with underscores
+    expect(isValidTraceId('00-00_00-00')).toBe(false); // All zeros mixed separators
+    expect(isValidTraceId('*invalid$chars#')).toBe(false); // Invalid characters
+    expect(isValidTraceId('spaces not allowed')).toBe(false); // Has spaces
+    expect(isValidTraceId('a'.repeat(65))).toBe(false); // Too long (65 chars)
+
+    // Valid cases
+    expect(isValidTraceId(randomUUID())).toBe(true); // Standard UUID
+    expect(isValidTraceId('12345678')).toBe(true); // Minimum length (8 chars)
+    expect(isValidTraceId('a'.repeat(64))).toBe(true); // Maximum length (64 chars)
+    expect(isValidTraceId('abcdef123456')).toBe(true); // Alphanumeric
+    expect(isValidTraceId('123-456-789')).toBe(true); // With dashes
+    expect(isValidTraceId('abc_def_123')).toBe(true); // With underscores
+    expect(isValidTraceId('00000000a')).toBe(true); // Mostly zeros but not all
+    expect(isValidTraceId('trace-id_123456789')).toBe(true); // Mixed chars
+    expect(isValidTraceId('4bf92f3577b34da6a3ce929d0e0e4736')).toBe(true); // W3C format
+    expect(isValidTraceId('67bde5d7dcd81f84')).toBe(true); // B3 SpanId format
+    expect(isValidTraceId('0c2cc9583f004a41-67bde5d7dcd81f84')).toBe(true); // Combined format
+    expect(isValidTraceId('1-67891233-abcdef012345678912345678')).toBe(true); // AWS format
   });
 
   describe('buildTracingExtension', () => {

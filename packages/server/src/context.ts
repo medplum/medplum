@@ -1,4 +1,4 @@
-import { Logger, ProfileResource, WithId, isUUID, parseLogLevel } from '@medplum/core';
+import { Logger, ProfileResource, WithId, parseLogLevel } from '@medplum/core';
 import { Bot, ClientApplication, Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
@@ -145,7 +145,7 @@ export function tryRunInRequestContext<T>(requestId: string | undefined, traceId
 
 export function getTraceId(req: Request): string | undefined {
   const xTraceId = req.header('x-trace-id');
-  if (xTraceId && isUUID(xTraceId)) {
+  if (xTraceId && isValidTraceId(xTraceId)) {
     return xTraceId;
   }
 
@@ -160,6 +160,26 @@ export function getTraceId(req: Request): string | undefined {
   }
 
   return undefined;
+}
+
+/**
+ * Validates that a trace ID meets the following requirements:
+ * - Must be at least 8 characters
+ * - No more than 64 characters
+ * - Must contain only alphanumeric characters, dashes and underscores
+ * - Cannot be all zeros (ignoring dashes and underscores)
+ *
+ * @param traceId - The trace ID to validate
+ * @returns true if the trace ID is valid, false otherwise
+ */
+export function isValidTraceId(traceId: string): boolean {
+  return (
+    !!traceId &&
+    traceId.length >= 8 &&
+    traceId.length <= 64 &&
+    /^[a-zA-Z0-9_-]+$/.test(traceId) &&
+    !/^0+$/.test(traceId.replace(/[_-]/g, ''))
+  );
 }
 
 export function extractAmazonTraceId(amznTraceId: string): string | undefined {
