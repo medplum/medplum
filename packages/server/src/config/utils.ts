@@ -29,6 +29,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.accurateCountThreshold ??= 1_000_000;
   config.defaultBotRuntimeVersion ??= 'awslambda';
   config.defaultProjectFeatures ??= [];
+  config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
 
   // History:
@@ -99,5 +100,5 @@ export function isBooleanConfig(key: string): boolean {
 }
 
 export function isObjectConfig(key: string): boolean {
-  return key === 'tls' || key === 'ssl';
+  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting';
 }
