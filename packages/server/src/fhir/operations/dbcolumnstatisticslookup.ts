@@ -1,11 +1,12 @@
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import { OperationDefinition } from '@medplum/fhirtypes';
 import { Client, Pool } from 'pg';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { parseInputParameters } from './utils/parameters';
+import { escapeUnicode } from '../../migrations/migrate-utils';
 import { isValidTableName } from '../sql';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const LookupOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -35,6 +36,8 @@ const LookupOperation: OperationDefinition = {
     {
       use: 'out',
       name: 'table',
+      min: 0,
+      max: '1',
       part: [
         { use: 'out', name: 'tableName', type: 'string', min: 1, max: '1' },
         {
@@ -45,7 +48,7 @@ const LookupOperation: OperationDefinition = {
           part: [
             {
               use: 'out',
-              name: 'columnName',
+              name: 'name',
               type: 'string',
               min: 1,
               max: '1',
@@ -53,7 +56,7 @@ const LookupOperation: OperationDefinition = {
             {
               use: 'out',
               name: 'statisticsTarget',
-              type: 'string',
+              type: 'integer',
               min: 1,
               max: '1',
             },
@@ -74,7 +77,7 @@ const LookupOperation: OperationDefinition = {
             {
               use: 'out',
               name: 'nDistinct',
-              type: 'integer',
+              type: 'decimal',
               min: 0,
               max: '1',
             },
@@ -130,8 +133,6 @@ const LookupOperation: OperationDefinition = {
           ],
         },
       ],
-      min: 0,
-      max: '1',
     },
   ],
 };
@@ -148,85 +149,19 @@ export async function lookupDbColumnStatisticsHandler(req: FhirRequest): Promise
   const defaultStatisticsTarget = await getDefaultStatisticsTarget();
   const client = getDatabasePool(DatabaseMode.WRITER);
   let columns: ColumnInfo[] | undefined;
-  if (params.tableName) {
-    columns = await getTableColumns(client, params.tableName);
-  }
-
-  return [allOk, buildOutput(defaultStatisticsTarget, columns)];
-}
-
-function buildOutput(defaultStatisticsTarget: number, columns: ColumnInfo[] | undefined): Parameters {
-  const output: Parameters & { parameter: ParametersParameter[] } = {
-    resourceType: 'Parameters',
-    parameter: [
-      {
-        name: 'defaultStatisticsTarget',
-        valueInteger: defaultStatisticsTarget,
-      },
-    ],
+  const output: { defaultStatisticsTarget: number; table?: { tableName: string; column: ColumnInfo[] } } = {
+    defaultStatisticsTarget,
   };
 
-  if (columns && columns.length > 0) {
-    output.parameter.push({
-      name: 'table',
-      part: columns.map((c) => {
-        return {
-          name: 'column',
-          part: [
-            {
-              name: 'name',
-              valueString: c.name,
-            },
-            {
-              name: 'statisticsTarget',
-              valueInteger: c.statisticsTarget,
-            },
-            {
-              name: 'nullFraction',
-              valueDecimal: c.nullFraction,
-            },
-            {
-              name: 'avgWidth',
-              valueInteger: c.avgWidth,
-            },
-            {
-              name: 'nDistinct',
-              valueInteger: c.nDistinct,
-            },
-            {
-              name: 'mostCommonValues',
-              valueString: c.mostCommonValues,
-            },
-            {
-              name: 'mostCommonFreqs',
-              valueString: c.mostCommonFreqs?.join(', '),
-            },
-            {
-              name: 'histogramBounds',
-              valueString: c.histogramBounds,
-            },
-            {
-              name: 'correlation',
-              valueDecimal: c.correlation,
-            },
-            {
-              name: 'mostCommonElems',
-              valueString: c.mostCommonElems,
-            },
-            {
-              name: 'mostCommonElemFreqs',
-              valueString: c.mostCommonElemFreqs?.join(', '),
-            },
-            {
-              name: 'elemCountHistogram',
-              valueString: c.elemCountHistogram?.join(', '),
-            },
-          ],
-        };
-      }),
-    });
+  if (params.tableName) {
+    columns = await getTableColumns(client, params.tableName);
+    output.table = {
+      tableName: params.tableName,
+      column: columns,
+    };
   }
-  return output;
+
+  return [allOk, buildOutputParameters(LookupOperation, output)];
 }
 
 async function getDefaultStatisticsTarget(): Promise<number> {
@@ -250,16 +185,38 @@ interface ColumnInfo {
   avgWidth: number | undefined;
   nDistinct: number | undefined;
   mostCommonValues: string | undefined;
-  mostCommonFreqs: number[] | undefined;
+  mostCommonFreqs: string | undefined;
   histogramBounds: string | undefined;
   correlation: number | undefined;
   mostCommonElems: string | undefined;
-  mostCommonElemFreqs: number[] | undefined;
-  elemCountHistogram: number[] | undefined;
+  mostCommonElemFreqs: string | undefined;
+  elemCountHistogram: string | undefined;
 }
 
 async function getTableColumns(db: Client | Pool, tableName: string): Promise<ColumnInfo[]> {
-  const rs = await db.query(
+  // mostCommonFreqs, mostCommonElemFreqs, elemCountHistogram are returned as number[] from pg_stats
+  // since number[] is an unwieldy type to work with upstream, we convert them to strings
+  interface RawColumnInfo {
+    schemaName: string;
+    tableName: string;
+    name: string;
+    type: string;
+    notNull: boolean;
+    defaultValue: string | undefined;
+    primaryKey: boolean;
+    statisticsTarget: number;
+    nullFraction: number | undefined;
+    avgWidth: number | undefined;
+    nDistinct: number | undefined;
+    mostCommonValues: string | undefined;
+    mostCommonFreqs: number[] | undefined;
+    histogramBounds: string | undefined;
+    correlation: number | undefined;
+    mostCommonElems: string | undefined;
+    mostCommonElemFreqs: number[] | undefined;
+    elemCountHistogram: number[] | undefined;
+  }
+  const rs = await db.query<RawColumnInfo>(
     `SELECT
       n.nspname as "schemaName",
       c.relname as "tableName",
@@ -297,12 +254,23 @@ async function getTableColumns(db: Client | Pool, tableName: string): Promise<Co
 
   const rows = rs.rows;
   for (const row of rows) {
-    for (const [k, v] of Object.entries(row)) {
-      if (v === null) {
-        row[k] = undefined;
+    // For consistency, convert any nulls to undefined
+    for (const k in row) {
+      if ((row as any)[k] === null) {
+        (row as any)[k] = undefined;
       }
     }
+
+    // If column values contains characters not permitted by the FHIR string type regex, escape them for human consumption
+    row.mostCommonElems = row.mostCommonElems ? escapeUnicode(row.mostCommonElems) : row.mostCommonElems;
+    row.mostCommonValues = row.mostCommonValues ? escapeUnicode(row.mostCommonValues) : row.mostCommonValues;
+    row.histogramBounds = row.histogramBounds ? escapeUnicode(row.histogramBounds) : row.histogramBounds;
+
+    // convert number[] to comma separated string
+    (row as unknown as ColumnInfo).mostCommonFreqs = row.mostCommonFreqs?.join(',');
+    (row as unknown as ColumnInfo).mostCommonElemFreqs = row.mostCommonElemFreqs?.join(',');
+    (row as unknown as ColumnInfo).elemCountHistogram = row.elemCountHistogram?.join(',');
   }
 
-  return rows;
+  return rows as ColumnInfo[];
 }

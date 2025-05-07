@@ -1,10 +1,10 @@
 import { ContentType } from '@medplum/core';
+import { ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
-import { ParametersParameter } from '@medplum/fhirtypes';
 
 describe('dbcolumnstatisticslookup', () => {
   const app = express();
@@ -86,6 +86,10 @@ function expectColumn(tableParam: ParametersParameter | undefined, name: string)
     name: 'table',
     part: expect.arrayContaining([
       expect.objectContaining({
+        name: 'tableName',
+        valueString: expect.any(String),
+      }),
+      expect.objectContaining({
         name: 'column',
         part: expect.arrayContaining([
           {
@@ -95,10 +99,6 @@ function expectColumn(tableParam: ParametersParameter | undefined, name: string)
           {
             name: 'statisticsTarget',
             valueInteger: -1,
-          },
-          {
-            name: 'nullFraction',
-            valueDecimal: expect.any(Number),
           },
         ]),
       }),
