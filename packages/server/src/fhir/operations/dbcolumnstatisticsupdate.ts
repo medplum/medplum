@@ -3,8 +3,8 @@ import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { getSystemRepo } from '../repo';
-import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { isValidColumnName, isValidTableName } from '../sql';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const UpdateOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
