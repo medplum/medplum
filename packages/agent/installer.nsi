@@ -239,7 +239,8 @@ Function UpgradeApp
 
 FunctionEnd
 
-Function StopAndDeleteOldMedplumServices
+!macro StopAndDeleteMacro un
+Function ${un}StopAndDeleteOldMedplumServices
     # Get the service name to filter out from function args
     Pop $0
 
@@ -314,6 +315,10 @@ Function StopAndDeleteOldMedplumServices
     ${Loop}
 
 FunctionEnd
+!macroend
+
+!insertmacro StopAndDeleteMacro ""
+!insertmacro StopAndDeleteMacro "un."
 
 # Do the actual installation.
 # Install all of the files.
@@ -399,14 +404,9 @@ Function InstallApp
 
 FunctionEnd
 
-Function un.StopAndDeleteMedplumServices
-    # Call stop and delete with empty string to single that all Medplum services should be stopped and deleted
-    Push ""
-    Call StopAndDeleteOldMedplumServices
-FunctionEnd
-
 # Start the uninstaller
 Section Uninstall
+    Push ""
     Call un.StopAndDeleteMedplumServices
 
     # Get out of the service directory so we can delete it
