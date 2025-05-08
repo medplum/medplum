@@ -1,5 +1,5 @@
 import { OperationOutcomeError, ProfileResource, unauthorized, WithId } from '@medplum/core';
-import { Login, Project, ProjectMembership } from '@medplum/fhirtypes';
+import { Login, Project, ProjectMembership, UserConfiguration } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { IncomingMessage } from 'http';
 import { getConfig } from '../config/loader';
@@ -10,6 +10,7 @@ export interface AuthState {
   login: Login;
   project: WithId<Project>;
   membership: WithId<ProjectMembership>;
+  userConfig: UserConfiguration;
   accessToken?: string;
 
   onBehalfOf?: WithId<ProfileResource>;
