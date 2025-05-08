@@ -236,11 +236,11 @@ Function UpgradeApp
 
     DetailPrint "Stopping and deleting old Medplum Agent services..."
     Push "${SERVICE_NAME}"
-    Call StopAndDeleteOldMedplumServices
+    Call StopAndDeleteMedplumServices
 
 FunctionEnd
 
-Function StopAndDeleteOldMedplumServices
+Function StopAndDeleteMedplumServices
     # Get the service name to filter out from function args
     Pop $0
 
@@ -320,7 +320,7 @@ FunctionEnd
 # Previously we tried to use a macro to resolve this issue, but you also have to use a different macro for "StrStr"
 # Between install and uninstall sections, ${StrStr} vs ${UnStrStr}
 # It's more time efficient to just copy and paste and be done with it
-Function un.StopAndDeleteOldMedplumServices
+Function un.StopAndDeleteMedplumServices
     # Get the service name to filter out from function args
     Pop $0
 
