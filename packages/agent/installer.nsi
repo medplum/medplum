@@ -33,8 +33,9 @@ InstallDir "$PROGRAMFILES64\${APP_NAME}"
 !include "LogicLib.nsh"
 !include "StrFunc.nsh"
 
-# Init StrStr fn
+# Init StrStr fns
 ${StrStr}
+${UnStrStr}
 
 RequestExecutionLevel admin
 
@@ -239,7 +240,7 @@ Function UpgradeApp
 
 FunctionEnd
 
-!macro StopAndDeleteMacro un
+!macro StopAndDeleteMacro un StrFn
 Function ${un}StopAndDeleteOldMedplumServices
     # Get the service name to filter out from function args
     Pop $0
@@ -274,7 +275,7 @@ Function ${un}StopAndDeleteOldMedplumServices
         ${EndIf}
 
         # Find position of next line break
-        ${StrStr} $TempStr "$WorkingList" "$\r$\n"
+        ${${StrFn}} $TempStr "$WorkingList" "$\r$\n"
 
         # If no more line breaks, process remaining text as the last service
         ${If} $TempStr == ""
@@ -317,8 +318,8 @@ Function ${un}StopAndDeleteOldMedplumServices
 FunctionEnd
 !macroend
 
-!insertmacro StopAndDeleteMacro ""
-!insertmacro StopAndDeleteMacro "un."
+!insertmacro StopAndDeleteMacro "" "StrStr"
+!insertmacro StopAndDeleteMacro "un." "UnStrStr"
 
 # Do the actual installation.
 # Install all of the files.
