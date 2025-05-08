@@ -21,7 +21,7 @@ import {
   typedValueToString,
 } from '@medplum/core';
 import {
-QuestionnaireItem,
+  QuestionnaireItem,
   QuestionnaireItemAnswerOption,
   QuestionnaireItemInitial,
   QuestionnaireResponseItem,
@@ -531,11 +531,11 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
               const selected = event.currentTarget.checked;
               const currentValues = currentAnswers || [];
               let newValues: string[];
-              
+
               if (selected) {
                 newValues = [...currentValues, optionValueStr];
               } else {
-                newValues = currentValues.filter(v => v !== optionValueStr);
+                newValues = currentValues.filter((v) => v !== optionValueStr);
               }
 
               const values = getNewMultiSelectValues(newValues, 'value' + capitalize(optionValue.type), item);
