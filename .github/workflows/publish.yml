@@ -127,12 +127,18 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
 
+      # See: https://github.com/actions/cache/blob/5a3ec84eff668545956fd18022155c47e93e2684/examples.md#node---npm
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        shell: pwsh
+        run: echo "dir=$(npm config get cache)" >> ${env:GITHUB_OUTPUT}
+
       - name: Cache node modules
         uses: actions/cache@v4
         env:
           cache-name: cache-node-modules
         with:
-          path: '%LocalAppData%/npm-cache'
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
           key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-build-agent-${{ env.cache-name }}-
