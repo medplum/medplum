@@ -157,6 +157,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
     headers: req.headers,
+    traceId: ctx.traceId,
     defaultHeaders,
   });
 
