@@ -1,9 +1,13 @@
-import { Pool, PoolClient } from 'pg';
+import { Client, Pool, PoolClient } from 'pg';
 import { globalLogger } from '../logger';
 
-export type MigrationAction = { name: string; durationMs: number };
+export type MigrationResultAction = { name: string; durationMs: number };
 
-export async function query(client: PoolClient, actions: MigrationAction[], queryStr: string): Promise<void> {
+export async function query(
+  client: Client | Pool | PoolClient,
+  actions: MigrationResultAction[],
+  queryStr: string
+): Promise<void> {
   const start = Date.now();
   await client.query(queryStr);
   actions.push({ name: queryStr, durationMs: Date.now() - start });
@@ -22,8 +26,8 @@ export async function query(client: PoolClient, actions: MigrationAction[], quer
  * @param createIndexSql - The SQL to create the index.
  */
 export async function idempotentCreateIndex(
-  client: Pool | PoolClient,
-  actions: MigrationAction[],
+  client: Client | Pool | PoolClient,
+  actions: MigrationResultAction[],
   indexName: string,
   createIndexSql: string
 ): Promise<void> {
@@ -68,8 +72,8 @@ export async function idempotentCreateIndex(
 }
 
 export async function analyzeTable(
-  client: Pool | PoolClient,
-  actions: MigrationAction[],
+  client: Client | Pool | PoolClient,
+  actions: MigrationResultAction[],
   tableName: string
 ): Promise<void> {
   const start = Date.now();

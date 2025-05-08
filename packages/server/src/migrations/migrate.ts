@@ -23,9 +23,12 @@ import {
 } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
+import * as fns from './migrate-functions';
+import { MigrationResultAction } from './migrate-functions';
 import {
   doubleEscapeSingleQuotes,
   escapeUnicode,
+  normalizeColumnType,
   parseIndexColumns,
   quotedColumnName,
   splitIndexColumnNames,
@@ -35,7 +38,6 @@ const SCHEMA_DIR = resolve(__dirname, 'schema');
 let DRY_RUN = false;
 let ALLOW_POST_DEPLOY_ACTIONS = false;
 let SKIP_POST_DEPLOY_ACTIONS = false;
-let ADD_ANALYZE_RESOURCE_TABLES = false;
 
 export interface SchemaDefinition {
   tables: TableDefinition[];
@@ -75,6 +77,19 @@ export interface IndexDefinition {
   indexdef?: string;
 }
 
+export type MigrationAction =
+  | { type: 'CREATE_FUNCTION'; name: string; createQuery: string }
+  | { type: 'CREATE_TABLE'; definition: TableDefinition }
+  | { type: 'ADD_COLUMN'; tableName: string; columnDefinition: ColumnDefinition }
+  | { type: 'DROP_COLUMN'; tableName: string; columnName: string }
+  | { type: 'ALTER_COLUMN_SET_DEFAULT'; tableName: string; columnName: string; defaultValue: string }
+  | { type: 'ALTER_COLUMN_DROP_DEFAULT'; tableName: string; columnName: string }
+  | { type: 'ALTER_COLUMN_UPDATE_NOT_NULL'; tableName: string; columnName: string; notNull: boolean }
+  | { type: 'ALTER_COLUMN_TYPE'; tableName: string; columnName: string; columnType: string }
+  | { type: 'CREATE_INDEX'; indexName: string; createIndexSql: string }
+  | { type: 'DROP_INDEX'; indexName: string }
+  | { type: 'ANALYZE_TABLE'; tableName: string };
+
 // Custom SQL functions should be avoided unless absolutely necessary.
 // Do not add any functions to this list unless you have a really good reason for doing so.
 const TargetFunctions: SqlFunctionDefinition[] = [TokenArrayToTextFn];
@@ -98,7 +113,6 @@ export async function main(): Promise<void> {
   DRY_RUN = process.argv.includes('--dryRun');
   ALLOW_POST_DEPLOY_ACTIONS = process.argv.includes('--allowPostDeploy');
   SKIP_POST_DEPLOY_ACTIONS = process.argv.includes('--skipPostDeploy');
-  ADD_ANALYZE_RESOURCE_TABLES = process.argv.includes('--addAnalyzeResourceTables');
   indexStructureDefinitionsAndSearchParameters();
 
   const dbClient = new Client({
@@ -110,7 +124,10 @@ export async function main(): Promise<void> {
   });
   const options: BuildMigrationOptions = {
     dbClient,
+    executionMode: 'file',
+    allowPostDeployActions: ALLOW_POST_DEPLOY_ACTIONS,
     dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
+    analyzeResourceTables: process.argv.includes('--analyzeResourceTables'),
   };
   await dbClient.connect();
 
@@ -128,17 +145,69 @@ export async function main(): Promise<void> {
 
 export type BuildMigrationOptions = {
   dbClient: Client | Pool;
+  executionMode: 'file' | 'direct';
   dropUnmatchedIndexes?: boolean;
   allowPostDeployActions?: boolean;
+  analyzeResourceTables?: boolean;
+  directExecutionClient?: Client | Pool;
 };
 
 export async function buildMigration(b: FileBuilder, options: BuildMigrationOptions): Promise<void> {
   const startDefinition = await buildStartDefinition(options);
   const targetDefinition = buildTargetDefinition();
-  if (typeof options.allowPostDeployActions === 'boolean') {
-    ALLOW_POST_DEPLOY_ACTIONS = options.allowPostDeployActions;
+
+  const actions = generateMigrationActions(startDefinition, targetDefinition, options);
+
+  if (options.executionMode === 'file') {
+    writeActionsToBuilder(b, actions);
+  } else if (options.executionMode === 'direct') {
+    if (!options.directExecutionClient) {
+      throw new Error('directExecutionClient is required for direct execution mode.');
+    }
+    await executeMigrationActions(options.directExecutionClient, actions, options);
+  } else {
+    const exhaustiveCheck: never = options.executionMode;
+    throw new Error(`Unknown execution mode: ${exhaustiveCheck}`);
   }
-  writeMigrations(b, startDefinition, targetDefinition, options);
+}
+
+function generateMigrationActions(
+  startDefinition: SchemaDefinition,
+  targetDefinition: SchemaDefinition,
+  options: BuildMigrationOptions
+): MigrationAction[] {
+  const actions: MigrationAction[] = [];
+
+  for (const targetFunction of targetDefinition.functions) {
+    const startFunction = startDefinition.functions.find((f) => f.name === targetFunction.name);
+    if (!startFunction) {
+      actions.push({
+        type: 'CREATE_FUNCTION',
+        name: targetFunction.name,
+        createQuery: targetFunction.createQuery,
+      });
+    }
+  }
+
+  for (const targetTable of targetDefinition.tables) {
+    const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
+    if (!startTable) {
+      actions.push({ type: 'CREATE_TABLE', definition: targetTable });
+    } else {
+      actions.push(...generateColumnsActions(startTable, targetTable));
+      actions.push(...generateIndexesActions(startTable, targetTable, options));
+    }
+  }
+
+  if (options.analyzeResourceTables) {
+    for (const [resourceType, fhirType] of Object.entries(getAllDataTypes())) {
+      if (!isResourceTypeSchema(fhirType)) {
+        continue;
+      }
+      actions.push({ type: 'ANALYZE_TABLE', tableName: resourceType });
+    }
+  }
+  return actions;
 }
 
 async function buildStartDefinition(options: BuildMigrationOptions): Promise<SchemaDefinition> {
@@ -363,11 +432,16 @@ function buildTargetDefinition(): SchemaDefinition {
   return result;
 }
 
-export function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirType: InternalTypeSchema): void {
+export function buildCreateTables(
+  result: SchemaDefinition,
+  maybeResourceType: string,
+  fhirType: InternalTypeSchema
+): void {
   if (!isResourceTypeSchema(fhirType)) {
     // Don't create a table if fhirType is a subtype or not a resource type
     return;
   }
+  const resourceType = maybeResourceType as ResourceType;
 
   const tableDefinition: TableDefinition = {
     name: resourceType,
@@ -604,7 +678,7 @@ function getColumnDefinition(name: string, impl: SearchParameterImplementation):
   return { name, type: impl.array ? baseColumnType + '[]' : baseColumnType, notNull: false };
 }
 
-function buildSearchIndexes(result: TableDefinition, resourceType: string): void {
+function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType): void {
   if (resourceType === 'UserConfiguration') {
     const nameCol = result.columns.find((c) => c.name === 'name');
     if (!nameCol) {
@@ -617,10 +691,6 @@ function buildSearchIndexes(result: TableDefinition, resourceType: string): void
     result.indexes.push({ columns: ['email'], indexType: 'btree' });
     result.indexes.push({ columns: ['project', 'email'], indexType: 'btree', unique: true });
     result.indexes.push({ columns: ['project', 'externalId'], indexType: 'btree', unique: true });
-  }
-
-  if (resourceType === 'Coding') {
-    result.indexes.push({ columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id', 'foo'] });
   }
 
   if (resourceType === 'Encounter') {
@@ -812,12 +882,68 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
   });
 }
 
-function writeMigrations(
-  b: FileBuilder,
-  startDefinition: SchemaDefinition,
-  targetDefinition: SchemaDefinition,
-  options: BuildMigrationOptions
-): void {
+async function executeMigrationActions(
+  client: Client | Pool,
+  actions: MigrationAction[],
+  _options: BuildMigrationOptions
+): Promise<MigrationResultAction[]> {
+  const resultActions: MigrationResultAction[] = [];
+  for (const action of actions) {
+    switch (action.type) {
+      case 'ANALYZE_TABLE':
+        await fns.analyzeTable(client, resultActions, action.tableName);
+        break;
+      case 'CREATE_FUNCTION': {
+        await fns.query(client, resultActions, action.createQuery);
+        break;
+      }
+      case 'CREATE_TABLE': {
+        throw new Error('Not implemented yet: "CREATE_TABLE" case');
+      }
+      case 'ADD_COLUMN': {
+        const query = getAddColumnQuery(action.tableName, action.columnDefinition);
+        await fns.query(client, resultActions, query);
+        break;
+      }
+      case 'DROP_COLUMN': {
+        const query = getDropColumnQuery(action.tableName, action.columnName);
+        await fns.query(client, resultActions, query);
+        break;
+      }
+      case 'ALTER_COLUMN_SET_DEFAULT': {
+        const query = getAlterColumnSetDefaultQuery(action.tableName, action.columnName, action.defaultValue);
+        await fns.query(client, resultActions, query);
+        break;
+      }
+      case 'ALTER_COLUMN_DROP_DEFAULT': {
+        const query = getAlterColumnDropDefaultQuery(action.tableName, action.columnName);
+        await fns.query(client, resultActions, query);
+        break;
+      }
+      case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
+        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+        await fns.query(client, resultActions, query);
+        break;
+      }
+      case 'ALTER_COLUMN_TYPE': {
+        const query = getAlterColumnTypeQuery(action.tableName, action.columnName, action.columnType);
+        await fns.query(client, resultActions, query);
+        break;
+      }
+      case 'CREATE_INDEX': {
+        await fns.idempotentCreateIndex(client, resultActions, action.indexName, action.createIndexSql);
+        break;
+      }
+      case 'DROP_INDEX': {
+        await fns.query(client, resultActions, `DROP INDEX IF EXISTS "${action.indexName}"`);
+        break;
+      }
+    }
+  }
+  return resultActions;
+}
+
+function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
   b.append("import { PoolClient } from 'pg';");
   b.append("import * as fns from '../migrate-functions';");
   b.newLine();
@@ -826,48 +952,68 @@ function writeMigrations(
   b.indentCount++;
   b.append('const actions: { name: string; durationMs: number }[] = []');
 
-  for (const targetFunction of targetDefinition.functions) {
-    const startFunction = startDefinition.functions.find((f) => f.name === targetFunction.name);
-    if (!startFunction) {
-      writeCreateFunction(b, targetFunction);
-    }
-  }
-
-  for (const targetTable of targetDefinition.tables) {
-    const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
-    migrateTable(b, startTable, targetTable, options);
-  }
-
-  if (ADD_ANALYZE_RESOURCE_TABLES) {
-    for (const [resourceType, fhirType] of Object.entries(getAllDataTypes())) {
-      if (!isResourceTypeSchema(fhirType)) {
-        continue;
+  for (const action of actions) {
+    switch (action.type) {
+      case 'ANALYZE_TABLE':
+        b.appendNoWrap(`await fns.analyzeTable(client, actions, '${action.tableName}');`);
+        break;
+      case 'CREATE_FUNCTION': {
+        b.appendNoWrap(`await fns.query(client, actions, \`${escapeUnicode(action.createQuery)}\`);`);
+        break;
       }
-      b.appendNoWrap(`await fns.analyzeTable(client, actions, '${resourceType}');`);
+      case 'CREATE_TABLE': {
+        writeCreateTable(b, action.definition);
+        break;
+      }
+      case 'ADD_COLUMN': {
+        const query = getAddColumnQuery(action.tableName, action.columnDefinition);
+        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        break;
+      }
+      case 'DROP_COLUMN': {
+        const query = getDropColumnQuery(action.tableName, action.columnName);
+        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        break;
+      }
+      case 'ALTER_COLUMN_SET_DEFAULT': {
+        const query = getAlterColumnSetDefaultQuery(action.tableName, action.columnName, action.defaultValue);
+        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        break;
+      }
+      case 'ALTER_COLUMN_DROP_DEFAULT': {
+        const query = getAlterColumnDropDefaultQuery(action.tableName, action.columnName);
+        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        break;
+      }
+      case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
+        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        break;
+      }
+      case 'ALTER_COLUMN_TYPE': {
+        const query = getAlterColumnTypeQuery(action.tableName, action.columnName, action.columnType);
+        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        break;
+      }
+      case 'CREATE_INDEX': {
+        b.appendNoWrap(
+          `await fns.idempotentCreateIndex(client, actions, '${action.indexName}', '${action.createIndexSql}');`
+        );
+        break;
+      }
+      case 'DROP_INDEX': {
+        b.appendNoWrap(`await fns.query(client, actions, 'DROP INDEX CONCURRENTLY IF EXISTS "${action.indexName}"');`);
+        break;
+      }
+      default: {
+        action satisfies never;
+        throw new Error('Unsupported action type', { cause: action });
+      }
     }
   }
 
   b.indentCount--;
   b.append('}');
-}
-
-function migrateTable(
-  b: FileBuilder,
-  startTable: TableDefinition | undefined,
-  targetTable: TableDefinition,
-  options: BuildMigrationOptions
-): void {
-  if (!startTable) {
-    writeCreateTable(b, targetTable);
-  } else {
-    migrateColumns(b, startTable, targetTable);
-    migrateIndexes(b, startTable, targetTable, options);
-  }
-}
-
-function writeCreateFunction(b: FileBuilder, functionDefinition: SqlFunctionDefinition): void {
-  b.appendNoWrap(`await fns.query(client, actions, \`${escapeUnicode(functionDefinition.createQuery)}\`);`);
-  b.newLine();
 }
 
 function writeCreateTable(b: FileBuilder, tableDefinition: TableDefinition): void {
@@ -894,74 +1040,96 @@ function writeCreateTable(b: FileBuilder, tableDefinition: TableDefinition): voi
   b.newLine();
 }
 
-function migrateColumns(b: FileBuilder, startTable: TableDefinition, targetTable: TableDefinition): void {
+function generateColumnsActions(startTable: TableDefinition, targetTable: TableDefinition): MigrationAction[] {
+  const actions: MigrationAction[] = [];
   for (const targetColumn of targetTable.columns) {
     const startColumn = startTable.columns.find((c) => c.name === targetColumn.name);
     if (!startColumn) {
-      writeAddColumn(b, targetTable, targetColumn);
+      actions.push({ type: 'ADD_COLUMN', tableName: targetTable.name, columnDefinition: targetColumn });
     } else if (!columnDefinitionsEqual(startColumn, targetColumn)) {
-      writeUpdateColumn(b, targetTable, startColumn, targetColumn);
+      actions.push(...generateAlterColumnActions(targetTable, startColumn, targetColumn));
     }
   }
   for (const startColumn of startTable.columns) {
     if (!targetTable.columns.some((c) => c.name === startColumn.name)) {
-      writeDropColumn(b, targetTable, startColumn);
+      actions.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
     }
   }
+  return actions;
 }
 
-function normalizeColumnType(colType: string): string {
-  return colType.toLocaleUpperCase().replace('TIMESTAMP WITH TIME ZONE', 'TIMESTAMPTZ').trim();
-}
-
-function writeAddColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
-  const { name, type, notNull, primaryKey, defaultValue } = columnDefinition;
-  b.appendNoWrap(
-    `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ADD COLUMN IF NOT EXISTS "${name}" ${type}${notNull ? ' NOT NULL' : ''}${primaryKey ? ' PRIMARY KEY' : ''}${defaultValue ? ' DEFAULT ' + defaultValue : ''}');`
-  );
-}
-
-function writeUpdateColumn(
-  b: FileBuilder,
+function generateAlterColumnActions(
   tableDefinition: TableDefinition,
   startDef: ColumnDefinition,
   targetDef: ColumnDefinition
-): void {
+): MigrationAction[] {
+  const actions: MigrationAction[] = [];
   if (startDef.defaultValue !== targetDef.defaultValue) {
     postDeployAction(() => {
       if (targetDef.defaultValue) {
-        b.appendNoWrap(
-          `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" SET DEFAULT ${targetDef.defaultValue}');`
-        );
+        actions.push({
+          type: 'ALTER_COLUMN_SET_DEFAULT',
+          tableName: tableDefinition.name,
+          columnName: targetDef.name,
+          defaultValue: targetDef.defaultValue,
+        });
       } else {
-        b.appendNoWrap(
-          `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" DROP DEFAULT');`
-        );
+        actions.push({
+          type: 'ALTER_COLUMN_DROP_DEFAULT',
+          tableName: tableDefinition.name,
+          columnName: targetDef.name,
+        });
       }
     }, `Change default value of ${tableDefinition.name}.${targetDef.name}`);
   }
 
   if (startDef.notNull !== targetDef.notNull) {
     postDeployAction(() => {
-      b.appendNoWrap(
-        `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" ${targetDef.notNull ? 'SET' : 'DROP'} NOT NULL');`
-      );
+      actions.push({
+        type: 'ALTER_COLUMN_UPDATE_NOT_NULL',
+        tableName: tableDefinition.name,
+        columnName: targetDef.name,
+        notNull: targetDef.notNull ?? false,
+      });
     }, `Change NOT NULL of ${tableDefinition.name}.${targetDef.name}`);
   }
 
   if (startDef.type !== targetDef.type) {
     postDeployAction(() => {
-      b.appendNoWrap(
-        `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" TYPE ${targetDef.type}');`
-      );
+      actions.push({
+        type: 'ALTER_COLUMN_TYPE',
+        tableName: tableDefinition.name,
+        columnName: targetDef.name,
+        columnType: targetDef.type,
+      });
     }, `Change type of ${tableDefinition.name}.${targetDef.name}`);
   }
+  return actions;
 }
 
-function writeDropColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
-  b.appendNoWrap(
-    `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" DROP COLUMN IF EXISTS "${columnDefinition.name}"');`
-  );
+function getAddColumnQuery(tableName: string, columnDefinition: ColumnDefinition): string {
+  const { name, type, notNull, primaryKey, defaultValue } = columnDefinition;
+  return `ALTER TABLE IF EXISTS "${tableName}" ADD COLUMN IF NOT EXISTS "${name}" ${type}${notNull ? ' NOT NULL' : ''}${primaryKey ? ' PRIMARY KEY' : ''}${defaultValue ? ' DEFAULT ' + defaultValue : ''}`;
+}
+
+function getDropColumnQuery(tableName: string, columnName: string): string {
+  return `ALTER TABLE IF EXISTS "${tableName}" DROP COLUMN IF EXISTS "${columnName}"`;
+}
+
+function getAlterColumnSetDefaultQuery(tableName: string, columnName: string, defaultValue: string): string {
+  return `ALTER TABLE IF EXISTS "${tableName}" ALTER COLUMN "${columnName}" SET DEFAULT ${defaultValue}`;
+}
+
+function getAlterColumnDropDefaultQuery(tableName: string, columnName: string): string {
+  return `ALTER TABLE IF EXISTS "${tableName}" ALTER COLUMN "${columnName}" DROP DEFAULT`;
+}
+
+function getAlterColumnUpdateNotNullQuery(tableName: string, columnName: string, notNull: boolean): string {
+  return `ALTER TABLE IF EXISTS "${tableName}" ALTER COLUMN "${columnName}" ${notNull ? 'SET' : 'DROP'} NOT NULL`;
+}
+
+function getAlterColumnTypeQuery(tableName: string, columnName: string, columnType: string): string {
+  return `ALTER TABLE IF EXISTS "${tableName}" ALTER COLUMN "${columnName}" TYPE ${columnType}`;
 }
 
 function writeAddPrimaryKey(b: FileBuilder, tableDefinition: TableDefinition, primaryKeyColumns: string[]): void {
@@ -975,17 +1143,27 @@ function writeAddPrimaryKey(b: FileBuilder, tableDefinition: TableDefinition, pr
   );
 }
 
-function migrateIndexes(
-  b: FileBuilder,
+function generateIndexesActions(
   startTable: TableDefinition,
   targetTable: TableDefinition,
   options: BuildMigrationOptions
-): void {
+): MigrationAction[] {
+  const actions: MigrationAction[] = [];
+
   const matchedIndexes = new Set<IndexDefinition>();
   for (const targetIndex of targetTable.indexes) {
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (!startIndex) {
-      writeAddIndex(b, targetTable, targetIndex);
+      postDeployAction(
+        () => {
+          const indexName = getIndexName(targetTable.name, targetIndex);
+          const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex);
+          actions.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
+        },
+        `CREATE INDEX ${targetTable.name} (${targetIndex.columns.map((c) =>
+          typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)
+        )})`
+      );
     } else {
       matchedIndexes.add(startIndex);
     }
@@ -1002,10 +1180,11 @@ function migrateIndexes(
         if (!indexName) {
           throw new Error('Could not extract index name from ' + startIndex.indexdef);
         }
-        writeDropIndex(b, indexName);
+        actions.push({ type: 'DROP_INDEX', indexName });
       }
     }
   }
+  return actions;
 }
 
 function writeAddIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDefinition: IndexDefinition): void {
@@ -1019,10 +1198,6 @@ function writeAddIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDe
       typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)
     )})`
   );
-}
-
-function writeDropIndex(b: FileBuilder, indexName: string): void {
-  b.appendNoWrap(`await fns.query(client, actions, 'DROP INDEX CONCURRENTLY IF EXISTS "${indexName}"');`);
 }
 
 function getIndexName(tableName: string, index: IndexDefinition): string {
