@@ -484,6 +484,7 @@ FunctionEnd
 
 # Start the uninstaller
 Section Uninstall
+    # We push empty string since it means we don't want to filter any services for this function
     Push ""
     Call un.StopAndDeleteMedplumServices
 
