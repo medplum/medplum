@@ -132,7 +132,7 @@ jobs:
         env:
           cache-name: cache-node-modules
         with:
-          path: '%LocalAppData%/npm-cache'
+          path: '%AppData%/npm-cache'
           key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-build-agent-${{ env.cache-name }}-
