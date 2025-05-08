@@ -213,14 +213,7 @@ export function SchedulePage(): JSX.Element | null {
             {props.view === 'day' && dayjs(props.date).format('MMMM D YYYY')}
           </Title>
           <Button.Group>
-            <Button
-              variant="default"
-              size="xs"
-              onClick={() => {
-                console.log('CODY navigate PREV');
-                props.onNavigate('PREV');
-              }}
-            >
+            <Button variant="default" size="xs" onClick={() => props.onNavigate('PREV')}>
               <IconChevronLeft size={12} />
             </Button>
             <Button variant="default" size="xs" onClick={() => props.onNavigate('TODAY')}>
