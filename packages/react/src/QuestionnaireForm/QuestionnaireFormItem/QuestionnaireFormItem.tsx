@@ -512,7 +512,7 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
   }
 
   return (
-    <Group>
+    <Group style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
       {options.map(([optionName, optionValue]) => {
         const optionValueStr = typedValueToString(optionValue);
         return (
