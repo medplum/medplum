@@ -238,6 +238,8 @@ Function UpgradeApp
     Push "${SERVICE_NAME}"
     Call StopAndDeleteMedplumServices
 
+    DetailPrint "Writing installer for upgraded version..."
+    WriteUninstaller "$INSTDIR\uninstall.exe"
 FunctionEnd
 
 Function StopAndDeleteMedplumServices
