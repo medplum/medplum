@@ -21,7 +21,7 @@ import {
   typedValueToString,
 } from '@medplum/core';
 import {
-  QuestionnaireItem,
+QuestionnaireItem,
   QuestionnaireItemAnswerOption,
   QuestionnaireItemInitial,
   QuestionnaireResponseItem,
@@ -408,6 +408,19 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
       />
     );
   }
+
+  if (isCheckboxChoice(item)) {
+    return (
+      <QuestionnaireCheckboxInput
+        name={response?.id ?? name}
+        item={item}
+        initial={initial}
+        response={response}
+        onChangeAnswer={onChangeAnswer}
+      />
+    );
+  }
+
   return (
     <QuestionnaireChoiceRadioInput
       name={response?.id ?? name}
@@ -478,6 +491,63 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
   );
 }
 
+function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+  const { name, item, initial, onChangeAnswer, response } = props;
+  const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
+  const currentAnswers = getCurrentMultiSelectAnswer(response);
+
+  const options: [string, TypedValue][] = [];
+  if (item.answerOption) {
+    for (let i = 0; i < item.answerOption.length && i < 50; i++) {
+      const option = item.answerOption[i];
+      const optionName = `${name}-option-${i}`;
+      const optionValue = getItemAnswerOptionValue(option);
+
+      if (!optionValue?.value) {
+        continue;
+      }
+
+      options.push([optionName, optionValue]);
+    }
+  }
+
+  return (
+    <Group>
+      {options.map(([optionName, optionValue]) => {
+        const optionValueStr = typedValueToString(optionValue);
+        return (
+          <Checkbox
+            key={optionName}
+            id={optionName}
+            label={
+              <ResourcePropertyDisplay
+                property={valueElementDefinition}
+                propertyType={optionValue.type}
+                value={optionValue.value}
+              />
+            }
+            checked={currentAnswers?.includes(optionValueStr)}
+            onChange={(event) => {
+              const selected = event.currentTarget.checked;
+              const currentValues = currentAnswers || [];
+              let newValues: string[];
+              
+              if (selected) {
+                newValues = [...currentValues, optionValueStr];
+              } else {
+                newValues = currentValues.filter(v => v !== optionValueStr);
+              }
+
+              const values = getNewMultiSelectValues(newValues, 'value' + capitalize(optionValue.type), item);
+              onChangeAnswer(values);
+            }}
+          />
+        );
+      })}
+    </Group>
+  );
+}
+
 function NoAnswerDisplay(): JSX.Element {
   return <TextInput disabled placeholder="No Answers Defined" />;
 }
@@ -513,6 +583,14 @@ function isMultiSelectChoice(item: QuestionnaireItem): boolean {
     (e) =>
       e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
       e.valueCodeableConcept?.coding?.[0]?.code === 'multi-select'
+  );
+}
+
+function isCheckboxChoice(item: QuestionnaireItem): boolean {
+  return !!item.extension?.some(
+    (e) =>
+      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
+      e.valueCodeableConcept?.coding?.[0]?.code === 'check-box'
   );
 }
 
