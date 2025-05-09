@@ -89,6 +89,7 @@ export function initOpenTelemetry(): void {
     new DataloaderInstrumentation(),
     new BullMQInstrumentation({
       requireParentSpanForPublish: true,
+      useProducerSpanAsConsumerParent: true,
     }),
   ];
 
