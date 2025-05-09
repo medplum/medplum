@@ -274,7 +274,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           <QuestionnaireChoiceSetInput
             name={name}
             item={item}
-            initial={initial}
             response={response}
             onChangeAnswer={(e) => onChangeAnswer(e)}
           />
@@ -390,7 +389,7 @@ function QuestionnaireMultiSelectInput(props: QuestionnaireChoiceInputProps): JS
 }
 
 function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, onChangeAnswer, response } = props;
+  const { name, item, onChangeAnswer, response } = props;
 
   if (!item.answerOption?.length && !item.answerValueSet) {
     return <NoAnswerDisplay />;
@@ -414,7 +413,6 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
       <QuestionnaireCheckboxInput
         name={response?.id ?? name}
         item={item}
-        initial={initial}
         response={response}
         onChangeAnswer={onChangeAnswer}
       />
@@ -492,7 +490,7 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
 }
 
 function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, onChangeAnswer, response } = props;
+  const { name, item, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const currentAnswers = getCurrentMultiSelectAnswer(response);
 
