@@ -56,7 +56,8 @@ jobs:
         run: npm ci --maxsockets 1
 
       - name: Build
-        run: npm run build -- --filter=@medplum/agent
+        # We need to force so MEDPLUM_VERSION matches, since using cached @medplum/core results in mismatch sometimes
+        run: npm run build -- --filter=@medplum/agent --force
 
       - name: Find signtool
         uses: actions/github-script@v6
@@ -167,7 +168,8 @@ jobs:
         run: npm ci --maxsockets 1
 
       - name: Build
-        run: npm run build -- --filter=@medplum/agent
+        # We need to force so MEDPLUM_VERSION matches, since using cached @medplum/core results in mismatch sometimes
+        run: npm run build -- --filter=@medplum/agent --force
 
       - name: Build Agent
         shell: bash

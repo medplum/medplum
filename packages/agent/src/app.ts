@@ -691,10 +691,6 @@ export class App {
     }
 
     try {
-      // Stop the agent to prepare for service being restarted
-      await this.stop();
-      this.log.info('Successfully stopped agent network services');
-
       // Write a manifest file
       this.log.info('Writing upgrade manifest...', { previousVersion: MEDPLUM_VERSION, targetVersion });
       writeFileSync(
