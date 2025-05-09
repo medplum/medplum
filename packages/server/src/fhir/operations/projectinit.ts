@@ -138,6 +138,7 @@ export async function createProject(
     owner: admin ? createReference(admin) : undefined,
     strictMode: true,
     features: config.defaultProjectFeatures,
+    systemSetting: config.defaultProjectSystemSetting,
   });
 
   log.info('Project created', {

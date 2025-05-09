@@ -584,6 +584,10 @@ Optional default bot runtime version. See [Bot runtime version](/docs/api/fhir/m
 
 Optional default project features. See [Project Settings](/docs/access/projects#settings)
 
+### defaultProjectSystemSetting
+
+Optional default project system settings. See [Project System Settings](/docs/self-hosting/project-settings#project-system-settings)
+
 **Created by:** `init`
 **Default:** None
 

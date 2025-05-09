@@ -1,3 +1,4 @@
+import { ProjectSetting } from '@medplum/fhirtypes';
 import { KeepJobs } from 'bullmq';
 
 export interface MedplumServerConfig {
@@ -55,13 +56,17 @@ export interface MedplumServerConfig {
   maxSearchOffset?: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?: (
-    | 'email'
+    | 'aws-comprehend'
+    | 'aws-textract'
     | 'bots'
     | 'cron'
+    | 'email'
     | 'google-auth-required'
     | 'graphql-introspection'
     | 'websocket-subscriptions'
+    | 'transaction-bundles'
   )[];
+  defaultProjectSystemSetting?: ProjectSetting[];
   /** Number of HTTP requests per minute users can make by default; overridable by Project settings */
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
