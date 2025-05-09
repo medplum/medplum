@@ -34,6 +34,10 @@ export async function dbSchemaDiffHandler(_req: FhirRequest): Promise<FhirRespon
   const b = new FileBuilder('  ', false);
   b.append('// The schema migration needed to match the expected schema');
   b.append('');
-  await buildMigration(b, { dbClient, dropUnmatchedIndexes: true, allowPostDeployActions: true });
+  await buildMigration(b, {
+    dbClient,
+    dropUnmatchedIndexes: true,
+    allowPostDeployActions: true,
+  });
   return [allOk, buildOutputParameters(operation, { migrationString: b.toString() })];
 }

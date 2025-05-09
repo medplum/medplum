@@ -210,7 +210,7 @@ describe('SuperAdminPage', () => {
     );
   });
 
-  test('Database Schema Drift', async () => {
+  test('Get Database Schema Drift', async () => {
     setup();
 
     const returnValue = 'This is a fake return value';
@@ -225,10 +225,20 @@ describe('SuperAdminPage', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Get Database Schema Drift' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Get Schema Drift' }));
     });
 
     expect(await screen.findByText(returnValue)).toBeInTheDocument();
+  });
+
+  test('Patch Database Schema Drift', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Patch Schema Drift' }));
+    });
+
+    expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
   test('Reload cron resources', async () => {

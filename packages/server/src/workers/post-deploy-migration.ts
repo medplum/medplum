@@ -8,11 +8,17 @@ import { globalLogger } from '../logger';
 import {
   CustomMigrationResult,
   CustomPostDeployMigrationJobData,
+  DynamicPostDeployJobData,
   PostDeployJobData,
   PostDeployJobRunResult,
   PostDeployMigration,
 } from '../migrations/data/types';
-import { getPostDeployMigration, MigrationDefinitionNotFoundError } from '../migrations/migration-utils';
+import { executeMigrationActions, MigrationAction } from '../migrations/migrate';
+import {
+  getPostDeployMigration,
+  MigrationDefinitionNotFoundError,
+  withLongRunningDatabaseClient,
+} from '../migrations/migration-utils';
 import {
   addVerboseQueueLogging,
   isJobActive,
@@ -58,13 +64,9 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
 export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
 
-  const migrationNumber = asyncJob.dataVersion;
-  if (!migrationNumber) {
-    throw new Error(`Post-deploy migration number (AsyncJob.dataVersion) not found in ${getReferenceString(asyncJob)}`);
-  }
-
   if (!isJobCompatible(asyncJob)) {
     await moveToDelayed(job, 'Post-deploy migration delayed since this worker is not compatible');
+    return;
   }
 
   if (!isJobActive(asyncJob)) {
@@ -72,16 +74,19 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
       jobId: job.id,
       ...getJobDataLoggingFields(job),
       asyncJobStatus: asyncJob.status,
-      version: migrationNumber,
     });
     return;
   }
 
-  globalLogger.info(`${PostDeployMigrationQueueName} processor`, {
-    jobId: job.id,
-    ...getJobDataLoggingFields(job),
-    version: migrationNumber,
-  });
+  if (job.data.type === 'dynamic') {
+    await runDynamicMigration(getSystemRepo(), job as Job<DynamicPostDeployJobData>);
+    return;
+  }
+
+  const migrationNumber = asyncJob.dataVersion;
+  if (!migrationNumber) {
+    throw new Error(`Post-deploy migration number (AsyncJob.dataVersion) not found in ${getReferenceString(asyncJob)}`);
+  }
 
   let migration: PostDeployMigration;
   try {
@@ -89,6 +94,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   } catch (err: any) {
     if (err instanceof MigrationDefinitionNotFoundError) {
       await moveToDelayed(job, 'Post-deploy migration delayed since migration definition was not found on this worker');
+      return;
     }
     throw err;
   }
@@ -111,6 +117,29 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
       result satisfies never;
       throw new Error(`Unexpected PostDeployMigration.run(${migrationNumber}) result: ${result}`);
   }
+}
+
+async function runDynamicMigration(
+  repo: Repository,
+  job: Job<DynamicPostDeployJobData>
+): Promise<PostDeployJobRunResult> {
+  const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
+  if (!isJobActive(asyncJob)) {
+    return 'interrupted';
+  }
+
+  const actions = job.data.migrationActions;
+  const exec = new AsyncJobExecutor(repo, asyncJob);
+  try {
+    const results = await withLongRunningDatabaseClient(async (client) => {
+      return executeMigrationActions(client, actions);
+    });
+    const output = getAsyncJobOutputFromCustomMigrationResults({ actions: results });
+    await exec.completeJob(repo, output);
+  } catch (err: any) {
+    await exec.failJob(repo, err);
+  }
+  return 'finished';
 }
 
 export async function runCustomMigration(
@@ -160,6 +189,20 @@ export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): Custo
   const { requestId, traceId } = getRequestContext();
   return {
     type: 'custom',
+    asyncJobId: asyncJob.id,
+    requestId,
+    traceId,
+  };
+}
+
+export function prepareDynamicMigrationJobData(
+  asyncJob: WithId<AsyncJob>,
+  migrationActions: MigrationAction[]
+): DynamicPostDeployJobData {
+  const { requestId, traceId } = getRequestContext();
+  return {
+    type: 'dynamic',
+    migrationActions,
     asyncJobId: asyncJob.id,
     requestId,
     traceId,
