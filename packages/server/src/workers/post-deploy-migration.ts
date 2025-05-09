@@ -1,6 +1,7 @@
 import { getReferenceString, WithId } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { randomUUID } from 'node:crypto';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -45,7 +46,7 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
 
   const worker = new Worker<PostDeployJobData>(
     PostDeployMigrationQueueName,
-    async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
+    async (job) => tryRunInRequestContext(randomUUID(), job.data.traceId, async () => jobProcessor(job)),
     {
       ...config.bullmq,
       ...defaultOptions,
@@ -157,13 +158,8 @@ function getAsyncJobOutputFromCustomMigrationResults(result: CustomMigrationResu
 }
 
 export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): CustomPostDeployMigrationJobData {
-  const { requestId, traceId } = getRequestContext();
-  return {
-    type: 'custom',
-    asyncJobId: asyncJob.id,
-    requestId,
-    traceId,
-  };
+  const { traceId } = getRequestContext();
+  return { type: 'custom', asyncJobId: asyncJob.id, traceId };
 }
 
 export async function addPostDeployMigrationJobData<T extends PostDeployJobData>(

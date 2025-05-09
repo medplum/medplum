@@ -187,7 +187,6 @@ describe('Database migrations', () => {
               ...prepareCustomMigrationJobData(asyncJob),
               // requestId and traceId will likely be different since in the mocked v1 migration,
               // the call to prepareJobData is not within `withTestContext`
-              requestId: expect.any(String),
               traceId: expect.any(String),
             })
           );

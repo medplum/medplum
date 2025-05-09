@@ -10,6 +10,7 @@ import {
 import { Attachment, Binary, Meta, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
+import { randomUUID } from 'node:crypto';
 import { Readable } from 'stream';
 import { getConfig } from '../config/loader';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
@@ -34,7 +35,6 @@ export interface DownloadJobData {
   readonly resourceType: ResourceType;
   readonly id: string;
   readonly url: string;
-  readonly requestId?: string;
   readonly traceId?: string;
 }
 
@@ -59,7 +59,7 @@ export const initDownloadWorker: WorkerInitializer = (config) => {
 
   const worker = new Worker<DownloadJobData>(
     queueName,
-    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job)),
+    (job) => tryRunInRequestContext(randomUUID(), job.data.traceId, () => execDownloadJob(job)),
     {
       ...defaultOptions,
       ...config.bullmq,
@@ -102,7 +102,6 @@ export async function addDownloadJobs(resource: WithId<Resource>): Promise<void>
         resourceType: resource.resourceType,
         id: resource.id,
         url: attachment.url,
-        requestId: ctx?.requestId,
         traceId: ctx?.traceId,
       });
     }

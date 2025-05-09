@@ -10,6 +10,7 @@ import {
 } from '@medplum/core';
 import { AsyncJob, Bundle, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { randomUUID } from 'node:crypto';
 import { getConfig } from '../config/loader';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool, getDefaultStatementTimeout } from '../database';
@@ -82,7 +83,7 @@ export const initReindexWorker: WorkerInitializer = (config) => {
 
   const worker = new Worker<ReindexJobData>(
     ReindexQueueName,
-    async (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, async () => jobProcessor(job)),
+    async (job) => tryRunInRequestContext(randomUUID(), job.data.traceId, async () => jobProcessor(job)),
     {
       ...defaultOptions,
       ...config.bullmq,
@@ -486,7 +487,7 @@ export function prepareReindexJobData(
   searchFilter?: SearchRequest,
   maxResourceVersion?: number
 ): ReindexJobData {
-  const { requestId, traceId } = getRequestContext();
+  const { traceId } = getRequestContext();
   const startTime = Date.now();
   const endTimestamp = new Date(startTime + 1000 * 60 * 5).toISOString(); // Five minutes in the future
 
@@ -500,7 +501,6 @@ export function prepareReindexJobData(
     searchFilter,
     maxResourceVersion,
     results: Object.create(null),
-    requestId,
     traceId,
   };
 }

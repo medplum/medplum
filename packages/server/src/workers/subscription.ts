@@ -23,7 +23,7 @@ import {
 import { Bot, Project, ProjectMembership, Reference, Resource, ResourceType, Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch, { HeadersInit } from 'node-fetch';
-import { createHmac } from 'node:crypto';
+import { createHmac, randomUUID } from 'node:crypto';
 import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
@@ -71,7 +71,6 @@ export interface SubscriptionJobData {
   readonly versionId: string;
   readonly interaction: 'create' | 'update' | 'delete';
   readonly requestTime: string;
-  readonly requestId?: string;
   readonly traceId?: string;
   readonly verbose?: boolean;
 }
@@ -97,7 +96,7 @@ export const initSubscriptionWorker: WorkerInitializer = (config) => {
 
   const worker = new Worker<SubscriptionJobData>(
     queueName,
-    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execSubscriptionJob(job)),
+    (job) => tryRunInRequestContext(randomUUID(), job.data.traceId, () => execSubscriptionJob(job)),
     {
       ...defaultOptions,
       ...config.bullmq,
@@ -281,7 +280,6 @@ export async function addSubscriptionJobs(
         versionId: resource.meta?.versionId as string,
         interaction: context.interaction,
         requestTime,
-        requestId: ctx?.requestId,
         traceId: ctx?.traceId,
         verbose: options?.verbose,
       });

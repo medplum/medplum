@@ -6,7 +6,6 @@ import { Repository } from '../../fhir/repo';
 export interface PostDeployJobData {
   readonly type: 'reindex' | 'custom';
   readonly asyncJobId: string;
-  readonly requestId?: string;
   readonly traceId?: string;
 }
 
