@@ -1,5 +1,6 @@
 import {
   AgentError,
+  AgentLogsRequest,
   AgentMessage,
   AgentReloadConfigResponse,
   AgentTransmitRequest,
@@ -24,12 +25,18 @@ import { ChildProcess, ExecException, ExecOptions, exec, spawn } from 'node:chil
 import { existsSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
+import path from 'node:path';
 import process from 'node:process';
 import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import { FileLogger, setGlobalLogger } from './logger';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
+import { readLastNLines } from './utils';
+
+// TODO: Remove
+const LOG_FILE_PATH = path.resolve(__dirname, '../agent-logs__CURRENT');
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -46,6 +53,7 @@ async function execAsync(command: string, options: ExecOptions): Promise<{ stdou
 
 export const DEFAULT_PING_TIMEOUT = 3600;
 export const MAX_MISSED_HEARTBEATS = 1;
+export const DEFAULT_LOG_COUNT = 10;
 
 export class App {
   static instance: App;
@@ -72,7 +80,9 @@ export class App {
     this.medplum = medplum;
     this.agentId = agentId;
     this.logLevel = logLevel;
-    this.log = new Logger((msg) => console.log(msg), undefined, logLevel);
+
+    this.log = new FileLogger(LOG_FILE_PATH, undefined, logLevel);
+    setGlobalLogger(this.log);
   }
 
   async start(): Promise<void> {
@@ -87,7 +97,9 @@ export class App {
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
-        this.connectWebSocket().catch(this.log.error);
+        this.connectWebSocket().catch((err) =>
+          this.log.error('Error while connecting to WebSocket', { err: normalizeErrorString(err) })
+        );
       } else {
         this.startWebSocketWorker();
       }
@@ -138,7 +150,9 @@ export class App {
   private async heartbeat(): Promise<void> {
     if (!this.webSocket) {
       this.log.warn('WebSocket not connected');
-      this.connectWebSocket().catch(this.log.error);
+      this.connectWebSocket().catch((err) =>
+        this.log.error('Error while connecting to WebSocket', { err: normalizeErrorString(err) })
+      );
       return;
     }
 
@@ -257,6 +271,9 @@ export class App {
             break;
           case 'agent:upgrade:request':
             await this.tryUpgradeAgent(command);
+            break;
+          case 'agent:logs:request':
+            await this.handleLogRequest(command);
             break;
           case 'agent:error':
             this.log.error(command.body);
@@ -432,6 +449,25 @@ export class App {
     this.channels.set(definition.name, channel);
   }
 
+  private async handleLogRequest(command: AgentLogsRequest): Promise<void> {
+    const count = command.count ?? DEFAULT_LOG_COUNT;
+    try {
+      const logs = await readLastNLines(LOG_FILE_PATH, count);
+      await this.sendToWebSocket({
+        type: 'agent:logs:response',
+        statusCode: 200,
+        logs: logs.join('\n'),
+        callback: command.callback,
+      });
+    } catch (err) {
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        body: normalizeErrorString(err),
+        callback: command.callback,
+      });
+    }
+  }
+
   async stop(): Promise<void> {
     this.log.info('Medplum service stopping...');
     this.shutdown = true;
@@ -482,7 +518,7 @@ export class App {
       .then(() => {
         this.webSocketWorker = undefined;
       })
-      .catch((err) => console.log('WebSocket worker error', err));
+      .catch((err) => this.log.error('WebSocket worker error', { err: normalizeErrorString(err) }));
   }
 
   private async trySendToWebSocket(): Promise<void> {

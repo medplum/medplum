@@ -66,12 +66,24 @@ export interface AgentUpgradeResponse extends BaseAgentMessage {
   statusCode: number;
 }
 
+export interface AgentLogsRequest extends BaseAgentRequestMessage {
+  type: 'agent:logs:request';
+  count?: number;
+}
+
+export interface AgentLogResponse extends BaseAgentMessage {
+  type: 'agent:logs:response';
+  statusCode: number;
+  logs: string;
+}
+
 export type AgentRequestMessage =
   | AgentConnectRequest
   | AgentHeartbeatRequest
   | AgentTransmitRequest
   | AgentReloadConfigRequest
-  | AgentUpgradeRequest;
+  | AgentUpgradeRequest
+  | AgentLogsRequest;
 
 export type AgentResponseMessage =
   | AgentConnectResponse
@@ -79,6 +91,7 @@ export type AgentResponseMessage =
   | AgentTransmitResponse
   | AgentReloadConfigResponse
   | AgentUpgradeResponse
+  | AgentLogResponse
   | AgentError;
 
 export type AgentMessage = AgentRequestMessage | AgentResponseMessage;

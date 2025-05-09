@@ -71,7 +71,7 @@ export class Logger {
     return new Logger(mergedConfig.write, mergedConfig.metadata, mergedConfig.level, mergedConfig.options);
   }
 
-  private getLoggerConfig(): LoggerConfig {
+  protected getLoggerConfig(): LoggerConfig {
     const { write, metadata, level, options } = this;
     return { write, metadata, level, options };
   }
