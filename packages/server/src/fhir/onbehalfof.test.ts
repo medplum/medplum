@@ -1,4 +1,5 @@
 import { ContentType, forbidden, getReferenceString } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -299,5 +300,99 @@ describe('On Behalf Of', () => {
         .send({ resourceType: 'Patient' });
       expect(res1.status).toBe(403);
       expect(res1.body).toMatchObject(forbidden);
+    }));
+
+  test('Consistent meta.account behavior', () =>
+    withTestContext(async () => {
+      // Create a single project and single admin client
+      const adminAccount = await createTestProject({
+        withClient: true,
+        withAccessToken: true,
+        membership: { admin: true },
+      });
+
+      const { client, project } = adminAccount;
+
+      // Setup basic auth for the admin client
+      // This client will be the "primary" user for all HTTP requests
+      const basicAuth = 'Basic ' + Buffer.from(client.id + ':' + client.secret).toString('base64');
+
+      // Create non-admin test account
+      // They will be the "onBehalfOf" users for all HTTP requests
+      const account = 'Organization/' + randomUUID();
+      const testAccount = await addTestUser(project, {
+        resourceType: 'AccessPolicy',
+        compartment: { reference: account },
+        resource: [{ resourceType: 'Patient', criteria: 'Patient?_compartment=' + account }],
+      });
+
+      // Create a patient on behalf of test account 1
+      const res1 = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', basicAuth)
+        .set('X-Medplum', 'extended')
+        .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({ resourceType: 'Patient' });
+      expect(res1.status).toBe(201);
+      expect(res1.body.resourceType).toStrictEqual('Patient');
+
+      const patient1 = res1.body as Patient;
+      expect(patient1.resourceType).toBe('Patient');
+      expect(patient1.meta?.author?.reference).toStrictEqual(getReferenceString(adminAccount.client));
+      expect(patient1.meta?.onBehalfOf?.reference).toStrictEqual(getReferenceString(testAccount.profile));
+      expect(patient1.meta?.account?.reference).toStrictEqual(account);
+      expect(patient1.meta?.accounts?.length).toStrictEqual(1);
+      expect(patient1.meta?.accounts?.[0]?.reference).toStrictEqual(account);
+
+      // Pass in empty meta.
+      // This should be ignored, because the on-behalf-of user is not a project admin
+      const res2 = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', basicAuth)
+        .set('X-Medplum', 'extended')
+        .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Patient',
+          meta: {},
+        });
+      expect(res2.status).toBe(201);
+      expect(res2.body.resourceType).toStrictEqual('Patient');
+
+      const patient2 = res2.body as Patient;
+      expect(patient2.resourceType).toBe('Patient');
+      expect(patient2.id).not.toBe(patient1.id);
+      expect(patient2.meta?.author?.reference).toStrictEqual(getReferenceString(adminAccount.client));
+      expect(patient2.meta?.onBehalfOf?.reference).toStrictEqual(getReferenceString(testAccount.profile));
+      expect(patient2.meta?.account?.reference).toStrictEqual(account);
+      expect(patient2.meta?.accounts?.length).toStrictEqual(1);
+      expect(patient2.meta?.accounts?.[0]?.reference).toStrictEqual(account);
+
+      // Try to manually set the meta.account
+      // This should be ignored, because the on-behalf-of user is not a project admin
+      const res3 = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', basicAuth)
+        .set('X-Medplum', 'extended')
+        .set('X-Medplum-On-Behalf-Of', getReferenceString(testAccount.profile))
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Patient',
+          meta: {
+            account: { reference: 'Organization/' + randomUUID() },
+          },
+        });
+      expect(res3.status).toBe(201);
+      expect(res3.body.resourceType).toStrictEqual('Patient');
+
+      const patient3 = res3.body as Patient;
+      expect(patient3.resourceType).toBe('Patient');
+      expect(patient3.id).not.toBe(patient1.id);
+      expect(patient3.meta?.author?.reference).toStrictEqual(getReferenceString(adminAccount.client));
+      expect(patient3.meta?.onBehalfOf?.reference).toStrictEqual(getReferenceString(testAccount.profile));
+      expect(patient3.meta?.account?.reference).toStrictEqual(account);
+      expect(patient3.meta?.accounts?.length).toStrictEqual(1);
+      expect(patient3.meta?.accounts?.[0]?.reference).toStrictEqual(account);
     }));
 });
