@@ -75,7 +75,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, result));
 }
 
-async function getUserConfiguration(
+export async function getUserConfiguration(
   systemRepo: Repository,
   project: Project,
   membership: ProjectMembership

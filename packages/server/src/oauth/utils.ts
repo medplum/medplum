@@ -34,6 +34,7 @@ import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
+import { getUserConfiguration } from '../auth/me';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { parseSmartScopes, SmartScope } from '../fhir/smart';
@@ -426,8 +427,10 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   // Or could this be done closer to call site?
   // This method is used internally in a bunch of places that do not need to check IP access rules
 
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+
   // Get the access policy
-  const accessPolicy = await getAccessPolicyForLogin({ project, login, membership });
+  const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig });
 
   // Check IP Access Rules
   await checkIpAccessRules(login, accessPolicy);
@@ -882,7 +885,8 @@ export async function getLoginForAccessToken(
 
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-  const authState = { login, project, membership };
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  const authState = { login, project, membership, userConfig };
   await tryAddOnBehalfOf(req, authState);
   return authState;
 }
@@ -925,8 +929,9 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
     authMethod: 'client',
     authTime: new Date().toISOString(),
   };
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
 
-  const authState: AuthState = { login, project, membership };
+  const authState: AuthState = { login, project, membership, userConfig };
   await tryAddOnBehalfOf(req, authState);
   return authState;
 }
