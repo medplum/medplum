@@ -73,7 +73,11 @@ export class AgentDicomChannel extends BaseChannel {
         request: dimse.requests.CStoreRequest,
         callback: (response: dimse.responses.CStoreResponse) => void
       ): void {
-        this.cStoreImpl(request).then(callback).catch(console.error);
+        this.cStoreImpl(request)
+          .then(callback)
+          .catch((err) =>
+            DcmjsDimseScp.channel.log.error('Error making C-STORE request', { err: normalizeErrorString(err) })
+          );
       }
 
       private async cStoreImpl(request: dimse.requests.CStoreRequest): Promise<dimse.responses.CStoreResponse> {
@@ -154,7 +158,7 @@ export class AgentDicomChannel extends BaseChannel {
     this.started = true;
     const address = new URL(this.getEndpoint().address as string);
     this.log.info(`Channel starting on ${address}`);
-    this.server.on('networkError', (e) => console.log('Network error: ', e));
+    this.server.on('networkError', (err) => this.log.error('Network error', { err: normalizeErrorString(err) }));
     this.server.listen(Number.parseInt(address.port, 10));
     this.log.info('Channel started successfully');
   }
