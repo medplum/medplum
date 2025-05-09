@@ -1,4 +1,5 @@
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Panel } from '../Panel/Panel';
 import { DescriptionList, DescriptionListEntry } from './DescriptionList';
 

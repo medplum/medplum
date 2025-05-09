@@ -2,8 +2,8 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { registerNew } from './register';
 import { withTestContext } from '../test.setup';
+import { registerNew } from './register';
 
 const app = express();
 

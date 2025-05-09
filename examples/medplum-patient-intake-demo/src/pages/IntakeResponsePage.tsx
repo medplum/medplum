@@ -2,6 +2,7 @@ import { Stack, Text, Title, TitleOrder } from '@mantine/core';
 import { formatDate } from '@medplum/core';
 import { QuestionnaireResponseItem, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, Document, QuantityDisplay, RangeDisplay, useMedplum } from '@medplum/react';
+import { JSX } from 'react';
 import { useParams } from 'react-router';
 
 interface ItemDisplayProps {

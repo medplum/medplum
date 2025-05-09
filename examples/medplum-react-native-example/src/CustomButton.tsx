@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import { GestureResponderEvent, Pressable, StyleSheet, Text } from 'react-native';
 
 interface CustomButtonProps {

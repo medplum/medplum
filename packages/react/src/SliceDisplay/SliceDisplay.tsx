@@ -1,11 +1,11 @@
 import {
-  SliceDefinitionWithTypes,
-  InternalSchemaElement,
   ElementsContextType,
+  InternalSchemaElement,
+  SliceDefinitionWithTypes,
   buildElementsContext,
   isPopulated,
 } from '@medplum/core';
-import { useContext, useMemo } from 'react';
+import { JSX, useContext, useMemo } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';

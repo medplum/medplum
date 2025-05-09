@@ -1,7 +1,9 @@
 import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
+import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { vi } from 'vitest';
+import { handler } from './obstetric-encounter-note';
 import {
   encounter,
   fullResponse,
@@ -10,8 +12,6 @@ import {
   onlyCondition,
   responseWithNoAssessment,
 } from './test-data/obstetric-encounter-note-test-data';
-import { handler } from './obstetric-encounter-note';
-import { vi } from 'vitest';
 
 describe('Obstetric Encounter Note', async () => {
   const bot = { reference: 'Bot/123' };

@@ -1,7 +1,7 @@
-import { Title, Group, Box, Textarea, Button, Alert, Grid } from '@mantine/core';
-import { CodingInput, Document, ResourceName, useMedplum, ResourceInput } from '@medplum/react';
-import { useState } from 'react';
+import { Alert, Box, Button, Grid, Group, Textarea, Title } from '@mantine/core';
 import { ValueSet } from '@medplum/fhirtypes';
+import { CodingInput, Document, ResourceInput, ResourceName, useMedplum } from '@medplum/react';
+import { JSX, useState } from 'react';
 
 export function HomePage(): JSX.Element {
   const medplum = useMedplum();

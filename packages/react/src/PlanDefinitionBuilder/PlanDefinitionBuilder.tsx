@@ -15,7 +15,7 @@ import { getReferenceString } from '@medplum/core';
 import { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
-import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
+import { JSX, MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
@@ -43,7 +43,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
     setSelectedKey(undefined);
   }
 
-  const valueRef = useRef<PlanDefinition>();
+  const valueRef = useRef<PlanDefinition>(value);
   valueRef.current = value;
 
   useEffect(() => {
@@ -107,7 +107,7 @@ interface ActionArrayBuilderProps {
 }
 
 function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
-  const actionsRef = useRef<PlanDefinitionAction[]>();
+  const actionsRef = useRef<PlanDefinitionAction[]>(props.actions);
   actionsRef.current = props.actions;
 
   function changeAction(changedAction: PlanDefinitionAction): void {

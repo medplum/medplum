@@ -4,8 +4,8 @@ import { Pool, PoolClient } from 'pg';
 import { Column, DeleteQuery } from '../sql';
 import { LookupTable, LookupTableRow } from './lookuptable';
 
-interface AddressTableRow extends LookupTableRow {
-  address: string;
+export interface AddressTableRow extends LookupTableRow {
+  address: string | undefined;
   city: string | undefined;
   country: string | undefined;
   postalCode: string | undefined;
@@ -109,15 +109,36 @@ export class AddressTable extends LookupTable {
     }
 
     for (const address of addresses) {
-      result.push({
+      const extracted = {
         resourceId: resource.id,
-        address: formatAddress(address),
-        city: address.city?.trim(),
-        country: address.country?.trim(),
-        postalCode: address.postalCode?.trim(),
-        state: address.state?.trim(),
-        use: address.use?.trim(),
-      });
+        // logical OR coalesce to ensure that empty strings are inserted as NULL
+        address: formatAddress(address) || undefined, // formatAddress can return the empty string
+        city: address.city?.trim() || undefined,
+        country: address.country?.trim() || undefined,
+        postalCode: address.postalCode?.trim() || undefined,
+        state: address.state?.trim() || undefined,
+        use: address.use?.trim() || undefined,
+      };
+      if (
+        (extracted.address ||
+          extracted.city ||
+          extracted.country ||
+          extracted.postalCode ||
+          extracted.state ||
+          extracted.use) &&
+        !result.some(
+          (a) =>
+            a.resourceId === extracted.resourceId &&
+            a.address === extracted.address &&
+            a.city === extracted.city &&
+            a.country === extracted.country &&
+            a.postalCode === extracted.postalCode &&
+            a.state === extracted.state &&
+            a.use === extracted.use
+        )
+      ) {
+        result.push(extracted);
+      }
     }
   }
 
@@ -138,21 +159,28 @@ export class AddressTable extends LookupTable {
       return undefined;
     }
 
+    let addresses: (Address | undefined | null)[] | undefined;
+
     switch (resource.resourceType) {
       case 'Patient':
       case 'Person':
       case 'Practitioner':
       case 'RelatedPerson':
       case 'Organization':
-        return resource.address;
+        addresses = resource.address;
+        break;
       case 'InsurancePlan':
-        return resource.contact?.map((contact) => contact.address).filter((address) => !!address);
+        addresses = resource.contact?.map((contact) => contact.address);
+        break;
       case 'Location':
-        return resource.address ? [resource.address] : undefined;
+        addresses = resource.address ? [resource.address] : undefined;
+        break;
       default:
         resource.resourceType satisfies never;
         return undefined;
     }
+
+    return addresses?.filter((a) => !!a);
   }
 
   /**

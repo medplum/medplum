@@ -1,9 +1,9 @@
 import { allOk, badRequest, forbidden } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Patient, Reference, OperationDefinition } from '@medplum/fhirtypes';
+import { OperationDefinition, Patient, Reference } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientEverything } from './patienteverything';
-import { parseInputParameters, buildOutputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',

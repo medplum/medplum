@@ -7,7 +7,9 @@ import {
   formatTiming,
   isEmpty,
 } from '@medplum/core';
+import { ElementDefinitionType } from '@medplum/fhirtypes';
 import { IconCheck, IconCopy } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { AttachmentArrayDisplay } from '../AttachmentArrayDisplay/AttachmentArrayDisplay';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
@@ -16,6 +18,7 @@ import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConcep
 import { CodingDisplay } from '../CodingDisplay/CodingDisplay';
 import { ContactDetailDisplay } from '../ContactDetailDisplay/ContactDetailDisplay';
 import { ContactPointDisplay } from '../ContactPointDisplay/ContactPointDisplay';
+import { ExtensionDisplay } from '../ExtensionDisplay/ExtensionDisplay';
 import { HumanNameDisplay } from '../HumanNameDisplay/HumanNameDisplay';
 import { IdentifierDisplay } from '../IdentifierDisplay/IdentifierDisplay';
 import { MoneyDisplay } from '../MoneyDisplay/MoneyDisplay';
@@ -24,8 +27,6 @@ import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { RatioDisplay } from '../RatioDisplay/RatioDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
-import { ExtensionDisplay } from '../ExtensionDisplay/ExtensionDisplay';
-import { ElementDefinitionType } from '@medplum/fhirtypes';
 
 export interface ResourcePropertyDisplayProps {
   readonly property?: InternalSchemaElement;

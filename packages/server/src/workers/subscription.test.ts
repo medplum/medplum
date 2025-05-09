@@ -318,6 +318,7 @@ describe('Subscription Worker', () => {
     withTestContext(
       async () => {
         const url = 'https://example.com/subscription';
+        const secret = randomUUID();
 
         const subscription = await repo.createResource<Subscription>({
           resourceType: 'Subscription',
@@ -332,6 +333,10 @@ describe('Subscription Worker', () => {
             {
               url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
               valueCode: 'delete',
+            },
+            {
+              url: 'https://www.medplum.com/fhir/StructureDefinition/subscription-secret',
+              valueString: secret,
             },
           ],
         });
@@ -373,6 +378,7 @@ describe('Subscription Worker', () => {
               'X-Medplum-Subscription': subscription.id,
               'X-Medplum-Interaction': 'delete',
               'X-Medplum-Deleted-Resource': `Patient/${patient.id}`,
+              'X-Signature': createHmac('sha256', secret).update('{}').digest('hex'),
               'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
               traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
             },

@@ -8,6 +8,8 @@ import {
 import { readJson as readDefinitionsJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, Organization, Patient, Practitioner, Questionnaire, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import {
   HEALTH_GORILLA_AUTHORIZED_BY_EXT,
   HEALTH_GORILLA_SYSTEM,
@@ -25,8 +27,6 @@ import {
 } from './lab-order';
 import { expectToBeDefined } from './test-utils';
 import { BillTo, LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 
 interface TestContext {
   medplum: MedplumClient;

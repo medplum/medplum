@@ -2,7 +2,7 @@ import { Anchor, TextProps } from '@mantine/core';
 import { isReference, isResource } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplumNavigate } from '@medplum/react-hooks';
-import { MouseEvent, MouseEventHandler, ReactNode } from 'react';
+import { JSX, MouseEvent, MouseEventHandler, ReactNode } from 'react';
 import { isAuxClick } from '../utils/dom';
 
 export interface MedplumLinkProps extends TextProps {

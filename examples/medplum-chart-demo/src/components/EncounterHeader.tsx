@@ -1,6 +1,7 @@
 import { Container, Group, Text, Title } from '@mantine/core';
 import { getDisplayString } from '@medplum/core';
 import { Encounter, Patient } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 
 interface EncounterHeaderProps {
   encounter: Encounter;

@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import { Container } from '../Container/Container';
 import { Panel, PanelProps } from '../Panel/Panel';
 

@@ -3,6 +3,7 @@ import { Patient, Resource } from '@medplum/fhirtypes';
 import { LabOrderInputErrors, LabOrganization } from '@medplum/health-gorilla-core';
 import { useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '@medplum/react';
+import { JSX } from 'react';
 
 export type PractitionerInputProps = {
   patient: Patient | undefined;

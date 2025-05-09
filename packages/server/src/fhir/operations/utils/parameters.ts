@@ -124,7 +124,9 @@ function parseStringifiedParameter(
       return value;
   }
 
-  throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
+  throw new OperationOutcomeError(
+    badRequest(`Invalid value '${value}' provided for ${param.type} parameter '${param.name}'`)
+  );
 }
 
 function validateInputParam(param: OperationDefinitionParameter, value: unknown): unknown {
@@ -158,14 +160,21 @@ function parseParams(
   for (const param of params) {
     // FHIR spec-compliant case: Parameters resource e.g.
     // { resourceType: 'Parameters', parameter: [{ name: 'message', valueString: 'Hello!' }] }
+    // except for Resource parameters, where the value is a whole resource.
     const inParams = inputParameters.filter((p) => p.name === param.name);
     let value: unknown;
     if (param.part?.length) {
       value = inParams.map((input) => parseParams(param.part as [], input.part ?? []));
     } else {
-      value = inParams?.map((v) => v[('value' + capitalize(param.type ?? 'string')) as keyof ParametersParameter]);
+      value = inParams?.map((v) => {
+        const paramType = param.type ?? 'string';
+        if (paramType === 'Resource') {
+          return v.resource;
+        } else {
+          return v[('value' + capitalize(paramType)) as keyof ParametersParameter];
+        }
+      });
     }
-
     parsed[param.name] = validateInputParam(param, value);
   }
 

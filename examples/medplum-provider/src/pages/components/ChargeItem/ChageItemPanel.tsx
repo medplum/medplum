@@ -1,8 +1,9 @@
-import { TextInput, Text, Stack, ActionIcon, Card, Flex, Grid } from '@mantine/core';
-import { IconDotsVertical } from '@tabler/icons-react';
+import { ActionIcon, Card, Flex, Grid, Stack, Text, TextInput } from '@mantine/core';
+import { HTTP_HL7_ORG } from '@medplum/core';
 import { ChargeItem, CodeableConcept } from '@medplum/fhirtypes';
 import { CodeableConceptInput } from '@medplum/react';
-import { HTTP_HL7_ORG } from '@medplum/core';
+import { IconDotsVertical } from '@tabler/icons-react';
+import { JSX } from 'react';
 
 const CHARGE_ITEM_MODIFIER_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/chargeitem-modifier`;
 

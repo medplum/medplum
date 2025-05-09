@@ -23,6 +23,19 @@ variable "app_domain" {
 }
 
 variable "app_certificate_secret_id" {
-  type    = string
-  default = null
+  description = "The ID of the Key Vault certificate secret"
+  type        = string
+  default     = null
+}
+
+variable "environment" {
+  description = "values: dev, test, prod"
+  type        = string
+  default     = "dev"
+}
+
+variable "deployment_id" {
+  description = "The deployment ID for the current deployment"
+  type        = string
+  default     = "1"
 }

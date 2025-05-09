@@ -1,10 +1,6 @@
-resource "random_id" "cdn_random_id" {
-  byte_length = 2
-}
-
 # Storage Account to host static content
 resource "azurerm_storage_account" "sa" {
-  name                     = "medplumapp${random_id.cdn_random_id.hex}"
+  name                     = "medplum${var.environment}${var.deployment_id}sa"
   resource_group_name      = var.resource_group_name
   location                 = var.location
   account_tier             = "Standard"
@@ -46,7 +42,7 @@ resource "azurerm_cdn_frontdoor_origin_group" "fd_origin_group" {
 }
 
 # Front Door Origin
-resource "azurerm_cdn_frontdoor_origin" "fd_storage_origin" {
+resource "azurerm_cdn_frontdoor_origin" "fd_origin_group" {
   name                           = "${azurerm_storage_account.sa.name}-origin"
   cdn_frontdoor_origin_group_id  = azurerm_cdn_frontdoor_origin_group.fd_origin_group.id
   host_name                      = azurerm_storage_account.sa.primary_web_host
@@ -67,7 +63,7 @@ resource "azurerm_cdn_frontdoor_route" "fd_route" {
   name                          = "${azurerm_storage_account.sa.name}-route"
   cdn_frontdoor_endpoint_id     = azurerm_cdn_frontdoor_endpoint.fd_endpoint.id
   cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.fd_origin_group.id
-  cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.fd_storage_origin.id]
+  cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.fd_origin_group.id]
 
   patterns_to_match   = ["/*"]
   forwarding_protocol = "HttpsOnly"
@@ -90,22 +86,21 @@ resource "azurerm_cdn_frontdoor_custom_domain" "fd_custom_domain" {
   host_name                = var.app_domain
 
   tls {
-    cdn_frontdoor_secret_id = azurerm_cdn_frontdoor_secret.fd_custom_secret.id
-    certificate_type        = "CustomerCertificate"
-    minimum_tls_version     = "TLS12"
+    certificate_type    = "CustomerCertificate"
+    minimum_tls_version = "TLS12"
   }
 }
 
-resource "azurerm_cdn_frontdoor_secret" "fd_custom_secret" {
-  name                     = "${azurerm_storage_account.sa.name}-secret"
-  cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd_profile.id
+# resource "azurerm_cdn_frontdoor_secret" "fd_custom_secret" {
+#   name                     = "${azurerm_storage_account.sa.name}-secret"
+#   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd_profile.id
 
-  secret {
-    customer_certificate {
-      key_vault_certificate_id = var.app_certificate_secret_id
-    }
-  }
-}
+#   secret {
+#     customer_certificate {
+#       key_vault_certificate_id = var.app_certificate_secret_id
+#     }
+#   }
+# }
 
 resource "azurerm_cdn_frontdoor_custom_domain_association" "custom_domain_association" {
   cdn_frontdoor_custom_domain_id = azurerm_cdn_frontdoor_custom_domain.fd_custom_domain.id

@@ -24,7 +24,7 @@ import {
   IconRobot,
   IconUser,
 } from '@tabler/icons-react';
-import { Suspense, useEffect, useState } from 'react';
+import { JSX, Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { LandingPage } from './pages/LandingPage';
 import { ResourcePage } from './pages/ResourcePage';

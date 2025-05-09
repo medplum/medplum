@@ -1,6 +1,7 @@
 import { Meta } from '@storybook/react';
-import { AttachmentInput } from './AttachmentInput';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
+import { AttachmentInput } from './AttachmentInput';
 
 export default {
   title: 'Medplum/AttachmentInput',

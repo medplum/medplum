@@ -1,5 +1,6 @@
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, Loading, ResourceTable, useResource } from '@medplum/react';
+import { JSX } from 'react';
 import { useParams } from 'react-router';
 
 export function ResourceDetailsPage(): JSX.Element {

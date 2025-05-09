@@ -19,10 +19,10 @@ import {
   useMedplum,
   ValueSetAutocomplete,
 } from '@medplum/react';
-import { useState } from 'react';
-import { CoverageInput } from './components/CoverageInput';
-import { PerformingLabInput } from './components/PerformingLabInput';
-import { TestMetadataCardInput } from './components/TestMetadataCardInput';
+import { JSX, useState } from 'react';
+import { CoverageInput } from '../components/CoverageInput';
+import { PerformingLabInput } from '../components/PerformingLabInput';
+import { TestMetadataCardInput } from '../components/TestMetadataCardInput';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
   return medplum.executeBot(

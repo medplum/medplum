@@ -1,6 +1,6 @@
 import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Patient, Reference, ResourceType } from '@medplum/fhirtypes';
-import { useCallback } from 'react';
+import { JSX, useCallback } from 'react';
 import { ResourceTimeline, ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
 
 export interface PatientTimelineProps extends Pick<ResourceTimelineProps<Patient>, 'getMenu'> {

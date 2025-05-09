@@ -16,7 +16,7 @@ export default function ConnectionHandler(props: WebSocketHandlerProps): null {
   const { subRequest, onMessage, onStatusChange } = props;
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('IDLE');
 
-  const connectionRef = useRef<FhircastConnection>();
+  const connectionRef = useRef<FhircastConnection>(undefined);
   const onMessageRef = useRef(onMessage);
 
   useEffect(() => {

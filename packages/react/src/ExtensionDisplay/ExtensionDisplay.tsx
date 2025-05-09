@@ -7,7 +7,7 @@ import {
   tryGetProfile,
 } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { JSX, useContext, useEffect, useMemo, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';

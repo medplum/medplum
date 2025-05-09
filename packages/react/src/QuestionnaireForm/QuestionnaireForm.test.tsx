@@ -2,10 +2,10 @@ import { getQuestionnaireAnswers } from '@medplum/core';
 import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '../test-utils/render';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import { MemoryRouter } from 'react-router';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
@@ -768,7 +768,7 @@ describe('QuestionnaireForm', () => {
               valueAttachment: {
                 title: 'hello.txt',
                 contentType: 'text/plain',
-                url: 'https://example.com/binary/123',
+                url: expect.stringContaining('https://example.com/binary/'),
               },
             },
           ],
@@ -2008,6 +2008,51 @@ describe('QuestionnaireForm', () => {
 
     expect(answers3['q1']).toMatchObject({ valueString: undefined });
     expect(answers3['q2']).toMatchObject({ valueBoolean: false });
+  });
+
+  test('Questionnaire CalculatedExpression failed to evaluate expression', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'temperature-threshold',
+        title: 'Temperature Threshold Check',
+        item: [
+          {
+            id: 'id-1',
+            linkId: 'q1',
+            type: 'string',
+            text: 'Fahrenheit',
+          },
+          {
+            id: 'id-2',
+            linkId: 'q2',
+            type: 'boolean',
+            text: 'Is temperature over 120?',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                valueExpression: {
+                  language: 'text/fhirpath',
+                  expression: '%fail',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '125' } });
+    });
+
+    expect(
+      screen.getByText('Expression evaluation failed: FhirPathError on "%fail": Error: Undefined variable %fail')
+    ).toBeInTheDocument();
   });
 
   test('Questionnaire CalculatedExpression with nested groups', async () => {

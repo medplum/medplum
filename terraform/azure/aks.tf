@@ -1,10 +1,6 @@
-resource "random_id" "prefix" {
-  byte_length = 8
-}
-
 resource "azurerm_user_assigned_identity" "aks_identity" {
   location            = var.location
-  name                = "${random_id.prefix.hex}-identity"
+  name                = "medplum-${var.environment}-${var.deployment_id}-identity"
   resource_group_name = var.resource_group_name
 }
 
@@ -12,13 +8,12 @@ module "medplum_aks" {
   source  = "Azure/aks/azurerm"
   version = "9.2.0"
 
-  prefix                               = "medplum-aks"
+  prefix                               = "medplum-${var.environment}-${var.deployment_id}-aks"
   resource_group_name                  = var.resource_group_name
   admin_username                       = null
-  azure_policy_enabled                 = true
-  cluster_log_analytics_workspace_name = "medplum-aks"
-  cluster_name                         = "medplum-aks"
-  disk_encryption_set_id               = azurerm_disk_encryption_set.des.id
+  cluster_log_analytics_workspace_name = "medplum-${var.environment}-${var.deployment_id}-aks"
+  cluster_name                         = "medplum-${var.environment}-${var.deployment_id}-aks"
+  disk_encryption_set_id               = azurerm_disk_encryption_set.des_disk_encryption_set.id
   identity_ids                         = [azurerm_user_assigned_identity.aks_identity.id]
   identity_type                        = "UserAssigned"
   log_analytics_solution = {
@@ -60,6 +55,7 @@ module "medplum_aks" {
     subnet_id = azurerm_subnet.medplum_appgw_subnet.id
   }
 
+
   depends_on = [
     azurerm_resource_group.rg,
     azurerm_key_vault_access_policy.kms,
@@ -68,10 +64,8 @@ module "medplum_aks" {
 
 }
 
-
-
 resource "azurerm_log_analytics_workspace" "main" {
-  name                = "medplum-log-analytics"
+  name                = "medplum-${var.environment}-${var.deployment_id}-log-analytics"
   location            = var.location
   resource_group_name = var.resource_group_name
   sku                 = "PerGB2018"
@@ -104,13 +98,13 @@ resource "azurerm_log_analytics_solution" "main" {
   }
 }
 
-# output "managed_identity_id" {
-#   value = azurerm_user_assigned_identity.aks_identity.name
-# }
+output "managed_identity_id" {
+  value = azurerm_user_assigned_identity.aks_identity.name
+}
 
-# output "managed_identity_client_id" {
-#   value = azurerm_user_assigned_identity.aks_identity.client_id
-# }
+output "managed_identity_client_id" {
+  value = azurerm_user_assigned_identity.aks_identity.client_id
+}
 
 output "oidc_issuer_url" {
   value = module.medplum_aks.oidc_issuer_url

@@ -2,7 +2,7 @@ import { ActionIcon, Flex, Textarea, TextareaProps } from '@mantine/core';
 import { useClipboard } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { IconCopy } from '@tabler/icons-react';
-import { RefAttributes, useRef, useState } from 'react';
+import { JSX, RefAttributes, useRef, useState } from 'react';
 
 export interface SensitiveTextareaProps extends TextareaProps, RefAttributes<HTMLTextAreaElement> {}
 

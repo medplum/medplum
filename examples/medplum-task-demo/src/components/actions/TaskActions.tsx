@@ -1,15 +1,16 @@
 import { Stack, Title } from '@mantine/core';
 import { Task } from '@medplum/fhirtypes';
 import { Loading, useResource } from '@medplum/react';
-import { AddNote } from './AddNote';
+import { JSX } from 'react';
 import { AddDueDate } from './AddDueDate';
-import { UpdateBusinessStatus } from './UpdateBusinessStatus';
-import { AssignTask } from './AssignTask';
+import { AddNote } from './AddNote';
 import { AssignRole } from './AssignRole';
+import { AssignTask } from './AssignTask';
 import { ClaimTask } from './ClaimTask';
+import { CompleteTask } from './CompleteTask';
 import { DeleteTask } from './DeleteTask';
 import { PauseResumeTask } from './PauseResumeTask';
-import { CompleteTask } from './CompleteTask';
+import { UpdateBusinessStatus } from './UpdateBusinessStatus';
 
 interface TaskActionsProps {
   readonly task: Task;

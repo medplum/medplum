@@ -2,7 +2,7 @@ import { Paper, Tabs } from '@mantine/core';
 import { Filter, getReferenceString, Operator, SearchRequest, WithId } from '@medplum/core';
 import { Practitioner } from '@medplum/fhirtypes';
 import { SearchControl, useMedplumProfile } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 export function AppointmentsPage(): JSX.Element {

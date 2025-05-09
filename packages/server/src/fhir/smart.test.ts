@@ -1,6 +1,7 @@
 import { AccessPolicy } from '@medplum/fhirtypes';
-import { applySmartScopes, parseSmartScopes } from './smart';
 import { randomUUID } from 'node:crypto';
+import { PopulatedAccessPolicy } from './accesspolicy';
+import { applySmartScopes, parseSmartScopes } from './smart';
 
 describe('SMART on FHIR', () => {
   test('Parse empty', () => {
@@ -75,7 +76,7 @@ describe('SMART on FHIR', () => {
   });
 
   test('Do not change access policy', () => {
-    const startAccessPolicy: AccessPolicy = {
+    const startAccessPolicy: PopulatedAccessPolicy = {
       resourceType: 'AccessPolicy',
       resource: [
         {
@@ -110,7 +111,10 @@ describe('SMART on FHIR', () => {
 
   test('Generate access policy', () => {
     expect(
-      applySmartScopes({ resourceType: 'AccessPolicy' }, 'patient/Observation.cruds patient/Patient.cruds')
+      applySmartScopes(
+        { resourceType: 'AccessPolicy', resource: [{ resourceType: '*' }] },
+        'patient/Observation.cruds patient/Patient.cruds'
+      )
     ).toMatchObject({
       resourceType: 'AccessPolicy',
       resource: [
@@ -125,7 +129,7 @@ describe('SMART on FHIR', () => {
   });
 
   test('Intersect access policy', () => {
-    const startAccessPolicy: AccessPolicy = {
+    const startAccessPolicy: PopulatedAccessPolicy = {
       resourceType: 'AccessPolicy',
       resource: [
         {
@@ -153,7 +157,7 @@ describe('SMART on FHIR', () => {
   });
 
   test('Intersect with wildcard access policy', () => {
-    const startAccessPolicy: AccessPolicy = {
+    const startAccessPolicy: PopulatedAccessPolicy = {
       resourceType: 'AccessPolicy',
       resource: [
         { resourceType: 'StructureDefinition', readonly: true },
@@ -178,7 +182,7 @@ describe('SMART on FHIR', () => {
   test('Intersect with granular scopes and criteria', () => {
     const id = randomUUID();
     const compartment = `Patient/${id}`;
-    const startAccessPolicy: AccessPolicy = {
+    const startAccessPolicy: PopulatedAccessPolicy = {
       resourceType: 'AccessPolicy',
       resource: [
         { resourceType: 'Patient', readonly: true, criteria: 'Patient?_id=' + id },

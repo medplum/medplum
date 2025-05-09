@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
-import { act, userEvent, UserEvent, render, screen, waitFor } from './test-utils/render';
+import { act, render, screen, userEvent, UserEvent, waitFor } from './test-utils/render';
 
 const medplum = new MockClient();
 

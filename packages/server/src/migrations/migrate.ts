@@ -22,6 +22,7 @@ import {
   TokenColumnSearchParameterImplementation,
 } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
+import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
 import {
   doubleEscapeSingleQuotes,
   escapeUnicode,
@@ -29,12 +30,12 @@ import {
   quotedColumnName,
   splitIndexColumnNames,
 } from './migrate-utils';
-import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
 let DRY_RUN = false;
 let ALLOW_POST_DEPLOY_ACTIONS = false;
 let SKIP_POST_DEPLOY_ACTIONS = false;
+let ADD_ANALYZE_RESOURCE_TABLES = false;
 
 export interface SchemaDefinition {
   tables: TableDefinition[];
@@ -97,6 +98,7 @@ export async function main(): Promise<void> {
   DRY_RUN = process.argv.includes('--dryRun');
   ALLOW_POST_DEPLOY_ACTIONS = process.argv.includes('--allowPostDeploy');
   SKIP_POST_DEPLOY_ACTIONS = process.argv.includes('--skipPostDeploy');
+  ADD_ANALYZE_RESOURCE_TABLES = process.argv.includes('--addAnalyzeResourceTables');
   indexStructureDefinitionsAndSearchParameters();
 
   const dbClient = new Client({
@@ -387,6 +389,7 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: string
       { columns: ['projectId'], indexType: 'btree' },
       { columns: ['_source'], indexType: 'btree' },
       { columns: ['_profile'], indexType: 'gin' },
+      { columns: ['__version'], indexType: 'btree' },
     ],
   };
 
@@ -766,15 +769,11 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'display', type: 'TEXT' },
+      { name: 'isSynonym', type: 'BOOLEAN' },
     ],
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
       { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
-      {
-        columns: ['system', { expression: "to_tsvector('english'::regconfig, display)", name: 'display' }],
-        indexType: 'gin',
-        where: 'display IS NOT NULL',
-      },
       // This index definition is cheating since "display gin_trgm_ops" is of course not just a column name
       // It should have a special parser
       { columns: ['system', 'display gin_trgm_ops'], indexType: 'gin' },
@@ -837,6 +836,15 @@ function writeMigrations(
   for (const targetTable of targetDefinition.tables) {
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
     migrateTable(b, startTable, targetTable, options);
+  }
+
+  if (ADD_ANALYZE_RESOURCE_TABLES) {
+    for (const [resourceType, fhirType] of Object.entries(getAllDataTypes())) {
+      if (!isResourceTypeSchema(fhirType)) {
+        continue;
+      }
+      b.appendNoWrap(`await fns.analyzeTable(client, actions, '${resourceType}');`);
+    }
   }
 
   b.indentCount--;

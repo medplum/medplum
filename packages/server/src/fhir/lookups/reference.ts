@@ -10,10 +10,10 @@ import {
 } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
-import { LookupTable, LookupTableRow } from './lookuptable';
 import { InsertQuery } from '../sql';
+import { LookupTable, LookupTableRow } from './lookuptable';
 
-interface ReferenceTableRow extends LookupTableRow {
+export interface ReferenceTableRow extends LookupTableRow {
   resourceId: string;
   targetId: string;
   code: string;

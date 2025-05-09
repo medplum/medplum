@@ -15,7 +15,7 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconCheck, IconCloudUpload, IconFileAlert, IconMessage } from '@tabler/icons-react';
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { JSX, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';

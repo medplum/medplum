@@ -5,7 +5,7 @@ import { createReference, normalizeErrorString, PatchOperation } from '@medplum/
 import { Coding, List, MedicationKnowledge, Resource } from '@medplum/fhirtypes';
 import { CodingInput, Container, Document, ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { FormularyDisplay } from '../components/FormularyDisplay';
 
 export function MedicationsPage(): JSX.Element {

@@ -1,5 +1,6 @@
 import { Button, Group, Stack, Stepper } from '@mantine/core';
 import { QuestionnaireItem, QuestionnaireResponse, QuestionnaireResponseItem } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { SubmitButton } from '../../Form/SubmitButton';
 import { QuestionnaireItemType } from '../../utils/questionnaire';
 import { QuestionnaireRepeatableItem } from '../QuestionnaireFormItem/QuestionnaireRepeatableItem';

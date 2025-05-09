@@ -8,7 +8,7 @@ import {
   SearchRequest,
 } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { CreateCoverageModal } from '../components/CreateCoverageModal';
 

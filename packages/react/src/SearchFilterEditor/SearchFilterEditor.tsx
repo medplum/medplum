@@ -2,7 +2,7 @@ import { ActionIcon, Group, Modal, NativeSelect } from '@mantine/core';
 import { Filter, Operator, SearchRequest, deepClone, getSearchParameters } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
 import { IconX } from '@tabler/icons-react';
-import { useEffect, useRef, useState } from 'react';
+import { JSX, useEffect, useRef, useState } from 'react';
 import { ArrayAddButton } from '../buttons/ArrayAddButton';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
@@ -35,10 +35,6 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
 
   function onAddFilter(filter: Filter): void {
     setSearch(addFilter(searchRef.current, filter.code, filter.operator, filter.value));
-  }
-
-  if (!props.visible) {
-    return null;
   }
 
   const resourceType = props.search.resourceType;
@@ -149,6 +145,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {operators && (
           <NativeSelect
+            key={`${props.id}-filter-value-${props.value.code}`}
             data-testid={`${props.id}-filter-operation`}
             defaultValue={value.operator}
             onChange={(e) => setFilterOperator(e.currentTarget.value as Operator)}
@@ -159,6 +156,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {searchParam && value.operator && (
           <SearchFilterValueInput
+            key={`${props.id}-filter-value-${props.value.code}-${props.value.operator}`}
             name={`${props.id}-filter-value`}
             resourceType={props.resourceType}
             searchParam={searchParam}

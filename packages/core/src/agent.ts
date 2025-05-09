@@ -59,6 +59,7 @@ export interface AgentReloadConfigResponse extends BaseAgentMessage {
 export interface AgentUpgradeRequest extends BaseAgentRequestMessage {
   type: 'agent:upgrade:request';
   version?: string;
+  force?: boolean;
 }
 
 export interface AgentUpgradeResponse extends BaseAgentMessage {

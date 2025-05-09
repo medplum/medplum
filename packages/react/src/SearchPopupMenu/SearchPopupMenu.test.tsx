@@ -118,38 +118,44 @@ describe('SearchPopupMenu', () => {
     }
   });
 
-  test.each(['Tomorrow', 'Today', 'Yesterday', 'Next Month', 'This Month', 'Last Month', 'Year to date'])(
-    '%s shortcut',
-    async (option) => {
-      let currSearch: SearchRequest = {
-        resourceType: 'Patient',
-      };
+  test.each([
+    'Tomorrow',
+    'Today',
+    'Yesterday',
+    'Next 24 Hours',
+    'Next Month',
+    'This Month',
+    'Last Month',
+    'Year to date',
+  ])('%s shortcut', async (option) => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
 
-      await setup({
-        search: currSearch,
-        searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
-        onChange: (e) => (currSearch = e),
-      });
+    await setup({
+      search: currSearch,
+      searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
+      onChange: (e) => (currSearch = e),
+    });
 
-      const optionButton = await screen.findByText(option);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
+    const optionButton = await screen.findByText(option);
+    await act(async () => {
+      fireEvent.click(optionButton);
+    });
 
-      expect(currSearch.filters).toBeDefined();
-      expect(currSearch.filters?.length).toEqual(2);
-      expect(currSearch.filters).toMatchObject([
-        {
-          code: 'birthdate',
-          operator: Operator.GREATER_THAN_OR_EQUALS,
-        },
-        {
-          code: 'birthdate',
-          operator: Operator.LESS_THAN_OR_EQUALS,
-        },
-      ]);
-    }
-  );
+    expect(currSearch.filters).toBeDefined();
+    expect(currSearch.filters?.length).toEqual(2);
+    expect(currSearch.filters).toMatchObject([
+      {
+        code: 'birthdate',
+        operator: Operator.GREATER_THAN_OR_EQUALS,
+      },
+      {
+        code: 'birthdate',
+        operator: Operator.LESS_THAN_OR_EQUALS,
+      },
+    ]);
+  });
 
   test('Date missing', async () => {
     let currSearch: SearchRequest = {
@@ -635,7 +641,5 @@ describe('SearchPopupMenu', () => {
 
 async function toggleMenu(): Promise<void> {
   const toggleMenuButton = await screen.findByText('Toggle menu');
-  await act(async () => {
-    await userEvent.click(toggleMenuButton);
-  });
+  await userEvent.click(toggleMenuButton);
 }

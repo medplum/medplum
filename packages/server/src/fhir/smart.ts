@@ -6,8 +6,9 @@
 import { ContentType, deepClone, OAuthGrantType, OAuthTokenAuthMethod, splitN } from '@medplum/core';
 import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getConfig } from '../config/loader';
 import qs from 'node:querystring';
+import { getConfig } from '../config/loader';
+import { PopulatedAccessPolicy } from './accesspolicy';
 
 const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
 
@@ -170,7 +171,10 @@ function normalizeV2ScopeString(str: string): string {
  * @param scope - The OAuth scope string.
  * @returns Updated access policy with the OAuth scope applied.
  */
-export function applySmartScopes(accessPolicy: AccessPolicy, scope: string | undefined): AccessPolicy {
+export function applySmartScopes(
+  accessPolicy: PopulatedAccessPolicy,
+  scope: string | undefined
+): PopulatedAccessPolicy {
   const smartScopes = parseSmartScopes(scope);
   if (smartScopes.length === 0) {
     // No SMART scopes, so no changes to the access policy
@@ -181,14 +185,14 @@ export function applySmartScopes(accessPolicy: AccessPolicy, scope: string | und
   return intersectSmartScopes(accessPolicy, smartScopes);
 }
 
-function intersectSmartScopes(accessPolicy: AccessPolicy, smartScope: SmartScope[]): AccessPolicy {
+function intersectSmartScopes(accessPolicy: AccessPolicy, smartScope: SmartScope[]): PopulatedAccessPolicy {
   // Build list of AccessPolicy entries
   if (!accessPolicy.resource) {
     // If none specified, generate an AccessPolicy from scratch
     return generateSmartScopesPolicy(smartScope);
   }
 
-  const result: AccessPolicy & { resource: AccessPolicyResource[] } = { ...accessPolicy, resource: [] };
+  const result: PopulatedAccessPolicy = { ...accessPolicy, resource: [] };
   for (const policy of accessPolicy.resource) {
     const scope = getScopeForResourceType(smartScope, policy.resourceType);
     if (scope) {
@@ -225,8 +229,8 @@ function getScopeForResourceType(scopes: SmartScope[], resourceType: string): Sm
   return scopes.find((s) => s.resourceType === resourceType) ?? scopes.find((s) => s.resourceType === '*');
 }
 
-function generateSmartScopesPolicy(smartScopes: SmartScope[]): AccessPolicy {
-  const result: AccessPolicy = {
+function generateSmartScopesPolicy(smartScopes: SmartScope[]): PopulatedAccessPolicy {
+  const result: PopulatedAccessPolicy = {
     resourceType: 'AccessPolicy',
     resource: [],
   };

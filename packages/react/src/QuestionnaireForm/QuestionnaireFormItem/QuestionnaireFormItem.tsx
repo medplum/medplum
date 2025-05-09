@@ -1,9 +1,20 @@
-import { Checkbox, ComboboxItem, Group, MultiSelect, NativeSelect, Radio, Textarea, TextInput } from '@mantine/core';
+import {
+  Checkbox,
+  ComboboxItem,
+  Group,
+  MultiSelect,
+  NativeSelect,
+  Radio,
+  Text,
+  Textarea,
+  TextInput,
+} from '@mantine/core';
 import {
   capitalize,
   deepEquals,
   formatCoding,
   getElementDefinition,
+  getExtension,
   HTTP_HL7_ORG,
   stringify,
   TypedValue,
@@ -16,7 +27,7 @@ import {
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
 } from '@medplum/fhirtypes';
-import { ChangeEvent, useContext } from 'react';
+import { ChangeEvent, JSX, useContext } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
 import { CodingInput } from '../../CodingInput/CodingInput';
@@ -84,12 +95,19 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
 
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
   const defaultValue = getCurrentAnswer(response, props.index) ?? getItemInitialValue(initial);
+  const validationError = getExtension(
+    response,
+    `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-validationError`
+  );
+
+  let formComponent: JSX.Element | null = null;
 
   switch (type) {
     case QuestionnaireItemType.display:
-      return <p key={props.item.linkId}>{props.item.text}</p>;
+      formComponent = <p key={props.item.linkId}>{props.item.text}</p>;
+      break;
     case QuestionnaireItemType.boolean:
-      return (
+      formComponent = (
         <CheckboxFormSection key={props.item.linkId} title={props.item.text} htmlFor={props.item.linkId}>
           <Checkbox
             id={props.item.linkId}
@@ -99,8 +117,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           />
         </CheckboxFormSection>
       );
+      break;
     case QuestionnaireItemType.decimal:
-      return (
+      formComponent = (
         <TextInput
           type="number"
           step="any"
@@ -108,11 +127,14 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
-          onChange={(e) => onChangeAnswer({ valueDecimal: e.currentTarget.valueAsNumber })}
+          onChange={(e) =>
+            onChangeAnswer({ valueDecimal: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber })
+          }
         />
       );
+      break;
     case QuestionnaireItemType.integer:
-      return (
+      formComponent = (
         <TextInput
           type="number"
           step={1}
@@ -120,11 +142,14 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
-          onChange={(e) => onChangeAnswer({ valueInteger: e.currentTarget.valueAsNumber })}
+          onChange={(e) =>
+            onChangeAnswer({ valueInteger: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber })
+          }
         />
       );
+      break;
     case QuestionnaireItemType.date:
-      return (
+      formComponent = (
         <TextInput
           type="date"
           id={name}
@@ -134,8 +159,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value })}
         />
       );
+      break;
     case QuestionnaireItemType.dateTime:
-      return (
+      formComponent = (
         <DateTimeInput
           name={name}
           required={props.required ?? item.required}
@@ -143,8 +169,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue })}
         />
       );
+      break;
     case QuestionnaireItemType.time:
-      return (
+      formComponent = (
         <TextInput
           type="time"
           id={name}
@@ -154,9 +181,10 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value })}
         />
       );
+      break;
     case QuestionnaireItemType.string:
     case QuestionnaireItemType.url:
-      return (
+      formComponent = (
         <TextInput
           id={name}
           name={name}
@@ -168,8 +196,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           }}
         />
       );
+      break;
     case QuestionnaireItemType.text:
-      return (
+      formComponent = (
         <Textarea
           id={name}
           name={name}
@@ -181,8 +210,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           }}
         />
       );
+      break;
     case QuestionnaireItemType.attachment:
-      return (
+      formComponent = (
         <Group py={4}>
           <AttachmentInput
             path=""
@@ -192,8 +222,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           />
         </Group>
       );
+      break;
     case QuestionnaireItemType.reference:
-      return (
+      formComponent = (
         <ReferenceInput
           name={name}
           required={props.required ?? item.required}
@@ -203,8 +234,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}
         />
       );
+      break;
     case QuestionnaireItemType.quantity:
-      return (
+      formComponent = (
         <QuantityInput
           path=""
           name={name}
@@ -214,10 +246,11 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           disableWheel
         />
       );
+      break;
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
       if (isDropDownChoice(item) && !item.answerValueSet) {
-        return (
+        formComponent = (
           <QuestionnaireChoiceDropDownInput
             name={name}
             item={item}
@@ -227,7 +260,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           />
         );
       } else if (isMultiSelectChoice(item) && !item.answerValueSet) {
-        return (
+        formComponent = (
           <QuestionnaireMultiSelectInput
             name={name}
             item={item}
@@ -237,7 +270,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           />
         );
       } else {
-        return (
+        formComponent = (
           <QuestionnaireChoiceSetInput
             name={name}
             item={item}
@@ -247,9 +280,21 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           />
         );
       }
+      break;
     default:
       return null;
   }
+
+  return (
+    <>
+      {formComponent}
+      {validationError?.valueString && (
+        <Text c="red" size="lg" mt={4}>
+          {validationError.valueString}
+        </Text>
+      )}
+    </>
+  );
 }
 
 interface QuestionnaireChoiceInputProps {

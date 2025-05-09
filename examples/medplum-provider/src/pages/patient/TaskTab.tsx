@@ -2,7 +2,7 @@ import { Blockquote, Group, Paper, Stack, Tabs, Text, Title } from '@mantine/cor
 import { formatCodeableConcept, getDisplayString } from '@medplum/core';
 import { Annotation, Task } from '@medplum/fhirtypes';
 import { Container, DefaultResourceTimeline, Document, ResourceTable, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { TaskActions } from '../../components/tasks/actions/TaskActions';
 import { formatPatientPageTabUrl, getPatientPageTabOrThrow } from './PatientPage.utils';

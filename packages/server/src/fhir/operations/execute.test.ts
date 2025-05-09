@@ -571,6 +571,46 @@ describe('Execute', () => {
     expect(profileToken.profile).toEqual(getReferenceString(profile));
   });
 
+  test('Propagates trace ID', async () => {
+    // Create a bot with empty code
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'vmcontext',
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+
+    // Deploy the bot
+    const res5 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({
+        code: `
+          exports.handler = async function (medplum, event) {
+            return event.traceId;
+          };
+      `,
+      });
+    expect(res5.status).toBe(200);
+
+    const traceId = randomUUID();
+
+    // Execute the bot as self
+    const res6 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.TEXT)
+      .set('X-Trace-Id', traceId)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send();
+    expect(res6.text).toBe(traceId);
+  });
+
   describe('linked project', () => {
     let project2: WithId<Project>;
     let accessToken2: string;

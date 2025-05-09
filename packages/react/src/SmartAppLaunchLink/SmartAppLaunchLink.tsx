@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { ensureTrailingSlash, normalizeErrorString } from '@medplum/core';
 import { ClientApplication, Encounter, Patient, Reference, SmartAppLaunch } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 
 export interface SmartAppLaunchLinkProps extends AnchorProps {
   readonly client: ClientApplication;

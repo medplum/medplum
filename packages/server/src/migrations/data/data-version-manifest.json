@@ -11,5 +11,14 @@
   },
   "v4": {
     "serverVersion": "4.1.0"
+  },
+  "v5": {
+    "serverVersion": "4.1.0"
+  },
+  "v6": {
+    "serverVersion": "4.1.1"
+  },
+  "v7": {
+    "serverVersion": "4.1.3"
   }
 }

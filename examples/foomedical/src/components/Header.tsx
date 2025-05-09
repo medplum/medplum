@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { ResourceAvatar, useMedplumProfile } from '@medplum/react';
 import { IconChevronDown, IconLogout, IconSettings, IconUserCircle } from '@tabler/icons-react';
 import cx from 'clsx';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import classes from './Header.module.css';
 import { Logo } from './Logo';

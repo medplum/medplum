@@ -2,7 +2,7 @@ import { Stack, Tabs } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
-import { useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router';
 import classes from './ResourcePage.module.css';
 import { useResourceType } from './useResourceType';

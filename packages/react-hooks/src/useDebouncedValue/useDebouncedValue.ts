@@ -52,7 +52,7 @@ export function useDebouncedValue<T = any>(
 ): [T, () => void] {
   const [debouncedValue, setDebouncedValue] = useState(value);
   const mountedRef = useRef(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const cooldownRef = useRef(false);
 
   const cancel = useCallback(() => window.clearTimeout(timeoutRef.current), []);

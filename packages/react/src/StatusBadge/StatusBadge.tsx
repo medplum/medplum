@@ -1,4 +1,5 @@
 import { Badge, DefaultMantineColor } from '@mantine/core';
+import { JSX } from 'react';
 
 /*
  * Request status: https://hl7.org/fhir/valueset-request-status.html

@@ -51,12 +51,12 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
-import { clampEstimateCount } from './search';
+import { clampEstimateCount, readFromTokenColumns } from './search';
 import { SelectQuery } from './sql';
 import { TokenColumnsFeature } from './tokens';
 
@@ -82,12 +82,47 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         repo = new Repository({
           strictMode: true,
           projects: [project.id],
+          currentProject: project,
           author: { reference: 'User/' + randomUUID() },
         });
       });
 
       afterAll(async () => {
         await shutdownApp();
+      });
+
+      test('readFromTokenColumns without systemSetting', () => {
+        expect(repo.currentProject()).toBeDefined();
+        expect(repo.currentProject()?.systemSetting).toBeUndefined();
+        if (tokenColumnsOrLookupTable === 'token columns') {
+          expect(readFromTokenColumns(repo)).toBe(true);
+        } else {
+          expect(readFromTokenColumns(repo)).toBe(false);
+        }
+      });
+
+      test('readFromTokenColumns with systemSetting', async () => {
+        const { project: projectWithTrue } = await createTestProject({
+          project: { systemSetting: [{ name: 'searchTokenColumns', valueBoolean: true }] },
+        });
+        const repoWithTrue = new Repository({
+          strictMode: true,
+          projects: [projectWithTrue.id],
+          currentProject: projectWithTrue,
+          author: { reference: 'User/' + randomUUID() },
+        });
+        expect(readFromTokenColumns(repoWithTrue)).toBe(true);
+
+        const { project: projectWithFalse } = await createTestProject({
+          project: { systemSetting: [{ name: 'searchTokenColumns', valueBoolean: false }] },
+        });
+        const repoWithFalse = new Repository({
+          strictMode: true,
+          projects: [projectWithFalse.id],
+          currentProject: projectWithFalse,
+          author: { reference: 'User/' + randomUUID() },
+        });
+        expect(readFromTokenColumns(repoWithFalse)).toBe(false);
       });
 
       test('Search total', async () =>
@@ -4749,6 +4784,29 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
 
       afterAll(async () => {
         await shutdownApp();
+      });
+
+      test('readFromTokenColumns', () => {
+        expect(getConfig().systemRepositoryTokenReadStrategy).toBeUndefined();
+
+        if (tokenColumnsOrLookupTable === 'token columns') {
+          expect(readFromTokenColumns(systemRepo)).toBe(true);
+        } else {
+          expect(readFromTokenColumns(systemRepo)).toBe(false);
+        }
+      });
+
+      test('readFromTokenColumns with systemRepositoryTokenReadStrategy', () => {
+        const config = getConfig();
+        const originalValue = config.systemRepositoryTokenReadStrategy;
+
+        config.systemRepositoryTokenReadStrategy = 'unified-tokens-column';
+        expect(readFromTokenColumns(systemRepo)).toBe(true);
+
+        config.systemRepositoryTokenReadStrategy = 'token-tables';
+        expect(readFromTokenColumns(systemRepo)).toBe(false);
+
+        config.systemRepositoryTokenReadStrategy = originalValue;
       });
 
       test('Filter by _project', () =>

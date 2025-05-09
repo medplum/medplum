@@ -1,5 +1,6 @@
 import { Title } from '@mantine/core';
 import { Document, ResourceHistoryTable } from '@medplum/react';
+import { JSX } from 'react';
 import { useParams } from 'react-router';
 
 export function PatientHistory(): JSX.Element {

@@ -41,11 +41,11 @@ export function getCounter(name: string, options?: MetricOptions): Counter {
   return result;
 }
 
-export function incrementCounter(name: string, options?: RecordMetricOptions): boolean {
+export function incrementCounter(name: string, options?: RecordMetricOptions, n = 1): boolean {
   if (!isOtelMetricsEnabled()) {
     return false;
   }
-  getCounter(name, options?.options).add(1, options?.attributes);
+  getCounter(name, options?.options).add(n, options?.attributes);
   return true;
 }
 

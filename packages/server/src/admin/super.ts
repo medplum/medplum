@@ -3,6 +3,7 @@ import {
   allOk,
   badRequest,
   forbidden,
+  getQueryString,
   getResourceTypes,
   OperationOutcomeError,
   parseSearchRequest,
@@ -22,6 +23,7 @@ import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/as
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
+import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
@@ -29,7 +31,6 @@ import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import { addReindexJob } from '../workers/reindex';
-import { markPostDeployMigrationCompleted } from '../migration-sql';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_scale_factor: 'float',
@@ -154,8 +155,21 @@ superAdminRouter.post(
         return;
     }
 
+    // construct a representation of the inputs/parameters for the reindex job
+    // for human consumption in `AsyncJob.request`
+    const queryForUrl: Record<string, string> = {
+      resourceType: req.body.resourceType,
+      filter: req.body.filter,
+      reindexType,
+      maxResourceVersion: maxResourceVersion?.toString() ?? '',
+    };
+
+    const asyncJobUrl = new URL(`${req.protocol}://${req.get('host') + req.originalUrl}`);
+    // replace the search, if any, with queryForUrl
+    asyncJobUrl.search = getQueryString(queryForUrl);
+
     const exec = new AsyncJobExecutor(systemRepo);
-    await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
+    await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
       await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter, maxResourceVersion);
     });
@@ -384,6 +398,7 @@ superAdminRouter.post(
       .withMessage('Table name(s) must be a snake_cased_string')
       .optional(),
     body('analyze').isBoolean().optional().default(false),
+    body('vacuum').isBoolean().optional().default(true),
     checkExact(),
   ],
   asyncWrap(async (req: Request, res: Response) => {
@@ -396,20 +411,33 @@ superAdminRouter.post(
       return;
     }
 
-    const query = `VACUUM${req.body.analyze ? ' ANALYZE' : ''}${req.body.tableNames?.length ? ` ${req.body.tableNames.map((name: string) => `"${name}"`).join(', ')}` : ''};`;
+    const vacuum = req.body.vacuum ?? true;
+
+    let action = vacuum ? 'VACUUM' : '';
+    action += req.body.analyze ? ' ANALYZE' : '';
+    if (!action) {
+      throw new OperationOutcomeError(badRequest('At least one of vacuum or analyze must be true'));
+    }
+
+    const query =
+      `${action}${req.body.tableNames?.length ? ` ${req.body.tableNames.map((name: string) => `"${name}"`).join(', ')}` : ''};`.trim();
 
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();
       await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
+        vacuum,
         analyze: req.body.analyze,
         query,
         durationMs: Date.now() - startTime,
       });
       return {
         resourceType: 'Parameters',
-        parameter: [{ name: 'outcome', resource: allOk }],
+        parameter: [
+          { name: 'outcome', resource: allOk },
+          { name: 'query', valueString: query },
+        ],
       };
     });
   })

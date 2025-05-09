@@ -70,6 +70,7 @@ import { Operation } from 'rfc6902';
 import { v7 } from 'uuid';
 import { getConfig } from '../config/loader';
 import { r4ProjectId } from '../constants';
+import { tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
@@ -94,6 +95,7 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { TokenTable } from './lookups/token';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
@@ -113,9 +115,10 @@ import {
   periodToRangeString,
 } from './sql';
 import { buildTokenColumns } from './token-column';
-import { isLegacyTokenColumnSearchParameter, TokenColumnsFeature } from './tokens';
+import { TokenColumnsFeature, isLegacyTokenColumnSearchParameter } from './tokens';
 
-const transactionAttempts = 2;
+const defaultTransactionAttempts = 2;
+const defaultExpBackoffBaseDelayMs = 50;
 const retryableTransactionErrorCodes = ['40001'];
 
 /**
@@ -269,6 +272,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
+
     const resourceWithId = {
       ...resource,
       id: options?.assignedId && resource.id ? resource.id : this.generateId(),
@@ -298,6 +303,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     options?: ReadResourceOptions
   ): Promise<WithId<T>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordRead();
+
     const startTime = Date.now();
     try {
       const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, options));
@@ -374,10 +381,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private canReadCacheEntry(cacheEntry: CacheEntry): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-    if (!this.context.projects?.includes(cacheEntry.projectId)) {
+    if (!this.isSuperAdmin() && !this.context.projects?.includes(cacheEntry.projectId)) {
       return false;
     }
     if (!satisfiedAccessPolicy(cacheEntry.resource, AccessPolicyInteraction.READ, this.context.accessPolicy)) {
@@ -387,6 +391,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(T | Error)[]> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordRead(references.length);
     const cacheEntries = await this.getCacheEntries(references);
     const result: (T | Error)[] = new Array(references.length);
 
@@ -472,6 +477,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns Operation outcome and a history bundle.
    */
   async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string, limit = 100): Promise<Bundle<T>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordHistory();
     const startTime = Date.now();
     try {
       let resource: T | undefined = undefined;
@@ -544,6 +550,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordRead();
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
     try {
@@ -581,6 +588,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
+
     const startTime = Date.now();
     try {
       let result: WithId<T>;
@@ -974,6 +983,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resources - The resource(s) to reindex.
    */
   async reindexResources<T extends Resource>(conn: PoolClient, resources: WithId<T>[]): Promise<void> {
+    if (!this.isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+
     // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < resources.length; i++) {
@@ -1025,6 +1038,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
+
     const startTime = Date.now();
     let resource: WithId<T>;
     try {
@@ -1096,6 +1111,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     patch: Operation[],
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
+
     const startTime = Date.now();
     try {
       return await this.withTransaction(async () => {
@@ -1161,6 +1178,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(db);
       await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
     });
+    incrementCounter(
+      `medplum.fhir.interaction.delete.count`,
+      { attributes: { resourceType, result: 'success' } },
+      ids.length
+    );
   }
 
   /**
@@ -1190,6 +1212,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
+    await tryGetRequestContext()?.fhirRateLimiter?.recordSearch();
+
     const startTime = Date.now();
     try {
       // Resource type validation is performed in the searchImpl function
@@ -1264,12 +1288,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resourceType - The resource type for compartments.
    */
   addSecurityFilters(builder: SelectQuery, resourceType: string): void {
-    if (this.isSuperAdmin()) {
-      // No compartment restrictions for admins.
-      return;
+    // No compartment restrictions for admins.
+    if (!this.isSuperAdmin()) {
+      this.addProjectFilters(builder);
     }
-
-    this.addProjectFilters(builder);
     this.addAccessPolicyFilters(builder, resourceType);
   }
 
@@ -1353,9 +1375,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
    * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
    * 3. 04/09/25 - Added columns for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
-   *
+   * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
+   * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
    */
-  static readonly VERSION: number = 3;
+  static readonly VERSION: number = 5;
 
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
@@ -1762,6 +1785,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return undefined;
   }
 
+  private disableTokenTableWrites: boolean | undefined;
+  private skipTokenTableWrite(): boolean {
+    if (this.disableTokenTableWrites === undefined) {
+      const project = this.currentProject();
+      const maybeWriteBoolean = project?.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')?.valueBoolean;
+      // If the Project.systemSetting exists, use its value. Otherwise, default to false
+      this.disableTokenTableWrites = maybeWriteBoolean ?? false;
+    }
+    return this.disableTokenTableWrites;
+  }
+
   /**
    * Writes resources values to the lookup tables.
    * @param client - The database client inside the transaction.
@@ -1770,6 +1804,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
+      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
+        continue;
+      }
       await lookupTable.indexResource(client, resource, create);
     }
   }
@@ -1780,6 +1817,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     create: boolean
   ): Promise<void> {
     for (const lookupTable of lookupTables) {
+      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
+        continue;
+      }
       await lookupTable.batchIndexResources(client, resources, create);
     }
   }
@@ -1988,10 +2028,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can read the specified resource type.
    */
   canReadResourceType(resourceType: string): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-    if (protectedResourceTypes.includes(resourceType)) {
+    if (!this.isSuperAdmin() && protectedResourceTypes.includes(resourceType)) {
       return false;
     }
     if (!this.context.accessPolicy) {
@@ -2008,10 +2045,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can write the specified resource type.
    */
   private canWriteResourceType(resourceType: string): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-    if (protectedResourceTypes.includes(resourceType)) {
+    if (!this.isSuperAdmin() && protectedResourceTypes.includes(resourceType)) {
       return false;
     }
     if (!this.context.accessPolicy) {
@@ -2027,15 +2061,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can write the specified resource type.
    */
   private canWriteToResource(resource: Resource): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
     const resourceType = resource.resourceType;
-    if (protectedResourceTypes.includes(resourceType)) {
-      return false;
-    }
-    if (resource.meta?.project !== this.context.projects?.[0]) {
-      return false;
+    if (!this.isSuperAdmin()) {
+      if (protectedResourceTypes.includes(resourceType)) {
+        return false;
+      }
+      if (resource.meta?.project !== this.context.projects?.[0]) {
+        return false;
+      }
     }
     return !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
   }
@@ -2047,11 +2080,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can write the specified resource type.
    */
   private isResourceWriteable(previous: Resource | undefined, current: Resource): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-
-    if (current.meta?.project !== this.context.projects?.[0]) {
+    if (!this.isSuperAdmin() && current.meta?.project !== this.context.projects?.[0]) {
       return false;
     }
 
@@ -2323,8 +2352,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     callback: (client: PoolClient) => Promise<TResult>,
     options?: { serializable: boolean }
   ): Promise<TResult> {
+    const config = getConfig();
+    const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
     let error: OperationOutcomeError | undefined;
-    for (let i = 0; i < transactionAttempts; i++) {
+    for (let attempt = 0; attempt < transactionAttempts; attempt++) {
       try {
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
         const result = await callback(client);
@@ -2342,6 +2373,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       } finally {
         this.endTransaction();
+      }
+
+      if (attempt + 1 < transactionAttempts) {
+        const baseDelayMs = config.transactionExpBackoffBaseDelayMs ?? defaultExpBackoffBaseDelayMs;
+        // Attempts are 0-indexed, so first wait after first attempt will be somewhere between 75% and 100% of baseDelayMs
+        // This calculation results in something like this for the default values:
+        // Attempt 1: 50 * (2^0) = 50 * [0.75, 1] = **[37.5, 50] ms**
+        // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
+        // etc...
+        const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.25));
+        await sleep(delayMs);
       }
     }
 
@@ -2570,7 +2612,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.context;
   }
 
-  [Symbol.dispose](): void {
+  [Symbol.dispose](removeConnection?: boolean): void {
     this.assertNotClosed();
     if (this.disposable) {
       if (this.transactionDepth > 0) {
@@ -2579,7 +2621,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         this.releaseConnection(new Error('Closing Repository with active transaction'));
       } else {
         // Good state, return healthy connection to pool
-        this.releaseConnection();
+        this.releaseConnection(removeConnection);
       }
     }
     this.closed = true;

@@ -1,6 +1,6 @@
 import { Paper, ScrollArea, Tabs } from '@mantine/core';
 import { Document, InfoBar, useMedplum } from '@medplum/react';
-import { useMemo } from 'react';
+import { JSX, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import { getProjectId } from '../utils';
 

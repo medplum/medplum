@@ -14,7 +14,7 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconGenderFemale, IconGenderMale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { JSX, ReactNode, useEffect, useMemo, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';

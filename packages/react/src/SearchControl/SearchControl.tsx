@@ -31,7 +31,7 @@ import {
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import { ChangeEvent, MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, JSX, MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
@@ -100,6 +100,7 @@ interface SearchControlState {
   readonly exportDialogVisible: boolean;
   readonly filterDialogFilter?: Filter;
   readonly filterDialogSearchParam?: SearchParameter;
+  readonly dialogOpenTime?: number;
 }
 
 /**
@@ -289,7 +290,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               variant={buttonVariant}
               color={buttonColor}
               leftSection={<IconColumns size={iconSize} />}
-              onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true })}
+              onClick={() => setState({ ...stateRef.current, fieldEditorVisible: true, dialogOpenTime: Date.now() })}
             >
               Fields
             </Button>
@@ -298,7 +299,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
               variant={buttonVariant}
               color={buttonColor}
               leftSection={<IconFilter size={iconSize} />}
-              onClick={() => setState({ ...stateRef.current, filterEditorVisible: true })}
+              onClick={() => setState({ ...stateRef.current, filterEditorVisible: true, dialogOpenTime: Date.now() })}
             >
               Filters
             </Button>
@@ -320,7 +321,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                 color={buttonColor}
                 leftSection={<IconTableExport size={iconSize} />}
                 onClick={
-                  props.onExport ? props.onExport : () => setState({ ...stateRef.current, exportDialogVisible: true })
+                  props.onExport
+                    ? props.onExport
+                    : () => setState({ ...stateRef.current, exportDialogVisible: true, dialogOpenTime: Date.now() })
                 }
               >
                 Export...
@@ -401,6 +404,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                         filterDialogVisible: true,
                         filterDialogSearchParam: searchParam,
                         filterDialogFilter: filter,
+                        dialogOpenTime: Date.now(),
                       });
                     }}
                     onChange={(result) => {
@@ -488,6 +492,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         </Center>
       )}
       <SearchFieldEditor
+        key={`search-field-editor-${state.dialogOpenTime}`}
         search={memoizedSearch}
         visible={stateRef.current.fieldEditorVisible}
         onOk={(result) => {
@@ -505,6 +510,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchFilterEditor
+        key={`search-filter-editor-${state.dialogOpenTime}`}
         search={memoizedSearch}
         visible={stateRef.current.filterEditorVisible}
         onOk={(result) => {
@@ -522,6 +528,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchExportDialog
+        key={`search-export-dialog-${state.dialogOpenTime}`}
         visible={stateRef.current.exportDialogVisible}
         exportCsv={props.onExportCsv}
         exportTransactionBundle={props.onExportTransactionBundle}
@@ -533,7 +540,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchFilterValueDialog
-        key={state.filterDialogSearchParam?.code}
+        key={`search-filter-dialog-${state.dialogOpenTime}`}
         visible={stateRef.current.filterDialogVisible}
         title={state.filterDialogSearchParam?.code ? buildFieldNameString(state.filterDialogSearchParam.code) : ''}
         resourceType={resourceType}

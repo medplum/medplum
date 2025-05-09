@@ -1,7 +1,8 @@
 import { Divider, Stack, Table, Title } from '@mantine/core';
-import { formatGivenName, formatFamilyName } from '@medplum/core';
+import { formatFamilyName, formatGivenName } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';
 import { Document, useSearchResources } from '@medplum/react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { Loading } from '../components/Loading';
 import classes from './MessageTablePage.module.css';

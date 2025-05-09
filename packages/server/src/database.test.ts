@@ -10,10 +10,11 @@ import {
   closeDatabase,
   DatabaseMode,
   getDatabasePool,
+  getDefaultStatementTimeout,
   initDatabase,
   releaseAdvisoryLock,
 } from './database';
-import { GetVersionSql, GetDataVersionSql } from './migration-sql';
+import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 
 describe('Database config', () => {
   let poolSpy: jest.SpyInstance<pg.Pool, [config?: pg.PoolConfig | undefined]>;
@@ -192,6 +193,19 @@ describe('Database config', () => {
     jest.runAllTimersAsync().catch((reason) => console.error('Unexpected error in jest.runAllTimersAsync', reason));
 
     await expect(initDBPromise).rejects.toThrow('Failed to acquire migration lock');
+  });
+
+  test('getDefaultStatementTimeout', async () => {
+    const config = await loadTestConfig();
+    config.database.disableConnectionConfiguration = true;
+    expect(getDefaultStatementTimeout(config.database)).toBe('DEFAULT');
+
+    config.database.disableConnectionConfiguration = false;
+    config.database.queryTimeout = 5000;
+    expect(getDefaultStatementTimeout(config.database)).toBe(5000);
+
+    config.database.queryTimeout = undefined;
+    expect(getDefaultStatementTimeout(config.database)).toBe(60000);
   });
 });
 

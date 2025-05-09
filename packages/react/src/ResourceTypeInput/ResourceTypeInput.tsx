@@ -1,5 +1,5 @@
 import { ResourceType } from '@medplum/fhirtypes';
-import { useCallback, useState } from 'react';
+import { JSX, useCallback, useState } from 'react';
 import { CodeInput } from '../CodeInput/CodeInput';
 
 export interface ResourceTypeInputProps {

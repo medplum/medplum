@@ -5,7 +5,7 @@ import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { awsTextractHandler } from '../cloud/aws/textract';
 import { getConfig } from '../config/loader';
-import { getAuthenticatedContext } from '../context';
+import { getAuthenticatedContext, tryGetRequestContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
 import { bulkDataRouter } from './bulkdata';
@@ -20,11 +20,13 @@ import { agentUpgradeHandler } from './operations/agentupgrade';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
+import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
+import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
 import { dbSchemaDiffHandler } from './operations/dbschemadiff';
 import { dbStatsHandler } from './operations/dbstats';
 import { deployHandler } from './operations/deploy';
@@ -57,8 +59,9 @@ export const fhirRouter = Router();
 let internalFhirRouter: FhirRouter;
 
 // OperationOutcome interceptor
-fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
+fhirRouter.use(function setupResponseInterceptors(req: Request, res: Response, next: NextFunction) {
   const oldJson = res.json;
+  const oldSend = res.send;
 
   res.json = (data: any) => {
     // Restore the original json to avoid double response
@@ -99,6 +102,19 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
 
     // Default JSON response
     return res.send(JSON.stringify(data, undefined, pretty ? 2 : undefined));
+  };
+  res.send = (...args: any[]) => {
+    // Restore the original method to avoid double response
+    // See: https://stackoverflow.com/a/60817116
+    res.send = oldSend;
+
+    const ctx = tryGetRequestContext();
+    if (ctx?.fhirRateLimiter) {
+      // Attach rate limit header before sending first part of response body
+      res.append('RateLimit', ctx.fhirRateLimiter.rateLimitHeader());
+    }
+
+    return oldSend.call(res, ...args);
   };
   next();
 });
@@ -242,6 +258,10 @@ function initInternalFhirRouter(): FhirRouter {
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
+  // Claim $export operation
+  router.add('POST', '/Claim/$export', claimExportPostHandler);
+  router.add('GET', '/Claim/:id/$export', claimExportGetHandler);
+
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
 
@@ -319,6 +339,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Super admin operations
   router.add('POST', '/$db-stats', dbStatsHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
+  router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();
@@ -352,7 +373,7 @@ function initInternalFhirRouter(): FhirRouter {
 // Default route
 protectedRoutes.use(
   '*',
-  asyncWrap(async (req: Request, res: Response) => {
+  asyncWrap(async function routeFhirRequest(req: Request, res: Response) {
     const ctx = getAuthenticatedContext();
 
     const request: FhirRequest = {

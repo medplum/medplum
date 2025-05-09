@@ -297,7 +297,7 @@
       "expression": "AsyncJob.type"
     },
     {
-      "name": "type",
+      "name": "status",
       "type": "token",
       "description": "Search for AsyncJob by status",
       "expression": "AsyncJob.status"

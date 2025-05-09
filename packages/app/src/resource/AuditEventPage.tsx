@@ -1,7 +1,7 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, SearchControl } from '@medplum/react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
 export function AuditEventPage(): JSX.Element | null {

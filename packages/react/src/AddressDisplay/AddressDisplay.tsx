@@ -1,5 +1,6 @@
 import { formatAddress } from '@medplum/core';
 import { Address } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 
 export interface AddressDisplayProps {
   readonly value?: Address;

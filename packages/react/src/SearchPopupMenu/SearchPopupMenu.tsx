@@ -17,9 +17,11 @@ import {
   IconSortDescending,
   IconX,
 } from '@tabler/icons-react';
+import { JSX } from 'react';
 import {
   addLastMonthFilter,
   addMissingFilter,
+  addNext24HoursFilter,
   addNextMonthFilter,
   addThisMonthFilter,
   addTodayFilter,
@@ -169,6 +171,12 @@ function DateFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
         onClick={() => props.onChange(addYesterdayFilter(props.search, code))}
       >
         Yesterday
+      </Menu.Item>
+      <Menu.Item
+        leftSection={<IconCalendar size={14} />}
+        onClick={() => props.onChange(addNext24HoursFilter(props.search, code))}
+      >
+        Next 24 Hours
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item

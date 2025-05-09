@@ -1,6 +1,6 @@
 import { showNotification } from '@mantine/notifications';
-import { IconCircleOff } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
+import { IconCircleOff } from '@tabler/icons-react';
 import React from 'react';
 
 export const showErrorNotification = (err: unknown): void => {

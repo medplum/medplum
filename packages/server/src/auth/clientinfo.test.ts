@@ -1,9 +1,9 @@
-import express from 'express';
 import { ClientApplication } from '@medplum/fhirtypes';
+import express from 'express';
+import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestClient } from '../test.setup';
-import request from 'supertest';
 
 const app = express();
 let client: ClientApplication;

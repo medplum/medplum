@@ -1,6 +1,7 @@
 import { getReferenceString } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
-import { Job, Queue, DelayedError } from 'bullmq';
+import { DelayedError, Job, Queue } from 'bullmq';
+import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
@@ -20,7 +21,6 @@ import {
   prepareCustomMigrationJobData,
   runCustomMigration,
 } from './post-deploy-migration';
-import { closeWorkers, initWorkers } from '.';
 import { queueRegistry } from './utils';
 
 describe('Post-Deploy Migration Worker', () => {
@@ -195,60 +195,79 @@ describe('Post-Deploy Migration Worker', () => {
     ]);
   });
 
-  test('Job processor re-queues ineligible jobs', async () => {
-    await initWorkers(config);
+  test.each(['some-token', undefined])(
+    'Job processor re-queues ineligible jobs with job.token %s',
+    async (jobToken) => {
+      await initWorkers(config);
 
-    const queue = getQueueFromRegistryOrThrow();
-    const addSpy = jest.mocked(queue.add);
+      const queue = getQueueFromRegistryOrThrow();
 
-    const mockAsyncJob = await getSystemRepo().createResource<AsyncJob>({
-      resourceType: 'AsyncJob',
-      status: 'accepted',
-      dataVersion: 456,
-      requestTime: new Date().toISOString(),
-      request: '/admin/super/migrate',
-      minServerVersion: '10.2.1',
-    });
+      const mockAsyncJob = await getSystemRepo().createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        dataVersion: 456,
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/migrate',
+        minServerVersion: '10.2.1',
+      });
 
-    const mockCustomMigration: CustomPostDeployMigration = {
-      type: 'custom',
-      prepareJobData: jest.fn(),
-      run: jest.fn().mockImplementation(async (repo, job, jobData) => {
-        return runCustomMigration(repo, job, jobData, async () => {
-          const actions: CustomMigrationAction[] = [
-            { name: 'first', durationMs: 111 },
-            { name: 'second', durationMs: 222 },
-          ];
-          return { actions };
-        });
-      }),
-    };
-    const getPostDeployMigrationSpy = jest
-      .spyOn(migrationUtils, 'getPostDeployMigration')
-      .mockReturnValue(mockCustomMigration);
+      const mockCustomMigration: CustomPostDeployMigration = {
+        type: 'custom',
+        prepareJobData: jest.fn(),
+        run: jest.fn().mockImplementation(async (repo, job, jobData) => {
+          return runCustomMigration(repo, job, jobData, async () => {
+            const actions: CustomMigrationAction[] = [
+              { name: 'first', durationMs: 111 },
+              { name: 'second', durationMs: 222 },
+            ];
+            return { actions };
+          });
+        }),
+      };
+      const getPostDeployMigrationSpy = jest
+        .spyOn(migrationUtils, 'getPostDeployMigration')
+        .mockReturnValue(mockCustomMigration);
 
-    // temporarily set to {} to appease typescript since it gets set within withTestContext
-    let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
-    await withTestContext(async () => {
-      const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
-      job = {
-        id: '1',
-        name: 'PostDeployMigrationJobData',
-        data: jobData,
-        queueName: 'PostDeployMigrationQueue',
-        opts: { attempts: 55 },
-      } as unknown as Job<PostDeployJobData>;
-    });
-    expect(job.opts.attempts).toEqual(55);
+      // temporarily set to {} to appease typescript since it gets set within withTestContext
+      let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
+      await withTestContext(async () => {
+        const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
+        job = new Job(queue, 'PostDeployMigrationJobData', jobData);
+        // Since the Job class is fully mocked, we need to set the data property manually
+        job.data = jobData;
+        // job.token generally gets set deep in the internals of bullmq, but we mock the module
+        job.token = jobToken;
+      });
 
-    await jobProcessor(job);
+      // DelayedError is part of the mocked bullmq module. Something about that causes
+      // the usual `expect(...).rejects.toThrow(...)`; it seems to be because DelayedError
+      // is no longer an `Error`. So instead, we manually check that it threw
+      let threw = undefined;
+      let manuallyThrownError = undefined;
+      try {
+        await jobProcessor(job);
+        manuallyThrownError = new Error(
+          jobToken ? 'Expected job to throw DelayedError' : 'Expected job to throw Error'
+        );
+        throw manuallyThrownError;
+      } catch (err) {
+        threw = err;
+      }
+      expect(threw).toBeDefined();
+      expect(threw).not.toBe(manuallyThrownError);
+      expect(threw).toBeInstanceOf(jobToken ? DelayedError : Error);
 
-    expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
-    expect(mockCustomMigration.run).not.toHaveBeenCalled();
+      expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
+      expect(mockCustomMigration.run).not.toHaveBeenCalled();
 
-    // Verify the job was re-queued
-    expect(addSpy).toHaveBeenCalledWith('PostDeployMigrationJobData', job.data, { attempts: 55 });
-  });
+      if (jobToken) {
+        expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
+        expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), jobToken);
+      } else {
+        expect(job.moveToDelayed).not.toHaveBeenCalled();
+      }
+    }
+  );
 
   test('Job processor delays job when migration definition is not found', async () => {
     await initWorkers(config);
@@ -276,22 +295,18 @@ describe('Post-Deploy Migration Worker', () => {
       }),
     };
 
+    const queue = getQueueFromRegistryOrThrow();
+
     // temporarily set to {} to appease typescript since it gets set within withTestContext
     let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
-    const moveToDelayedSpy = jest.fn();
     await withTestContext(async () => {
       const jobData: PostDeployJobData = prepareCustomMigrationJobData(mockAsyncJob);
-      job = {
-        id: '1',
-        name: 'PostDeployMigrationJobData',
-        data: jobData,
-        queueName: 'PostDeployMigrationQueue',
-        opts: { attempts: 55 },
-        token: 'some-token',
-        moveToDelayed: moveToDelayedSpy,
-      } as unknown as Job<PostDeployJobData>;
+      job = new Job(queue, 'PostDeployMigrationJobData', jobData);
+      // Since the Job class is fully mocked, we need to set the data property manually
+      job.data = jobData;
+      // job.token generally gets set deep in the internals of bullmq, but we mock the module
+      job.token = 'some-token';
     });
-    expect(job.opts.attempts).toEqual(55);
 
     // DelayedError is part of the mocked bullmq module. Something about that causes
     // the usual `expect(...).rejects.toThrow(...)`; it seems to be becuase DelayedError
@@ -307,8 +322,8 @@ describe('Post-Deploy Migration Worker', () => {
     expect(threw).toBeInstanceOf(DelayedError);
 
     expect(mockCustomMigration.run).not.toHaveBeenCalled();
-    expect(moveToDelayedSpy).toHaveBeenCalledTimes(1);
-    expect(moveToDelayedSpy).toHaveBeenCalledWith(expect.any(Number), 'some-token');
+    expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
+    expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), 'some-token');
   });
 
   test('Run custom migration success', async () => {

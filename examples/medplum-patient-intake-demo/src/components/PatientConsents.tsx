@@ -1,6 +1,7 @@
 import { formatSearchQuery, Operator, SearchRequest } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { SearchControl } from '@medplum/react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 
 interface PatientConsentsProps {

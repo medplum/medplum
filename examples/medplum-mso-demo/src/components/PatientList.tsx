@@ -1,12 +1,12 @@
-import { Table, Button, Text, Group, TextInput, Badge, Modal, Stack, MultiSelect } from '@mantine/core';
-import { useMedplum, useMedplumNavigate } from '@medplum/react';
-import { Organization, Patient } from '@medplum/fhirtypes';
-import { normalizeErrorString } from '@medplum/core';
-import { useEffect, useState, useCallback } from 'react';
-import { unEnrollPatient, enrollPatient, getEnrolledPatients } from '../utils/enrollment';
+import { Badge, Button, Group, Modal, MultiSelect, Stack, Table, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
-import { IconRefresh, IconPlus, IconSearch } from '@tabler/icons-react';
+import { normalizeErrorString } from '@medplum/core';
+import { Organization, Patient } from '@medplum/fhirtypes';
+import { useMedplum, useMedplumNavigate } from '@medplum/react';
+import { IconPlus, IconRefresh, IconSearch } from '@tabler/icons-react';
+import { JSX, useCallback, useEffect, useState } from 'react';
+import { enrollPatient, getEnrolledPatients, unEnrollPatient } from '../utils/enrollment';
 
 interface PatientListProps {
   organization: Organization;
