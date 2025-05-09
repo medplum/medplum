@@ -314,7 +314,11 @@ function MaxResourceVersionInput(): JSX.Element {
 }
 
 function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: Record<string, string>): void {
+  // Use a random ID rather than just `url` to facilitate multiple requests of the same type
+  const notificationId = Date.now().toString();
+
   showNotification({
+    id: notificationId,
     loading: true,
     title,
     message: 'Running...',
@@ -338,6 +342,7 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
       }
 
       notifications.update({
+        id: notificationId,
         color: 'green',
         title,
         message,
@@ -349,6 +354,7 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
     })
     .catch((err) => {
       notifications.update({
+        id: notificationId,
         color: 'red',
         title,
         message: normalizeErrorString(err),

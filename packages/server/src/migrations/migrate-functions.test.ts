@@ -2,7 +2,7 @@ import { Client, Pool } from 'pg';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
-import { idempotentCreateIndex, MigrationResultAction } from './migrate-functions';
+import { idempotentCreateIndex, MigrationActionResult } from './migrate-functions';
 
 interface IndexInfo {
   index_name: string;
@@ -65,7 +65,7 @@ describe('idempotentCreateIndex', () => {
   const indexDefinition = 'CREATE INDEX test_index_1 ON public.test_table USING btree (id)';
 
   test('is idempotent', async () => {
-    const actions: MigrationResultAction[] = [];
+    const actions: MigrationActionResult[] = [];
     await idempotentCreateIndex(client, actions, indexName, createIndexSql);
     expect(actions).toEqual([{ name: createIndexSql, durationMs: expect.any(Number) }]);
     const indexes1 = await getTableIndexes(client, 'test_table');
@@ -80,7 +80,7 @@ describe('idempotentCreateIndex', () => {
     );
 
     // invoked twice to ensure idempotency; no actions this time
-    const actions2: MigrationResultAction[] = [];
+    const actions2: MigrationActionResult[] = [];
     await idempotentCreateIndex(client, actions2, indexName, createIndexSql);
     expect(actions2).toHaveLength(0);
     const indexes2 = await getTableIndexes(client, 'test_table');
@@ -112,7 +112,7 @@ describe('idempotentCreateIndex', () => {
       })
     );
 
-    const actions3: MigrationResultAction[] = [];
+    const actions3: MigrationActionResult[] = [];
     await idempotentCreateIndex(client, actions3, indexName, createIndexSql);
     expect(actions3).toEqual([
       { name: `DROP INDEX IF EXISTS ${indexName}`, durationMs: expect.any(Number) },

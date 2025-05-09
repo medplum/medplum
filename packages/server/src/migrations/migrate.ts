@@ -24,7 +24,7 @@ import {
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
 import * as fns from './migrate-functions';
-import { MigrationResultAction } from './migrate-functions';
+import { MigrationActionResult } from './migrate-functions';
 import {
   doubleEscapeSingleQuotes,
   escapeUnicode,
@@ -881,65 +881,65 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
 export async function executeMigrationActions(
   client: Client | Pool | PoolClient,
   actions: MigrationAction[]
-): Promise<MigrationResultAction[]> {
-  const resultActions: MigrationResultAction[] = [];
+): Promise<MigrationActionResult[]> {
+  const results: MigrationActionResult[] = [];
   for (const action of actions) {
     switch (action.type) {
       case 'ANALYZE_TABLE':
-        await fns.analyzeTable(client, resultActions, action.tableName);
+        await fns.analyzeTable(client, results, action.tableName);
         break;
       case 'CREATE_FUNCTION': {
-        await fns.query(client, resultActions, action.createQuery);
+        await fns.query(client, results, action.createQuery);
         break;
       }
       case 'CREATE_TABLE': {
         const queries = getCreateTableQueries(action.definition);
         for (const query of queries) {
-          await fns.query(client, resultActions, query);
+          await fns.query(client, results, query);
         }
         break;
       }
       case 'ADD_COLUMN': {
         const query = getAddColumnQuery(action.tableName, action.columnDefinition);
-        await fns.query(client, resultActions, query);
+        await fns.query(client, results, query);
         break;
       }
       case 'DROP_COLUMN': {
         const query = getDropColumnQuery(action.tableName, action.columnName);
-        await fns.query(client, resultActions, query);
+        await fns.query(client, results, query);
         break;
       }
       case 'ALTER_COLUMN_SET_DEFAULT': {
         const query = getAlterColumnSetDefaultQuery(action.tableName, action.columnName, action.defaultValue);
-        await fns.query(client, resultActions, query);
+        await fns.query(client, results, query);
         break;
       }
       case 'ALTER_COLUMN_DROP_DEFAULT': {
         const query = getAlterColumnDropDefaultQuery(action.tableName, action.columnName);
-        await fns.query(client, resultActions, query);
+        await fns.query(client, results, query);
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
         const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        await fns.query(client, resultActions, query);
+        await fns.query(client, results, query);
         break;
       }
       case 'ALTER_COLUMN_TYPE': {
         const query = getAlterColumnTypeQuery(action.tableName, action.columnName, action.columnType);
-        await fns.query(client, resultActions, query);
+        await fns.query(client, results, query);
         break;
       }
       case 'CREATE_INDEX': {
-        await fns.idempotentCreateIndex(client, resultActions, action.indexName, action.createIndexSql);
+        await fns.idempotentCreateIndex(client, results, action.indexName, action.createIndexSql);
         break;
       }
       case 'DROP_INDEX': {
-        await fns.query(client, resultActions, `DROP INDEX IF EXISTS "${action.indexName}"`);
+        await fns.query(client, results, `DROP INDEX IF EXISTS "${action.indexName}"`);
         break;
       }
     }
   }
-  return resultActions;
+  return results;
 }
 
 function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {

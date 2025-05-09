@@ -234,17 +234,6 @@ describe('SuperAdminPage', () => {
   test('Patch Database Schema Drift', async () => {
     setup();
 
-    // const returnValue = 'This is a fake return value';
-    // medplum.router.add('POST', 'admin/super/migrate-drift', async () => {
-    //   return [
-    //     allOk,
-    //     {
-    //       resourceType: 'Parameters',
-    //       parameter: [{ name: 'migrationString', valueString: returnValue }],
-    //     },
-    //   ];
-    // });
-
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Patch Schema Drift' }));
     });
