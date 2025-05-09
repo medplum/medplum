@@ -1,23 +1,26 @@
 import {
   Button,
   Divider,
+  Grid,
   Modal,
   NativeSelect,
   NumberInput,
   PasswordInput,
   Stack,
+  Text,
   TextInput,
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
 import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import { Parameters, Resource } from '@medplum/fhirtypes';
 import {
   DateTimeInput,
   Document,
   Form,
   FormSection,
+  MedplumLink,
   OperationOutcomeAlert,
   convertLocalToIso,
   useMedplum,
@@ -126,6 +129,10 @@ export function SuperAdminPage(): JSX.Element {
         open();
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function patchSchemaDiff(): void {
+    startAsyncJob(medplum, 'Patch Schema Diff', 'admin/super/migrate-drift');
   }
 
   return (
@@ -252,11 +259,22 @@ export function SuperAdminPage(): JSX.Element {
       <Divider my="lg" />
       <Title order={2}>Database Schema Drift</Title>
       <p>Show the schema migration needed to match the expected database schema.</p>
-      <Form onSubmit={getSchemaDiff}>
-        <Stack>
-          <Button type="submit">Get Database Schema Drift</Button>
-        </Stack>
-      </Form>
+      <Grid>
+        <Grid.Col span={6}>
+          <Form onSubmit={getSchemaDiff}>
+            <Stack>
+              <Button type="submit">Get Schema Drift</Button>
+            </Stack>
+          </Form>
+        </Grid.Col>
+        <Grid.Col span={6}>
+          <Form onSubmit={patchSchemaDiff}>
+            <Stack>
+              <Button type="submit">Patch Schema Drift</Button>
+            </Stack>
+          </Form>
+        </Grid.Col>
+      </Grid>
       <Divider my="lg" />
       <Title order={2}>Reload Cron Resources</Title>
       <p>Obliterates the cron queue and rebuilds all the cron job schedulers for cron resources (eg. cron bots).</p>
@@ -296,8 +314,7 @@ function MaxResourceVersionInput(): JSX.Element {
 }
 
 function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: Record<string, string>): void {
-  notifications.show({
-    id: url,
+  showNotification({
     loading: true,
     title,
     message: 'Running...',
@@ -311,13 +328,19 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
   }
 
   medplum
-    .startAsyncRequest(url, options)
-    .then(() => {
+    .startAsyncRequest<Resource>(url, options)
+    .then((resource) => {
+      let message: React.ReactNode = 'Done';
+      if (resource.resourceType === 'AsyncJob') {
+        message = <MedplumLink to={resource}>View AsyncJob</MedplumLink>;
+      } else if (resource.resourceType === 'OperationOutcome' && resource.issue?.[0]?.details?.text) {
+        message = <Text>{resource.issue[0].details.text}</Text>;
+      }
+
       notifications.update({
-        id: url,
         color: 'green',
         title,
-        message: 'Done',
+        message,
         icon: <IconCheck size="1rem" />,
         loading: false,
         autoClose: false,
@@ -326,7 +349,6 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
     })
     .catch((err) => {
       notifications.update({
-        id: url,
         color: 'red',
         title,
         message: normalizeErrorString(err),

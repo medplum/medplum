@@ -36,7 +36,6 @@ export async function dbSchemaDiffHandler(_req: FhirRequest): Promise<FhirRespon
   b.append('');
   await buildMigration(b, {
     dbClient,
-    executionMode: 'file',
     dropUnmatchedIndexes: true,
     allowPostDeployActions: true,
   });

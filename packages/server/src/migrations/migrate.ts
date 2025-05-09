@@ -13,7 +13,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { Client, Pool, QueryResult } from 'pg';
+import { Client, Pool, PoolClient, QueryResult } from 'pg';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import {
   ColumnSearchParameterImplementation,
@@ -35,9 +35,6 @@ import {
 } from './migrate-utils';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
-let DRY_RUN = false;
-let ALLOW_POST_DEPLOY_ACTIONS = false;
-let SKIP_POST_DEPLOY_ACTIONS = false;
 
 export interface SchemaDefinition {
   tables: TableDefinition[];
@@ -110,9 +107,8 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
 }
 
 export async function main(): Promise<void> {
-  DRY_RUN = process.argv.includes('--dryRun');
-  ALLOW_POST_DEPLOY_ACTIONS = process.argv.includes('--allowPostDeploy');
-  SKIP_POST_DEPLOY_ACTIONS = process.argv.includes('--skipPostDeploy');
+  const dryRun = process.argv.includes('--dryRun');
+
   indexStructureDefinitionsAndSearchParameters();
 
   const dbClient = new Client({
@@ -124,8 +120,8 @@ export async function main(): Promise<void> {
   });
   const options: BuildMigrationOptions = {
     dbClient,
-    executionMode: 'file',
-    allowPostDeployActions: ALLOW_POST_DEPLOY_ACTIONS,
+    skipPostDeployActions: process.argv.includes('--skipPostDeploy'),
+    allowPostDeployActions: process.argv.includes('--allowPostDeploy'),
     dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
     analyzeResourceTables: process.argv.includes('--analyzeResourceTables'),
   };
@@ -135,7 +131,7 @@ export async function main(): Promise<void> {
   await buildMigration(b, options);
 
   await dbClient.end();
-  if (DRY_RUN) {
+  if (dryRun) {
     console.log(b.toString());
   } else {
     writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
@@ -144,38 +140,35 @@ export async function main(): Promise<void> {
 }
 
 export type BuildMigrationOptions = {
-  dbClient: Client | Pool;
-  executionMode: 'file' | 'direct';
+  dbClient: Client | Pool | PoolClient;
   dropUnmatchedIndexes?: boolean;
+  skipPostDeployActions?: boolean;
   allowPostDeployActions?: boolean;
   analyzeResourceTables?: boolean;
-  directExecutionClient?: Client | Pool;
 };
 
 export async function buildMigration(b: FileBuilder, options: BuildMigrationOptions): Promise<void> {
-  const startDefinition = await buildStartDefinition(options);
-  const targetDefinition = buildTargetDefinition();
-
-  const actions = generateMigrationActions(startDefinition, targetDefinition, options);
-
-  if (options.executionMode === 'file') {
-    writeActionsToBuilder(b, actions);
-  } else if (options.executionMode === 'direct') {
-    if (!options.directExecutionClient) {
-      throw new Error('directExecutionClient is required for direct execution mode.');
-    }
-    await executeMigrationActions(options.directExecutionClient, actions, options);
-  } else {
-    const exhaustiveCheck: never = options.executionMode;
-    throw new Error(`Unknown execution mode: ${exhaustiveCheck}`);
-  }
+  const actions = await generateMigrationActions(options);
+  writeActionsToBuilder(b, actions);
 }
 
-function generateMigrationActions(
-  startDefinition: SchemaDefinition,
-  targetDefinition: SchemaDefinition,
-  options: BuildMigrationOptions
-): MigrationAction[] {
+export async function generateMigrationActions(options: BuildMigrationOptions): Promise<MigrationAction[]> {
+  const ctx: GenerateActionsContext = {
+    postDeployAction: (action, description) => {
+      if (options.skipPostDeployActions) {
+        console.log(`Skipping post-deploy migration for: ${description}`);
+        return;
+      }
+
+      if (!options.allowPostDeployActions) {
+        throw new Error(`Post-deploy migration required for: ${description}`);
+      }
+
+      action();
+    },
+  };
+  const startDefinition = await buildStartDefinition(options);
+  const targetDefinition = buildTargetDefinition();
   const actions: MigrationAction[] = [];
 
   for (const targetFunction of targetDefinition.functions) {
@@ -194,8 +187,8 @@ function generateMigrationActions(
     if (!startTable) {
       actions.push({ type: 'CREATE_TABLE', definition: targetTable });
     } else {
-      actions.push(...generateColumnsActions(startTable, targetTable));
-      actions.push(...generateIndexesActions(startTable, targetTable, options));
+      actions.push(...generateColumnsActions(ctx, startTable, targetTable));
+      actions.push(...generateIndexesActions(ctx, startTable, targetTable, options));
     }
   }
 
@@ -236,12 +229,12 @@ async function buildStartDefinition(options: BuildMigrationOptions): Promise<Sch
   return { tables, functions };
 }
 
-async function getTableNames(db: Client | Pool): Promise<string[]> {
+async function getTableNames(db: Client | Pool | PoolClient): Promise<string[]> {
   const rs = await db.query("SELECT * FROM information_schema.tables WHERE table_schema='public'");
   return rs.rows.map((row) => row.table_name);
 }
 
-async function getTableDefinition(db: Client | Pool, name: string): Promise<TableDefinition> {
+async function getTableDefinition(db: Client | Pool | PoolClient, name: string): Promise<TableDefinition> {
   return {
     name,
     columns: await getColumns(db, name),
@@ -249,7 +242,10 @@ async function getTableDefinition(db: Client | Pool, name: string): Promise<Tabl
   };
 }
 
-async function getFunctionDefinition(db: Client | Pool, name: string): Promise<SqlFunctionDefinition | undefined> {
+async function getFunctionDefinition(
+  db: Client | Pool | PoolClient,
+  name: string
+): Promise<SqlFunctionDefinition | undefined> {
   let result: QueryResult<{ pg_get_functiondef: string }>;
   try {
     result = await db.query(`SELECT pg_catalog.pg_get_functiondef('${name}'::regproc::oid);`);
@@ -271,7 +267,7 @@ async function getFunctionDefinition(db: Client | Pool, name: string): Promise<S
   return undefined;
 }
 
-async function getColumns(db: Client | Pool, tableName: string): Promise<ColumnDefinition[]> {
+async function getColumns(db: Client | Pool | PoolClient, tableName: string): Promise<ColumnDefinition[]> {
   // https://stackoverflow.com/questions/8146448/get-the-default-values-of-table-columns-in-postgres
   const rs = await db.query(`
     SELECT
@@ -303,7 +299,7 @@ async function getColumns(db: Client | Pool, tableName: string): Promise<ColumnD
   }));
 }
 
-async function getIndexes(db: Client | Pool, tableName: string): Promise<IndexDefinition[]> {
+async function getIndexes(db: Client | Pool | PoolClient, tableName: string): Promise<IndexDefinition[]> {
   const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='${tableName}'`);
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
@@ -882,10 +878,9 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
   });
 }
 
-async function executeMigrationActions(
-  client: Client | Pool,
-  actions: MigrationAction[],
-  _options: BuildMigrationOptions
+export async function executeMigrationActions(
+  client: Client | Pool | PoolClient,
+  actions: MigrationAction[]
 ): Promise<MigrationResultAction[]> {
   const resultActions: MigrationResultAction[] = [];
   for (const action of actions) {
@@ -898,7 +893,11 @@ async function executeMigrationActions(
         break;
       }
       case 'CREATE_TABLE': {
-        throw new Error('Not implemented yet: "CREATE_TABLE" case');
+        const queries = getCreateTableQueries(action.definition);
+        for (const query of queries) {
+          await fns.query(client, resultActions, query);
+        }
+        break;
       }
       case 'ADD_COLUMN': {
         const query = getAddColumnQuery(action.tableName, action.columnDefinition);
@@ -962,7 +961,10 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
         break;
       }
       case 'CREATE_TABLE': {
-        writeCreateTable(b, action.definition);
+        const queries = getCreateTableQueries(action.definition);
+        for (const query of queries) {
+          b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        }
         break;
       }
       case 'ADD_COLUMN': {
@@ -1016,38 +1018,18 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
   b.append('}');
 }
 
-function writeCreateTable(b: FileBuilder, tableDefinition: TableDefinition): void {
-  b.newLine();
-  b.appendNoWrap(`await fns.query(client, actions, \`CREATE TABLE IF NOT EXISTS "${tableDefinition.name}" (`);
-  b.indentCount++;
-  for (let i = 0; i < tableDefinition.columns.length; i++) {
-    b.append(
-      `"${tableDefinition.columns[i].name}" ${tableDefinition.columns[i].type}` +
-        (i !== tableDefinition.columns.length - 1 ? ',' : '')
-    );
-  }
-  b.indentCount--;
-  b.append(')`);');
-  b.newLine();
-
-  if (tableDefinition.compositePrimaryKey !== undefined && tableDefinition.compositePrimaryKey.length > 0) {
-    writeAddPrimaryKey(b, tableDefinition, tableDefinition.compositePrimaryKey);
-  }
-
-  for (const indexDefinition of tableDefinition.indexes) {
-    writeAddIndex(b, tableDefinition, indexDefinition);
-  }
-  b.newLine();
-}
-
-function generateColumnsActions(startTable: TableDefinition, targetTable: TableDefinition): MigrationAction[] {
+function generateColumnsActions(
+  ctx: GenerateActionsContext,
+  startTable: TableDefinition,
+  targetTable: TableDefinition
+): MigrationAction[] {
   const actions: MigrationAction[] = [];
   for (const targetColumn of targetTable.columns) {
     const startColumn = startTable.columns.find((c) => c.name === targetColumn.name);
     if (!startColumn) {
       actions.push({ type: 'ADD_COLUMN', tableName: targetTable.name, columnDefinition: targetColumn });
     } else if (!columnDefinitionsEqual(startColumn, targetColumn)) {
-      actions.push(...generateAlterColumnActions(targetTable, startColumn, targetColumn));
+      actions.push(...generateAlterColumnActions(ctx, targetTable, startColumn, targetColumn));
     }
   }
   for (const startColumn of startTable.columns) {
@@ -1058,14 +1040,27 @@ function generateColumnsActions(startTable: TableDefinition, targetTable: TableD
   return actions;
 }
 
+type GenerateActionsContext = {
+  /**
+   * Guard function that should be called before writes of post-deploy actions.
+   * If `--skipPostDeploy` is provided, the action is skipped.
+   * If `--allowPostDeploy` is not provided, the action is performed.
+   * Otherwise, an error is thrown to halt the migration generation process.
+   * @param action - The post-deploy action to perform if the guard passes.
+   * @param description - A human-readable description of the action that is being checked
+   */
+  postDeployAction: (action: () => void, description: string) => void;
+};
+
 function generateAlterColumnActions(
+  ctx: GenerateActionsContext,
   tableDefinition: TableDefinition,
   startDef: ColumnDefinition,
   targetDef: ColumnDefinition
 ): MigrationAction[] {
   const actions: MigrationAction[] = [];
   if (startDef.defaultValue !== targetDef.defaultValue) {
-    postDeployAction(() => {
+    ctx.postDeployAction(() => {
       if (targetDef.defaultValue) {
         actions.push({
           type: 'ALTER_COLUMN_SET_DEFAULT',
@@ -1084,7 +1079,7 @@ function generateAlterColumnActions(
   }
 
   if (startDef.notNull !== targetDef.notNull) {
-    postDeployAction(() => {
+    ctx.postDeployAction(() => {
       actions.push({
         type: 'ALTER_COLUMN_UPDATE_NOT_NULL',
         tableName: tableDefinition.name,
@@ -1095,7 +1090,7 @@ function generateAlterColumnActions(
   }
 
   if (startDef.type !== targetDef.type) {
-    postDeployAction(() => {
+    ctx.postDeployAction(() => {
       actions.push({
         type: 'ALTER_COLUMN_TYPE',
         tableName: tableDefinition.name,
@@ -1105,6 +1100,31 @@ function generateAlterColumnActions(
     }, `Change type of ${tableDefinition.name}.${targetDef.name}`);
   }
   return actions;
+}
+
+function getCreateTableQueries(tableDef: TableDefinition): string[] {
+  const queries: string[] = [];
+  const createTableParts = [`CREATE TABLE IF NOT EXISTS "${tableDef.name}" (`];
+  for (let i = 0; i < tableDef.columns.length; i++) {
+    const column = tableDef.columns[i];
+    createTableParts.push(`  "${column.name}" ${column.type}` + (i !== tableDef.columns.length - 1 ? ',' : ''));
+  }
+  createTableParts.push(')');
+  queries.push(createTableParts.join('\n'));
+
+  if (tableDef.compositePrimaryKey !== undefined && tableDef.compositePrimaryKey.length > 0) {
+    queries.push(
+      `ALTER TABLE IF EXISTS "${tableDef.name}" ADD PRIMARY KEY (${tableDef.compositePrimaryKey.map((c) => `"${c}"`).join(', ')})`
+    );
+  }
+
+  for (const indexDef of tableDef.indexes) {
+    const indexName = getIndexName(tableDef.name, indexDef);
+    const createIndexSql = buildIndexSql(tableDef.name, indexName, indexDef);
+    queries.push(createIndexSql);
+  }
+
+  return queries;
 }
 
 function getAddColumnQuery(tableName: string, columnDefinition: ColumnDefinition): string {
@@ -1132,18 +1152,8 @@ function getAlterColumnTypeQuery(tableName: string, columnName: string, columnTy
   return `ALTER TABLE IF EXISTS "${tableName}" ALTER COLUMN "${columnName}" TYPE ${columnType}`;
 }
 
-function writeAddPrimaryKey(b: FileBuilder, tableDefinition: TableDefinition, primaryKeyColumns: string[]): void {
-  postDeployAction(
-    () => {
-      b.appendNoWrap(
-        `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ADD PRIMARY KEY (${primaryKeyColumns.map((c) => `"${c}"`).join(', ')})');`
-      );
-    },
-    `ADD PRIMARY KEY ${tableDefinition.name} (${primaryKeyColumns.join(', ')})`
-  );
-}
-
 function generateIndexesActions(
+  ctx: GenerateActionsContext,
   startTable: TableDefinition,
   targetTable: TableDefinition,
   options: BuildMigrationOptions
@@ -1154,7 +1164,7 @@ function generateIndexesActions(
   for (const targetIndex of targetTable.indexes) {
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (!startIndex) {
-      postDeployAction(
+      ctx.postDeployAction(
         () => {
           const indexName = getIndexName(targetTable.name, targetIndex);
           const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex);
@@ -1185,19 +1195,6 @@ function generateIndexesActions(
     }
   }
   return actions;
-}
-
-function writeAddIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDefinition: IndexDefinition): void {
-  postDeployAction(
-    () => {
-      const indexName = getIndexName(tableDefinition.name, indexDefinition);
-      const createIndexSql = buildIndexSql(tableDefinition.name, indexName, indexDefinition);
-      b.appendNoWrap(`await fns.idempotentCreateIndex(client, actions, '${indexName}', '${createIndexSql}');`);
-    },
-    `CREATE INDEX ${tableDefinition.name} (${indexDefinition.columns.map((c) =>
-      typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)
-    )})`
-  );
 }
 
 function getIndexName(tableName: string, index: IndexDefinition): string {
@@ -1347,25 +1344,4 @@ if (require.main === module) {
     console.error(reason);
     process.exit(1);
   });
-}
-
-/**
- * Guard function that should be called before writes of post-deploy actions.
- * If `--skipPostDeploy` is provided, the action is skipped.
- * If `--allowPostDeploy` is not provided, the action is performed.
- * Otherwise, an error is thrown to halt the migration generation process.
- * @param action - The post-deploy action to perform if the guard passes.
- * @param description - A human-readable description of the action that is being checked
- */
-function postDeployAction(action: () => void, description: string): void {
-  if (SKIP_POST_DEPLOY_ACTIONS) {
-    console.log(`Skipping post-deploy migration for: ${description}`);
-    return;
-  }
-
-  if (!ALLOW_POST_DEPLOY_ACTIONS) {
-    throw new Error(`Post-deploy migration required for: ${description}`);
-  }
-
-  action();
 }
