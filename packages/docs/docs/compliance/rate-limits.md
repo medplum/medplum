@@ -20,7 +20,7 @@ Rate limits can be increased for paid plans. Please [contact us](mailto:info+rat
 
 ## Total Load Rate Limit
 
-In addition to limits on the number of requests that can be made to the Medplum server, there is a limit on the total load of the interactions made to the Medplum server. Different interactions with the datastore at weighted by complexity and impact, and **the sum of a user's interactions in a given minute** must remain under the user's total load limit. 
+In addition to limits on the number of requests that can be made to the Medplum server, there is a limit on the total load of the interactions made to the Medplum server. Different interactions with the datastore at weighted by complexity and impact, and **the sum of a user's interactions in a given minute** must remain under the user's total load limit in order to not receive a 429. 
 
 :::warning Feature Beta
 
