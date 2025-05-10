@@ -1,9 +1,9 @@
 # Rate Limits
 
 The Medplum API uses a number of safeguards against bursts of incoming traffic to help maximize its stability. Users who
-send many requests in quick succession might see HTTP error responses with status code `429 Too Many Requests`.
+send many requests in quick succession may receive HTTP error responses with status code `429 Too Many Requests`.
 
-## Default Rate Limits
+## Request Rate Limits
 
 | Category                      | Free tier                        | Paid tier                         |
 | ----------------------------- | -------------------------------- | --------------------------------- |
@@ -14,16 +14,35 @@ All rate limits are calculated per IP address over a one minute window.
 
 Rate limits can be increased for paid plans. Please [contact us](mailto:info+rate-limits@medplum.com?subject=Increase%20rate%20limits) for more information.
 
-## HTTP Headers
+## FHIR Interaction Quota
 
-All API calls affected by rate limits will include the following headers:
+In addition to limits on the number of requests that can be made to the Medplum server, there is a quota on the
+data store interactions performed by the server on behalf of the client. This ensures, for example, that large batch
+requests do not overwhelm the system by packing many expensive operations into single requests.
 
-- `X-Ratelimit-Limit`: The maximum number of requests that the consumer is permitted to make in a one minute window.
-- `X-Ratelimit-Remaining`: The number of requests remaining in the current rate limit window.
-- `X-Ratelimit-Reset`: The time at which the current rate limit window resets in UTC epoch seconds.
+:::warning Feature Beta
+
+FHIR interaction quotas are currently in beta testing, and are not yet finalized. Specific details about how
+the limits are calculated and enforced are subject to change.
+
+:::
+
+FHIR uses [specific terminology](http://hl7.org/fhir/restful-interaction) to categorize different interactions with
+the data store, e.g. `search` and `update`. These interactions are weighted by complexity and impact to the data store,
+with the sum of each user's interactions in a given minute compared to the configured limit. There is also
+a limit on the total interactions for all users within a Project as a whole, which defaults to ten times the per-user
+limit.
+
+## Reporting: HTTP Headers
+
+All API calls affected by rate limits will include a `RateLimit` header with details about the applicable limits:
 
 ```
-X-Ratelimit-Limit: 600
-X-Ratelimit-Remaining: 599
-X-Ratelimit-Reset: 1713810464
+RateLimit: "requests";r=59999;t=60, "fhirInteractions";r=49894;t=60
 ```
+
+Each logical limit reports the number of units remaining (`r`) and the time remaining, in seconds, until
+the limit resets (`t`). Applications should use these reported values to proactively slow down activity when
+few units are remaining, in order to prevent service disruption. Once a `429 Too Many Requests` error is produced,
+applications should not retry until after at least the indicated number of seconds have passed and the limit has
+been reset.

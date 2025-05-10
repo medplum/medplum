@@ -107,7 +107,7 @@ Because of the Patient's [compartment definition](https://build.fhir.org/compart
 For example, say you want to enroll *Patient/123* into two Organizations, *Organization/789* and *Organization/456*. You can do this by making the following request:
 
 ```ts
-const response = await medplum.post('/fhir/Patient/123/$set-accounts', {
+const response = await medplum.post('/fhir/R4/Patient/123/$set-accounts', {
   "resourceType": "Parameters",
   "parameter": [
     {
@@ -212,7 +212,7 @@ If allowing Practitioners to access all Patients enrolled in a shared Organizati
 
 For example, say you want to give *Practitioner/456* in *Organization/789* access to *Patient/123*. You can do this by making the following request:
 ```typescript
-const response = await medplum.post('/fhir/Patient/123/$set-accounts', {
+const response = await medplum.post('/fhir/R4/Patient/123/$set-accounts', {
  "resourceType": "Parameters",
  "parameter": [
    {

@@ -26,6 +26,7 @@ import {
   Subscription,
   Task,
   User,
+  UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { inviteUser } from '../admin/invite';
@@ -813,6 +814,7 @@ describe('AccessPolicy', () => {
           user: createReference(clientApplication),
         },
         project: testProject,
+        userConfig: {} as UserConfiguration,
       });
 
       // Create a Patient using the ClientApplication
@@ -923,6 +925,7 @@ describe('AccessPolicy', () => {
           user: createReference(clientApplication),
         },
         project: testProject,
+        userConfig: {} as UserConfiguration,
       });
 
       // Create a Patient using the ClientApplication
@@ -1783,6 +1786,7 @@ describe('AccessPolicy', () => {
         login: { resourceType: 'Login' } as Login,
         membership,
         project: testProject,
+        userConfig: {} as UserConfiguration,
       });
 
       const check1 = await repo2.readResource<Patient>('Patient', p1.id);
@@ -1834,6 +1838,7 @@ describe('AccessPolicy', () => {
         login: { resourceType: 'Login' } as Login,
         membership,
         project: testProject,
+        userConfig: {} as UserConfiguration,
       });
 
       const check1 = await repo2.readResource<Task>('Task', t1.id);
@@ -1891,7 +1896,12 @@ describe('AccessPolicy', () => {
         sendEmail: false,
       });
 
-      const repo2 = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project });
+      const repo2 = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project,
+        userConfig: {} as UserConfiguration,
+      });
 
       // Read Patient - allowed by AccessPolicy
       const check1 = await repo2.readResource<Patient>('Patient', patient.id);
@@ -1937,7 +1947,10 @@ describe('AccessPolicy', () => {
         admin: true,
       });
 
-      const repo2 = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project }, true);
+      const repo2 = await getRepoForLogin(
+        { login: { resourceType: 'Login' } as Login, membership, project, userConfig: {} as UserConfiguration },
+        true
+      );
 
       const check1 = await repo2.readResource<Project>('Project', project.id);
       expect(check1.id).toStrictEqual(project.id);
@@ -2013,7 +2026,7 @@ describe('AccessPolicy', () => {
           resource: [{ resourceType: '*' }, { resourceType: 'Project' }, { resourceType: 'ProjectMembership' }],
         },
       });
-      const repo = await getRepoForLogin({ login, project, membership }, true);
+      const repo = await getRepoForLogin({ login, project, membership, userConfig: {} as UserConfiguration }, true);
 
       const check1 = await repo.readResource<Project>('Project', project.id);
       expect(check1.id).toStrictEqual(project.id);
@@ -2090,11 +2103,21 @@ describe('AccessPolicy', () => {
       });
 
       const adminRepo = await getRepoForLogin(
-        { login: { resourceType: 'Login' } as Login, membership: adminMembership, project },
+        {
+          login: { resourceType: 'Login' } as Login,
+          membership: adminMembership,
+          project,
+          userConfig: {} as UserConfiguration,
+        },
         true
       );
       const nonAdminRepo = await getRepoForLogin(
-        { login: { resourceType: 'Login' } as Login, membership: nonAdminMembership, project },
+        {
+          login: { resourceType: 'Login' } as Login,
+          membership: nonAdminMembership,
+          project,
+          userConfig: {} as UserConfiguration,
+        },
         true
       );
       const account1 = 'Organization/' + randomUUID();
@@ -2172,11 +2195,21 @@ describe('AccessPolicy', () => {
       });
 
       const adminRepo = await getRepoForLogin(
-        { login: { resourceType: 'Login' } as Login, membership: adminMembership, project },
+        {
+          login: { resourceType: 'Login' } as Login,
+          membership: adminMembership,
+          project,
+          userConfig: {} as UserConfiguration,
+        },
         true
       );
       const nonAdminRepo = await getRepoForLogin(
-        { login: { resourceType: 'Login' } as Login, membership: nonAdminMembership, project },
+        {
+          login: { resourceType: 'Login' } as Login,
+          membership: nonAdminMembership,
+          project,
+          userConfig: {} as UserConfiguration,
+        },
         true
       );
       const account1 = 'Organization/' + randomUUID();
@@ -2278,6 +2311,7 @@ describe('AccessPolicy', () => {
         login: { resourceType: 'Login' } as Login,
         membership: miniAdminMembership,
         project,
+        userConfig: {} as UserConfiguration,
       });
 
       // Read Patient - explicitly allowed by AccessPolicy
@@ -2471,7 +2505,10 @@ describe('AccessPolicy', () => {
       });
 
       // Get a repo for the user
-      const repo = await getRepoForLogin({ login, membership: updatedMembership, project }, true);
+      const repo = await getRepoForLogin(
+        { login, membership: updatedMembership, project, userConfig: {} as UserConfiguration },
+        true
+      );
 
       // Try to search for StructureDefinitions, should succeed
       const bundle1 = await repo.search<StructureDefinition>({ resourceType: 'StructureDefinition' });
@@ -2557,7 +2594,7 @@ describe('AccessPolicy', () => {
         password: randomUUID(),
       });
       expect(project.link).toBeUndefined();
-      const repo = await getRepoForLogin({ login, membership, project }, true);
+      const repo = await getRepoForLogin({ login, membership, project, userConfig: {} as UserConfiguration }, true);
 
       project.link = [{ project: { reference: 'Project/foo' } }, { project: { reference: 'Project/bar' } }];
 
@@ -2609,7 +2646,10 @@ describe('AccessPolicy', () => {
       });
 
       // Repo for project admin
-      const projAdminRepo = await getRepoForLogin({ login, membership, project }, true);
+      const projAdminRepo = await getRepoForLogin(
+        { login, membership, project, userConfig: {} as UserConfiguration },
+        true
+      );
 
       // Repos for the test user
 

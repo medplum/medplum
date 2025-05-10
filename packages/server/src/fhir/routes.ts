@@ -110,7 +110,7 @@ fhirRouter.use(function setupResponseInterceptors(req: Request, res: Response, n
     const ctx = tryGetRequestContext();
     if (ctx?.fhirRateLimiter) {
       // Attach rate limit header before sending first part of response body
-      res.append('RateLimit', ctx.fhirRateLimiter.rateLimitHeader());
+      ctx.fhirRateLimiter.attachRateLimitHeader(res);
     }
 
     return oldSend.call(res, ...args);

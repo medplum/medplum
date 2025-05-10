@@ -19,6 +19,7 @@ import { createHash, randomUUID } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
 import { asyncWrap } from '../async';
+import { getUserConfiguration } from '../auth/me';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
@@ -146,7 +147,8 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   // TODO: build full AuthState object, including on-behalf-of
 
   try {
-    const accessPolicy = await getAccessPolicyForLogin({ project, login, membership });
+    const userConfig = await getUserConfiguration(systemRepo, project, membership);
+    const accessPolicy = await getAccessPolicyForLogin({ project, login, membership, userConfig });
     await checkIpAccessRules(login, accessPolicy);
   } catch (err) {
     sendTokenError(res, 'invalid_request', normalizeErrorString(err));

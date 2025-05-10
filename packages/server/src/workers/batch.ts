@@ -10,6 +10,7 @@ import {
 import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
 import { AsyncJob, Bundle, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { getUserConfiguration } from '../auth/me';
 import { getAuthenticatedContext, tryRunInRequestContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { uploadBinaryData } from '../fhir/binary';
@@ -102,7 +103,8 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   const logger = getLogger();
 
   // Prepare the original submitting user's repo
-  const repo = await getRepoForLogin({ login, project, membership });
+  const userConfig = await getUserConfiguration(getSystemRepo(), project, membership);
+  const repo = await getRepoForLogin({ login, project, membership, userConfig });
   const router = new FhirRouter();
   const req: FhirRequest = {
     method: 'POST',
