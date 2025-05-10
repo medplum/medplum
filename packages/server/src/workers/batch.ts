@@ -10,6 +10,7 @@ import {
 import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
 import { AsyncJob, Bundle, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { randomUUID } from 'node:crypto';
 import { getUserConfiguration } from '../auth/me';
 import { getAuthenticatedContext, tryRunInRequestContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
@@ -30,7 +31,6 @@ export interface BatchJobData {
   readonly login: Login;
   readonly project: WithId<Project>;
   readonly membership: WithId<ProjectMembership>;
-  readonly requestId?: string;
   readonly traceId?: string;
 }
 
@@ -49,7 +49,7 @@ export const initBatchWorker: WorkerInitializer = (config) => {
 
   const worker = new Worker<BatchJobData>(
     queueName,
-    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execBatchJob(job)),
+    (job) => tryRunInRequestContext(randomUUID(), job.data.traceId, () => execBatchJob(job)),
     {
       ...defaultOptions,
       ...config.bullmq,
@@ -82,16 +82,8 @@ async function addBatchJobData(job: BatchJobData): Promise<Job<BatchJobData>> {
 }
 
 export async function queueBatchProcessing(batch: Bundle, asyncJob: WithId<AsyncJob>): Promise<Job<BatchJobData>> {
-  const { requestId, traceId, login, project, membership } = getAuthenticatedContext();
-  return addBatchJobData({
-    bundle: batch,
-    asyncJob,
-    login,
-    project,
-    membership,
-    requestId,
-    traceId,
-  });
+  const { traceId, login, project, membership } = getAuthenticatedContext();
+  return addBatchJobData({ bundle: batch, asyncJob, login, project, membership, traceId });
 }
 
 /**
