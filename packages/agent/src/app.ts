@@ -17,6 +17,7 @@ import {
   fetchLatestVersionString,
   isValidHostname,
   normalizeErrorString,
+  sleep,
 } from '@medplum/core';
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
@@ -30,6 +31,7 @@ import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from '.
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import { createPidFile, removePidFile } from './pid';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -78,10 +80,11 @@ export class App {
 
     await this.startWebSocket();
 
-    // We do this after starting WebSockets so that we can send a message if we finished upgrading
-    await this.maybeFinalizeUpgrade();
-
     await this.reloadConfig();
+
+    // We do this after starting WebSockets so that we can send a message if we finished upgrading
+    // We also do it after reloading the config, to make sure that we have bound to the ports before releasing the upgrading agent PID file
+    await this.maybeFinalizeUpgrade();
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
@@ -125,6 +128,27 @@ export class App {
 
       // Delete manifest
       rmSync(UPGRADE_MANIFEST_PATH);
+      removePidFile('medplum-upgrading-agent');
+      await this.tryToCreateAgentPidFile();
+    }
+  }
+
+  private async tryToCreateAgentPidFile(): Promise<void> {
+    const maxAttempts = 15;
+    let attempt = 0;
+    let success = false;
+    while (!success) {
+      try {
+        createPidFile('medplum-agent');
+        success = true;
+      } catch (_err) {
+        this.log.info('Unable to create agent PID file, trying again...');
+        attempt++;
+        if (attempt === maxAttempts) {
+          throw new Error('Too many unsuccessful attempts to create agent PID file');
+        }
+        await sleep(50);
+      }
     }
   }
 
@@ -277,7 +301,7 @@ export class App {
   }
 
   private async reloadConfig(): Promise<void> {
-    const agent = await this.medplum.readResource('Agent', this.agentId);
+    const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
 
     if (!keepAlive && this.hl7Clients.size !== 0) {
@@ -310,7 +334,9 @@ export class App {
 
     const endpointPromises = [] as Promise<Endpoint>[];
     for (const definition of channels) {
-      endpointPromises.push(this.medplum.readReference(definition.endpoint as Reference<Endpoint>));
+      endpointPromises.push(
+        this.medplum.readReference(definition.endpoint as Reference<Endpoint>, { cache: 'no-cache' })
+      );
     }
 
     const endpoints = await Promise.all(endpointPromises);
@@ -665,10 +691,6 @@ export class App {
     }
 
     try {
-      // Stop the agent to prepare for service being restarted
-      await this.stop();
-      this.log.info('Successfully stopped agent network services');
-
       // Write a manifest file
       this.log.info('Writing upgrade manifest...', { previousVersion: MEDPLUM_VERSION, targetVersion });
       writeFileSync(
