@@ -12,6 +12,8 @@ import {
   CustomPostDeployMigrationJobData,
   PostDeployJobData,
 } from '../migrations/data/types';
+import * as migrateModule from '../migrations/migrate';
+import { MigrationAction } from '../migrations/migrate';
 import * as migrationUtils from '../migrations/migration-utils';
 import { withTestContext } from '../test.setup';
 import {
@@ -19,6 +21,7 @@ import {
   jobProcessor,
   PostDeployMigrationQueueName,
   prepareCustomMigrationJobData,
+  prepareDynamicMigrationJobData,
   runCustomMigration,
 } from './post-deploy-migration';
 import { queueRegistry } from './utils';
@@ -140,6 +143,62 @@ describe('Post-Deploy Migration Worker', () => {
     // getting the post-deploy migration is a reasonable proxy for running the job
     // since the migration is what contains the run function.
     expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
+  });
+
+  test.only('Job processor runs dynamic migration when AsyncJob is active', async () => {
+    const getPostDeployMigrationSpy = jest.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation(() => {
+      throw new Error('Should not be called');
+    });
+
+    const executeMigrationActionsSpy = jest.spyOn(migrateModule, 'executeMigrationActions').mockResolvedValue([
+      {
+        name: 'some-action',
+        durationMs: 10,
+      },
+    ]);
+
+    const systemRepo = getSystemRepo();
+    const mockAsyncJob = await systemRepo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
+      status: 'accepted',
+      requestTime: new Date().toISOString(),
+      request: '/admin/super/reconcile-schema-drift',
+    });
+
+    const migrationActions: MigrationAction[] = [
+      {
+        type: 'CREATE_INDEX',
+        indexName: 'some_necessary_test_index',
+        createIndexSql: 'CREATE INDEX some_necessary_test_index ON Observation (id)',
+      },
+    ];
+
+    // temporarily set to {} to appease typescript since it gets set within withTestContext
+    let job: Job<PostDeployJobData> = {} as unknown as Job<PostDeployJobData>;
+    await withTestContext(async () => {
+      const jobData: PostDeployJobData = prepareDynamicMigrationJobData(mockAsyncJob, migrationActions);
+      job = {
+        id: '1',
+        data: jobData,
+        queueName: 'PostDeployMigrationQueue',
+      } as unknown as Job<PostDeployJobData>;
+    });
+    expect(job.data).toBeDefined();
+
+    await jobProcessor(job);
+
+    expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
+    expect(executeMigrationActionsSpy).toHaveBeenCalledTimes(1);
+    expect(executeMigrationActionsSpy).toHaveBeenCalledWith(expect.any(Object), migrationActions);
+
+    const updatedAsyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', mockAsyncJob.id);
+    expect(updatedAsyncJob.status).toBe('completed');
+    expect(updatedAsyncJob.output?.parameter).toEqual([
+      { name: 'some-action', part: [{ name: 'durationMs', valueInteger: 10 }] },
+    ]);
+
+    getPostDeployMigrationSpy.mockRestore();
+    executeMigrationActionsSpy.mockRestore();
   });
 
   test('Job processor runs migration when AsyncJob is active', async () => {

@@ -23,7 +23,7 @@ import {
   addVerboseQueueLogging,
   isJobActive,
   isJobCompatible,
-  moveToDelayed,
+  moveToDelayedAndThrow,
   queueRegistry,
   updateAsyncJobOutput,
   WorkerInitializer,
@@ -99,7 +99,7 @@ export const initReindexWorker: WorkerInitializer = (config) => {
 export async function jobProcessor(job: Job<ReindexJobData>): Promise<void> {
   const result = await new ReindexJob().execute(job, job.data);
   if (result === 'ineligible') {
-    await moveToDelayed(job, 'Reindex job delayed since worker is not eligible to execute it');
+    await moveToDelayedAndThrow(job, 'Reindex job delayed since worker is not eligible to execute it');
   }
 }
 
@@ -154,7 +154,7 @@ export class ReindexJob {
 
       if (job) {
         await job.updateData(nextJobData);
-        await moveToDelayed(job, 'ReindexJob delayed since queue is closing');
+        await moveToDelayedAndThrow(job, 'ReindexJob delayed since queue is closing');
       }
     }
   }

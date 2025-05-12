@@ -23,7 +23,7 @@ import {
   addVerboseQueueLogging,
   isJobActive,
   isJobCompatible,
-  moveToDelayed,
+  moveToDelayedAndThrow,
   queueRegistry,
   WorkerInitializer,
 } from './utils';
@@ -65,8 +65,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
 
   if (!isJobCompatible(asyncJob)) {
-    await moveToDelayed(job, 'Post-deploy migration delayed since this worker is not compatible');
-    return;
+    await moveToDelayedAndThrow(job, 'Post-deploy migration delayed since this worker is not compatible');
   }
 
   if (!isJobActive(asyncJob)) {
@@ -93,8 +92,10 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
     migration = getPostDeployMigration(migrationNumber);
   } catch (err: any) {
     if (err instanceof MigrationDefinitionNotFoundError) {
-      await moveToDelayed(job, 'Post-deploy migration delayed since migration definition was not found on this worker');
-      return;
+      await moveToDelayedAndThrow(
+        job,
+        'Post-deploy migration delayed since migration definition was not found on this worker'
+      );
     }
     throw err;
   }
@@ -107,7 +108,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
 
   switch (result) {
     case 'ineligible': {
-      await moveToDelayed(job, 'Post-deploy migration delayed since worker is not eligible to execute it');
+      await moveToDelayedAndThrow(job, 'Post-deploy migration delayed since worker is not eligible to execute it');
       break;
     }
     case 'finished':
