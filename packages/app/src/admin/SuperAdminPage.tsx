@@ -131,8 +131,8 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
-  function patchSchemaDiff(): void {
-    startAsyncJob(medplum, 'Patch Schema Diff', 'admin/super/migrate-drift');
+  function reconcileSchemaDiff(): void {
+    startAsyncJob(medplum, 'Reconcile Schema Diff', 'admin/super/reconcile-db-schema-drift');
   }
 
   return (
@@ -268,9 +268,9 @@ export function SuperAdminPage(): JSX.Element {
           </Form>
         </Grid.Col>
         <Grid.Col span={6}>
-          <Form onSubmit={patchSchemaDiff}>
+          <Form onSubmit={reconcileSchemaDiff}>
             <Stack>
-              <Button type="submit">Patch Schema Drift</Button>
+              <Button type="submit">Reconcile Schema Drift</Button>
             </Stack>
           </Form>
         </Grid.Col>

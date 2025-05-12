@@ -231,11 +231,11 @@ describe('SuperAdminPage', () => {
     expect(await screen.findByText(returnValue)).toBeInTheDocument();
   });
 
-  test('Patch Database Schema Drift', async () => {
+  test('Reconcile Database Schema Drift', async () => {
     setup();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Patch Schema Drift' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Reconcile Schema Drift' }));
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();

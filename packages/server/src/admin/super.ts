@@ -300,16 +300,10 @@ superAdminRouter.post(
 );
 
 superAdminRouter.post(
-  '/migrate-drift',
+  '/reconcile-db-schema-drift',
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
-
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      sendOutcome(res, invalidRequest(errors));
-      return;
-    }
 
     const migrationActions = await generateMigrationActions({
       dbClient: getDatabasePool(DatabaseMode.WRITER),
@@ -318,6 +312,7 @@ superAdminRouter.post(
     });
 
     if (migrationActions.length === 0) {
+      // Nothing to do
       sendOutcome(res, allOk);
       return;
     }
