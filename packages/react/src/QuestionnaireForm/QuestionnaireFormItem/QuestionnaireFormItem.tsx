@@ -27,8 +27,10 @@ import {
   QuestionnaireItemInitial,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
+  ValueSetExpansionContains,
+  ValueSet,
 } from '@medplum/fhirtypes';
-import { ChangeEvent, JSX, useContext } from 'react';
+import { ChangeEvent, JSX, useContext, useState, useEffect } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
 import { CodingInput } from '../../CodingInput/CodingInput';
@@ -45,6 +47,7 @@ import {
   QuestionnaireItemType,
 } from '../../utils/questionnaire';
 import { QuestionnaireFormContext } from '../QuestionnaireForm.context';
+import { useMedplum } from '@medplum/react-hooks';
 
 export interface QuestionnaireFormItemProps {
   readonly item: QuestionnaireItem;
@@ -384,14 +387,77 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
   }
 }
 
+function getValueSetOptions(valueSetUrl: string | undefined, medplum: ReturnType<typeof useMedplum>): Promise<ValueSetExpansionContains[]> {
+  if (!valueSetUrl) {
+    return Promise.resolve([]);
+  }
+
+  return medplum.valueSetExpand({
+    url: valueSetUrl,
+    count: 50, // Limit to 50 items for performance
+  }).then((valueSet: ValueSet) => valueSet.expansion?.contains ?? []);
+}
+
+function getOptionsFromValueSet(valueSetOptions: ValueSetExpansionContains[], name: string): [string, TypedValue][] {
+  return valueSetOptions.map((option, i) => {
+    const optionName = `${name}-valueset-${i}`;
+    const optionValue = {
+      type: 'Coding',
+      value: {
+        system: option.system,
+        code: option.code,
+        display: option.display,
+      },
+    };
+    return [optionName, optionValue];
+  });
+}
+
 function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const initialValue = getItemInitialValue(initial);
+  const medplum = useMedplum();
+
+  const [valueSetOptions, setValueSetOptions] = useState<ValueSetExpansionContains[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadValueSet(): Promise<void> {
+      if (!item.answerValueSet) {
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const options = await getValueSetOptions(item.answerValueSet, medplum);
+        if (mounted) {
+          setValueSetOptions(options);
+        }
+      } catch (err) {
+        console.error('Error loading value set:', err);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadValueSet().catch(console.error);
+
+    return () => {
+      mounted = false;
+    };
+  }, [item.answerValueSet, medplum]);
 
   const options: [string, TypedValue][] = [];
   let defaultValue = undefined;
-  if (item.answerOption) {
+
+  if (item.answerValueSet) {
+    options.push(...getOptionsFromValueSet(valueSetOptions, name));
+  } else if (item.answerOption) {
     for (let i = 0; i < item.answerOption.length; i++) {
       const option = item.answerOption[i];
       const optionName = `${name}-option-${i}`;
@@ -410,6 +476,14 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
 
   const defaultAnswer = getCurrentAnswer(response);
   const answerLinkId = getCurrentRadioAnswer(options, defaultAnswer);
+
+  if (isLoading) {
+    return <Text>Loading options...</Text>;
+  }
+
+  if (options.length === 0) {
+    return <NoAnswerDisplay />;
+  }
 
   return (
     <Radio.Group
@@ -447,9 +521,46 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
   const { name, item, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const currentAnswers = getCurrentMultiSelectAnswer(response);
+  const medplum = useMedplum();
+
+  const [valueSetOptions, setValueSetOptions] = useState<ValueSetExpansionContains[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadValueSet(): Promise<void> {
+      if (!item.answerValueSet) {
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const options = await getValueSetOptions(item.answerValueSet, medplum);
+        if (mounted) {
+          setValueSetOptions(options);
+        }
+      } catch (err) {
+        console.error('Error loading value set:', err);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadValueSet().catch(console.error);
+
+    return () => {
+      mounted = false;
+    };
+  }, [item.answerValueSet, medplum]);
 
   const options: [string, TypedValue][] = [];
-  if (item.answerOption) {
+
+  if (item.answerValueSet) {
+    options.push(...getOptionsFromValueSet(valueSetOptions, name));
+  } else if (item.answerOption) {
     for (let i = 0; i < item.answerOption.length && i < 50; i++) {
       const option = item.answerOption[i];
       const optionName = `${name}-option-${i}`;
@@ -463,10 +574,21 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
     }
   }
 
+  if (isLoading) {
+    return <Text>Loading options...</Text>;
+  }
+
+  if (options.length === 0) {
+    return <NoAnswerDisplay />;
+  }
+
   return (
     <Group style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
       {options.map(([optionName, optionValue]) => {
-        const optionValueStr = typedValueToString(optionValue);
+        const isChecked = item.answerValueSet
+          ? response.answer?.some((answer) => deepEquals(answer.valueCoding, optionValue.value))
+          : currentAnswers?.includes(typedValueToString(optionValue));
+
         return (
           <Checkbox
             key={optionName}
@@ -478,20 +600,29 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
                 value={optionValue.value}
               />
             }
-            checked={currentAnswers?.includes(optionValueStr)}
+            checked={isChecked}
             onChange={(event) => {
               const selected = event.currentTarget.checked;
-              const currentValues = currentAnswers || [];
-              let newValues: string[];
-
-              if (selected) {
-                newValues = [...currentValues, optionValueStr];
+              if (item.answerValueSet) {
+                const currentCodings = (response.answer?.map(a => a.valueCoding) || []).filter((c): c is Coding => c !== undefined);
+                let newCodings: Coding[];
+                if (selected) {
+                  newCodings = [...currentCodings, optionValue.value as Coding];
+                } else {
+                  newCodings = currentCodings.filter(c => !deepEquals(c, optionValue.value));
+                }
+                onChangeAnswer(newCodings.map(coding => ({ valueCoding: coding })));
               } else {
-                newValues = currentValues.filter((v) => v !== optionValueStr);
+                const currentValues = currentAnswers || [];
+                let newValues: string[];
+                if (selected) {
+                  newValues = [...currentValues, typedValueToString(optionValue)];
+                } else {
+                  newValues = currentValues.filter((v) => v !== typedValueToString(optionValue));
+                }
+                const values = getNewMultiSelectValues(newValues, 'value' + capitalize(optionValue.type), item);
+                onChangeAnswer(values);
               }
-
-              const values = getNewMultiSelectValues(newValues, 'value' + capitalize(optionValue.type), item);
-              onChangeAnswer(values);
             }}
           />
         );
