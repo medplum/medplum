@@ -607,7 +607,7 @@ export class App {
   }
 
   private async tryUpgradeAgent(message: AgentUpgradeRequest): Promise<void> {
-    this.log.info(`Attempting to upgrade from ${MEDPLUM_VERSION} to ${message.version}...`);
+    this.log.info(`Attempting to upgrade from ${MEDPLUM_VERSION} to ${message.version ?? 'latest'}...`);
 
     if (platform() !== 'win32') {
       const errMsg = 'Auto-upgrading is currently only supported on Windows';

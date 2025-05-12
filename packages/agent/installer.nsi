@@ -262,7 +262,8 @@ Function StopAndDeleteMedplumServices
     ${EndIf}
     Pop $0 # Return value
     Pop $ServicesList # Command output
-
+    
+    DetailPrint "Exit code $0"
     DetailPrint "Services to be stopped and removed: $ServicesList"
 
     # Process each service in the filtered list
@@ -343,6 +344,7 @@ Function un.StopAndDeleteMedplumServices
     Pop $0 # Return value
     Pop $ServicesList # Command output
 
+    DetailPrint "Exit code $0"
     DetailPrint "Services to be stopped and removed: $ServicesList"
 
     # Process each service in the filtered list
