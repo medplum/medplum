@@ -247,7 +247,7 @@ Function StopAndDeleteMedplumServices
     Pop $0
 
     DetailPrint "DEBUG: Querying for list of all services..."
-    nsExec::ExecToStack "sc.exe query type= service state= all"
+    nsExec::ExecToStack "cmd.exe /c 'sc.exe query type= service state= all'"
     Pop $1 # Exit code
     Pop $2 # Output
     DetailPrint "Exit code $1"
