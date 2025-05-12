@@ -33,34 +33,19 @@ describe('Hl7Client', () => {
   test('Connection timeout when server does not respond', async () => {
     const port = getRandomPort();
 
-    // Create a server that accepts connections but doesn't respond
-    const hangingServer = createServer((_socket) => {
-      // Intentionally don't respond to simulate a hanging server
-    });
-
-    // Start the server
-    await new Promise<void>((resolve) => {
-      hangingServer.listen(port, () => resolve());
-    });
-
     // Create client with a short timeout
     const client = new Hl7Client({
-      host: 'localhost',
+      host: '10.255.255.1', // Use an unreachable IP address
       port,
       connectTimeout: 500,
     });
 
-    // The connection itself will succeed, but sending a message should time out
-    await client.connect(); // This should work as TCP connection is established
+    // Attempt to connect should fail with timeout error
+    await expect(client.connect()).rejects.toThrow('Connection timeout after 500ms');
 
     // Close the connection
     client.close();
-
-    // Stop the server
-    await new Promise<void>((resolve) => {
-      hangingServer.close(() => resolve());
-    });
-  });
+  }, 1000);
 
   // Test cancelling a connection attempt
   test('Cancel connection attempt', async () => {
