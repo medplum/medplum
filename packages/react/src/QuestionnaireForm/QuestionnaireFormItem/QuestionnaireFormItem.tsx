@@ -249,31 +249,28 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       break;
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
-      if (isDropDownChoice(item) && !item.answerValueSet) {
-        formComponent = (
-          <QuestionnaireChoiceDropDownInput
-            name={name}
-            item={item}
-            initial={initial}
-            response={response}
-            onChangeAnswer={(e) => onChangeAnswer(e)}
-          />
-        );
-      } else if (isMultiSelectChoice(item) && !item.answerValueSet) {
-        formComponent = (
-          <QuestionnaireMultiSelectInput
-            name={name}
-            item={item}
-            initial={initial}
-            response={response}
-            onChangeAnswer={(e) => onChangeAnswer(e)}
-          />
-        );
+      if (isRadiobuttonChoice(item)) {
+        <QuestionnaireRadiobuttonInput
+          name={response?.id ?? name}
+          item={item}
+          initial={initial}
+          response={response}
+          onChangeAnswer={onChangeAnswer}
+        />
+      } else if (isCheckboxChoice(item)) {
+        <QuestionnaireCheckboxInput
+          name={response?.id ?? name}
+          item={item}
+          initial={initial}
+          response={response}
+          onChangeAnswer={onChangeAnswer}
+        />
       } else {
         formComponent = (
-          <QuestionnaireChoiceSetInput
+          <QuestionnaireDropdownInput
             name={name}
             item={item}
+            initial={initial}
             response={response}
             onChangeAnswer={(e) => onChangeAnswer(e)}
           />
@@ -306,7 +303,7 @@ interface QuestionnaireChoiceInputProps {
   ) => void;
 }
 
-function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+function QuestionnaireDropdownSingleSelectInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, response } = props;
 
   if (!item.answerOption?.length) {
@@ -363,7 +360,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
   );
 }
 
-function QuestionnaireMultiSelectInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+function QuestionnaireDropdownMultiSelectInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { item, initial, response } = props;
 
   if (!item.answerOption?.length) {
@@ -388,49 +385,37 @@ function QuestionnaireMultiSelectInput(props: QuestionnaireChoiceInputProps): JS
   );
 }
 
-function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, onChangeAnswer, response } = props;
+function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+  const { name, item, initial, onChangeAnswer, response } = props;
 
   if (!item.answerOption?.length && !item.answerValueSet) {
     return <NoAnswerDisplay />;
   }
 
-  if (item.answerValueSet) {
+  if (isMultiSelectChoice(item)) {
     return (
-      <CodingInput
-        path=""
+      <QuestionnaireDropdownMultiSelectInput
+            name={name}
+            item={item}
+            initial={initial}
+            response={response}
+            onChangeAnswer={(e) => onChangeAnswer(e)}
+          />
+    );
+  } else {
+    return (
+      <QuestionnaireDropdownSingleSelectInput
         name={name}
-        binding={item.answerValueSet}
-        response={response}
-        onChange={(code) => onChangeAnswer({ valueCoding: code })}
-        creatable={item.type === QuestionnaireItemType.openChoice}
-      />
-    );
-  }
-
-  if (isCheckboxChoice(item)) {
-    return (
-      <QuestionnaireCheckboxInput
-        name={response?.id ?? name}
         item={item}
+        initial={initial}
         response={response}
-        onChangeAnswer={onChangeAnswer}
+        onChangeAnswer={(e) => onChangeAnswer(e)}
       />
     );
   }
-
-  return (
-    <QuestionnaireChoiceRadioInput
-      name={response?.id ?? name}
-      item={item}
-      initial={initial}
-      response={response}
-      onChangeAnswer={onChangeAnswer}
-    />
-  );
 }
 
-function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const initialValue = getItemInitialValue(initial);
@@ -589,6 +574,14 @@ function isCheckboxChoice(item: QuestionnaireItem): boolean {
     (e) =>
       e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
       e.valueCodeableConcept?.coding?.[0]?.code === 'check-box'
+  );
+}
+
+function isRadiobuttonChoice(item: QuestionnaireItem): boolean {
+  return !!item.extension?.some(
+    (e) =>
+      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
+      e.valueCodeableConcept?.coding?.[0]?.code === 'radio-button'
   );
 }
 
