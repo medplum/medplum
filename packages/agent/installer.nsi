@@ -246,6 +246,18 @@ Function StopAndDeleteMedplumServices
     # Get the service name to filter out from function args
     Pop $0
 
+    DetailPrint "DEBUG: Querying for list of all services..."
+    nsExec::ExecToStack "sc.exe query type= service state= all"
+    Pop $1 # Exit code
+    Pop $2 # Output
+    DetailPrint "Exit code $1"
+
+    DetailPrint "Writing debug output to file..."
+    FileOpen $9 debug-service.out w
+    FileWrite $9 $2
+    FileClose $9
+    DetailPrint "Debug output written"
+
     # Get list of services
     # We use "nsExec:ExecToStack" so that another CMD window is not opened
     # Here's the processing this command does:
