@@ -26,10 +26,12 @@ import {
   QuestionnaireItemInitial,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
+  Coding,
 } from '@medplum/fhirtypes';
 import { ChangeEvent, JSX, useContext } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
+import { CodingInput } from '../../CodingInput/CodingInput';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
@@ -249,21 +251,25 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
       if (isRadiobuttonChoice(item)) {
-        <QuestionnaireRadiobuttonInput
-          name={response?.id ?? name}
-          item={item}
-          initial={initial}
-          response={response}
-          onChangeAnswer={onChangeAnswer}
-        />;
+        formComponent = (
+          <QuestionnaireRadiobuttonInput
+            name={response?.id ?? name}
+            item={item}
+            initial={initial}
+            response={response}
+            onChangeAnswer={onChangeAnswer}
+          />
+        );
       } else if (isCheckboxChoice(item)) {
-        <QuestionnaireCheckboxInput
-          name={response?.id ?? name}
-          item={item}
-          initial={initial}
-          response={response}
-          onChangeAnswer={onChangeAnswer}
-        />;
+        formComponent = (
+          <QuestionnaireCheckboxInput
+            name={response?.id ?? name}
+            item={item}
+            initial={initial}
+            response={response}
+            onChangeAnswer={onChangeAnswer}
+          />
+        );
       } else {
         formComponent = (
           <QuestionnaireDropdownInput
@@ -302,28 +308,40 @@ interface QuestionnaireChoiceInputProps {
   ) => void;
 }
 
-function QuestionnaireDropdownSingleSelectInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, response } = props;
+function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+  const { name, item, initial, onChangeAnswer, response } = props;
 
-  if (!item.answerOption?.length) {
+  if (!item.answerOption?.length && !item.answerValueSet) {
     return <NoAnswerDisplay />;
   }
 
   const initialValue = getItemInitialValue(initial);
+  const defaultValue = getCurrentAnswer(response) ?? initialValue;
+  const currentAnswer = getCurrentMultiSelectAnswer(response);
+  const isMultiSelect = item.repeats || isMultiSelectChoice(item);
 
-  const data = [''];
-
-  for (const option of item.answerOption) {
-    const optionValue = getItemAnswerOptionValue(option);
-    data.push(typedValueToString(optionValue) as string);
+  if (item.answerValueSet) {
+    return (
+      <CodingInput
+        path=""
+        name={name}
+        binding={item.answerValueSet}
+        response={response}
+        onChange={(codes: Coding[]) => {
+          if (isMultiSelect) {
+            onChangeAnswer(codes.map((code: Coding) => ({ valueCoding: code })));
+          } else {
+            onChangeAnswer({ valueCoding: codes[0] });
+          }
+        }}
+        creatable={item.type === QuestionnaireItemType.openChoice}
+        maxValues={isMultiSelect ? undefined : 1}
+      />
+    );
   }
 
-  const defaultValue = getCurrentAnswer(response) ?? initialValue;
-
-  if (item.repeats) {
-    const { propertyName, data } = formatSelectData(props.item);
-    const currentAnswer = getCurrentMultiSelectAnswer(response);
-
+  if (isMultiSelect) {
+    const { propertyName, data } = formatSelectData(item);
     return (
       <MultiSelect
         data={data}
@@ -332,83 +350,35 @@ function QuestionnaireDropdownSingleSelectInput(props: QuestionnaireChoiceInputP
         defaultValue={currentAnswer || [typedValueToString(initialValue)]}
         onChange={(selected) => {
           const values = getNewMultiSelectValues(selected, propertyName, item);
-          props.onChangeAnswer(values);
+          onChangeAnswer(values);
         }}
       />
     );
-  }
-
-  return (
-    <NativeSelect
-      id={name}
-      name={name}
-      onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-        const index = e.currentTarget.selectedIndex;
-        if (index === 0) {
-          props.onChangeAnswer({});
-          return;
-        }
-        const option = (item.answerOption as QuestionnaireItemAnswerOption[])[index - 1];
-        const optionValue = getItemAnswerOptionValue(option);
-        const propertyName = 'value' + capitalize(optionValue.type);
-        props.onChangeAnswer({ [propertyName]: optionValue.value });
-      }}
-      defaultValue={formatCoding(defaultValue?.value) || defaultValue?.value}
-      data={data}
-    />
-  );
-}
-
-function QuestionnaireDropdownMultiSelectInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { item, initial, response } = props;
-
-  if (!item.answerOption?.length) {
-    return <NoAnswerDisplay />;
-  }
-
-  const initialValue = getItemInitialValue(initial);
-  const { propertyName, data } = formatSelectData(props.item);
-  const currentAnswer = getCurrentMultiSelectAnswer(response);
-
-  return (
-    <MultiSelect
-      data={data}
-      placeholder="Select items"
-      searchable
-      defaultValue={currentAnswer || [typedValueToString(initialValue)]}
-      onChange={(selected) => {
-        const values = getNewMultiSelectValues(selected, propertyName, item);
-        props.onChangeAnswer(values);
-      }}
-    />
-  );
-}
-
-function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, onChangeAnswer, response } = props;
-
-  if (!item.answerOption?.length && !item.answerValueSet) {
-    return <NoAnswerDisplay />;
-  }
-
-  if (isMultiSelectChoice(item)) {
-    return (
-      <QuestionnaireDropdownMultiSelectInput
-        name={name}
-        item={item}
-        initial={initial}
-        response={response}
-        onChangeAnswer={(e) => onChangeAnswer(e)}
-      />
-    );
   } else {
+    const data = [''];
+    if (item.answerOption) {
+      for (const option of item.answerOption) {
+        const optionValue = getItemAnswerOptionValue(option);
+        data.push(typedValueToString(optionValue) as string);
+      }
+    }
     return (
-      <QuestionnaireDropdownSingleSelectInput
+      <NativeSelect
+        id={name}
         name={name}
-        item={item}
-        initial={initial}
-        response={response}
-        onChangeAnswer={(e) => onChangeAnswer(e)}
+        onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+          const index = e.currentTarget.selectedIndex;
+          if (index === 0) {
+            onChangeAnswer({});
+            return;
+          }
+          const option = (item.answerOption as QuestionnaireItemAnswerOption[])[index - 1];
+          const optionValue = getItemAnswerOptionValue(option);
+          const propertyName = 'value' + capitalize(optionValue.type);
+          onChangeAnswer({ [propertyName]: optionValue.value });
+        }}
+        defaultValue={formatCoding(defaultValue?.value) || defaultValue?.value}
+        data={data}
       />
     );
   }
@@ -550,14 +520,6 @@ function getCurrentMultiSelectAnswer(response: QuestionnaireResponseItem): strin
 
 function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: TypedValue): string | undefined {
   return options.find((option) => deepEquals(option[1].value, defaultAnswer?.value))?.[0];
-}
-
-function isDropDownChoice(item: QuestionnaireItem): boolean {
-  return !!item.extension?.some(
-    (e) =>
-      e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
-      e.valueCodeableConcept?.coding?.[0]?.code === 'drop-down'
-  );
 }
 
 function isMultiSelectChoice(item: QuestionnaireItem): boolean {
