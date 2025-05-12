@@ -91,7 +91,7 @@ fi
 # jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # express - version 5 is now latest and has some breaking changes -- we need to make sure middleware and other related deps work with new version
-MAJOR_EXCLUDE="@mantine/core @mantine/hooks @mantine/notifications @types/express @types/node commander eslint jose node-fetch express"
+MAJOR_EXCLUDE="@mantine/core @mantine/dropzone @mantine/hooks @mantine/notifications @types/express @types/node commander eslint express jose node-fetch npm"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
