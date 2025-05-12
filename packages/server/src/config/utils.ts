@@ -63,6 +63,7 @@ type DefaultConfigKeys =
   | 'accurateCountThreshold'
   | 'defaultBotRuntimeVersion'
   | 'defaultProjectFeatures'
+  | 'defaultProjectSystemSetting'
   | 'emailProvider'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
