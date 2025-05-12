@@ -1,3 +1,7 @@
+---
+sidebar_position: 2
+---
+
 # Rate Limits
 
 The Medplum API uses a number of safeguards against bursts of incoming traffic to help maximize its stability. Users who
