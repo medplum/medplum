@@ -21,12 +21,12 @@ import {
   typedValueToString,
 } from '@medplum/core';
 import {
+  Coding,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
   QuestionnaireItemInitial,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
-  Coding,
 } from '@medplum/fhirtypes';
 import { ChangeEvent, JSX, useContext } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
