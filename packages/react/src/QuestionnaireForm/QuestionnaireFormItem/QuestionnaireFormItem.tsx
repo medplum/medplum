@@ -30,7 +30,6 @@ import {
 import { ChangeEvent, JSX, useContext } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
-import { CodingInput } from '../../CodingInput/CodingInput';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
@@ -256,7 +255,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           initial={initial}
           response={response}
           onChangeAnswer={onChangeAnswer}
-        />
+        />;
       } else if (isCheckboxChoice(item)) {
         <QuestionnaireCheckboxInput
           name={response?.id ?? name}
@@ -264,7 +263,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           initial={initial}
           response={response}
           onChangeAnswer={onChangeAnswer}
-        />
+        />;
       } else {
         formComponent = (
           <QuestionnaireDropdownInput
@@ -395,12 +394,12 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
   if (isMultiSelectChoice(item)) {
     return (
       <QuestionnaireDropdownMultiSelectInput
-            name={name}
-            item={item}
-            initial={initial}
-            response={response}
-            onChangeAnswer={(e) => onChangeAnswer(e)}
-          />
+        name={name}
+        item={item}
+        initial={initial}
+        response={response}
+        onChangeAnswer={(e) => onChangeAnswer(e)}
+      />
     );
   } else {
     return (
