@@ -21,7 +21,7 @@ Medplum v5 makes several important dependency upgrades to provide the best perfo
 
 ### PostgreSQL
 
-- **Dropping support for Postgres 13** (which reaches end-of-life)
+- **Dropping support for Postgres 13** (which reaches end-of-life in November 2025)
 - **Adding support for Postgres 18** (releasing September 2025)
 - Postgres 18 introduces major performance improvements with its new asynchronous I/O subsystem, enabling up to 2-3x faster operations for sequential scans and other common operations
 
@@ -69,8 +69,8 @@ While upgrades may require some adjustment, Medplum v5 delivers significant adva
 
 ## Timeline
 
-- **May 2025**: Early preview documentation
-- **August 2025**: Medplum v5 beta release
+- **May 2025**: Blog post and initial announcements
+- **September 2025**: Medplum v5 beta release
 - **October 2025**: General availability release
 
 We're committed to making this transition as smooth as possible. Our team will provide detailed migration guides, support resources, and early access testing opportunities as we approach the release date.

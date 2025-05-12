@@ -7,28 +7,26 @@ tags: [mso, tenant, access-control]
 
 # A step by step guide to building a Multi-Tenant Managed Service Organization with Medplum
 
-In the Medplum community of implementors, a common use case is to building an application that **serves multiple clinics** in the form of a Managed Service Organization (MSO). An MSO is a separate business entity that provides non-clinical services—e.g., revenue-cycle management, HR, IT, compliance, facilities, and purchasing—to physician groups or other provider organizations.
+In the Medplum community of implementors, a common use case is building an application that **serves multiple clinics** in the form of a Managed Service Organization (MSO). An MSO is a separate business entity that provides non-clinical services—e.g., revenue-cycle management, HR, IT, compliance, facilities, and purchasing—to physician groups or other provider organizations.
 
 <!-- truncate -->
 
 In this post, we'll focus on some key features of an MSO application using Medplum: [multi-tenancy](#tenant-management-with-organizations), [access control](#access-control), [patient consent management](#additional-access-control-patient-consent), and [project-scoped users](#user-management-strategy). The application also supports FHIR, C-CDA and HL7v2 interfacing making it well suited to interface with record-keeping solutions across multiple practices.
 
-If you haven't checked out the **MSO Demo App** yet, you can view the code [here](https://github.com/medplum/medplum-mso-demo) or watch our demo video below. The demo app is an example implementation for how to build the enrollment workflows and user management console for clinicians and patients across different clinics of an MSO provider network. 
+If you haven't checked out the **MSO Demo App** yet, you can view the code [here](https://github.com/medplum/medplum-mso-demo) or watch our demo video below. The demo app is an example implementation for how to build the enrollment workflows and user management console for clinicians and patients across different clinics of an MSO provider network.
 
 <div className="responsive-iframe-wrapper">
   <iframe src="https://www.youtube.com/embed/FJIZTI9_fBc?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 </div>
 
-
 ## Understanding the MSO Architectural Needs
 
-
 At its core, an MSO usually needs to handle the following requirements:
+
 - Multiple clinics (tenants) sharing the same platform
 - [Enrollment workflows](https://github.com/medplum/medplum-mso-demo/blob/main/src/operations/enrollment.ts) that allow Practitioners and Patients to be added and removed from one or more clinics
 - Customizable access control which Users have access to which resources. This can built with varying levels of sophistication depending on how restrictive the MSO wants to be.
 - [Provider directory](/docs/administration/provider-directory) to group and display clinicians from across the MSO.
-
 
 ## Core Implementation
 
@@ -36,12 +34,11 @@ At its core, an MSO usually needs to handle the following requirements:
 
 To achieve multi-tenancy with Medplum while allowing for some level of coordination between tenants, the recommended pattern is to represent each healthcare clinic as an [Organization](/docs/api/fhir/resources/organization) resource, all within a single Medplum [Project](/docs/api/fhir/medplum/project).
 
-
 ```ts
 const clinic = await medplum.createResource<Organization>({
- resourceType: 'Organization',
- name: 'Kings Landing Health Center',
- active: true
+  resourceType: 'Organization',
+  name: 'Kings Landing Health Center',
+  active: true,
 });
 ```
 
@@ -55,7 +52,7 @@ To see reference implementation of each enrollment operation, see the [MSO Demo 
 
 The most basic MSO access control model is to **restrict access to resources that share a common Organization assignment**.
 
-Imposing these restrictions on Practitioner users is done via Medplum's [AccessPolicies](/docs/access/access-policies), which are applied to each Practitioner user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership). 
+Imposing these restrictions on Practitioner users is done via Medplum's [AccessPolicies](/docs/access/access-policies), which are applied to each Practitioner user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership).
 
 **Enrollment of a Practitioner into an Organization** is done by adding a Organization reference to the Practitioner ProjectMembership's **access** field. Here is an example for a Practitioner enrolled in one Organization:
 
@@ -104,31 +101,32 @@ Imposing these restrictions on Practitioner users is done via Medplum's [AccessP
 }
 
 ```
+
 Because of the Patient's [compartment definition](https://build.fhir.org/compartmentdefinition-patient.html), which is essentially a way to link related resource types to the Patient resource, we can set the **compartment** array on the Patient resource and have that same **compartment** propogate to all the other resources related to the Patient. These are resources like Appointments, Observations, and DiagnosticReports that should all inherit the same access restrictions. This is done using the Patient [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) FHIR operation.
 
-For example, say you want to enroll *Patient/123* into two Organizations, *Organization/789* and *Organization/456*. You can do this by making the following request:
+For example, say you want to enroll _Patient/123_ into two Organizations, _Organization/789_ and _Organization/456_. You can do this by making the following request:
 
 ```ts
 const response = await medplum.post('/fhir/R4/Patient/123/$set-accounts', {
-  "resourceType": "Parameters",
-  "parameter": [
+  resourceType: 'Parameters',
+  parameter: [
     {
-      "name": "accounts",
-      "valueReference": {
-        "reference": "Organization/789"
-      }
+      name: 'accounts',
+      valueReference: {
+        reference: 'Organization/789',
+      },
     },
     {
-      "name": "accounts",
-      "valueReference": {
-        "reference": "Organization/456"
-      }
-    }
-  ]
+      name: 'accounts',
+      valueReference: {
+        reference: 'Organization/456',
+      },
+    },
+  ],
 });
 ```
 
-Then, the [AccessPolicy](/docs/access/access-policies) can be configured to restrict access to all of the resources based on the Organization references in each resource's **compartment**. Here is what the Practitioner AccessPolicy might look like:  
+Then, the [AccessPolicy](/docs/access/access-policies) can be configured to restrict access to all of the resources based on the Organization references in each resource's **compartment**. Here is what the Practitioner AccessPolicy might look like:
 
 :::info
 The `%organization` value is replaced at runtime with one or more of the Organization references from the Practitioner's ProjectMembership.access array
@@ -171,7 +169,7 @@ The `%organization` value is replaced at runtime with one or more of the Organiz
 
 What if we want to do everything discussed above but also restrict any access until the Patient has given consent?
 
-To do this, we can create a universal [Consent](/docs/api/fhir/resources/consent) resource with its *status* set to *active* that can also be added to the Patient's compartment and extended to all resources related to the Patient using the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation. Then to revoke Patient consent, you can simply remove the Consent resource from the Patient's compartment.
+To do this, we can create a universal [Consent](/docs/api/fhir/resources/consent) resource with its _status_ set to _active_ that can also be added to the Patient's compartment and extended to all resources related to the Patient using the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) operation. Then to revoke Patient consent, you can simply remove the Consent resource from the Patient's compartment.
 
 Then, your access policy will look like this:
 
@@ -212,24 +210,25 @@ Then, your access policy will look like this:
 
 If allowing Practitioners to access all Patients enrolled in a shared Organization is not restrictive enough, you can also configure the AccessPolicy to only allow access to specifically assigned Patients. This can be done using a similar pattern to the Organizational access by not just adding Organization references to the Patient's compartment, but also adding Practitioner references to the Patient's compartment that represent the Practitioners that are allowed to access the Patient. Again, this is done using the [$set-accounts](/docs/api/fhir/operations/patient-set-accounts) FHIR operation.
 
-For example, say you want to give *Practitioner/456* in *Organization/789* access to *Patient/123*. You can do this by making the following request:
+For example, say you want to give _Practitioner/456_ in _Organization/789_ access to _Patient/123_. You can do this by making the following request:
+
 ```typescript
 const response = await medplum.post('/fhir/R4/Patient/123/$set-accounts', {
- "resourceType": "Parameters",
- "parameter": [
-   {
-     "name": "accounts",
-     "valueReference": {
-       "reference": "Organization/456"
-     }
-   },
-   {
-     "name": "accounts",
-     "valueReference": {
-       "reference": "Practitioner/789"
-     }
-   }
- ]
+  resourceType: 'Parameters',
+  parameter: [
+    {
+      name: 'accounts',
+      valueReference: {
+        reference: 'Organization/456',
+      },
+    },
+    {
+      name: 'accounts',
+      valueReference: {
+        reference: 'Practitioner/789',
+      },
+    },
+  ],
 });
 ```
 

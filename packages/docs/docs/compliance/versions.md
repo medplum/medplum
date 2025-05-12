@@ -93,11 +93,7 @@ Dependencies without predefined release schedules (e.g., Redis, React, Mantine) 
 
 ## Deprecation & Removal Policy
 
-- “A feature marked **deprecated** in minor _N_ will **not** be removed until major _N + 1_.”
-- Deprecations are surfaced in:
-  1. Release notes & documentation
-  2. CLI health check (`medplum doctor`)
-  3. API response header `X-Medplum-Deprecation` (includes sunset date)
+A feature marked **deprecated** in minor _N_ will **not** be removed until major _N + 1_.
 
 ## Deployment Requirements
 
