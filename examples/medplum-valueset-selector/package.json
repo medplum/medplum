@@ -15,9 +15,9 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@mantine/core": "8.0.0",
-    "@mantine/hooks": "8.0.0",
-    "@mantine/notifications": "8.0.0",
+    "@mantine/core": "7.17.7",
+    "@mantine/hooks": "7.17.7",
+    "@mantine/notifications": "7.17.7",
     "@medplum/core": "4.1.4",
     "@medplum/eslint-config": "4.1.4",
     "@medplum/fhirtypes": "4.1.4",
