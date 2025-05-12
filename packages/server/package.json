@@ -56,6 +56,7 @@
     "@opentelemetry/instrumentation-ioredis": "0.48.0",
     "@opentelemetry/instrumentation-pg": "0.52.0",
     "@opentelemetry/instrumentation-runtime-node": "0.14.0",
+    "@opentelemetry/propagator-aws-xray": "2.1.0",
     "@opentelemetry/sdk-metrics": "1.30.1",
     "@opentelemetry/sdk-node": "0.57.2",
     "@smithy/util-retry": "4.0.3",

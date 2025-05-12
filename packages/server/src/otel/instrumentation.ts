@@ -10,10 +10,11 @@ import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { PgInstrumentation, PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
+import { AWSXRayPropagator } from '@opentelemetry/propagator-aws-xray';
 import { Resource } from '@opentelemetry/resources';
 import { MetricReader, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { SpanExporter } from '@opentelemetry/sdk-trace-base';
+import { BasicTracerProvider, SpanExporter } from '@opentelemetry/sdk-trace-base';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 import { ClientRequest, IncomingMessage, ServerResponse } from 'http';
 
@@ -52,6 +53,13 @@ export function initOpenTelemetry(): void {
   let traceExporter: SpanExporter | undefined = undefined;
   if (OTLP_TRACES_ENDPOINT) {
     traceExporter = new OTLPTraceExporter({ url: OTLP_TRACES_ENDPOINT });
+
+    const provider = new BasicTracerProvider({ resource });
+
+    // Set the global trace context propagator to use AWS X-Ray formatted trace header
+    provider.register({
+      propagator: new AWSXRayPropagator(),
+    });
   }
 
   const instrumentations = [
