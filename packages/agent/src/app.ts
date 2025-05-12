@@ -607,6 +607,8 @@ export class App {
   }
 
   private async tryUpgradeAgent(message: AgentUpgradeRequest): Promise<void> {
+    this.log.info(`Attempting to upgrade from ${MEDPLUM_VERSION} to ${message.version}...`);
+
     if (platform() !== 'win32') {
       const errMsg = 'Auto-upgrading is currently only supported on Windows';
       this.log.error(errMsg);
@@ -656,14 +658,23 @@ export class App {
     try {
       const command = __filename;
       const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
-      child = spawn(command, ['--upgrade'], { detached: true, stdio: ['ignore', logFile, logFile, 'ipc'] });
+      child = spawn(command, ['--upgrade'], {
+        detached: true,
+        stdio: ['ignore', logFile, logFile, 'ipc'],
+        shell: false,
+        windowsHide: true,
+      });
       // We unref the child process so that this process can close before the child has closed (since we want the child to be able to close the parent process)
       child.unref();
+
+      child.on('error', (err) => {
+        this.log.error(normalizeErrorString(err));
+      });
 
       await new Promise<void>((resolve, reject) => {
         const childTimeout = setTimeout(
           () => reject(new Error('Timed out while waiting for message from child')),
-          5000
+          15000
         );
         child.on('message', (msg: { type: string }) => {
           clearTimeout(childTimeout);
@@ -673,10 +684,6 @@ export class App {
             reject(new Error(`Received unexpected message type ${msg.type} when expected type STARTED`));
           }
         });
-      });
-
-      child.on('error', (err) => {
-        this.log.error(normalizeErrorString(err));
       });
     } catch (err) {
       const versionTag = message.version ? `v${message.version}` : 'latest';

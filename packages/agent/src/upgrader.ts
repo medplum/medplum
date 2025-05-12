@@ -23,9 +23,7 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   let rejectOnTimeout!: () => void;
   const disconnectedPromise = new Promise<void>((resolve, reject) => {
     rejectOnTimeout = () => reject(new Error('Timed out while waiting for IPC to disconnect'));
-    process.once('disconnect', () => {
-      resolve();
-    });
+    process.once('disconnect', resolve);
   });
 
   process.send({ type: 'STARTED' });
