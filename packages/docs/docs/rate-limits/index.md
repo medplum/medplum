@@ -3,7 +3,7 @@
 The Medplum API uses a number of safeguards against bursts of incoming traffic to help maximize its stability. Users who
 send many requests in quick succession may receive HTTP error responses with status code `429 Too Many Requests`.
 
-## Request Rate Limits
+## Total Requests Rate Limit
 
 | Category                      | Free tier                        | Paid tier                         |
 | ----------------------------- | -------------------------------- | --------------------------------- |
@@ -14,11 +14,9 @@ All rate limits are calculated per IP address over a one minute window.
 
 Rate limits can be increased for paid plans. Please [contact us](mailto:info+rate-limits@medplum.com?subject=Increase%20rate%20limits) for more information.
 
-## FHIR Interaction Quota
+## FHIR Interaction Load Rate Limit
 
-In addition to limits on the number of requests that can be made to the Medplum server, there is a quota on the
-data store interactions performed by the server on behalf of the client. This ensures, for example, that large batch
-requests do not overwhelm the system by packing many expensive operations into single requests.
+In addition to limits on the number of requests that can be made to the Medplum server, there is a limit on the total load of the interactions made to the Medplum server. Different interactions with the datastore at weighted by complexity and impact, and **the sum of a user's interactions in a given minute** must remain under the user's total load limit.
 
 :::warning Feature Beta
 
@@ -45,7 +43,7 @@ with the sum of each user's interactions in a given minute compared to the confi
 a limit on the total interactions for all users within a Project as a whole, which defaults to ten times the per-user
 limit.
 
-## Reporting: HTTP Headers
+## Reporting Request and Load Rate Limits: HTTP Headers
 
 All API calls affected by rate limits will include a `RateLimit` header with details about the applicable limits:
 
