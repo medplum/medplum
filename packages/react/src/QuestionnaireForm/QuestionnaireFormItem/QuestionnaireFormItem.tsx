@@ -27,10 +27,11 @@ import {
   QuestionnaireItemInitial,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
-  ValueSetExpansionContains,
   ValueSet,
+  ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
-import { ChangeEvent, JSX, useContext, useState, useEffect } from 'react';
+import { useMedplum } from '@medplum/react-hooks';
+import { ChangeEvent, JSX, useContext, useEffect, useState } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
 import { CodingInput } from '../../CodingInput/CodingInput';
@@ -47,7 +48,6 @@ import {
   QuestionnaireItemType,
 } from '../../utils/questionnaire';
 import { QuestionnaireFormContext } from '../QuestionnaireForm.context';
-import { useMedplum } from '@medplum/react-hooks';
 
 export interface QuestionnaireFormItemProps {
   readonly item: QuestionnaireItem;
@@ -387,15 +387,20 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
   }
 }
 
-function getValueSetOptions(valueSetUrl: string | undefined, medplum: ReturnType<typeof useMedplum>): Promise<ValueSetExpansionContains[]> {
+function getValueSetOptions(
+  valueSetUrl: string | undefined,
+  medplum: ReturnType<typeof useMedplum>
+): Promise<ValueSetExpansionContains[]> {
   if (!valueSetUrl) {
     return Promise.resolve([]);
   }
 
-  return medplum.valueSetExpand({
-    url: valueSetUrl,
-    count: 50, // Limit to 50 items for performance
-  }).then((valueSet: ValueSet) => valueSet.expansion?.contains ?? []);
+  return medplum
+    .valueSetExpand({
+      url: valueSetUrl,
+      count: 50, // Limit to 50 items for performance
+    })
+    .then((valueSet: ValueSet) => valueSet.expansion?.contains ?? []);
 }
 
 function getOptionsFromValueSet(valueSetOptions: ValueSetExpansionContains[], name: string): [string, TypedValue][] {
@@ -604,14 +609,16 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
             onChange={(event) => {
               const selected = event.currentTarget.checked;
               if (item.answerValueSet) {
-                const currentCodings = (response.answer?.map(a => a.valueCoding) || []).filter((c): c is Coding => c !== undefined);
+                const currentCodings = (response.answer?.map((a) => a.valueCoding) || []).filter(
+                  (c): c is Coding => c !== undefined
+                );
                 let newCodings: Coding[];
                 if (selected) {
                   newCodings = [...currentCodings, optionValue.value as Coding];
                 } else {
-                  newCodings = currentCodings.filter(c => !deepEquals(c, optionValue.value));
+                  newCodings = currentCodings.filter((c) => !deepEquals(c, optionValue.value));
                 }
-                onChangeAnswer(newCodings.map(coding => ({ valueCoding: coding })));
+                onChangeAnswer(newCodings.map((coding) => ({ valueCoding: coding })));
               } else {
                 const currentValues = currentAnswers || [];
                 let newValues: string[];
