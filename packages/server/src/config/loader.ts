@@ -51,11 +51,6 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     default:
       throw new Error('Unrecognized config type: ' + configType);
   }
-
-  if (!config.baseUrl || typeof config.baseUrl !== 'string' || config.baseUrl.trim() === '') {
-    throw new Error('Missing required config setting: baseUrl. Please set "baseUrl" in your configuration.');
-  }
-
   cachedConfig = addDefaults(config);
   return cachedConfig;
 }
