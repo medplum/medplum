@@ -108,17 +108,17 @@ You'll need the above to successfully install and connect the agent.
 
 This guide walks through how to install the agent onto the host. The agent connects to Medplum using [device authentication](/docs/auth/methods).
 
-#### Running via CLI
+#### Running from Source via CLI
 
-The agent can also be run locally using the agent files in the Medplum repo. You can get started by following these steps: 
+The agent can be run locally using the agent package directory in the Medplum repo. Keep the terminal open after setup so that you can see the logs. You can get started by following these steps: 
 
 1. Clone the [Medplum repo](https://github.com/medplum/medplum). 
 2. Run the following commands from the top level of the repo. 
-   ```sh
-  npm ci
-  cd packages/agent
-  npm run agent --baseUrl <base_url> --clientId <client_id> --clientSecret <client_secret> --agentId <agent_id>
-   ```
+```sh
+npm ci
+cd packages/agent
+npm run agent --baseUrl <base_url> --clientId <client_id> --clientSecret <client_secret> --agentId <agent_id>
+```
 
 #### Windows Install
 
@@ -137,13 +137,13 @@ The Linux version of the Medplum Agent is currently available as a standalone bi
 
 1. Download the latest Linux binary from the [Medplum Releases](https://github.com/medplum/medplum/releases/latest) page.
 2. Make the binary executable
-   ```bash
-   chmod +x medplum-agent-linux
-   ```
+```bash
+chmod +x medplum-agent-linux
+```
 3. Run the agent with your configuration parameters
-   ```bash
-   ./medplum-agent-linux <base_url> <client_id> <client_secret> <agent_id>
-   ```
+```bash
+./medplum-agent-linux <base_url> <client_id> <client_secret> <agent_id>
+```
 
 #### Docker Image
 
@@ -215,18 +215,6 @@ These are not duplicated `AuditEvent` resources but rather the same resource sho
 ## Preparing for Scale
 
 HL7 Feeds can be extremely high volume, and before you go live with a high-volume feed you may want to modify your Bot to log only set the Bot `AuditEventDestination` to `log`.
-
-## Running from source
-
-Testing the setup end-to-end on localhost can be done by doing the following steps. This assumes you are [running Medplum on localhost](/docs/contributing/run-the-stack) as a prerequisite.
-
-Navigate to the `medplum/packages/agent`` folder on your drive and run the following command in your terminal
-
-```bash
-npm run agent <base_url> <client_id> <client_secret> <agent_id>
-```
-
-Keep the terminal open so that you can see the logs. At this point you can start sending messages to the agent.
 
 ## Supported Protocols
 
