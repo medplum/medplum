@@ -32,8 +32,8 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { ChangeEvent, JSX, useContext, useEffect, useState } from 'react';
-import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { AsyncAutocomplete } from '../../AsyncAutocomplete/AsyncAutocomplete';
+import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../../QuantityInput/QuantityInput';
@@ -335,11 +335,16 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
             filter: inputValue,
             count: 50,
           });
-          return valueSet.expansion?.contains?.map((item) => ({
-            system: item.system,
-            code: item.code,
-            display: item.display,
-          } as Coding)) ?? [];
+          return (
+            valueSet.expansion?.contains?.map(
+              (item) =>
+                ({
+                  system: item.system,
+                  code: item.code,
+                  display: item.display,
+                }) as Coding
+            ) ?? []
+          );
         }}
         toOption={(coding: Coding) => ({
           value: coding.code as string,
