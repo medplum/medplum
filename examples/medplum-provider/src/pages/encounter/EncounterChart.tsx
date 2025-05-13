@@ -1,4 +1,18 @@
-import { ActionIcon, Box, Button, Card, Flex, Group, Menu, Modal, Select, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import {
+  ActionIcon,
+  Box,
+  Button,
+  Card,
+  Flex,
+  Group,
+  Menu,
+  Modal,
+  Select,
+  Stack,
+  Text,
+  Textarea,
+  TextInput,
+} from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import {
@@ -263,10 +277,9 @@ export const EncounterChart = (): JSX.Element => {
             },
           ],
         };
-        
+
         const savedEncounter = await medplum.updateResource(updatedEncounter);
         setEncounter(savedEncounter);
-       
       }
     } catch (err) {
       showErrorNotification(err);
@@ -298,7 +311,7 @@ export const EncounterChart = (): JSX.Element => {
       }
     }
 
-    const diagnosisArray: ClaimDiagnosis[] | undefined  = []//createDiagnosisArray(encounter?.diagnosis);
+    const diagnosisArray: ClaimDiagnosis[] | undefined = []; //createDiagnosisArray(encounter?.diagnosis);
     const claimToExport: Claim = {
       ...claim,
       insurance: [
@@ -326,7 +339,7 @@ export const EncounterChart = (): JSX.Element => {
     if (!value || value.length === 0) {
       return undefined;
     }
-    
+
     return value.map((diagnosis, index) => ({
       diagnosisCodeableConcept: {
         coding: diagnosis.code?.coding?.[0] ? [diagnosis.code.coding[0]] : [],
@@ -336,56 +349,62 @@ export const EncounterChart = (): JSX.Element => {
     }));
   };
 
-  const updateDiagnosis = useCallback(async (diagnosis: EncounterDiagnosis, value: string): Promise<void> => {
-    if (!encounter?.diagnosis?.length) {
-      return;
-    }
-    
-    const newRank = parseInt(value);
-    const maxAllowedRank = encounter.diagnosis.length;
-    const validRank = Math.max(1, Math.min(newRank, maxAllowedRank));
-    const diagnosisCopy = [...encounter.diagnosis];
-    const diagnosisIndex = diagnosisCopy.findIndex(d => 
-      d.condition?.reference === diagnosis.condition?.reference
-    );
-    
-    if (diagnosisIndex === -1) {
-      return;
-    }
-    
-    const diagnosisToUpdate = diagnosisCopy.splice(diagnosisIndex, 1)[0];
-    diagnosisCopy.splice(validRank - 1, 0, diagnosisToUpdate);
-    const updatedDiagnosis = diagnosisCopy.map((d, index) => ({
-      ...d,
-      rank: index + 1
-    }));
-    
-    const updatedEncounter: Encounter = await medplum.updateResource({
-      ...encounter,
-      diagnosis: updatedDiagnosis,
-    });
-    
-    setEncounter(updatedEncounter);
-  }, [encounter, setEncounter, medplum]);
+  const updateDiagnosis = useCallback(
+    async (diagnosis: EncounterDiagnosis, value: string): Promise<void> => {
+      if (!encounter?.diagnosis?.length) {
+        return;
+      }
 
-  const removeDiagnosis = useCallback(async (diagnosis: EncounterDiagnosis): Promise<void> => {
-    if (!encounter) {
-      return;
-    }
-  
-    const updatedDiagnosis = encounter.diagnosis?.filter(d => d.condition?.reference !== diagnosis.condition?.reference);
-    const reindexedDiagnosis = updatedDiagnosis?.map((d, index) => ({
-      ...d,
-      rank: index + 1
-    }));
-    
-    const updatedEncounter: Encounter = await medplum.updateResource({
-      ...encounter,
-      diagnosis: reindexedDiagnosis,
-    });   
+      const newRank = parseInt(value);
+      const maxAllowedRank = encounter.diagnosis.length;
+      const validRank = Math.max(1, Math.min(newRank, maxAllowedRank));
+      const diagnosisCopy = [...encounter.diagnosis];
+      const diagnosisIndex = diagnosisCopy.findIndex((d) => d.condition?.reference === diagnosis.condition?.reference);
 
-    setEncounter(updatedEncounter);
-  }, [encounter, setEncounter, medplum]);
+      if (diagnosisIndex === -1) {
+        return;
+      }
+
+      const diagnosisToUpdate = diagnosisCopy.splice(diagnosisIndex, 1)[0];
+      diagnosisCopy.splice(validRank - 1, 0, diagnosisToUpdate);
+      const updatedDiagnosis = diagnosisCopy.map((d, index) => ({
+        ...d,
+        rank: index + 1,
+      }));
+
+      const updatedEncounter: Encounter = await medplum.updateResource({
+        ...encounter,
+        diagnosis: updatedDiagnosis,
+      });
+
+      setEncounter(updatedEncounter);
+    },
+    [encounter, setEncounter, medplum]
+  );
+
+  const removeDiagnosis = useCallback(
+    async (diagnosis: EncounterDiagnosis): Promise<void> => {
+      if (!encounter) {
+        return;
+      }
+
+      const updatedDiagnosis = encounter.diagnosis?.filter(
+        (d) => d.condition?.reference !== diagnosis.condition?.reference
+      );
+      const reindexedDiagnosis = updatedDiagnosis?.map((d, index) => ({
+        ...d,
+        rank: index + 1,
+      }));
+
+      const updatedEncounter: Encounter = await medplum.updateResource({
+        ...encounter,
+        diagnosis: reindexedDiagnosis,
+      });
+
+      setEncounter(updatedEncounter);
+    },
+    [encounter, setEncounter, medplum]
+  );
 
   if (!patient || !encounter || !clinicalImpression) {
     return <Loading />;
