@@ -12,6 +12,8 @@ This is a living document, and we continually update our resources. We welcome f
 
 ## Compliance Resources
 
+- [Rate Limits](rate-limits.md)
+- [Medplum Version Policy](versions.md)
 - [ONC Certification](onc.md)
 - [CLIA/CAP](clia-cap.md)
 - [SOC2 Type II](soc2.md)
