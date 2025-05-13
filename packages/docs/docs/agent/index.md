@@ -24,7 +24,11 @@ The installation of the agent has two parts: first setting up the configurations
 
 The Medplum App setup includes creating four resources which represent the configuration of the agent itself. These resources are `Endpoint`, `Bot`, `Agent`, and `ClientApplication`.
 
-**First**, set up the [Endpoint](/docs/api/fhir/resources/endpoint), here is the link to create a [new Endpoint](https://app.medplum.com/Endpoint/new) on the Medplum App. Assuming you want to configure the Endpoint to listen to HL7 v2 over MLLP you'll want set up agent as follows, for example.
+#### Set up an Endpoint Resource
+
+First, set up the [Endpoint](/docs/api/fhir/resources/endpoint). An endpoint is a representation of what the on-site system will connect to. For visibility you may consider adding a `managingOrganization`, `address`, `contact`, and related metadata the `Endpoint` to represent where this physical on-site system is. 
+
+Here is the link to create a [new Endpoint](https://app.medplum.com/Endpoint/new) on the Medplum App. Assuming you want to configure the Endpoint to listen to HL7 v2 over MLLP you'll want set up agent as follows: 
 
 ```json
 {
@@ -51,9 +55,9 @@ The Medplum App setup includes creating four resources which represent the confi
 }
 ```
 
-The way to think about this endpoint is that it represents what the on-site system will connect to. For visibility you may consider linking a `managingOrganization` and related metadata to the `Endpoint` to represent where this is.
+#### Set up a Bot Resource
 
-**Second**, set up the [Bot](https://app.medplum.com/Bot/new) that transforms the HL7 as needed. The [HL7 Bots documentation](/docs/bots/hl7-into-fhir) applies. Ensure that your Bot can accept HL7 inputs. For an initial setup, the minimal Bot may be helpful.
+Second, set up the [Bot](https://app.medplum.com/Bot/new) that accepts the HL7 message, applies necessary transformations and translations, and sends an `ACK` message back to the sender. Ensure that your Bot accepts HL7 inputs, and you may refer to the [HL7 Bots documentation](/docs/bots/hl7-into-fhir) for more advanced uses. For an initial setup, the minimal Bot may be used: 
 
 ```js
 import { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';
@@ -63,7 +67,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
 }
 ```
 
-**Third**, set up the [Agent](https://app.medplum.com/Agent/new) itself. This identifies the Agent in the field and helps route and manage the traffic from that agent appropriately. Give the `Agent` a descriptive name. You'll want to link the Agent to the Endpoint and Bot you created to support its setup.
+#### Set up an Agent Resource 
+
+Third, set up the [Agent](https://app.medplum.com/Agent/new). This identifies the Agent in the field and helps route and manage the traffic from that agent appropriately. Give the `Agent` a descriptive name. You'll want to link the Agent to the Endpoint and Bot you created to support its setup.
 
 ```json
 {
@@ -86,12 +92,14 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
 }
 ```
 
-**Finally**, set up your Client Application. We recommend setting up an AccessPolicy and attaching it to the ClientApplication you can restrict access to the host. The instructions on [setting up access controls](/docs/auth/user-management-guide#creating-memberships) are available in the Admin panel.
+#### Set up a Client Application
+
+Finally, set up your [Client Application](https://app.medplum.com/admin/clients/new). While a default client may be used, we recommend setting up a new client for traceability. We also recommend setting up an AccessPolicy and attaching it to the ClientApplication you can restrict access to the host. The instructions on [setting up access controls](/docs/auth/user-management-guide#creating-memberships) are available in the Admin panel.
 
 At the end of the setup you should have the following items:
 
 - Base Url - The base URL of your Medplum server, or https://api.medplum.com for hosted Medplum
-- `ClientId`/`ClientSecret` - obtain these from your [ClientApplication](https://app.medplum.com/ClientApplication/) in the Medplum app
+- `ClientId`/`ClientSecret` - obtain these from the [ClientApplication](https://app.medplum.com/ClientApplication/) you created or will use in the Medplum app. 
 - Agent ID - this is the Agent `id` UUID
 
 You'll need the above to successfully install and connect the agent.
