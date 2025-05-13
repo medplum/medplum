@@ -100,6 +100,18 @@ You'll need the above to successfully install and connect the agent.
 
 This guide walks through how to install the agent onto the host. The agent connects to Medplum using [device authentication](/docs/auth/methods).
 
+#### Running via CLI
+
+The agent can also be run locally using the agent files in the Medplum repo. You can get started by following these steps: 
+
+1. Clone the [Medplum repo](https://github.com/medplum/medplum). 
+2. Run the following commands from the top level of the repo. 
+   ```sh
+  npm ci
+  cd packages/agent
+  npm run agent --baseUrl <base_url> --clientId <client_id> --clientSecret <client_secret> --agentId <agent_id>
+   ```
+
 #### Windows Install
 
 The agent executable for Windows is built with each release, and can be be downloaded from the [Medplum Releases](https://github.com/medplum/medplum/releases) page.
@@ -156,6 +168,12 @@ Then send a test message:
 
 ```bash
 medplum hl7 send localhost 56000 --generate-example
+```
+
+You can also send a specific test message, stored in a `.hl7`, similar extension (`.oru`, `.adt`, etc.), or `.txt.` file, via the following command: 
+
+```bash
+npx medplum hl7 send localhost 56000 --file <some-file.hl7>
 ```
 
 There should now be an `AuditEvent` in Medplum for the message.
