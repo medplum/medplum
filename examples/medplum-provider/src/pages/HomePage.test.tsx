@@ -1,6 +1,7 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { MemoryRouter } from 'react-router';
 import { describe, test, expect } from 'vitest';
 import { HomePage } from './HomePage';
