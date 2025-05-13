@@ -660,7 +660,7 @@ export class App {
       const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
 
       // We quote the command because file paths containing spaces must be quoted in Windows
-      child = spawn(`"${command}"`, ['--upgrade'], {
+      child = spawn(command, ['--upgrade'], {
         detached: true,
         stdio: ['ignore', logFile, logFile, 'ipc'],
         shell: true,
