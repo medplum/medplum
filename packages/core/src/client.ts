@@ -484,7 +484,7 @@ export interface TokenResponse {
   readonly profile: Reference<ProfileResource>;
 }
 
-export interface BotEvent<T = Resource | Hl7Message | string | Record<string, any>> {
+export interface BotEvent<T extends Resource | Hl7Message | string | Record<string, any> | undefined = Resource | Hl7Message | string | Record<string, any> | undefined> {
   readonly bot: Reference<Bot>;
   readonly contentType: string;
   readonly input: T;
