@@ -1327,6 +1327,147 @@ describe('QuestionnaireForm', () => {
     });
   });
 
+  test('Value Set Checkbox', async () => {
+    const onSubmit = jest.fn();
+    
+    // Mock the value set expansion to return more than 30 items
+    const mockValueSet = {
+      resourceType: 'ValueSet',
+      expansion: {
+        contains: Array.from({ length: 35 }, (_, i) => ({
+          system: 'x',
+          code: `test-code-${i}`,
+          display: `Test Display ${i}`,
+        })),
+      },
+    };
+    
+    // Mock the medplum client's valueSetExpand method
+    medplum.valueSetExpand = jest.fn().mockResolvedValue(mockValueSet);
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'value-set-checkbox',
+        title: 'Value Set Checkbox',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Value Set Checkbox',
+            type: 'choice',
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check Box',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Wait for value set to load
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Check that checkboxes are rendered
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBeGreaterThan(0);
+
+    // Verify that the cutoff message is shown
+    const cutoffMessage = screen.getByText(/Showing first 30 of \d+ options/);
+    expect(cutoffMessage).toBeInTheDocument();
+
+    // Click the first checkbox
+    await act(async () => {
+      fireEvent.click(checkboxes[0]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    const answer = getQuestionnaireAnswers(response);
+    expect(answer['q1']).toBeDefined();
+    expect(answer['q1']).toMatchObject({
+      valueCoding: { code: 'test-code-0', display: 'Test Display 0', system: 'x' },
+    });
+  });
+
+  test('Value Set Radio Button', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'value-set-radio',
+        title: 'Value Set Radio',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Value Set Radio',
+            type: 'choice',
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'radio-button',
+                      display: 'Radio Button',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Wait for value set to load
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Check that radio buttons are rendered
+    const radioButtons = screen.getAllByRole('radio');
+    expect(radioButtons.length).toBeGreaterThan(0);
+
+    // Click the first radio button
+    await act(async () => {
+      fireEvent.click(radioButtons[0]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    const answer = getQuestionnaireAnswers(response);
+    expect(answer['q1']).toMatchObject({
+      valueCoding: { code: 'test-code-0', display: 'Test Display 0', system: 'x' },
+    });
+  });
+
   test('Repeated Choice Dropdown', async () => {
     await setup({
       questionnaire: {
