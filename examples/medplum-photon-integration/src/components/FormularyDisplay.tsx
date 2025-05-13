@@ -1,6 +1,7 @@
 import { Table } from '@mantine/core';
 import { List, MedicationKnowledge } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 
 interface FormularyDisplayProps {

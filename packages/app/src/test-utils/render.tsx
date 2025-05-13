@@ -11,7 +11,7 @@ import { ReactNode } from 'react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 
-export { RenderResult, act, fireEvent, screen, userEvent, UserEvent, waitFor };
+export { act, fireEvent, RenderResult, screen, userEvent, UserEvent, waitFor };
 
 const theme = {};
 

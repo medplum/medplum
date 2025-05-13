@@ -1,4 +1,4 @@
-import { Title, Text } from '@mantine/core';
+import { Text, Title } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Practitioner } from '@medplum/fhirtypes';
 import {
@@ -9,6 +9,7 @@ import {
   useMedplumNavigate,
   useMedplumProfile,
 } from '@medplum/react';
+import { JSX } from 'react';
 import { Outlet } from 'react-router';
 
 /**

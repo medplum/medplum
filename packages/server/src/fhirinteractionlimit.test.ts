@@ -1,12 +1,14 @@
+import { createReference, sleep } from '@medplum/core';
+import { Bundle, ProjectMembership, UserConfiguration } from '@medplum/fhirtypes';
 import express, { Express } from 'express';
-import { loadTestConfig } from './config/loader';
-import { initApp, shutdownApp } from './app';
-import { getRedis } from './redis';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
-import { createTestProject } from './test.setup';
+import { inviteUser } from './admin/invite';
+import { initApp, shutdownApp } from './app';
+import { loadTestConfig } from './config/loader';
 import { MedplumServerConfig } from './config/types';
-import { Bundle } from '@medplum/fhirtypes';
-import { sleep } from '@medplum/core';
+import { getRedis } from './redis';
+import { createTestProject } from './test.setup';
 
 describe('FHIR Rate Limits', () => {
   let app: Express;
@@ -28,11 +30,14 @@ describe('FHIR Rate Limits', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
-  test.skip('Blocks request that would exceed limit', async () => {
-    config.defaultFhirInteractionLimit = 1;
+  test('Blocks request that would exceed limit', async () => {
+    config.defaultFhirQuota = 100;
     await initApp(app, config);
 
-    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+    ({ accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: { systemSetting: [{ name: 'enableFhirQuota', valueBoolean: true }] },
+    }));
 
     const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res.status).toBe(200);
@@ -43,11 +48,14 @@ describe('FHIR Rate Limits', () => {
     expect(res2.get('ratelimit')).toStrictEqual('"fhirInteractions";r=0;t=60');
   });
 
-  test.skip('Blocks single too-expensive request', async () => {
-    config.defaultFhirInteractionLimit = 1;
+  test('Blocks single too-expensive request', async () => {
+    config.defaultFhirQuota = 1;
     await initApp(app, config);
 
-    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+    ({ accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: { systemSetting: [{ name: 'enableFhirQuota', valueBoolean: true }] },
+    }));
 
     const res = await request(app)
       .post('/fhir/R4/Patient')
@@ -57,10 +65,13 @@ describe('FHIR Rate Limits', () => {
   });
 
   test('Allows batch under limit', async () => {
-    config.defaultFhirInteractionLimit = 1;
+    config.defaultFhirQuota = 1;
     await initApp(app, config);
 
-    ({ accessToken } = await createTestProject({ withAccessToken: true }));
+    ({ accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: { systemSetting: [{ name: 'enableFhirQuota', valueBoolean: true }] },
+    }));
 
     const res = await request(app)
       .post('/fhir/R4/')
@@ -73,13 +84,13 @@ describe('FHIR Rate Limits', () => {
     expect(res.status).toBe(200);
   });
 
-  test.skip('Blocks oversized transaction bundle', async () => {
-    config.defaultFhirInteractionLimit = 1;
+  test('Blocks oversized transaction bundle', async () => {
+    config.defaultFhirQuota = 1;
     await initApp(app, config);
 
     ({ accessToken } = await createTestProject({
       withAccessToken: true,
-      project: { features: ['transaction-bundles'] },
+      project: { features: ['transaction-bundles'], systemSetting: [{ name: 'enableFhirQuota', valueBoolean: true }] },
     }));
 
     const res = await request(app)
@@ -94,7 +105,7 @@ describe('FHIR Rate Limits', () => {
   });
 
   test('Reports multiple, in-progress rate limits', async () => {
-    config.defaultFhirInteractionLimit = 500;
+    config.defaultFhirQuota = 500;
     config.defaultRateLimit = 100;
     await initApp(app, config);
 
@@ -112,12 +123,17 @@ describe('FHIR Rate Limits', () => {
   });
 
   test('Respects Project setting override', async () => {
-    config.defaultFhirInteractionLimit = 1;
+    config.defaultFhirQuota = 1;
     await initApp(app, config);
 
     ({ accessToken } = await createTestProject({
       withAccessToken: true,
-      project: { systemSetting: [{ name: 'defaultFhirInteractionLimit', valueInteger: 10 }] },
+      project: {
+        systemSetting: [
+          { name: 'userFhirQuota', valueInteger: 1000 },
+          { name: 'enableFhirQuota', valueBoolean: true },
+        ],
+      },
     }));
 
     const res = await request(app)
@@ -125,5 +141,81 @@ describe('FHIR Rate Limits', () => {
       .auth(accessToken, { type: 'bearer' })
       .send({ resourceType: 'Patient' });
     expect(res.status).toBe(201);
+  });
+
+  test('Respects ProjectMembership setting override', async () => {
+    config.defaultFhirQuota = 1;
+    await initApp(app, config);
+
+    const { accessToken, repo, membership } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      withClient: true,
+      project: { systemSetting: [{ name: 'enableFhirQuota', valueBoolean: true }] },
+    });
+
+    const userConfig = await repo.createResource<UserConfiguration>({
+      resourceType: 'UserConfiguration',
+      option: [{ id: 'fhirQuota', valueInteger: 1000 }],
+    });
+    await repo.updateResource<ProjectMembership>({
+      ...membership,
+      userConfiguration: createReference(userConfig),
+    });
+
+    const res = await request(app)
+      .post('/fhir/R4/Patient')
+      .auth(accessToken, { type: 'bearer' })
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+  });
+
+  test('Respects Project level limit', async () => {
+    config.defaultFhirQuota = 100;
+    await initApp(app, config);
+
+    const { accessToken, project } = await createTestProject({
+      withAccessToken: true,
+      project: {
+        systemSetting: [
+          { name: 'enableFhirQuota', valueBoolean: true },
+          { name: 'totalFhirQuota', valueInteger: 100 },
+        ],
+      },
+    });
+
+    const email = `${randomUUID()}@example.com`;
+    const password = randomUUID();
+    await inviteUser({ project, resourceType: 'Practitioner', firstName: 'A.', lastName: 'Zee', email, password });
+
+    const loginRes = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      scope: 'openid offline',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(loginRes.status).toBe(200);
+
+    const tokenRes = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: loginRes.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(tokenRes.status).toBe(200);
+    expect(tokenRes.body.access_token).toBeDefined();
+    const otherToken = tokenRes.body.access_token;
+
+    const res = await request(app)
+      .post('/fhir/R4/Patient')
+      .auth(accessToken, { type: 'bearer' })
+      .send({ resourceType: 'Patient' });
+    expect(res.status).toBe(201);
+
+    const res2 = await request(app)
+      .post('/fhir/R4/Patient')
+      .auth(otherToken, { type: 'bearer' })
+      .send({ resourceType: 'Patient' });
+    expect(res2.status).toBe(429);
   });
 });

@@ -6,8 +6,8 @@ import Client from 'ssh2-sftp-client';
 
 // end-block sftpImport
 // start-block formImports
-import fetch from 'node-fetch';
 import FormData from 'form-data';
+import fetch from 'node-fetch';
 
 // end-block formImports
 

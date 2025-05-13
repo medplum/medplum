@@ -4,7 +4,7 @@ import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '
 import { Questionnaire, QuestionnaireItem, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useContext } from 'react';
+import { JSX, useContext } from 'react';
 import { Event } from 'react-big-calendar';
 import { ScheduleContext } from '../../Schedule.context';
 import { BlockAvailabilityEvent } from '../../bots/core/block-availability';

@@ -1,6 +1,7 @@
 import { getReferenceString } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
-import { Job, Queue, DelayedError } from 'bullmq';
+import { DelayedError, Job, Queue } from 'bullmq';
+import { closeWorkers, initWorkers } from '.';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
@@ -20,7 +21,6 @@ import {
   prepareCustomMigrationJobData,
   runCustomMigration,
 } from './post-deploy-migration';
-import { closeWorkers, initWorkers } from '.';
 import { queueRegistry } from './utils';
 
 describe('Post-Deploy Migration Worker', () => {

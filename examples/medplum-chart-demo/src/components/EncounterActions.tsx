@@ -1,5 +1,6 @@
 import { Stack, Title } from '@mantine/core';
 import { Encounter } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { EditType } from './actions/EditType';
 
 interface EncounterActionsProps {

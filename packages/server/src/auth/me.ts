@@ -1,11 +1,11 @@
 import { getReferenceString, Operator, ProfileResource, WithId } from '@medplum/core';
 import { Login, Project, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
+import Bowser from 'bowser';
 import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import Bowser from 'bowser';
 
 interface UserSession {
   id: string;
@@ -75,7 +75,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, result));
 }
 
-async function getUserConfiguration(
+export async function getUserConfiguration(
   systemRepo: Repository,
   project: Project,
   membership: ProjectMembership

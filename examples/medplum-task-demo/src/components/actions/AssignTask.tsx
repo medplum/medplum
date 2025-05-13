@@ -5,6 +5,7 @@ import { getQuestionnaireAnswers, MedplumClient, PatchOperation } from '@medplum
 import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 
 interface AssignTaskProps {
   readonly task: Task;

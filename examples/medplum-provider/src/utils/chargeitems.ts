@@ -1,5 +1,5 @@
-import { Encounter, ChargeItem, Reference, ClaimItem } from '@medplum/fhirtypes';
 import { getReferenceString, MedplumClient } from '@medplum/core';
+import { ChargeItem, ClaimItem, Encounter, Reference } from '@medplum/fhirtypes';
 
 export const CPT = 'http://www.ama-assn.org/go/cpt';
 

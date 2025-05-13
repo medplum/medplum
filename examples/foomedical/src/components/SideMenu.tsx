@@ -1,6 +1,6 @@
 import { Title } from '@mantine/core';
 import cx from 'clsx';
-import { Fragment } from 'react';
+import { Fragment, JSX } from 'react';
 import { NavLink } from 'react-router';
 import classes from './SideMenu.module.css';
 

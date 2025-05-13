@@ -6,20 +6,20 @@ import {
   resolveId,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import { AllergyIntolerance, Bundle, MedicationRequest, Patient, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { Patient, Bundle, SearchParameter, Resource, AllergyIntolerance, MedicationRequest } from '@medplum/fhirtypes';
 import { generateKeyPairSync } from 'crypto';
-import { Mock } from 'vitest';
 import fetch from 'node-fetch';
+import { Mock } from 'vitest';
 import { handler } from './epic-query-patient';
 import {
-  medplumPatientWithoutEpicIdentifier,
   epicAllergyIntolerance,
   epicMedication,
   epicMedicationRequest,
   epicOrganization,
   epicPatient,
   epicPractitioner,
+  medplumPatientWithoutEpicIdentifier,
 } from './epic-query-patient-test-data';
 
 vi.mock('node-fetch');

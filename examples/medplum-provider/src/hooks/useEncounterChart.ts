@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Task, ClinicalImpression, Practitioner, Encounter, ChargeItem, Claim } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
 import { getReferenceString } from '@medplum/core';
-import { showErrorNotification } from '../utils/notifications';
-import { createClaimFromEncounter } from '../utils/claims';
+import { ChargeItem, Claim, ClinicalImpression, Encounter, Practitioner, Task } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
+import { useCallback, useEffect, useState } from 'react';
 import { getChargeItemsForEncounter } from '../utils/chargeitems';
+import { createClaimFromEncounter } from '../utils/claims';
+import { showErrorNotification } from '../utils/notifications';
 
 export interface EncounterChartHook {
   // State values

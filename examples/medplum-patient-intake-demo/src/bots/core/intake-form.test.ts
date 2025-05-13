@@ -1,12 +1,10 @@
-import { MockClient } from '@medplum/mock';
-import { handler } from './intake-form';
 import {
-  intakeQuestionnaire,
-  intakeResponse,
-  payorOrganization1,
-  payorOrganization2,
-  pharmacyOrganization,
-} from './test-data/intake-form-test-data';
+  createReference,
+  getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+} from '@medplum/core';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
   Bundle,
   Organization,
@@ -15,13 +13,8 @@ import {
   QuestionnaireResponseItem,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import {
-  createReference,
-  getReferenceString,
-  indexSearchParameterBundle,
-  indexStructureDefinitionBundle,
-} from '@medplum/core';
+import { MockClient } from '@medplum/mock';
+import { handler } from './intake-form';
 import {
   consentCategoryMapping,
   consentPolicyRuleMapping,
@@ -30,6 +23,13 @@ import {
   findQuestionnaireItem,
   PROFILE_URLS,
 } from './intake-utils';
+import {
+  intakeQuestionnaire,
+  intakeResponse,
+  payorOrganization1,
+  payorOrganization2,
+  pharmacyOrganization,
+} from './test-data/intake-form-test-data';
 
 describe('Intake form', async () => {
   let medplum: MockClient,

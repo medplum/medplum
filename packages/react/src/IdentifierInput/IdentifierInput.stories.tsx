@@ -1,10 +1,11 @@
+import { buildElementsContext } from '@medplum/core';
 import { Identifier } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
-import { IdentifierInput } from './IdentifierInput';
-import { buildElementsContext } from '@medplum/core';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { IdentifierInput } from './IdentifierInput';
 
 export default {
   title: 'Medplum/IdentifierInput',

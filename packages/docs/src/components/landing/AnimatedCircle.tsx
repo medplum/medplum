@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { JSX, useCallback, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import './animations.css';
 

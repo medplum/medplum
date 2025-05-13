@@ -1,12 +1,7 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Modal } from '@mantine/core';
+import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
-  HTTP_HL7_ORG,
-  HTTP_TERMINOLOGY_HL7_ORG,
-  LOINC,
   SNOMED,
-  createReference,
-  formatCodeableConcept,
 } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
@@ -14,33 +9,10 @@ import { useCallback, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import { IconChevronDown, IconPlus, IconPencil } from '@tabler/icons-react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { formatDate } from '@medplum/core';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { ConceptBadge } from './ConceptBadge';
 
-const NULLFLAVOR = HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-NullFlavor';
-
-type SexualOrientationCode = '38628009' | '20430005' | '42035005' | 'OTH' | 'UNK' | 'ASKU';
-// Sexual orientation widget
-// See: https://hl7.org/fhir/us/core/STU5.0.1/StructureDefinition-us-core-observation-sexual-orientation.html
-const CodesToText: Record<SexualOrientationCode, string> = {
-  '38628009': 'Homosexual',
-  '20430005': 'Heterosexual',
-  '42035005': 'Bisexual',
-  OTH: 'Other',
-  UNK: 'Unknown',
-  ASKU: 'Asked but no answer',
-};
-
-const CodesToSystem: Record<SexualOrientationCode, string> = {
-  38628009: SNOMED,
-  20430005: SNOMED,
-  42035005: SNOMED,
-  OTH: NULLFLAVOR,
-  UNK: NULLFLAVOR,
-  ASKU: NULLFLAVOR,
-};
 
 export interface SexualOrientationProps {
   readonly patient: Patient;
@@ -193,11 +165,7 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
                         <Text size="sm" fw={500}>
                           {sexualOrientation.valueCodeableConcept?.text || 'Unknown'}
                         </Text>
-                        {sexualOrientation.effectiveDateTime && (
-                          <Text size="xs" c="dimmed">
-                            · Recorded {formatDate(sexualOrientation.effectiveDateTime)}
-                          </Text>
-                        )}
+                    
                         {hoverIndex === 0 && (
                           <ActionIcon
                             style={{

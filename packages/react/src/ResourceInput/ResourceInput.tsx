@@ -2,7 +2,7 @@ import { Group, Text } from '@mantine/core';
 import { getDisplayString, getReferenceString, isPopulated } from '@medplum/core';
 import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { forwardRef, ReactNode, useCallback, useState } from 'react';
+import { forwardRef, JSX, ReactNode, useCallback, useState } from 'react';
 import {
   AsyncAutocomplete,
   AsyncAutocompleteOption,

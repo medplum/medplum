@@ -1,5 +1,5 @@
-import { Claim, ChargeItem, Coverage } from '@medplum/fhirtypes';
 import { getReferenceString, MedplumClient } from '@medplum/core';
+import { ChargeItem, Claim, Coverage } from '@medplum/fhirtypes';
 import { calculateTotalPrice, getCptChargeItems } from './chargeitems';
 import { createSelfPayCoverage } from './coverage';
 

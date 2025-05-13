@@ -1,5 +1,5 @@
 import { createReference, normalizeErrorString, WithId } from '@medplum/core';
-import { Login, Patient, Project, ServiceRequest } from '@medplum/fhirtypes';
+import { Login, Patient, Project, ServiceRequest, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
@@ -7,8 +7,8 @@ import { loadTestConfig } from '../config/loader';
 import { AuthState } from '../oauth/middleware';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { getSystemRepo } from './repo';
 import { ReferenceTable, ReferenceTableRow } from './lookups/reference';
+import { getSystemRepo } from './repo';
 
 describe('Reference checks', () => {
   beforeAll(async () => {
@@ -35,6 +35,7 @@ describe('Reference checks', () => {
         login: {} as Login,
         membership,
         project,
+        userConfig: {} as UserConfiguration,
       };
 
       const repo = await getRepoForLogin(authState, true);
@@ -102,13 +103,23 @@ describe('Reference checks', () => {
       project.checkReferencesOnWrite = true;
       project.link = [{ project: createReference(project2) }];
 
-      const repo2 = await getRepoForLogin({ login: {} as Login, membership: membership2, project: project2 });
+      const repo2 = await getRepoForLogin({
+        login: {} as Login,
+        membership: membership2,
+        project: project2,
+        userConfig: {} as UserConfiguration,
+      });
       const patient2 = await repo2.createResource({
         resourceType: 'Patient',
       });
 
       // Reference available into linked Project
-      let repo = await getRepoForLogin({ login: {} as Login, membership, project });
+      let repo = await getRepoForLogin({
+        login: {} as Login,
+        membership,
+        project,
+        userConfig: {} as UserConfiguration,
+      });
       const patient = await repo.createResource({
         resourceType: 'Patient',
         link: [{ type: 'seealso', other: createReference(patient2) }],
@@ -121,6 +132,7 @@ describe('Reference checks', () => {
         login: {} as Login,
         membership,
         project,
+        userConfig: {} as UserConfiguration,
       });
       await expect(
         repo.createResource({
@@ -152,7 +164,12 @@ describe('Reference checks', () => {
       const systemRepo = getSystemRepo();
       await systemRepo.updateResource(project1);
 
-      const repo = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project: project1 });
+      const repo = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project: project1,
+        userConfig: {} as UserConfiguration,
+      });
       let project = await repo.readResource<Project>('Project', project1.id);
 
       // Checking the name change is ancillary; mostly confirming that the update
@@ -176,7 +193,12 @@ describe('Reference checks', () => {
       const systemRepo = getSystemRepo();
       project = await systemRepo.updateResource({ ...project, checkReferencesOnWrite: true });
 
-      const repo = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project });
+      const repo = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project,
+        userConfig: {} as UserConfiguration,
+      });
 
       // Checking the externalId change is ancillary; mostly confirming that the update
       // doesn't throw due to reference validation failure

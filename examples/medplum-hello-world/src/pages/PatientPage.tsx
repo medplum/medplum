@@ -2,7 +2,7 @@ import { Loader, Paper, Tabs } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { PatientHeader, useResource } from '@medplum/react';
-import { Fragment } from 'react';
+import { Fragment, JSX } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router';
 
 export function PatientPage(): JSX.Element {

@@ -1,9 +1,9 @@
-import { RequestHandler, Request, Response } from 'express';
-import { asyncWrap } from '../async';
-import { verifyJwt } from './keys';
-import { getSystemRepo } from '../fhir/repo';
 import { Login, SmartAppLaunch } from '@medplum/fhirtypes';
+import { Request, RequestHandler, Response } from 'express';
 import { JWTPayload } from 'jose';
+import { asyncWrap } from '../async';
+import { getSystemRepo } from '../fhir/repo';
+import { verifyJwt } from './keys';
 
 /**
  * Handles the OAuth2 Token Introspection Endpoint

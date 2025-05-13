@@ -8,7 +8,7 @@ import {
   IconRobot,
   IconUser,
 } from '@tabler/icons-react';
-import { Suspense } from 'react';
+import { JSX, Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import { EncounterPage } from './pages/EncounterPage';
 import { LandingPage } from './pages/LandingPage';

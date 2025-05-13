@@ -24,7 +24,7 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
-  const { project, login, membership } = authState;
+  const { project, login, membership, onBehalfOfMembership } = authState;
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
   let allowedProjects: string[] | undefined;
@@ -43,7 +43,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     author: membership.profile as Reference,
     remoteAddress: login.remoteAddress,
     superAdmin: project.superAdmin,
-    projectAdmin: membership.admin,
+    projectAdmin: onBehalfOfMembership ? onBehalfOfMembership.admin : membership.admin,
     accessPolicy,
     strictMode: project.strictMode,
     extendedMode,

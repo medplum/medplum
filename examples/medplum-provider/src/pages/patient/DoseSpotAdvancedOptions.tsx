@@ -1,14 +1,14 @@
-import { Button, Text, Stack, Group, Box, TextInput, Modal } from '@mantine/core';
+import { Box, Button, Group, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import {
-  DOSESPOT_PRESCRIPTIONS_SYNC_BOT,
   DOSESPOT_MEDICATION_HISTORY_BOT,
   DOSESPOT_PATIENT_SYNC_BOT,
+  DOSESPOT_PRESCRIPTIONS_SYNC_BOT,
 } from '@medplum/dosespot-react';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState } from 'react';
 import { IconSettings } from '@tabler/icons-react';
+import { JSX, useCallback, useState } from 'react';
 
 export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): JSX.Element {
   const medplum = useMedplum();

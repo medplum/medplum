@@ -5,6 +5,7 @@ import { normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 
 interface CloseOpenThreadProps {
   readonly communication: Communication;

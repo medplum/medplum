@@ -1,8 +1,8 @@
 import { Client, Pool } from 'pg';
-import { idempotentCreateIndex, MigrationAction } from './migrate-functions';
-import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
-import { MedplumServerConfig } from '../config/types';
 import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
+import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
+import { idempotentCreateIndex, MigrationAction } from './migrate-functions';
 
 interface IndexInfo {
   index_name: string;

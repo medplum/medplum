@@ -1,8 +1,8 @@
 import { PoolClient } from 'pg';
-import { CustomMigrationAction, CustomPostDeployMigration } from './types';
-import * as fns from '../migrate-functions';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
+import * as fns from '../migrate-functions';
 import { withLongRunningDatabaseClient } from '../migration-utils';
+import { CustomMigrationAction, CustomPostDeployMigration } from './types';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',

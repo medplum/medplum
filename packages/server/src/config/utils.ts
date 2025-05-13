@@ -29,6 +29,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.accurateCountThreshold ??= 1_000_000;
   config.defaultBotRuntimeVersion ??= 'awslambda';
   config.defaultProjectFeatures ??= [];
+  config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
 
   // History:
@@ -39,7 +40,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultRateLimit ??= 60_000;
   config.defaultAuthRateLimit ??= 160;
 
-  config.defaultFhirInteractionLimit ??= 50_000;
+  config.defaultFhirQuota ??= 50_000;
   return config as ServerConfig;
 }
 
@@ -62,12 +63,13 @@ type DefaultConfigKeys =
   | 'accurateCountThreshold'
   | 'defaultBotRuntimeVersion'
   | 'defaultProjectFeatures'
+  | 'defaultProjectSystemSetting'
   | 'emailProvider'
   | 'defaultRateLimit'
   | 'defaultAuthRateLimit'
-  | 'defaultFhirInteractionLimit';
+  | 'defaultFhirQuota';
 
-const integerKeys = ['port', 'accurateCountThreshold'];
+const integerKeys = ['port', 'accurateCountThreshold', 'defaultRateLimit', 'defaultAuthRateLimit', 'defaultFhirQuota'];
 
 export function isIntegerConfig(key: string): boolean {
   return integerKeys.includes(key);
@@ -99,5 +101,5 @@ export function isBooleanConfig(key: string): boolean {
 }
 
 export function isObjectConfig(key: string): boolean {
-  return key === 'tls' || key === 'ssl';
+  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting';
 }

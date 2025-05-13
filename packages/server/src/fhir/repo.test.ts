@@ -30,6 +30,7 @@ import {
   ServiceRequest,
   StructureDefinition,
   User,
+  UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
@@ -40,10 +41,10 @@ import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
-import { SelectQuery } from './sql';
-import { lookupTables } from './searchparameter';
 import { TokenTable } from './lookups/token';
+import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
+import { lookupTables } from './searchparameter';
+import { SelectQuery } from './sql';
 
 jest.mock('hibp');
 
@@ -74,6 +75,7 @@ describe('FHIR Repo', () => {
         login: { resourceType: 'Login' } as Login,
         membership: { resourceType: 'ProjectMembership' } as WithId<ProjectMembership>,
         project: testProject,
+        userConfig: {} as UserConfiguration,
       })
     ).rejects.toThrow('Invalid author reference');
   });
@@ -530,7 +532,12 @@ describe('FHIR Repo', () => {
       const result1 = await registerNew(registration1);
       expect(result1.profile).toBeDefined();
 
-      const repo1 = await getRepoForLogin(result1);
+      const repo1 = await getRepoForLogin({
+        project: result1.project,
+        membership: result1.membership,
+        login: result1.login,
+        userConfig: {} as UserConfiguration,
+      });
       const patient1 = await repo1.createResource<Patient>({
         resourceType: 'Patient',
       });
@@ -553,7 +560,12 @@ describe('FHIR Repo', () => {
       const result2 = await registerNew(registration2);
       expect(result2.profile).toBeDefined();
 
-      const repo2 = await getRepoForLogin(result2);
+      const repo2 = await getRepoForLogin({
+        project: result2.project,
+        membership: result2.membership,
+        login: result2.login,
+        userConfig: {} as UserConfiguration,
+      });
       try {
         await repo2.readResource('Patient', patient1.id);
         fail('Should have thrown');
@@ -1256,7 +1268,12 @@ describe('FHIR Repo', () => {
       });
       project.link = [{ project: createReference(project2) }];
 
-      const repo2 = await getRepoForLogin({ login: {} as Login, membership: membership2, project: project2 });
+      const repo2 = await getRepoForLogin({
+        login: {} as Login,
+        membership: membership2,
+        project: project2,
+        userConfig: {} as UserConfiguration,
+      });
       const profileJson = JSON.parse(
         readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
       ) as StructureDefinition;
@@ -1270,7 +1287,12 @@ describe('FHIR Repo', () => {
       };
 
       // Resource upload should fail with profile linked
-      let repo = await getRepoForLogin({ login: {} as Login, membership, project });
+      let repo = await getRepoForLogin({
+        login: {} as Login,
+        membership,
+        project,
+        userConfig: {} as UserConfiguration,
+      });
       await expect(repo.createResource(patientJson)).rejects.toThrow(/Missing required property/);
 
       // Unlink Project and verify that profile is not cached; resource upload should succeed without access to profile
@@ -1279,6 +1301,7 @@ describe('FHIR Repo', () => {
         login: {} as Login,
         membership,
         project,
+        userConfig: {} as UserConfiguration,
       });
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
     }));
@@ -1290,7 +1313,10 @@ describe('FHIR Repo', () => {
         withAccessToken: true,
         withClient: true,
       });
-      const extendedRepo = await getRepoForLogin({ login, project, membership }, true);
+      const extendedRepo = await getRepoForLogin(
+        { login, project, membership, userConfig: {} as UserConfiguration },
+        true
+      );
 
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
       expect(patient.meta?.project).toBeUndefined();

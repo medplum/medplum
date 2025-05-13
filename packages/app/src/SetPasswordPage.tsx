@@ -11,7 +11,7 @@ import {
   getIssuesForExpression,
   useMedplum,
 } from '@medplum/react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { useParams } from 'react-router';
 
 export function SetPasswordPage(): JSX.Element {

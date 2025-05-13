@@ -1,4 +1,5 @@
-import { Tabs, Paper } from '@mantine/core';
+import { Paper, Tabs } from '@mantine/core';
+import { JSX } from 'react';
 import { PatientPageTabs } from './PatientPage.utils';
 
 interface PatientTabsNavigationProps {

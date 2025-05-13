@@ -2,8 +2,9 @@ import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import { Appointment, Coding, Encounter, Patient, Practitioner, Questionnaire, Reference } from '@medplum/fhirtypes';
-import { useMedplum, QuestionnaireForm } from '@medplum/react';
+import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 
 interface CreateEncounterProps {

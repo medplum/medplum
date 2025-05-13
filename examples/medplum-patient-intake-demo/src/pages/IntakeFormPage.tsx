@@ -1,11 +1,11 @@
+import { showNotification } from '@mantine/notifications';
 import { createReference, normalizeErrorString } from '@medplum/core';
 import { QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useContext, useCallback } from 'react';
-import { showNotification } from '@mantine/notifications';
-import { Loading } from '../components/Loading';
-import { useNavigate } from 'react-router';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX, useCallback, useContext } from 'react';
+import { useNavigate } from 'react-router';
+import { Loading } from '../components/Loading';
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 
 export function IntakeFormPage(): JSX.Element {

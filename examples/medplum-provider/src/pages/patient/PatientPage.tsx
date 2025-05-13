@@ -2,17 +2,17 @@ import { Loader, ScrollArea } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary } from '@medplum/react';
-import { useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useState } from 'react';
 import { Location, Outlet, useLocation, useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
-import { PatientTabsNavigation } from './PatientTabsNavigation';
 import {
   PatientPageTabInfo,
   PatientPageTabs,
   formatPatientPageTabUrl,
   getPatientPageTabOrThrow,
 } from './PatientPage.utils';
+import { PatientTabsNavigation } from './PatientTabsNavigation';
 
 function getTabFromLocation(location: Location): PatientPageTabInfo | undefined {
   const tabId = location.pathname.split('/')[3] ?? '';

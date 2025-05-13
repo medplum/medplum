@@ -1,9 +1,9 @@
-import { Box, Combobox, Group, Stack, useCombobox, Text, UnstyledButton, Code } from '@mantine/core';
+import { Box, Code, Combobox, Group, Stack, Text, UnstyledButton, useCombobox } from '@mantine/core';
 import { isPopulated } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceTable, useResource } from '@medplum/react';
 import { IconChevronDown } from '@tabler/icons-react';
-import { useEffect, useMemo, useState } from 'react';
+import { JSX, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router';
 import classes from './DetailsPage.module.css';
 

@@ -23,7 +23,7 @@ import {
   useMedplum,
 } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
-import { ReactNode, useState } from 'react';
+import { JSX, ReactNode, useState } from 'react';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();

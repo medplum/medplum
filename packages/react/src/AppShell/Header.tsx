@@ -4,7 +4,7 @@ import { HumanName } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react-hooks';
 import { IconChevronDown } from '@tabler/icons-react';
 import cx from 'clsx';
-import { ReactNode, useState } from 'react';
+import { JSX, ReactNode, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import classes from './Header.module.css';
 import { HeaderDropdown } from './HeaderDropdown';

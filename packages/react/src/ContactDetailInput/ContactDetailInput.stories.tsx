@@ -1,10 +1,11 @@
+import { buildElementsContext } from '@medplum/core';
 import { ContactDetail } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
-import { ContactDetailInput } from './ContactDetailInput';
-import { buildElementsContext } from '@medplum/core';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { ContactDetailInput } from './ContactDetailInput';
 
 export default {
   title: 'Medplum/ContactDetailInput',

@@ -1,6 +1,7 @@
 import { NativeSelect } from '@mantine/core';
 import { Reference, ValueSet } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
+import { JSX } from 'react';
 import classes from './QuickStatus.module.css';
 
 export interface QuickStatusProps {

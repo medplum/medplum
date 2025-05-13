@@ -1,7 +1,7 @@
 import { ExampleWorkflowRequestGroup } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
 import { Meta } from '@storybook/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
   Covid19AssessmentTask,
@@ -12,8 +12,8 @@ import {
   Covid19RequestGroup,
   Covid19ReviewLabsTask,
 } from '../stories/covid19';
-import { RequestGroupDisplay } from './RequestGroupDisplay';
 import { withMockedDate } from '../stories/decorators';
+import { RequestGroupDisplay } from './RequestGroupDisplay';
 
 export default {
   title: 'Medplum/RequestGroupDisplay',

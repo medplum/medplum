@@ -16,14 +16,14 @@ This example app demonstrates the following:
 
 The application will feature the following core workflows:
 
-* Visit documentation
-* Task creation and assignment
-* Appointment scheduling
-* Patient registration/onboarding
-* Lab orders
-* Ordering medications
-* Claim creation and billing
-* Patient/Provider Messaging
+- Visit documentation
+- Task creation and assignment
+- Appointment scheduling
+- Patient registration/onboarding
+- Lab orders
+- Ordering medications
+- Claim creation and billing
+- Patient/Provider Messaging
 
 ### Getting Started
 

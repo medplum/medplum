@@ -1,15 +1,8 @@
 data "azurerm_client_config" "current" {}
 
-resource "random_string" "key_vault_prefix" {
-  length  = 6
-  numeric = false
-  special = false
-  upper   = false
-}
-
 resource "azurerm_key_vault" "des_vault" {
   location                      = var.location
-  name                          = "${random_string.key_vault_prefix.result}-des-keyvault"
+  name                          = "medplum-${var.environment}-des-vault"
   resource_group_name           = var.resource_group_name
   sku_name                      = "premium"
   tenant_id                     = data.azurerm_client_config.current.tenant_id
@@ -41,7 +34,7 @@ resource "azurerm_key_vault_access_policy" "current_user" {
 
 resource "azurerm_key_vault" "medplum_vault" {
   location                      = var.location
-  name                          = "${random_string.key_vault_prefix.result}-medplum-keyvault"
+  name                          = "medplum-${var.environment}-${var.deployment_id}-keyvault"
   resource_group_name           = var.resource_group_name
   sku_name                      = "premium"
   tenant_id                     = data.azurerm_client_config.current.tenant_id
@@ -57,7 +50,7 @@ resource "azurerm_key_vault" "medplum_vault" {
   #   }
 }
 
-resource "azurerm_key_vault_access_policy" "current_user_medplum_vault" {
+resource "azurerm_key_vault_access_policy" "current_user-medplum_vault" {
   key_vault_id = azurerm_key_vault.medplum_vault.id
   object_id    = coalesce(var.managed_identity_principal_id, data.azurerm_client_config.current.object_id)
   tenant_id    = data.azurerm_client_config.current.tenant_id

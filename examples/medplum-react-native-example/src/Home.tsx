@@ -2,7 +2,7 @@ import { LoginAuthenticationResponse, getDisplayString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumContext, useMedplumProfile, useSubscription } from '@medplum/react-hooks';
 import { StatusBar } from 'expo-status-bar';
-import { useCallback, useState } from 'react';
+import { JSX, useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import CustomButton from './CustomButton';
 

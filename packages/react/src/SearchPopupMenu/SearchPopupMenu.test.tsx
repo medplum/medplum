@@ -641,7 +641,5 @@ describe('SearchPopupMenu', () => {
 
 async function toggleMenu(): Promise<void> {
   const toggleMenuButton = await screen.findByText('Toggle menu');
-  await act(async () => {
-    await userEvent.click(toggleMenuButton);
-  });
+  await userEvent.click(toggleMenuButton);
 }

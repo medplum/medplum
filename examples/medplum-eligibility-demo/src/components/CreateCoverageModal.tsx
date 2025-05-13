@@ -4,6 +4,7 @@ import { getReferenceString } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 
 interface CreateCoverageModalProps {

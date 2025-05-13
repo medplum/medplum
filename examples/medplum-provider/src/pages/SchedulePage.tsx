@@ -1,11 +1,12 @@
-import { Box, Button, Group, Title } from '@mantine/core';
-import { useDisclosure, usePrevious } from '@mantine/hooks';
-import { createReference, getReferenceString } from '@medplum/core';
+import { Box, Button, Group, SegmentedControl, Title } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
+import { createReference, getReferenceString, WithId } from '@medplum/core';
 import { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import dayjs from 'dayjs';
-import { useCallback, useEffect, useState } from 'react';
-import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
+import { Calendar, dayjsLocalizer, Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router';
 import { BlockAvailability } from '../components/schedule/BlockAvailability';
@@ -13,6 +14,10 @@ import { CreateAppointment } from '../components/schedule/CreateAppointment';
 import { CreateUpdateSlot } from '../components/schedule/CreateUpdateSlot';
 import { SetAvailability } from '../components/schedule/SetAvailability';
 import { SlotDetails } from '../components/schedule/SlotDetails';
+
+type AppointmentEvent = Event & { type: 'appointment'; appointment: Appointment; start: Date; end: Date };
+type SlotEvent = Event & { type: 'slot'; status: string; start: Date; end: Date };
+type ScheduleEvent = AppointmentEvent | SlotEvent;
 
 /**
  * Schedule page that displays the practitioner's schedule.
@@ -23,24 +28,20 @@ import { SlotDetails } from '../components/schedule/SlotDetails';
 export function SchedulePage(): JSX.Element | null {
   const navigate = useNavigate();
   const medplum = useMedplum();
-
-  const [schedule, setSchedule] = useState<Schedule | undefined>();
+  const profile = useMedplumProfile() as Practitioner;
+  const calendarRef = useRef<Calendar<ScheduleEvent>>(null);
+  const [schedule, setSchedule] = useState<WithId<Schedule> | undefined>();
+  const [view, setView] = useState<View>('week');
+  const [date, setDate] = useState<Date>(new Date());
+  const [range, setRange] = useState<{ start: Date; end: Date } | undefined>(undefined);
   const [blockAvailabilityOpened, blockAvailabilityHandlers] = useDisclosure(false);
   const [setAvailabilityOpened, setAvailabilityHandlers] = useDisclosure(false);
   const [slotDetailsOpened, slotDetailsHandlers] = useDisclosure(false);
   const [createUpdateSlotOpened, createUpdateSlotHandlers] = useDisclosure(false);
   const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
-
-  const [selectedEvent, setSelectedEvent] = useState<Event>();
-  const profile = useMedplumProfile() as Practitioner;
-
-  const prevSchedule = usePrevious(schedule);
-  const prevProfile = usePrevious(profile);
-
-  const [shouldRefreshCalender, setShouldRefreshCalender] = useState(true);
-
-  const [slots, setSlots] = useState<Slot[]>();
-  const [appointments, setAppointments] = useState<Appointment[]>();
+  const [slotEvents, setSlotEvents] = useState<ScheduleEvent[]>();
+  const [appointmentEvents, setAppointmentEvents] = useState<ScheduleEvent[]>();
+  const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent>();
 
   useEffect(() => {
     if (medplum.isLoading() || !profile) {
@@ -62,93 +63,89 @@ export function SchedulePage(): JSX.Element | null {
               active: true,
             })
             .then(setSchedule)
-            .catch((err) => {
-              console.log(err);
-            });
+            .catch(console.error);
         }
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch(console.error);
   }, [medplum, profile]);
 
-  useEffect(() => {
-    if ((schedule && prevSchedule?.id !== schedule?.id) || (profile && prevProfile?.id !== profile?.id)) {
-      setShouldRefreshCalender(true);
-    }
-  }, [schedule, profile, prevSchedule?.id, prevProfile?.id]);
+  const handleRangeChange = useCallback(
+    (newRange: Date[] | { start: Date; end: Date }) => {
+      let newStart: Date;
+      let newEnd: Date;
+      if (Array.isArray(newRange)) {
+        // Week view passes the range as an array of dates
+        newStart = newRange[0];
+        newEnd = new Date(newRange[newRange.length - 1].getTime() + 24 * 60 * 60 * 1000);
+      } else {
+        // Other views pass the range as an object
+        newStart = newRange.start;
+        newEnd = newRange.end;
+      }
+
+      // Only update state if the range has changed
+      if (!range || newStart.getTime() !== range.start.getTime() || newEnd.getTime() !== range.end.getTime()) {
+        setRange({ start: newStart, end: newEnd });
+      }
+    },
+    [range, setRange]
+  );
+
+  const refreshEvents = useCallback(
+    (cache?: RequestCache) => {
+      const calendar = calendarRef.current;
+      if (!calendar || !schedule || !range) {
+        return;
+      }
+
+      const start = range.start.toISOString();
+      const end = range.end.toISOString();
+
+      async function searchSlots(): Promise<void> {
+        const slots = await medplum.searchResources(
+          'Slot',
+          [
+            ['_count', '1000'],
+            ['schedule', getReferenceString(schedule as WithId<Schedule>)],
+            ['start', `ge${start}`],
+            ['start', `le${end}`],
+          ],
+          { cache }
+        );
+        setSlotEvents(slotsToEvents(slots));
+      }
+
+      async function searchAppointments(): Promise<void> {
+        const appointments = await medplum.searchResources(
+          'Appointment',
+          [
+            ['_count', '1000'],
+            ['actor', getReferenceString(profile as WithId<Practitioner>)],
+            ['date', `ge${start}`],
+            ['date', `le${end}`],
+          ],
+          { cache }
+        );
+        setAppointmentEvents(appointmentsToEvents(appointments));
+      }
+
+      Promise.allSettled([searchSlots(), searchAppointments()]).catch(console.error);
+    },
+    [medplum, profile, schedule, range]
+  );
 
   useEffect(() => {
-    async function searchSlots(): Promise<void> {
-      const slots = await medplum.searchResources(
-        'Slot',
-        {
-          schedule: getReferenceString(schedule as Schedule),
-          _count: '100',
-        },
-        { cache: 'no-cache' }
-      );
-      setSlots(slots);
-    }
-
-    async function searchAppointments(): Promise<void> {
-      const appointments = await medplum.searchResources(
-        'Appointment',
-        {
-          actor: getReferenceString(profile as Practitioner),
-        },
-        { cache: 'no-cache' }
-      );
-      setAppointments(appointments);
-    }
-
-    if (shouldRefreshCalender) {
-      Promise.allSettled([searchSlots(), searchAppointments()])
-        .then(() => setShouldRefreshCalender(false))
-        .catch(console.error);
-    }
-  }, [medplum, schedule, profile, shouldRefreshCalender]);
-
-  // Converts Slot resources to big-calendar Event objects
-  // Only show free and busy-unavailable slots
-  const slotEvents: Event[] = (slots ?? [])
-    .filter((slot) => slot.status === 'free' || slot.status === 'busy-unavailable')
-    .map((slot) => ({
-      title: slot.status === 'free' ? 'Available' : 'Blocked',
-      start: new Date(slot.start),
-      end: new Date(slot.end),
-      resource: slot,
-    }));
-
-  // Converts Appointment resources to big-calendar Event objects
-  // Exclude cancelled appointments to prevent them from overlapping free slots during rendering
-  const appointmentEvents: Event[] = (appointments ?? [])
-    .filter((appointment) => appointment.status !== 'cancelled')
-    .map((appointment) => {
-      // Find the patient among the participants to use as title
-      const patientParticipant = appointment?.participant?.find((p) => p.actor?.reference?.startsWith('Patient/'));
-      const status = !['booked', 'arrived', 'fulfilled'].includes(appointment.status as string)
-        ? ` (${appointment.status})`
-        : '';
-
-      return {
-        title: `${patientParticipant?.actor?.display} ${status}`,
-        start: new Date(appointment.start as string),
-        end: new Date(appointment.end as string),
-        resource: appointment,
-      };
-    });
+    refreshEvents();
+  }, [refreshEvents]);
 
   /**
    * When a date/time range is selected, set the event object and open the create slot modal
    */
   const handleSelectSlot = useCallback(
-    (event: Event & { action?: string }) => {
-      console.log('CODY', event.action, event);
-      if (event.action !== 'select') {
+    (slot: SlotInfo) => {
+      if (slot.action !== 'select') {
         return;
       }
-      setSelectedEvent(event);
       createUpdateSlotHandlers.open();
     },
     [createUpdateSlotHandlers]
@@ -162,7 +159,7 @@ export function SchedulePage(): JSX.Element | null {
    * - If the event is an appointment, navigate to the appointment page.
    */
   const handleSelectEvent = useCallback(
-    (event: Event) => {
+    (event: ScheduleEvent) => {
       const { resourceType, status, id } = event.resource;
 
       function handleSlot(): void {
@@ -196,32 +193,106 @@ export function SchedulePage(): JSX.Element | null {
 
   const height = window.innerHeight - 60;
 
+  const CustomToolbar = (props: ToolbarProps<ScheduleEvent>): JSX.Element => {
+    const [firstRender, setFirstRender] = useState(true);
+    useEffect(() => {
+      // The calendar does not provide any way to receive the range of dates that
+      // are visible except when they change. This is the cleanest way I could find
+      // to extend it to provide the _initial_ range (`onView` calls `onRangeChange`).
+      // https://github.com/jquense/react-big-calendar/issues/1752#issuecomment-761051235
+      if (firstRender) {
+        props.onView(props.view);
+        setFirstRender(false);
+      }
+    }, [props, firstRender, setFirstRender]);
+    return (
+      <Group justify="space-between" pb="sm">
+        <Group>
+          <Title order={4} mr="md">
+            {props.view !== 'day' && dayjs(props.date).format('MMMM YYYY')}
+            {props.view === 'day' && dayjs(props.date).format('MMMM D YYYY')}
+          </Title>
+          <Button.Group>
+            <Button variant="default" size="xs" onClick={() => props.onNavigate('PREV')}>
+              <IconChevronLeft size={12} />
+            </Button>
+            <Button variant="default" size="xs" onClick={() => props.onNavigate('TODAY')}>
+              Today
+            </Button>
+            <Button variant="default" size="xs" onClick={() => props.onNavigate('NEXT')}>
+              <IconChevronRight size={12} />
+            </Button>
+          </Button.Group>
+        </Group>
+        <SegmentedControl
+          size="xs"
+          value={props.view}
+          onChange={(newView) => setView(newView as View)}
+          data={[
+            { label: 'Month', value: 'month' },
+            { label: 'Week', value: 'week' },
+            { label: 'Day', value: 'day' },
+          ]}
+        />
+        <Button.Group>
+          <Button variant="default" size="xs" onClick={() => setAvailabilityHandlers.open()}>
+            Set Availability
+          </Button>
+          <Button variant="default" size="xs" onClick={() => blockAvailabilityHandlers.open()}>
+            Block Availability
+          </Button>
+        </Button.Group>
+      </Group>
+    );
+  };
+
+  function eventPropGetter(
+    event: ScheduleEvent,
+    _start: Date,
+    _end: Date,
+    _isSelected: boolean
+  ): { className?: string | undefined; style?: React.CSSProperties } {
+    const result = {
+      style: {
+        backgroundColor: '#228be6',
+        border: '1px solid rgba(255, 255, 255, 0)',
+        borderRadius: '4px',
+        color: 'white',
+        display: 'block',
+        opacity: 1.0,
+      },
+    };
+
+    if (event.type === 'slot') {
+      result.style.backgroundColor = event.status === 'free' ? '#d3f9d8' : '#ced4da';
+      result.style.color = 'black';
+      result.style.opacity = 0.6;
+    }
+
+    return result;
+  }
+
   return (
     <Box pos="relative" bg="white" p="md" style={{ height }}>
-      <Title order={1} mb="lg">
-        My Schedule
-      </Title>
-
-      <Group mb="lg">
-        <Button size="sm" onClick={() => setAvailabilityHandlers.open()}>
-          Set Availability
-        </Button>
-        <Button size="sm" onClick={() => blockAvailabilityHandlers.open()}>
-          Block Availability
-        </Button>
-      </Group>
-
       <Calendar
-        defaultView="week"
-        views={['month', 'week', 'day', 'agenda']}
+        ref={calendarRef}
+        components={{ toolbar: CustomToolbar }}
+        view={view}
+        date={date}
         localizer={dayjsLocalizer(dayjs)}
         events={appointmentEvents}
         backgroundEvents={slotEvents} // Background events don't show in the month view
+        onNavigate={(newDate: Date, newView: View) => {
+          setDate(newDate);
+          setView(newView);
+        }}
+        onRangeChange={handleRangeChange}
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleSelectEvent}
-        scrollToTime={new Date()} // Default scroll to current time
+        scrollToTime={date} // Default scroll to current time
         style={{ height: height - 150 }}
         selectable
+        eventPropGetter={eventPropGetter}
       />
 
       {/* Modals */}
@@ -232,22 +303,131 @@ export function SchedulePage(): JSX.Element | null {
         event={selectedEvent}
         opened={createUpdateSlotOpened}
         handlers={createUpdateSlotHandlers}
-        onSlotsUpdated={() => setShouldRefreshCalender(true)}
+        onSlotsUpdated={() => refreshEvents('no-cache')}
       />
       <SlotDetails
         schedule={schedule}
         event={selectedEvent}
         opened={slotDetailsOpened}
         handlers={slotDetailsHandlers}
-        onSlotsUpdated={() => setShouldRefreshCalender(true)}
+        onSlotsUpdated={() => refreshEvents('no-cache')}
       />
       <CreateAppointment
         schedule={schedule}
         event={selectedEvent}
         opened={createAppointmentOpened}
         handlers={createAppointmentHandlers}
-        onAppointmentsUpdated={() => setShouldRefreshCalender(true)}
+        onAppointmentsUpdated={() => refreshEvents('no-cache')}
       />
     </Box>
   );
+}
+
+// This function collapses contiguous or overlapping slots of the same status into single events
+function slotsToEvents(slots: Slot[]): SlotEvent[] {
+  if (!slots || slots.length === 0) {
+    return [];
+  }
+
+  // First, filter the slots as before
+  const filteredSlots = slots.filter((slot) => slot.status === 'free' || slot.status === 'busy-unavailable');
+
+  // Group slots by status
+  const slotsByStatus: Record<string, SlotEvent[]> = {};
+  filteredSlots.forEach((slot) => {
+    if (!slotsByStatus[slot.status]) {
+      slotsByStatus[slot.status] = [];
+    }
+    slotsByStatus[slot.status].push({
+      type: 'slot',
+      status: slot.status,
+      start: new Date(slot.start),
+      end: new Date(slot.end),
+    });
+  });
+
+  const collapsedEvents: SlotEvent[] = [];
+
+  // Process each status group separately
+  Object.entries(slotsByStatus).forEach(([status, statusSlots]) => {
+    // Sort slots by start time
+    statusSlots.sort((a, b) => a.start.getTime() - b.start.getTime());
+
+    // Merge contiguous/overlapping slots
+    let currentGroup: SlotEvent | undefined = undefined;
+
+    for (const slot of statusSlots) {
+      if (!currentGroup) {
+        // Start a new group
+        currentGroup = {
+          type: 'slot',
+          status,
+          start: slot.start,
+          end: slot.end,
+        };
+      } else if (slot.start <= new Date(currentGroup.end.getTime() + 1000)) {
+        // Slot is contiguous or overlapping with current group
+        // The +1000ms (1 second) tolerance handles potential tiny gaps
+
+        // Extend end time if needed
+        if (slot.end > currentGroup.end) {
+          currentGroup.end = slot.end;
+        }
+      } else {
+        // This slot doesn't connect to the current group
+        // Finish current group and start a new one
+        collapsedEvents.push({
+          type: 'slot',
+          status: currentGroup.status,
+          title: status === 'free' ? 'Available' : 'Blocked',
+          start: currentGroup.start,
+          end: currentGroup.end,
+        });
+
+        currentGroup = {
+          type: 'slot',
+          status,
+          start: slot.start,
+          end: slot.end,
+        };
+      }
+    }
+
+    // Don't forget to add the last group
+    if (currentGroup) {
+      collapsedEvents.push({
+        type: 'slot',
+        status: currentGroup.status,
+        title: status === 'free' ? 'Available' : 'Blocked',
+        start: currentGroup.start,
+        end: currentGroup.end,
+        resource: {
+          status,
+        },
+      });
+    }
+  });
+
+  return collapsedEvents;
+}
+
+function appointmentsToEvents(appointments: Appointment[]): AppointmentEvent[] {
+  return appointments
+    .filter((appointment) => appointment.status !== 'cancelled')
+    .map((appointment) => {
+      // Find the patient among the participants to use as title
+      const patientParticipant = appointment?.participant?.find((p) => p.actor?.reference?.startsWith('Patient/'));
+      const status = !['booked', 'arrived', 'fulfilled'].includes(appointment.status as string)
+        ? ` (${appointment.status})`
+        : '';
+
+      return {
+        type: 'appointment',
+        appointment,
+        title: `${patientParticipant?.actor?.display} ${status}`,
+        start: new Date(appointment.start as string),
+        end: new Date(appointment.end as string),
+        resource: appointment,
+      };
+    });
 }

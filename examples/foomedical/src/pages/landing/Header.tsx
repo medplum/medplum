@@ -1,5 +1,6 @@
 import {
   Anchor,
+  AppShell,
   Box,
   Burger,
   Button,
@@ -10,14 +11,13 @@ import {
   Drawer,
   Group,
   HoverCard,
-  AppShell,
+  rem,
   ScrollArea,
   SimpleGrid,
   Text,
   ThemeIcon,
   UnstyledButton,
   useMantineTheme,
-  rem,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import {
@@ -29,6 +29,7 @@ import {
   IconFingerprint,
   IconNotification,
 } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { Logo } from '../../components/Logo';
 import classes from './Header.module.css';

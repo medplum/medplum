@@ -584,6 +584,10 @@ Optional default bot runtime version. See [Bot runtime version](/docs/api/fhir/m
 
 Optional default project features. See [Project Settings](/docs/access/projects#settings)
 
+### defaultProjectSystemSetting
+
+Optional default project system settings. See [Project System Settings](/docs/self-hosting/project-settings#project-system-settings)
+
 **Created by:** `init`
 **Default:** None
 
@@ -601,13 +605,13 @@ Optional max `AuditEvent.outcomeDesc` length for Bot events sent to logger.
 
 ### defaultRateLimit
 
-Limit for the rate at which requests can be sent to or processed by the server. For more details see the [Rate Limit docs](/docs/rate-limits/index.md).
+Limit for the rate at which requests can be sent to or processed by the server. For more details see the [Rate Limit docs](/docs/compliance/rate-limits.md).
 
 **Default:** `60000/minute`
 
 ### defaultAuthRateLimit
 
-Limit for the rate at which auth requests can be sent to or processed by the server. If developers are hitting this limit, it could be an indication of a suboptimal integration where each request is authenticating rather than reusing a token. For more details see the [Rate Limit docs](/docs/rate-limits/index.md).
+Limit for the rate at which auth requests can be sent to or processed by the server. If developers are hitting this limit, it could be an indication of a suboptimal integration where each request is authenticating rather than reusing a token. For more details see the [Rate Limit docs](/docs/compliance/rate-limits.md).
 
 **Default:** `60/minute`
 

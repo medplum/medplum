@@ -1,7 +1,7 @@
 import { Tabs } from '@mantine/core';
 import { Operator, SearchRequest, formatSearchQuery, getReferenceString, parseSearchRequest } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { CreateTaskModal } from '../components/actions/CreateTaskModal';
 import { getPopulatedSearch } from '../utils/search-control';

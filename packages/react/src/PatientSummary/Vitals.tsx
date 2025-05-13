@@ -1,13 +1,12 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Modal, SimpleGrid, TextInput, Textarea } from '@mantine/core';
+import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Modal, SimpleGrid, TextInput, Textarea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { formatQuantity } from '@medplum/core';
+import { formatDate, formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
 import { killEvent } from '../utils/dom';
-import { IconChevronDown, IconPlus, IconPencil, IconChevronRight } from '@tabler/icons-react';
+import { IconChevronDown, IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { formatDate } from '@medplum/core';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import {
@@ -101,27 +100,6 @@ export interface VitalsProps {
   readonly onClickResource?: (resource: Observation) => void;
 }
 
-// Helper function to get status badge color
-const getStatusColor = (status?: string): string => {
-  if (!status) return 'gray';
-  switch (status) {
-    case 'final':
-      return 'green';
-    case 'preliminary':
-      return 'yellow';
-    case 'amended':
-      return 'blue';
-    case 'corrected':
-      return 'orange';
-    case 'cancelled':
-      return 'red';
-    case 'entered-in-error':
-      return 'gray';
-    default:
-      return 'gray';
-  }
-};
-
 export function Vitals(props: VitalsProps): JSX.Element {
   const medplum = useMedplum();
   const [vitals, setVitals] = useState<Observation[]>(props.vitals);
@@ -132,7 +110,6 @@ export function Vitals(props: VitalsProps): JSX.Element {
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
       const observations: Observation[] = [];
-      const now = new Date().toISOString();
 
       // Handle blood pressure as a compound observation
       if (formData.systolic || formData.diastolic) {
@@ -245,7 +222,9 @@ export function Vitals(props: VitalsProps): JSX.Element {
               <Flex direction="column" gap={8}>
                 {LOINC_CODES.map((meta, index) => {
                   const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
-                  if (!obs) return null;
+                  if (!obs) {
+                    return null;
+                  }
 
                   const loincCode = meta.code;
                   const category = meta.name === 'respiratory' ? 'respRate' : 'vital-signs';

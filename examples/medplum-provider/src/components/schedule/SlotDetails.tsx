@@ -5,6 +5,7 @@ import { formatPeriod, normalizeErrorString } from '@medplum/core';
 import { Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconClock, IconEdit, IconNote, IconTrash } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { Event } from 'react-big-calendar';
 import { CreateUpdateSlot } from './CreateUpdateSlot';
 

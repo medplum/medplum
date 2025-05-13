@@ -9,20 +9,20 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import {
-  IconCalendar,
   IconClipboardCheck,
   IconMail,
   IconPencil,
   IconTimeDuration0,
-  IconTimeDuration15,
+  IconTransformPoint,
   IconUser,
 } from '@tabler/icons-react';
-import { Suspense } from 'react';
+import { JSX, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
 import { HomePage } from './pages/HomePage';
+import { IntegrationsPage } from './pages/IntegrationsPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
@@ -33,6 +33,7 @@ import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
+import { IntakeFormPage } from './pages/patient/IntakeFormPage';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { TaskTab } from './pages/patient/TaskTab';
@@ -43,7 +44,6 @@ import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { TaskDetails } from './pages/tasks/TaskDetails';
-import { IntakeFormPage } from './pages/patient/IntakeFormPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -67,24 +67,15 @@ export function App(): JSX.Element | null {
         },
         {
           title: 'Scheduling',
-          links: [
-            { icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' },
-            { icon: <IconTimeDuration0 />, label: 'New Appointment', href: '/Appointment/new' },
-            {
-              icon: <IconTimeDuration15 />,
-              label: 'Appointment Requests',
-              href: '/Appointment?_count=20&_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_offset=0&_sort=-_lastUpdated&status=proposed',
-            },
-            {
-              icon: <IconCalendar />,
-              label: 'Upcoming Appointments',
-              href: '/Appointment?_count=20&_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_offset=0&_sort=-_lastUpdated&status=booked',
-            },
-          ],
+          links: [{ icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' }],
         },
         {
           title: 'Onboarding',
           links: [{ icon: <IconPencil />, label: 'New Patient', href: '/onboarding' }],
+        },
+        {
+          title: 'Integrations',
+          links: [{ icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' }],
         },
       ]}
       resourceTypeSearchDisabled={true}
@@ -159,6 +150,7 @@ export function App(): JSX.Element | null {
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/dosespot" element={<DoseSpotTab />} />
+              <Route path="/integrations" element={<IntegrationsPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>

@@ -1,17 +1,17 @@
-import '@mantine/notifications/styles.css';
+import { createTheme, MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
-import '@medplum/react/styles.css';
 import { Notifications } from '@mantine/notifications';
+import '@mantine/notifications/styles.css';
 import { MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react';
+import '@medplum/react/styles.css';
 import { createRoot } from 'react-dom/client';
-import { App } from './App';
-import { createTheme, MantineProvider } from '@mantine/core';
 import { createBrowserRouter, RouterProvider } from 'react-router';
+import { App } from './App';
+import { getConfig } from './config';
 
 const medplum = new MedplumClient({
-  // Uncomment this line to use a local Medplum server
-  // baseUrl: 'http://localhost:8103/',
+  baseUrl: getConfig().baseUrl,
   cacheTime: 60000,
   autoBatchTime: 100,
   onUnauthenticated: () => {

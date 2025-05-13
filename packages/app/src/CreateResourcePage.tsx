@@ -1,5 +1,5 @@
 import { Badge, Group, Paper, ScrollArea, Tabs, Text, useMantineTheme } from '@mantine/core';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { Outlet, useNavigate, useParams } from 'react-router';
 
 const tabs = ['Form', 'JSON', 'Profiles'] as const;

@@ -1,4 +1,4 @@
-import { MedplumClient, BotEvent } from '@medplum/core';
+import { BotEvent, MedplumClient } from '@medplum/core';
 import { Appointment, Bundle, BundleEntry, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 
 export interface BlockAvailabilityEvent {

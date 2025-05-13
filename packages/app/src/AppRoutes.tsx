@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import { Route, Routes } from 'react-router';
 import { BatchPage } from './BatchPage';
 import { BulkAppPage } from './BulkAppPage';

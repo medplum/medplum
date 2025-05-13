@@ -5,12 +5,12 @@ import { NextFunction, Request, Response } from 'express';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
-import { systemLogger } from './logger';
+import { FhirRateLimiter } from './fhirinteractionlimit';
+import { globalLogger, systemLogger } from './logger';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
+import { getRedis } from './redis';
 import { IRequestContext, requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
-import { getRedis } from './redis';
-import { FhirRateLimiter } from './fhirinteractionlimit';
 
 export class RequestContext implements IRequestContext {
   readonly requestId: string;
@@ -82,7 +82,7 @@ export class AuthenticatedRequestContext extends RequestContext {
     return new AuthenticatedRequestContext(
       ctx?.requestId ?? '',
       ctx?.traceId ?? '',
-      {} as unknown as AuthState,
+      { userConfig: {} } as unknown as AuthState,
       getSystemRepo(),
       systemLogger
     );
@@ -213,10 +213,14 @@ function write(msg: string): void {
 }
 
 function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimiter | undefined {
-  const projectLimit = authState.project?.systemSetting?.find(
-    (s) => s.name === 'userFhirInteractionLimit'
-  )?.valueInteger;
-  const limit = projectLimit ?? getConfig().defaultFhirInteractionLimit;
+  const defaultUserLimit = authState.project?.systemSetting?.find((s) => s.name === 'userFhirQuota')?.valueInteger;
+  const userSpecificLimit = authState.userConfig.option?.find((o) => o.id === 'fhirQuota')?.valueInteger;
+  const userLimit = userSpecificLimit ?? defaultUserLimit ?? getConfig().defaultFhirQuota;
 
-  return authState.membership ? new FhirRateLimiter(getRedis(), authState, limit, logger) : undefined;
+  const perProjectLimit = authState.project?.systemSetting?.find((s) => s.name === 'totalFhirQuota')?.valueInteger;
+  const projectLimit = perProjectLimit ?? userLimit * 10;
+
+  return authState.membership
+    ? new FhirRateLimiter(getRedis(), authState, userLimit, projectLimit, logger ?? globalLogger)
+    : undefined;
 }

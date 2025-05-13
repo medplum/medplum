@@ -1,5 +1,5 @@
 import type { ChartData, ChartOptions } from 'chart.js';
-import { ComponentType, lazy, Suspense } from 'react';
+import { ComponentType, JSX, lazy, Suspense } from 'react';
 
 const lineChartOptions = {
   responsive: true,

@@ -1,6 +1,6 @@
 import { getResourceTypes, WithId } from '@medplum/core';
-import { prepareReindexJobData, ReindexJob, ReindexPostDeployMigration } from '../../workers/reindex';
 import { AsyncJob } from '@medplum/fhirtypes';
+import { prepareReindexJobData, ReindexJob, ReindexPostDeployMigration } from '../../workers/reindex';
 
 export const migration: ReindexPostDeployMigration = {
   type: 'reindex',

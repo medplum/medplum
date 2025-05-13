@@ -1,6 +1,6 @@
 import { TextInput } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { ChangeEvent } from 'react';
+import { ChangeEvent, JSX } from 'react';
 import { PrimitiveTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { getErrorsForInput } from '../utils/outcomes';
 import { convertIsoToLocal, convertLocalToIso } from './DateTimeInput.utils';

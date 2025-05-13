@@ -22,6 +22,7 @@ import {
   TokenColumnSearchParameterImplementation,
 } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
+import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
 import {
   doubleEscapeSingleQuotes,
   escapeUnicode,
@@ -29,7 +30,6 @@ import {
   quotedColumnName,
   splitIndexColumnNames,
 } from './migrate-utils';
-import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
 let DRY_RUN = false;

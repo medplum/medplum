@@ -6,7 +6,7 @@ import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
 import { getConfig } from './config';
-import { act, userEvent, UserEvent, render, screen } from './test-utils/render';
+import { act, render, screen, userEvent, UserEvent } from './test-utils/render';
 
 async function setup(medplum: MedplumClient): Promise<UserEvent> {
   const user = userEvent.setup();

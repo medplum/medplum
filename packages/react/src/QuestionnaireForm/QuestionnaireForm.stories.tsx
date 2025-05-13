@@ -1,7 +1,8 @@
+import { QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { QuestionnaireForm } from './QuestionnaireForm';
-import { QuestionnaireResponse } from '@medplum/fhirtypes';
 
 export default {
   title: 'Medplum/QuestionnaireForm',

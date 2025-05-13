@@ -19,6 +19,12 @@ Medplum fully supports creating a white-label experience where users do not see 
 
 This document describes the steps to send custom email messages.
 
+:::info
+
+By default, this will work for Patient Users. If you want to process custom emails for Practitioner Users, the Practitioners must be [invited](/docs/api/project-admin/invite) as project scoped users. See [Project vs Server Scoped Users](/docs/auth/project-vs-server-scoped-users) for more information.
+
+:::
+
 In short, here are the key steps:
 
 1. Setup reCAPTCHA (required for password reset emails, optional for welcome emails)

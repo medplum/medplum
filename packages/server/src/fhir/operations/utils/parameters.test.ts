@@ -55,6 +55,7 @@ const opDef: OperationDefinition = {
     { name: 'fractional', use: 'in', min: 0, max: '1', type: 'decimal' },
     { name: 'multiIn', use: 'in', min: 0, max: '*', type: 'string' },
     { name: 'complexIn', use: 'in', min: 0, max: '*', type: 'Reference' },
+    { name: 'resource', use: 'in', min: 0, max: '1', type: 'Resource' },
     {
       name: 'partsIn',
       use: 'in',
@@ -105,6 +106,20 @@ describe('Operation Input Parameters parsing', () => {
         complexIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
         multiIn: [],
         singleIn: undefined,
+        partsIn: [],
+      },
+    ],
+    [
+      [
+        { name: 'requiredIn', valueBoolean: true },
+        { name: 'resource', resource: { resourceType: 'Patient', id: 'test-patient', name: [{ family: 'Smith' }] } },
+      ],
+      {
+        requiredIn: true,
+        resource: { resourceType: 'Patient', id: 'test-patient', name: [{ family: 'Smith' }] },
+        singleIn: undefined,
+        multiIn: [],
+        complexIn: [],
         partsIn: [],
       },
     ],

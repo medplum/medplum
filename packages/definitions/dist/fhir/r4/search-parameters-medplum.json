@@ -1326,7 +1326,7 @@
         "id": "AsyncJob-status",
         "url": "https://medplum.com/fhir/SearchParameter/AsyncJob-status",
         "version": "4.0.1",
-        "name": "type",
+        "name": "status",
         "status": "draft",
         "publisher": "Medplum",
         "description": "Search for AsyncJob by status",

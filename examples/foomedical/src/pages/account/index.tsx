@@ -1,5 +1,5 @@
 import { Container, Group } from '@mantine/core';
-import { Suspense } from 'react';
+import { JSX, Suspense } from 'react';
 import { Outlet } from 'react-router';
 import { SideMenu } from '../../components/SideMenu';
 

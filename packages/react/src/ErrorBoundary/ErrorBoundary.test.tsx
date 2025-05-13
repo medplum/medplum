@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useState } from 'react';
 import { render, screen } from '../test-utils/render';
 import { ErrorBoundary } from './ErrorBoundary';
 

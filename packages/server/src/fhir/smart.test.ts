@@ -1,7 +1,7 @@
 import { AccessPolicy } from '@medplum/fhirtypes';
-import { applySmartScopes, parseSmartScopes } from './smart';
 import { randomUUID } from 'node:crypto';
 import { PopulatedAccessPolicy } from './accesspolicy';
+import { applySmartScopes, parseSmartScopes } from './smart';
 
 describe('SMART on FHIR', () => {
   test('Parse empty', () => {

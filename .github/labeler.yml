@@ -24,15 +24,6 @@ auth:
           - packages/server/src/fhir/accesspolicy.ts
           - packages/core/src/access.ts
 
-security:
-  - changed-files:
-      - any-glob-to-any-file:
-          - packages/server/src/auth/**/*
-          - packages/server/src/oauth/**/*
-          - packages/server/src/scim/**/*
-          - packages/server/src/fhir/accesspolicy.ts
-          - packages/core/src/access.ts
-
 fhir-datastore:
   - changed-files:
       - any-glob-to-any-file:

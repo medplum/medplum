@@ -27,6 +27,7 @@ import {
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, renderHook } from '@testing-library/react';
+import { JSX } from 'react';
 import { MemoryRouter } from 'react-router';
 import { vi } from 'vitest';
 import {

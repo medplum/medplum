@@ -19,6 +19,7 @@ import { agentUpgradeHandler } from './operations/agentupgrade';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { chargeItemDefinitionApplyHandler } from './operations/chargeitemdefinitionapply';
+import { claimExportGetHandler, claimExportPostHandler } from './operations/claimexport';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -51,7 +52,6 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { claimExportHandler } from './operations/claimexport';
 
 export const fhirRouter = Router();
 
@@ -110,7 +110,7 @@ fhirRouter.use(function setupResponseInterceptors(req: Request, res: Response, n
     const ctx = tryGetRequestContext();
     if (ctx?.fhirRateLimiter) {
       // Attach rate limit header before sending first part of response body
-      res.append('RateLimit', ctx.fhirRateLimiter.rateLimitHeader());
+      ctx.fhirRateLimiter.attachRateLimitHeader(res);
     }
 
     return oldSend.call(res, ...args);
@@ -254,7 +254,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
   // Claim $export operation
-  router.add('GET', '/Claim/:id/$export', claimExportHandler);
+  router.add('POST', '/Claim/$export', claimExportPostHandler);
+  router.add('GET', '/Claim/:id/$export', claimExportGetHandler);
 
   // Group $export operation
   router.add('GET', '/Group/:id/$export', groupExportHandler);
