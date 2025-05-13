@@ -1,22 +1,21 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { MemoryRouter } from 'react-router';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { HomePage } from './HomePage';
 
 const medplum = new MockClient();
 
 async function setup(): Promise<void> {
-  await act(async () => {
-    render(
-      <MemoryRouter>
-        <MedplumProvider medplum={medplum}>
-          <HomePage />
-        </MedplumProvider>
-      </MemoryRouter>
-    );
-  });
+  render(
+    <MemoryRouter>
+      <MedplumProvider medplum={medplum}>
+        <HomePage />
+      </MedplumProvider>
+    </MemoryRouter>
+  );
 }
 
 describe('HomePage', () => {

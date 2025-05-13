@@ -8,7 +8,7 @@
     "dev": "vite",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "jest"
+    "test": "vitest run"
   },
   "prettier": {
     "printWidth": 120,
