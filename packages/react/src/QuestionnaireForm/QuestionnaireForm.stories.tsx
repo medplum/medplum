@@ -970,6 +970,37 @@ export const MultipleChoice = (): JSX.Element => (
               },
             ],
           },
+          {
+            linkId: 'q2',
+            text: 'Question 2',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Red',
+              },
+              {
+                valueString: 'Blue',
+              },
+              {
+                valueString: 'Yellow',
+              },
+            ],
+            "extension": [
+              {
+                url: "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: "http://hl7.org/fhir/questionnaire-item-control",
+                      code: "check-box",
+                      display: "Check box",
+                    }
+                  ],
+                  text: "Check box",
+                }
+              }
+            ]
+          },
         ],
       }}
       onSubmit={(formData: any) => {
@@ -1578,6 +1609,12 @@ export const KitchenSink = (): JSX.Element => (
             linkId: 'quantity',
             type: 'quantity',
             text: 'Quantity',
+          },
+          {
+            linkId: 'value-set-checkbox-choice',
+            type: 'choice',
+            text: 'Value Set Checkbox Choice',
+            answerValueSet: 'http://terminology.hl7.org/ValueSet/v3-Ethnicity',
           },
         ],
       }}
