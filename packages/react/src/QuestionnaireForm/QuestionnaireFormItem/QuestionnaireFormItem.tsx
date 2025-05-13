@@ -253,17 +253,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       break;
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
-      if (isDropdownChoice(item) || (item.answerValueSet && !isRadiobuttonChoice(item))) {
-        formComponent = (
-          <QuestionnaireDropdownInput
-            name={name}
-            item={item}
-            initial={initial}
-            response={response}
-            onChangeAnswer={(e) => onChangeAnswer(e)}
-          />
-        );
-      } else if (isCheckboxChoice(item)) {
+      if (isCheckboxChoice(item)) {
         formComponent = (
           <QuestionnaireCheckboxInput
             name={response?.id ?? name}
@@ -271,6 +261,16 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             initial={initial}
             response={response}
             onChangeAnswer={onChangeAnswer}
+          />
+        );
+      } else if (isDropdownChoice(item) || (item.answerValueSet && !isRadiobuttonChoice(item))) {
+        formComponent = (
+          <QuestionnaireDropdownInput
+            name={name}
+            item={item}
+            initial={initial}
+            response={response}
+            onChangeAnswer={(e) => onChangeAnswer(e)}
           />
         );
       } else {
