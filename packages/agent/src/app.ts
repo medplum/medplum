@@ -661,7 +661,7 @@ export class App {
       child = spawn(command, ['--upgrade'], {
         detached: true,
         stdio: ['ignore', logFile, logFile, 'ipc'],
-        shell: false,
+        shell: true,
         windowsHide: true,
       });
       // We unref the child process so that this process can close before the child has closed (since we want the child to be able to close the parent process)
