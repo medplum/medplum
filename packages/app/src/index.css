@@ -10,3 +10,14 @@ body,
 .grecaptcha-badge {
   visibility: hidden;
 }
+
+/* Center modal vertically */
+.mantine-Modal-root .mantine-Modal-inner {
+  display: flex;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.mantine-Modal-root .mantine-Modal-content {
+  margin: 0;
+}

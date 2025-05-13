@@ -57,6 +57,17 @@ export async function initApp(): Promise<void> {
       lg: '1.0rem',
       xl: '1.125rem',
     },
+    components: {
+      Modal: {
+        styles: {
+          inner: {
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+          },
+        },
+      },
+    },
   });
 
   const router = createBrowserRouter([{ path: '*', element: <App /> }]);

@@ -1,13 +1,15 @@
-import { Anchor, Grid, Group, Modal, SimpleGrid, Text, Textarea, TextInput, Tooltip } from '@mantine/core';
+import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Modal, SimpleGrid, TextInput, Textarea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { Fragment, useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
+import { killEvent } from '../utils/dom';
+import { IconChevronDown, IconPlus, IconPencil, IconChevronRight } from '@tabler/icons-react';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { formatDate } from '@medplum/core';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
-import { killEvent } from '../utils/dom';
-import { ConceptBadge } from './ConceptBadge';
 import {
   createCompoundObservation,
   createLoincCode,
@@ -15,6 +17,7 @@ import {
   createQuantity,
   getObservationValue,
 } from './Vitals.utils';
+import styles from './PatientSummary.module.css';
 
 interface ObservationMeta {
   readonly name: string;
@@ -25,82 +28,69 @@ interface ObservationMeta {
   readonly unit: string;
 }
 
-const BP = '85354-9';
-const SYSTOLIC = '8480-6';
-const DIASTOLIC = '8462-4';
-
 const LOINC_CODES: ObservationMeta[] = [
   {
     name: 'systolic',
-    short: 'BP Sys',
-    code: BP,
-    component: SYSTOLIC,
-    title: 'Blood Pressure',
+    short: 'Systolic',
+    code: '8480-6',
+    title: 'Systolic blood pressure',
     unit: 'mm[Hg]',
   },
   {
     name: 'diastolic',
-    short: 'BP Dias',
-    code: BP,
-    component: DIASTOLIC,
-    title: 'Blood Pressure',
+    short: 'Diastolic',
+    code: '8462-4',
+    title: 'Diastolic blood pressure',
     unit: 'mm[Hg]',
   },
   {
-    name: 'heartRate',
-    short: 'HR',
+    name: 'pulse',
+    short: 'Pulse',
     code: '8867-4',
-    title: 'Heart Rate',
+    title: 'Heart rate',
     unit: '/min',
   },
   {
-    name: 'bodyTemperature',
+    name: 'temperature',
     short: 'Temp',
     code: '8310-5',
-    title: 'Body Temperature',
+    title: 'Body temperature',
     unit: 'Cel',
   },
   {
-    name: 'respiratoryRate',
-    short: 'RR',
+    name: 'respiratory',
+    short: 'Resp',
     code: '9279-1',
-    title: 'Respiratory Rate',
+    title: 'Respiratory rate',
     unit: '/min',
   },
   {
+    name: 'oxygen',
+    short: 'O2',
+    code: '2708-6',
+    title: 'Oxygen saturation in Arterial blood',
+    unit: '%',
+  },
+  {
     name: 'height',
-    short: 'Ht',
+    short: 'Height',
     code: '8302-2',
-    title: 'Height',
+    title: 'Body height',
     unit: 'cm',
   },
   {
     name: 'weight',
-    short: 'Wt',
+    short: 'Weight',
     code: '29463-7',
-    title: 'Weight',
+    title: 'Body weight',
     unit: 'kg',
   },
   {
     name: 'bmi',
     short: 'BMI',
     code: '39156-5',
-    title: 'BMI',
+    title: 'Body mass index (BMI) [Ratio]',
     unit: 'kg/m2',
-  },
-  {
-    name: 'oxygen',
-    short: 'O2',
-    code: '2708-6',
-    title: 'Oxygen',
-    unit: '%',
-  },
-  {
-    name: 'headCircumference',
-    short: 'HC',
-    code: '9843-4',
-    title: 'Head Circumference',
-    unit: 'cm',
   },
 ];
 
@@ -111,97 +101,215 @@ export interface VitalsProps {
   readonly onClickResource?: (resource: Observation) => void;
 }
 
+// Helper function to get status badge color
+const getStatusColor = (status?: string): string => {
+  if (!status) return 'gray';
+  switch (status) {
+    case 'final':
+      return 'green';
+    case 'preliminary':
+      return 'yellow';
+    case 'amended':
+      return 'blue';
+    case 'corrected':
+      return 'orange';
+    case 'cancelled':
+      return 'red';
+    case 'entered-in-error':
+      return 'gray';
+    default:
+      return 'gray';
+  }
+};
+
 export function Vitals(props: VitalsProps): JSX.Element {
   const medplum = useMedplum();
-  const { patient, encounter } = props;
   const [vitals, setVitals] = useState<Observation[]>(props.vitals);
   const [opened, { open, close }] = useDisclosure(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      const newObservations = [];
+      const observations: Observation[] = [];
+      const now = new Date().toISOString();
 
-      // Blood pressure is special because it has two components
-      newObservations.push(
-        createCompoundObservation(patient, encounter, BP, 'Blood pressure', [
-          {
-            code: createLoincCode(SYSTOLIC, 'Systolic blood pressure'),
-            valueQuantity: createQuantity(parseFloat(formData['systolic']), 'mm[Hg]'),
-          },
-          {
-            code: createLoincCode(DIASTOLIC, 'Diastolic blood pressure'),
-            valueQuantity: createQuantity(parseFloat(formData['diastolic']), 'mm[Hg]'),
-          },
-        ])
-      );
-
-      for (const meta of LOINC_CODES) {
-        if (meta.component) {
-          continue;
-        }
-        newObservations.push(
-          createObservation(
-            patient,
-            encounter,
-            meta.code,
-            meta.title,
-            createQuantity(parseFloat(formData[meta.name]), meta.unit)
-          )
+      // Handle blood pressure as a compound observation
+      if (formData.systolic || formData.diastolic) {
+        const bpObs = createCompoundObservation(
+          props.patient,
+          props.encounter,
+          'blood-pressure',
+          'Blood pressure',
+          [
+            {
+              code: createLoincCode('8480-6', 'Systolic blood pressure'),
+              valueQuantity: createQuantity(parseFloat(formData.systolic), 'mm[Hg]'),
+            },
+            {
+              code: createLoincCode('8462-4', 'Diastolic blood pressure'),
+              valueQuantity: createQuantity(parseFloat(formData.diastolic), 'mm[Hg]'),
+            },
+          ]
         );
+        if (bpObs) {
+          observations.push(bpObs);
+        }
       }
 
-      // Execute all create requests in parallel to take advantage of autobatching
-      Promise.all(newObservations.filter(Boolean).map((obs) => medplum.createResource<Observation>(obs as Observation)))
-        .then((newVitals) => setVitals([...newVitals, ...vitals]))
-        .catch(console.error);
+      // Handle all other vitals as individual observations
+      LOINC_CODES.filter((meta) => meta.name !== 'systolic' && meta.name !== 'diastolic').forEach((meta) => {
+        const value = formData[meta.name];
+        if (value) {
+          const obs = createObservation(
+            props.patient,
+            props.encounter,
+            meta.code,
+            meta.title,
+            createQuantity(parseFloat(value), meta.unit)
+          );
+          if (obs) {
+            observations.push(obs);
+          }
+        }
+      });
 
-      close();
+      Promise.all(observations.map((obs) => medplum.createResource(obs)))
+        .then((newVitals) => {
+          setVitals([...vitals, ...newVitals]);
+          close();
+        })
+        .catch(console.error);
     },
-    [medplum, patient, encounter, vitals, close]
+    [medplum, props.patient, props.encounter, vitals, close]
   );
+
+  const patientId = props.patient.id;
 
   return (
     <>
-      <Group justify="space-between">
-        <Text fz="md" fw={700}>
-          Vitals
-        </Text>
-        <Anchor
-          href="#"
-          onClick={(e) => {
-            killEvent(e);
-            open();
+      <Box style={{ position: 'relative' }}>
+        <UnstyledButton
+          style={{
+            width: '100%',
+            cursor: 'default',
+            '&:hover .add-button': {
+              opacity: 1
+            },
+            '& .mantine-ActionIcon-root, & .mantine-Text-root': {
+              cursor: 'pointer',
+              margin: '0'
+            }
           }}
         >
-          + Add
-        </Anchor>
-      </Group>
-      <Grid align="center">
-        {LOINC_CODES.map((meta) => {
-          const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
-          return (
-            <Fragment key={meta.name}>
-              <Grid.Col span={2} ta="right">
-                <Tooltip label={meta.title}>
-                  <Text c="dimmed" size="xs">
-                    {meta.short}
-                  </Text>
-                </Tooltip>
-              </Grid.Col>
-              <Grid.Col span={4} p={1}>
-                {obs && (
-                  <ConceptBadge<Observation>
-                    key={meta.name}
-                    resource={obs}
-                    display={formatQuantity(getObservationValue(obs, meta.component))}
-                    onClick={props.onClickResource}
-                  />
-                )}
-              </Grid.Col>
-            </Fragment>
-          );
-        })}
-      </Grid>
+          <Group justify="space-between">
+            <Group gap={8}>
+              <ActionIcon
+                variant="subtle"
+                onClick={() => setCollapsed((c) => !c)}
+                aria-label={collapsed ? 'Show vitals' : 'Hide vitals'}
+                style={{ transition: 'transform 0.2s', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
+                size="md"
+              >
+                <IconChevronDown size={20} />
+              </ActionIcon>
+              <Text fz="md" fw={800} onClick={() => setCollapsed((c) => !c)} style={{ cursor: 'pointer' }}>
+                Vitals
+              </Text>
+            </Group>
+            <ActionIcon
+              className="add-button"
+              variant="subtle"
+              onClick={(e) => {
+                killEvent(e);
+                open();
+              }}
+              style={{
+                opacity: 0,
+                transition: 'opacity 0.2s',
+                position: 'absolute',
+                right: 0,
+                top: 0,
+                transform: 'none',
+                strokeWidth: 1
+              }}
+              size="md"
+            >
+              <IconPlus size={18} />
+            </ActionIcon>
+          </Group>
+        </UnstyledButton>
+        <Collapse in={!collapsed}>
+          {vitals.length > 0 ? (
+            <Box ml="36" mt="8" mb="16">
+              <Flex direction="column" gap={8}>
+                {LOINC_CODES.map((meta, index) => {
+                  const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
+                  if (!obs) return null;
+
+                  const loincCode = meta.code;
+                  const category = meta.name === 'respiratory' ? 'respRate' : 'vital-signs';
+                  const tableUrl = `/Patient/${patientId}/Observation?_count=20&_fields=_id,_lastUpdated,value[x]&category=${category}&category=vital-signs&patient=Patient%2F${patientId}&code=${loincCode}`;
+
+                  return (
+                    <MedplumLink
+                      key={meta.code}
+                      to={tableUrl}
+                      style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+                    >
+                      <Box
+                      className={styles.patientSummaryListItem}
+                      onMouseEnter={() => setHoverIndex(index)}
+                      onMouseLeave={() => setHoverIndex(null)}
+                        onClick={() => {
+                          if (props.onClickResource) {
+                            props.onClickResource(obs);
+                          }
+                        }}
+                        style={{ cursor: 'pointer' }}
+                    >
+                      <Group gap={4} align="center">
+                        <Text size="sm" fw={500} style={{ cursor: 'pointer' }}>
+                          {meta.short}:
+                        </Text>
+                        <Text size="sm">
+                          {formatQuantity(getObservationValue(obs, meta.component))}
+                        </Text>
+                        {obs?.effectiveDateTime && (
+                          <Text size="xs" fw={500} color="gray.6" ml={2}>
+                            {formatDate(obs.effectiveDateTime)}
+                          </Text>
+                        )}
+                      </Group>
+                      <div className={styles.patientSummaryGradient} />
+                      <div className={styles.patientSummaryChevronContainer}>
+                        <ActionIcon
+                          className={styles.patientSummaryChevron}
+                          size="md"
+                          variant="transparent"
+                            tabIndex={-1}
+                        >
+                          <IconChevronRight size={16} stroke={2.5}/>
+                        </ActionIcon>
+                      </div>
+                    </Box>
+                    </MedplumLink>
+                  );
+                })}
+              </Flex>
+            </Box>
+          ) : (
+            <Box ml="36" my="4">
+              <Text>(none)</Text>
+            </Box>
+          )}
+        </Collapse>
+        <style>{`
+          .mantine-UnstyledButton-root:hover .add-button {
+            opacity: 1 !important;
+          }
+        `}</style>
+      </Box>
       <Modal opened={opened} onClose={close} title="Add Vitals">
         <Form onSubmit={handleSubmit}>
           <SimpleGrid cols={2}>

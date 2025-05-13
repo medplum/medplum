@@ -79,18 +79,16 @@ export function PatientPage(): JSX.Element {
   return (
     <div key={getReferenceString(patient)} className={classes.container}>
       <div className={classes.sidebar}>
-        <ScrollArea className={classes.scrollArea}>
-          <PatientSummary
-            w={350}
-            mb="auto"
-            patient={patient}
-            appointmentsUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('appointments'))}
-            encountersUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('encounter'))}
-            onClickResource={(resource) =>
-              navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
-            }
-          />
-        </ScrollArea>
+        <PatientSummary
+          w={350}
+          mb="auto"
+          patient={patient}
+          appointmentsUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('appointments'))}
+          encountersUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('encounter'))}
+          onClickResource={(resource) =>
+            navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
+          }
+        />
       </div>
 
       <div className={classes.content}>
