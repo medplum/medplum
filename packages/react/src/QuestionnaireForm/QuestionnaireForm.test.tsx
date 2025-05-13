@@ -1329,7 +1329,7 @@ describe('QuestionnaireForm', () => {
 
   test('Value Set Checkbox', async () => {
     const onSubmit = jest.fn();
-    
+
     // Mock the value set expansion to return more than 30 items
     const mockValueSet = {
       resourceType: 'ValueSet',
@@ -1341,7 +1341,7 @@ describe('QuestionnaireForm', () => {
         })),
       },
     };
-    
+
     // Mock the medplum client's valueSetExpand method
     medplum.valueSetExpand = jest.fn().mockResolvedValue(mockValueSet);
 
