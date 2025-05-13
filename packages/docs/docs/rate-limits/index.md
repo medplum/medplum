@@ -24,7 +24,7 @@ In addition to limits on the number of requests that can be made to the Medplum 
 
 :::warning Feature Beta
 
-FHIR interaction quotas are currently in beta testing, and are not yet finalized. Specific details about how
+FHIR interaction quotas are currently in draft, and are not yet finalized. Specific details about how
 the limits are calculated and enforced are subject to change.
 
 The quota is calculated as the sum of each user's interactions in a given minute, where each interaction is weighted by its impact on the data store. Here are the weights used to calculate the quota:
@@ -36,7 +36,7 @@ The quota is calculated as the sum of each user's interactions in a given minute
 | Update | 100 points | Full resource update |
 | Delete | 100 points | Deleting a resource |
 | Patch | 100 points | Partial resource update |
-| Search | 100 points | Searching resources |
+| Search | 20 points | Searching resources |
 | History | 10 points | Retrieving resource version history |
 
 :::
