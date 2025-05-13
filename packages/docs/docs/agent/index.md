@@ -18,7 +18,7 @@ The Medplum Agent securely connects to Medplum servers running in the cloud usin
 
 ## Installation
 
-The installation of the agent has two parts: first setting up the configurations on the Medplum app, second installing the application on the edge host and then inputting the configurations from the first step into the installer. After completing your install you'll be able to send test transmissions end-to-end.
+The installation of the agent has two parts: first [setting up the configurations on the Medplum app](#configuration-on-medplum-app), then [installing the application on the edge host](#install-on-host) and then inputting the configurations from the first step into the installer. After completing your install you'll be able to [send test transmissions end-to-end](#testing-your-setup).
 
 ### Configuration on Medplum App
 
