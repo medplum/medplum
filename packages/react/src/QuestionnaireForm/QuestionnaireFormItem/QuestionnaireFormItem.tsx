@@ -253,14 +253,14 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       break;
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
-      if (isRadiobuttonChoice(item)) {
+      if (isDropdownChoice(item) || (item.answerValueSet && !isRadiobuttonChoice(item))) {
         formComponent = (
-          <QuestionnaireRadiobuttonInput
-            name={response?.id ?? name}
+          <QuestionnaireDropdownInput
+            name={name}
             item={item}
             initial={initial}
             response={response}
-            onChangeAnswer={onChangeAnswer}
+            onChangeAnswer={(e) => onChangeAnswer(e)}
           />
         );
       } else if (isCheckboxChoice(item)) {
@@ -275,12 +275,12 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         );
       } else {
         formComponent = (
-          <QuestionnaireDropdownInput
-            name={name}
+          <QuestionnaireRadiobuttonInput
+            name={response?.id ?? name}
             item={item}
             initial={initial}
             response={response}
-            onChangeAnswer={(e) => onChangeAnswer(e)}
+            onChangeAnswer={onChangeAnswer}
           />
         );
       }
@@ -676,11 +676,11 @@ function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: T
   return options.find((option) => deepEquals(option[1].value, defaultAnswer?.value))?.[0];
 }
 
-function isMultiSelectChoice(item: QuestionnaireItem): boolean {
+function isDropdownChoice(item: QuestionnaireItem): boolean {
   return !!item.extension?.some(
     (e) =>
-      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
-      e.valueCodeableConcept?.coding?.[0]?.code === 'multi-select'
+      e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
+      e.valueCodeableConcept?.coding?.[0]?.code === 'drop-down'
   );
 }
 
@@ -697,6 +697,14 @@ function isRadiobuttonChoice(item: QuestionnaireItem): boolean {
     (e) =>
       e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
       e.valueCodeableConcept?.coding?.[0]?.code === 'radio-button'
+  );
+}
+
+function isMultiSelectChoice(item: QuestionnaireItem): boolean {
+  return !!item.extension?.some(
+    (e) =>
+      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
+      e.valueCodeableConcept?.coding?.[0]?.code === 'multi-select'
   );
 }
 
