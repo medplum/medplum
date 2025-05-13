@@ -33,8 +33,8 @@ import {
 import { useMedplum } from '@medplum/react-hooks';
 import { ChangeEvent, JSX, useContext, useEffect, useState } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
+import { AsyncAutocomplete } from '../../AsyncAutocomplete/AsyncAutocomplete';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
-import { CodingInput } from '../../CodingInput/CodingInput';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
@@ -314,6 +314,7 @@ interface QuestionnaireChoiceInputProps {
 
 function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, response } = props;
+  const medplum = useMedplum();
 
   if (!item.answerOption?.length && !item.answerValueSet) {
     return <NoAnswerDisplay />;
@@ -326,19 +327,33 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
 
   if (item.answerValueSet) {
     return (
-      <CodingInput
-        path=""
+      <AsyncAutocomplete<Coding>
         name={name}
-        binding={item.answerValueSet}
-        response={response}
-        onChange={(codes: Coding[]) => {
+        loadOptions={async (inputValue: string, _signal: AbortSignal) => {
+          const valueSet = await medplum.valueSetExpand({
+            url: item.answerValueSet as string,
+            filter: inputValue,
+            count: 50,
+          });
+          return valueSet.expansion?.contains?.map((item) => ({
+            system: item.system,
+            code: item.code,
+            display: item.display,
+          } as Coding)) ?? [];
+        }}
+        toOption={(coding: Coding) => ({
+          value: coding.code as string,
+          label: coding.display as string,
+          resource: coding,
+        })}
+        defaultValue={defaultValue?.value}
+        onChange={(value) => {
           if (isMultiSelect) {
-            onChangeAnswer(codes.map((code: Coding) => ({ valueCoding: code })));
+            onChangeAnswer(value.map((coding) => ({ valueCoding: coding })));
           } else {
-            onChangeAnswer({ valueCoding: codes[0] });
+            onChangeAnswer({ valueCoding: value[0] });
           }
         }}
-        creatable={item.type === QuestionnaireItemType.openChoice}
         maxValues={isMultiSelect ? undefined : 1}
       />
     );

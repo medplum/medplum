@@ -5,36 +5,26 @@ import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAuto
 
 export interface CodingInputProps
   extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange' | 'disabled' | 'name'>,
-    Omit<ComplexTypeInputProps<Coding>, 'onChange'> {
+    ComplexTypeInputProps<Coding> {
   readonly response?: QuestionnaireResponseItem;
-  readonly onChange?: (value: Coding[]) => void;
 }
 
 export function CodingInput(props: CodingInputProps): JSX.Element {
   const { defaultValue, onChange, withHelpText, response, ...rest } = props;
-  const [value, setValue] = useState<Coding[] | undefined>(() => {
-    if (response?.answer?.[0]?.valueCoding) {
-      return [response.answer[0].valueCoding];
-    }
-    if (defaultValue) {
-      return [defaultValue];
-    }
-    return undefined;
-  });
+  const [value, setValue] = useState<Coding | undefined>(response?.answer?.[0]?.valueCoding ?? defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
-    if (newValues && newValues.length > 0) {
-      const concepts = newValues.map((value) => valueSetElementToCoding(value));
-      setValue(concepts);
-      if (onChange) {
-        onChange(concepts);
-      }
+    const newValue = newValues[0];
+    const newConcept = newValue && valueSetElementToCoding(newValue);
+    setValue(newConcept);
+    if (onChange) {
+      onChange(newConcept);
     }
   }
 
   return (
     <ValueSetAutocomplete
-      defaultValue={value?.map(codingToValueSetElement)}
+      defaultValue={value ? codingToValueSetElement(value) : undefined}
       maxValues={1}
       onChange={handleChange}
       withHelpText={withHelpText ?? true}
