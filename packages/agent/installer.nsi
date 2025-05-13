@@ -246,6 +246,10 @@ Function StopAndDeleteMedplumServices
     # Get the service name to filter out from function args
     Pop $0
 
+    DetailPrint "Printing PATH..."
+    ReadEnvStr $1 PATH
+    DetailPrint "PATH: $1"
+
     DetailPrint "DEBUG: Querying for list of all services..."
     nsExec::ExecToStack `cmd.exe /c sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent"`
     Pop $1 # Exit code
