@@ -14,6 +14,7 @@ export default defineConfig({
       '@medplum/fhirtypes': path.resolve(__dirname, '../../packages/fhirtypes/dist'),
       '@medplum/fhir-router': path.resolve(__dirname, '../../packages/fhir-router/src'),
       '@medplum/definitions': path.resolve(__dirname, '../../packages/definitions/src'),
+      '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),
     },
   },
 });
