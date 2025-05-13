@@ -11,6 +11,8 @@ const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
   Object.entries({
     '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
     '@medplum/dosespot-react': path.resolve(__dirname, '../../packages/dosespot-react/src'),
+    '@medplum/fhirtypes': path.resolve(__dirname, '../../packages/fhirtypes/dist'),
+    '@medplum/mock': path.resolve(__dirname, '../../packages/mock/src'),
     '@medplum/react$': path.resolve(__dirname, '../../packages/react/src'),
     '@medplum/react/styles.css': path.resolve(__dirname, '../../packages/react/dist/styles.css'),
     '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),
@@ -30,5 +32,9 @@ export default defineConfig({
   },
   resolve: {
     alias,
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
   },
 });
