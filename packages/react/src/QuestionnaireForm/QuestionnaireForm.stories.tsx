@@ -985,21 +985,21 @@ export const MultipleChoice = (): JSX.Element => (
                 valueString: 'Yellow',
               },
             ],
-            "extension": [
+            extension: [
               {
-                url: "http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl",
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
                 valueCodeableConcept: {
                   coding: [
                     {
-                      system: "http://hl7.org/fhir/questionnaire-item-control",
-                      code: "check-box",
-                      display: "Check box",
-                    }
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check box',
+                    },
                   ],
-                  text: "Check box",
-                }
-              }
-            ]
+                  text: 'Check box',
+                },
+              },
+            ],
           },
         ],
       }}
