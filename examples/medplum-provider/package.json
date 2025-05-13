@@ -47,6 +47,6 @@
     "react-router": "7.6.0",
     "typescript": "5.8.3",
     "vite": "6.3.5",
-    "vitest": "1.2.2"
+    "vitest": "3.1.3"
   }
 }
