@@ -490,35 +490,44 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
     return <NoAnswerDisplay />;
   }
 
+  const limitedOptions = options.slice(0, 30);
+
   return (
-    <Radio.Group
-      name={name}
-      value={answerLinkId ?? defaultValue}
-      onChange={(newValue) => {
-        const option = options.find((option) => option[0] === newValue);
-        if (option) {
-          const optionValue = option[1];
-          const propertyName = 'value' + capitalize(optionValue.type);
-          onChangeAnswer({ [propertyName]: optionValue.value });
-        }
-      }}
-    >
-      {options.map(([optionName, optionValue]) => (
-        <Radio
-          key={optionName}
-          id={optionName}
-          value={optionName}
-          py={4}
-          label={
-            <ResourcePropertyDisplay
-              property={valueElementDefinition}
-              propertyType={optionValue.type}
-              value={optionValue.value}
-            />
+    <>
+      <Radio.Group
+        name={name}
+        value={answerLinkId ?? defaultValue}
+        onChange={(newValue) => {
+          const option = options.find((option) => option[0] === newValue);
+          if (option) {
+            const optionValue = option[1];
+            const propertyName = 'value' + capitalize(optionValue.type);
+            onChangeAnswer({ [propertyName]: optionValue.value });
           }
-        />
-      ))}
-    </Radio.Group>
+        }}
+      >
+        {limitedOptions.map(([optionName, optionValue]) => (
+          <Radio
+            key={optionName}
+            id={optionName}
+            value={optionName}
+            py={4}
+            label={
+              <ResourcePropertyDisplay
+                property={valueElementDefinition}
+                propertyType={optionValue.type}
+                value={optionValue.value}
+              />
+            }
+          />
+        ))}
+      </Radio.Group>
+      {options.length > 30 && (
+        <Text size="sm" c="dimmed" mt="xs">
+          Showing first 30 of {options.length} options
+        </Text>
+      )}
+    </>
   );
 }
 
@@ -587,9 +596,11 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
     return <NoAnswerDisplay />;
   }
 
+  const limitedOptions = options.slice(0, 30);
+
   return (
     <Group style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-      {options.map(([optionName, optionValue]) => {
+      {limitedOptions.map(([optionName, optionValue]) => {
         const isChecked = item.answerValueSet
           ? response.answer?.some((answer) => deepEquals(answer.valueCoding, optionValue.value))
           : currentAnswers?.includes(typedValueToString(optionValue));
@@ -634,6 +645,11 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
           />
         );
       })}
+      {options.length > 30 && (
+        <Text size="sm" c="dimmed">
+          Showing first 30 of {options.length} options
+        </Text>
+      )}
     </Group>
   );
 }
