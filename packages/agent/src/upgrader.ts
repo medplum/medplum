@@ -51,7 +51,6 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   try {
     // Run installer
     globalLogger.info('Running installer silently', { binPath });
-    // We quote the bin path since it can (and will in our case) contain spaces, which require the whole path to be quoted on Windows
     spawnSync(binPath, ['/S'], { windowsHide: true, shell: true, windowsVerbatimArguments: false });
     globalLogger.info(`Agent version ${version} successfully installed`);
   } catch (err: unknown) {
