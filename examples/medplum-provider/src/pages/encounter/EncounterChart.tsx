@@ -14,7 +14,7 @@ import {
   Task,
 } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
-import { IconCircleCheck, IconCircleOff, IconDownload, IconFileText, IconSend, IconX } from '@tabler/icons-react';
+import { IconCircleCheck, IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useParams } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
@@ -57,6 +57,7 @@ export const EncounterChart = (): JSX.Element => {
   } = useEncounterChart(patientId, encounterId);
   const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
   const [opened, setOpened] = useState(false);
+  const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
 
   useEffect(() => {
     const fetchConditions = async (): Promise<void> => {
@@ -408,7 +409,7 @@ export const EncounterChart = (): JSX.Element => {
     };
 
     setEncounter(updatedEncounter);
-    await useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS)(updatedEncounter);
+    await debouncedUpdateResource(updatedEncounter);
   };
 
   const removeDiagnosis = async (condition: Condition): Promise<void> => {
@@ -432,7 +433,7 @@ export const EncounterChart = (): JSX.Element => {
 
     setEncounter(updatedEncounter);
     await medplum.deleteResource('Condition', condition.id as string);
-    await useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS)(updatedEncounter);
+    await debouncedUpdateResource(updatedEncounter);
   };
 
   if (!patient || !encounter || !clinicalImpression) {
