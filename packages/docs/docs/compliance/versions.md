@@ -1,6 +1,5 @@
 ---
-sidebar_label: Versions
-sidebar_position: 1
+sidebar_position: 3
 ---
 
 # Medplum Version Policy
