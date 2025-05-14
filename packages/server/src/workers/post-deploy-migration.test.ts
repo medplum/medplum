@@ -7,9 +7,9 @@ import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import {
-  CustomMigrationAction,
   CustomPostDeployMigration,
   CustomPostDeployMigrationJobData,
+  MigrationActionResult,
   PostDeployJobData,
 } from '../migrations/data/types';
 import * as migrateModule from '../migrations/migrate';
@@ -207,7 +207,7 @@ describe('Post-Deploy Migration Worker', () => {
       prepareJobData: jest.fn(),
       run: jest.fn().mockImplementation(async (repo, job, jobData) => {
         return runCustomMigration(repo, job, jobData, async () => {
-          const actions: CustomMigrationAction[] = [
+          const actions: MigrationActionResult[] = [
             { name: 'first', durationMs: 111 },
             { name: 'second', durationMs: 222 },
           ];
@@ -275,7 +275,7 @@ describe('Post-Deploy Migration Worker', () => {
         prepareJobData: jest.fn(),
         run: jest.fn().mockImplementation(async (repo, job, jobData) => {
           return runCustomMigration(repo, job, jobData, async () => {
-            const actions: CustomMigrationAction[] = [
+            const actions: MigrationActionResult[] = [
               { name: 'first', durationMs: 111 },
               { name: 'second', durationMs: 222 },
             ];
@@ -345,7 +345,7 @@ describe('Post-Deploy Migration Worker', () => {
       prepareJobData: jest.fn(),
       run: jest.fn().mockImplementation(async (repo, job, jobData) => {
         return runCustomMigration(repo, job, jobData, async () => {
-          const actions: CustomMigrationAction[] = [
+          const actions: MigrationActionResult[] = [
             { name: 'first', durationMs: 111 },
             { name: 'second', durationMs: 222 },
           ];

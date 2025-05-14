@@ -2,7 +2,7 @@ import { Pool, PoolClient } from 'pg';
 import { loadTestConfig } from './config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from './database';
 import { getPostDeployVersion, markPostDeployMigrationCompleted } from './migration-sql';
-import { CustomMigrationAction, CustomPostDeployMigration } from './migrations/data/types';
+import { CustomPostDeployMigration, MigrationActionResult } from './migrations/data/types';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 
 jest.mock('./migrations/data/v1', () => {
@@ -13,7 +13,7 @@ jest.mock('./migrations/data/v1', () => {
     prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
     run: function (repo, jobData) {
       return runCustomMigration(repo, jobData, async () => {
-        const actions: CustomMigrationAction[] = [];
+        const actions: MigrationActionResult[] = [];
         actions.push({ name: 'nothing', durationMs: 5 });
         return { actions };
       });

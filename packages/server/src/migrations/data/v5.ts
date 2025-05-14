@@ -2,7 +2,7 @@ import { PoolClient } from 'pg';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import * as fns from '../migrate-functions';
 import { withLongRunningDatabaseClient } from '../migration-utils';
-import { CustomMigrationAction, CustomPostDeployMigration } from './types';
+import { CustomPostDeployMigration, MigrationActionResult } from './types';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',
@@ -10,7 +10,7 @@ export const migration: CustomPostDeployMigration = {
   run: async (repo, job, jobData) => {
     return runCustomMigration(repo, job, jobData, async () => {
       return withLongRunningDatabaseClient(async (client) => {
-        const actions: CustomMigrationAction[] = [];
+        const actions: MigrationActionResult[] = [];
         await run(client, actions);
         return { actions };
       });
@@ -19,7 +19,7 @@ export const migration: CustomPostDeployMigration = {
 };
 
 // prettier-ignore
-async function run(client: PoolClient, actions: CustomMigrationAction[]): Promise<void> {
+async function run(client: PoolClient, actions: MigrationActionResult[]): Promise<void> {
   await fns.idempotentCreateIndex(client, actions, 'Account___version_idx', 'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Account___version_idx" ON "Account" ("__version")');
   await fns.idempotentCreateIndex(client, actions, 'ActivityDefinition___version_idx', 'CREATE INDEX CONCURRENTLY IF NOT EXISTS "ActivityDefinition___version_idx" ON "ActivityDefinition" ("__version")');
   await fns.idempotentCreateIndex(client, actions, 'AdverseEvent___version_idx', 'CREATE INDEX CONCURRENTLY IF NOT EXISTS "AdverseEvent___version_idx" ON "AdverseEvent" ("__version")');

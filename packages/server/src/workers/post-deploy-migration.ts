@@ -9,6 +9,7 @@ import {
   CustomMigrationResult,
   CustomPostDeployMigrationJobData,
   DynamicPostDeployJobData,
+  MigrationActionResult,
   PostDeployJobData,
   PostDeployJobRunResult,
   PostDeployMigration,
@@ -125,17 +126,13 @@ async function runDynamicMigration(
   job: Job<DynamicPostDeployJobData>
 ): Promise<PostDeployJobRunResult> {
   const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
-  if (!isJobActive(asyncJob)) {
-    return 'interrupted';
-  }
-
   const actions = job.data.migrationActions;
   const exec = new AsyncJobExecutor(repo, asyncJob);
   try {
     const results = await withLongRunningDatabaseClient(async (client) => {
       return executeMigrationActions(client, actions);
     });
-    const output = getAsyncJobOutputFromCustomMigrationResults({ actions: results });
+    const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
   } catch (err: any) {
     await exec.failJob(repo, err);
@@ -151,17 +148,12 @@ export async function runCustomMigration(
     job: Job<CustomPostDeployMigrationJobData> | undefined,
     jobData: CustomPostDeployMigrationJobData
   ) => Promise<CustomMigrationResult>
-): Promise<'finished' | 'ineligible' | 'interrupted'> {
+): Promise<PostDeployJobRunResult> {
   const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
-
-  if (!isJobActive(asyncJob)) {
-    return 'interrupted';
-  }
-
   const exec = new AsyncJobExecutor(repo, asyncJob);
   try {
     const result = await callback(job, jobData);
-    const output = getAsyncJobOutputFromCustomMigrationResults(result);
+    const output = getAsyncJobOutputFromMigrationActionResults(result.actions);
     await exec.completeJob(repo, output);
   } catch (err: any) {
     await exec.failJob(repo, err);
@@ -169,10 +161,10 @@ export async function runCustomMigration(
   return 'finished';
 }
 
-function getAsyncJobOutputFromCustomMigrationResults(result: CustomMigrationResult): Parameters {
+function getAsyncJobOutputFromMigrationActionResults(result: MigrationActionResult[]): Parameters {
   return {
     resourceType: 'Parameters',
-    parameter: result.actions.map((r) => {
+    parameter: result.map((r) => {
       return {
         name: r.name,
         part: [

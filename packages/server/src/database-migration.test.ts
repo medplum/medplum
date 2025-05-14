@@ -13,9 +13,9 @@ import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
 import {
-  CustomMigrationAction,
   CustomPostDeployMigration,
   CustomPostDeployMigrationJobData,
+  MigrationActionResult,
   PostDeployJobData,
 } from './migrations/data/types';
 import * as migrateModule from './migrations/migrate';
@@ -64,7 +64,7 @@ jest.mock('./migrations/data/v1', () => {
     prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
     run: function (repo, jobData) {
       return runCustomMigration(repo, jobData, async () => {
-        const actions: CustomMigrationAction[] = [];
+        const actions: MigrationActionResult[] = [];
         actions.push({ name: 'nothing', durationMs: 5 });
         return { actions };
       });

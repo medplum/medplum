@@ -32,10 +32,10 @@ export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJob
   run(repo: Repository, job: Job<T> | undefined, data: T): Promise<PostDeployJobRunResult>;
 }
 
-// Custom Jobs
+export type MigrationActionResult = { name: string; durationMs: number };
 
-export type CustomMigrationAction = { name: string; durationMs: number };
-export type CustomMigrationResult = { actions: CustomMigrationAction[] };
+// Custom Jobs
+export type CustomMigrationResult = { actions: MigrationActionResult[] };
 export interface CustomPostDeployMigrationJobData extends PostDeployJobData {
   readonly type: 'custom';
 }
@@ -45,7 +45,6 @@ export interface CustomPostDeployMigration extends PostDeployMigration<CustomPos
 }
 
 // Dynamic Migration Jobs
-
 export interface DynamicPostDeployJobData extends PostDeployJobData {
   readonly type: 'dynamic';
   readonly migrationActions: MigrationAction[];
