@@ -424,6 +424,44 @@ function getValueSetOptions(
     .then((valueSet: ValueSet) => valueSet.expansion?.contains ?? []);
 }
 
+function useValueSetOptions(valueSetUrl: string | undefined): [ValueSetExpansionContains[], boolean] {
+  const medplum = useMedplum();
+  const [valueSetOptions, setValueSetOptions] = useState<ValueSetExpansionContains[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadValueSet(): Promise<void> {
+      if (!valueSetUrl) {
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const options = await getValueSetOptions(valueSetUrl, medplum);
+        if (mounted) {
+          setValueSetOptions(options);
+        }
+      } catch (err) {
+        console.error('Error loading value set:', err);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadValueSet().catch(console.error);
+
+    return () => {
+      mounted = false;
+    };
+  }, [valueSetUrl, medplum]);
+
+  return [valueSetOptions, isLoading];
+}
+
 function getOptionsFromValueSet(valueSetOptions: ValueSetExpansionContains[], name: string): [string, TypedValue][] {
   return valueSetOptions.map((option, i) => {
     const optionName = `${name}-valueset-${i}`;
@@ -443,40 +481,7 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
   const { name, item, initial, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const initialValue = getItemInitialValue(initial);
-  const medplum = useMedplum();
-
-  const [valueSetOptions, setValueSetOptions] = useState<ValueSetExpansionContains[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadValueSet(): Promise<void> {
-      if (!item.answerValueSet) {
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const options = await getValueSetOptions(item.answerValueSet, medplum);
-        if (mounted) {
-          setValueSetOptions(options);
-        }
-      } catch (err) {
-        console.error('Error loading value set:', err);
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadValueSet().catch(console.error);
-
-    return () => {
-      mounted = false;
-    };
-  }, [item.answerValueSet, medplum]);
+  const [valueSetOptions, isLoading] = useValueSetOptions(item.answerValueSet);
 
   const options: [string, TypedValue][] = [];
   let defaultValue = undefined;
@@ -556,40 +561,7 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
   const { name, item, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const currentAnswers = getCurrentMultiSelectAnswer(response);
-  const medplum = useMedplum();
-
-  const [valueSetOptions, setValueSetOptions] = useState<ValueSetExpansionContains[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-
-    async function loadValueSet(): Promise<void> {
-      if (!item.answerValueSet) {
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const options = await getValueSetOptions(item.answerValueSet, medplum);
-        if (mounted) {
-          setValueSetOptions(options);
-        }
-      } catch (err) {
-        console.error('Error loading value set:', err);
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadValueSet().catch(console.error);
-
-    return () => {
-      mounted = false;
-    };
-  }, [item.answerValueSet, medplum]);
+  const [valueSetOptions, isLoading] = useValueSetOptions(item.answerValueSet);
 
   const options: [string, TypedValue][] = [];
 
