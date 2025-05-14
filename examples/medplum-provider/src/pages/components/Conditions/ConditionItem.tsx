@@ -28,7 +28,7 @@ export default function ConditionItem(props: ConditionItemProps): JSX.Element {
               }
             }}
           />
-          <Text>{condition?.code?.coding?.[0]?.display}</Text>
+          <Text>{condition?.code?.coding?.[0]?.display || ''}</Text>
         </Group>
       </Group>
       <ActionIcon
