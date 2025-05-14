@@ -3337,7 +3337,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     // Previously default for maxRetries was 3, but we will interpret maxRetries literally and not count first attempt
     // Default of 2 matches old behavior with the new semantics
     const maxRetries = options?.maxRetries ?? 2;
-    const retryDelay = 200;
 
     // We use <= since we want to retry maxRetries times and first retry is when attemptNum === 1
     for (let attemptNum = 0; attemptNum <= maxRetries; attemptNum++) {
@@ -3351,9 +3350,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
         // Handle non-500 response and max retries exceeded
         // We return immediately for non-500 or 500 that has exceeded max retries
-        if (response.status < 500 || attemptNum === maxRetries) {
+        if (attemptNum >= maxRetries || !isRetryable(response)) {
           return response;
         }
+        await sleep(getRetryDelay(response, attemptNum));
       } catch (err) {
         // This is for the 1st retry to avoid multiple notifications
         if ((err as Error).message === 'Failed to fetch' && attemptNum === 0) {
@@ -3365,8 +3365,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           throw err;
         }
       }
-
-      await sleep(retryDelay);
     }
 
     throw new Error('Unreachable');
@@ -4273,4 +4271,20 @@ export function normalizeCreatePdfOptions(
     tableLayouts: arg3,
     fonts: arg4,
   };
+}
+
+function isRetryable(response: Response): boolean {
+  return response.status === 429 || response.status >= 500;
+}
+
+const baseRetryDelay = 500;
+function getRetryDelay(response: Response, attemptNum: number): number {
+  const rateLimitHeader = response.headers.get('ratelimit');
+  if (rateLimitHeader) {
+    const matches = rateLimitHeader.match(/,\s*t=(\d+)\s*[,;]/g)?.slice(1);
+    if (matches) {
+      return Math.max(...matches.map((s) => parseInt(s, 10)));
+    }
+  }
+  return baseRetryDelay * Math.pow(1.5, attemptNum);
 }
