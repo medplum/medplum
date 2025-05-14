@@ -1,4 +1,4 @@
-import { getQuestionnaireAnswers, getAllQuestionnaireAnswers } from '@medplum/core';
+import { getAllQuestionnaireAnswers, getQuestionnaireAnswers } from '@medplum/core';
 import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
