@@ -40,10 +40,7 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
           subject: createReference(patient),
           encounter: encounter && createReference(encounter),
           code: {
-            coding: [
-              ...(problem?.coding || []),
-              ...(diagnosis?.coding || [])
-            ],
+            coding: [...(problem?.coding || []), ...(diagnosis?.coding || [])],
           },
           clinicalStatus,
         },
