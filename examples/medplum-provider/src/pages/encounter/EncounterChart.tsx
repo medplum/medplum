@@ -375,45 +375,37 @@ export const EncounterChart = (): JSX.Element => {
     });
   };
 
+  /*
+  * Re-orders the conditions in the conditions array and updates the encounter diagnosis.
+  */
   const updateDiagnosis = async (condition: Condition, value: string): Promise<void> => {
-    if (!encounter?.diagnosis?.length) {
+    
+    if (!conditions || conditions.length === 0 || !encounter) {
       return;
     }
 
     const newRank = parseInt(value);
-    const maxAllowedRank = encounter.diagnosis.length;
+    const maxAllowedRank = conditions.length;
     const validRank = Math.max(1, Math.min(newRank, maxAllowedRank));
-    const diagnosisCopy = [...encounter.diagnosis];
-    const diagnosisIndex = diagnosisCopy.findIndex((d) => d.condition?.reference === getReferenceString(condition));
 
-    if (diagnosisIndex === -1) {
+    const updatedConditions = [...conditions];
+    const conditionIndex = updatedConditions.findIndex((c) => getReferenceString(c) === getReferenceString(condition));
+
+    if (conditionIndex === -1) {
       return;
     }
 
-    const diagnosisToUpdate = diagnosisCopy.splice(diagnosisIndex, 1)[0];
-    diagnosisCopy.splice(validRank - 1, 0, diagnosisToUpdate);
-    const updatedDiagnosis = diagnosisCopy.map((d, index) => ({
-      ...d,
-      rank: index + 1,
-    }));
+    const conditionToMove = updatedConditions.splice(conditionIndex, 1)[0];
+    updatedConditions.splice(validRank - 1, 0, conditionToMove);
+    setConditions(updatedConditions);
 
     const updatedEncounter: Encounter = {
       ...encounter,
-      diagnosis: updatedDiagnosis,
+      diagnosis: updatedConditions.map((c, index) => ({
+        condition: { reference: `Condition/${c.id}` },
+        rank: index + 1,
+      })),
     };
-
-    if (conditions?.length) {
-      const updatedConditions = [...conditions];
-      const conditionIndex = updatedConditions.findIndex(
-        (c) => getReferenceString(c) === getReferenceString(condition)
-      );
-
-      if (conditionIndex !== -1) {
-        const conditionToMove = updatedConditions.splice(conditionIndex, 1)[0];
-        updatedConditions.splice(validRank - 1, 0, conditionToMove);
-        setConditions(updatedConditions);
-      }
-    }
 
     setEncounter(updatedEncounter);
     await useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS)(updatedEncounter);
@@ -635,20 +627,6 @@ export const EncounterChart = (): JSX.Element => {
 
               <Card withBorder shadow="sm">
                 <Stack gap="md">
-                  {/* {encounter.diagnosis && encounter.diagnosis.length > 0 ? (
-                    encounter.diagnosis.map((diagnosis, idx) => (
-                      <ConditionItem
-                        key={diagnosis.id ?? idx}
-                        condition={conditions?.find(c => getReferenceString(c) === diagnosis.condition?.reference)}
-                        totalDiagnosis={encounter.diagnosis?.length || 0}
-                        onChange={updateDiagnosis}
-                        onRemove={removeDiagnosis}
-                      />
-                    ))
-                  ) : (
-                    <Text c="dimmed">No diagnosis conditions recorded</Text>
-                  )} */}
-
                   {conditions &&
                     conditions.length > 0 &&
                     conditions.map((condition, idx) => (
