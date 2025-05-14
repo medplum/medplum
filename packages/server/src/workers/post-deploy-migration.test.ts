@@ -343,7 +343,6 @@ describe('Post-Deploy Migration Worker', () => {
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
       asyncJobId: asyncJob.id,
-      requestId: '123',
       traceId: '456',
     };
     const result = await runCustomMigration(systemRepo, undefined, jobData, mockCallback);
@@ -377,7 +376,6 @@ describe('Post-Deploy Migration Worker', () => {
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
       asyncJobId: asyncJob.id,
-      requestId: '123',
       traceId: '456',
     };
     const mockCallback = jest.fn();
@@ -401,7 +399,6 @@ describe('Post-Deploy Migration Worker', () => {
     const jobData: CustomPostDeployMigrationJobData = {
       type: 'custom',
       asyncJobId: asyncJob.id,
-      requestId: '123',
       traceId: '456',
     };
     const mockCallback = jest.fn().mockImplementation(() => {

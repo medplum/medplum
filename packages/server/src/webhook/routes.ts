@@ -2,6 +2,7 @@ import { allOk, badRequest, getStatus, isOperationOutcome } from '@medplum/core'
 import { Bot, OperationOutcome, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
+import { tryGetRequestContext } from '../context';
 import { executeBot } from '../fhir/operations/execute';
 import { getSystemRepo } from '../fhir/repo';
 
@@ -56,6 +57,7 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
     headers,
+    traceId: tryGetRequestContext()?.traceId,
   });
 
   // Unlike normal Bot $execute operations, we don't want to return the result
