@@ -75,6 +75,7 @@ export interface LoginRequest {
   readonly remoteAddress?: string;
   readonly userAgent?: string;
   readonly allowNoMembership?: boolean;
+  readonly origin?: string;
   /** @deprecated Use scope of "offline" or "offline_access" instead. */
   readonly remember?: boolean;
 }
@@ -142,6 +143,11 @@ export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   let client: ClientApplication | undefined;
   if (request.clientId) {
     client = await getClientApplication(request.clientId);
+    if (client.allowedOrigin && request.origin) {
+      if (!client.allowedOrigin.some((o) => o === request.origin)) {
+        throw new OperationOutcomeError(badRequest('Invalid origin'));
+      }
+    }
   }
 
   validatePkce(request, client);
