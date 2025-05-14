@@ -1,4 +1,4 @@
-import { Client, Pool, PoolClient } from 'pg';
+import { Client, escapeIdentifier, Pool, PoolClient } from 'pg';
 import { globalLogger } from '../logger';
 import { MigrationActionResult } from './types';
 
@@ -54,10 +54,11 @@ export async function idempotentCreateIndex(
     }
 
     const start = Date.now();
-    await client.query(`DROP INDEX IF EXISTS ${indexName}`);
+    const dropQuery = `DROP INDEX IF EXISTS ${escapeIdentifier(indexName)}`;
+    await client.query(dropQuery);
     const durationMs = Date.now() - start;
     globalLogger.info('Dropped invalid index', { indexName, durationMs });
-    results.push({ name: `DROP INDEX IF EXISTS ${indexName}`, durationMs });
+    results.push({ name: dropQuery, durationMs });
     exists = false;
   }
 
@@ -76,8 +77,9 @@ export async function analyzeTable(
   tableName: string
 ): Promise<void> {
   const start = Date.now();
-  await client.query(`ANALYZE "${tableName}"`);
+  const analyzeQuery = `ANALYZE ${escapeIdentifier(tableName)}`;
+  await client.query(analyzeQuery);
   const durationMs = Date.now() - start;
   globalLogger.info('Analyzed table', { tableName, durationMs });
-  actions.push({ name: `ANALYZE "${tableName}"`, durationMs });
+  actions.push({ name: analyzeQuery, durationMs });
 }

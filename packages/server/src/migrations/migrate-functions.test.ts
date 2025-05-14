@@ -1,8 +1,8 @@
-import { Client, Pool } from 'pg';
+import { Client, escapeIdentifier, Pool } from 'pg';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
-import { idempotentCreateIndex } from './migrate-functions';
+import { analyzeTable, idempotentCreateIndex } from './migrate-functions';
 import { MigrationActionResult } from './types';
 
 interface IndexInfo {
@@ -36,7 +36,7 @@ async function getTableIndexes(client: Client | Pool, tableName: string): Promis
     .then((results) => results.rows);
 }
 
-describe('idempotentCreateIndex', () => {
+describe('migrate-functions', () => {
   let config: MedplumServerConfig;
   let client: Pool;
 
@@ -50,107 +50,125 @@ describe('idempotentCreateIndex', () => {
     await closeDatabase();
   });
 
+  const tableName = 'Test_Table';
+  const escapedTableName = escapeIdentifier(tableName);
+
   beforeEach(async () => {
     // Create a test table
-    await client.query('DROP TABLE IF EXISTS test_table');
-    await client.query('CREATE TABLE test_table (id INTEGER, name TEXT)');
+    await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
+    await client.query(`CREATE TABLE ${escapedTableName} (id INTEGER, name TEXT)`);
   });
 
   afterEach(async () => {
     // Clean up test table and indexes
-    await client.query('DROP TABLE IF EXISTS test_table');
+    await client.query(`DROP TABLE IF EXISTS ${escapedTableName}`);
   });
 
-  const indexName = 'test_index_1';
-  const createIndexSql = 'CREATE INDEX CONCURRENTLY test_index_1 ON test_table (id)';
-  const indexDefinition = 'CREATE INDEX test_index_1 ON public.test_table USING btree (id)';
+  describe('idempotentCreateIndex', () => {
+    const indexName = 'Test_index_1';
+    const createIndexSql = `CREATE INDEX CONCURRENTLY ${escapeIdentifier(indexName)} ON ${escapedTableName} (id)`;
+    const indexDefinition = `CREATE INDEX ${escapeIdentifier(indexName)} ON public.${escapedTableName} USING btree (id)`;
 
-  test('is idempotent', async () => {
-    const actions: MigrationActionResult[] = [];
-    await idempotentCreateIndex(client, actions, indexName, createIndexSql);
-    expect(actions).toEqual([{ name: createIndexSql, durationMs: expect.any(Number) }]);
-    const indexes1 = await getTableIndexes(client, 'test_table');
-    expect(indexes1).toHaveLength(1);
-    expect(indexes1[0]).toEqual(
-      expect.objectContaining({
-        index_name: indexName,
-        is_valid: true,
-        is_live: true,
-        index_definition: indexDefinition,
-      })
-    );
+    test('is idempotent', async () => {
+      const actions: MigrationActionResult[] = [];
+      await idempotentCreateIndex(client, actions, indexName, createIndexSql);
+      expect(actions).toEqual([{ name: createIndexSql, durationMs: expect.any(Number) }]);
+      const indexes1 = await getTableIndexes(client, tableName);
+      expect(indexes1).toHaveLength(1);
+      expect(indexes1[0]).toEqual(
+        expect.objectContaining({
+          index_name: indexName,
+          is_valid: true,
+          is_live: true,
+          index_definition: indexDefinition,
+        })
+      );
 
-    // invoked twice to ensure idempotency; no actions this time
-    const actions2: MigrationActionResult[] = [];
-    await idempotentCreateIndex(client, actions2, indexName, createIndexSql);
-    expect(actions2).toHaveLength(0);
-    const indexes2 = await getTableIndexes(client, 'test_table');
-    expect(indexes2).toHaveLength(1);
-    expect(indexes2[0]).toEqual(
-      expect.objectContaining({
-        index_name: indexName,
-        is_valid: true,
-        is_live: true,
-        index_definition: indexDefinition,
-      })
-    );
+      // invoked twice to ensure idempotency; no actions this time
+      const actions2: MigrationActionResult[] = [];
+      await idempotentCreateIndex(client, actions2, indexName, createIndexSql);
+      expect(actions2).toHaveLength(0);
+      const indexes2 = await getTableIndexes(client, tableName);
+      expect(indexes2).toHaveLength(1);
+      expect(indexes2[0]).toEqual(
+        expect.objectContaining({
+          index_name: indexName,
+          is_valid: true,
+          is_live: true,
+          index_definition: indexDefinition,
+        })
+      );
 
-    // Simulate an index that failed during creation: invalid and not live
-    await client.query(
-      `UPDATE pg_index SET indisvalid = false, indislive = false 
+      // Simulate an index that failed during creation: invalid and not live
+      await client.query(
+        `UPDATE pg_index SET indisvalid = false, indislive = false 
       FROM pg_class WHERE pg_class.oid = pg_index.indexrelid 
       AND pg_class.relname = $1`,
-      [indexName]
-    );
-    const simulateFailedIndexes = await getTableIndexes(client, 'test_table');
-    expect(simulateFailedIndexes).toHaveLength(1);
-    expect(simulateFailedIndexes[0]).toEqual(
-      expect.objectContaining({
-        index_name: indexName,
-        is_valid: false,
-        is_live: false,
-        index_definition: indexDefinition,
-      })
-    );
+        [indexName]
+      );
+      const simulateFailedIndexes = await getTableIndexes(client, tableName);
+      expect(simulateFailedIndexes).toHaveLength(1);
+      expect(simulateFailedIndexes[0]).toEqual(
+        expect.objectContaining({
+          index_name: indexName,
+          is_valid: false,
+          is_live: false,
+          index_definition: indexDefinition,
+        })
+      );
 
-    const actions3: MigrationActionResult[] = [];
-    await idempotentCreateIndex(client, actions3, indexName, createIndexSql);
-    expect(actions3).toEqual([
-      { name: `DROP INDEX IF EXISTS ${indexName}`, durationMs: expect.any(Number) },
-      { name: createIndexSql, durationMs: expect.any(Number) },
-    ]);
-    const indexes3 = await getTableIndexes(client, 'test_table');
-    expect(indexes3).toHaveLength(1);
-    expect(indexes3[0]).toEqual(
-      expect.objectContaining({
-        index_name: indexName,
-        is_valid: true,
-        is_live: true,
-        index_definition: indexDefinition,
-      })
-    );
+      const actions3: MigrationActionResult[] = [];
+      await idempotentCreateIndex(client, actions3, indexName, createIndexSql);
+      expect(actions3).toEqual([
+        { name: `DROP INDEX IF EXISTS "${indexName}"`, durationMs: expect.any(Number) },
+        { name: createIndexSql, durationMs: expect.any(Number) },
+      ]);
+      const indexes3 = await getTableIndexes(client, tableName);
+      expect(indexes3).toHaveLength(1);
+      expect(indexes3[0]).toEqual(
+        expect.objectContaining({
+          index_name: indexName,
+          is_valid: true,
+          is_live: true,
+          index_definition: indexDefinition,
+        })
+      );
 
-    // Simulate an index that is being created by some other client: invalid but live
-    await client.query(
-      `UPDATE pg_index SET indisvalid = false, indislive = true 
+      // Simulate an index that is being created by some other client: invalid but live
+      await client.query(
+        `UPDATE pg_index SET indisvalid = false, indislive = true 
       FROM pg_class WHERE pg_class.oid = pg_index.indexrelid 
       AND pg_class.relname = $1`,
-      [indexName]
-    );
-    const simulateCompetingClientIndexes = await getTableIndexes(client, 'test_table');
-    expect(simulateCompetingClientIndexes).toHaveLength(1);
-    expect(simulateCompetingClientIndexes[0]).toEqual(
-      expect.objectContaining({
-        index_name: indexName,
-        is_valid: false,
-        is_live: true,
-        index_definition: indexDefinition,
-      })
-    );
+        [indexName]
+      );
+      const simulateCompetingClientIndexes = await getTableIndexes(client, tableName);
+      expect(simulateCompetingClientIndexes).toHaveLength(1);
+      expect(simulateCompetingClientIndexes[0]).toEqual(
+        expect.objectContaining({
+          index_name: indexName,
+          is_valid: false,
+          is_live: true,
+          index_definition: indexDefinition,
+        })
+      );
 
-    // Fails because index is being created by some other client
-    await expect(idempotentCreateIndex(client, [], indexName, createIndexSql)).rejects.toThrow(
-      'Another client is actively creating index'
-    );
+      // Fails because index is being created by some other client
+      await expect(idempotentCreateIndex(client, [], indexName, createIndexSql)).rejects.toThrow(
+        'Another client is actively creating index'
+      );
+    });
+  });
+
+  describe('analyzeTable', () => {
+    test('should analyze table', async () => {
+      const results: MigrationActionResult[] = [];
+      await analyzeTable(client, results, tableName);
+      expect(results).toEqual([
+        {
+          name: `ANALYZE ${escapedTableName}`,
+          durationMs: expect.any(Number),
+        },
+      ]);
+    });
   });
 });
