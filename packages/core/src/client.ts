@@ -3353,9 +3353,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
         this.setCurrentRateLimit(response);
 
+        // Handle non-500 response and max retries exceeded
+        // We return immediately for non-500 or 500 that has exceeded max retries
         if (response.status < 500 || attemptNum === maxRetries) {
-          // Handle non-500 response and max retries exceeded
-          // We return immediately for non-500 or 500 that has exceeded max retries
           return response;
         }
       } catch (err) {
