@@ -18,14 +18,8 @@ import {
   Goal,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-<<<<<<< HEAD
 import { IconStethoscope, IconCake, IconMenuOrder, IconSquareChevronsUp, IconSquareChevronsDown, IconEmpathize, IconBinaryTree, IconMapPin, IconLanguage, IconChevronRight } from '@tabler/icons-react';
 import { useEffect, useState, useRef } from 'react';
-=======
-import { IconGenderFemale, IconGenderMale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
-import { JSX, ReactNode, useEffect, useMemo, useState } from 'react';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
->>>>>>> 4cb9bdde1003c3442929ae147d71f8e9fa439015
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Contact } from './Contact';
