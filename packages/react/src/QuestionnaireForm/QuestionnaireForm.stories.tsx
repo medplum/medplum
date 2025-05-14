@@ -1034,7 +1034,28 @@ export const Choices = (): JSX.Element => (
           },
           {
             linkId: 'q4',
-            text: 'Question 4 - Value Set MultiselectDropdown',
+            type: 'choice',
+            text: 'Question 4 - Value Set Checkbox Choice',
+            answerValueSet: 'http://loinc.org/vs/LL4436-3',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check box',
+                    },
+                  ],
+                  text: 'Check box',
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'q5',
+            text: 'Question 5 - Value Set Multiselect Dropdown',
             type: 'choice',
             answerValueSet: 'http://loinc.org/vs/LL4436-3',
             extension: [
@@ -1062,27 +1083,6 @@ export const Choices = (): JSX.Element => (
                     },
                   ],
                   text: 'Multi select',
-                },
-              },
-            ],
-          },
-          {
-            linkId: 'q5',
-            type: 'choice',
-            text: 'Question 5 - Value Set Checkbox Choice > 30 items',
-            answerValueSet: 'http://terminology.hl7.org/ValueSet/v3-Ethnicity',
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'check-box',
-                      display: 'Check box',
-                    },
-                  ],
-                  text: 'Check box',
                 },
               },
             ],
