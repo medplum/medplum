@@ -669,36 +669,30 @@ function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: T
   return options.find((option) => deepEquals(option[1].value, defaultAnswer?.value))?.[0];
 }
 
-function isDropdownChoice(item: QuestionnaireItem): boolean {
-  return !!item.extension?.some(
+type ChoiceType = 'check-box' | 'drop-down' | 'radio-button' | 'multi-select' | undefined;
+
+function getChoiceType(item: QuestionnaireItem): ChoiceType {
+  return item.extension?.find(
     (e) =>
-      e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
-      e.valueCodeableConcept?.coding?.[0]?.code === 'drop-down'
-  );
+      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
+      e.valueCodeableConcept?.coding?.[0]?.code
+  )?.valueCodeableConcept?.coding?.[0]?.code as ChoiceType;
+}
+
+function isDropdownChoice(item: QuestionnaireItem): boolean {
+  return getChoiceType(item) === 'drop-down';
 }
 
 function isCheckboxChoice(item: QuestionnaireItem): boolean {
-  return !!item.extension?.some(
-    (e) =>
-      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
-      e.valueCodeableConcept?.coding?.[0]?.code === 'check-box'
-  );
+  return getChoiceType(item) === 'check-box';
 }
 
 function isRadiobuttonChoice(item: QuestionnaireItem): boolean {
-  return !!item.extension?.some(
-    (e) =>
-      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
-      e.valueCodeableConcept?.coding?.[0]?.code === 'radio-button'
-  );
+  return getChoiceType(item) === 'radio-button';
 }
 
 function isMultiSelectChoice(item: QuestionnaireItem): boolean {
-  return !!item.extension?.some(
-    (e) =>
-      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
-      e.valueCodeableConcept?.coding?.[0]?.code === 'multi-select'
-  );
+  return getChoiceType(item) === 'multi-select';
 }
 
 interface FormattedData {
