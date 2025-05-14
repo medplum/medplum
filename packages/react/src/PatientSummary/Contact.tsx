@@ -110,7 +110,11 @@ export function Contact(props: ContactProps): JSX.Element {
                     </Box>
                     <div className={styles.patientSummaryGradient} />
                     <div className={styles.patientSummaryChevronContainer} style={{ alignItems: 'flex-start', display: 'flex', width: 28, minWidth: 28, maxWidth: 28, justifyContent: 'flex-end', gap: 2 }}>
-                      <Tooltip label={copied.address ? 'Copied!' : 'Copy Address'} withArrow={false} openDelay={650}>
+                      <Tooltip 
+                        label="Copied!"
+                        withArrow={false}
+                        opened={copied.address}
+                      >
                         <ActionIcon
                           className={styles.patientSummaryChevron}
                           size="md"
@@ -119,11 +123,11 @@ export function Contact(props: ContactProps): JSX.Element {
                           onClick={e => handleCopyWithFeedback(e, addressString, 'address')}
                           aria-label="Copy address"
                         >
-                          <IconSquares size={16} stroke={2.5} />
+                          <IconSquares size={16} stroke={2.25} />
                         </ActionIcon>
                       </Tooltip>
                       <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
-                        <IconChevronRight size={16} stroke={2.5} />
+                        <IconChevronRight size={16} stroke={2.25} />
                       </ActionIcon>
                     </div>
                   </Group>
@@ -141,7 +145,11 @@ export function Contact(props: ContactProps): JSX.Element {
                   <Text size="sm" fw={500} truncate style={{ flex: 1, minWidth: 0 }}>{phone.value}</Text>
                   <div className={styles.patientSummaryGradient} />
                   <div className={styles.patientSummaryChevronContainer} style={{ alignItems: 'flex-start', display: 'flex', width: 28, minWidth: 28, maxWidth: 28, justifyContent: 'flex-end', gap: 2 }}>
-                    <Tooltip label={copied.phone === index ? 'Copied!' : 'Copy Phone'} withArrow={false} openDelay={650}>
+                    <Tooltip 
+                      label="Copied!"
+                      withArrow={false}
+                      opened={copied.phone === index}
+                    >
                       <ActionIcon
                         className={styles.patientSummaryChevron}
                         size="md"
@@ -154,7 +162,7 @@ export function Contact(props: ContactProps): JSX.Element {
                       </ActionIcon>
                     </Tooltip>
                     <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
-                      <IconChevronRight size={16} stroke={2.5} />
+                      <IconChevronRight size={16} stroke={2.25} />
                     </ActionIcon>
                   </div>
                 </Group>
@@ -169,9 +177,12 @@ export function Contact(props: ContactProps): JSX.Element {
               <MedplumLink to={`/Patient/${patientId}/edit`} style={{ textDecoration: 'none', color: 'black', display: 'block' }}>
                 <Group align="center" gap={0} className={styles.patientSummaryListItem} style={{ position: 'relative', minWidth: 0 }}>
                   <Text size="sm" fw={500} truncate style={{ flex: 1, minWidth: 0 }}>{email.value}</Text>
-                  <div className={styles.patientSummaryGradient} />
                   <div className={styles.patientSummaryChevronContainer} style={{ alignItems: 'flex-start', display: 'flex', width: 28, minWidth: 28, maxWidth: 28, justifyContent: 'flex-end', gap: 2 }}>
-                    <Tooltip label={copied.email === index ? 'Copied!' : 'Copy Email'} withArrow={false} openDelay={650}>
+                    <Tooltip 
+                      label="Copied!"
+                      withArrow={false}
+                      opened={copied.email === index}
+                    >
                       <ActionIcon
                         className={styles.patientSummaryChevron}
                         size="md"
