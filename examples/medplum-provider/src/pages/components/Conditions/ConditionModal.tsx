@@ -1,14 +1,12 @@
-
-import { DateTimeInput } from '@medplum/react'
-import { CodeableConceptInput, convertLocalToIso } from '@medplum/react'
-import { Group } from '@mantine/core'
-import { Stack } from '@mantine/core'
-import { Form, SubmitButton } from '@medplum/react'
-import React, { useCallback, useState } from 'react'
-import { addProfileToResource, createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core'
-import { CodeableConcept, Condition } from '@medplum/fhirtypes'
-import { Encounter } from '@medplum/fhirtypes'
-import { Patient } from '@medplum/fhirtypes'
+import { CodeableConceptInput, convertLocalToIso } from '@medplum/react';
+import { Group } from '@mantine/core';
+import { Stack } from '@mantine/core';
+import { Form, SubmitButton } from '@medplum/react';
+import { useCallback, useState } from 'react';
+import { addProfileToResource, createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core';
+import { CodeableConcept, Condition } from '@medplum/fhirtypes';
+import { Encounter } from '@medplum/fhirtypes';
+import { Patient } from '@medplum/fhirtypes';
 
 export interface ConditionDialogProps {
   readonly patient: Patient;
@@ -18,7 +16,8 @@ export interface ConditionDialogProps {
 
 export default function ConditionModal(props: ConditionDialogProps): JSX.Element {
   const { patient, encounter, onSubmit } = props;
-  const [code, setCode] = useState<CodeableConcept | undefined>();
+  const [problem, setProblem] = useState<CodeableConcept | undefined>();
+  const [diagnosis, setDiagnosis] = useState<CodeableConcept | undefined>();
   const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept | undefined>();
 
   const handleSubmit = useCallback(
@@ -40,17 +39,22 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
           ],
           subject: createReference(patient),
           encounter: encounter && createReference(encounter),
-          code,
-          clinicalStatus
+          code: {
+            coding: [
+              ...(problem?.coding || []),
+              ...(diagnosis?.coding || [])
+            ],
+          },
+          clinicalStatus,
         },
         HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns'
-      )
+      );
 
       onSubmit(updatedCondition);
     },
-    [patient, encounter, code, clinicalStatus, onSubmit]
+    [patient, encounter, problem, diagnosis, clinicalStatus, onSubmit]
   );
-          
+
   return (
     <Form onSubmit={handleSubmit}>
       <Stack>
@@ -58,11 +62,20 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
           name="code"
           label="Problem"
           path="Condition.code"
-          data-autofocus={true}
+          required
           binding={HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-condition-code'}
-          onChange={(code) => setCode(code)}
-          outcome={undefined}
+          onChange={(problem) => setProblem(problem)}
         />
+
+        <CodeableConceptInput
+          binding="http://hl7.org/fhir/ValueSet/icd-10"
+          label="ICD-10 Code"
+          name="diagnosis"
+          path="diagnosis"
+          required
+          onChange={(diagnosis) => setDiagnosis(diagnosis)}
+        />
+
         <CodeableConceptInput
           name="clinicalStatus"
           label="Status"
@@ -76,5 +89,5 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
         </Group>
       </Stack>
     </Form>
-  )
+  );
 }

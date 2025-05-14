@@ -1,19 +1,17 @@
-import { Condition, EncounterDiagnosis } from '@medplum/fhirtypes';
+import { Condition } from '@medplum/fhirtypes';
 import { ActionIcon, Select, Group, Flex, Text } from '@mantine/core';
-import { useResource } from '@medplum/react';
 import { IconX } from '@tabler/icons-react';
 
 interface ConditionItemProps {
-  diagnosis: EncounterDiagnosis;
-  totalDiagnosis: number;
-  onChange?: (diagnosis: EncounterDiagnosis, value: string) => void;
-  onRemove?: (diagnosis: EncounterDiagnosis) => void;
+  condition: Condition;
+  rank: number;
+  total: number;
+  onChange?: (condition: Condition, value: string) => void;
+  onRemove?: (condition: Condition) => void;
 }
 
 export default function ConditionItem(props: ConditionItemProps): JSX.Element {
-  const { diagnosis, totalDiagnosis, onChange, onRemove } = props;
-  const conditionRef = diagnosis.condition?.reference;
-  const condition = useResource<Condition>({ reference: conditionRef });
+  const { condition, rank, total, onChange, onRemove } = props;
 
   return (
     <Flex justify="space-between">
@@ -22,11 +20,11 @@ export default function ConditionItem(props: ConditionItemProps): JSX.Element {
           <Select
             placeholder="Sequence"
             w={80}
-            value={diagnosis.rank?.toString() || '1'}
-            data={Array.from({ length: totalDiagnosis }, (_, i) => (i + 1).toString())}
+            value={rank.toString()}
+            data={Array.from({ length: total }, (_, i) => (i + 1).toString())}
             onChange={(value) => {
               if (value) {
-                onChange?.(diagnosis, value);
+                onChange?.(condition, value);
               }
             }}
           />
@@ -37,7 +35,7 @@ export default function ConditionItem(props: ConditionItemProps): JSX.Element {
         variant="subtle"
         color="gray"
         onClick={() => {
-          onRemove?.(diagnosis);
+          onRemove?.(condition);
         }}
       >
         <IconX size={16} />
