@@ -20,37 +20,34 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
   const [diagnosis, setDiagnosis] = useState<CodeableConcept | undefined>();
   const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept | undefined>();
 
-  const handleSubmit = useCallback(
-    () => {
-      const updatedCondition: Condition = addProfileToResource(
-        {
-          resourceType: 'Condition',
-          category: [
-            {
-              coding: [
-                {
-                  system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/condition-category',
-                  code: 'problem-list-item',
-                  display: 'Problem List Item',
-                },
-              ],
-              text: 'Problem List Item',
-            },
-          ],
-          subject: createReference(patient),
-          encounter: encounter && createReference(encounter),
-          code: {
-            coding: [...(problem?.coding || []), ...(diagnosis?.coding || [])],
+  const handleSubmit = useCallback(() => {
+    const updatedCondition: Condition = addProfileToResource(
+      {
+        resourceType: 'Condition',
+        category: [
+          {
+            coding: [
+              {
+                system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/condition-category',
+                code: 'problem-list-item',
+                display: 'Problem List Item',
+              },
+            ],
+            text: 'Problem List Item',
           },
-          clinicalStatus,
+        ],
+        subject: createReference(patient),
+        encounter: encounter && createReference(encounter),
+        code: {
+          coding: [...(problem?.coding || []), ...(diagnosis?.coding || [])],
         },
-        HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns'
-      );
+        clinicalStatus,
+      },
+      HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns'
+    );
 
-      onSubmit(updatedCondition);
-    },
-    [patient, encounter, problem, diagnosis, clinicalStatus, onSubmit]
-  );
+    onSubmit(updatedCondition);
+  }, [patient, encounter, problem, diagnosis, clinicalStatus, onSubmit]);
 
   return (
     <Form onSubmit={handleSubmit}>

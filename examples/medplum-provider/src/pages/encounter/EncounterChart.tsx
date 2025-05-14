@@ -348,7 +348,7 @@ export const EncounterChart = (): JSX.Element => {
       ],
       diagnosis: diagnosisArray,
     };
-  
+
     const response = await medplum.post(medplum.fhirUrl('Claim', '$export'), {
       resourceType: 'Parameters',
       parameter: [{ name: 'resource', resource: claimToExport }],
@@ -376,7 +376,6 @@ export const EncounterChart = (): JSX.Element => {
   };
 
   const updateDiagnosis = async (condition: Condition, value: string): Promise<void> => {
-
     if (!encounter?.diagnosis?.length) {
       return;
     }
@@ -401,8 +400,8 @@ export const EncounterChart = (): JSX.Element => {
     const updatedEncounter: Encounter = {
       ...encounter,
       diagnosis: updatedDiagnosis,
-    }
-    
+    };
+
     if (conditions?.length) {
       const updatedConditions = [...conditions];
       const conditionIndex = updatedConditions.findIndex(
@@ -418,8 +417,7 @@ export const EncounterChart = (): JSX.Element => {
 
     setEncounter(updatedEncounter);
     await useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS)(updatedEncounter);
-
-  }
+  };
 
   const removeDiagnosis = async (condition: Condition): Promise<void> => {
     if (!encounter) {
@@ -443,7 +441,7 @@ export const EncounterChart = (): JSX.Element => {
     setEncounter(updatedEncounter);
     await medplum.deleteResource('Condition', condition.id as string);
     await useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS)(updatedEncounter);
-  }
+  };
 
   if (!patient || !encounter || !clinicalImpression) {
     return <Loading />;
