@@ -1,13 +1,10 @@
-import { CodeableConceptInput } from '@medplum/react';
-import { Group } from '@mantine/core';
-import { Stack } from '@mantine/core';
-import { Form, SubmitButton } from '@medplum/react';
+import { CodeableConceptInput, Form, SubmitButton } from '@medplum/react';
+import { Group, Stack } from '@mantine/core';
 import { useCallback, useState } from 'react';
 import { addProfileToResource, createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core';
-import { CodeableConcept, Condition } from '@medplum/fhirtypes';
-import { Encounter } from '@medplum/fhirtypes';
-import { Patient } from '@medplum/fhirtypes';
+import { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { JSX } from 'react';
+
 export interface ConditionDialogProps {
   readonly patient: Patient;
   readonly encounter: Encounter;

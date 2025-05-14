@@ -87,8 +87,13 @@ export const EncounterChart = (): JSX.Element => {
             return diagnosisMap.get(aRef)! - diagnosisMap.get(bRef)!;
           }
 
-          if (diagnosisMap.has(aRef)) return -1;
-          if (diagnosisMap.has(bRef)) return 1;
+          if (diagnosisMap.has(aRef)) {
+            return -1;
+          }
+
+          if (diagnosisMap.has(bRef)) {
+            return 1;
+          }
 
           return 0;
         });
