@@ -21,7 +21,7 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
   const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept | undefined>();
 
   const handleSubmit = useCallback(
-    (formData: Record<string, string>) => {
+    () => {
       const updatedCondition: Condition = addProfileToResource(
         {
           resourceType: 'Condition',
@@ -82,7 +82,7 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
           path="Condition.clinicalStatus"
           binding={HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical'}
           onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
-          outcome={undefined}
+          required
         />
         <Group justify="flex-end" gap={4} mt="md">
           <SubmitButton>Save</SubmitButton>
