@@ -164,6 +164,12 @@ export interface ClientApplication {
    * Optional configuration to set the refresh token duration
    */
   refreshTokenLifetime?: string;
+
+  /**
+   * Optional CORS allowed origin for the client application.  By default,
+   * all origins are allowed.
+   */
+  allowedOrigin?: string[];
 }
 
 /**

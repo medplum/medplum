@@ -971,6 +971,21 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "ClientApplication.allowedOrigin",
+            "path" : "ClientApplication.allowedOrigin",
+            "definition" : "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.allowedOrigin",
+              "min" : 0,
+              "max" : "*"
+            }
           }
         ]
       }
