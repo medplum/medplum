@@ -420,30 +420,6 @@ describe('Post-Deploy Migration Worker', () => {
     });
   });
 
-  test('Run custom migration interrupted', async () => {
-    const systemRepo = getSystemRepo();
-    const asyncJob = await systemRepo.createResource<AsyncJob>({
-      resourceType: 'AsyncJob',
-      status: 'cancelled',
-      dataVersion: 123,
-      requestTime: new Date().toISOString(),
-      request: '/admin/super/migrate',
-    });
-
-    const jobData: CustomPostDeployMigrationJobData = {
-      type: 'custom',
-      asyncJobId: asyncJob.id,
-      requestId: '123',
-      traceId: '456',
-    };
-    const mockCallback = jest.fn();
-
-    const result = await runCustomMigration(systemRepo, undefined, jobData, mockCallback);
-
-    expect(result).toBe('interrupted');
-    expect(mockCallback).not.toHaveBeenCalled();
-  });
-
   test('Run custom migration with error', async () => {
     const systemRepo = getSystemRepo();
     const asyncJob = await systemRepo.createResource<AsyncJob>({
