@@ -605,13 +605,13 @@ Optional max `AuditEvent.outcomeDesc` length for Bot events sent to logger.
 
 ### defaultRateLimit
 
-Limit for the rate at which requests can be sent to or processed by the server. For more details see the [Rate Limit docs](/docs/rate-limits/rate-limits.md).
+Limit for the rate at which requests can be sent to or processed by the server. For more details see the [Rate Limit docs](/docs/rate-limits).
 
 **Default:** `60000/minute`
 
 ### defaultAuthRateLimit
 
-Limit for the rate at which auth requests can be sent to or processed by the server. If developers are hitting this limit, it could be an indication of a suboptimal integration where each request is authenticating rather than reusing a token. For more details see the [Rate Limit docs](/docs/rate-limits/rate-limits.md).
+Limit for the rate at which auth requests can be sent to or processed by the server. If developers are hitting this limit, it could be an indication of a suboptimal integration where each request is authenticating rather than reusing a token. For more details see the [Rate Limit docs](/docs/rate-limits).
 
 **Default:** `60/minute`
 
