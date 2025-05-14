@@ -68,7 +68,7 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
           binding="http://hl7.org/fhir/ValueSet/icd-10"
           label="ICD-10 Code"
           name="diagnosis"
-          path="diagnosis"
+          path="Condition.code"
           required
           onChange={(diagnosis) => setDiagnosis(diagnosis)}
         />
