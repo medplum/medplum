@@ -2,11 +2,7 @@ import { Anchor, Box, Group, Modal, Text, Collapse, ActionIcon, UnstyledButton, 
 import { useDisclosure } from '@mantine/hooks';
 import { AllergyIntolerance, Encounter, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-<<<<<<< HEAD
 import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
-=======
-import { JSX, useCallback, useState } from 'react';
->>>>>>> 4cb9bdde1003c3442929ae147d71f8e9fa439015
 import { killEvent } from '../utils/dom';
 import { AllergyDialog } from './AllergyDialog';
 import { IconChevronDown, IconPlus, IconChevronRight } from '@tabler/icons-react';

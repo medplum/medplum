@@ -2,11 +2,7 @@ import { Box, Group, Modal, Text, Collapse, ActionIcon, UnstyledButton, Flex, Ba
 import { useDisclosure } from '@mantine/hooks';
 import { Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-<<<<<<< HEAD
 import { useCallback, useState, useRef, useEffect } from 'react';
-=======
-import { Fragment, JSX, useCallback, useState } from 'react';
->>>>>>> 4cb9bdde1003c3442929ae147d71f8e9fa439015
 import { killEvent } from '../utils/dom';
 import { ConditionDialog } from './ConditionDialog';
 import { IconChevronDown, IconPlus, IconChevronRight, IconStackForward } from '@tabler/icons-react';

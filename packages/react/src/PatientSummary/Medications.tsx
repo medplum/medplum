@@ -1,14 +1,8 @@
 import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-<<<<<<< HEAD
 import { Encounter, MedicationRequest, Patient, Medication } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { useCallback, useState, useRef, useEffect } from 'react';
-=======
-import { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
-import { JSX, useCallback, useState } from 'react';
->>>>>>> 4cb9bdde1003c3442929ae147d71f8e9fa439015
 import { killEvent } from '../utils/dom';
 import { IconChevronDown, IconPlus, IconPencil, IconChevronRight } from '@tabler/icons-react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
