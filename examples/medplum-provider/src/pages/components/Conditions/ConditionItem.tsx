@@ -1,6 +1,7 @@
 import { Condition } from '@medplum/fhirtypes';
 import { ActionIcon, Select, Group, Flex, Text } from '@mantine/core';
 import { IconX } from '@tabler/icons-react';
+import { JSX } from 'react';
 
 interface ConditionItemProps {
   condition: Condition;
