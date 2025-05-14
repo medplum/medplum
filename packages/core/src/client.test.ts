@@ -3488,6 +3488,7 @@ describe('Client', () => {
     });
 
     const client = new MedplumClient({ fetch });
+    expect(client.rateLimitStatus()).toStrictEqual([]);
     const result = await client.readResource('Patient', '123');
     expect(result).toBeDefined();
     expect(client.rateLimitStatus()).toStrictEqual(
@@ -3496,6 +3497,44 @@ describe('Client', () => {
         { name: 'fhirInteractions', remainingUnits: 255, secondsUntilReset: 59 },
       ])
     );
+  });
+
+  test('Invalid rate limit header', async () => {
+    let fetch = jest.fn((_url: string, _options?: any) => {
+      return Promise.resolve(
+        mockFetchResponse(
+          200,
+          { resourceType: 'Patient' },
+          {
+            'content-type': 'application/fhir+json',
+            ratelimit: `"requests",r=15`,
+          }
+        )
+      );
+    });
+
+    const client = new MedplumClient({ fetch });
+    const result = await client.readResource('Patient', '123');
+    expect(result).toBeDefined();
+    expect(() => client.rateLimitStatus()).toThrow(/parse RateLimit/);
+
+    fetch = jest.fn((_url: string, _options?: any) => {
+      return Promise.resolve(
+        mockFetchResponse(
+          200,
+          { resourceType: 'Patient' },
+          {
+            'content-type': 'application/fhir+json',
+            ratelimit: `"",r=15,t=60`,
+          }
+        )
+      );
+    });
+
+    const client2 = new MedplumClient({ fetch });
+    const result2 = await client2.readResource('Patient', '123');
+    expect(result2).toBeDefined();
+    expect(() => client.rateLimitStatus()).toThrow(/parse RateLimit/);
   });
 
   test('Call-time auto-batch opt-out', async () => {
