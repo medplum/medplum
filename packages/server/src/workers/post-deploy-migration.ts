@@ -6,20 +6,19 @@ import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import {
-  CustomMigrationResult,
   CustomPostDeployMigrationJobData,
   DynamicPostDeployJobData,
-  MigrationActionResult,
   PostDeployJobData,
   PostDeployJobRunResult,
   PostDeployMigration,
 } from '../migrations/data/types';
-import { executeMigrationActions, MigrationAction } from '../migrations/migrate';
+import { executeMigrationActions } from '../migrations/migrate';
 import {
   getPostDeployMigration,
   MigrationDefinitionNotFoundError,
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
+import { MigrationAction, MigrationActionResult } from '../migrations/types';
 import {
   addVerboseQueueLogging,
   isJobActive,
@@ -126,11 +125,10 @@ async function runDynamicMigration(
   job: Job<DynamicPostDeployJobData>
 ): Promise<PostDeployJobRunResult> {
   const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
-  const actions = job.data.migrationActions;
   const exec = new AsyncJobExecutor(repo, asyncJob);
   try {
     const results = await withLongRunningDatabaseClient(async (client) => {
-      return executeMigrationActions(client, actions);
+      return executeMigrationActions(client, job.data.migrationActions);
     });
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
@@ -147,13 +145,13 @@ export async function runCustomMigration(
   callback: (
     job: Job<CustomPostDeployMigrationJobData> | undefined,
     jobData: CustomPostDeployMigrationJobData
-  ) => Promise<CustomMigrationResult>
+  ) => Promise<MigrationActionResult[]>
 ): Promise<PostDeployJobRunResult> {
   const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
   const exec = new AsyncJobExecutor(repo, asyncJob);
   try {
-    const result = await callback(job, jobData);
-    const output = getAsyncJobOutputFromMigrationActionResults(result.actions);
+    const results = await callback(job, jobData);
+    const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
   } catch (err: any) {
     await exec.failJob(repo, err);
@@ -161,10 +159,10 @@ export async function runCustomMigration(
   return 'finished';
 }
 
-function getAsyncJobOutputFromMigrationActionResults(result: MigrationActionResult[]): Parameters {
+function getAsyncJobOutputFromMigrationActionResults(results: MigrationActionResult[]): Parameters {
   return {
     resourceType: 'Parameters',
-    parameter: result.map((r) => {
+    parameter: results.map((r) => {
       return {
         name: r.name,
         part: [

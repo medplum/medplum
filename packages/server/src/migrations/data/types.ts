@@ -2,7 +2,7 @@ import { WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { Repository } from '../../fhir/repo';
-import { MigrationAction } from '../migrate';
+import { MigrationAction } from '../types';
 
 export interface PostDeployJobData {
   readonly type: 'reindex' | 'custom' | 'dynamic';
@@ -32,10 +32,7 @@ export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJob
   run(repo: Repository, job: Job<T> | undefined, data: T): Promise<PostDeployJobRunResult>;
 }
 
-export type MigrationActionResult = { name: string; durationMs: number };
-
 // Custom Jobs
-export type CustomMigrationResult = { actions: MigrationActionResult[] };
 export interface CustomPostDeployMigrationJobData extends PostDeployJobData {
   readonly type: 'custom';
 }

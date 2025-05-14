@@ -2,15 +2,12 @@ import { getDataType, InternalTypeSchema } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import {
   buildCreateTables,
-  ColumnDefinition,
   columnDefinitionsEqual,
-  IndexDefinition,
   indexDefinitionsEqual,
   indexStructureDefinitionsAndSearchParameters,
   parseIndexDefinition,
-  SchemaDefinition,
-  TableDefinition,
 } from './migrate';
+import { ColumnDefinition, IndexDefinition, SchemaDefinition, TableDefinition } from './types';
 
 describe('Generator', () => {
   describe('buildCreateTables', () => {

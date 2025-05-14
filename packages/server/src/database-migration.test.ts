@@ -15,13 +15,12 @@ import * as migrationSql from './migration-sql';
 import {
   CustomPostDeployMigration,
   CustomPostDeployMigrationJobData,
-  MigrationActionResult,
   PostDeployJobData,
 } from './migrations/data/types';
 import * as migrateModule from './migrations/migrate';
-import { MigrationAction } from './migrations/migrate';
 import { getPendingPostDeployMigration } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
+import { MigrationAction, MigrationActionResult } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
 import { requestContextStore } from './request-context-store';
 import { createTestProject, withTestContext } from './test.setup';
@@ -64,9 +63,9 @@ jest.mock('./migrations/data/v1', () => {
     prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
     run: function (repo, jobData) {
       return runCustomMigration(repo, jobData, async () => {
-        const actions: MigrationActionResult[] = [];
-        actions.push({ name: 'nothing', durationMs: 5 });
-        return { actions };
+        const results: MigrationActionResult[] = [];
+        results.push({ name: 'nothing', durationMs: 5 });
+        return results;
       });
     },
   };

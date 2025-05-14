@@ -1,16 +1,15 @@
 import { Client, Pool, PoolClient } from 'pg';
 import { globalLogger } from '../logger';
-
-export type MigrationActionResult = { name: string; durationMs: number };
+import { MigrationActionResult } from './types';
 
 export async function query(
   client: Client | Pool | PoolClient,
-  actions: MigrationActionResult[],
+  results: MigrationActionResult[],
   queryStr: string
 ): Promise<void> {
   const start = Date.now();
   await client.query(queryStr);
-  actions.push({ name: queryStr, durationMs: Date.now() - start });
+  results.push({ name: queryStr, durationMs: Date.now() - start });
 }
 
 /**
@@ -21,13 +20,13 @@ export async function query(
  * performing the migration is interrupted/crashes for any other reason.
  *
  * @param client - The database client or pool.
- * @param actions - The list of actions to push operations performed.
+ * @param results - The list of action results to push operations performed.
  * @param indexName - The name of the index to create.
  * @param createIndexSql - The SQL to create the index.
  */
 export async function idempotentCreateIndex(
   client: Client | Pool | PoolClient,
-  actions: MigrationActionResult[],
+  results: MigrationActionResult[],
   indexName: string,
   createIndexSql: string
 ): Promise<void> {
@@ -58,7 +57,7 @@ export async function idempotentCreateIndex(
     await client.query(`DROP INDEX IF EXISTS ${indexName}`);
     const durationMs = Date.now() - start;
     globalLogger.info('Dropped invalid index', { indexName, durationMs });
-    actions.push({ name: `DROP INDEX IF EXISTS ${indexName}`, durationMs });
+    results.push({ name: `DROP INDEX IF EXISTS ${indexName}`, durationMs });
     exists = false;
   }
 
@@ -67,7 +66,7 @@ export async function idempotentCreateIndex(
     await client.query(createIndexSql);
     const durationMs = Date.now() - start;
     globalLogger.info('Created index', { indexName, durationMs });
-    actions.push({ name: createIndexSql, durationMs });
+    results.push({ name: createIndexSql, durationMs });
   }
 }
 

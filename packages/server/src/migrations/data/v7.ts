@@ -2,7 +2,8 @@ import { PoolClient } from 'pg';
 import { prepareCustomMigrationJobData, runCustomMigration } from '../../workers/post-deploy-migration';
 import * as fns from '../migrate-functions';
 import { withLongRunningDatabaseClient } from '../migration-utils';
-import { CustomPostDeployMigration, MigrationActionResult } from './types';
+import { MigrationActionResult } from '../types';
+import { CustomPostDeployMigration } from './types';
 
 export const migration: CustomPostDeployMigration = {
   type: 'custom',
@@ -10,18 +11,18 @@ export const migration: CustomPostDeployMigration = {
   run: async (repo, job, jobData) => {
     return runCustomMigration(repo, job, jobData, async () => {
       return withLongRunningDatabaseClient(async (client) => {
-        const actions: MigrationActionResult[] = [];
-        await run(client, actions);
-        return { actions };
+        const results: MigrationActionResult[] = [];
+        await run(client, results);
+        return results;
       });
     });
   },
 };
 
-async function run(client: PoolClient, actions: MigrationActionResult[]): Promise<void> {
+async function run(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
   await fns.idempotentCreateIndex(
     client,
-    actions,
+    results,
     'Flag_status_idx',
     'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Flag_status_idx" ON "Flag" ("status")'
   );
