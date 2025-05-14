@@ -11,6 +11,8 @@ tags: [self-host, integration, interop, community]
 
 This week, NextGen Healthcare [announced](https://forums.mirthproject.io/forum/mirth-connect/general-discussion/186098-new-era-for-mirth%C2%AE-connect-by-nextgen-healthcare-begins-with-version-4-6) that [Mirth Connect](https://www.nextgen.com/insight/interop/demo/mirth-family-insights), the healthcare integration engine that has been a cornerstone of interoperability for countless organizations, will no longer be available. As long-time healthcare integration engineers ourselves, we recognize this news creates significant uncertainty for the many organizations that rely on Mirth Connect for critical healthcare workflows.
 
+<!-- truncate -->
+
 ## Honoring Mirth's Legacy
 
 First, we want to acknowledge Mirth Connect's tremendous contribution to healthcare interoperability. For more than a decade, Mirth has enabled healthcare data exchange for organizations of all sizes, from small clinics to large hospital systems. It helped usher in an era of digital healthcare, and many of us at Medplum have deep experience with Mirth throughout our careers.

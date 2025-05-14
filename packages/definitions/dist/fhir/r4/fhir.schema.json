@@ -59837,6 +59837,13 @@
         "refreshTokenLifetime": {
           "description": "Optional configuration to set the refresh token duration",
           "$ref": "#/definitions/string"
+        },
+        "allowedOrigin": {
+          "description": "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,

@@ -24,6 +24,7 @@ const email = randomUUID() + '@example.com';
 const password = randomUUID();
 let project: WithId<Project>;
 let client: WithId<ClientApplication>;
+let corsClient: WithId<ClientApplication>;
 
 describe('Login', () => {
   beforeAll(async () => {
@@ -34,6 +35,18 @@ describe('Login', () => {
 
       // Create a test project
       ({ project, client } = await createTestProject({ withClient: true }));
+
+      // Create another client with CORS "allowed origins"
+      corsClient = await getSystemRepo().createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        meta: {
+          project: project.id,
+        },
+        secret: randomUUID(),
+        redirectUri: 'https://example.com/',
+        name: 'Test Client Application',
+        allowedOrigin: ['https://allowed.example.com'],
+      });
 
       // Create a test user
       const { user } = await inviteUser({
@@ -524,5 +537,38 @@ describe('Login', () => {
     expect(res.body.code).toBeUndefined();
     expect(res.body.memberships).toBeUndefined();
     expect(res.body.issue[0].details.text).toBe('Profile not active');
+  });
+
+  test('Success with no origin', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: corsClient.id,
+      email,
+      password,
+      scope: 'openid',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.code).toBeDefined();
+  });
+
+  test('Success with matching origin', async () => {
+    const res = await request(app).post('/auth/login').set('Origin', 'https://allowed.example.com').type('json').send({
+      clientId: corsClient.id,
+      email,
+      password,
+      scope: 'openid',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.code).toBeDefined();
+  });
+
+  test('Failure with unknown origin', async () => {
+    const res = await request(app).post('/auth/login').set('Origin', 'https://unknown.example.com').type('json').send({
+      clientId: corsClient.id,
+      email,
+      password,
+      scope: 'openid',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid origin');
   });
 });
