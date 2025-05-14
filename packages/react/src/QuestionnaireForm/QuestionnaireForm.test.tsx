@@ -1504,6 +1504,186 @@ describe('QuestionnaireForm', () => {
     });
   });
 
+  test('Non-Value Set Checkbox', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'non-valueset-checkbox',
+        title: 'Non-Value Set Checkbox',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Non-Value Set Checkbox',
+            type: 'choice',
+            repeats: true,
+            answerOption: [
+              {
+                valueString: 'Option 1',
+              },
+              {
+                valueString: 'Option 2',
+              },
+              {
+                valueString: 'Option 3',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check Box',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Check that checkboxes are rendered
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBe(3);
+
+    // Select multiple options
+    await act(async () => {
+      fireEvent.click(checkboxes[0]); // Option 1
+      fireEvent.click(checkboxes[2]); // Option 3
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer).toHaveLength(2);
+    expect(response.item[0].answer[0]).toMatchObject({ valueString: 'Option 1' });
+    expect(response.item[0].answer[1]).toMatchObject({ valueString: 'Option 3' });
+  });
+
+  test('Multi-Select Dropdown Value Set', async () => {
+    const onSubmit = jest.fn();
+
+    // Mock the value set expansion to return multiple items
+    const mockValueSet = {
+      resourceType: 'ValueSet',
+      expansion: {
+        contains: Array.from({ length: 5 }, (_, i) => ({
+          system: 'x',
+          code: `test-code-${i}`,
+          display: `Test Display ${i}`,
+        })),
+      },
+    };
+
+    // Mock the medplum client's valueSetExpand method
+    medplum.valueSetExpand = jest.fn().mockResolvedValue(mockValueSet);
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'multi-select-dropdown-valueset',
+        title: 'Multi-Select Dropdown Value Set',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Multi-Select Dropdown Value Set',
+            type: 'choice',
+            repeats: true,
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Wait for value set to load
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    const searchInput = screen.getByPlaceholderText('Select items');
+    expect(searchInput).toBeInTheDocument();
+
+    // Select first option
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'Test Display 0' } });
+    });
+
+    // Wait for options to load
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Select the first option
+    await act(async () => {
+      fireEvent.keyDown(searchInput, { key: 'ArrowDown', code: 'ArrowDown' });
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+    });
+
+    // Clear input for second selection
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: '' } });
+    });
+
+    // Select second option
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'Test Display 2' } });
+    });
+
+    // Wait for options to load
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Select the second option (press ArrowDown twice to get to the third option)
+    await act(async () => {
+      fireEvent.keyDown(searchInput, { key: 'ArrowDown', code: 'ArrowDown' });
+      fireEvent.keyDown(searchInput, { key: 'ArrowDown', code: 'ArrowDown' });
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+    });
+
+    // Submit the form
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer).toHaveLength(2);
+    expect(response.item[0].answer[0]).toMatchObject({
+      valueCoding: { code: 'test-code-0', display: 'Test Display 0', system: 'x' },
+    });
+    expect(response.item[0].answer[1]).toMatchObject({
+      valueCoding: { code: 'test-code-2', display: 'Test Display 2', system: 'x' },
+    });
+  });
+
   test('Repeated Choice Dropdown', async () => {
     await setup({
       questionnaire: {

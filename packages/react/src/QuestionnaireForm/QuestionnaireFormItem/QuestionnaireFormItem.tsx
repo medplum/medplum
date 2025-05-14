@@ -329,6 +329,7 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
     return (
       <AsyncAutocomplete<Coding>
         name={name}
+        placeholder="Select items"
         loadOptions={async (inputValue: string, _signal: AbortSignal) => {
           const valueSet = await medplum.valueSetExpand({
             url: item.answerValueSet as string,
