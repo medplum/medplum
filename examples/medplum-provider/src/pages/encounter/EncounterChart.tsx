@@ -377,10 +377,9 @@ export const EncounterChart = (): JSX.Element => {
   };
 
   /*
-  * Re-orders the conditions in the conditions array and updates the encounter diagnosis.
-  */
+   * Re-orders the conditions in the conditions array and updates the encounter diagnosis.
+   */
   const updateDiagnosis = async (condition: Condition, value: string): Promise<void> => {
-    
     if (!conditions || conditions.length === 0 || !encounter) {
       return;
     }
