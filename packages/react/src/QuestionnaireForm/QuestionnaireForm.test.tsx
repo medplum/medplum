@@ -1327,6 +1327,42 @@ describe('QuestionnaireForm', () => {
     });
   });
 
+  test('Dropdown with no value set or options', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'no-options-dropdown',
+        title: 'No Options Dropdown Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
+  });
+
   test('Value Set Checkbox', async () => {
     const onSubmit = jest.fn();
 
@@ -2372,5 +2408,41 @@ describe('QuestionnaireForm', () => {
     expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
     expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
     expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
+  });
+
+  test('Dropdown with no value set or options', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'no-options-dropdown',
+        title: 'No Options Dropdown Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
   });
 });
