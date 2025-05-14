@@ -1,6 +1,6 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
-import { allOk } from '@medplum/core';
+import { allOk, forbidden } from '@medplum/core';
 import { Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -231,14 +231,33 @@ describe('SuperAdminPage', () => {
     expect(await screen.findByText(returnValue)).toBeInTheDocument();
   });
 
-  test('Reconcile Database Schema Drift', async () => {
+  test('Reconcile Database Schema Drift - Success', async () => {
     setup();
+    const startAsyncRequestSpy = jest.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce({
+      resourceType: 'AsyncJob',
+      id: '123',
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Reconcile Schema Drift' }));
     });
 
-    expect(screen.getByText('Done')).toBeInTheDocument();
+    expect(screen.getByText('View AsyncJob')).toBeInTheDocument();
+    expect(startAsyncRequestSpy).toHaveBeenCalledTimes(1);
+    startAsyncRequestSpy.mockRestore();
+  });
+
+  test('Reconcile Database Schema Drift - Forbidden', async () => {
+    setup();
+    const startAsyncRequestSpy = jest.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce(forbidden);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Reconcile Schema Drift' }));
+    });
+
+    expect(screen.getByText('Forbidden')).toBeInTheDocument();
+    expect(startAsyncRequestSpy).toHaveBeenCalledTimes(1);
+    startAsyncRequestSpy.mockRestore();
   });
 
   test('Reload cron resources', async () => {

@@ -145,7 +145,7 @@ describe('Post-Deploy Migration Worker', () => {
     expect(getPostDeployMigrationSpy).not.toHaveBeenCalled();
   });
 
-  test.only('Job processor runs dynamic migration when AsyncJob is active', async () => {
+  test('Job processor runs dynamic migration when AsyncJob is active', async () => {
     const getPostDeployMigrationSpy = jest.spyOn(migrationUtils, 'getPostDeployMigration').mockImplementation(() => {
       throw new Error('Should not be called');
     });
