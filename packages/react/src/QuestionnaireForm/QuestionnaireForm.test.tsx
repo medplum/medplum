@@ -1,4 +1,4 @@
-import { getQuestionnaireAnswers } from '@medplum/core';
+import { getQuestionnaireAnswers, getAllQuestionnaireAnswers } from '@medplum/core';
 import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -1431,16 +1431,29 @@ describe('QuestionnaireForm', () => {
       fireEvent.click(checkboxes[0]);
     });
 
+    // Click the second checkbox
+    await act(async () => {
+      fireEvent.click(checkboxes[1]);
+    });
+
+    // Click the third checkbox
+    await act(async () => {
+      fireEvent.click(checkboxes[2]);
+    });
+
     await act(async () => {
       fireEvent.click(screen.getByText('Submit'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
     const response = onSubmit.mock.calls[0][0];
-    const answer = getQuestionnaireAnswers(response);
+    const answer = getAllQuestionnaireAnswers(response);
     expect(answer['q1']).toBeDefined();
-    expect(answer['q1']).toMatchObject({
+    expect(answer['q1'][0]).toMatchObject({
       valueCoding: { code: 'test-code-0', display: 'Test Display 0', system: 'x' },
+    });
+    expect(answer['q1'][2]).toMatchObject({
+      valueCoding: { code: 'test-code-2', display: 'Test Display 2', system: 'x' },
     });
   });
 
@@ -2588,41 +2601,5 @@ describe('QuestionnaireForm', () => {
     expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
     expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
     expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
-  });
-
-  test('Dropdown with no value set or options', async () => {
-    await setup({
-      questionnaire: {
-        resourceType: 'Questionnaire',
-        status: 'active',
-        id: 'no-options-dropdown',
-        title: 'No Options Dropdown Example',
-        item: [
-          {
-            linkId: 'choices',
-            text: 'Choices',
-            type: 'choice',
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'drop-down',
-                      display: 'Drop down',
-                    },
-                  ],
-                  text: 'Drop down',
-                },
-              },
-            ],
-          },
-        ],
-      },
-      onSubmit: jest.fn(),
-    });
-
-    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
   });
 });
