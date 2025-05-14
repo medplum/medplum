@@ -19,7 +19,6 @@ export default function ConditionItem(props: ConditionItemProps): JSX.Element {
       <Group>
         <Group>
           <Select
-            placeholder="Sequence"
             w={80}
             value={rank.toString()}
             data={Array.from({ length: total }, (_, i) => (i + 1).toString())}
