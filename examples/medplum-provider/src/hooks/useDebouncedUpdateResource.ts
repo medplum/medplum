@@ -6,7 +6,7 @@ export const DEFAULT_SAVE_TIMEOUT_MS = 500;
 
 /**
  * Hook that provides a debounced version of medplum's updateResource
- * 
+ *
  * @param medplum - The MedplumClient instance
  * @param timeoutMs - Optional timeout in milliseconds
  * @returns A debounced function that updates any Medplum resource
@@ -15,10 +15,7 @@ export function useDebouncedUpdateResource<T extends Resource>(
   medplum: MedplumClient,
   timeoutMs: number = DEFAULT_SAVE_TIMEOUT_MS
 ) {
-  return useDebouncedCallback(
-    async (resourcePayload: T): Promise<T> => {
-      return await medplum.updateResource(resourcePayload) as T;
-    },
-    timeoutMs
-  );
+  return useDebouncedCallback(async (resourcePayload: T): Promise<T> => {
+    return (await medplum.updateResource(resourcePayload)) as T;
+  }, timeoutMs);
 }
