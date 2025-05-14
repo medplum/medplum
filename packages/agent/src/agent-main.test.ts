@@ -20,6 +20,7 @@ describe('Main', () => {
     jest.spyOn(globalThis, 'fetch').mockImplementation(async () => {
       return {
         ok: true,
+        headers: new Headers(),
         json: async () => ({
           access_token: 'foo',
         }),
@@ -150,6 +151,7 @@ describe('Main', () => {
     fetchSpy.mockImplementation(async () => {
       return {
         ok: true,
+        headers: new Headers(),
         json: async () => ({
           access_token: 'foo',
         }),
