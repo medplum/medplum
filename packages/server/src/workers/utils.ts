@@ -324,7 +324,7 @@ export function addVerboseQueueLogging<TDataType>(
   });
 }
 
-export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<void> {
+export async function moveToDelayedAndThrow(job: Job, reason: string): Promise<never> {
   if (job.token) {
     const delayMs = 60_000;
     globalLogger.info(reason, {
