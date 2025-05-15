@@ -1,4 +1,4 @@
-import { formatHl7DateTime, Hl7Field, Hl7Message, Hl7Segment, parseHl7DateTime, Hl7Context } from './hl7';
+import { formatHl7DateTime, Hl7Context, Hl7Field, Hl7Message, Hl7Segment, parseHl7DateTime } from './hl7';
 
 describe('HL7', () => {
   test('Unsupported encoding', () => {
@@ -527,18 +527,14 @@ describe('HL7 Setter Functions', () => {
     });
 
     it('should return false for invalid index', () => {
-      const message = new Hl7Message([
-        new Hl7Segment(['MSH', '|', '^~\\&'], context),
-      ]);
+      const message = new Hl7Message([new Hl7Segment(['MSH', '|', '^~\\&'], context)]);
 
       const newSegment = new Hl7Segment(['PID', '1', '2'], context);
       expect(message.setSegment(5, newSegment)).toBe(false);
     });
 
     it('should return false for non-existent segment name', () => {
-      const message = new Hl7Message([
-        new Hl7Segment(['MSH', '|', '^~\\&'], context),
-      ]);
+      const message = new Hl7Message([new Hl7Segment(['MSH', '|', '^~\\&'], context)]);
 
       const newSegment = new Hl7Segment(['PID', '1', '2'], context);
       expect(message.setSegment('NONEXISTENT', newSegment)).toBe(false);

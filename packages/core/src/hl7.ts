@@ -476,12 +476,12 @@ export class Hl7Field {
       // Handle subcomponent setting
       const currentValue = this.components[repetition][component - 1] || '';
       const subcomponents = currentValue.split(this.context.subcomponentSeparator);
-      
+
       // Ensure we have enough subcomponents
       while (subcomponents.length <= subcomponent) {
         subcomponents.push('');
       }
-      
+
       subcomponents[subcomponent] = value;
       this.components[repetition][component - 1] = subcomponents.join(this.context.subcomponentSeparator);
     } else {
