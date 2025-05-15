@@ -368,6 +368,10 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
   return indexDef;
 }
 
+export function parseIndexName(indexdef: string): string | undefined {
+  return indexdef.match(/INDEX "?([^"]+)"? ON/i)?.[1];
+}
+
 function buildTargetDefinition(): SchemaDefinition {
   const result: SchemaDefinition = { tables: [], functions: TargetFunctions };
 
@@ -892,7 +896,7 @@ export async function executeMigrationActions(
         break;
       }
       case 'DROP_INDEX': {
-        await fns.query(client, results, `DROP INDEX IF EXISTS "${action.indexName}"`);
+        await fns.query(client, results, getDropIndexQuery(action.indexName));
         break;
       }
     }
@@ -962,7 +966,7 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
         break;
       }
       case 'DROP_INDEX': {
-        b.appendNoWrap(`await fns.query(client, actions, 'DROP INDEX CONCURRENTLY IF EXISTS "${action.indexName}"');`);
+        b.appendNoWrap(`await fns.query(client, actions, ${getDropIndexQuery(action.indexName)});`);
         break;
       }
       default: {
@@ -1110,6 +1114,10 @@ function getAlterColumnTypeQuery(tableName: string, columnName: string, columnTy
   return `ALTER TABLE IF EXISTS "${tableName}" ALTER COLUMN "${columnName}" TYPE ${columnType}`;
 }
 
+function getDropIndexQuery(indexName: string): string {
+  return `DROP INDEX CONCURRENTLY IF EXISTS "${indexName}"`;
+}
+
 function generateIndexesActions(
   ctx: GenerateActionsContext,
   startTable: TableDefinition,
@@ -1144,9 +1152,9 @@ function generateIndexesActions(
         startIndex.indexdef || JSON.stringify(startIndex)
       );
       if (options?.dropUnmatchedIndexes) {
-        const indexName = startIndex.indexdef?.match(/INDEX "?(.+)"? ON/)?.[1];
+        const indexName = parseIndexName(startIndex.indexdef ?? '');
         if (!indexName) {
-          throw new Error('Could not extract index name from ' + startIndex.indexdef);
+          throw new Error('Could not extract index name from ' + startIndex.indexdef, { cause: startIndex });
         }
         actions.push({ type: 'DROP_INDEX', indexName });
       }
