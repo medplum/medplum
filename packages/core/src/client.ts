@@ -4279,11 +4279,11 @@ function isRetryable(response: Response): boolean {
 
 const baseRetryDelay = 500;
 function getRetryDelay(response: Response, attemptNum: number): number {
-  const rateLimitHeader = response.headers.get('ratelimit');
+  const rateLimitHeader = response.headers?.get('ratelimit');
   if (rateLimitHeader) {
-    const matches = rateLimitHeader.match(/,\s*t=(\d+)\s*[,;]/g)?.slice(1);
+    const matches = [...rateLimitHeader.matchAll(/,\s*t=(\d+)\s*(?:,|;|$)/g)];
     if (matches) {
-      return Math.max(...matches.map((s) => parseInt(s, 10)));
+      return Math.max(...matches.map((s) => parseInt(s[1], 10)));
     }
   }
   return baseRetryDelay * Math.pow(1.5, attemptNum);

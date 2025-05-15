@@ -2968,6 +2968,30 @@ describe('Client', () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
+  test('Retry on 429', async () => {
+    let count = 0;
+
+    const fetch = jest.fn(async (): Promise<Partial<Response>> => {
+      if (count === 0) {
+        count++;
+        return { status: 429, headers: new Headers({ ratelimit: '"requests",r=0,t=1; "fhirInteractions",r=12,t=60' }) };
+      }
+      return {
+        status: 200,
+        headers: new Headers({ 'content-type': ContentType.FHIR_JSON }),
+        json: async () => ({ resourceType: 'Patient' }),
+      };
+    });
+
+    const client = new MedplumClient({ fetch });
+    const patientPromise = client.readResource('Patient', '123');
+    await sleep(800);
+    expect(patientPromise.isPending()).toBe(true);
+    await sleep(250);
+    expect(patientPromise.isOk()).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
   test('Dispatch on bad connection', async () => {
     const fetch = jest.fn(async () => {
       throw new Error('Failed to fetch');
