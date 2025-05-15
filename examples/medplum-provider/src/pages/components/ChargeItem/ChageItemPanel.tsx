@@ -19,9 +19,14 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
     chargeItem?.code?.coding?.filter((coding) => coding.system === 'http://www.ama-assn.org/go/cpt') ?? [];
 
   const updateCptCodes = (value: CodeableConcept | undefined): void => {
-    if (!value) {
-      return;
-    }
+    const updatedChargeItem = { ...chargeItem };
+    const existingNonCptCodes = chargeItem.code?.coding?.filter(coding => coding.system !== 'http://www.ama-assn.org/go/cpt') ?? [];
+    updatedChargeItem.code = {
+      ...(value ?? {}),
+      coding: [...(value?.coding ?? []), ...existingNonCptCodes]
+    };
+    onChange(updatedChargeItem);
+  };
 
     const updatedChargeItem = { ...chargeItem };
     const existingNonCptCodes =
