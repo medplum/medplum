@@ -443,7 +443,7 @@ export const EncounterChart = (): JSX.Element => {
     await debouncedUpdateResource(updatedEncounter);
   };
 
-  if (!patient || !encounter || !clinicalImpression) {
+  if (!patient || !encounter) {
     return <Loading />;
   }
 
@@ -451,19 +451,21 @@ export const EncounterChart = (): JSX.Element => {
     if (activeTab === 'notes') {
       return (
         <Stack gap="md">
-          <Card withBorder shadow="sm" mt="md">
-            <Text fw={600} size="lg" mb="md">
-              Fill chart note
-            </Text>
-            <Textarea
-              defaultValue={clinicalImpression.note?.[0]?.text}
+          {clinicalImpression && (
+            <Card withBorder shadow="sm" mt="md">
+              <Text fw={600} size="lg" mb="md">
+                Fill chart note
+              </Text>
+              <Textarea
+                defaultValue={clinicalImpression.note?.[0]?.text}
               value={chartNote}
               onChange={handleChartNoteChange}
               autosize
               minRows={4}
               maxRows={8}
-            />
-          </Card>
+              />
+            </Card>
+          )}
 
           {tasks.map((task: Task) => (
             <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
