@@ -83,21 +83,21 @@ export const EncounterChart = (): JSX.Element => {
         conditionsInDiagnosis.sort((a, b) => {
           const aRef = getReferenceString(a);
           const bRef = getReferenceString(b);
-          
+
           if (diagnosisMap.has(aRef) && diagnosisMap.has(bRef)) {
             const aValue = diagnosisMap.get(aRef) ?? 0;
             const bValue = diagnosisMap.get(bRef) ?? 0;
             return aValue - bValue;
           }
-          
+
           if (diagnosisMap.has(aRef)) {
             return -1;
           }
-          
+
           if (diagnosisMap.has(bRef)) {
             return 1;
           }
-          
+
           return 0;
         });
 
