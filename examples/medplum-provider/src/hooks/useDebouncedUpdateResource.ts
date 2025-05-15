@@ -15,13 +15,10 @@ export function useDebouncedUpdateResource<T extends Resource>(
   medplum: MedplumClient,
   timeoutMs: number = DEFAULT_SAVE_TIMEOUT_MS
 ): (resourcePayload: T) => Promise<T> {
-  const debouncedCallback = useDebouncedCallback(
-    async (resourcePayload: T): Promise<T> => {
-      return (await medplum.updateResource(resourcePayload)) as T;
-    },
-    timeoutMs
-  );
-  
+  const debouncedCallback = useDebouncedCallback(async (resourcePayload: T): Promise<T> => {
+    return (await medplum.updateResource(resourcePayload)) as T;
+  }, timeoutMs);
+
   return async (resourcePayload: T): Promise<T> => {
     debouncedCallback(resourcePayload);
     return resourcePayload;
