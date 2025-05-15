@@ -38,7 +38,7 @@
     "@tabler/icons-react": "3.17.0",
     "@types/node": "20.17.47",
     "@types/react": "19.1.4",
-    "@types/react-big-calendar": "^1.16.1",
+    "@types/react-big-calendar": "1.16.1",
     "@types/react-dom": "19.1.5",
     "@vitejs/plugin-react": "4.4.1",
     "chart.js": "4.4.9",

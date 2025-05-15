@@ -107,7 +107,7 @@
     "storybook": "8.6.12",
     "storybook-addon-mantine": "5.0.0",
     "typescript": "5.8.3",
-    "vite-plugin-turbosnap": "^1.0.3"
+    "vite-plugin-turbosnap": "1.0.3"
   },
   "peerDependencies": {
     "@mantine/core": "^7.0.0",
