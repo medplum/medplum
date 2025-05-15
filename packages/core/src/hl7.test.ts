@@ -1,4 +1,4 @@
-import { formatHl7DateTime, Hl7Field, Hl7Message, Hl7Segment, parseHl7DateTime } from './hl7';
+import { formatHl7DateTime, Hl7Field, Hl7Message, Hl7Segment, parseHl7DateTime, Hl7Context } from './hl7';
 
 describe('HL7', () => {
   test('Unsupported encoding', () => {
@@ -497,5 +497,106 @@ describe('Date time formatting', () => {
     const isoDateTime = '2023-05-08T10:30:04.123Z';
     const expectedResult = '20230508103004.123';
     expect(formatHl7DateTime(isoDateTime)).toBe(expectedResult);
+  });
+});
+
+describe('HL7 Setter Functions', () => {
+  const context = new Hl7Context();
+
+  describe('Hl7Message.setSegment', () => {
+    it('should set segment by numeric index', () => {
+      const message = new Hl7Message([
+        new Hl7Segment(['MSH', '|', '^~\\&'], context),
+        new Hl7Segment(['PID', '1', '2'], context),
+      ]);
+
+      const newSegment = new Hl7Segment(['PID', '3', '4'], context);
+      expect(message.setSegment(1, newSegment)).toBe(true);
+      expect(message.segments[1].toString()).toBe('PID|3|4');
+    });
+
+    it('should set segment by name', () => {
+      const message = new Hl7Message([
+        new Hl7Segment(['MSH', '|', '^~\\&'], context),
+        new Hl7Segment(['PID', '1', '2'], context),
+      ]);
+
+      const newSegment = new Hl7Segment(['PID', '3', '4'], context);
+      expect(message.setSegment('PID', newSegment)).toBe(true);
+      expect(message.segments[1].toString()).toBe('PID|3|4');
+    });
+
+    it('should return false for invalid index', () => {
+      const message = new Hl7Message([
+        new Hl7Segment(['MSH', '|', '^~\\&'], context),
+      ]);
+
+      const newSegment = new Hl7Segment(['PID', '1', '2'], context);
+      expect(message.setSegment(5, newSegment)).toBe(false);
+    });
+
+    it('should return false for non-existent segment name', () => {
+      const message = new Hl7Message([
+        new Hl7Segment(['MSH', '|', '^~\\&'], context),
+      ]);
+
+      const newSegment = new Hl7Segment(['PID', '1', '2'], context);
+      expect(message.setSegment('NONEXISTENT', newSegment)).toBe(false);
+    });
+  });
+
+  describe('Hl7Segment.setField', () => {
+    it('should set field in regular segment', () => {
+      const segment = new Hl7Segment(['PID', '1', '2'], context);
+      expect(segment.setField(2, 'new value')).toBe(true);
+      expect(segment.getField(2).toString()).toBe('new value');
+    });
+
+    it('should set field in MSH segment', () => {
+      const segment = new Hl7Segment(['MSH', '|', '^~\\&', 'SENDING_APP'], context);
+      expect(segment.setField(3, 'NEW_APP')).toBe(true);
+      expect(segment.getField(3).toString()).toBe('NEW_APP');
+    });
+
+    it('should not allow changing MSH.1', () => {
+      const segment = new Hl7Segment(['MSH', '|', '^~\\&'], context);
+      expect(segment.setField(1, 'new value')).toBe(false);
+    });
+
+    it('should not allow changing MSH.2', () => {
+      const segment = new Hl7Segment(['MSH', '|', '^~\\&'], context);
+      expect(segment.setField(2, 'new value')).toBe(false);
+    });
+
+    it('should return false for invalid field index', () => {
+      const segment = new Hl7Segment(['PID', '1', '2'], context);
+      expect(segment.setField(5, 'new value')).toBe(false);
+    });
+  });
+
+  describe('Hl7Field.setComponent', () => {
+    it('should set component value', () => {
+      const field = new Hl7Field([['value1', 'value2']], context);
+      expect(field.setComponent(2, 'new value')).toBe(true);
+      expect(field.getComponent(2)).toBe('new value');
+    });
+
+    it('should set subcomponent value', () => {
+      const field = new Hl7Field([['value1&sub1&sub2']], context);
+      expect(field.setComponent(1, 'new sub', 1)).toBe(true);
+      expect(field.getComponent(1, 1)).toBe('new sub');
+    });
+
+    it('should handle new repetitions', () => {
+      const field = new Hl7Field([['value1']], context);
+      expect(field.setComponent(1, 'new value', undefined, 1)).toBe(true);
+      expect(field.getComponent(1, undefined, 1)).toBe('new value');
+    });
+
+    it('should handle new subcomponents', () => {
+      const field = new Hl7Field([['value1']], context);
+      expect(field.setComponent(1, 'new sub', 2)).toBe(true);
+      expect(field.getComponent(1, 2)).toBe('new sub');
+    });
   });
 });

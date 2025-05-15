@@ -207,6 +207,30 @@ export class Hl7Message {
       context
     );
   }
+
+  /**
+   * Sets or replaces a segment at the specified index.
+   * If the index is a string, replaces the first segment with that name.
+   * @param index - The segment index or name
+   * @param segment - The new segment to set
+   * @returns true if the segment was set, false otherwise
+   */
+  setSegment(index: number | string, segment: Hl7Segment): boolean {
+    if (typeof index === 'number') {
+      if (index >= 0 && index < this.segments.length) {
+        this.segments[index] = segment;
+        return true;
+      }
+      return false;
+    }
+
+    const existingIndex = this.segments.findIndex((s) => s.name === index);
+    if (existingIndex !== -1) {
+      this.segments[existingIndex] = segment;
+      return true;
+    }
+    return false;
+  }
 }
 
 /**
@@ -318,6 +342,42 @@ export class Hl7Segment {
       context
     );
   }
+
+  /**
+   * Sets a field at the specified index.
+   * Note that the index is 1-based, not 0-based.
+   * @param index - The field index
+   * @param field - The new field value
+   * @returns true if the field was set, false otherwise
+   */
+  setField(index: number, field: Hl7Field | string): boolean {
+    if (this.name === 'MSH') {
+      // MSH segments require special handling
+      if (index === 1) {
+        // MSH.1 is the field separator - cannot be changed
+        return false;
+      }
+      if (index === 2) {
+        // MSH.2 is the encoding characters - cannot be changed
+        return false;
+      }
+      if (index > 2) {
+        // MSH.3 through MSH.n are offset by 1
+        const actualIndex = index - 1;
+        if (actualIndex < this.fields.length) {
+          this.fields[actualIndex] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+          return true;
+        }
+        return false;
+      }
+    }
+
+    if (index >= 0 && index < this.fields.length) {
+      this.fields[index] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+      return true;
+    }
+    return false;
+  }
 }
 
 /**
@@ -393,6 +453,43 @@ export class Hl7Field {
       text.split(context.repetitionSeparator).map((r) => r.split(context.componentSeparator)),
       context
     );
+  }
+
+  /**
+   * Sets a component value at the specified indices.
+   * Note that the indices are 1-based, not 0-based.
+   * @param component - The component index
+   * @param value - The new component value
+   * @param subcomponent - Optional subcomponent index
+   * @param repetition - Optional repetition index
+   * @returns true if the component was set, false otherwise
+   */
+  setComponent(component: number, value: string, subcomponent?: number, repetition = 0): boolean {
+    if (repetition >= this.components.length) {
+      // Add new repetitions if needed
+      while (this.components.length <= repetition) {
+        this.components.push(['']);
+      }
+    }
+
+    if (subcomponent !== undefined) {
+      // Handle subcomponent setting
+      const currentValue = this.components[repetition][component - 1] || '';
+      const subcomponents = currentValue.split(this.context.subcomponentSeparator);
+      
+      // Ensure we have enough subcomponents
+      while (subcomponents.length <= subcomponent) {
+        subcomponents.push('');
+      }
+      
+      subcomponents[subcomponent] = value;
+      this.components[repetition][component - 1] = subcomponents.join(this.context.subcomponentSeparator);
+    } else {
+      // Handle regular component setting
+      this.components[repetition][component - 1] = value;
+    }
+
+    return true;
   }
 }
 
