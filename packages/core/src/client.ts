@@ -55,7 +55,6 @@ import {
   serializeFhircastSubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from './fhircast';
-import { Hl7Message } from './hl7';
 import { isJwt, isMedplumAccessToken, parseJWTPayload, tryGetJwtExpiration } from './jwt';
 import { MedplumKeyValueClient } from './keyvalue';
 import {
@@ -484,7 +483,7 @@ export interface TokenResponse {
   readonly profile: Reference<ProfileResource>;
 }
 
-export interface BotEvent<T = Resource | Hl7Message | string | Record<string, any>> {
+export interface BotEvent<T = unknown> {
   readonly bot: Reference<Bot>;
   readonly contentType: string;
   readonly input: T;
