@@ -1,9 +1,8 @@
 import { CodeableConceptInput, Form, SubmitButton } from '@medplum/react';
 import { Group, Stack } from '@mantine/core';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, JSX } from 'react';
 import { addProfileToResource, createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core';
 import { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
-import { JSX } from 'react';
 
 export interface ConditionDialogProps {
   readonly patient: Patient;
