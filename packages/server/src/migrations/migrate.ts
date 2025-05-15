@@ -931,32 +931,32 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
       }
       case 'ADD_COLUMN': {
         const query = getAddColumnQuery(action.tableName, action.columnDefinition);
-        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
         break;
       }
       case 'DROP_COLUMN': {
         const query = getDropColumnQuery(action.tableName, action.columnName);
-        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_SET_DEFAULT': {
         const query = getAlterColumnSetDefaultQuery(action.tableName, action.columnName, action.defaultValue);
-        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_DROP_DEFAULT': {
         const query = getAlterColumnDropDefaultQuery(action.tableName, action.columnName);
-        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
         const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_TYPE': {
         const query = getAlterColumnTypeQuery(action.tableName, action.columnName, action.columnType);
-        b.appendNoWrap(`await fns.query(client, actions, ${query});`);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
         break;
       }
       case 'CREATE_INDEX': {
@@ -966,7 +966,8 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
         break;
       }
       case 'DROP_INDEX': {
-        b.appendNoWrap(`await fns.query(client, actions, ${getDropIndexQuery(action.indexName)});`);
+        const query = getDropIndexQuery(action.indexName);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
         break;
       }
       default: {
