@@ -1,22 +1,11 @@
 import {
   doubleEscapeSingleQuotes,
   parseIndexColumns,
-  quotedColumnName,
   splitIndexColumnNames,
   tsVectorExpression,
 } from './migrate-utils';
 
 describe('migration-utils', () => {
-  describe('quotedColumnName', () => {
-    test('lowercase string', () => {
-      expect(quotedColumnName('column')).toEqual('column');
-    });
-
-    test('mixed case string', () => {
-      expect(quotedColumnName('resourceId')).toEqual('"resourceId"');
-    });
-  });
-
   test('doubleEscapeSingleQuotes', () => {
     expect(doubleEscapeSingleQuotes("to_tsvector('simple'::regconfig, value)")).toEqual(
       "to_tsvector(\\'simple\\'::regconfig, value)"
