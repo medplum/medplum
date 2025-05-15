@@ -401,7 +401,7 @@ function getValueSetOptions(
   return medplum
     .valueSetExpand({
       url: valueSetUrl,
-      count: MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS+1, 
+      count: MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS + 1,
     })
     .then((valueSet: ValueSet) => valueSet.expansion?.contains ?? []);
 }
@@ -485,7 +485,7 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
         return [optionName, optionValue] as [string, TypedValue];
       })
       .filter((option): option is [string, TypedValue] => option !== null);
-    
+
     options.push(...mappedOptions);
   }
 
@@ -532,7 +532,8 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
           />
         ))}
       </Radio.Group>
-      {((item.answerValueSet && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS) || (item.answerOption && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)) && (
+      {((item.answerValueSet && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS) ||
+        (item.answerOption && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)) && (
         <Text size="sm" c="dimmed" mt="xs">
           Showing first {MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS} options
         </Text>
@@ -557,10 +558,10 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
       .map((option, i) => {
         const optionName = `${name}-option-${i}`;
         const optionValue = getItemAnswerOptionValue(option);
-        return optionValue?.value ? [optionName, optionValue] as [string, TypedValue] : null;
+        return optionValue?.value ? ([optionName, optionValue] as [string, TypedValue]) : null;
       })
       .filter((option): option is [string, TypedValue] => option !== null);
-    
+
     options.push(...mappedOptions);
   }
 
@@ -621,7 +622,8 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
           />
         );
       })}
-      {((item.answerValueSet && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS) || (item.answerOption && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)) && (
+      {((item.answerValueSet && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS) ||
+        (item.answerOption && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)) && (
         <Text size="sm" c="dimmed">
           Showing first {MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS} options
         </Text>
