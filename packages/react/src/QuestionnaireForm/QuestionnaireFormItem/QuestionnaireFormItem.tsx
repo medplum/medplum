@@ -656,28 +656,28 @@ function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: T
 
 type ChoiceType = 'check-box' | 'drop-down' | 'radio-button' | 'multi-select' | undefined;
 
-function getChoiceType(item: QuestionnaireItem): ChoiceType {
-  return item.extension?.find(
+function hasChoiceType(item: QuestionnaireItem, type: ChoiceType): boolean {
+  return !!item.extension?.some(
     (e) =>
-      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
-      e.valueCodeableConcept?.coding?.[0]?.code
-  )?.valueCodeableConcept?.coding?.[0]?.code as ChoiceType;
+      e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
+      e.valueCodeableConcept?.coding?.[0]?.code === type
+  );
 }
 
 function isDropdownChoice(item: QuestionnaireItem): boolean {
-  return getChoiceType(item) === 'drop-down';
+  return hasChoiceType(item, 'drop-down');
 }
 
 function isCheckboxChoice(item: QuestionnaireItem): boolean {
-  return getChoiceType(item) === 'check-box';
+  return hasChoiceType(item, 'check-box');
 }
 
 function isRadiobuttonChoice(item: QuestionnaireItem): boolean {
-  return getChoiceType(item) === 'radio-button';
+  return hasChoiceType(item, 'radio-button');
 }
 
 function isMultiSelectChoice(item: QuestionnaireItem): boolean {
-  return getChoiceType(item) === 'multi-select';
+  return hasChoiceType(item, 'multi-select');
 }
 
 interface FormattedData {
