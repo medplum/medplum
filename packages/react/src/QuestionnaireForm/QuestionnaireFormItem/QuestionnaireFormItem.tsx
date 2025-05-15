@@ -32,7 +32,6 @@ import {
 } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { ChangeEvent, JSX, useContext, useEffect, useState } from 'react';
-import { AsyncAutocomplete } from '../../AsyncAutocomplete/AsyncAutocomplete';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
@@ -48,6 +47,9 @@ import {
   QuestionnaireItemType,
 } from '../../utils/questionnaire';
 import { QuestionnaireFormContext } from '../QuestionnaireForm.context';
+import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
+
+const MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS = 30;
 
 export interface QuestionnaireFormItemProps {
   readonly item: QuestionnaireItem;
@@ -256,7 +258,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       if (isCheckboxChoice(item)) {
         formComponent = (
           <QuestionnaireCheckboxInput
-            name={response?.id ?? name}
+            name={name}
             item={item}
             initial={initial}
             response={response}
@@ -277,7 +279,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       } else {
         formComponent = (
           <QuestionnaireRadiobuttonInput
-            name={response?.id ?? name}
+            name={name}
             item={item}
             initial={initial}
             response={response}
@@ -314,7 +316,6 @@ interface QuestionnaireChoiceInputProps {
 
 function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, response } = props;
-  const medplum = useMedplum();
 
   if (!item.answerOption?.length && !item.answerValueSet) {
     return <NoAnswerDisplay />;
@@ -327,40 +328,19 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
 
   if (item.answerValueSet) {
     return (
-      <AsyncAutocomplete<Coding>
+      <ValueSetAutocomplete
         name={name}
         placeholder="Select items"
-        loadOptions={async (inputValue: string, _signal: AbortSignal) => {
-          const valueSet = await medplum.valueSetExpand({
-            url: item.answerValueSet as string,
-            filter: inputValue,
-            count: 50,
-          });
-          return (
-            valueSet.expansion?.contains?.map(
-              (item) =>
-                ({
-                  system: item.system,
-                  code: item.code,
-                  display: item.display,
-                }) as Coding
-            ) ?? []
-          );
-        }}
-        toOption={(coding: Coding) => ({
-          value: coding.code as string,
-          label: coding.display as string,
-          resource: coding,
-        })}
-        defaultValue={defaultValue?.value}
-        onChange={(value) => {
+        binding={item.answerValueSet}
+        maxValues={isMultiSelect ? undefined : 1}
+        onChange={(values) => {
           if (isMultiSelect) {
-            onChangeAnswer(value.map((coding) => ({ valueCoding: coding })));
+            onChangeAnswer(values.map((coding) => ({ valueCoding: coding })));
           } else {
-            onChangeAnswer({ valueCoding: value[0] });
+            onChangeAnswer({ valueCoding: values[0] });
           }
         }}
-        maxValues={isMultiSelect ? undefined : 1}
+        defaultValue={defaultValue?.value}
       />
     );
   }
@@ -420,7 +400,7 @@ function getValueSetOptions(
   return medplum
     .valueSetExpand({
       url: valueSetUrl,
-      count: 50, // Limit to 50 items for performance
+      count: MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS+1, // Limit to 50 items for performance
     })
     .then((valueSet: ValueSet) => valueSet.expansion?.contains ?? []);
 }
@@ -517,7 +497,7 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
     return <NoAnswerDisplay />;
   }
 
-  const limitedOptions = options.slice(0, 30);
+  const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS);
 
   return (
     <>
@@ -549,9 +529,9 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
           />
         ))}
       </Radio.Group>
-      {options.length > 30 && (
+      {options.length > MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS && (
         <Text size="sm" c="dimmed" mt="xs">
-          Showing first 30 of {options.length} options
+          Showing first {MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS} options
         </Text>
       )}
     </>
@@ -590,7 +570,7 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
     return <NoAnswerDisplay />;
   }
 
-  const limitedOptions = options.slice(0, 30);
+  const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS);
 
   return (
     <Group style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -639,9 +619,9 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
           />
         );
       })}
-      {options.length > 30 && (
+      {options.length > MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS && (
         <Text size="sm" c="dimmed">
-          Showing first 30 of {options.length} options
+          Showing first {MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS} options
         </Text>
       )}
     </Group>

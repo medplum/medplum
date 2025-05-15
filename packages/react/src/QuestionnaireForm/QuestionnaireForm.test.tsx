@@ -1423,7 +1423,7 @@ describe('QuestionnaireForm', () => {
     expect(checkboxes.length).toBeGreaterThan(0);
 
     // Verify that the cutoff message is shown
-    const cutoffMessage = screen.getByText(/Showing first 30 of \d+ options/);
+    const cutoffMessage = screen.getByText(/Showing first 30 options/);
     expect(cutoffMessage).toBeInTheDocument();
 
     // Click the first checkbox
