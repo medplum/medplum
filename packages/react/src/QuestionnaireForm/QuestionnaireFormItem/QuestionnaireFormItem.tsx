@@ -46,8 +46,8 @@ import {
   getQuestionnaireItemReferenceTargetTypes,
   QuestionnaireItemType,
 } from '../../utils/questionnaire';
-import { QuestionnaireFormContext } from '../QuestionnaireForm.context';
 import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
+import { QuestionnaireFormContext } from '../QuestionnaireForm.context';
 
 const MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS = 30;
 
@@ -400,7 +400,7 @@ function getValueSetOptions(
   return medplum
     .valueSetExpand({
       url: valueSetUrl,
-      count: MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS+1, // Limit to 50 items for performance
+      count: MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS + 1, // Limit to 50 items for performance
     })
     .then((valueSet: ValueSet) => valueSet.expansion?.contains ?? []);
 }
