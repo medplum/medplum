@@ -160,8 +160,7 @@ export const EncounterChart = (): JSX.Element => {
         };
         const savedClaim = await medplum.updateResource(updatedClaim);
         setClaim(savedClaim);
-
-      } 
+      }
     },
     [chargeItems, setChargeItems]
   );
