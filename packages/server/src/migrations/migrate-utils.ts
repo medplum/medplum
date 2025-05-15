@@ -156,3 +156,7 @@ export function escapeUnicode(str: string): string {
     return '\\u' + code.toString(16).padStart(4, '0');
   });
 }
+
+export function normalizeColumnType(colType: string): string {
+  return colType.toLocaleUpperCase().replace('TIMESTAMP WITH TIME ZONE', 'TIMESTAMPTZ').trim();
+}
