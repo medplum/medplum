@@ -49,7 +49,8 @@ import {
 import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
 import { QuestionnaireFormContext } from '../QuestionnaireForm.context';
 
-const MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS = 30;
+const MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS = 30;
+const MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS = 50;
 
 export interface QuestionnaireFormItemProps {
   readonly item: QuestionnaireItem;
@@ -400,7 +401,7 @@ function getValueSetOptions(
   return medplum
     .valueSetExpand({
       url: valueSetUrl,
-      count: MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS + 1, // Limit to 50 items for performance
+      count: MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS+1, 
     })
     .then((valueSet: ValueSet) => valueSet.expansion?.contains ?? []);
 }
@@ -470,20 +471,22 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
   if (item.answerValueSet) {
     options.push(...getOptionsFromValueSet(valueSetOptions, name));
   } else if (item.answerOption) {
-    for (let i = 0; i < item.answerOption.length; i++) {
-      const option = item.answerOption[i];
-      const optionName = `${name}-option-${i}`;
-      const optionValue = getItemAnswerOptionValue(option);
-
-      if (!optionValue?.value) {
-        continue;
-      }
-
-      if (initialValue && stringify(optionValue) === stringify(initialValue)) {
-        defaultValue = optionName;
-      }
-      options.push([optionName, optionValue]);
-    }
+    const mappedOptions = item.answerOption
+      .slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)
+      .map((option, i) => {
+        const optionName = `${name}-option-${i}`;
+        const optionValue = getItemAnswerOptionValue(option);
+        if (!optionValue?.value) {
+          return null;
+        }
+        if (initialValue && stringify(optionValue) === stringify(initialValue)) {
+          defaultValue = optionName;
+        }
+        return [optionName, optionValue] as [string, TypedValue];
+      })
+      .filter((option): option is [string, TypedValue] => option !== null);
+    
+    options.push(...mappedOptions);
   }
 
   const defaultAnswer = getCurrentAnswer(response);
@@ -497,7 +500,7 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
     return <NoAnswerDisplay />;
   }
 
-  const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS);
+  const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS);
 
   return (
     <>
@@ -529,9 +532,9 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
           />
         ))}
       </Radio.Group>
-      {options.length > MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS && (
+      {((item.answerValueSet && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS) || (item.answerOption && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)) && (
         <Text size="sm" c="dimmed" mt="xs">
-          Showing first {MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS} options
+          Showing first {MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS} options
         </Text>
       )}
     </>
@@ -549,17 +552,16 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
   if (item.answerValueSet) {
     options.push(...getOptionsFromValueSet(valueSetOptions, name));
   } else if (item.answerOption) {
-    for (let i = 0; i < item.answerOption.length && i < 50; i++) {
-      const option = item.answerOption[i];
-      const optionName = `${name}-option-${i}`;
-      const optionValue = getItemAnswerOptionValue(option);
-
-      if (!optionValue?.value) {
-        continue;
-      }
-
-      options.push([optionName, optionValue]);
-    }
+    const mappedOptions = item.answerOption
+      .slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)
+      .map((option, i) => {
+        const optionName = `${name}-option-${i}`;
+        const optionValue = getItemAnswerOptionValue(option);
+        return optionValue?.value ? [optionName, optionValue] as [string, TypedValue] : null;
+      })
+      .filter((option): option is [string, TypedValue] => option !== null);
+    
+    options.push(...mappedOptions);
   }
 
   if (isLoading) {
@@ -570,7 +572,7 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
     return <NoAnswerDisplay />;
   }
 
-  const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS);
+  const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS);
 
   return (
     <Group style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
@@ -619,9 +621,9 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
           />
         );
       })}
-      {options.length > MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS && (
+      {((item.answerValueSet && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS) || (item.answerOption && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)) && (
         <Text size="sm" c="dimmed">
-          Showing first {MAX_DISPLAYED_CHECKBOX_RADIO_OPTIONS} options
+          Showing first {MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS} options
         </Text>
       )}
     </Group>
