@@ -2,7 +2,7 @@ import { ActionIcon, Box, Card, Flex, Grid, Menu, Stack, Text, TextInput } from 
 import { HTTP_HL7_ORG } from '@medplum/core';
 import { ChargeItem, CodeableConcept } from '@medplum/fhirtypes';
 import { CodeableConceptInput } from '@medplum/react';
-import { IconDotsVertical, IconTrash } from '@tabler/icons-react';
+import { IconTrash } from '@tabler/icons-react';
 import { JSX } from 'react';
 
 const CHARGE_ITEM_MODIFIER_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/chargeitem-modifier`;
