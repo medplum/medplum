@@ -85,7 +85,6 @@ describe('createMedplumClient', () => {
     const fetch = jest.fn(async () => {
       return {
         status: 200,
-        headers: new Headers(),
         ok: true,
         json: jest.fn(async () => ({
           access_token: accessToken,
@@ -103,7 +102,6 @@ describe('createMedplumClient', () => {
     const fetch = jest.fn(async () => {
       return {
         status: 401,
-        headers: new Headers(),
       };
     });
 

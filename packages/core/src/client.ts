@@ -3394,7 +3394,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   private setCurrentRateLimit(res: Response): void {
-    const rateLimitHeader = res.headers.get('ratelimit');
+    const rateLimitHeader = res.headers?.get('ratelimit');
     if (rateLimitHeader) {
       this.currentRateLimits = rateLimitHeader;
     }
