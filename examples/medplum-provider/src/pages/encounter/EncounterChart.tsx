@@ -458,11 +458,11 @@ export const EncounterChart = (): JSX.Element => {
               </Text>
               <Textarea
                 defaultValue={clinicalImpression.note?.[0]?.text}
-              value={chartNote}
-              onChange={handleChartNoteChange}
-              autosize
-              minRows={4}
-              maxRows={8}
+                value={chartNote}
+                onChange={handleChartNoteChange}
+                autosize
+                minRows={4}
+                maxRows={8}
               />
             </Card>
           )}
