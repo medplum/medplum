@@ -116,6 +116,7 @@ export const EncounterChart = (): JSX.Element => {
 
   const updateChargeItemList = useCallback(
     (updatedChargeItem: ChargeItem): void => {
+      console.log('updateChargeItemList', updatedChargeItem);
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
@@ -140,6 +141,29 @@ export const EncounterChart = (): JSX.Element => {
       }, SAVE_TIMEOUT_MS);
     },
     [chargeItems, saveChargeItem, setChargeItems, medplum, claim, setClaim, encounter]
+  );
+
+  const deleteChargeItem = useCallback(
+    async (chargeItem: ChargeItem): Promise<void> => {
+      const updatedChargeItems = chargeItems.filter((item) => item.id !== chargeItem.id);
+      setChargeItems(updatedChargeItems);
+
+      if (chargeItem.id) {
+        await medplum.deleteResource('ChargeItem', chargeItem.id);
+      }
+
+      if (claim?.id && updatedChargeItems.length > 0 && encounter) {
+        const updatedClaim: Claim = {
+          ...claim,
+          item: getCptChargeItems(updatedChargeItems, { reference: getReferenceString(encounter) }),
+          total: { value: calculateTotalPrice(updatedChargeItems) },
+        };
+        const savedClaim = await medplum.updateResource(updatedClaim);
+        setClaim(savedClaim);
+
+      } 
+    },
+    [chargeItems, setChargeItems]
   );
 
   const handleEncounterStatusChange = useCallback(
@@ -550,7 +574,12 @@ export const EncounterChart = (): JSX.Element => {
             {chargeItems.length > 0 ? (
               <Stack gap="md">
                 {chargeItems.map((chargeItem: ChargeItem) => (
-                  <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} onChange={updateChargeItemList} />
+                  <ChageItemPanel
+                    key={chargeItem.id}
+                    chargeItem={chargeItem}
+                    onChange={updateChargeItemList}
+                    onDelete={deleteChargeItem}
+                  />
                 ))}
 
                 <Card withBorder shadow="sm">
