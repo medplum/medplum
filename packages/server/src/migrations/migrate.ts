@@ -548,9 +548,11 @@ function getSearchParameterColumns(
         throw new Error('Expected SearchParameterDetails.type to be TEXT but got ' + impl.type);
       }
       const columns = [
-        { name: impl.columnName, type: 'TEXT[]' },
+        { name: impl.tokenColumnName, type: 'TEXT[]' },
         { name: impl.textSearchColumnName, type: 'TEXT[]' },
         { name: impl.sortColumnName, type: 'TEXT' },
+        { name: impl.legacyColumnName, type: 'TEXT[]' },
+        { name: impl.legacyTextSearchColumnName, type: 'TEXT[]' },
       ];
 
       if (legacyColumnImpl) {
@@ -572,12 +574,22 @@ function getSearchParameterIndexes(
   switch (impl.searchStrategy) {
     case 'token-column': {
       const columns: IndexDefinition[] = [
-        { columns: [impl.columnName], indexType: 'gin' },
+        { columns: [impl.tokenColumnName], indexType: 'gin' },
         {
           columns: [
             {
               expression: `${TokenArrayToTextFn.name}(${quotedColumnName(impl.textSearchColumnName)}) gin_trgm_ops`,
-              name: impl.columnName + 'Trgm',
+              name: impl.textSearchColumnName + 'Trgm',
+            },
+          ],
+          indexType: 'gin',
+        },
+        { columns: [impl.legacyColumnName], indexType: 'gin' },
+        {
+          columns: [
+            {
+              expression: `${TokenArrayToTextFn.name}(${quotedColumnName(impl.legacyTextSearchColumnName)}) gin_trgm_ops`,
+              name: impl.legacyColumnName + 'Trgm',
             },
           ],
           indexType: 'gin',
@@ -1165,7 +1177,7 @@ function generateIndexesActions(
 }
 
 function getIndexName(tableName: string, index: IndexDefinition): string {
-  let indexName = applyAbbreviations(tableName, TableAbbrieviations) + '_';
+  let indexName = applyAbbreviations(tableName, TableNameAbbreviations) + '_';
   indexName += index.columns
     .map((c) => (typeof c === 'string' ? c : c.name))
     .map((c) => applyAbbreviations(c, ColumnNameAbbreviations))
@@ -1278,16 +1290,24 @@ export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition)
   return deepEquals(a, b);
 }
 
-const TableAbbrieviations: Record<string, string | undefined> = {
+const TableNameAbbreviations: Record<string, string | undefined> = {
+  BiologicallyDerivedProduct: 'BDP',
+  CoverageEligibilityRequest: 'CEReq',
+  CoverageEligibilityResponse: 'CEResp',
+  FamilyMemberHistory: 'FMH',
   MedicinalProductAuthorization: 'MPA',
   MedicinalProductContraindication: 'MPC',
+  MedicinalProductInteraction: 'MPI',
+  MedicinalProductManufactured: 'MPM',
   MedicinalProductPharmaceutical: 'MPP',
   MedicinalProductUndesirableEffect: 'MPUE',
+  SubstanceReferenceInformation: 'SRI',
 };
 
 const ColumnNameAbbreviations: Record<string, string | undefined> = {
   participatingOrganization: 'partOrg',
   primaryOrganization: 'primOrg',
+  immunizationEvent: 'immEvent',
 };
 
 function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
