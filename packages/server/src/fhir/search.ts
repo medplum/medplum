@@ -39,6 +39,7 @@ import {
   Bundle,
   BundleEntry,
   BundleLink,
+  Extension,
   Reference,
   Resource,
   ResourceType,
@@ -46,6 +47,7 @@ import {
 } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
+import { escapeUnicode } from '../migrations/migrate-utils';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { Repository } from './repo';
 import { getFullUrl } from './response';
@@ -64,6 +66,7 @@ import {
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
+  SqlBuilder,
   SqlFunction,
   Union,
   ValuesQuery,
@@ -110,25 +113,58 @@ interface ChainedSearchParameter {
 
 export interface SearchOptions extends Pick<GetBaseSelectQueryOptions, 'maxResourceVersion'> {}
 
+const DO_EXPLAIN = Boolean(process.env['SEARCH_DEBUG']);
+
 export async function searchImpl<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest<T>,
   options?: SearchOptions
 ): Promise<Bundle<WithId<T>>> {
+  const startTime = Date.now();
   validateSearchResourceTypes(repo, searchRequest);
   applyCountAndOffsetLimits(searchRequest);
 
   let entry = undefined;
   let rowCount = undefined;
   let nextResource: T | undefined;
+  let builder: SelectQuery | undefined;
   if (searchRequest.count > 0) {
-    const builder = getSelectQueryForSearch(repo, searchRequest, options);
+    builder = getSelectQueryForSearch(repo, searchRequest, options);
     ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder));
   }
+  const searchEndTime = Date.now();
+  const extension: Extension[] = [{ url: 'searchDurationMs', valueInteger: searchEndTime - startTime }];
 
+  let countType = undefined;
   let total = undefined;
   if (searchRequest.total === 'accurate' || searchRequest.total === 'estimate') {
-    total = await getCount(repo, searchRequest, rowCount);
+    const countResult = await getCount(repo, searchRequest, rowCount);
+    const countEndTime = Date.now();
+    total = countResult.count;
+    countType = countResult.type;
+    extension.push({ url: 'countType', valueString: countType });
+    extension.push({ url: 'countDurationMs', valueInteger: countEndTime - searchEndTime });
+  }
+
+  if (DO_EXPLAIN) {
+    builder ??= getSelectQueryForSearch(repo, searchRequest, options);
+
+    // Capture query
+    const sqlBuilder = new SqlBuilder();
+    builder.buildSql(sqlBuilder);
+    extension.push({ url: 'queryText', valueString: sqlBuilder.toString() });
+    const paramsStr = sqlBuilder
+      .getValues()
+      .map((v, i) => `$${i + 1} = '${typeof v === 'string' ? escapeUnicode(v) : v}'`)
+      .join(', ');
+    extension.push({ url: 'queryParams', valueString: paramsStr });
+
+    // Capture explain analyze
+    builder.explain = true;
+    builder.analyzeBuffers = true;
+    const explainRows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+    const explain = explainRows.map((row) => row['QUERY PLAN']).join('\n');
+    extension.push({ url: 'explain', valueString: explain });
   }
 
   return {
@@ -136,6 +172,9 @@ export async function searchImpl<T extends Resource>(
     type: 'searchset',
     entry,
     total,
+    meta: {
+      extension,
+    },
     link: getSearchLinks(searchRequest, entry, nextResource),
   };
 }
@@ -777,12 +816,16 @@ function getSearchUrl(searchRequest: SearchRequest): string {
  * @param rowCount - The number of matching results if found.
  * @returns The total number of matching results.
  */
-async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount: number | undefined): Promise<number> {
+async function getCount(
+  repo: Repository,
+  searchRequest: SearchRequest,
+  rowCount: number | undefined
+): Promise<{ count: number; type: 'estimate' | 'accurate' }> {
   const estimateCount = await getEstimateCount(repo, searchRequest, rowCount);
   if (estimateCount < getConfig().accurateCountThreshold) {
-    return getAccurateCount(repo, searchRequest);
+    return { count: await getAccurateCount(repo, searchRequest), type: 'accurate' };
   }
-  return estimateCount;
+  return { count: estimateCount, type: 'estimate' };
 }
 
 /**
