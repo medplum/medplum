@@ -1,6 +1,6 @@
-import { Button, Group, Stack, TextInput, Select } from '@mantine/core';
+import { Button, Group, Select, Stack, TextInput } from '@mantine/core';
 import { Device, Patient } from '@medplum/fhirtypes';
-import { useCallback, JSX } from 'react';
+import { JSX, useCallback } from 'react';
 
 export interface DeviceDialogProps {
   readonly patient: Patient;
@@ -25,23 +25,23 @@ export function DeviceDialog(props: DeviceDialogProps): JSX.Element {
         deviceName: [
           {
             name: deviceName,
-            type: 'user-friendly-name'
-          }
+            type: 'user-friendly-name',
+          },
         ],
         type: {
           coding: [
             {
               system: 'http://snomed.info/sct',
               code: '49062001',
-              display: deviceType
-            }
+              display: deviceType,
+            },
           ],
-          text: deviceType
+          text: deviceType,
         },
         status: status,
         patient: {
-          reference: `Patient/${patient.id}`
-        }
+          reference: `Patient/${patient.id}`,
+        },
       };
 
       onSubmit(updatedDevice);
@@ -52,12 +52,7 @@ export function DeviceDialog(props: DeviceDialogProps): JSX.Element {
   return (
     <form onSubmit={handleSubmit}>
       <Stack>
-        <TextInput
-          label="Device Name"
-          name="deviceName"
-          defaultValue={device?.deviceName?.[0]?.name}
-          required
-        />
+        <TextInput label="Device Name" name="deviceName" defaultValue={device?.deviceName?.[0]?.name} required />
         <TextInput
           label="Device Type"
           name="deviceType"
@@ -72,7 +67,7 @@ export function DeviceDialog(props: DeviceDialogProps): JSX.Element {
             { value: 'active', label: 'Active' },
             { value: 'inactive', label: 'Inactive' },
             { value: 'entered-in-error', label: 'Entered in Error' },
-            { value: 'unknown', label: 'Unknown' }
+            { value: 'unknown', label: 'Unknown' },
           ]}
           required
         />
@@ -82,4 +77,4 @@ export function DeviceDialog(props: DeviceDialogProps): JSX.Element {
       </Stack>
     </form>
   );
-} 
+}

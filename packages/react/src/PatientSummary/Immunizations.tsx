@@ -1,8 +1,8 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Badge, Flex, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Box, Collapse, Flex, Group, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { formatDate, resolveId } from '@medplum/core';
 import { Immunization, Patient, Resource } from '@medplum/fhirtypes';
 import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
-import { useState, useRef, useEffect } from 'react';
-import { formatDate, resolveId } from '@medplum/core';
+import { useEffect, useRef, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import styles from './PatientSummary.module.css';
 
@@ -74,18 +74,22 @@ export function Immunizations(props: ImmunizationsProps): JSX.Element {
                     setIsOverflowed(el.scrollWidth > el.clientWidth);
                   }
                 }, [imm]);
-                const vaccineName = (imm.vaccineCode?.text || imm.vaccineCode?.coding?.[0]?.display || 'Unknown Vaccine').replace(/^\w/, (c) => c.toUpperCase());
+                const vaccineName = (
+                  imm.vaccineCode?.text ||
+                  imm.vaccineCode?.coding?.[0]?.display ||
+                  'Unknown Vaccine'
+                ).replace(/^\w/, (c) => c.toUpperCase());
                 return (
-                <MedplumLink
-                  key={imm.id}
-                  to={`/Patient/${patientId}/Immunization/${imm.id}`}
-                  style={{ textDecoration: 'none', display: 'block', color: 'black' }}
-                >
+                  <MedplumLink
+                    key={imm.id}
+                    to={`/Patient/${patientId}/Immunization/${imm.id}`}
+                    style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+                  >
                     <Tooltip label={vaccineName} position="top-start" openDelay={650} disabled={!isOverflowed}>
                       <Box
                         className={styles.patientSummaryListItem}
-                    onMouseEnter={() => setHoverIndex(index)}
-                    onMouseLeave={() => setHoverIndex(null)}
+                        onMouseEnter={() => setHoverIndex(index)}
+                        onMouseLeave={() => setHoverIndex(null)}
                         style={{ cursor: 'pointer' }}
                       >
                         <Text
@@ -95,22 +99,34 @@ export function Immunizations(props: ImmunizationsProps): JSX.Element {
                         >
                           <span
                             ref={textRef}
-                            style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', display: 'block' }}
+                            style={{
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              width: '100%',
+                              display: 'block',
+                            }}
                           >
                             {vaccineName}
                           </span>
                         </Text>
-                      <Group gap={8} align="center">
-                        {imm.status && (
-                            <Badge size="xs" color={getStatusColor(imm.status)} variant="light" className={styles.patientSummaryBadge}>
-                            {imm.status === 'not-done' ? 'Not done' : imm.status}
-                          </Badge>
-                        )}
-                        {imm.occurrenceDateTime && (
-                          <Text size="xs" fw={500} color="gray.6">
-                            {imm.status === 'not-done' ? 'Expected: ' : ''}{formatDate(imm.occurrenceDateTime)}
-                          </Text>
-                        )}
+                        <Group gap={8} align="center">
+                          {imm.status && (
+                            <Badge
+                              size="xs"
+                              color={getStatusColor(imm.status)}
+                              variant="light"
+                              className={styles.patientSummaryBadge}
+                            >
+                              {imm.status === 'not-done' ? 'Not done' : imm.status}
+                            </Badge>
+                          )}
+                          {imm.occurrenceDateTime && (
+                            <Text size="xs" fw={500} color="gray.6">
+                              {imm.status === 'not-done' ? 'Expected: ' : ''}
+                              {formatDate(imm.occurrenceDateTime)}
+                            </Text>
+                          )}
                         </Group>
                         <div className={styles.patientSummaryGradient} />
                         <div className={styles.patientSummaryChevronContainer}>
@@ -123,9 +139,9 @@ export function Immunizations(props: ImmunizationsProps): JSX.Element {
                             <IconChevronRight size={16} stroke={2.5} />
                           </ActionIcon>
                         </div>
-                    </Box>
+                      </Box>
                     </Tooltip>
-                </MedplumLink>
+                  </MedplumLink>
                 );
               })}
             </Flex>

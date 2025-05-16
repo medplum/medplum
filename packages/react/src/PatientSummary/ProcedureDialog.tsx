@@ -1,7 +1,7 @@
-import { Group, Stack, Radio } from '@mantine/core';
+import { Group, Radio, Stack } from '@mantine/core';
 import { HTTP_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
-import { CodeableConcept, Procedure, Encounter, Patient } from '@medplum/fhirtypes';
-import { useCallback, useState, JSX } from 'react';
+import { CodeableConcept, Encounter, Patient, Procedure } from '@medplum/fhirtypes';
+import { JSX, useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
@@ -68,11 +68,16 @@ export function ProcedureDialog(props: ProcedureDialogProps): JSX.Element {
             <Radio key={sv} value={sv} label={sv} my="xs" required />
           ))}
         </Radio.Group>
-        <DateTimeInput name="performedDateTime" label="Date Performed" defaultValue={procedure?.performedDateTime} required />
+        <DateTimeInput
+          name="performedDateTime"
+          label="Date Performed"
+          defaultValue={procedure?.performedDateTime}
+          required
+        />
         <Group justify="flex-end" gap={4}>
           <SubmitButton>Save</SubmitButton>
         </Group>
       </Stack>
     </Form>
   );
-} 
+}

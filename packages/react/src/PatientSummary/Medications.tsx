@@ -1,13 +1,13 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Modal, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Box, Collapse, Flex, Group, Modal, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { getDisplayString } from '@medplum/core';
 import { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState, useRef, useEffect, JSX } from 'react';
+import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
-import { IconChevronDown, IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { MedicationDialog } from './MedicationDialog';
 import styles from './PatientSummary.module.css';
-import { getDisplayString } from '@medplum/core';
 
 export interface MedicationsProps {
   readonly patient: Patient;
@@ -17,10 +17,10 @@ export interface MedicationsProps {
 }
 
 function getStatusColor(status?: string): string {
-  if (!status) { 
-    return 'gray'; 
+  if (!status) {
+    return 'gray';
   }
-  
+
   switch (status) {
     case 'active':
       return 'green';
@@ -41,10 +41,16 @@ function getStatusColor(status?: string): string {
   }
 }
 
-function MedicationItem({ medication, onEdit }: { medication: MedicationRequest; onEdit: (med: MedicationRequest) => void }): JSX.Element {
+function MedicationItem({
+  medication,
+  onEdit,
+}: {
+  medication: MedicationRequest;
+  onEdit: (med: MedicationRequest) => void;
+}): JSX.Element {
   const [isOverflowed, setIsOverflowed] = useState(false);
   const textRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     const el = textRef.current;
     if (el) {
@@ -55,7 +61,7 @@ function MedicationItem({ medication, onEdit }: { medication: MedicationRequest;
   const displayText = getDisplayString(medication);
 
   return (
-    <Box 
+    <Box
       key={medication.id}
       className={styles.patientSummaryListItem}
       onClick={(e) => {
@@ -65,17 +71,13 @@ function MedicationItem({ medication, onEdit }: { medication: MedicationRequest;
     >
       <Tooltip label={displayText} position="top-start" openDelay={650} disabled={!isOverflowed}>
         <Box style={{ position: 'relative' }}>
-          <Text 
-            ref={textRef}
-            size="sm" 
-            className={styles.patientSummaryListItemText}
-          >
+          <Text ref={textRef} size="sm" className={styles.patientSummaryListItemText}>
             {displayText}
           </Text>
           <Group mt={2} gap={4}>
             {medication.status && (
-              <Badge 
-                size="xs" 
+              <Badge
+                size="xs"
                 color={getStatusColor(medication.status)}
                 variant="light"
                 className={styles.patientSummaryBadge}
@@ -86,13 +88,8 @@ function MedicationItem({ medication, onEdit }: { medication: MedicationRequest;
           </Group>
           <div className={styles.patientSummaryGradient} />
           <div className={styles.patientSummaryChevronContainer}>
-            <ActionIcon
-              className={styles.patientSummaryChevron}
-              size="md"
-              variant="transparent"
-              tabIndex={-1}
-            >
-              <IconChevronRight size={16} stroke={2.5}/>
+            <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
+              <IconChevronRight size={16} stroke={2.5} />
             </ActionIcon>
           </div>
         </Box>
@@ -132,12 +129,12 @@ export function Medications(props: MedicationsProps): JSX.Element {
             width: '100%',
             cursor: 'default',
             '&:hover .add-button': {
-              opacity: 1
+              opacity: 1,
             },
             '& .mantine-ActionIcon-root, & .mantine-Text-root': {
               cursor: 'pointer',
-              margin: '0'
-            }
+              margin: '0',
+            },
           }}
         >
           <Group justify="space-between">
@@ -174,7 +171,7 @@ export function Medications(props: MedicationsProps): JSX.Element {
             <Box ml="36" mt="8" mb="16">
               <Flex direction="column" gap={8}>
                 {medicationRequests.map((medication) => (
-                  <MedicationItem 
+                  <MedicationItem
                     key={medication.id}
                     medication={medication}
                     onEdit={(med) => {

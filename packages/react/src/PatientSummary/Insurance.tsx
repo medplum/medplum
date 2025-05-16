@@ -1,10 +1,9 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Tooltip } from '@mantine/core';
-import { Coverage, Organization, Patient, RelatedPerson, Reference } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/react-hooks';
-import { useState, useRef, useEffect } from 'react';
-import { IconChevronDown, IconPlus, IconPencil, IconChevronRight } from '@tabler/icons-react';
+import { ActionIcon, Badge, Box, Collapse, Flex, Group, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { Coverage, Patient, Reference } from '@medplum/fhirtypes';
+import { useResource } from '@medplum/react-hooks';
+import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import styles from './PatientSummary.module.css';
 
@@ -16,26 +15,43 @@ export interface InsuranceProps {
 
 function PayorDisplay({ reference }: { reference?: Reference }): JSX.Element {
   const payor = useResource(reference);
-  
+
   if (!payor) {
-    return <Text size="sm" fw={500}>Unknown Payor</Text>;
+    return (
+      <Text size="sm" fw={500}>
+        Unknown Payor
+      </Text>
+    );
   }
 
   if ('name' in payor && typeof payor.name === 'string') {
     // Organization
-    return <Text size="sm" fw={500}>{payor.name}</Text>;
+    return (
+      <Text size="sm" fw={500}>
+        {payor.name}
+      </Text>
+    );
   } else if ('name' in payor && Array.isArray(payor.name) && payor.name.length > 0) {
     // Patient or RelatedPerson
-    return <Text size="sm" fw={500}>{formatHumanName(payor.name[0])}</Text>;
+    return (
+      <Text size="sm" fw={500}>
+        {formatHumanName(payor.name[0])}
+      </Text>
+    );
   }
 
-  return <Text size="sm" fw={500}>Unknown Payor</Text>;
+  return (
+    <Text size="sm" fw={500}>
+      Unknown Payor
+    </Text>
+  );
 }
 
 // Helper to capitalize first letter of each word
 function capitalizeWords(str: string): string {
-  return str.split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+  return str
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 }
 
@@ -45,7 +61,7 @@ export function Insurance(props: InsuranceProps): JSX.Element {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   // Filter to only show active coverages
-  const activeCoverages = coverages.filter(coverage => coverage.status === 'active');
+  const activeCoverages = coverages.filter((coverage) => coverage.status === 'active');
 
   // Helper function to get status badge color
   const getStatusColor = (status?: string): string => {
@@ -67,13 +83,13 @@ export function Insurance(props: InsuranceProps): JSX.Element {
   // Helper to format class information
   const formatClassInfo = (coverage: Coverage): string => {
     const classInfo = coverage.class
-      ?.filter(cls => cls.type?.coding?.[0]?.code !== 'plan')
-      .map(cls => {
+      ?.filter((cls) => cls.type?.coding?.[0]?.code !== 'plan')
+      .map((cls) => {
         const type = cls.type?.coding?.[0]?.code || '';
         return `${capitalizeWords(type)}: ${cls.value}`;
       })
       .join(' · ');
-    
+
     return classInfo || '';
   };
 
@@ -101,11 +117,7 @@ export function Insurance(props: InsuranceProps): JSX.Element {
             >
               <IconChevronDown size={20} />
             </ActionIcon>
-            <Text 
-              fz="md" 
-              fw={800} 
-              onClick={() => setCollapsed((c) => !c)}
-            >
+            <Text fz="md" fw={800} onClick={() => setCollapsed((c) => !c)}>
               Insurance
             </Text>
           </Group>
@@ -131,7 +143,7 @@ export function Insurance(props: InsuranceProps): JSX.Element {
                 const [isPayorOverflowed, setIsPayorOverflowed] = useState(false);
                 const textRef = useRef<HTMLSpanElement>(null);
                 const payorRef = useRef<HTMLSpanElement>(null);
-                
+
                 useEffect(() => {
                   const el = textRef.current;
                   if (el) {
@@ -149,7 +161,11 @@ export function Insurance(props: InsuranceProps): JSX.Element {
                 if (payorResource) {
                   if ('name' in payorResource && typeof payorResource.name === 'string') {
                     payorName = payorResource.name;
-                  } else if ('name' in payorResource && Array.isArray(payorResource.name) && payorResource.name.length > 0) {
+                  } else if (
+                    'name' in payorResource &&
+                    Array.isArray(payorResource.name) &&
+                    payorResource.name.length > 0
+                  ) {
                     payorName = formatHumanName(payorResource.name[0]);
                   }
                 }
@@ -158,7 +174,7 @@ export function Insurance(props: InsuranceProps): JSX.Element {
                 const detailsText = `ID: ${coverage.subscriberId || 'N/A'}${formatClassInfo(coverage) ? ` · ${formatClassInfo(coverage)}` : ''}`;
 
                 return (
-                  <Box 
+                  <Box
                     key={coverage.id}
                     className={styles.patientSummaryListItem}
                     onMouseEnter={() => setHoverIndex(index)}
@@ -167,31 +183,39 @@ export function Insurance(props: InsuranceProps): JSX.Element {
                   >
                     <Tooltip label={payorName} position="top-start" openDelay={650} disabled={!isPayorOverflowed}>
                       <Box style={{ position: 'relative' }}>
-                        <Text 
-                          size="sm" 
+                        <Text
+                          size="sm"
                           className={styles.patientSummaryListItemText}
                           style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}
                         >
                           <span
                             ref={payorRef}
-                            style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', display: 'block' }}
+                            style={{
+                              fontWeight: 500,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              width: '100%',
+                              display: 'block',
+                            }}
                           >
                             {payorName}
                           </span>
                           <span
                             ref={textRef}
-                            style={{ fontWeight: 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}
+                            style={{
+                              fontWeight: 400,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              width: '100%',
+                            }}
                           >
                             {detailsText}
                           </span>
                         </Text>
                         <Group mt={2} gap={4}>
-                          <Badge 
-                            size="xs" 
-                            color="green"
-                            variant="light"
-                            className={styles.patientSummaryBadge}
-                          >
+                          <Badge size="xs" color="green" variant="light" className={styles.patientSummaryBadge}>
                             Active
                           </Badge>
                           {coverage.period?.end && (
@@ -208,7 +232,7 @@ export function Insurance(props: InsuranceProps): JSX.Element {
                             variant="transparent"
                             tabIndex={-1}
                           >
-                            <IconChevronRight size={16} stroke={2.5}/>
+                            <IconChevronRight size={16} stroke={2.5} />
                           </ActionIcon>
                         </div>
                       </Box>
@@ -226,4 +250,4 @@ export function Insurance(props: InsuranceProps): JSX.Element {
       </Collapse>
     </Box>
   );
-} 
+}

@@ -1,10 +1,10 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Modal, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Box, Collapse, Flex, Group, Modal, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Device, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState, useRef, useEffect, JSX } from 'react';
+import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
-import { IconChevronDown, IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { DeviceDialog } from './DeviceDialog';
 import styles from './PatientSummary.module.css';
 
@@ -16,7 +16,9 @@ export interface DevicesProps {
 
 // Helper function to get status badge color
 const getStatusColor = (status?: string): string => {
-  if (!status) { return 'gray'; }
+  if (!status) {
+    return 'gray';
+  }
   switch (status) {
     case 'active':
       return 'green';
@@ -35,7 +37,7 @@ const getStatusColor = (status?: string): string => {
 function DeviceItem({ device, onEdit }: { device: Device; onEdit: (device: Device) => void }): JSX.Element {
   const [isOverflowed, setIsOverflowed] = useState(false);
   const textRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     const el = textRef.current;
     if (el) {
@@ -46,25 +48,17 @@ function DeviceItem({ device, onEdit }: { device: Device; onEdit: (device: Devic
   const displayText = `${device.deviceName?.[0]?.name || 'Unknown Device'} ⸱ ${device.type?.coding?.[0]?.display || device.type?.text || 'Unknown Type'}`;
 
   return (
-    <Box
-      key={device.id}
-      className={styles.patientSummaryListItem}
-      onClick={() => onEdit(device)}
-    >
+    <Box key={device.id} className={styles.patientSummaryListItem} onClick={() => onEdit(device)}>
       <Tooltip label={displayText} position="top-start" openDelay={650} disabled={!isOverflowed}>
         <Box style={{ position: 'relative' }}>
-          <Text 
-            ref={textRef}
-            size="sm" 
-            className={styles.patientSummaryListItemText}
-          >
+          <Text ref={textRef} size="sm" className={styles.patientSummaryListItemText}>
             {displayText}
           </Text>
           <Group gap={4} align="center">
-            <Badge 
-              size="xs" 
-              color={getStatusColor(device.status)} 
-              variant="light" 
+            <Badge
+              size="xs"
+              color={getStatusColor(device.status)}
+              variant="light"
               className={styles.patientSummaryBadge}
             >
               {device.status}
@@ -72,13 +66,8 @@ function DeviceItem({ device, onEdit }: { device: Device; onEdit: (device: Devic
           </Group>
           <div className={styles.patientSummaryGradient} />
           <div className={styles.patientSummaryChevronContainer}>
-            <ActionIcon
-              className={styles.patientSummaryChevron}
-              size="md"
-              variant="transparent"
-              tabIndex={-1}
-            >
-              <IconChevronRight size={16} stroke={2.5}/>
+            <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
+              <IconChevronRight size={16} stroke={2.5} />
             </ActionIcon>
           </div>
         </Box>
@@ -118,12 +107,12 @@ export function Devices(props: DevicesProps): JSX.Element {
             width: '100%',
             cursor: 'default',
             '&:hover .add-button': {
-              opacity: 1
+              opacity: 1,
             },
             '& .mantine-ActionIcon-root, & .mantine-Text-root': {
               cursor: 'pointer',
-              margin: '0'
-            }
+              margin: '0',
+            },
           }}
         >
           <Group justify="space-between">
@@ -160,7 +149,7 @@ export function Devices(props: DevicesProps): JSX.Element {
             <Box ml="36" mt="8" mb="16">
               <Flex direction="column" gap={8}>
                 {devices.map((device) => (
-                  <DeviceItem 
+                  <DeviceItem
                     key={device.id}
                     device={device}
                     onEdit={(device) => {
@@ -184,12 +173,8 @@ export function Devices(props: DevicesProps): JSX.Element {
         `}</style>
       </Box>
       <Modal opened={opened} onClose={close} title={editDevice ? 'Edit Device' : 'Add Device'}>
-        <DeviceDialog
-          patient={props.patient}
-          device={editDevice}
-          onSubmit={handleSubmit}
-        />
+        <DeviceDialog patient={props.patient} device={editDevice} onSubmit={handleSubmit} />
       </Modal>
     </>
   );
-} 
+}

@@ -1,17 +1,19 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Tooltip, Modal } from '@mantine/core';
+import { ActionIcon, Badge, Box, Collapse, Flex, Group, Modal, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { Procedure, Patient } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
-import { useState, useRef, useEffect, useCallback, JSX } from 'react';
-import { IconChevronDown, IconPlus, IconChevronRight } from '@tabler/icons-react';
 import { formatDate } from '@medplum/core';
-import styles from './PatientSummary.module.css';
+import { Patient, Procedure } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
+import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
+import styles from './PatientSummary.module.css';
 import { ProcedureDialog } from './ProcedureDialog';
 
 // Helper function to get status badge color
 const getStatusColor = (status?: string): string => {
-  if (!status) { return 'gray'; }
+  if (!status) {
+    return 'gray';
+  }
   switch (status) {
     case 'completed':
       return 'green';
@@ -35,10 +37,16 @@ export interface ProceduresProps {
 }
 
 // TODO: new file
-function ProcedureItem({ procedure, onEdit }: { procedure: Procedure; onEdit: (procedure: Procedure) => void }): JSX.Element {
+function ProcedureItem({
+  procedure,
+  onEdit,
+}: {
+  procedure: Procedure;
+  onEdit: (procedure: Procedure) => void;
+}): JSX.Element {
   const [isOverflowed, setIsOverflowed] = useState(false);
   const textRef = useRef<HTMLDivElement>(null);
-  
+
   useEffect(() => {
     const el = textRef.current;
     if (el) {
@@ -49,26 +57,18 @@ function ProcedureItem({ procedure, onEdit }: { procedure: Procedure; onEdit: (p
   const displayText = procedure.code?.coding?.[0]?.display || procedure.code?.text || 'Unknown Procedure';
 
   return (
-    <Box
-      key={procedure.id}
-      className={styles.patientSummaryListItem}
-      onClick={() => onEdit(procedure)}
-    >
+    <Box key={procedure.id} className={styles.patientSummaryListItem} onClick={() => onEdit(procedure)}>
       <Tooltip label={displayText} position="top-start" openDelay={650} disabled={!isOverflowed}>
         <Box style={{ position: 'relative' }}>
-          <Text 
-            ref={textRef}
-            size="sm" 
-            className={styles.patientSummaryListItemText}
-          >
+          <Text ref={textRef} size="sm" className={styles.patientSummaryListItemText}>
             {displayText}
           </Text>
           <Group mt={2} gap={4}>
             {procedure.status && (
-              <Badge 
-                size="xs" 
-                color={getStatusColor(procedure.status)} 
-                variant="light" 
+              <Badge
+                size="xs"
+                color={getStatusColor(procedure.status)}
+                variant="light"
                 className={styles.patientSummaryBadge}
               >
                 {procedure.status}
@@ -82,13 +82,8 @@ function ProcedureItem({ procedure, onEdit }: { procedure: Procedure; onEdit: (p
           </Group>
           <div className={styles.patientSummaryGradient} />
           <div className={styles.patientSummaryChevronContainer}>
-            <ActionIcon
-              className={styles.patientSummaryChevron}
-              size="md"
-              variant="transparent"
-              tabIndex={-1}
-            >
-              <IconChevronRight size={16} stroke={2.5}/>
+            <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
+              <IconChevronRight size={16} stroke={2.5} />
             </ActionIcon>
           </div>
         </Box>
@@ -126,8 +121,6 @@ export function Procedures(props: ProceduresProps): JSX.Element {
     return dateB - dateA;
   });
 
-  
-
   return (
     <>
       <Box style={{ position: 'relative' }}>
@@ -143,11 +136,7 @@ export function Procedures(props: ProceduresProps): JSX.Element {
               >
                 <IconChevronDown size={20} />
               </ActionIcon>
-              <Text 
-                fz="md" 
-                fw={800} 
-                onClick={() => setCollapsed((c) => !c)}
-              >
+              <Text fz="md" fw={800} onClick={() => setCollapsed((c) => !c)}>
                 Procedures
               </Text>
             </Group>
@@ -170,7 +159,7 @@ export function Procedures(props: ProceduresProps): JSX.Element {
             <Box ml="36" mt="8" mb="16">
               <Flex direction="column" gap={8}>
                 {sortedProcedures.map((procedure) => (
-                  <ProcedureItem 
+                  <ProcedureItem
                     key={procedure.id}
                     procedure={procedure}
                     onEdit={(procedure) => {
@@ -189,12 +178,8 @@ export function Procedures(props: ProceduresProps): JSX.Element {
         </Collapse>
       </Box>
       <Modal opened={opened} onClose={close} title={editProcedure ? 'Edit Procedure' : 'Add Procedure'}>
-        <ProcedureDialog
-          patient={props.patient}
-          procedure={editProcedure}
-          onSubmit={handleSubmit}
-        />
+        <ProcedureDialog patient={props.patient} procedure={editProcedure} onSubmit={handleSubmit} />
       </Modal>
     </>
   );
-} 
+}

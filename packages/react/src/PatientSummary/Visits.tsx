@@ -1,8 +1,8 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Tooltip } from '@mantine/core';
-import { Appointment, Encounter, Patient } from '@medplum/fhirtypes';
-import { useState, useRef, useEffect } from 'react';
-import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import { ActionIcon, Badge, Box, Collapse, Flex, Group, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { formatDate, resolveId } from '@medplum/core';
+import { Appointment, Encounter, Patient } from '@medplum/fhirtypes';
+import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import styles from './PatientSummary.module.css';
 
@@ -99,15 +99,11 @@ export function Visits(props: VisitsProps): JSX.Element {
           <Box ml="36" mt="8" mb="16">
             <Flex direction="column" gap={8}>
               {sortedAppointments.map((appt, index) => {
-                const practitioner = appt.participant?.find(
-                  (p) => p.actor?.reference?.startsWith('Practitioner')
-                );
+                const practitioner = appt.participant?.find((p) => p.actor?.reference?.startsWith('Practitioner'));
                 const practitionerName = practitioner?.actor?.display || 'No provider';
                 const encounter = findEncounterForAppointment(appt);
                 const patientId = resolveId(patient);
-                const encounterUrl = encounter
-                  ? `/Patient/${patientId}/Encounter/${encounter.id}/chart`
-                  : undefined;
+                const encounterUrl = encounter ? `/Patient/${patientId}/Encounter/${encounter.id}/chart` : undefined;
 
                 // Truncation and tooltip logic for date/time
                 const [isOverflowed, setIsOverflowed] = useState(false);
@@ -137,24 +133,30 @@ export function Visits(props: VisitsProps): JSX.Element {
                           <Text
                             size="sm"
                             className={styles.patientSummaryListItemText}
-                            style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}
+                            style={{
+                              fontWeight: 500,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              width: '100%',
+                            }}
                           >
                             <span ref={textRef}>{dateTimeText}</span>
-                        </Text>
-                          <Group mt={2} gap={4}>
-                          {appt.status && (
-                            <Badge 
-                              size="xs" 
-                              color={getStatusColor(appt.status)}
-                              variant="light"
-                                className={styles.patientSummaryBadge}
-                            >
-                              {appt.status}
-                            </Badge>
-                          )}
-                          <Text size="xs" fw={500} color="gray.6">
-                            {practitionerName}
                           </Text>
+                          <Group mt={2} gap={4}>
+                            {appt.status && (
+                              <Badge
+                                size="xs"
+                                color={getStatusColor(appt.status)}
+                                variant="light"
+                                className={styles.patientSummaryBadge}
+                              >
+                                {appt.status}
+                              </Badge>
+                            )}
+                            <Text size="xs" fw={500} color="gray.6">
+                              {practitionerName}
+                            </Text>
                           </Group>
                           <div className={styles.patientSummaryGradient} />
                           <div className={styles.patientSummaryChevronContainer}>
@@ -169,7 +171,7 @@ export function Visits(props: VisitsProps): JSX.Element {
                           </div>
                         </Box>
                       </Tooltip>
-                      </Box>
+                    </Box>
                   </MedplumLink>
                 );
               })}
@@ -183,4 +185,4 @@ export function Visits(props: VisitsProps): JSX.Element {
       </Collapse>
     </Box>
   );
-} 
+}

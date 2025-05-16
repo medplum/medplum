@@ -1,40 +1,48 @@
-import { Divider, Group, Stack, Text, Tooltip, ActionIcon, Box } from '@mantine/core';
+import { ActionIcon, Box, Divider, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { calculateAgeString, formatHumanName, resolveId } from '@medplum/core';
 import {
   AllergyIntolerance,
   Appointment,
   Condition,
   Coverage,
+  Device,
   Encounter,
+  Goal,
   HumanName,
+  Immunization,
   MedicationRequest,
   Observation,
   Patient,
+  Procedure,
   Reference,
   Resource,
-  Immunization,
-  Procedure,
-  Device,
-  Goal,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { IconStethoscope, IconCake, IconMenuOrder, IconSquareChevronsUp, IconSquareChevronsDown, IconEmpathize, IconBinaryTree, IconMapPin, IconLanguage, IconChevronRight } from '@tabler/icons-react';
-import { useEffect, useState, useRef } from 'react';
+import {
+  IconBinaryTree,
+  IconCake,
+  IconChevronRight,
+  IconEmpathize,
+  IconLanguage,
+  IconMapPin,
+  IconStethoscope,
+} from '@tabler/icons-react';
+import { useEffect, useRef, useState } from 'react';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Contact } from './Contact';
+import { Devices } from './Devices';
+import { Goals } from './Goals';
+import { Immunizations } from './Immunizations';
 import { Insurance } from './Insurance';
 import { Medications } from './Medications';
-import { ProblemList } from './ProblemList';
-import { Vitals } from './Vitals';
-import { Visits } from './Visits';
-import { Immunizations } from './Immunizations';
-import { Procedures } from './Procedures';
-import { Devices } from './Devices';
-import { SocialHistory } from './SocialHistory';
-import { Goals } from './Goals';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
 import styles from './PatientSummary.module.css';
+import { ProblemList } from './ProblemList';
+import { Procedures } from './Procedures';
+import { SocialHistory } from './SocialHistory';
+import { Visits } from './Visits';
+import { Vitals } from './Vitals';
 
 export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
@@ -107,147 +115,147 @@ function getLanguages(patient: Patient): { preferred?: string; other?: string } 
 
 const LANGUAGE_DISPLAY_MAP: Record<string, string> = {
   // Root language codes
-  'en': 'English',
-  'es': 'Spanish',
-  'fr': 'French',
-  'de': 'German',
-  'it': 'Italian',
-  'pt': 'Portuguese',
-  'zh': 'Chinese',
-  'ja': 'Japanese',
-  'ko': 'Korean',
-  'ru': 'Russian',
-  'ar': 'Arabic',
-  'hi': 'Hindi',
-  'bn': 'Bengali',
-  'vi': 'Vietnamese',
-  'th': 'Thai',
-  'nl': 'Dutch',
-  'pl': 'Polish',
-  'tr': 'Turkish',
-  'sv': 'Swedish',
-  'da': 'Danish',
-  'fi': 'Finnish',
-  'no': 'Norwegian',
-  'cs': 'Czech',
-  'hu': 'Hungarian',
-  'el': 'Greek',
-  'he': 'Hebrew',
-  'id': 'Indonesian',
-  'ms': 'Malay',
-  'ro': 'Romanian',
-  'uk': 'Ukrainian',
-  'hr': 'Croatian',
-  'sk': 'Slovak',
-  'sl': 'Slovenian',
-  'et': 'Estonian',
-  'lv': 'Latvian',
-  'lt': 'Lithuanian',
-  'bg': 'Bulgarian',
-  'sr': 'Serbian',
-  'is': 'Icelandic',
-  'fa': 'Persian',
-  'ur': 'Urdu',
-  'ta': 'Tamil',
-  'te': 'Telugu',
-  'kn': 'Kannada',
-  'ml': 'Malayalam',
-  'si': 'Sinhala',
-  'km': 'Khmer',
-  'lo': 'Lao',
-  'my': 'Burmese',
-  'ka': 'Georgian',
-  'hy': 'Armenian',
-  'az': 'Azerbaijani',
-  'uz': 'Uzbek',
-  'kk': 'Kazakh',
-  'ky': 'Kyrgyz',
-  'tg': 'Tajik',
-  'tk': 'Turkmen',
-  'mn': 'Mongolian',
-  'ne': 'Nepali',
-  'ps': 'Pashto',
-  'ku': 'Kurdish',
-  'sd': 'Sindhi',
-  'pa': 'Punjabi',
-  'gu': 'Gujarati',
-  'or': 'Odia',
-  'as': 'Assamese',
-  'mr': 'Marathi',
-  'sa': 'Sanskrit',
-  'bo': 'Tibetan',
-  'dz': 'Dzongkha',
-  'ti': 'Tigrinya',
-  'am': 'Amharic',
-  'so': 'Somali',
-  'sw': 'Swahili',
-  'yo': 'Yoruba',
-  'ha': 'Hausa',
-  'ig': 'Igbo',
-  'zu': 'Zulu',
-  'xh': 'Xhosa',
-  'af': 'Afrikaans',
-  'st': 'Sesotho',
-  'tn': 'Tswana',
-  'ss': 'Swati',
-  've': 'Venda',
-  'nr': 'Ndebele',
-  'ts': 'Tsonga',
-  'ny': 'Chichewa',
-  'rw': 'Kinyarwanda',
-  'mg': 'Malagasy',
-  'sg': 'Sango',
-  'ln': 'Lingala',
-  'lu': 'Luba-Katanga',
-  'lg': 'Ganda',
-  'ak': 'Akan',
-  'ee': 'Ewe',
-  'ga': 'Irish',
-  'gd': 'Scottish Gaelic',
-  'cy': 'Welsh',
-  'br': 'Breton',
-  'oc': 'Occitan',
-  'co': 'Corsican',
-  'gv': 'Manx',
-  'kw': 'Cornish',
-  'fy': 'Western Frisian',
-  'lb': 'Luxembourgish',
-  'rm': 'Romansh',
-  'wa': 'Walloon',
-  'li': 'Limburgish',
-  'nds': 'Low German',
-  'dsb': 'Lower Sorbian',
-  'hsb': 'Upper Sorbian',
-  'fo': 'Faroese',
-  'se': 'Northern Sami',
-  'sm': 'Samoan',
-  'to': 'Tongan',
-  'fj': 'Fijian',
-  'ty': 'Tahitian',
-  'mi': 'Maori',
-  'haw': 'Hawaiian',
-  'chr': 'Cherokee',
-  'iu': 'Inuktitut',
-  'cr': 'Cree',
-  'oj': 'Ojibwa',
-  'kl': 'Kalaallisut',
-  'ff': 'Fulah',
-  'wo': 'Wolof',
-  'sn': 'Shona',
-  'ii': 'Sichuan Yi',
-  'ug': 'Uighur',
-  'za': 'Zhuang',
-  'jv': 'Javanese',
-  'su': 'Sundanese',
-  'ceb': 'Cebuano',
-  'ilo': 'Iloko',
-  'hil': 'Hiligaynon',
-  'war': 'Waray',
-  'pam': 'Pampanga',
-  'bik': 'Bikol',
-  'pag': 'Pangasinan',
-  'bcl': 'Central Bikol',
-  'cbk': 'Chavacano',
+  en: 'English',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  it: 'Italian',
+  pt: 'Portuguese',
+  zh: 'Chinese',
+  ja: 'Japanese',
+  ko: 'Korean',
+  ru: 'Russian',
+  ar: 'Arabic',
+  hi: 'Hindi',
+  bn: 'Bengali',
+  vi: 'Vietnamese',
+  th: 'Thai',
+  nl: 'Dutch',
+  pl: 'Polish',
+  tr: 'Turkish',
+  sv: 'Swedish',
+  da: 'Danish',
+  fi: 'Finnish',
+  no: 'Norwegian',
+  cs: 'Czech',
+  hu: 'Hungarian',
+  el: 'Greek',
+  he: 'Hebrew',
+  id: 'Indonesian',
+  ms: 'Malay',
+  ro: 'Romanian',
+  uk: 'Ukrainian',
+  hr: 'Croatian',
+  sk: 'Slovak',
+  sl: 'Slovenian',
+  et: 'Estonian',
+  lv: 'Latvian',
+  lt: 'Lithuanian',
+  bg: 'Bulgarian',
+  sr: 'Serbian',
+  is: 'Icelandic',
+  fa: 'Persian',
+  ur: 'Urdu',
+  ta: 'Tamil',
+  te: 'Telugu',
+  kn: 'Kannada',
+  ml: 'Malayalam',
+  si: 'Sinhala',
+  km: 'Khmer',
+  lo: 'Lao',
+  my: 'Burmese',
+  ka: 'Georgian',
+  hy: 'Armenian',
+  az: 'Azerbaijani',
+  uz: 'Uzbek',
+  kk: 'Kazakh',
+  ky: 'Kyrgyz',
+  tg: 'Tajik',
+  tk: 'Turkmen',
+  mn: 'Mongolian',
+  ne: 'Nepali',
+  ps: 'Pashto',
+  ku: 'Kurdish',
+  sd: 'Sindhi',
+  pa: 'Punjabi',
+  gu: 'Gujarati',
+  or: 'Odia',
+  as: 'Assamese',
+  mr: 'Marathi',
+  sa: 'Sanskrit',
+  bo: 'Tibetan',
+  dz: 'Dzongkha',
+  ti: 'Tigrinya',
+  am: 'Amharic',
+  so: 'Somali',
+  sw: 'Swahili',
+  yo: 'Yoruba',
+  ha: 'Hausa',
+  ig: 'Igbo',
+  zu: 'Zulu',
+  xh: 'Xhosa',
+  af: 'Afrikaans',
+  st: 'Sesotho',
+  tn: 'Tswana',
+  ss: 'Swati',
+  ve: 'Venda',
+  nr: 'Ndebele',
+  ts: 'Tsonga',
+  ny: 'Chichewa',
+  rw: 'Kinyarwanda',
+  mg: 'Malagasy',
+  sg: 'Sango',
+  ln: 'Lingala',
+  lu: 'Luba-Katanga',
+  lg: 'Ganda',
+  ak: 'Akan',
+  ee: 'Ewe',
+  ga: 'Irish',
+  gd: 'Scottish Gaelic',
+  cy: 'Welsh',
+  br: 'Breton',
+  oc: 'Occitan',
+  co: 'Corsican',
+  gv: 'Manx',
+  kw: 'Cornish',
+  fy: 'Western Frisian',
+  lb: 'Luxembourgish',
+  rm: 'Romansh',
+  wa: 'Walloon',
+  li: 'Limburgish',
+  nds: 'Low German',
+  dsb: 'Lower Sorbian',
+  hsb: 'Upper Sorbian',
+  fo: 'Faroese',
+  se: 'Northern Sami',
+  sm: 'Samoan',
+  to: 'Tongan',
+  fj: 'Fijian',
+  ty: 'Tahitian',
+  mi: 'Maori',
+  haw: 'Hawaiian',
+  chr: 'Cherokee',
+  iu: 'Inuktitut',
+  cr: 'Cree',
+  oj: 'Ojibwa',
+  kl: 'Kalaallisut',
+  ff: 'Fulah',
+  wo: 'Wolof',
+  sn: 'Shona',
+  ii: 'Sichuan Yi',
+  ug: 'Uighur',
+  za: 'Zhuang',
+  jv: 'Javanese',
+  su: 'Sundanese',
+  ceb: 'Cebuano',
+  ilo: 'Iloko',
+  hil: 'Hiligaynon',
+  war: 'Waray',
+  pam: 'Pampanga',
+  bik: 'Bikol',
+  pag: 'Pangasinan',
+  bcl: 'Central Bikol',
+  cbk: 'Chavacano',
   // Country/region specific codes
   'en-US': 'English (United States)',
   'en-GB': 'English (United Kingdom)',
@@ -397,7 +405,7 @@ const LANGUAGE_DISPLAY_MAP: Record<string, string> = {
   'bik-PH': 'Bikol (Philippines)',
   'pag-PH': 'Pangasinan (Philippines)',
   'bcl-PH': 'Central Bikol (Philippines)',
-  'cbk-PH': 'Chavacano (Philippines)'
+  'cbk-PH': 'Chavacano (Philippines)',
 };
 
 function getLanguageDisplay(code: string): string {
@@ -410,7 +418,7 @@ function formatLanguages(patient: Patient): { text: string; hasLanguages: boolea
   }
 
   const languages = patient.communication
-    .map(comm => {
+    .map((comm) => {
       const code = comm.language?.coding?.[0]?.code;
       return code ? getLanguageDisplay(code) : undefined;
     })
@@ -422,19 +430,19 @@ function formatLanguages(patient: Patient): { text: string; hasLanguages: boolea
 
   // Sort languages - preferred first, then alphabetically
   const preferred = patient.communication
-    .filter(comm => comm.preferred)
-    .map(comm => {
+    .filter((comm) => comm.preferred)
+    .map((comm) => {
       const code = comm.language?.coding?.[0]?.code;
       return code ? getLanguageDisplay(code) : undefined;
     })
     .filter((lang): lang is string => !!lang);
 
-  const other = languages.filter(lang => !preferred.includes(lang)).sort();
+  const other = languages.filter((lang) => !preferred.includes(lang)).sort();
   const allLanguages = [...preferred, ...other];
 
   return {
     text: allLanguages.join(' · '),
-    hasLanguages: true
+    hasLanguages: true,
   };
 }
 
@@ -444,10 +452,7 @@ function getGeneralPractitioner(patient: Patient): string | undefined {
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const {
-    patient: propsPatient,
-    onClickResource,
-  } = props;
+  const { patient: propsPatient, onClickResource } = props;
   const patient = useResource(propsPatient);
   const [medicalData, setMedicalData] = useState<PatientMedicalData>();
   const [createdDate, setCreatedDate] = useState<string | undefined>();
@@ -511,7 +516,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
           devices: results[9],
           goals: results[10],
           socialHistory: observations.filter((obs) =>
-            obs.category?.some(cat => cat.coding?.some(coding => coding.code === 'social-history'))
+            obs.category?.some((cat) => cat.coding?.some((coding) => coding.code === 'social-history'))
           ),
         });
       })
@@ -520,7 +525,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
 
   useEffect(() => {
     if (patient?.id) {
-      medplum.readHistory('Patient', patient.id)
+      medplum
+        .readHistory('Patient', patient.id)
         .then((history) => {
           const firstEntry = history.entry?.[history.entry.length - 1];
           const lastUpdated = firstEntry?.resource?.meta?.lastUpdated;
@@ -542,20 +548,50 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   }
 
   return (
-    <div style={{ height: '100%', width: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', backgroundColor: 'white' }}>
-      <MedplumLink to={`/Patient/${patientId}/edit`} style={{ textDecoration: 'none', display: 'block', color: 'black' }}>
-        <div style={{ position: 'sticky', top: 0, backgroundColor: 'white', zIndex: 1, padding: '16px 16px 0 16px', cursor: 'pointer', minWidth: 0 }} className={styles.patientSummaryListItem}>
+    <div
+      style={{
+        height: '100%',
+        width: '100%',
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: 'white',
+      }}
+    >
+      <MedplumLink
+        to={`/Patient/${patientId}/edit`}
+        style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+      >
+        <div
+          style={{
+            position: 'sticky',
+            top: 0,
+            backgroundColor: 'white',
+            zIndex: 1,
+            padding: '16px 16px 0 16px',
+            cursor: 'pointer',
+            minWidth: 0,
+          }}
+          className={styles.patientSummaryListItem}
+        >
           <Group align="center" gap="sm" mb={16} style={{ position: 'relative', minWidth: 0 }}>
             <ResourceAvatar value={patient} size={48} radius={48} style={{ border: '2px solid white' }} />
             <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-              <Tooltip label={formatHumanName(patient.name?.[0] as HumanName)} position="top-start" openDelay={650} disabled={!isNameOverflowed}>
+              <Tooltip
+                label={formatHumanName(patient.name?.[0] as HumanName)}
+                position="top-start"
+                openDelay={650}
+                disabled={!isNameOverflowed}
+              >
                 <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }} ref={nameRef}>
                   {formatHumanName(patient.name?.[0] as HumanName)}
                 </Text>
               </Tooltip>
               {(() => {
                 const dateString = typeof createdDate === 'string' && createdDate.length > 0 ? createdDate : undefined;
-                if (!dateString) { return null; }
+                if (!dateString) {
+                  return null;
+                }
                 const d = new Date(dateString);
                 return (
                   <Text fz="xs" mt={-2} fw={500} c="gray.6" truncate style={{ minWidth: 0 }}>
@@ -578,22 +614,45 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         {medicalData && (
           <>
             <Stack gap="xs" py={8}>
-              <MedplumLink to={`/Patient/${patientId}/edit`} style={{ textDecoration: 'none', display: 'block', color: 'black' }}>
+              <MedplumLink
+                to={`/Patient/${patientId}/edit`}
+                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Birthdate & Age" position="top-start" openDelay={650}>
                     <Group gap="sm" align="center" style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <IconCake size={16} style={{ marginLeft: '6', marginRight: '2' }} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text fz="sm" fw={400} truncate style={{ flex: 1, minWidth: 0, color: patient.birthDate ? 'inherit' : 'var(--mantine-color-gray-6)' }}>
-                        {patient.birthDate ? new Date(patient.birthDate).toLocaleDateString('en-US', {
-                          month: 'numeric',
-                          day: 'numeric',
-                          year: 'numeric'
-                        }) + ' · ' + (() => {
-                          const ageStr = calculateAgeString(patient.birthDate);
-                          if (!ageStr) { return '0 years old'; }
-                          const age = parseInt(ageStr, 10);
-                          return `${isNaN(age) ? '0' : age} years old`;
-                        })() : 'Add Birthdate'}
+                      <IconCake
+                        size={16}
+                        style={{ marginLeft: '6', marginRight: '2' }}
+                        stroke={2}
+                        color="var(--mantine-color-gray-6)"
+                      />
+                      <Text
+                        fz="sm"
+                        fw={400}
+                        truncate
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          color: patient.birthDate ? 'inherit' : 'var(--mantine-color-gray-6)',
+                        }}
+                      >
+                        {patient.birthDate
+                          ? new Date(patient.birthDate).toLocaleDateString('en-US', {
+                              month: 'numeric',
+                              day: 'numeric',
+                              year: 'numeric',
+                            }) +
+                            ' · ' +
+                            (() => {
+                              const ageStr = calculateAgeString(patient.birthDate);
+                              if (!ageStr) {
+                                return '0 years old';
+                              }
+                              const age = parseInt(ageStr, 10);
+                              return `${isNaN(age) ? '0' : age} years old`;
+                            })()
+                          : 'Add Birthdate'}
                       </Text>
                     </Group>
                   </Tooltip>
@@ -606,15 +665,33 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                 </Box>
               </MedplumLink>
 
-              <MedplumLink to={`/Patient/${patientId}/edit`} style={{ textDecoration: 'none', display: 'block', color: 'black' }}>
+              <MedplumLink
+                to={`/Patient/${patientId}/edit`}
+                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Gender & Identity" position="top-start" openDelay={650}>
                     <Group gap="sm" align="center" style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <IconEmpathize size={16} style={{ marginLeft: '6', marginRight: '2' }} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text fz="sm" fw={400} truncate style={{ flex: 1, minWidth: 0, color: (patient.gender || getGenderIdentity(patient)) ? 'inherit' : 'var(--mantine-color-gray-6)' }}>
-                        {patient.gender || getGenderIdentity(patient) ? 
-                          `${patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : ''}${patient.gender && getGenderIdentity(patient) ? ' · ' : ''}${getGenderIdentity(patient) ? `${getGenderIdentity(patient)}` : ''}${getBirthSex(patient) ? ` · Born as ${getBirthSex(patient)}` : ''}` : 
-                          'Add Gender & Identity'}
+                      <IconEmpathize
+                        size={16}
+                        style={{ marginLeft: '6', marginRight: '2' }}
+                        stroke={2}
+                        color="var(--mantine-color-gray-6)"
+                      />
+                      <Text
+                        fz="sm"
+                        fw={400}
+                        truncate
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          color:
+                            patient.gender || getGenderIdentity(patient) ? 'inherit' : 'var(--mantine-color-gray-6)',
+                        }}
+                      >
+                        {patient.gender || getGenderIdentity(patient)
+                          ? `${patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : ''}${patient.gender && getGenderIdentity(patient) ? ' · ' : ''}${getGenderIdentity(patient) ? `${getGenderIdentity(patient)}` : ''}${getBirthSex(patient) ? ` · Born as ${getBirthSex(patient)}` : ''}`
+                          : 'Add Gender & Identity'}
                       </Text>
                     </Group>
                   </Tooltip>
@@ -627,15 +704,32 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                 </Box>
               </MedplumLink>
 
-              <MedplumLink to={`/Patient/${patientId}/edit`} style={{ textDecoration: 'none', display: 'block', color: 'black' }}>
+              <MedplumLink
+                to={`/Patient/${patientId}/edit`}
+                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Race & Ethnicity" position="top-start" openDelay={650}>
                     <Group gap="sm" align="center" style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <IconBinaryTree size={16} style={{ marginLeft: '6', marginRight: '2' }} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text fz="sm" fw={400} truncate style={{ flex: 1, minWidth: 0, color: (getRace(patient) || getEthnicity(patient)) ? 'inherit' : 'var(--mantine-color-gray-6)' }}>
-                        {getRace(patient) || getEthnicity(patient) ? 
-                          `${getRace(patient) || ''}${getRace(patient) && getEthnicity(patient) ? ' · ' : ''}${getEthnicity(patient) || ''}` : 
-                          'Add Race & Ethnicity'}
+                      <IconBinaryTree
+                        size={16}
+                        style={{ marginLeft: '6', marginRight: '2' }}
+                        stroke={2}
+                        color="var(--mantine-color-gray-6)"
+                      />
+                      <Text
+                        fz="sm"
+                        fw={400}
+                        truncate
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          color: getRace(patient) || getEthnicity(patient) ? 'inherit' : 'var(--mantine-color-gray-6)',
+                        }}
+                      >
+                        {getRace(patient) || getEthnicity(patient)
+                          ? `${getRace(patient) || ''}${getRace(patient) && getEthnicity(patient) ? ' · ' : ''}${getEthnicity(patient) || ''}`
+                          : 'Add Race & Ethnicity'}
                       </Text>
                     </Group>
                   </Tooltip>
@@ -648,15 +742,35 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                 </Box>
               </MedplumLink>
 
-              <MedplumLink to={`/Patient/${patientId}/edit`} style={{ textDecoration: 'none', display: 'block', color: 'black' }}>
+              <MedplumLink
+                to={`/Patient/${patientId}/edit`}
+                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Location" position="top-start" openDelay={650}>
                     <Group gap="sm" align="center" style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <IconMapPin size={16} style={{ marginLeft: '6', marginRight: '2' }} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text fz="sm" fw={400} truncate style={{ flex: 1, minWidth: 0, color: (patient.address?.[0]?.city || patient.address?.[0]?.state) ? 'inherit' : 'var(--mantine-color-gray-6)' }}>
-                        {patient.address?.[0]?.city || patient.address?.[0]?.state ? 
-                          `${patient.address[0].city || ''}${patient.address[0].city && patient.address[0].state ? ', ' : ''}${patient.address[0].state || ''}` : 
-                          'Add Location'}
+                      <IconMapPin
+                        size={16}
+                        style={{ marginLeft: '6', marginRight: '2' }}
+                        stroke={2}
+                        color="var(--mantine-color-gray-6)"
+                      />
+                      <Text
+                        fz="sm"
+                        fw={400}
+                        truncate
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          color:
+                            patient.address?.[0]?.city || patient.address?.[0]?.state
+                              ? 'inherit'
+                              : 'var(--mantine-color-gray-6)',
+                        }}
+                      >
+                        {patient.address?.[0]?.city || patient.address?.[0]?.state
+                          ? `${patient.address[0].city || ''}${patient.address[0].city && patient.address[0].state ? ', ' : ''}${patient.address[0].state || ''}`
+                          : 'Add Location'}
                       </Text>
                     </Group>
                   </Tooltip>
@@ -669,12 +783,29 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                 </Box>
               </MedplumLink>
 
-              <MedplumLink to={`/Patient/${patientId}/edit`} style={{ textDecoration: 'none', display: 'block', color: 'black' }}>
+              <MedplumLink
+                to={`/Patient/${patientId}/edit`}
+                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Language" position="top-start" openDelay={650}>
                     <Group gap="sm" align="center" style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <IconLanguage size={16} style={{ marginLeft: '6', marginRight: '2' }} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text fz="sm" fw={400} truncate style={{ flex: 1, minWidth: 0, color: formatLanguages(patient).hasLanguages ? 'inherit' : 'var(--mantine-color-gray-6)' }}>
+                      <IconLanguage
+                        size={16}
+                        style={{ marginLeft: '6', marginRight: '2' }}
+                        stroke={2}
+                        color="var(--mantine-color-gray-6)"
+                      />
+                      <Text
+                        fz="sm"
+                        fw={400}
+                        truncate
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          color: formatLanguages(patient).hasLanguages ? 'inherit' : 'var(--mantine-color-gray-6)',
+                        }}
+                      >
                         {formatLanguages(patient).text}
                       </Text>
                     </Group>
@@ -688,12 +819,29 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                 </Box>
               </MedplumLink>
 
-              <MedplumLink to={`/Patient/${patientId}/edit`} style={{ textDecoration: 'none', display: 'block', color: 'black' }}>
+              <MedplumLink
+                to={`/Patient/${patientId}/edit`}
+                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="General Practitioner" position="top-start" openDelay={650}>
                     <Group gap="sm" align="center" style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <IconStethoscope size={16} style={{ marginLeft: '6', marginRight: '2' }} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text fz="sm" fw={400} truncate style={{ flex: 1, minWidth: 0, color: getGeneralPractitioner(patient) ? 'inherit' : 'var(--mantine-color-gray-6)' }}>
+                      <IconStethoscope
+                        size={16}
+                        style={{ marginLeft: '6', marginRight: '2' }}
+                        stroke={2}
+                        color="var(--mantine-color-gray-6)"
+                      />
+                      <Text
+                        fz="sm"
+                        fw={400}
+                        truncate
+                        style={{
+                          flex: 1,
+                          minWidth: 0,
+                          color: getGeneralPractitioner(patient) ? 'inherit' : 'var(--mantine-color-gray-6)',
+                        }}
+                      >
                         {getGeneralPractitioner(patient) || 'Add a General Practitioner'}
                       </Text>
                     </Group>
@@ -710,9 +858,18 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Divider />
             <Contact patient={patient} onClickResource={onClickResource} />
             <Divider />
-            <Immunizations patient={patient} immunizations={medicalData.immunizations || []} onClickResource={onClickResource} />
+            <Immunizations
+              patient={patient}
+              immunizations={medicalData.immunizations || []}
+              onClickResource={onClickResource}
+            />
             <Divider />
-            <Visits patient={patient} appointments={medicalData.appointments || []} encounters={medicalData.encounters || []} onClickResource={onClickResource} />
+            <Visits
+              patient={patient}
+              appointments={medicalData.appointments || []}
+              encounters={medicalData.encounters || []}
+              onClickResource={onClickResource}
+            />
             <Divider />
             <Insurance patient={patient} coverages={medicalData.coverages || []} onClickResource={onClickResource} />
             <Divider />
@@ -764,4 +921,3 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     </div>
   );
 }
-

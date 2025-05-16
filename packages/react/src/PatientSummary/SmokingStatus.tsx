@@ -1,14 +1,14 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Modal } from '@mantine/core';
+import { ActionIcon, Box, Collapse, Flex, Group, Modal, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { HTTP_HL7_ORG, LOINC, SNOMED, createReference, formatDate } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import { IconChevronDown, IconPencil, IconPlus } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
-import { killEvent } from '../utils/dom';
-import { IconChevronDown, IconPlus, IconPencil } from '@tabler/icons-react';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { killEvent } from '../utils/dom';
 
 // Smoking Status widget
 // See: https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-smokingstatus.html
@@ -100,12 +100,12 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
             width: '100%',
             cursor: 'default',
             '&:hover .add-button': {
-              opacity: 1
+              opacity: 1,
             },
             '& .mantine-ActionIcon-root, & .mantine-Text-root': {
               cursor: 'pointer',
-              margin: '0'
-            }
+              margin: '0',
+            },
           }}
         >
           <Group justify="space-between">
@@ -137,7 +137,7 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
                 right: 0,
                 top: 0,
                 transform: 'none',
-                strokeWidth: 1
+                strokeWidth: 1,
               }}
               size="md"
             >
@@ -149,7 +149,7 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
           {smokingStatus ? (
             <Box ml="36" mt="8" mb="16">
               <Flex direction="column" gap={8}>
-                <Box 
+                <Box
                   style={{ position: 'relative' }}
                   onMouseEnter={() => setHoverIndex(0)}
                   onMouseLeave={() => setHoverIndex(null)}
@@ -191,7 +191,7 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
                               right: 0,
                               top: '50%',
                               transform: 'translateY(-50%)',
-                              zIndex: 2
+                              zIndex: 2,
                             }}
                             onClick={(e) => {
                               killEvent(e);

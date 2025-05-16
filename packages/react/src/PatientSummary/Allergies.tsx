@@ -1,12 +1,12 @@
-import { Anchor, Box, Group, Modal, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Box, Collapse, Flex, Group, Modal, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { getDisplayString } from '@medplum/core';
 import { AllergyIntolerance, Encounter, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
+import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import { AllergyDialog } from './AllergyDialog';
-import { IconChevronDown, IconPlus, IconChevronRight } from '@tabler/icons-react';
-import { getDisplayString } from '@medplum/core';
 import styles from './PatientSummary.module.css';
 
 export interface AllergiesProps {
@@ -30,11 +30,11 @@ export function Allergies(props: AllergiesProps): JSX.Element {
     return [...allergies].sort((a, b) => {
       const aStatus = a.clinicalStatus?.coding?.[0]?.code;
       const bStatus = b.clinicalStatus?.coding?.[0]?.code;
-      
+
       // Active allergies first
       if (aStatus === 'active' && bStatus !== 'active') return -1;
       if (aStatus !== 'active' && bStatus === 'active') return 1;
-      
+
       // Then sort by name
       return getDisplayString(a).localeCompare(getDisplayString(b));
     });
@@ -61,7 +61,7 @@ export function Allergies(props: AllergiesProps): JSX.Element {
       if (e) {
         killEvent(e);
       }
-      
+
       // Always open the edit modal
       setEditAllergy(allergy);
       open();
@@ -72,7 +72,7 @@ export function Allergies(props: AllergiesProps): JSX.Element {
   // Helper function to get clinical status badge color
   const getClinicalStatusColor = (status?: string): string => {
     if (!status) return 'gray';
-    
+
     switch (status) {
       case 'active':
         return 'red'; // Changed from green to red
@@ -88,7 +88,7 @@ export function Allergies(props: AllergiesProps): JSX.Element {
   // Helper function to get verification status badge color
   const getVerificationStatusColor = (status?: string): string => {
     if (!status) return 'gray';
-    
+
     switch (status) {
       case 'confirmed':
         return 'green';
@@ -120,11 +120,7 @@ export function Allergies(props: AllergiesProps): JSX.Element {
               >
                 <IconChevronDown size={20} />
               </ActionIcon>
-              <Text 
-                fz="md" 
-                fw={800} 
-                onClick={() => setCollapsed((c) => !c)}
-              >
+              <Text fz="md" fw={800} onClick={() => setCollapsed((c) => !c)}>
                 Allergies
               </Text>
             </Group>
@@ -149,7 +145,7 @@ export function Allergies(props: AllergiesProps): JSX.Element {
                 {sortedAllergies.map((allergy, index) => {
                   const [isOverflowed, setIsOverflowed] = useState(false);
                   const textRef = useRef<HTMLDivElement>(null);
-                  
+
                   useEffect(() => {
                     const el = textRef.current;
                     if (el) {
@@ -158,46 +154,47 @@ export function Allergies(props: AllergiesProps): JSX.Element {
                   }, [allergy]);
 
                   return (
-                  <Box 
-                    key={allergy.id}
-                    className={styles.patientSummaryListItem}
-                    onMouseEnter={() => setHoverIndex(index)}
-                    onMouseLeave={() => setHoverIndex(null)}
+                    <Box
+                      key={allergy.id}
+                      className={styles.patientSummaryListItem}
+                      onMouseEnter={() => setHoverIndex(index)}
+                      onMouseLeave={() => setHoverIndex(null)}
                       onClick={(e) => handleAllergyClick(allergy, e)}
                     >
-                      <Tooltip label={getDisplayString(allergy)} position="top-start" openDelay={650} disabled={!isOverflowed}>
-                        <Box style={{ position: 'relative' }}>
-                          <Text 
-                            ref={textRef}
-                            size="sm" 
-                            className={styles.patientSummaryListItemText}
-                    >
-                      {getDisplayString(allergy)}
-                    </Text>
-                    <Group mt={2} gap={4}>
-                      {allergy.clinicalStatus?.coding?.[0]?.code && (
-                        <Badge 
-                          size="xs" 
-                          color={getClinicalStatusColor(allergy.clinicalStatus.coding[0].code)}
-                          variant="light"
-                                className={styles.patientSummaryBadge}
-                        >
-                          {allergy.clinicalStatus.coding[0].code}
-                        </Badge>
-                      )}
-                    </Group>
-                    <div className={styles.patientSummaryGradient} />
-                    <div className={styles.patientSummaryChevronContainer}>
-                      <ActionIcon
-                        className={styles.patientSummaryChevron}
-                        size="md"
-                        variant="transparent"
-                        tabIndex={-1}
+                      <Tooltip
+                        label={getDisplayString(allergy)}
+                        position="top-start"
+                        openDelay={650}
+                        disabled={!isOverflowed}
                       >
-                        <IconChevronRight size={16} stroke={2.5}/>
-                      </ActionIcon>
-                    </div>
-                  </Box>
+                        <Box style={{ position: 'relative' }}>
+                          <Text ref={textRef} size="sm" className={styles.patientSummaryListItemText}>
+                            {getDisplayString(allergy)}
+                          </Text>
+                          <Group mt={2} gap={4}>
+                            {allergy.clinicalStatus?.coding?.[0]?.code && (
+                              <Badge
+                                size="xs"
+                                color={getClinicalStatusColor(allergy.clinicalStatus.coding[0].code)}
+                                variant="light"
+                                className={styles.patientSummaryBadge}
+                              >
+                                {allergy.clinicalStatus.coding[0].code}
+                              </Badge>
+                            )}
+                          </Group>
+                          <div className={styles.patientSummaryGradient} />
+                          <div className={styles.patientSummaryChevronContainer}>
+                            <ActionIcon
+                              className={styles.patientSummaryChevron}
+                              size="md"
+                              variant="transparent"
+                              tabIndex={-1}
+                            >
+                              <IconChevronRight size={16} stroke={2.5} />
+                            </ActionIcon>
+                          </div>
+                        </Box>
                       </Tooltip>
                     </Box>
                   );

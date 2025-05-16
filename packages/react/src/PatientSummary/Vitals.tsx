@@ -1,14 +1,27 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Modal, SimpleGrid, TextInput, Textarea } from '@mantine/core';
+import {
+  ActionIcon,
+  Box,
+  Collapse,
+  Flex,
+  Group,
+  Modal,
+  SimpleGrid,
+  Text,
+  TextInput,
+  Textarea,
+  UnstyledButton,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
-import { killEvent } from '../utils/dom';
-import { IconChevronDown, IconPlus, IconChevronRight } from '@tabler/icons-react';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { killEvent } from '../utils/dom';
+import styles from './PatientSummary.module.css';
 import {
   createCompoundObservation,
   createLoincCode,
@@ -16,7 +29,6 @@ import {
   createQuantity,
   getObservationValue,
 } from './Vitals.utils';
-import styles from './PatientSummary.module.css';
 
 interface ObservationMeta {
   readonly name: string;
@@ -113,22 +125,16 @@ export function Vitals(props: VitalsProps): JSX.Element {
 
       // Handle blood pressure as a compound observation
       if (formData.systolic || formData.diastolic) {
-        const bpObs = createCompoundObservation(
-          props.patient,
-          props.encounter,
-          'blood-pressure',
-          'Blood pressure',
-          [
-            {
-              code: createLoincCode('8480-6', 'Systolic blood pressure'),
-              valueQuantity: createQuantity(parseFloat(formData.systolic), 'mm[Hg]'),
-            },
-            {
-              code: createLoincCode('8462-4', 'Diastolic blood pressure'),
-              valueQuantity: createQuantity(parseFloat(formData.diastolic), 'mm[Hg]'),
-            },
-          ]
-        );
+        const bpObs = createCompoundObservation(props.patient, props.encounter, 'blood-pressure', 'Blood pressure', [
+          {
+            code: createLoincCode('8480-6', 'Systolic blood pressure'),
+            valueQuantity: createQuantity(parseFloat(formData.systolic), 'mm[Hg]'),
+          },
+          {
+            code: createLoincCode('8462-4', 'Diastolic blood pressure'),
+            valueQuantity: createQuantity(parseFloat(formData.diastolic), 'mm[Hg]'),
+          },
+        ]);
         if (bpObs) {
           observations.push(bpObs);
         }
@@ -171,12 +177,12 @@ export function Vitals(props: VitalsProps): JSX.Element {
             width: '100%',
             cursor: 'default',
             '&:hover .add-button': {
-              opacity: 1
+              opacity: 1,
             },
             '& .mantine-ActionIcon-root, & .mantine-Text-root': {
               cursor: 'pointer',
-              margin: '0'
-            }
+              margin: '0',
+            },
           }}
         >
           <Group justify="space-between">
@@ -208,7 +214,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
                 right: 0,
                 top: 0,
                 transform: 'none',
-                strokeWidth: 1
+                strokeWidth: 1,
               }}
               size="md"
             >
@@ -237,41 +243,39 @@ export function Vitals(props: VitalsProps): JSX.Element {
                       style={{ textDecoration: 'none', display: 'block', color: 'black' }}
                     >
                       <Box
-                      className={styles.patientSummaryListItem}
-                      onMouseEnter={() => setHoverIndex(index)}
-                      onMouseLeave={() => setHoverIndex(null)}
+                        className={styles.patientSummaryListItem}
+                        onMouseEnter={() => setHoverIndex(index)}
+                        onMouseLeave={() => setHoverIndex(null)}
                         onClick={() => {
                           if (props.onClickResource) {
                             props.onClickResource(obs);
                           }
                         }}
                         style={{ cursor: 'pointer' }}
-                    >
-                      <Group gap={4} align="center">
-                        <Text size="sm" fw={500} style={{ cursor: 'pointer' }}>
-                          {meta.short}:
-                        </Text>
-                        <Text size="sm">
-                          {formatQuantity(getObservationValue(obs, meta.component))}
-                        </Text>
-                        {obs?.effectiveDateTime && (
-                          <Text size="xs" fw={500} color="gray.6" ml={2}>
-                            {formatDate(obs.effectiveDateTime)}
+                      >
+                        <Group gap={4} align="center">
+                          <Text size="sm" fw={500} style={{ cursor: 'pointer' }}>
+                            {meta.short}:
                           </Text>
-                        )}
-                      </Group>
-                      <div className={styles.patientSummaryGradient} />
-                      <div className={styles.patientSummaryChevronContainer}>
-                        <ActionIcon
-                          className={styles.patientSummaryChevron}
-                          size="md"
-                          variant="transparent"
+                          <Text size="sm">{formatQuantity(getObservationValue(obs, meta.component))}</Text>
+                          {obs?.effectiveDateTime && (
+                            <Text size="xs" fw={500} color="gray.6" ml={2}>
+                              {formatDate(obs.effectiveDateTime)}
+                            </Text>
+                          )}
+                        </Group>
+                        <div className={styles.patientSummaryGradient} />
+                        <div className={styles.patientSummaryChevronContainer}>
+                          <ActionIcon
+                            className={styles.patientSummaryChevron}
+                            size="md"
+                            variant="transparent"
                             tabIndex={-1}
-                        >
-                          <IconChevronRight size={16} stroke={2.5}/>
-                        </ActionIcon>
-                      </div>
-                    </Box>
+                          >
+                            <IconChevronRight size={16} stroke={2.5} />
+                          </ActionIcon>
+                        </div>
+                      </Box>
                     </MedplumLink>
                   );
                 })}

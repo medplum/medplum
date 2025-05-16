@@ -1,13 +1,13 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Badge, Flex, Tooltip, Modal } from '@mantine/core';
+import { ActionIcon, Badge, Box, Collapse, Flex, Group, Modal, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { formatDate } from '@medplum/core';
 import { Goal, Patient, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { formatDate } from '@medplum/core';
 import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
-import styles from './PatientSummary.module.css';
 import { GoalDialog } from './GoalDialog';
+import styles from './PatientSummary.module.css';
 
 export interface GoalsProps {
   readonly patient: Patient;
@@ -53,9 +53,9 @@ export function Goals(props: GoalsProps): JSX.Element {
     // Check for overflow on all goals
     Object.entries(textRefs.current).forEach(([id, el]) => {
       if (el) {
-        setOverflowedGoals(prev => ({
+        setOverflowedGoals((prev) => ({
           ...prev,
-          [id]: el.scrollWidth > el.clientWidth
+          [id]: el.scrollWidth > el.clientWidth,
         }));
       }
     });
@@ -86,7 +86,7 @@ export function Goals(props: GoalsProps): JSX.Element {
       if (e) {
         killEvent(e);
       }
-      
+
       // Always open the edit modal
       setEditGoal(goal);
       open();
@@ -139,7 +139,12 @@ export function Goals(props: GoalsProps): JSX.Element {
                       className={styles.patientSummaryListItem}
                       onClick={(e) => handleGoalClick(goal, e)}
                     >
-                      <Tooltip label={description} position="top-start" openDelay={650} disabled={!overflowedGoals[goal.id || '']}>
+                      <Tooltip
+                        label={description}
+                        position="top-start"
+                        openDelay={650}
+                        disabled={!overflowedGoals[goal.id || '']}
+                      >
                         <Box style={{ position: 'relative' }}>
                           <Text
                             size="sm"
@@ -152,14 +157,25 @@ export function Goals(props: GoalsProps): JSX.Element {
                                   textRefs.current[goal.id || ''] = el;
                                 }
                               }}
-                              style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', display: 'block' }}
+                              style={{
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                width: '100%',
+                                display: 'block',
+                              }}
                             >
                               {description}
                             </span>
                           </Text>
                           <Group gap={8} align="center">
                             {goal.lifecycleStatus && (
-                              <Badge size="xs" color={getStatusColor(goal.lifecycleStatus)} variant="light" className={styles.patientSummaryBadge}>
+                              <Badge
+                                size="xs"
+                                color={getStatusColor(goal.lifecycleStatus)}
+                                variant="light"
+                                className={styles.patientSummaryBadge}
+                              >
                                 {goal.lifecycleStatus}
                               </Badge>
                             )}
@@ -199,18 +215,9 @@ export function Goals(props: GoalsProps): JSX.Element {
           opacity: 1 !important;
         }
       `}</style>
-      <Modal 
-        opened={opened} 
-        onClose={close} 
-        title={editGoal ? 'Edit Goal' : 'Add Goal'}
-      >
-        <GoalDialog 
-          patient={patient} 
-          goal={editGoal} 
-          onSubmit={handleSubmit} 
-          onClose={close}
-        />
+      <Modal opened={opened} onClose={close} title={editGoal ? 'Edit Goal' : 'Add Goal'}>
+        <GoalDialog patient={patient} goal={editGoal} onSubmit={handleSubmit} onClose={close} />
       </Modal>
     </>
   );
-} 
+}
