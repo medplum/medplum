@@ -13,7 +13,7 @@ describe('migration-utils', () => {
   });
 
   test('tsVectorExpression', () => {
-    expect(tsVectorExpression('simple', 'column')).toEqual("to_tsvector('simple'::regconfig, column)");
+    expect(tsVectorExpression('simple', 'column')).toEqual('to_tsvector(\'simple\'::regconfig, "column")');
   });
 
   test('splitIndexColumnNames', () => {
