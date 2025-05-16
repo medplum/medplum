@@ -13,14 +13,17 @@ import { getSystemRepo } from '../fhir/repo';
  *      - See: https://consensus.stoplight.io/docs/fax-services/1c4979f1d8ca0-fax-inbound-notification
  *   - `X-Cal-Signature-256` - Cal.com specific signature header
  *      - See: https://cal.com/docs/developing/guides/automation/webhooks
- *   - `X-Twilio-Email-Event-Webhook-Signature` - Twilio specific signature header
+ *   - `X-Twilio-Email-Event-Webhook-Signature` - Twilio SendGrid specific signature header
  *     - See: https://www.twilio.com/docs/sendgrid/for-developers/tracking-events/getting-started-event-webhook-security-features
+ *   - `X-Twilio-Signature` - Twilio specific signature header
+ *     - See: https://www.twilio.com/docs/usage/webhooks/webhooks-security
  */
 const SIGNATURE_HEADERS = [
   'x-signature',
   'x-hmac-signature',
   'x-cal-signature-256',
   'x-twilio-email-event-webhook-signature',
+  'x-twilio-signature',
 ];
 
 /**
