@@ -235,185 +235,11 @@ Function UpgradeApp
     ${Loop}
 
     DetailPrint "Stopping and deleting old Medplum Agent services..."
-    Push "${SERVICE_NAME}"
-    Call StopAndDeleteMedplumServices
+    ExecWait "$INSTDIR\${SERVICE_FILE_NAME} --stop-old-services" $1
+    DetailPrint "Exit code $1"
 
     DetailPrint "Writing installer for upgraded version..."
     WriteUninstaller "$INSTDIR\uninstall.exe"
-FunctionEnd
-
-Function StopAndDeleteMedplumServices
-    # Get the service name to filter out from function args
-    Pop $0
-
-    DetailPrint "Printing PATH..."
-    ReadEnvStr $1 PATH
-    DetailPrint "PATH: $1"
-
-    DetailPrint "DEBUG: Querying for list of all services..."
-    nsExec::ExecToStack `cmd.exe /c sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent"`
-    Pop $1 # Exit code
-    Pop $2 # Output
-    DetailPrint "Exit code $1"
-
-    DetailPrint "Writing debug output to file..."
-    FileOpen $9 debug-service.out w
-    FileWrite $9 $2
-    FileClose $9
-    DetailPrint "Debug output written"
-
-    # Get list of services
-    # We use "nsExec:ExecToStack" so that another CMD window is not opened
-    # Here's the processing this command does:
-    # We take the output of an SC query which gives us all the services and their info
-    # We filter each line and only take the lines giving the service names specifically containing MedplumAgent
-    # We then filter each of those lines and remove any lines matching SERVICE_NAME: ${SERVICE_NAME} to filter out the current version of the service
-    # Finally, in the outer for loop we go through all the remaining output lines and re-output them without the "SERVICE_NAME: " prefix
-    ${If} $0 == ""
-        DetailPrint "No service name given to filter out. Querying for all Medplum agent services..."
-        nsExec::ExecToStack `cmd.exe /c "for /f "tokens=2 delims=: " %i in ('sc query type^= service state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent"') do @echo %i"`
-    ${Else}
-        DetailPrint "Service name to filter out: $0"
-        nsExec::ExecToStack `cmd.exe /c "for /f "tokens=2 delims=: " %i in ('sc query type^= service state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent" ^| findstr /v /i "SERVICE_NAME.*$0"') do @echo %i"`
-    ${EndIf}
-    Pop $0 # Return value
-    Pop $ServicesList # Command output
-    
-    DetailPrint "Exit code $0"
-    DetailPrint "Services to be stopped and removed: $ServicesList"
-
-    # Process each service in the filtered list
-    StrCpy $WorkingList "$ServicesList"
-
-    ${Do}
-        # If no more services to process, exit loop
-        ${If} $WorkingList == ""
-            DetailPrint "Finished cleaning up all old Medplum services"
-            ${Break}
-        ${EndIf}
-
-        # Find position of next line break
-        ${StrStr} $TempStr "$WorkingList" "$\r$\n"
-
-        # If no more line breaks, process remaining text as the last service
-        ${If} $TempStr == ""
-            StrCpy $CurrentServiceName "$WorkingList"
-            StrCpy $WorkingList "" # Clear remaining list to exit after this iteration
-        ${Else}
-            # Extract current service name
-            StrLen $LineLen "$WorkingList"
-            StrLen $TempLen "$TempStr"
-            IntOp $CurrentLen $LineLen - $TempLen
-            StrCpy $CurrentServiceName "$WorkingList" $CurrentLen
-            
-            # Remove processed service from working list
-            StrCpy $WorkingList "$TempStr" "" 2 # Skip the \r\n
-        ${EndIf}
-
-        # Skip empty service names
-        ${If} $CurrentServiceName == ""
-            ${Continue}
-        ${EndIf}
-
-        DetailPrint "Processing service: $CurrentServiceName"
-
-        # Stop the service
-        DetailPrint "Stopping service: $CurrentServiceName"
-        # We use net stop specifically because it waits for the service to gracefully stop before returning
-        nsExec::ExecToStack 'net stop "$CurrentServiceName"'
-        Pop $0 # Return value
-        Pop $1 # Output
-        DetailPrint "Stop result: $0"
-
-        # Delete the service
-        DetailPrint "Deleting service: $CurrentServiceName"
-        nsExec::ExecToStack 'sc delete "$CurrentServiceName"'
-        Pop $0 # Return value
-        Pop $1 # Output
-        DetailPrint "Delete result: $0"
-    ${Loop}
-
-FunctionEnd
-
-# This function is duplicated because functions in the uninstall section must be prefixed by "un."
-# Previously we tried to use a macro to resolve this issue, but you also have to use a different macro for "StrStr"
-# Between install and uninstall sections, ${StrStr} vs ${UnStrStr}
-# It's more time efficient to just copy and paste and be done with it
-Function un.StopAndDeleteMedplumServices
-    # Get the service name to filter out from function args
-    Pop $0
-
-    # Get list of services
-    # We use "nsExec:ExecToStack" so that another CMD window is not opened
-    # Here's the processing this command does:
-    # We take the output of an SC query which gives us all the services and their info
-    # We filter each line and only take the lines giving the service names specifically containing MedplumAgent
-    # We then filter each of those lines and remove any lines matching SERVICE_NAME: ${SERVICE_NAME} to filter out the current version of the service
-    # Finally, in the outer for loop we go through all the remaining output lines and re-output them without the "SERVICE_NAME: " prefix
-    ${If} $0 == ""
-        DetailPrint "No service name given to filter out. Querying for all Medplum agent services..."
-        nsExec::ExecToStack `cmd.exe /c "for /f "tokens=2 delims=: " %i in ('sc query type^= service state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent"') do @echo %i"`
-    ${Else}
-        DetailPrint "Service name to filter out: $0"
-        nsExec::ExecToStack `cmd.exe /c "for /f "tokens=2 delims=: " %i in ('sc query type^= service state^= all ^| findstr /i "SERVICE_NAME.*MedplumAgent" ^| findstr /v /i "SERVICE_NAME.*$0"') do @echo %i"`
-    ${EndIf}
-    Pop $0 # Return value
-    Pop $ServicesList # Command output
-
-    DetailPrint "Exit code $0"
-    DetailPrint "Services to be stopped and removed: $ServicesList"
-
-    # Process each service in the filtered list
-    StrCpy $WorkingList "$ServicesList"
-
-    ${Do}
-        # If no more services to process, exit loop
-        ${If} $WorkingList == ""
-            DetailPrint "Finished cleaning up all old Medplum services"
-            ${Break}
-        ${EndIf}
-
-        # Find position of next line break
-        ${UnStrStr} $TempStr "$WorkingList" "$\r$\n"
-
-        # If no more line breaks, process remaining text as the last service
-        ${If} $TempStr == ""
-            StrCpy $CurrentServiceName "$WorkingList"
-            StrCpy $WorkingList "" # Clear remaining list to exit after this iteration
-        ${Else}
-            # Extract current service name
-            StrLen $LineLen "$WorkingList"
-            StrLen $TempLen "$TempStr"
-            IntOp $CurrentLen $LineLen - $TempLen
-            StrCpy $CurrentServiceName "$WorkingList" $CurrentLen
-            
-            # Remove processed service from working list
-            StrCpy $WorkingList "$TempStr" "" 2 # Skip the \r\n
-        ${EndIf}
-
-        # Skip empty service names
-        ${If} $CurrentServiceName == ""
-            ${Continue}
-        ${EndIf}
-
-        DetailPrint "Processing service: $CurrentServiceName"
-
-        # Stop the service
-        DetailPrint "Stopping service: $CurrentServiceName"
-        # We use net stop specifically because it waits for the service to gracefully stop before returning
-        nsExec::ExecToStack 'net stop "$CurrentServiceName"'
-        Pop $0 # Return value
-        Pop $1 # Output
-        DetailPrint "Stop result: $0"
-
-        # Delete the service
-        DetailPrint "Deleting service: $CurrentServiceName"
-        nsExec::ExecToStack 'sc delete "$CurrentServiceName"'
-        Pop $0 # Return value
-        Pop $1 # Output
-        DetailPrint "Delete result: $0"
-    ${Loop}
-
 FunctionEnd
 
 # Do the actual installation.
@@ -502,9 +328,9 @@ FunctionEnd
 
 # Start the uninstaller
 Section Uninstall
-    # We push empty string since it means we don't want to filter any services for this function
-    Push ""
-    Call un.StopAndDeleteMedplumServices
+    DetailPrint "Stopping and deleting all old Medplum Agent services..."
+    ExecWait "$INSTDIR\${SERVICE_FILE_NAME} --stop-old-services --all" $1
+    DetailPrint "Exit code $1"
 
     # Get out of the service directory so we can delete it
     SetOutPath "$PROGRAMFILES64"
