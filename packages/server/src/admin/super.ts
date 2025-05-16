@@ -24,12 +24,14 @@ import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
+import { generateMigrationActions } from '../migrations/migrate';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
+import { addPostDeployMigrationJobData, prepareDynamicMigrationJobData } from '../workers/post-deploy-migration';
 import { addReindexJob } from '../workers/reindex';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
@@ -293,6 +295,36 @@ superAdminRouter.post(
       return;
     }
     const exec = new AsyncJobExecutor(ctx.repo, dataMigrationJob);
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  })
+);
+
+superAdminRouter.post(
+  '/reconcile-db-schema-drift',
+  asyncWrap(async (req: Request, res: Response) => {
+    const ctx = requireSuperAdmin();
+    requireAsync(req);
+
+    const migrationActions = await generateMigrationActions({
+      dbClient: getDatabasePool(DatabaseMode.WRITER),
+      dropUnmatchedIndexes: true,
+      allowPostDeployActions: true,
+    });
+
+    if (migrationActions.length === 0) {
+      // Nothing to do
+      sendOutcome(res, allOk);
+      return;
+    }
+
+    const exec = new AsyncJobExecutor(ctx.repo);
+    await exec.init(req.originalUrl);
+    await exec.run(async (asyncJob) => {
+      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      await addPostDeployMigrationJobData(jobData);
+    });
+
+    const { baseUrl } = getConfig();
     sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
   })
 );

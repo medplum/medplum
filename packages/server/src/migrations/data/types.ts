@@ -2,9 +2,10 @@ import { WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { Repository } from '../../fhir/repo';
+import { MigrationAction } from '../types';
 
 export interface PostDeployJobData {
-  readonly type: 'reindex' | 'custom';
+  readonly type: 'reindex' | 'custom' | 'dynamic';
   readonly asyncJobId: string;
   readonly requestId?: string;
   readonly traceId?: string;
@@ -32,13 +33,20 @@ export interface PostDeployMigration<T extends PostDeployJobData = PostDeployJob
 }
 
 // Custom Jobs
-
-export type CustomMigrationAction = { name: string; durationMs: number };
-export type CustomMigrationResult = { actions: CustomMigrationAction[] };
 export interface CustomPostDeployMigrationJobData extends PostDeployJobData {
   readonly type: 'custom';
 }
 
 export interface CustomPostDeployMigration extends PostDeployMigration<CustomPostDeployMigrationJobData> {
   type: 'custom';
+}
+
+// Dynamic Migration Jobs
+export interface DynamicPostDeployJobData extends PostDeployJobData {
+  readonly type: 'dynamic';
+  readonly migrationActions: MigrationAction[];
+}
+
+export interface DynamicPostDeployMigration extends PostDeployMigration<DynamicPostDeployJobData> {
+  type: 'dynamic';
 }
