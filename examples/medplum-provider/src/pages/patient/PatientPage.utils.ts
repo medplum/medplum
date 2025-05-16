@@ -33,11 +33,10 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
 
 export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'timeline', url: '', label: 'Timeline' },
-  { id: 'edit', url: 'edit', label: 'Edit' },
   {
     id: 'encounter',
     url: 'Encounter?_count=20&_fields=_lastUpdated,period,status,serviceType&_sort=-_lastUpdated&patient=%patient.id',
-    label: 'Encounter',
+    label: 'Visits',
   },
   {
     id: 'tasks',
@@ -70,16 +69,11 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Documents',
   },
   {
-    id: 'appointments',
-    url: 'Appointment?_fields=_lastUpdated,category,type,status,author&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
-    label: 'Appointments',
-  },
-  {
     id: 'careplan',
     url: 'CarePlan?_fields=_lastUpdated,status,intent,category,period&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Care Plans',
   },
-  { id: 'communication', url: 'communication', label: 'Communications' },
+  { id: 'communication', url: 'communication', label: 'Messages' },
   { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
   { id: 'export', url: 'export', label: 'Export' },
 ];
