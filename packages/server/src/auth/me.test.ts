@@ -7,6 +7,7 @@ import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
+import { getUserConfigurationMenu } from './me';
 import { registerNew } from './register';
 
 const app = express();
@@ -131,6 +132,7 @@ describe('Me', () => {
     expect(res2.body.profile.resourceType).toBe('Practitioner');
     expect(res2.body.config).toBeDefined();
     expect(res2.body.config.resourceType).toBe('UserConfiguration');
+    expect(res2.body.config.menu).toMatchObject(getUserConfigurationMenu(project, membership));
 
     // Create a new user configuration
     const config: UserConfiguration = {
@@ -170,7 +172,7 @@ describe('Me', () => {
     expect(res6.status).toBe(200);
     expect(res6.body).toBeDefined();
     expect(res6.body.config.menu).toBeDefined();
-    expect(res6.body.config.menu[0].title).toStrictEqual('Favorites');
+    expect(res2.body.config.menu).toMatchObject(getUserConfigurationMenu(project, membership));
   });
 
   test('Get me as ClientApplication', async () => {

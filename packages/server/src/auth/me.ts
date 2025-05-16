@@ -88,7 +88,7 @@ export async function getUserConfiguration(
   project: Project,
   membership: ProjectMembership
 ): Promise<UserConfiguration> {
-  let result: UserConfiguration | undefined = undefined;
+  let result: UserConfiguration;
 
   if (membership.userConfiguration) {
     result = await systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
