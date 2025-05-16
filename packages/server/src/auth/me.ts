@@ -1,5 +1,13 @@
 import { getReferenceString, Operator, ProfileResource, WithId } from '@medplum/core';
-import { Login, Project, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
+import {
+  Login,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+  UserConfiguration,
+  UserConfigurationMenu,
+} from '@medplum/fhirtypes';
 import Bowser from 'bowser';
 import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
@@ -80,24 +88,33 @@ export async function getUserConfiguration(
   project: Project,
   membership: ProjectMembership
 ): Promise<UserConfiguration> {
+  let result: UserConfiguration | undefined = undefined;
+
   if (membership.userConfiguration) {
-    return systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
+    result = await systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
+  } else {
+    result = { resourceType: 'UserConfiguration' };
   }
 
+  if (!result.menu) {
+    result.menu = getUserConfigurationMenu(project, membership);
+  }
+
+  return result;
+}
+
+export function getUserConfigurationMenu(project: Project, membership: ProjectMembership): UserConfigurationMenu[] {
   const favorites = ['Patient', 'Practitioner', 'Organization', 'ServiceRequest', 'DiagnosticReport', 'Questionnaire'];
 
-  const result = {
-    resourceType: 'UserConfiguration',
-    menu: [
-      {
-        title: 'Favorites',
-        link: favorites.map((resourceType) => ({ name: resourceType, target: '/' + resourceType })),
-      },
-    ],
-  } satisfies UserConfiguration;
+  const result = [
+    {
+      title: 'Favorites',
+      link: favorites.map((resourceType) => ({ name: resourceType, target: '/' + resourceType })),
+    },
+  ];
 
   if (membership.admin) {
-    result.menu.push({
+    result.push({
       title: 'Admin',
       link: [
         { name: 'Project', target: '/admin/project' },
@@ -110,7 +127,7 @@ export async function getUserConfiguration(
   }
 
   if (project.superAdmin) {
-    result.menu.push({
+    result.push({
       title: 'Super Admin',
       link: [
         { name: 'Projects', target: '/Project' },
