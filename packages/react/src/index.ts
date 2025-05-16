@@ -1,3 +1,17 @@
+import { createTheme } from '@mantine/core';
+
+export const theme = createTheme({
+  components: {
+    Modal: {
+      styles: {
+        inner: {
+          alignItems: 'center',
+        },
+      },
+    },
+  },
+});
+
 // Re-export all hooks from @medplum/react-hooks
 export * from '@medplum/react-hooks';
 
@@ -35,6 +49,7 @@ export * from './ContactPointInput/ContactPointInput';
 export * from './Container/Container';
 export * from './DateTimeInput/DateTimeInput';
 export * from './DateTimeInput/DateTimeInput.utils';
+export * from './DateTimeInput/DateInput';
 export * from './DefaultResourceTimeline/DefaultResourceTimeline';
 export * from './DescriptionList/DescriptionList';
 export * from './DiagnosticReportDisplay/DiagnosticReportDisplay';

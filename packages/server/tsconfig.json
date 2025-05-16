@@ -6,3 +6,4 @@
   },
   "include": ["src/**/*.ts", "src/**/*.json"]
 }
+  "exclude": ["src/**/*.test.ts", "src/**/*.spec.ts"]
