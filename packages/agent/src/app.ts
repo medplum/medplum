@@ -669,6 +669,8 @@ export class App {
         this.log.error(normalizeErrorString(err));
       });
 
+      // TODO: remove this comment, just triggering new git hash
+
       await new Promise<void>((resolve, reject) => {
         const childTimeout = setTimeout(
           () => reject(new Error('Timed out while waiting for message from child')),
