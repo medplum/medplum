@@ -811,7 +811,6 @@ function buildCodingPropertyTable(result: SchemaDefinition): void {
       { name: 'target', type: 'BIGINT' },
       { name: 'value', type: 'TEXT' },
     ],
-    compositePrimaryKey: ['target', 'property', 'coding'],
     indexes: [
       { columns: ['coding', 'property', 'target', 'value'], indexType: 'btree', unique: true },
       { columns: ['target', 'property', 'coding'], indexType: 'btree', unique: false, where: 'target IS NOT NULL' },
