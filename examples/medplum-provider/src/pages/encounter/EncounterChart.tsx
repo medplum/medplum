@@ -25,11 +25,11 @@ import { calculateTotalPrice, fetchAndApplyChargeItemDefinitions, getCptChargeIt
 import { createClaimFromEncounter } from '../../utils/claims';
 import { createSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
-import ChageItemPanel from '../components/ChargeItem/ChageItemPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import classes from './EncounterChart.module.css';
+import ChargeItemPanel from '../components/ChargeItem/ChageItemPanel';
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
@@ -116,7 +116,6 @@ export const EncounterChart = (): JSX.Element => {
 
   const updateChargeItemList = useCallback(
     (updatedChargeItem: ChargeItem): void => {
-      console.log('updateChargeItemList', updatedChargeItem);
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
@@ -162,7 +161,7 @@ export const EncounterChart = (): JSX.Element => {
         setClaim(savedClaim);
       }
     },
-    [chargeItems, setChargeItems]
+    [chargeItems, setChargeItems, claim, setClaim, encounter, medplum]
   );
 
   const handleEncounterStatusChange = useCallback(
@@ -573,7 +572,7 @@ export const EncounterChart = (): JSX.Element => {
             {chargeItems.length > 0 ? (
               <Stack gap="md">
                 {chargeItems.map((chargeItem: ChargeItem) => (
-                  <ChageItemPanel
+                  <ChargeItemPanel
                     key={chargeItem.id}
                     chargeItem={chargeItem}
                     onChange={updateChargeItemList}

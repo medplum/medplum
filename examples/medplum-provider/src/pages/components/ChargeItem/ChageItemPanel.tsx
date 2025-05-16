@@ -28,16 +28,6 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
     onChange(updatedChargeItem);
   };
 
-    const updatedChargeItem = { ...chargeItem };
-    const existingNonCptCodes =
-      chargeItem.code?.coding?.filter((coding) => coding.system !== 'http://www.ama-assn.org/go/cpt') ?? [];
-    updatedChargeItem.code = {
-      ...value,
-      coding: [...(value.coding ?? []), ...existingNonCptCodes],
-    };
-    onChange(updatedChargeItem);
-  };
-
   const updateModifierExtension = (value: CodeableConcept | undefined): void => {
     if (!value) {
       const updatedChargeItem = { ...chargeItem };
