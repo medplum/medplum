@@ -19,6 +19,7 @@ import { BotsPage } from './admin/BotsPage';
 import { ClientsPage } from './admin/ClientsPage';
 import { CreateBotPage } from './admin/CreateBotPage';
 import { CreateClientPage } from './admin/CreateClientPage';
+import { DatabaseConfigPage } from './admin/DatabaseConfigPage';
 import { EditMembershipPage } from './admin/EditMembershipPage';
 import { InvitePage } from './admin/InvitePage';
 import { PatientsPage } from './admin/PatientsPage';
@@ -75,6 +76,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/smart" element={<SmartSearchPage />} />
         <Route path="/forms/:id" element={<FormPage />} />
         <Route path="/admin/super" element={<SuperAdminPage />} />
+        <Route path="/admin/super/db" element={<DatabaseConfigPage />} />
         <Route path="/admin/config" element={<ProjectAdminConfigPage />} />
         <Route path="/admin" element={<ProjectPage />}>
           <Route path="patients" element={<PatientsPage />} />

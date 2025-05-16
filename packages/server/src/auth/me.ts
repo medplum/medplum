@@ -115,6 +115,7 @@ export async function getUserConfiguration(
       link: [
         { name: 'Projects', target: '/Project' },
         { name: 'Super Config', target: '/admin/super' },
+        { name: 'Database Config', target: '/admin/super/db' },
       ],
     });
   }
