@@ -22,7 +22,7 @@ Rate limits can be increased for paid plans. Please [contact us](mailto:info+rat
 
 In addition to limits on the number of requests that can be made to the Medplum server, there is a limit on the total load of the interactions made to the Medplum server. Different interactions with the datastore are weighted by complexity and impact, and **the sum of a user's interactions in a given minute** must remain under the user's total load limit.
 
-:::warning Feature Beta
+:::warning
 
 FHIR interaction quotas are currently in draft, and are not yet finalized. Specific details about how
 the limits are calculated and enforced are subject to change.
