@@ -3400,6 +3400,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
   }
 
+  /**
+   * Reports the last-seen rate limit information from the server.
+   * @returns Array of applicable rate limits.
+   */
   rateLimitStatus(): { name: string; remainingUnits: number; secondsUntilReset: number }[] {
     if (!this.currentRateLimits) {
       return [];
