@@ -2985,10 +2985,13 @@ describe('Client', () => {
 
     const client = new MedplumClient({ fetch });
     const patientPromise = client.readResource('Patient', '123');
+
+    // Promise should resolve after one second retry delay
     await sleep(800);
     expect(patientPromise.isPending()).toBe(true);
     await sleep(250);
     expect(patientPromise.isOk()).toBe(true);
+
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 

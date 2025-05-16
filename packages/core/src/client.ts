@@ -512,6 +512,12 @@ export interface InviteRequest {
   admin?: boolean;
 }
 
+export type RateLimitInfo = {
+  name: string;
+  remainingUnits: number;
+  secondsUntilReset: number;
+};
+
 /**
  * JSONPatch patch operation.
  * Compatible with fast-json-patch and rfc6902 Operation.
@@ -3349,6 +3355,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           this.logResponse(response);
         }
 
+        // Ensure current rate limits are set before calculating retry delay
         this.setCurrentRateLimit(response);
 
         // Handle non-500 response and max retries exceeded
@@ -3356,7 +3363,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         if (attemptNum >= maxRetries || !isRetryable(response)) {
           return response;
         }
-        await sleep(getRetryDelay(response, attemptNum));
+        await sleep(this.getRetryDelay(attemptNum));
       } catch (err) {
         // This is for the 1st retry to avoid multiple notifications
         if ((err as Error).message === 'Failed to fetch' && attemptNum === 0) {
@@ -3401,29 +3408,22 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Reports the last-seen rate limit information from the server.
    * @returns Array of applicable rate limits.
    */
-  rateLimitStatus(): { name: string; remainingUnits: number; secondsUntilReset: number }[] {
+  rateLimitStatus(): RateLimitInfo[] {
     if (!this.currentRateLimits) {
       return [];
     }
+    return parseRateLimitHeader(this.currentRateLimits);
+  }
 
-    const header = this.currentRateLimits;
-    return header.split(/\s*;\s*/g).map((str) => {
-      const parts = str.split(/\s*,\s*/g);
-      if (parts.length !== 3) {
-        throw new Error('Could not parse RateLimit header: ' + header);
+  private getRetryDelay(attemptNum: number): number {
+    const rateLimits = this.rateLimitStatus();
+    let retryDelay = 500 * Math.pow(1.5, attemptNum);
+    for (const limit of rateLimits) {
+      if (!limit.remainingUnits) {
+        retryDelay = Math.max(retryDelay, limit.secondsUntilReset * 1000);
       }
-
-      const name = parts[0].substring(1, parts[0].length - 1);
-      const remainingPart = parts.find((p) => p.startsWith('r='));
-      const remainingUnits = remainingPart ? parseInt(remainingPart.substring(2), 10) : NaN;
-      const timePart = parts.find((p) => p.startsWith('t='));
-      const secondsUntilReset = timePart ? parseInt(timePart.substring(2), 10) : NaN;
-      if (!name || Number.isNaN(remainingUnits) || Number.isNaN(secondsUntilReset)) {
-        throw new Error('Could not parse RateLimit header: ' + header);
-      }
-
-      return { name, remainingUnits, secondsUntilReset };
-    });
+    }
+    return retryDelay;
   }
 
   private async pollStatus<T>(statusUrl: string, options: MedplumRequestOptions, state: RequestState): Promise<T> {
@@ -4312,18 +4312,26 @@ export function normalizeCreatePdfOptions(
   };
 }
 
-function isRetryable(response: Response): boolean {
-  return response.status === 429 || response.status >= 500;
+function parseRateLimitHeader(header: string): RateLimitInfo[] {
+  return header.split(/\s*;\s*/g).map((str) => {
+    const parts = str.split(/\s*,\s*/g);
+    if (parts.length !== 3) {
+      throw new Error('Could not parse RateLimit header: ' + header);
+    }
+
+    const name = parts[0].substring(1, parts[0].length - 1);
+    const remainingPart = parts.find((p) => p.startsWith('r='));
+    const remainingUnits = remainingPart ? parseInt(remainingPart.substring(2), 10) : NaN;
+    const timePart = parts.find((p) => p.startsWith('t='));
+    const secondsUntilReset = timePart ? parseInt(timePart.substring(2), 10) : NaN;
+    if (!name || Number.isNaN(remainingUnits) || Number.isNaN(secondsUntilReset)) {
+      throw new Error('Could not parse RateLimit header: ' + header);
+    }
+
+    return { name, remainingUnits, secondsUntilReset };
+  });
 }
 
-const baseRetryDelay = 500;
-function getRetryDelay(response: Response, attemptNum: number): number {
-  const rateLimitHeader = response.headers?.get('ratelimit');
-  if (rateLimitHeader) {
-    const matches = [...rateLimitHeader.matchAll(/,\s*t=(\d+)\s*(?:,|;|$)/g)];
-    if (matches) {
-      return Math.max(...matches.map((s) => parseInt(s[1], 10)));
-    }
-  }
-  return baseRetryDelay * Math.pow(1.5, attemptNum);
+function isRetryable(response: Response): boolean {
+  return response.status === 429 || response.status >= 500;
 }
