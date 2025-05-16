@@ -13,7 +13,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { Client, Pool, PoolClient, QueryResult } from 'pg';
+import { Client, escapeIdentifier, Pool, PoolClient, QueryResult } from 'pg';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import {
   ColumnSearchParameterImplementation,
@@ -24,14 +24,7 @@ import {
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
 import * as fns from './migrate-functions';
-import {
-  doubleEscapeSingleQuotes,
-  escapeUnicode,
-  normalizeColumnType,
-  parseIndexColumns,
-  quotedColumnName,
-  splitIndexColumnNames,
-} from './migrate-utils';
+import { escapeUnicode, normalizeColumnType, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
 import {
   ColumnDefinition,
   IndexDefinition,
@@ -576,7 +569,7 @@ function getSearchParameterIndexes(
         {
           columns: [
             {
-              expression: `${TokenArrayToTextFn.name}(${quotedColumnName(impl.textSearchColumnName)}) gin_trgm_ops`,
+              expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.textSearchColumnName)}) gin_trgm_ops`,
               name: impl.columnName + 'Trgm',
             },
           ],
@@ -961,7 +954,7 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
       }
       case 'CREATE_INDEX': {
         b.appendNoWrap(
-          `await fns.idempotentCreateIndex(client, actions, '${action.indexName}', '${action.createIndexSql}');`
+          `await fns.idempotentCreateIndex(client, actions, '${action.indexName}', \`${action.createIndexSql}\`);`
         );
         break;
       }
@@ -1131,15 +1124,13 @@ function generateIndexesActions(
   for (const targetIndex of targetTable.indexes) {
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (!startIndex) {
+      const indexName = getIndexName(targetTable.name, targetIndex);
       ctx.postDeployAction(
         () => {
-          const indexName = getIndexName(targetTable.name, targetIndex);
           const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex);
           actions.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
         },
-        `CREATE INDEX ${targetTable.name} (${targetIndex.columns.map((c) =>
-          typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)
-        )})`
+        `CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapeIdentifier(targetTable.name)} ...`
       );
     } else {
       matchedIndexes.add(startIndex);
@@ -1197,9 +1188,7 @@ function buildIndexSql(tableName: string, indexName: string, index: IndexDefinit
   }
 
   result += '(';
-  result += index.columns
-    .map((c) => (typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)))
-    .join(', ');
+  result += index.columns.map((c) => (typeof c === 'string' ? `"${c}"` : c.expression)).join(', ');
   result += ')';
 
   if (index.include) {
@@ -1210,7 +1199,7 @@ function buildIndexSql(tableName: string, indexName: string, index: IndexDefinit
 
   if (index.where) {
     result += ' WHERE (';
-    result += doubleEscapeSingleQuotes(index.where);
+    result += index.where;
     result += ')';
   }
 
