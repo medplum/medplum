@@ -2,15 +2,13 @@ import { getDataType, InternalTypeSchema } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import {
   buildCreateTables,
-  ColumnDefinition,
   columnDefinitionsEqual,
-  IndexDefinition,
   indexDefinitionsEqual,
   indexStructureDefinitionsAndSearchParameters,
   parseIndexDefinition,
-  SchemaDefinition,
-  TableDefinition,
+  parseIndexName,
 } from './migrate';
+import { ColumnDefinition, IndexDefinition, SchemaDefinition, TableDefinition } from './types';
 
 describe('Generator', () => {
   describe('buildCreateTables', () => {
@@ -268,6 +266,20 @@ describe('Generator', () => {
       };
       expect(def).toStrictEqual(expected);
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+  });
+
+  describe('parseIndexName', () => {
+    test('parse index name with quotes', () => {
+      const indexdef = 'CREATE INDEX "Account_Token_code_idx" ON "Account_Token" USING btree (code)';
+      const indexName = parseIndexName(indexdef);
+      expect(indexName).toBe('Account_Token_code_idx');
+    });
+
+    test('parse index name without quotes', () => {
+      const indexdef = 'CREATE INDEX account_token_code_idx ON account_token USING btree (code)';
+      const indexName = parseIndexName(indexdef);
+      expect(indexName).toBe('account_token_code_idx');
     });
   });
 });

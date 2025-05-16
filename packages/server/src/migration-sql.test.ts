@@ -2,8 +2,9 @@ import { Pool, PoolClient } from 'pg';
 import { loadTestConfig } from './config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from './database';
 import { getPostDeployVersion, markPostDeployMigrationCompleted } from './migration-sql';
-import { CustomMigrationAction, CustomPostDeployMigration } from './migrations/data/types';
+import { CustomPostDeployMigration } from './migrations/data/types';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
+import { MigrationActionResult } from './migrations/types';
 
 jest.mock('./migrations/data/v1', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -13,9 +14,9 @@ jest.mock('./migrations/data/v1', () => {
     prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
     run: function (repo, jobData) {
       return runCustomMigration(repo, jobData, async () => {
-        const actions: CustomMigrationAction[] = [];
-        actions.push({ name: 'nothing', durationMs: 5 });
-        return { actions };
+        const results: MigrationActionResult[] = [];
+        results.push({ name: 'nothing', durationMs: 5 });
+        return results;
       });
     },
   };

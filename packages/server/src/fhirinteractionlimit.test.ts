@@ -31,7 +31,7 @@ describe('FHIR Rate Limits', () => {
   });
 
   test('Blocks request that would exceed limit', async () => {
-    config.defaultFhirQuota = 100;
+    config.defaultFhirQuota = 20;
     await initApp(app, config);
 
     ({ accessToken } = await createTestProject({
@@ -113,13 +113,13 @@ describe('FHIR Rate Limits', () => {
 
     const res = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res.status).toBe(200);
-    expect(res.get('ratelimit')).toStrictEqual('"requests";r=99;t=60, "fhirInteractions";r=400;t=60');
+    expect(res.get('ratelimit')).toStrictEqual('"requests";r=99;t=60, "fhirInteractions";r=480;t=60');
 
     await sleep(1000);
 
     const res2 = await request(app).get('/fhir/R4/Patient?_count=20').auth(accessToken, { type: 'bearer' }).send();
     expect(res2.status).toBe(200);
-    expect(res2.get('ratelimit')).toStrictEqual('"requests";r=98;t=59, "fhirInteractions";r=300;t=59');
+    expect(res2.get('ratelimit')).toStrictEqual('"requests";r=98;t=59, "fhirInteractions";r=460;t=59');
   });
 
   test('Respects Project setting override', async () => {
