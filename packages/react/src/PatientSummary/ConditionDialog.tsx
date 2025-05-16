@@ -13,6 +13,7 @@ export interface ConditionDialogProps {
   readonly encounter?: Encounter;
   readonly condition?: Condition;
   readonly onSubmit: (condition: Condition) => void;
+  readonly onClose?: () => void;
 }
 
 export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
@@ -52,32 +53,34 @@ export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
   );
 
   return (
-    <Form key={condition?.id} onSubmit={handleSubmit}>
-      <Stack>
-        <CodeableConceptInput
-          name="code"
-          label="Problem"
-          path="Condition.code"
-          data-autofocus={true}
-          binding={HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-condition-code'}
-          defaultValue={condition?.code}
-          onChange={(code) => setCode(code)}
-          outcome={undefined}
-        />
-        <CodeableConceptInput
-          name="clinicalStatus"
-          label="Status"
-          path="Condition.clinicalStatus"
-          binding={HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical'}
-          defaultValue={condition?.clinicalStatus}
-          onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
-          outcome={undefined}
-        />
-        <DateTimeInput name="onsetDateTime" label="Dx Date" defaultValue={condition?.onsetDateTime} required />
-        <Group justify="flex-end" gap={4} mt="md">
-          <SubmitButton>Save</SubmitButton>
-        </Group>
-      </Stack>
-    </Form>
+    <>
+      <Form onSubmit={handleSubmit} style={{ marginTop: 0 }}>
+        <Stack>
+          <CodeableConceptInput
+            name="code"
+            label="Problem"
+            path="Condition.code"
+            data-autofocus={true}
+            binding={HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-condition-code'}
+            defaultValue={condition?.code}
+            onChange={(code) => setCode(code)}
+            outcome={undefined}
+          />
+          <CodeableConceptInput
+            name="clinicalStatus"
+            label="Status"
+            path="Condition.clinicalStatus"
+            binding={HTTP_HL7_ORG + '/fhir/ValueSet/condition-clinical'}
+            defaultValue={condition?.clinicalStatus}
+            onChange={(clinicalStatus) => setClinicalStatus(clinicalStatus)}
+            outcome={undefined}
+          />
+          <DateTimeInput name="onsetDateTime" label="Dx Date" defaultValue={condition?.onsetDateTime} required />
+          <Group justify="flex-end" gap={4} mt="md">
+            <SubmitButton>Save</SubmitButton>
+          </Group>
+        </Stack>
+      </Form>
+    </>
   );
 }
