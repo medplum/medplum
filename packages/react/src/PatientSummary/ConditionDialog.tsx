@@ -1,18 +1,19 @@
-import { Group, Stack } from '@mantine/core';
+import { Stack, Group } from '@mantine/core';
 import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
 import { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { JSX, useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
-import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 
 export interface ConditionDialogProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly condition?: Condition;
   readonly onSubmit: (condition: Condition) => void;
+  readonly onClose?: () => void;
 }
 
 export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
@@ -52,19 +53,20 @@ export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
   );
 
   return (
-    <Form key={condition?.id} onSubmit={handleSubmit}>
-      <Stack>
-        <CodeableConceptInput
-          name="code"
-          label="Problem"
-          path="Condition.code"
-          data-autofocus={true}
-          binding={HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-condition-code'}
-          defaultValue={condition?.code}
-          onChange={(code) => setCode(code)}
-          outcome={undefined}
-        />
-        <CodeableConceptInput
+    <>
+      <Form onSubmit={handleSubmit} style={{ marginTop: 0 }}>
+        <Stack>
+          <CodeableConceptInput
+            name="code"
+            label="Problem"
+            path="Condition.code"
+            data-autofocus={true}
+            binding={HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-condition-code'}
+            defaultValue={condition?.code}
+            onChange={(code) => setCode(code)}
+            outcome={undefined}
+          />
+          <CodeableConceptInput
           name="clinicalStatus"
           label="Status"
           path="Condition.clinicalStatus"
@@ -77,7 +79,8 @@ export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
         <Group justify="flex-end" gap={4} mt="md">
           <SubmitButton>Save</SubmitButton>
         </Group>
-      </Stack>
-    </Form>
+        </Stack>
+      </Form>
+    </>
   );
 }

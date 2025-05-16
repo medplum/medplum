@@ -1,47 +1,38 @@
 import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Modal, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import { Device, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState, useRef, useEffect, JSX } from 'react';
 import { killEvent } from '../utils/dom';
 import { IconChevronDown, IconPlus, IconChevronRight } from '@tabler/icons-react';
-import { MedicationDialog } from './MedicationDialog';
+import { DeviceDialog } from './DeviceDialog';
 import styles from './PatientSummary.module.css';
-import { getDisplayString } from '@medplum/core';
 
-export interface MedicationsProps {
+export interface DevicesProps {
   readonly patient: Patient;
-  readonly encounter?: Encounter;
-  readonly medicationRequests: MedicationRequest[];
-  readonly onClickResource?: (resource: MedicationRequest) => void;
+  readonly devices: Device[];
+  readonly onClickResource?: (resource: Device) => void;
 }
 
-function getStatusColor(status?: string): string {
-  if (!status) { 
-    return 'gray'; 
-  }
-  
+// Helper function to get status badge color
+const getStatusColor = (status?: string): string => {
+  if (!status) { return 'gray'; }
   switch (status) {
     case 'active':
       return 'green';
-    case 'stopped':
+    case 'inactive':
       return 'red';
-    case 'on-hold':
-      return 'yellow';
-    case 'cancelled':
-      return 'red';
-    case 'completed':
-      return 'blue';
     case 'entered-in-error':
       return 'red';
-    case 'draft':
+    case 'unknown':
       return 'gray';
     default:
       return 'gray';
   }
-}
+};
 
-function MedicationItem({ medication, onEdit }: { medication: MedicationRequest; onEdit: (med: MedicationRequest) => void }): JSX.Element {
+// TODO: new file
+function DeviceItem({ device, onEdit }: { device: Device; onEdit: (device: Device) => void }): JSX.Element {
   const [isOverflowed, setIsOverflowed] = useState(false);
   const textRef = useRef<HTMLDivElement>(null);
   
@@ -50,18 +41,15 @@ function MedicationItem({ medication, onEdit }: { medication: MedicationRequest;
     if (el) {
       setIsOverflowed(el.scrollWidth > el.clientWidth);
     }
-  }, [medication]);
+  }, [device]);
 
-  const displayText = getDisplayString(medication);
+  const displayText = `${device.deviceName?.[0]?.name || 'Unknown Device'} ⸱ ${device.type?.coding?.[0]?.display || device.type?.text || 'Unknown Type'}`;
 
   return (
-    <Box 
-      key={medication.id}
+    <Box
+      key={device.id}
       className={styles.patientSummaryListItem}
-      onClick={(e) => {
-        killEvent(e);
-        onEdit(medication);
-      }}
+      onClick={() => onEdit(device)}
     >
       <Tooltip label={displayText} position="top-start" openDelay={650} disabled={!isOverflowed}>
         <Box style={{ position: 'relative' }}>
@@ -72,17 +60,15 @@ function MedicationItem({ medication, onEdit }: { medication: MedicationRequest;
           >
             {displayText}
           </Text>
-          <Group mt={2} gap={4}>
-            {medication.status && (
-              <Badge 
-                size="xs" 
-                color={getStatusColor(medication.status)}
-                variant="light"
-                className={styles.patientSummaryBadge}
-              >
-                {medication.status}
-              </Badge>
-            )}
+          <Group gap={4} align="center">
+            <Badge 
+              size="xs" 
+              color={getStatusColor(device.status)} 
+              variant="light" 
+              className={styles.patientSummaryBadge}
+            >
+              {device.status}
+            </Badge>
           </Group>
           <div className={styles.patientSummaryGradient} />
           <div className={styles.patientSummaryChevronContainer}>
@@ -101,27 +87,27 @@ function MedicationItem({ medication, onEdit }: { medication: MedicationRequest;
   );
 }
 
-export function Medications(props: MedicationsProps): JSX.Element {
+export function Devices(props: DevicesProps): JSX.Element {
   const medplum = useMedplum();
-  const [medicationRequests, setMedicationRequests] = useState<MedicationRequest[]>(props.medicationRequests);
-  const [editMedication, setEditMedication] = useState<MedicationRequest>();
+  const [devices, setDevices] = useState<Device[]>(props.devices);
+  const [editDevice, setEditDevice] = useState<Device>();
   const [opened, { open, close }] = useDisclosure(false);
   const [collapsed, setCollapsed] = useState(false);
 
   const handleSubmit = useCallback(
-    async (medication: MedicationRequest) => {
-      if (medication.id) {
-        const updatedMedication = await medplum.updateResource(medication);
-        setMedicationRequests(medicationRequests.map((m) => (m.id === updatedMedication.id ? updatedMedication : m)));
+    async (device: Device) => {
+      if (device.id) {
+        const updatedDevice = await medplum.updateResource(device);
+        setDevices(devices.map((d) => (d.id === updatedDevice.id ? updatedDevice : d)));
       } else {
-        const newMedication = await medplum.createResource(medication);
-        setMedicationRequests([newMedication, ...medicationRequests]);
+        const newDevice = await medplum.createResource(device);
+        setDevices([newDevice, ...devices]);
       }
 
-      setEditMedication(undefined);
+      setEditDevice(undefined);
       close();
     },
-    [medplum, medicationRequests, close]
+    [medplum, devices, close]
   );
 
   return (
@@ -145,14 +131,14 @@ export function Medications(props: MedicationsProps): JSX.Element {
               <ActionIcon
                 variant="subtle"
                 onClick={() => setCollapsed((c) => !c)}
-                aria-label={collapsed ? 'Show medications' : 'Hide medications'}
+                aria-label={collapsed ? 'Show devices' : 'Hide devices'}
                 style={{ transition: 'transform 0.2s', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
                 size="md"
               >
                 <IconChevronDown size={20} />
               </ActionIcon>
               <Text fz="md" fw={800} onClick={() => setCollapsed((c) => !c)} style={{ cursor: 'pointer' }}>
-                Medications
+                Devices
               </Text>
             </Group>
             <ActionIcon
@@ -160,7 +146,7 @@ export function Medications(props: MedicationsProps): JSX.Element {
               variant="subtle"
               onClick={(e) => {
                 killEvent(e);
-                setEditMedication(undefined);
+                setEditDevice(undefined);
                 open();
               }}
               size="md"
@@ -170,15 +156,15 @@ export function Medications(props: MedicationsProps): JSX.Element {
           </Group>
         </UnstyledButton>
         <Collapse in={!collapsed}>
-          {medicationRequests.length > 0 ? (
+          {devices.length > 0 ? (
             <Box ml="36" mt="8" mb="16">
               <Flex direction="column" gap={8}>
-                {medicationRequests.map((medication) => (
-                  <MedicationItem 
-                    key={medication.id}
-                    medication={medication}
-                    onEdit={(med) => {
-                      setEditMedication(med);
+                {devices.map((device) => (
+                  <DeviceItem 
+                    key={device.id}
+                    device={device}
+                    onEdit={(device) => {
+                      setEditDevice(device);
                       open();
                     }}
                   />
@@ -197,14 +183,13 @@ export function Medications(props: MedicationsProps): JSX.Element {
           }
         `}</style>
       </Box>
-      <Modal opened={opened} onClose={close} title={editMedication ? 'Edit Medication' : 'Add Medication'}>
-        <MedicationDialog
+      <Modal opened={opened} onClose={close} title={editDevice ? 'Edit Device' : 'Add Device'}>
+        <DeviceDialog
           patient={props.patient}
-          encounter={props.encounter}
-          medication={editMedication}
+          device={editDevice}
           onSubmit={handleSubmit}
         />
       </Modal>
     </>
   );
-}
+} 
