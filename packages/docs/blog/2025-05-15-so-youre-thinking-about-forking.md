@@ -37,7 +37,7 @@ At Medplum, we have seen partners launch forks with convinced leadership support
 There **are** legitimate scenarios:
 
 1. **Project abandonment** No active maintainers, unmerged PRs, stale security issues.
-2. **Licence retreat** Upstream changes from permissive to restrictive terms.
+2. **License retreat** Upstream changes from permissive to restrictive terms.
 3. **Irreconcilable governance clash** The core team rejects a domain‑specific regulatory requirement that your business legally must meet.
 
 If none of the above apply, pause before you type `git clone`.
