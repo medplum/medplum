@@ -68,11 +68,6 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     url: 'DocumentReference?_fields=_lastUpdated,category,type,status,author&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Documents',
   },
-  {
-    id: 'careplan',
-    url: 'CarePlan?_fields=_lastUpdated,status,intent,category,period&_sort=-_lastUpdated&patient=%patient.id',
-    label: 'Care Plans',
-  },
   { id: 'communication', url: 'communication', label: 'Messages' },
   { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
   { id: 'export', url: 'export', label: 'Export' },
