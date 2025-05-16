@@ -639,7 +639,6 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
   }
 
   if (resourceType === 'User') {
-    result.indexes.push({ columns: ['email'], indexType: 'btree' });
     result.indexes.push({ columns: ['project', 'email'], indexType: 'btree', unique: true });
     result.indexes.push({ columns: ['project', 'externalId'], indexType: 'btree', unique: true });
   }
@@ -743,16 +742,19 @@ function buildHumanNameTable(result: SchemaDefinition): void {
         columns: [{ expression: "to_tsvector('simple'::regconfig, name)", name: 'name' }],
         indexType: 'gin',
         unique: false,
+        indexNameSuffix: 'idx_tsv',
       },
       {
         columns: [{ expression: "to_tsvector('simple'::regconfig, given)", name: 'given' }],
         indexType: 'gin',
         unique: false,
+        indexNameSuffix: 'idx_tsv',
       },
       {
         columns: [{ expression: "to_tsvector('simple'::regconfig, family)", name: 'family' }],
         indexType: 'gin',
         unique: false,
+        indexNameSuffix: 'idx_tsv',
       },
     ]
   );
@@ -1120,10 +1122,17 @@ function generateIndexesActions(
   const actions: MigrationAction[] = [];
 
   const matchedIndexes = new Set<IndexDefinition>();
+  const seenIndexNames = new Set<string>();
+
   for (const targetIndex of targetTable.indexes) {
+    const indexName = getIndexName(targetTable.name, targetIndex);
+    if (seenIndexNames.has(indexName)) {
+      throw new Error('Duplicate index name: ' + indexName, { cause: targetIndex });
+    }
+    seenIndexNames.add(indexName);
+
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (!startIndex) {
-      const indexName = getIndexName(targetTable.name, targetIndex);
       ctx.postDeployAction(
         () => {
           const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex);
@@ -1155,7 +1164,10 @@ function generateIndexesActions(
 }
 
 function getIndexName(tableName: string, index: IndexDefinition): string {
-  let indexName = applyAbbreviations(tableName, TableAbbrieviations) + '_';
+  let indexName = tableName;
+
+  indexName = applyAbbreviations(indexName, TableAbbrieviations) + '_';
+
   indexName += index.columns
     .map((c) => (typeof c === 'string' ? c : c.name))
     .map((c) => applyAbbreviations(c, ColumnNameAbbreviations))
@@ -1280,6 +1292,12 @@ const ColumnNameAbbreviations: Record<string, string | undefined> = {
 
 function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
   let result = name;
+
+  // Shorten _References suffix to _Refs
+  if (result.endsWith('_References')) {
+    result = result.slice(0, -'References'.length) + 'Refs';
+  }
+
   for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>)) {
     result = result.replace(original, abbrev);
   }
@@ -1291,6 +1309,12 @@ function expandAbbreviations(name: string, abbreviations: Record<string, string 
   for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>).reverse()) {
     result = result.replace(abbrev, original);
   }
+
+  // Expand _Refs suffix back to _References
+  if (result.endsWith('_Refs')) {
+    result = result.slice(0, -'Refs'.length) + 'References';
+  }
+
   return result;
 }
 
