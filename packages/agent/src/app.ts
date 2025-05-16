@@ -658,10 +658,9 @@ export class App {
     try {
       const command = __filename;
       const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
-      child = spawn(`"${command}" --upgrade`, {
+      child = spawn(command, ['--upgrade'], {
         detached: true,
         stdio: ['ignore', logFile, logFile, 'ipc'],
-        shell: true,
       });
       // We unref the child process so that this process can close before the child has closed (since we want the child to be able to close the parent process)
       child.unref();
