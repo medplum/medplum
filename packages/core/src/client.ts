@@ -3412,7 +3412,24 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (!this.currentRateLimits) {
       return [];
     }
-    return parseRateLimitHeader(this.currentRateLimits);
+    const header = this.currentRateLimits;
+    return header.split(/\s*;\s*/g).map((str) => {
+      const parts = str.split(/\s*,\s*/g);
+      if (parts.length !== 3) {
+        throw new Error('Could not parse RateLimit header: ' + header);
+      }
+
+      const name = parts[0].substring(1, parts[0].length - 1);
+      const remainingPart = parts.find((p) => p.startsWith('r='));
+      const remainingUnits = remainingPart ? parseInt(remainingPart.substring(2), 10) : NaN;
+      const timePart = parts.find((p) => p.startsWith('t='));
+      const secondsUntilReset = timePart ? parseInt(timePart.substring(2), 10) : NaN;
+      if (!name || Number.isNaN(remainingUnits) || Number.isNaN(secondsUntilReset)) {
+        throw new Error('Could not parse RateLimit header: ' + header);
+      }
+
+      return { name, remainingUnits, secondsUntilReset };
+    });
   }
 
   private getRetryDelay(attemptNum: number): number {
@@ -4310,26 +4327,6 @@ export function normalizeCreatePdfOptions(
     tableLayouts: arg3,
     fonts: arg4,
   };
-}
-
-function parseRateLimitHeader(header: string): RateLimitInfo[] {
-  return header.split(/\s*;\s*/g).map((str) => {
-    const parts = str.split(/\s*,\s*/g);
-    if (parts.length !== 3) {
-      throw new Error('Could not parse RateLimit header: ' + header);
-    }
-
-    const name = parts[0].substring(1, parts[0].length - 1);
-    const remainingPart = parts.find((p) => p.startsWith('r='));
-    const remainingUnits = remainingPart ? parseInt(remainingPart.substring(2), 10) : NaN;
-    const timePart = parts.find((p) => p.startsWith('t='));
-    const secondsUntilReset = timePart ? parseInt(timePart.substring(2), 10) : NaN;
-    if (!name || Number.isNaN(remainingUnits) || Number.isNaN(secondsUntilReset)) {
-      throw new Error('Could not parse RateLimit header: ' + header);
-    }
-
-    return { name, remainingUnits, secondsUntilReset };
-  });
 }
 
 function isRetryable(response: Response): boolean {
