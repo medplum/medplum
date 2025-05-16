@@ -845,6 +845,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private refreshPromise?: Promise<any>;
   private profilePromise?: Promise<any>;
   private sessionDetails?: SessionDetails;
+  private currentRateLimits?: string;
   private basicAuth?: string;
   private initPromise: Promise<void>;
   private initComplete = true;
@@ -3348,6 +3349,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         if (this.options.verbose) {
           this.logResponse(response);
         }
+
+        this.setCurrentRateLimit(response);
+
         // Handle non-500 response and max retries exceeded
         // We return immediately for non-500 or 500 that has exceeded max retries
         if (response.status < 500 || attemptNum === maxRetries) {
@@ -3386,6 +3390,42 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (response.headers) {
       response.headers.forEach((value, key) => console.log(`< ${key}: ${value}`));
     }
+  }
+
+  private setCurrentRateLimit(res: Response): void {
+    const rateLimitHeader = res.headers?.get('ratelimit');
+    if (rateLimitHeader) {
+      this.currentRateLimits = rateLimitHeader;
+    }
+  }
+
+  /**
+   * Reports the last-seen rate limit information from the server.
+   * @returns Array of applicable rate limits.
+   */
+  rateLimitStatus(): { name: string; remainingUnits: number; secondsUntilReset: number }[] {
+    if (!this.currentRateLimits) {
+      return [];
+    }
+
+    const header = this.currentRateLimits;
+    return header.split(/\s*;\s*/g).map((str) => {
+      const parts = str.split(/\s*,\s*/g);
+      if (parts.length !== 3) {
+        throw new Error('Could not parse RateLimit header: ' + header);
+      }
+
+      const name = parts[0].substring(1, parts[0].length - 1);
+      const remainingPart = parts.find((p) => p.startsWith('r='));
+      const remainingUnits = remainingPart ? parseInt(remainingPart.substring(2), 10) : NaN;
+      const timePart = parts.find((p) => p.startsWith('t='));
+      const secondsUntilReset = timePart ? parseInt(timePart.substring(2), 10) : NaN;
+      if (!name || Number.isNaN(remainingUnits) || Number.isNaN(secondsUntilReset)) {
+        throw new Error('Could not parse RateLimit header: ' + header);
+      }
+
+      return { name, remainingUnits, secondsUntilReset };
+    });
   }
 
   private async pollStatus<T>(statusUrl: string, options: MedplumRequestOptions, state: RequestState): Promise<T> {
