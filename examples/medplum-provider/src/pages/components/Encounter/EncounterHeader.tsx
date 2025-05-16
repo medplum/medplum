@@ -22,7 +22,9 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     return `${d.getMonth() + 1}/${d.getDate()}/${d.getFullYear()}`;
   };
 
-  const practitionerName = practitioner?.name?.[0] ? formatHumanName(practitioner.name[0] as HumanName) : 'Unknown Provider';
+  const practitionerName = practitioner?.name?.[0]
+    ? formatHumanName(practitioner.name[0] as HumanName)
+    : 'Unknown Provider';
   const formattedDate = formatDate(encounter.period?.start);
   const encounterDetail = formattedDate ? `${formattedDate} · ${practitionerName}` : practitionerName;
 
