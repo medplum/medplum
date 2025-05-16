@@ -87,7 +87,7 @@ export const Groups = (): JSX.Element => (
   </Document>
 );
 
-export const Choices = (): JSX.Element => (
+export const NestedGroups = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
       questionnaire={{
@@ -946,7 +946,7 @@ export const PageAndNonPageSequence = (): JSX.Element => (
   </Document>
 );
 
-export const MultipleChoice = (): JSX.Element => (
+export const Choices = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
       questionnaire={{
@@ -956,7 +956,7 @@ export const MultipleChoice = (): JSX.Element => (
         item: [
           {
             linkId: 'q1',
-            text: 'Question 1',
+            text: 'Question 1 - Default Radio',
             type: 'choice',
             answerOption: [
               {
@@ -967,6 +967,123 @@ export const MultipleChoice = (): JSX.Element => (
               },
               {
                 valueString: 'Yellow',
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            text: 'Question 2 - Checkbox',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Red',
+              },
+              {
+                valueString: 'Blue',
+              },
+              {
+                valueString: 'Yellow',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check box',
+                    },
+                  ],
+                  text: 'Check box',
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'q3',
+            text: 'Question 3 - Dropdown',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Red',
+              },
+              {
+                valueString: 'Blue',
+              },
+              {
+                valueString: 'Yellow',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'q4',
+            type: 'choice',
+            text: 'Question 4 - Value Set Checkbox Choice',
+            answerValueSet: 'http://loinc.org/vs/LL4436-3',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check box',
+                    },
+                  ],
+                  text: 'Check box',
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'q5',
+            text: 'Question 5 - Value Set Multiselect Dropdown',
+            type: 'choice',
+            answerValueSet: 'http://loinc.org/vs/LL4436-3',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'multi-select',
+                      display: 'Multi select',
+                    },
+                  ],
+                  text: 'Multi select',
+                },
               },
             ],
           },
