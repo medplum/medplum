@@ -116,7 +116,7 @@ const integrations = [
     description: 'Analyze system logs and user activities across healthcare IT systems for compliance verification.',
     displayUrl: 'sumologic.com',
     url: 'https://www.sumologic.com',
-    imageUrl: 'sumologic.png',
+    imageUrl: 'sumo.png',
   },
   {
     name: 'Snowflake',

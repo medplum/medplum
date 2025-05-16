@@ -13,13 +13,14 @@ import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
 import {
-  CustomMigrationAction,
   CustomPostDeployMigration,
   CustomPostDeployMigrationJobData,
   PostDeployJobData,
 } from './migrations/data/types';
+import * as migrateModule from './migrations/migrate';
 import { getPendingPostDeployMigration } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
+import { MigrationAction, MigrationActionResult } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
 import { requestContextStore } from './request-context-store';
 import { createTestProject, withTestContext } from './test.setup';
@@ -62,9 +63,9 @@ jest.mock('./migrations/data/v1', () => {
     prepareJobData: (asyncJob) => prepareCustomMigrationJobData(asyncJob),
     run: function (repo, jobData) {
       return runCustomMigration(repo, jobData, async () => {
-        const actions: CustomMigrationAction[] = [];
-        actions.push({ name: 'nothing', durationMs: 5 });
-        return { actions };
+        const results: MigrationActionResult[] = [];
+        results.push({ name: 'nothing', durationMs: 5 });
+        return results;
       });
     },
   };
@@ -708,6 +709,61 @@ describe('Database migrations', () => {
 
         expect(res1.status).toStrictEqual(400);
         expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
+      });
+    });
+
+    describe('Reconcile schema drift', () => {
+      let generateMigrationActionsSpy: jest.SpyInstance<ReturnType<typeof migrateModule.generateMigrationActions>>;
+
+      beforeEach(() => {
+        generateMigrationActionsSpy = jest.spyOn(migrateModule, 'generateMigrationActions');
+      });
+
+      afterEach(() => {
+        generateMigrationActionsSpy.mockRestore();
+      });
+
+      test('Nothing to do', async () => {
+        generateMigrationActionsSpy.mockResolvedValueOnce([]);
+        const queueAddSpy = getQueueAddSpy();
+        expect(queueAddSpy).toHaveBeenCalledTimes(0);
+        const res1 = await request(app)
+          .post('/admin/super/reconcile-db-schema-drift')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json');
+
+        expect(queueAddSpy).toHaveBeenCalledTimes(0);
+        expect(res1.status).toStrictEqual(200);
+        expect(res1.headers['content-location']).not.toBeDefined();
+      });
+
+      test('Has schema drift', async () => {
+        const pendingActions: MigrationAction[] = [
+          {
+            type: 'ANALYZE_TABLE',
+            tableName: 'AsyncJob',
+          },
+        ];
+        generateMigrationActionsSpy.mockResolvedValueOnce(pendingActions);
+
+        const queueAddSpy = getQueueAddSpy();
+        expect(queueAddSpy).toHaveBeenCalledTimes(0);
+        const res1 = await request(app)
+          .post('/admin/super/reconcile-db-schema-drift')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json');
+
+        expect(queueAddSpy).toHaveBeenCalledTimes(1);
+        const jobData = queueAddSpy.mock.calls[0][1];
+        expect(jobData).toMatchObject({
+          type: 'dynamic',
+          migrationActions: pendingActions,
+        });
+
+        expect(res1.status).toStrictEqual(202);
+        expect(res1.headers['content-location']).toBeDefined();
       });
     });
   });
