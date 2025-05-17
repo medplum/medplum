@@ -54,9 +54,9 @@ export async function main(argv: string[]): Promise<void> {
         console.error(`Failed to delete service: ${serviceName}`);
         console.error(normalizeErrorString(err));
       }
-
-      closeSync(logFileFd);
     }
+
+    closeSync(logFileFd);
   } else if (existsSync(UPGRADE_MANIFEST_PATH)) {
     // If we are the agent starting up just after upgrading, skip checking pid file until later
     // We do want to do the "upgrading-agent" check though
