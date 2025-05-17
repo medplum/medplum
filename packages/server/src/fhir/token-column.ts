@@ -9,12 +9,13 @@ import {
 } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
-import { Column, Conjunction, Disjunction, Expression, Negation, SelectQuery, TypedCondition } from './sql';
+import { Column, Disjunction, Expression, Negation, SelectQuery, TypedCondition } from './sql';
 import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent, Token } from './tokens';
 
 const DELIM = '\x01';
 const NULL_SYSTEM = '\x02';
 const ARRAY_DELIM = '\x03'; // If `ARRAY_DELIM` changes, the `token_array_to_text` function will be outdated.
+const TEXT_SEARCH_SYSTEM = '\x04';
 
 export function buildTokenColumns(
   searchParam: SearchParameter,
@@ -23,7 +24,7 @@ export function buildTokenColumns(
   resource: Resource
 ): void {
   const allTokens: Token[] = [];
-  buildTokensForSearchParameter(allTokens, resource, searchParam);
+  buildTokensForSearchParameter(allTokens, resource, searchParam, TEXT_SEARCH_SYSTEM);
 
   // search parameters may share columns, so add any existing tokens to the set
   const tokens = new Set<string>(columns[impl.tokenColumnName]);
@@ -50,11 +51,30 @@ export function buildTokenColumns(
       throw new Error(`Invalid token code ${code} for search parameter with code ${searchParam.code}`);
     }
 
+    // text search
+    if (value && (system === TEXT_SEARCH_SYSTEM || impl.textSearch)) {
+      legacyTextSearchTokens.add(code + DELIM + DELIM + value);
+      textSearchTokens.add(value);
+
+      /*
+      Ideally we could continue here when system === TEXT_SEARCH_SYSTEM, but right now Medplum supports exact searches on the text content
+      as if it were a normal token value, e.g. the following resource should match the search `Task?code=cursor_test` 
+
+      {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+        code: { text: 'cursor_test' },
+      }
+      */
+    }
+
     // :missing/:present - in a token column per search parameter, the presence of any elements
     // in the main token column, `impl.tokenColumnName`, is sufficient.
     legacyTokens.add(code);
 
-    if (system) {
+    // The TEXT_SEARCH_SYSTEM is never searchable
+    if (system && system !== TEXT_SEARCH_SYSTEM) {
       // [parameter]=[system]|
       legacyTokens.add(code + DELIM + system);
       tokens.add(system);
@@ -77,12 +97,6 @@ export function buildTokenColumns(
         // [parameter]=|[code]
         legacyTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
         tokens.add(NULL_SYSTEM + DELIM + value);
-      }
-
-      // text search
-      if (system === 'text' || impl.textSearch) {
-        legacyTextSearchTokens.add(code + DELIM + DELIM + value);
-        textSearchTokens.add(value);
       }
     }
   }
@@ -271,14 +285,6 @@ function buildTokenColumnsWhereCondition(
       const regexStr = ARRAY_DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       const textSearchCol = new Column(tableName, impl.textSearchColumnName);
       const regexCond = new TypedCondition(textSearchCol, 'TOKEN_ARRAY_IREGEX', regexStr, 'TEXT[]');
-
-      // For :text (but not :contains), also check that the token column contains `'text'`,
-      // where 'text' is the system value specified for token values that should be text-searchable
-      if (operator === FhirOperator.TEXT) {
-        const systemCol = new Column(tableName, impl.tokenColumnName);
-        return new Conjunction([regexCond, new TypedCondition(systemCol, 'ARRAY_CONTAINS', 'text', 'TEXT[]')]);
-      }
-
       return regexCond;
     }
     case FhirOperator.EQUALS:
@@ -361,16 +367,6 @@ function buildTokenColumnsWhereConditionOneColumn(
       // and then the query string
       const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       const regexCond = new TypedCondition(textSearchCol, 'TOKEN_ARRAY_IREGEX', regexStr, 'TEXT[]');
-
-      // For :text (but not :contains), also check that the token column contains `<code> + DELIM + 'text'`,
-      // where 'text' is the system value specified for token values that should be text-searchable
-      if (operator === FhirOperator.TEXT) {
-        return new Conjunction([
-          regexCond,
-          new TypedCondition(tokenCol, 'ARRAY_CONTAINS', code + DELIM + 'text', 'TEXT[]'),
-        ]);
-      }
-
       return regexCond;
     }
     case FhirOperator.EQUALS:
