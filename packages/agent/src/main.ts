@@ -25,12 +25,15 @@ export async function main(argv: string[]): Promise<void> {
       .toString()
       .trim()
       .split('\n')
-      .map((line) => line.replace('SERVICE_NAME: ', ''));
-    appendFileSync(logFileFd, `All services: \r\n${allAgentServices.join('\r\n')}`, { encoding: 'utf-8' });
+      .map((line) => line.replace('SERVICE_NAME: ', '').trim());
+    appendFileSync(logFileFd, `All services: \r\n${allAgentServices.join('\r\n')}\r\n`, { encoding: 'utf-8' });
     const servicesToStop =
       argv[3] === '--all'
         ? allAgentServices
         : allAgentServices.filter((serviceName) => serviceName !== `MedplumAgent_${MEDPLUM_VERSION}`);
+    appendFileSync(logFileFd, `Medplum agent service to filter out: MedplumAgent_${MEDPLUM_VERSION}\r\n`, {
+      encoding: 'utf-8',
+    });
     for (const serviceName of servicesToStop) {
       // We try to stop the service and continue even if it fails
       try {
