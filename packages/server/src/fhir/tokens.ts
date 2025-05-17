@@ -90,34 +90,42 @@ export function getTokenIndexType(searchParam: SearchParameter, resourceType: st
  * @param result - The result array where tokens will be added.
  * @param resource - The resource.
  * @param searchParam - The search parameter.
+ * @param textSearchSystem - (optional) The system to use for :text-searchable tokens. Defaults to 'text'.
  */
-export function buildTokensForSearchParameter(result: Token[], resource: Resource, searchParam: SearchParameter): void {
+export function buildTokensForSearchParameter(
+  result: Token[],
+  resource: Resource,
+  searchParam: SearchParameter,
+  textSearchSystem: string = 'text'
+): void {
   const details = getSearchParameterDetails(resource.resourceType, searchParam);
   const typedValues = evalFhirPathTyped(details.parsedExpression, [toTypedValue(resource)]);
+
+  const context: TokensContext = {
+    searchParam,
+    caseInsensitive: getTokenIndexType(searchParam, resource.resourceType) === TokenIndexTypes.CASE_INSENSITIVE,
+    textSearchSystem,
+  };
+
   for (const typedValue of typedValues) {
-    buildTokens(result, searchParam, resource, typedValue);
+    buildTokens(context, result, typedValue);
   }
 }
 
 interface TokensContext {
   searchParam: SearchParameter;
   caseInsensitive: boolean;
+  textSearchSystem?: string;
 }
 
 /**
  * Builds a list of zero or more tokens for a search parameter and value.
+ * @param context - The context for building tokens.
  * @param result - The result array where tokens will be added.
- * @param searchParam - The search parameter.
- * @param resource - The resource.
  * @param typedValue - A typed value to be indexed for the search parameter.
  */
-function buildTokens(result: Token[], searchParam: SearchParameter, resource: Resource, typedValue: TypedValue): void {
+function buildTokens(context: TokensContext, result: Token[], typedValue: TypedValue): void {
   const { type, value } = typedValue;
-
-  const context: TokensContext = {
-    searchParam,
-    caseInsensitive: getTokenIndexType(searchParam, resource.resourceType) === TokenIndexTypes.CASE_INSENSITIVE,
-  };
 
   switch (type) {
     case PropertyType.Identifier:
@@ -145,7 +153,7 @@ function buildTokens(result: Token[], searchParam: SearchParameter, resource: Re
  */
 function buildIdentifierToken(result: Token[], context: TokensContext, identifier: Identifier | undefined): void {
   if (identifier?.type?.text) {
-    buildSimpleToken(result, context, 'text', identifier.type.text);
+    buildSimpleToken(result, context, context.textSearchSystem, identifier.type.text);
   }
   buildSimpleToken(result, context, identifier?.system, identifier?.value);
 }
@@ -162,7 +170,7 @@ function buildCodeableConceptToken(
   codeableConcept: CodeableConcept | undefined
 ): void {
   if (codeableConcept?.text) {
-    buildSimpleToken(result, context, 'text', codeableConcept.text);
+    buildSimpleToken(result, context, context.textSearchSystem, codeableConcept.text);
   }
   if (codeableConcept?.coding) {
     for (const coding of codeableConcept.coding) {
@@ -180,7 +188,7 @@ function buildCodeableConceptToken(
 function buildCodingToken(result: Token[], context: TokensContext, coding: Coding | undefined): void {
   if (coding) {
     if (coding.display) {
-      buildSimpleToken(result, context, 'text', coding.display);
+      buildSimpleToken(result, context, context.textSearchSystem, coding.display);
     }
     buildSimpleToken(result, context, coding.system, coding.code);
   }
