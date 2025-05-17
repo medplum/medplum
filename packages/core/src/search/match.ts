@@ -1,6 +1,8 @@
 import { CodeableConcept, Coding, Identifier, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPath } from '../fhirpath/parse';
+import { isPeriod } from '../fhirpath/utils';
 import { PropertyType, globalSchema } from '../types';
+import { isString } from '../utils';
 import { SearchParameterType, getSearchParameterDetails } from './details';
 import { Filter, Operator, SearchRequest, splitSearchOnComma } from './search';
 
@@ -268,17 +270,14 @@ function matchesDateValue(resourceValue: string | undefined, operator: Operator,
  * @returns The date/time string if parsed; undefined otherwise.
  */
 function buildDateTimeColumn(value: unknown): string | undefined {
-  if (!value) {
-    return undefined;
-  }
-  if (typeof value === 'string') {
+  if (isString(value)) {
     try {
       const date = new Date(value);
       return date.toISOString();
     } catch (_err) {
       // Silent ignore
     }
-  } else if (typeof value === 'object') {
+  } else if (isPeriod(value)) {
     // Can be a Period
     if ('start' in value) {
       return buildDateTimeColumn(value.start);
