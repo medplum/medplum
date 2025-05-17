@@ -1,6 +1,11 @@
 import {
+  allOk,
+  badRequest,
   ClientStorage,
   ContentType,
+  getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
   LoginState,
   MemoryStorage,
   MockAsyncClientStorage,
@@ -8,15 +13,10 @@ import {
   NewProjectRequest,
   NewUserRequest,
   OperationOutcomeError,
-  SubscriptionEmitter,
-  allOk,
-  badRequest,
-  getReferenceString,
-  indexSearchParameterBundle,
-  indexStructureDefinitionBundle,
   sleep,
+  SubscriptionEmitter,
 } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
 import {
   Agent,
@@ -27,6 +27,7 @@ import {
   ProjectMembership,
   SearchParameter,
   ServiceRequest,
+  Task,
 } from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'node:crypto';
 import { TextEncoder } from 'node:util';
@@ -38,7 +39,9 @@ describe('MockClient', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
 
     Object.defineProperty(global, 'TextEncoder', {
       value: TextEncoder,
@@ -652,6 +655,28 @@ describe('MockClient', () => {
       ])
     );
     expect(slots.length).toBeGreaterThan(0);
+  });
+
+  test('Task search by due-date', async () => {
+    const now = new Date();
+    const dueDate = new Date(now.getTime() + 1000 * 60 * 60 * 12); // 12 hours from now
+    const endDate = new Date(now.getTime() + 1000 * 60 * 60 * 24); // 24 hours from now
+
+    const client = new MockClient();
+
+    const task = await client.createResource<Task>({
+      resourceType: 'Task',
+      status: 'requested',
+      intent: 'order',
+      code: { text: 'test' },
+      restriction: { period: { end: dueDate.toISOString() } },
+    });
+
+    const result = await client.searchResources('Task', [
+      ['due-date', `ge${now.toISOString()}`],
+      ['due-date', `le${endDate.toISOString()}`],
+    ]);
+    expect(result.find((t) => t.id === task.id)).toBeDefined();
   });
 
   test('Identifier search', async () => {
