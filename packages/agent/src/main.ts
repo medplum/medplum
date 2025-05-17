@@ -7,7 +7,10 @@ import { createPidFile, registerAgentCleanup } from './pid';
 import { upgraderMain } from './upgrader';
 import { UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
-const TEMP_LOG_FILE = path.join(dirname(UPGRADE_MANIFEST_PATH), `stop-service-logs-${new Date().toISOString()}.txt`);
+const TEMP_LOG_FILE = path.join(
+  dirname(UPGRADE_MANIFEST_PATH),
+  `stop-service-logs-${new Date().toISOString().replace(/:\s*/g, '-')}.txt`
+);
 
 export async function main(argv: string[]): Promise<void> {
   registerAgentCleanup();
