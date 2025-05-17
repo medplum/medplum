@@ -1,6 +1,6 @@
 import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { execSync } from 'node:child_process';
-import { appendFileSync, existsSync, writeFileSync } from 'node:fs';
+import { appendFileSync, closeSync, existsSync, openSync } from 'node:fs';
 import path, { dirname } from 'node:path';
 import { agentMain } from './agent-main';
 import { createPidFile, registerAgentCleanup } from './pid';
@@ -15,9 +15,9 @@ export async function main(argv: string[]): Promise<void> {
     createPidFile('medplum-agent-upgrader');
     await upgraderMain(argv);
   } else if (argv[2] === '--stop-old-services') {
-    writeFileSync(TEMP_LOG_FILE, '', { flag: 'w+' });
+    const logFileFd = openSync(TEMP_LOG_FILE, 'a');
     const output = execSync('cmd.exe /c sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent"');
-    appendFileSync(TEMP_LOG_FILE, `${output}\r\n`, { encoding: 'utf-8' });
+    appendFileSync(logFileFd, `${output}\r\n`, { encoding: 'utf-8' });
     const allAgentServices = output.toString().trim().split('\r\n');
     const servicesToStop =
       argv[3] === '--all'
@@ -27,25 +27,27 @@ export async function main(argv: string[]): Promise<void> {
       // We try to stop the service and continue even if it fails
       try {
         execSync(`net stop ${serviceName}`);
-        appendFileSync(TEMP_LOG_FILE, `${serviceName} stopped\r\n`, { encoding: 'utf-8' });
+        appendFileSync(logFileFd, `${serviceName} stopped\r\n`, { encoding: 'utf-8' });
         console.log(`${serviceName} stopped`);
       } catch (err) {
-        appendFileSync(TEMP_LOG_FILE, `Failed to stop service: ${serviceName}\r\n`, { encoding: 'utf-8' });
-        appendFileSync(TEMP_LOG_FILE, `${normalizeErrorString(err)}\r\n`, { encoding: 'utf-8' });
+        appendFileSync(logFileFd, `Failed to stop service: ${serviceName}\r\n`, { encoding: 'utf-8' });
+        appendFileSync(logFileFd, `${normalizeErrorString(err)}\r\n`, { encoding: 'utf-8' });
         console.error(`Failed to stop service: ${serviceName}`);
         console.error(normalizeErrorString(err));
       }
       // We try to delete the service even if stopping it failed
       try {
         execSync(`sc.exe delete ${serviceName}`);
-        appendFileSync(TEMP_LOG_FILE, `${serviceName} deleted\r\n`, { encoding: 'utf-8' });
+        appendFileSync(logFileFd, `${serviceName} deleted\r\n`, { encoding: 'utf-8' });
         console.log(`${serviceName} deleted`);
       } catch (err) {
-        appendFileSync(TEMP_LOG_FILE, `Failed to delete service: ${serviceName}\r\n`, { encoding: 'utf-8' });
-        appendFileSync(TEMP_LOG_FILE, `${normalizeErrorString(err)}\r\n`, { encoding: 'utf-8' });
+        appendFileSync(logFileFd, `Failed to delete service: ${serviceName}\r\n`, { encoding: 'utf-8' });
+        appendFileSync(logFileFd, `${normalizeErrorString(err)}\r\n`, { encoding: 'utf-8' });
         console.error(`Failed to delete service: ${serviceName}`);
         console.error(normalizeErrorString(err));
       }
+
+      closeSync(logFileFd);
     }
   } else if (existsSync(UPGRADE_MANIFEST_PATH)) {
     // If we are the agent starting up just after upgrading, skip checking pid file until later
