@@ -21,7 +21,11 @@ export async function main(argv: string[]): Promise<void> {
     const logFileFd = openSync(TEMP_LOG_FILE, 'a');
     const output = execSync('cmd.exe /c sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent"');
     appendFileSync(logFileFd, `${output}\r\n`, { encoding: 'utf-8' });
-    const allAgentServices = output.toString().trim().split('\r\n');
+    const allAgentServices = output
+      .toString()
+      .trim()
+      .split('\r\n')
+      .map((line) => line.replace('SERVICE_NAME: ', ''));
     const servicesToStop =
       argv[3] === '--all'
         ? allAgentServices
