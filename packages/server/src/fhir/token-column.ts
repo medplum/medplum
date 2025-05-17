@@ -8,6 +8,7 @@ import {
   splitSearchOnComma,
 } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { NIL, v5 } from 'uuid';
 import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
 import { Column, Disjunction, Expression, Negation, SelectQuery, TypedCondition } from './sql';
 import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent, Token } from './tokens';
@@ -101,11 +102,15 @@ export function buildTokenColumns(
     }
   }
 
-  columns[impl.tokenColumnName] = Array.from(tokens);
+  columns[impl.tokenColumnName] = Array.from(tokens).map(hashTokenColumnValue);
   columns[impl.textSearchColumnName] = Array.from(textSearchTokens);
   columns[impl.sortColumnName] = sortColumnValue;
   columns[impl.legacyColumnName] = Array.from(legacyTokens);
   columns[impl.legacyTextSearchColumnName] = Array.from(legacyTextSearchTokens);
+}
+
+function hashTokenColumnValue(value: string): string {
+  return v5(value, NIL).replace(/-/g, '');
 }
 
 /**
@@ -206,9 +211,9 @@ export function buildTokenColumnsSearchFilter(
       }
 
       if (shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
-        return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_NOT_EMPTY', undefined, 'TEXT[]');
+        return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_NOT_EMPTY', undefined, 'UUID[]');
       } else {
-        return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_EMPTY', undefined, 'TEXT[]');
+        return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_EMPTY', undefined, 'UUID[]');
       }
     }
     case FhirOperator.IN:
@@ -301,28 +306,26 @@ function buildTokenColumnsWhereCondition(
 
       let system: string;
       let value: string;
-      let columnName: string;
+      let searchString: string;
       const parts = splitN(query, '|', 2);
       if (parts.length === 2) {
         system = parts[0] || NULL_SYSTEM; // If query is "|foo", searching for "foo" values without a system, aka NULL_SYSTEM
         value = parts[1];
         if (value) {
           value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
-          return new TypedCondition(
-            new Column(tableName, impl.tokenColumnName),
-            'ARRAY_CONTAINS',
-            system + DELIM + value,
-            'TEXT[]'
-          );
+          searchString = system + DELIM + value;
         } else {
-          return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_CONTAINS', system, 'TEXT[]');
+          searchString = system;
         }
       } else {
         value = query;
-        columnName = impl.tokenColumnName;
         value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
-        return new TypedCondition(new Column(tableName, columnName), 'ARRAY_CONTAINS', DELIM + value, 'TEXT[]');
+        searchString = DELIM + value;
       }
+
+      searchString = hashTokenColumnValue(searchString);
+
+      return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_CONTAINS', searchString, 'UUID[]');
     }
     default: {
       operator satisfies never;
