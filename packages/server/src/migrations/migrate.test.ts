@@ -161,7 +161,7 @@ describe('Generator', () => {
           return [
             {
               name: `__${code}`,
-              type: 'TEXT[]',
+              type: 'UUID[]',
             },
             {
               name: `__${code}Sort`,
