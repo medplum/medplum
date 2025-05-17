@@ -24,8 +24,9 @@ export async function main(argv: string[]): Promise<void> {
     const allAgentServices = output
       .toString()
       .trim()
-      .split('\r\n')
+      .split('\n')
       .map((line) => line.replace('SERVICE_NAME: ', ''));
+    appendFileSync(logFileFd, `All services: \r\n${allAgentServices.join('\r\n')}`, { encoding: 'utf-8' });
     const servicesToStop =
       argv[3] === '--all'
         ? allAgentServices
