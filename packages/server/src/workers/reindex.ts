@@ -34,6 +34,8 @@ import {
  * recomputing all search columns and lookup table entries.
  */
 
+const AUTORUN = Boolean(process.env['AUTORUN_REINDEX']);
+
 export interface ReindexJobData extends PostDeployJobData {
   readonly type: 'reindex';
   readonly resourceTypes: ResourceType[];
@@ -86,6 +88,8 @@ export const initReindexWorker: WorkerInitializer = (config) => {
     {
       ...defaultOptions,
       ...config.bullmq,
+      concurrency: 1,
+      autorun: AUTORUN,
     }
   );
   addVerboseQueueLogging<ReindexJobData>(queue, worker, (job) => ({

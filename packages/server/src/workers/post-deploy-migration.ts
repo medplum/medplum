@@ -28,6 +28,8 @@ import {
   WorkerInitializer,
 } from './utils';
 
+const AUTORUN = Boolean(process.env['AUTORUN_POSTDEPLOY']);
+
 export const PostDeployMigrationQueueName = 'PostDeployMigrationQueue';
 
 function getJobDataLoggingFields(job: Job<PostDeployJobData>): Record<string, string> {
@@ -55,6 +57,9 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
     {
       ...config.bullmq,
       ...defaultOptions,
+      concurrency: 1,
+      autorun: AUTORUN,
+      maxStalledCount: 1000,
     }
   );
   addVerboseQueueLogging<PostDeployJobData>(queue, worker, getJobDataLoggingFields);
