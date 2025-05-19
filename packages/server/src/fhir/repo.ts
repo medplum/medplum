@@ -1,6 +1,7 @@
 import {
   AccessPolicyInteraction,
   BackgroundJobInteraction,
+  ContentType,
   DEFAULT_MAX_SEARCH_COUNT,
   Filter,
   OperationOutcomeError,
@@ -23,6 +24,7 @@ import {
   evalFhirPathTyped,
   forbidden,
   formatSearchQuery,
+  getExtension,
   getReferenceString,
   getStatus,
   gone,
@@ -42,6 +44,7 @@ import {
   preconditionFailed,
   protectedResourceTypes,
   resolveId,
+  resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
   serverError,
   sleep,
@@ -54,6 +57,7 @@ import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOp
 import {
   AccessPolicy,
   Binary,
+  Bot,
   Bundle,
   BundleEntry,
   Meta,
@@ -64,6 +68,7 @@ import {
   ResourceType,
   SearchParameter,
   StructureDefinition,
+  Subscription,
 } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
@@ -96,9 +101,11 @@ import {
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
+import { findProjectMembership } from '../workers/utils';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import { TokenTable } from './lookups/token';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
+import { executeBot } from './operations/execute';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
@@ -661,6 +668,79 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.canWriteResourceType(resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
+
+    // START PRE-COMMIT BOT CHECK
+
+    const projectId = this.context.projects?.[0];
+    if (projectId) {
+      const systemRepo = getSystemRepo();
+      const logger = getLogger();
+      const subscriptions = await systemRepo.searchResources<Subscription>({
+        resourceType: 'Subscription',
+        count: 1000,
+        filters: [
+          {
+            code: '_project',
+            operator: Operator.EQUALS,
+            value: projectId,
+          },
+          {
+            code: 'status',
+            operator: Operator.EQUALS,
+            value: 'active',
+          },
+        ],
+      });
+
+      for (const subscription of subscriptions) {
+        // Only consider pre-commit subscriptions
+        if (!getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot')?.valueBoolean) {
+          continue;
+        }
+
+        // Check subscription criteria
+        if (
+          !(await resourceMatchesSubscriptionCriteria({
+            resource,
+            subscription,
+            logger,
+            context: { interaction: 'update' },
+            getPreviousResource: async () => undefined,
+          }))
+        ) {
+          continue;
+        }
+
+        // URL should be a Bot reference string
+        const url = subscription.channel?.endpoint;
+        if (!url?.startsWith('Bot/')) {
+          // Skip if the URL is not a Bot reference
+          continue;
+        }
+
+        const bot = await systemRepo.readReference<Bot>({ reference: url });
+        const runAs = await findProjectMembership(projectId, createReference(bot));
+        if (!runAs) {
+          // Skip if the Bot is not in the project
+          continue;
+        }
+
+        const botResult = await executeBot({
+          subscription,
+          bot,
+          runAs,
+          input: resource,
+          contentType: ContentType.FHIR_JSON,
+          requestTime: new Date().toISOString(),
+        });
+
+        if (!botResult.success) {
+          throw new OperationOutcomeError(normalizeOperationOutcome(botResult.returnValue));
+        }
+      }
+    }
+
+    // END PRE-COMMIT BOT CHECK
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
