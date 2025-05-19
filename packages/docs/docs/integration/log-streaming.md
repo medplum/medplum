@@ -19,7 +19,7 @@ Medplum server can stream the following to `STDOUT`
 - All RESTful interactions with FHIR resources, which are recorded as [FHIR AuditEvent resources](/docs/api/fhir/resources/auditevent)
 
 :::warning
-To capture [AuditEvent](/docs/api/fhir/resources/auditevent) resources for any RESTful interactions you __*must*__ set the server configuration for [logAuditEvent](/docs/self-hosting/config-settings#logauditevents)
+To capture [AuditEvent](/docs/api/fhir/resources/auditevent) resources for any RESTful interactions you __*must*__ set the server configuration for [`logAuditEvents`](/docs/self-hosting/config-settings#logauditevents)
 
 :::
 
