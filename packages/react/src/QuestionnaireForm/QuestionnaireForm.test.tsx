@@ -1584,6 +1584,99 @@ describe('QuestionnaireForm', () => {
     expect(response.item[0].answer[1]).toMatchObject({ valueString: 'Option 3' });
   });
 
+  test('Checkbox Selection and Deselection', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'checkbox-selection-deselection',
+        title: 'Checkbox Selection and Deselection',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Select Options',
+            type: 'choice',
+            repeats: true,
+            answerOption: [
+              {
+                valueString: 'Option 1',
+              },
+              {
+                valueString: 'Option 2',
+              },
+              {
+                valueString: 'Option 3',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check Box',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Check that checkboxes are rendered
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBe(3);
+
+    // Select all options
+    await act(async () => {
+      checkboxes.forEach(checkbox => {
+        fireEvent.click(checkbox);
+      });
+    });
+
+    // Submit with all options selected
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    // Verify all options are selected in the response
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const response1 = onSubmit.mock.calls[0][0];
+    expect(response1.item[0].answer).toHaveLength(3);
+    expect(response1.item[0].answer).toEqual(
+      expect.arrayContaining([
+        { valueString: 'Option 1' },
+        { valueString: 'Option 2' },
+        { valueString: 'Option 3' },
+      ])
+    );
+
+    // Deselect all options
+    await act(async () => {
+      checkboxes.forEach(checkbox => {
+        fireEvent.click(checkbox);
+      });
+    });
+
+    // Submit with no options selected
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    // Verify no options are selected in the response
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+    const response2 = onSubmit.mock.calls[1][0];
+    expect(response2.item[0].answer).toHaveLength(1);
+    expect(response2.item[0].answer).toEqual(expect.arrayContaining([{}]));
+  });
+
   test('Multi-Select Dropdown Value Set', async () => {
     const onSubmit = jest.fn();
 

@@ -263,7 +263,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             item={item}
             initial={initial}
             response={response}
-            onChangeAnswer={onChangeAnswer}
+            onChangeAnswer={(e) => onChangeAnswer(e)}
           />
         );
       } else if (isDropdownChoice(item) || (item.answerValueSet && !isRadiobuttonChoice(item))) {
@@ -284,7 +284,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             item={item}
             initial={initial}
             response={response}
-            onChangeAnswer={onChangeAnswer}
+            onChangeAnswer={(e) => onChangeAnswer(e)}
           />
         );
       }
@@ -336,7 +336,11 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
         maxValues={isMultiSelect ? undefined : 1}
         onChange={(values) => {
           if (isMultiSelect) {
-            onChangeAnswer(values.map((coding) => ({ valueCoding: coding })));
+            if (values.length === 0) {
+              onChangeAnswer({});
+            } else {
+              onChangeAnswer(values.map((coding) => ({ valueCoding: coding })));
+            }
           } else {
             onChangeAnswer({ valueCoding: values[0] });
           }
@@ -355,8 +359,12 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
         searchable
         defaultValue={currentAnswer || [typedValueToString(initialValue)]}
         onChange={(selected) => {
-          const values = getNewMultiSelectValues(selected, propertyName, item);
-          onChangeAnswer(values);
+          if (selected.length === 0) {
+            onChangeAnswer({});
+          } else {
+            const values = getNewMultiSelectValues(selected, propertyName, item);
+            onChangeAnswer(values);
+          }
         }}
       />
     );
@@ -571,7 +579,7 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
 
   const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS);
 
-  const handleCheckboxChange = (optionValue: TypedValue, selected: boolean) => {
+  const handleCheckboxChange = (optionValue: TypedValue, selected: boolean): void => {
     if (item.answerValueSet) {
       const currentCodings = selectedValues as Coding[];
       let newCodings: Coding[];
@@ -583,7 +591,11 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
       }
 
       setSelectedValues(newCodings);
-      onChangeAnswer(newCodings.map((coding) => ({ valueCoding: coding })));
+      if (newCodings.length === 0) {
+        onChangeAnswer({});
+      } else {
+        onChangeAnswer(newCodings.map((coding) => ({ valueCoding: coding })));
+      }
     } else {
       const currentValues = selectedValues as string[];
       const optionValueStr = typedValueToString(optionValue);
@@ -596,8 +608,12 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
       }
 
       setSelectedValues(newValues);
-      const values = getNewMultiSelectValues(newValues, 'value' + capitalize(optionValue.type), item);
-      onChangeAnswer(values);
+      if (newValues.length === 0) {
+        onChangeAnswer({});
+      } else {
+        const values = getNewMultiSelectValues(newValues, 'value' + capitalize(optionValue.type), item);
+        onChangeAnswer(values);
+      }
     }
   };
 
