@@ -19,14 +19,21 @@ export async function main(argv: string[]): Promise<void> {
     await upgraderMain(argv);
   } else if (argv[2] === '--stop-old-services') {
     const logFileFd = openSync(TEMP_LOG_FILE, 'a');
-    const output = execSync('cmd.exe /c sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent"');
-    appendFileSync(logFileFd, `${output}\r\n`, { encoding: 'utf-8' });
-    const allAgentServices = output
-      .toString()
-      .trim()
-      .split('\n')
-      .map((line) => line.replace('SERVICE_NAME: ', '').trim());
-    appendFileSync(logFileFd, `All services: \r\n${allAgentServices.join('\r\n')}\r\n`, { encoding: 'utf-8' });
+
+    let allAgentServices: string[] = [];
+    const currentServiceName = `MedplumAgent_${MEDPLUM_VERSION}`;
+
+    while (!allAgentServices.includes(currentServiceName)) {
+      const output = execSync('cmd.exe /c sc query type= service state= all | findstr /i "SERVICE_NAME.*MedplumAgent"');
+      appendFileSync(logFileFd, `${output}\r\n`, { encoding: 'utf-8' });
+      allAgentServices = output
+        .toString()
+        .trim()
+        .split('\n')
+        .map((line) => line.replace('SERVICE_NAME: ', '').trim());
+      appendFileSync(logFileFd, `All services: \r\n${allAgentServices.join('\r\n')}\r\n`, { encoding: 'utf-8' });
+    }
+
     const servicesToStop =
       argv[3] === '--all'
         ? allAgentServices
@@ -34,6 +41,7 @@ export async function main(argv: string[]): Promise<void> {
     appendFileSync(logFileFd, `Medplum agent service to filter out: MedplumAgent_${MEDPLUM_VERSION}\r\n`, {
       encoding: 'utf-8',
     });
+
     for (const serviceName of servicesToStop) {
       // We try to stop the service and continue even if it fails
       try {
