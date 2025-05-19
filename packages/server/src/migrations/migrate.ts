@@ -13,7 +13,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { Client, Pool, PoolClient, QueryResult } from 'pg';
+import { Client, escapeIdentifier, Pool, PoolClient, QueryResult } from 'pg';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import {
   ColumnSearchParameterImplementation,
@@ -24,14 +24,7 @@ import {
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
 import * as fns from './migrate-functions';
-import {
-  doubleEscapeSingleQuotes,
-  escapeUnicode,
-  normalizeColumnType,
-  parseIndexColumns,
-  quotedColumnName,
-  splitIndexColumnNames,
-} from './migrate-utils';
+import { escapeUnicode, normalizeColumnType, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
 import {
   ColumnDefinition,
   IndexDefinition,
@@ -576,7 +569,7 @@ function getSearchParameterIndexes(
         {
           columns: [
             {
-              expression: `${TokenArrayToTextFn.name}(${quotedColumnName(impl.textSearchColumnName)}) gin_trgm_ops`,
+              expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.textSearchColumnName)}) gin_trgm_ops`,
               name: impl.columnName + 'Trgm',
             },
           ],
@@ -646,7 +639,6 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
   }
 
   if (resourceType === 'User') {
-    result.indexes.push({ columns: ['email'], indexType: 'btree' });
     result.indexes.push({ columns: ['project', 'email'], indexType: 'btree', unique: true });
     result.indexes.push({ columns: ['project', 'externalId'], indexType: 'btree', unique: true });
   }
@@ -750,16 +742,19 @@ function buildHumanNameTable(result: SchemaDefinition): void {
         columns: [{ expression: "to_tsvector('simple'::regconfig, name)", name: 'name' }],
         indexType: 'gin',
         unique: false,
+        indexNameSuffix: 'idx_tsv',
       },
       {
         columns: [{ expression: "to_tsvector('simple'::regconfig, given)", name: 'given' }],
         indexType: 'gin',
         unique: false,
+        indexNameSuffix: 'idx_tsv',
       },
       {
         columns: [{ expression: "to_tsvector('simple'::regconfig, family)", name: 'family' }],
         indexType: 'gin',
         unique: false,
+        indexNameSuffix: 'idx_tsv',
       },
     ]
   );
@@ -818,7 +813,6 @@ function buildCodingPropertyTable(result: SchemaDefinition): void {
       { name: 'target', type: 'BIGINT' },
       { name: 'value', type: 'TEXT' },
     ],
-    compositePrimaryKey: ['target', 'property', 'coding'],
     indexes: [
       { columns: ['coding', 'property', 'target', 'value'], indexType: 'btree', unique: true },
       { columns: ['target', 'property', 'coding'], indexType: 'btree', unique: false, where: 'target IS NOT NULL' },
@@ -961,7 +955,7 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
       }
       case 'CREATE_INDEX': {
         b.appendNoWrap(
-          `await fns.idempotentCreateIndex(client, actions, '${action.indexName}', '${action.createIndexSql}');`
+          `await fns.idempotentCreateIndex(client, actions, '${action.indexName}', \`${action.createIndexSql}\`);`
         );
         break;
       }
@@ -1128,18 +1122,23 @@ function generateIndexesActions(
   const actions: MigrationAction[] = [];
 
   const matchedIndexes = new Set<IndexDefinition>();
+  const seenIndexNames = new Set<string>();
+
   for (const targetIndex of targetTable.indexes) {
+    const indexName = getIndexName(targetTable.name, targetIndex);
+    if (seenIndexNames.has(indexName)) {
+      throw new Error('Duplicate index name: ' + indexName, { cause: targetIndex });
+    }
+    seenIndexNames.add(indexName);
+
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (!startIndex) {
       ctx.postDeployAction(
         () => {
-          const indexName = getIndexName(targetTable.name, targetIndex);
           const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex);
           actions.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
         },
-        `CREATE INDEX ${targetTable.name} (${targetIndex.columns.map((c) =>
-          typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)
-        )})`
+        `CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapeIdentifier(targetTable.name)} ...`
       );
     } else {
       matchedIndexes.add(startIndex);
@@ -1165,7 +1164,10 @@ function generateIndexesActions(
 }
 
 function getIndexName(tableName: string, index: IndexDefinition): string {
-  let indexName = applyAbbreviations(tableName, TableAbbrieviations) + '_';
+  let indexName = tableName;
+
+  indexName = applyAbbreviations(indexName, TableAbbrieviations) + '_';
+
   indexName += index.columns
     .map((c) => (typeof c === 'string' ? c : c.name))
     .map((c) => applyAbbreviations(c, ColumnNameAbbreviations))
@@ -1197,9 +1199,7 @@ function buildIndexSql(tableName: string, indexName: string, index: IndexDefinit
   }
 
   result += '(';
-  result += index.columns
-    .map((c) => (typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)))
-    .join(', ');
+  result += index.columns.map((c) => (typeof c === 'string' ? `"${c}"` : c.expression)).join(', ');
   result += ')';
 
   if (index.include) {
@@ -1210,7 +1210,7 @@ function buildIndexSql(tableName: string, indexName: string, index: IndexDefinit
 
   if (index.where) {
     result += ' WHERE (';
-    result += doubleEscapeSingleQuotes(index.where);
+    result += index.where;
     result += ')';
   }
 
@@ -1292,6 +1292,12 @@ const ColumnNameAbbreviations: Record<string, string | undefined> = {
 
 function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
   let result = name;
+
+  // Shorten _References suffix to _Refs
+  if (result.endsWith('_References')) {
+    result = result.slice(0, -'References'.length) + 'Refs';
+  }
+
   for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>)) {
     result = result.replace(original, abbrev);
   }
@@ -1303,6 +1309,12 @@ function expandAbbreviations(name: string, abbreviations: Record<string, string 
   for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>).reverse()) {
     result = result.replace(abbrev, original);
   }
+
+  // Expand _Refs suffix back to _References
+  if (result.endsWith('_Refs')) {
+    result = result.slice(0, -'Refs'.length) + 'References';
+  }
+
   return result;
 }
 
