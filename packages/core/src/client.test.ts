@@ -2969,6 +2969,7 @@ describe('Client', () => {
   });
 
   test('Retry on 429', async () => {
+    jest.useFakeTimers();
     let count = 0;
 
     const fetch = jest.fn(async (): Promise<Partial<Response>> => {
@@ -2987,11 +2988,12 @@ describe('Client', () => {
     const patientPromise = client.readResource('Patient', '123');
 
     // Promise should resolve after one second retry delay
-    await sleep(800);
+    await jest.advanceTimersByTimeAsync(800);
     expect(patientPromise.isPending()).toBe(true);
-    await sleep(250);
-    expect(patientPromise.isOk()).toBe(true);
+    await jest.advanceTimersByTimeAsync(250);
+    jest.useRealTimers();
 
+    expect(patientPromise.isOk()).toBe(true);
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
