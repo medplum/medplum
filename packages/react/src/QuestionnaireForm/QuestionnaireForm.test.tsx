@@ -1636,7 +1636,7 @@ describe('QuestionnaireForm', () => {
 
     // Select all options
     await act(async () => {
-      checkboxes.forEach(checkbox => {
+      checkboxes.forEach((checkbox) => {
         fireEvent.click(checkbox);
       });
     });
@@ -1651,16 +1651,12 @@ describe('QuestionnaireForm', () => {
     const response1 = onSubmit.mock.calls[0][0];
     expect(response1.item[0].answer).toHaveLength(3);
     expect(response1.item[0].answer).toEqual(
-      expect.arrayContaining([
-        { valueString: 'Option 1' },
-        { valueString: 'Option 2' },
-        { valueString: 'Option 3' },
-      ])
+      expect.arrayContaining([{ valueString: 'Option 1' }, { valueString: 'Option 2' }, { valueString: 'Option 3' }])
     );
 
     // Deselect all options
     await act(async () => {
-      checkboxes.forEach(checkbox => {
+      checkboxes.forEach((checkbox) => {
         fireEvent.click(checkbox);
       });
     });
