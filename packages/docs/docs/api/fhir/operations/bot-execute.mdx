@@ -186,3 +186,7 @@ Medplum Bots support a variety of input content types. Specify the input content
 | `x-application/hl7-v2+er7`           | [`HL7Message`](/docs/sdk/core.hl7message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
 
 The input data that will be parsed according to `CONTENT_TYPE` and passed into your Bot as `event.input`.
+
+## Asynchronous Execution
+
+To run bots asynchronously, you can specify the `Prefer: respond-async` header to move the bot to the background.  Asyn execution will result in a `HTTP 202 Accepted` response immediately.
