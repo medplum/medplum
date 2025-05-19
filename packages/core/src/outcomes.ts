@@ -1,5 +1,6 @@
 import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { Constraint } from './typeschema/types';
+import { isError } from './utils';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
