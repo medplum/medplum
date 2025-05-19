@@ -10,6 +10,7 @@ import {
   isResource,
   MedplumClient,
   normalizeErrorString,
+  normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
   resolveId,
@@ -476,6 +477,7 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
     return {
       success: false,
       logResult: botConsole.toString(),
+      returnValue: normalizeOperationOutcome(err),
     };
   }
 }
