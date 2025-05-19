@@ -47,6 +47,24 @@ with the sum of each user's interactions in a given minute compared to the confi
 a limit on the total interactions for all users within a Project as a whole, which defaults to ten times the per-user
 limit.
 
+### How to view your project's FHIR quota rate limits
+
+The FHIR quota rate limit that will be enforced on each User in a Project can be viewed in the [Project's](/docs/api/fhir/medplum/project) system settings:
+
+- `Project.systemSettings.userFhirQuota` - integer value limit FHIR quota for each User in the Project
+- `Project.systemSettings.totalFhirQuota` - integer value limit for the sum of all concurrent Users' FHIR quota in the Project
+
+If those values are not set, then the default values from the [Project Settings](/docs/self-hosting/project-settings#project-system-settings) will be used.
+
+### How to set a custom FHIR quota rate limit for a User, Bot, or ClientApplication
+
+There are some scenarios where you may want to **set a custom quota for a User, Bot, or ClientApplication**. For example, say you expect higher traffic for a specific User, Bot, or ClientApplication than the default user quota in your project, you can set a custom quota for that User, Bot, or ClientApplication. See [how to set user-specific FHIR quotas](/docs/access/user-configuration#user-specific-fhir-quota-rate-limits) for more information about how to do this. 
+
+:::info
+Note that the `totalFhirQuota` will still be enforced, but `userFhirQuota` will be overridden for the User, Bot, or ClientApplication.
+:::
+
+
 ## Reporting Request and Load Rate Limits: HTTP Headers
 
 All API calls affected by rate limits will include a `RateLimit` header with details about the applicable limits:
