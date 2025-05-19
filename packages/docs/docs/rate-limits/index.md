@@ -49,10 +49,10 @@ limit.
 
 ### How to view your project's FHIR quota rate limits
 
-The limit that will be enforced on each User in a Project can be viewed in the [Project's](/docs/api/fhir/medplum/project) system settings:
+The FHIR quota rate limit that will be enforced on each User in a Project can be viewed in the [Project's](/docs/api/fhir/medplum/project) system settings:
 
-- `Project.systemSettings.userFhirQuota` - the limit that will be enforced on each User in the Project
-- `Project.systemSettings.totalFhirQuota` - the total limit for all concurrent Users in the Project
+- `Project.systemSettings.userFhirQuota` - integer value limit FHIR quota for each User in the Project
+- `Project.systemSettings.totalFhirQuota` - integer value limit for the sum of all concurrent Users' FHIR quota in the Project
 
 If those values are not set, then the default values from the [Project Settings](/docs/self-hosting/project-settings#project-system-settings) will be used.
 
