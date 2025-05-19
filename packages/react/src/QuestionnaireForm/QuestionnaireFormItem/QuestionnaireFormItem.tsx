@@ -412,8 +412,6 @@ function useValueSetOptions(valueSetUrl: string | undefined): [ValueSetExpansion
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-
     async function loadValueSet(): Promise<void> {
       if (!valueSetUrl) {
         return;
@@ -422,23 +420,15 @@ function useValueSetOptions(valueSetUrl: string | undefined): [ValueSetExpansion
       setIsLoading(true);
       try {
         const options = await getValueSetOptions(valueSetUrl, medplum);
-        if (mounted) {
-          setValueSetOptions(options);
-        }
+        setValueSetOptions(options);
       } catch (err) {
         console.error('Error loading value set:', err);
       } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     }
 
     loadValueSet().catch(console.error);
-
-    return () => {
-      mounted = false;
-    };
   }, [valueSetUrl, medplum]);
 
   return [valueSetOptions, isLoading];
@@ -545,8 +535,14 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
 function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
-  const currentAnswers = getCurrentMultiSelectAnswer(response);
   const [valueSetOptions, isLoading] = useValueSetOptions(item.answerValueSet);
+  
+  // Get initial values from response
+  const initialSelectedValues = item.answerValueSet
+    ? (response.answer?.map((a) => a.valueCoding) || []).filter((c): c is Coding => c !== undefined)
+    : getCurrentMultiSelectAnswer(response);
+  
+  const [selectedValues, setSelectedValues] = useState(initialSelectedValues);
 
   const options: [string, TypedValue][] = [];
 
@@ -575,12 +571,43 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
 
   const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS);
 
+  const handleCheckboxChange = (optionValue: TypedValue, selected: boolean) => {
+    if (item.answerValueSet) {
+      const currentCodings = selectedValues as Coding[];
+      let newCodings: Coding[];
+      
+      if (selected) {
+        newCodings = [...currentCodings, optionValue.value as Coding];
+      } else {
+        newCodings = currentCodings.filter((c) => !deepEquals(c, optionValue.value));
+      }
+      
+      setSelectedValues(newCodings);
+      onChangeAnswer(newCodings.map((coding) => ({ valueCoding: coding })));
+    } else {
+      const currentValues = selectedValues as string[];
+      const optionValueStr = typedValueToString(optionValue);
+      let newValues: string[];
+      
+      if (selected) {
+        newValues = [...currentValues, optionValueStr];
+      } else {
+        newValues = currentValues.filter((v) => v !== optionValueStr);
+      }
+      
+      setSelectedValues(newValues);
+      const values = getNewMultiSelectValues(newValues, 'value' + capitalize(optionValue.type), item);
+      onChangeAnswer(values);
+    }
+  };
+
   return (
     <Group style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
       {limitedOptions.map(([optionName, optionValue]) => {
+        const optionValueStr = typedValueToString(optionValue);
         const isChecked = item.answerValueSet
-          ? response.answer?.some((answer) => deepEquals(answer.valueCoding, optionValue.value))
-          : currentAnswers?.includes(typedValueToString(optionValue));
+          ? (selectedValues as Coding[]).some((coding) => deepEquals(coding, optionValue.value))
+          : (selectedValues as string[]).includes(optionValueStr);
 
         return (
           <Checkbox
@@ -594,31 +621,7 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
               />
             }
             checked={isChecked}
-            onChange={(event) => {
-              const selected = event.currentTarget.checked;
-              if (item.answerValueSet) {
-                const currentCodings = (response.answer?.map((a) => a.valueCoding) || []).filter(
-                  (c): c is Coding => c !== undefined
-                );
-                let newCodings: Coding[];
-                if (selected) {
-                  newCodings = [...currentCodings, optionValue.value as Coding];
-                } else {
-                  newCodings = currentCodings.filter((c) => !deepEquals(c, optionValue.value));
-                }
-                onChangeAnswer(newCodings.map((coding) => ({ valueCoding: coding })));
-              } else {
-                const currentValues = currentAnswers || [];
-                let newValues: string[];
-                if (selected) {
-                  newValues = [...currentValues, typedValueToString(optionValue)];
-                } else {
-                  newValues = currentValues.filter((v) => v !== typedValueToString(optionValue));
-                }
-                const values = getNewMultiSelectValues(newValues, 'value' + capitalize(optionValue.type), item);
-                onChangeAnswer(values);
-              }
-            }}
+            onChange={(event) => handleCheckboxChange(optionValue, event.currentTarget.checked)}
           />
         );
       })}
