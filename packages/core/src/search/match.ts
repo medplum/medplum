@@ -274,8 +274,8 @@ function buildDateTimeColumn(value: unknown): string | undefined {
     try {
       const date = new Date(value);
       return date.toISOString();
-    } catch (_err) {
-      // Silent ignore
+    } catch (err) {
+      console.debug('Failed to parse date', value, err);
     }
   } else if (isPeriod(value)) {
     // Can be a Period
