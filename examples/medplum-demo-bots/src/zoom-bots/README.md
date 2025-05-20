@@ -2,6 +2,8 @@
 
 This bot is responsible for creating and updating Zoom meetings. It can be triggered through Subscription on Appointment resource or invoking the bot directly with an Appointment resource as input.
 
+**It takes an Appointment resource as input and returns the updated Appointment resource with the Zoom meeting details added to the extension.**
+
 ## Prerequisites
 
 1. A Zoom Server-to-Server OAuth app created in Zoom with the following:
