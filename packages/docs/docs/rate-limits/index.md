@@ -11,7 +11,7 @@ send many requests in quick succession may receive HTTP error responses with sta
 
 | Category                      | Free tier                        | Paid tier                         |
 | ----------------------------- | -------------------------------- | --------------------------------- |
-| Auth (`/auth/*`, `/oauth2/*`) | 60 request per IP per minute     | 60 request per IP per minute      |
+| Auth (`/auth/*`, `/oauth2/*`) | 160 requests per IP per minute   | 160 requests per IP per minute    |
 | Others                        | 6,000 requests per IP per minute | 60,000 requests per IP per minute |
 
 All rate limits are calculated per IP address over a one minute window.
