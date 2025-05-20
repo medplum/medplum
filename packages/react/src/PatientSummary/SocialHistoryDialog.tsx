@@ -1,6 +1,6 @@
-import { Button, Group, Stack, TextInput, Select } from '@mantine/core';
+import { Button, Group, Select, Stack, TextInput } from '@mantine/core';
 import { Observation, Patient } from '@medplum/fhirtypes';
-import { useCallback, JSX } from 'react';
+import { JSX, useCallback } from 'react';
 
 export interface SocialHistoryDialogProps {
   readonly patient: Patient;
@@ -17,7 +17,13 @@ export function SocialHistoryDialog(props: SocialHistoryDialogProps): JSX.Elemen
       const formData = new FormData(e.target as HTMLFormElement);
       const code = formData.get('code') as string;
       const value = formData.get('value') as string;
-      const status = formData.get('status') as 'final' | 'preliminary' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error';
+      const status = formData.get('status') as
+        | 'final'
+        | 'preliminary'
+        | 'amended'
+        | 'corrected'
+        | 'cancelled'
+        | 'entered-in-error';
 
       const updatedObservation: Observation = {
         ...observation,
@@ -29,34 +35,34 @@ export function SocialHistoryDialog(props: SocialHistoryDialogProps): JSX.Elemen
               {
                 system: 'http://terminology.hl7.org/CodeSystem/observation-category',
                 code: 'social-history',
-                display: 'Social History'
-              }
-            ]
-          }
+                display: 'Social History',
+              },
+            ],
+          },
         ],
         code: {
           coding: [
             {
               system: 'http://loinc.org',
               code: '76690-7', // Generic social history code
-              display: code
-            }
+              display: code,
+            },
           ],
-          text: code
+          text: code,
         },
         valueCodeableConcept: {
           coding: [
             {
               system: 'http://snomed.info/sct',
               code: '261665006', // Generic social history value code
-              display: value
-            }
+              display: value,
+            },
           ],
-          text: value
+          text: value,
         },
         subject: {
-          reference: `Patient/${patient.id}`
-        }
+          reference: `Patient/${patient.id}`,
+        },
       };
 
       onSubmit(updatedObservation);
@@ -77,16 +83,11 @@ export function SocialHistoryDialog(props: SocialHistoryDialogProps): JSX.Elemen
             { value: 'Occupation', label: 'Occupation' },
             { value: 'Occupation Industry', label: 'Occupation Industry' },
             { value: 'Housing Status', label: 'Housing Status' },
-            { value: 'Education Level', label: 'Education Level' }
+            { value: 'Education Level', label: 'Education Level' },
           ]}
           required
         />
-        <TextInput
-          label="Value"
-          name="value"
-          defaultValue={observation?.valueCodeableConcept?.text}
-          required
-        />
+        <TextInput label="Value" name="value" defaultValue={observation?.valueCodeableConcept?.text} required />
         <Select
           label="Status"
           name="status"
@@ -97,7 +98,7 @@ export function SocialHistoryDialog(props: SocialHistoryDialogProps): JSX.Elemen
             { value: 'amended', label: 'Amended' },
             { value: 'corrected', label: 'Corrected' },
             { value: 'cancelled', label: 'Cancelled' },
-            { value: 'entered-in-error', label: 'Entered in Error' }
+            { value: 'entered-in-error', label: 'Entered in Error' },
           ]}
           required
         />
@@ -107,4 +108,4 @@ export function SocialHistoryDialog(props: SocialHistoryDialogProps): JSX.Elemen
       </Stack>
     </form>
   );
-} 
+}

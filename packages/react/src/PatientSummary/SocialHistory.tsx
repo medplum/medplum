@@ -1,13 +1,13 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Modal } from '@mantine/core';
+import { ActionIcon, Box, Collapse, Flex, Group, Modal, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState, JSX } from 'react';
-import { killEvent } from '../utils/dom';
-import { IconChevronDown, IconPlus, IconChevronRight } from '@tabler/icons-react';
+import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { JSX, useCallback, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { SocialHistoryDialog } from './SocialHistoryDialog';
+import { killEvent } from '../utils/dom';
 import styles from './PatientSummary.module.css';
+import { SocialHistoryDialog } from './SocialHistoryDialog';
 
 export interface SocialHistoryProps {
   readonly patient: Patient;
@@ -83,7 +83,9 @@ export function SocialHistory(props: SocialHistoryProps): JSX.Element {
             className={`${styles.patientSummaryAddButton} add-button`}
             variant="subtle"
             onClick={(e) => {
-              if (e) { killEvent(e); }
+              if (e) {
+                killEvent(e);
+              }
               setEditObservation(undefined);
               open();
             }}
@@ -100,37 +102,45 @@ export function SocialHistory(props: SocialHistoryProps): JSX.Element {
               {observations.map((observation) => (
                 <MedplumLink
                   key={observation.id}
-                    to={`/Observation/${observation.id}`}
-                    style={{ textDecoration: 'none', display: 'block', color: 'black' }}
-                  >
+                  to={`/Observation/${observation.id}`}
+                  style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+                >
                   <Box
                     className={styles.patientSummaryListItem}
                     style={{ cursor: 'pointer' }}
-                      onClick={(e) => {
-                        if (e) { killEvent(e); }
-                        if (props.onClickResource) {
-                          props.onClickResource(observation);
-                        }
-                      }}
-                    >
+                    onClick={(e) => {
+                      if (e) {
+                        killEvent(e);
+                      }
+                      if (props.onClickResource) {
+                        props.onClickResource(observation);
+                      }
+                    }}
+                  >
                     <Box style={{ position: 'relative' }}>
-                      <Text size="sm" fw={500} mb={2} style={{ whiteSpace: 'normal', overflow: 'visible', textOverflow: 'unset' }}>
-                        {getDisplayName(observation)}: <span style={{ fontWeight: 400 }}>{getDisplayValue(observation)}</span>
-                        </Text>
+                      <Text
+                        size="sm"
+                        fw={500}
+                        mb={2}
+                        style={{ whiteSpace: 'normal', overflow: 'visible', textOverflow: 'unset' }}
+                      >
+                        {getDisplayName(observation)}:{' '}
+                        <span style={{ fontWeight: 400 }}>{getDisplayValue(observation)}</span>
+                      </Text>
                       <div className={styles.patientSummaryGradient} />
                       <div className={styles.patientSummaryChevronContainer}>
-                          <ActionIcon
+                        <ActionIcon
                           className={styles.patientSummaryChevron}
                           size="md"
-                            variant="transparent"
+                          variant="transparent"
                           tabIndex={-1}
-                          >
+                        >
                           <IconChevronRight size={16} stroke={2.5} />
-                          </ActionIcon>
+                        </ActionIcon>
                       </div>
                     </Box>
-                      </Box>
-                  </MedplumLink>
+                  </Box>
+                </MedplumLink>
               ))}
             </Flex>
           </Box>
@@ -140,13 +150,15 @@ export function SocialHistory(props: SocialHistoryProps): JSX.Element {
           </Box>
         )}
       </Collapse>
-      <Modal opened={opened} onClose={close} title={<span style={{fontWeight: 700}}>{editObservation ? 'Edit Social History' : 'Add Social History'}</span>}>
-        <SocialHistoryDialog
-          patient={props.patient}
-          observation={editObservation}
-          onSubmit={handleSubmit}
-        />
+      <Modal
+        opened={opened}
+        onClose={close}
+        title={
+          <span style={{ fontWeight: 700 }}>{editObservation ? 'Edit Social History' : 'Add Social History'}</span>
+        }
+      >
+        <SocialHistoryDialog patient={props.patient} observation={editObservation} onSubmit={handleSubmit} />
       </Modal>
     </Box>
   );
-} 
+}

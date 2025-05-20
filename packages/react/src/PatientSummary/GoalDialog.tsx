@@ -34,19 +34,21 @@ export function GoalDialog(props: GoalDialogProps): JSX.Element {
         },
         lifecycleStatus: formData.lifecycleStatus as Goal['lifecycleStatus'],
         startDate: formData.startDate || undefined,
-        target: formData.target ? [
-          {
-            measure: {
-              coding: [
-                {
-                  system: 'http://loinc.org',
-                  code: 'unknown',
-                  display: formData.target,
+        target: formData.target
+          ? [
+              {
+                measure: {
+                  coding: [
+                    {
+                      system: 'http://loinc.org',
+                      code: 'unknown',
+                      display: formData.target,
+                    },
+                  ],
                 },
-              ],
-            },
-          },
-        ] : undefined,
+              },
+            ]
+          : undefined,
       };
 
       if (goal?.id) {
@@ -75,17 +77,8 @@ export function GoalDialog(props: GoalDialogProps): JSX.Element {
           defaultValue={goal?.lifecycleStatus}
           required
         />
-        <TextInput
-          name="startDate"
-          label="Start Date"
-          type="date"
-          defaultValue={goal?.startDate}
-        />
-        <TextInput
-          name="target"
-          label="Target"
-          defaultValue={goal?.target?.[0]?.measure?.coding?.[0]?.display}
-        />
+        <TextInput name="startDate" label="Start Date" type="date" defaultValue={goal?.startDate} />
+        <TextInput name="target" label="Target" defaultValue={goal?.target?.[0]?.measure?.coding?.[0]?.display} />
         <Group justify="flex-end" gap={4}>
           <Button variant="subtle" onClick={onClose}>
             Cancel
@@ -95,4 +88,4 @@ export function GoalDialog(props: GoalDialogProps): JSX.Element {
       </Stack>
     </Form>
   );
-} 
+}
