@@ -6,6 +6,8 @@ import process from 'node:process';
 
 const EXIT_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
 
+export type AppPidState = 'running' | 'stale' | 'clean';
+
 export const pidLogger = new Logger((msg) => `[PID]: ${msg}`);
 const pidFilePaths = new Set<string>();
 const processExitListener = (): void => {
@@ -58,6 +60,20 @@ export function removePidFile(pidFilePath: string): void {
 }
 
 /**
+ * Forcefully kills an application by name if it is running, otherwise it no-ops.
+ * @param appName - The application to force kill.
+ */
+export function forceKillApp(appName: string): void {
+  // Get process ID
+  const pid = getAppPid(appName);
+  if (pid === undefined) {
+    pidLogger.info(`${appName} not running, skipping killing app`);
+    return;
+  }
+  process.kill(pid, 'SIGTERM');
+}
+
+/**
  * Returns true if a PID points to an existing process, else returns false.
  * @param pid - The PID to check if it exists.
  * @returns Boolean indicating if a process with the given PID exists.
@@ -83,6 +99,52 @@ export function checkProcessExists(pid: number): boolean {
 }
 
 /**
+ * Checks if a given appName has an existing PID and process is still running.
+ * @param appName - The name of the application to check the status of.
+ * @returns True if application PID exists and is not stale, otherwise returns false.
+ */
+export function isAppRunning(appName: string): boolean {
+  return getAppPidState(appName) === 'running';
+}
+
+/**
+ * Gets an application's PID from the appropriate PID file by name.
+ * @param appName - The name of the application to get the PID of.
+ * @returns A numeric PID of the process, or `undefined` if no PID file is found.
+ */
+export function getAppPid(appName: string): number | undefined {
+  const pidFilePath = getPidFilePath(appName);
+  if (!fs.existsSync(pidFilePath)) {
+    return undefined;
+  }
+  const existingPidStr = fs.readFileSync(pidFilePath, 'utf8').trim();
+  const existingPid = Number.parseInt(existingPidStr, 10);
+  if (Number.isNaN(existingPid)) {
+    throw new Error('PID file does not contain a valid numeric PID');
+  }
+  return undefined;
+}
+
+/**
+ * Gets the current state associated with the app PID file.
+ * @param appName - The name of the application to get the PID state for.
+ * @returns An enum string of `running`, `stale`, or `clean`, depending on the state.
+ */
+export function getAppPidState(appName: string): AppPidState {
+  const pid = getAppPid(appName);
+  // If no PID is returned, we are in a clean state
+  if (pid === undefined) {
+    return 'clean';
+  }
+  // Check if the process with this PID is still running
+  pidLogger.info(`PID file for ${appName} already exists, checking if process is running`);
+  if (checkProcessExists(pid)) {
+    return 'running';
+  }
+  return 'stale';
+}
+
+/**
  * Create a PID file for the current process
  * @param appName - Optional application name, defaults to script filename
  * @returns Object containing success status and pidFilePath
@@ -90,17 +152,13 @@ export function checkProcessExists(pid: number): boolean {
 export function createPidFile(appName: string): string {
   const pid = process.pid;
   const pidFilePath = getPidFilePath(appName);
+  const pidState = getAppPidState(appName);
 
-  // Check if PID file already exists
-  if (fs.existsSync(pidFilePath)) {
-    const existingPid = fs.readFileSync(pidFilePath, 'utf8').trim();
+  if (pidState === 'running') {
+    throw new Error(`${appName} already running`);
+  }
 
-    // Check if the process with this PID is still running
-    pidLogger.info('Checking if process is running');
-    if (checkProcessExists(Number.parseInt(existingPid, 10))) {
-      throw new Error(`${appName} already running`);
-    }
-
+  if (pidState === 'stale') {
     // If we make it here, PID file exists but it's stale
     pidLogger.info('Stale PID file found. Overwriting...');
     fs.unlinkSync(pidFilePath);

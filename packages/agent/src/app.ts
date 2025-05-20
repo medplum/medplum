@@ -22,7 +22,7 @@ import {
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { ChildProcess, ExecException, ExecOptions, exec, spawn } from 'node:child_process';
-import { existsSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
 import process from 'node:process';
@@ -31,7 +31,7 @@ import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from '.
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import { createPidFile, removePidFile } from './pid';
+import { createPidFile, forceKillApp, getPidFilePath, isAppRunning, removePidFile } from './pid';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -127,14 +127,22 @@ export class App {
       }
 
       // Delete manifest
-      rmSync(UPGRADE_MANIFEST_PATH);
-      removePidFile('medplum-upgrading-agent');
+      unlinkSync(UPGRADE_MANIFEST_PATH);
+
       await this.tryToCreateAgentPidFile();
+
+      // Wait for upgrading agent PID file to exist
+      while (!existsSync(getPidFilePath('medplum-upgrading-agent'))) {
+        await sleep(0);
+      }
+      // Now make sure to remove it
+      removePidFile('medplum-upgrading-agent');
     }
   }
 
   private async tryToCreateAgentPidFile(): Promise<void> {
-    const maxAttempts = 15;
+    // Should be ~ 500 seconds (500 ms wait x 1000 times)
+    const maxAttempts = 1000;
     let attempt = 0;
     let success = false;
     while (!success) {
@@ -147,7 +155,7 @@ export class App {
         if (attempt === maxAttempts) {
           throw new Error('Too many unsuccessful attempts to create agent PID file');
         }
-        await sleep(50);
+        await sleep(500);
       }
     }
   }
@@ -620,6 +628,20 @@ export class App {
       return;
     }
 
+    const upgradeInProgress = this.isAgentUpgrading();
+
+    // If the agent detects there is already an upgrade in progress, and force mode is not on, then prevent attempt to upgrade
+    if (upgradeInProgress && !message.force) {
+      const errMsg = 'Pending upgrade is already in progress';
+      this.log.error(errMsg);
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
+      return;
+    }
+
     let child: ChildProcess;
 
     // If there is an explicit version, check if it's valid
@@ -655,6 +677,22 @@ export class App {
       this.log.info(`Forcing upgrade from ${MEDPLUM_VERSION} to ${targetVersion}`);
     }
 
+    if (upgradeInProgress && message.force) {
+      // If running, just cleanup the file since it could be that the cleanup failed for whatever reason
+      if (isAppRunning('medplum-upgrading-agent')) {
+        removePidFile(getPidFilePath('medplum-upgrading-agent'));
+      }
+      // If running, kill the upgrader and cleanup the file
+      if (isAppRunning('medplum-agent-upgrader')) {
+        // Attempt to kill the upgrader
+        forceKillApp('medplum-agent-upgrader');
+        // Remove PID file
+        removePidFile(getPidFilePath('medplum-agent-upgrader'));
+      }
+      // Clean up upgrade.json
+      unlinkSync(UPGRADE_MANIFEST_PATH);
+    }
+
     try {
       const command = __filename;
       const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
@@ -668,8 +706,6 @@ export class App {
       child.on('error', (err) => {
         this.log.error(normalizeErrorString(err));
       });
-
-      // TODO: remove this comment, just triggering new git hash
 
       await new Promise<void>((resolve, reject) => {
         const childTimeout = setTimeout(
@@ -821,5 +857,15 @@ export class App {
           client.close();
         }
       });
+  }
+
+  private isAgentUpgrading(): boolean {
+    if (existsSync(UPGRADE_MANIFEST_PATH)) {
+      return true;
+    }
+    if (isAppRunning('medplum-upgrading-agent') || isAppRunning('medplum-agent-upgrader')) {
+      return true;
+    }
+    return false;
   }
 }
