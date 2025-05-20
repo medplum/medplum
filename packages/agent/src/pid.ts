@@ -122,7 +122,7 @@ export function getAppPid(appName: string): number | undefined {
   if (Number.isNaN(existingPid)) {
     throw new Error('PID file does not contain a valid numeric PID');
   }
-  return undefined;
+  return existingPid;
 }
 
 /**
