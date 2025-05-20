@@ -2,7 +2,7 @@ import { ActionIcon, Box, Collapse, Flex, Group, Text, UnstyledButton } from '@m
 import { formatDate } from '@medplum/core';
 import { Immunization, Patient, Resource } from '@medplum/fhirtypes';
 import { IconChevronDown } from '@tabler/icons-react';
-import { useState, JSX } from 'react';
+import { JSX, useState } from 'react';
 import styles from './PatientSummary.module.css';
 import SummaryItem from './SummaryItem';
 
@@ -55,7 +55,7 @@ export function Immunizations(props: ImmunizationsProps): JSX.Element {
                   title={imm.vaccineCode?.coding?.[0]?.display || 'Unknown Vaccine'}
                   subtitle={formatDate(imm.occurrenceDateTime)}
                   color={getStatusColor(imm.status)}
-                  onClick={() => { }}
+                  onClick={() => {}}
                 />
               ))}
             </Flex>

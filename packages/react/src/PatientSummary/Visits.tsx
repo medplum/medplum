@@ -1,10 +1,10 @@
 import { ActionIcon, Box, Collapse, Flex, Group, Text, UnstyledButton } from '@mantine/core';
+import { formatDate } from '@medplum/core';
 import { Appointment, Encounter, Patient } from '@medplum/fhirtypes';
 import { IconChevronDown } from '@tabler/icons-react';
-import { useState, JSX } from 'react';
+import { JSX, useState } from 'react';
 import styles from './PatientSummary.module.css';
 import SummaryItem from './SummaryItem';
-import { formatDate } from '@medplum/core';
 
 export interface VisitsProps {
   readonly patient: Patient;
@@ -73,7 +73,6 @@ export function Visits(props: VisitsProps): JSX.Element {
   );
 }
 
-
 const getStatusColor = (status?: string): string => {
   if (!status) {
     return 'gray';
@@ -98,7 +97,6 @@ const getStatusColor = (status?: string): string => {
       return 'gray';
   }
 };
-
 
 function formatDateTime(dateString?: string): string {
   if (!dateString) {

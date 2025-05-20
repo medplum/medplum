@@ -1,12 +1,12 @@
-import { Box, Group, Modal, Text, Collapse, ActionIcon, UnstyledButton, Flex, Tooltip } from '@mantine/core';
+import { ActionIcon, Box, Collapse, Flex, Group, Modal, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { formatDate, getDisplayString } from '@medplum/core';
 import { Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState, JSX } from 'react';
+import { IconChevronDown, IconPlus, IconStackForward } from '@tabler/icons-react';
+import { JSX, useCallback, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import { ConditionDialog } from './ConditionDialog';
-import { IconChevronDown, IconPlus, IconStackForward } from '@tabler/icons-react';
-import { getDisplayString, formatDate } from '@medplum/core';
 import styles from './PatientSummary.module.css';
 import SummaryItem from './SummaryItem';
 
@@ -20,9 +20,9 @@ export interface ProblemListProps {
 export function ProblemList(props: ProblemListProps): JSX.Element {
   const medplum = useMedplum();
   const { patient, encounter } = props;
-  const [problems, setProblems] = useState<Condition[]>(props.problems.filter(
-    (c) => c.verificationStatus?.coding?.[0]?.code !== 'entered-in-error'
-  ));
+  const [problems, setProblems] = useState<Condition[]>(
+    props.problems.filter((c) => c.verificationStatus?.coding?.[0]?.code !== 'entered-in-error')
+  );
   const [editCondition, setEditCondition] = useState<Condition>();
   const [opened, { open, close }] = useDisclosure(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -39,7 +39,7 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
         }
       } catch (error) {
         console.error('Error saving condition:', error);
-      } finally { 
+      } finally {
         setEditCondition(undefined);
         close();
       }
@@ -62,11 +62,7 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
               >
                 <IconChevronDown size={20} />
               </ActionIcon>
-              <Text 
-                fz="md" 
-                fw={800} 
-                onClick={() => setCollapsed((c) => !c)}
-              >
+              <Text fz="md" fw={800} onClick={() => setCollapsed((c) => !c)}>
                 Problem List
               </Text>
             </Group>
@@ -115,23 +111,20 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
           opacity: 1 !important;
         }
       `}</style>
-      <Modal 
-        opened={opened} 
-        onClose={close} 
-        withCloseButton={false}
-        title={null}
-      >
+      <Modal opened={opened} onClose={close} withCloseButton={false} title={null}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <span style={{fontWeight: 700 }}>
-            {editCondition ? 'Edit Problem' : 'Add Problem'}
-          </span>
+          <span style={{ fontWeight: 700 }}>{editCondition ? 'Edit Problem' : 'Add Problem'}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {editCondition?.id && (
               <Tooltip label="X-ray" position="top">
-                <ActionIcon variant="subtle" onClick={() => {
-                  close();
-                  // navigate(`/Patient/${patient.id}/Condition/${editCondition.id}/edit`);
-                }} aria-label="X-ray">
+                <ActionIcon
+                  variant="subtle"
+                  onClick={() => {
+                    close();
+                    // navigate(`/Patient/${patient.id}/Condition/${editCondition.id}/edit`);
+                  }}
+                  aria-label="X-ray"
+                >
                   <span style={{ color: '#868e96' }}>
                     <IconStackForward size={22} />
                   </span>
@@ -139,15 +132,27 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
               </Tooltip>
             )}
             <ActionIcon variant="subtle" onClick={close} aria-label="Close">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#868e96" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#868e96"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
             </ActionIcon>
           </div>
         </div>
-        <ConditionDialog 
-          patient={patient} 
-          encounter={encounter} 
-          condition={editCondition} 
-          onSubmit={handleSubmit} 
+        <ConditionDialog
+          patient={patient}
+          encounter={encounter}
+          condition={editCondition}
+          onSubmit={handleSubmit}
           onClose={close}
         />
       </Modal>
@@ -156,8 +161,10 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
 }
 
 const getStatusColor = (status?: string): string => {
-  if (!status) { return 'gray'; }
-  
+  if (!status) {
+    return 'gray';
+  }
+
   switch (status) {
     case 'active':
     case 'recurrence':

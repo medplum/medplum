@@ -8,10 +8,7 @@ export default {
   component: PatientSummary,
 } as Meta;
 
-export const Patient = (): JSX.Element => (
-  <PatientSummary 
-  patient={HomerSimpson} />
-);
+export const Patient = (): JSX.Element => <PatientSummary patient={HomerSimpson} />;
 
 export const BackgroundImage = (): JSX.Element => (
   <PatientSummary

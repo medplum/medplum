@@ -1,14 +1,13 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Modal } from '@mantine/core';
+import { ActionIcon, Box, Collapse, Flex, Group, Modal, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState, JSX } from 'react';
-import { killEvent } from '../utils/dom';
-import { IconChevronDown, IconPlus, IconPencil } from '@tabler/icons-react';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { IconChevronDown, IconPencil, IconPlus } from '@tabler/icons-react';
+import { JSX, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
-
+import { MedplumLink } from '../MedplumLink/MedplumLink';
+import { killEvent } from '../utils/dom';
 
 export interface SexualOrientationProps {
   readonly patient: Patient;
@@ -82,12 +81,12 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
             width: '100%',
             cursor: 'default',
             '&:hover .add-button': {
-              opacity: 1
+              opacity: 1,
             },
             '& .mantine-ActionIcon-root, & .mantine-Text-root': {
               cursor: 'pointer',
-              margin: '0'
-            }
+              margin: '0',
+            },
           }}
         >
           <Group justify="space-between">
@@ -119,7 +118,7 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
                 right: 0,
                 top: 0,
                 transform: 'none',
-                strokeWidth: 1
+                strokeWidth: 1,
               }}
               size="md"
             >
@@ -131,7 +130,7 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
           {sexualOrientation ? (
             <Box ml="36" mt="8" mb="16">
               <Flex direction="column" gap={8}>
-                <Box 
+                <Box
                   style={{ position: 'relative' }}
                   onMouseEnter={() => setHoverIndex(0)}
                   onMouseLeave={() => setHoverIndex(null)}
@@ -161,7 +160,7 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
                         <Text size="sm" fw={500}>
                           {sexualOrientation.valueCodeableConcept?.text || 'Unknown'}
                         </Text>
-                    
+
                         {hoverIndex === 0 && (
                           <ActionIcon
                             style={{
@@ -169,7 +168,7 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
                               right: 0,
                               top: '50%',
                               transform: 'translateY(-50%)',
-                              zIndex: 2
+                              zIndex: 2,
                             }}
                             onClick={(e) => {
                               killEvent(e);

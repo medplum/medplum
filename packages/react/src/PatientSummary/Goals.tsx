@@ -1,13 +1,13 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Modal } from '@mantine/core';
+import { ActionIcon, Box, Collapse, Flex, Group, Modal, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { formatDate } from '@medplum/core';
 import { Goal, Patient, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useState, useCallback, JSX } from 'react';
-import { formatDate } from '@medplum/core';
 import { IconChevronDown, IconPlus } from '@tabler/icons-react';
+import { JSX, useCallback, useState } from 'react';
 import { killEvent } from '../utils/dom';
-import styles from './PatientSummary.module.css';
 import { GoalDialog } from './GoalDialog';
+import styles from './PatientSummary.module.css';
 import SummaryItem from './SummaryItem';
 
 export interface GoalsProps {
@@ -108,21 +108,12 @@ export function Goals(props: GoalsProps): JSX.Element {
           )}
         </Collapse>
       </Box>
-      <Modal 
-        opened={opened} 
-        onClose={close} 
-        title={editGoal ? 'Edit Goal' : 'Add Goal'}
-      >
-        <GoalDialog 
-          patient={patient} 
-          goal={editGoal} 
-          onSubmit={handleSubmit} 
-          onClose={close}
-        />
+      <Modal opened={opened} onClose={close} title={editGoal ? 'Edit Goal' : 'Add Goal'}>
+        <GoalDialog patient={patient} goal={editGoal} onSubmit={handleSubmit} onClose={close} />
       </Modal>
     </>
   );
-} 
+}
 
 function getStatusColor(status?: string): string {
   switch (status) {
