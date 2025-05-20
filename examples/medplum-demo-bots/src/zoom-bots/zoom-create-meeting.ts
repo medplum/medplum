@@ -1,6 +1,13 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { Appointment, Extension } from '@medplum/fhirtypes';
 
+// Zoom extension URLs
+const ZOOM_MEETING_EXTENSION_URL = 'https://medplum.com/zoom-meeting';
+const ZOOM_MEETING_ID_URL = 'https://medplum.com/zoom-meeting-id';
+const ZOOM_MEETING_PASSWORD_URL = 'https://medplum.com/zoom-meeting-password';
+const ZOOM_MEETING_START_URL = 'https://medplum.com/zoom-meeting-start-url';
+const ZOOM_MEETING_JOIN_URL = 'https://medplum.com/zoom-meeting-join-url';
+
 interface ZoomMeetingInput {
   topic?: string;
   duration?: number;
@@ -275,7 +282,7 @@ async function deleteZoomMeeting(accessToken: string, meetingId: string): Promis
 function removeZoomExtensions(appointment: Appointment): Appointment {
   return {
     ...appointment,
-    extension: appointment.extension?.filter(ext => ext.url !== 'https://medplum.com/zoom-meeting')
+    extension: appointment.extension?.filter(ext => ext.url !== ZOOM_MEETING_EXTENSION_URL)
   };
 }
 
@@ -294,22 +301,22 @@ async function updateAppointmentWithZoomDetails(
   // Add Zoom meeting details as extension
   const extensions: Extension[] = appointment.extension || [];
   extensions.push({
-    url: 'https://medplum.com/zoom-meeting',
+    url: ZOOM_MEETING_EXTENSION_URL,
     extension: [
       {
-        url: 'https://medplum.com/zoom-meeting-id',
+        url: ZOOM_MEETING_ID_URL,
         valueString: meetingDetails.meetingId,
       },
       {
-        url: 'https://medplum.com/zoom-meeting-password',
+        url: ZOOM_MEETING_PASSWORD_URL,
         valueString: meetingDetails.password || '',
       },
       {
-        url: 'https://medplum.com/zoom-meeting-start-url',
+        url: ZOOM_MEETING_START_URL,
         valueString: meetingDetails.startUrl,
       },
       {
-        url: 'https://medplum.com/zoom-meeting-join-url',
+        url: ZOOM_MEETING_JOIN_URL,
         valueString: meetingDetails.joinUrl,
       },
     ],

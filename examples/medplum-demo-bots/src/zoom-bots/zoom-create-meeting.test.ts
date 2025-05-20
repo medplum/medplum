@@ -55,19 +55,19 @@ test('Create Zoom meeting from Appointment', async () => {
     url: 'https://medplum.com/zoom-meeting',
     extension: [
       {
-        url: 'meetingId',
+        url: 'https://medplum.com/zoom-meeting-id',
         valueString: mockMeeting.id,
       },
       {
-        url: 'password',
+        url: 'https://medplum.com/zoom-meeting-password',
         valueString: mockMeeting.password,
       },
       {
-        url: 'startUrl',
+        url: 'https://medplum.com/zoom-meeting-start-url',
         valueString: mockMeeting.start_url,
       },
       {
-        url: 'joinUrl',
+        url: 'https://medplum.com/zoom-meeting-join-url',
         valueString: mockMeeting.join_url,
       },
     ],
@@ -79,19 +79,19 @@ test('Create Zoom meeting from Appointment', async () => {
     url: 'https://medplum.com/zoom-meeting',
     extension: [
       {
-        url: 'meetingId',
+        url: 'https://medplum.com/zoom-meeting-id',
         valueString: mockMeeting.id,
       },
       {
-        url: 'password',
+        url: 'https://medplum.com/zoom-meeting-password',
         valueString: mockMeeting.password,
       },
       {
-        url: 'startUrl',
+        url: 'https://medplum.com/zoom-meeting-start-url',
         valueString: mockMeeting.start_url,
       },
       {
-        url: 'joinUrl',
+        url: 'https://medplum.com/zoom-meeting-join-url',
         valueString: mockMeeting.join_url,
       },
     ],
