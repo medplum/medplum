@@ -10,12 +10,12 @@ test('Send Scheduled Reminders - Success', async () => {
   // Create a patient and practitioner
   const patient = await medplum.createResource({
     resourceType: 'Patient',
-    name: [{ given: ['John'], family: 'Doe' }]
+    name: [{ given: ['John'], family: 'Doe' }],
   });
 
   const practitioner = await medplum.createResource({
     resourceType: 'Practitioner',
-    name: [{ given: ['Jane'], family: 'Smith' }]
+    name: [{ given: ['Jane'], family: 'Smith' }],
   });
 
   // Create dynamic dates based on current time
@@ -32,8 +32,8 @@ test('Send Scheduled Reminders - Success', async () => {
     start: oneHourFromNow,
     participant: [
       { actor: { reference: `Patient/${patient.id}` }, status: 'accepted' },
-      { actor: { reference: `Practitioner/${practitioner.id}` }, status: 'accepted' }
-    ]
+      { actor: { reference: `Practitioner/${practitioner.id}` }, status: 'accepted' },
+    ],
   });
 
   const appointment2 = await medplum.createResource({
@@ -43,8 +43,8 @@ test('Send Scheduled Reminders - Success', async () => {
     start: twelveHoursFromNow,
     participant: [
       { actor: { reference: `Patient/${patient.id}` }, status: 'accepted' },
-      { actor: { reference: `Practitioner/${practitioner.id}` }, status: 'accepted' }
-    ]
+      { actor: { reference: `Practitioner/${practitioner.id}` }, status: 'accepted' },
+    ],
   });
 
   // Create an appointment that should NOT trigger a reminder (too far in future)
@@ -55,8 +55,8 @@ test('Send Scheduled Reminders - Success', async () => {
     identifier: [{ value: '789' }],
     participant: [
       { actor: { reference: `Patient/${patient.id}` }, status: 'accepted' },
-      { actor: { reference: `Practitioner/${practitioner.id}` }, status: 'accepted' }
-    ]
+      { actor: { reference: `Practitioner/${practitioner.id}` }, status: 'accepted' },
+    ],
   });
 
   // Mock the searchResources call to return our test appointments
@@ -72,13 +72,13 @@ test('Send Scheduled Reminders - Success', async () => {
     bot: { reference: 'Bot/123' },
     input: {},
     contentType: 'application/fhir+json',
-    secrets: {}
+    secrets: {},
   });
 
   // Verify communications were created for both appointments
   const communications = await medplum.searchResources('Communication');
-  const comm1 = communications.find(c => c.basedOn?.[0]?.reference === `Appointment/${appointment1.id}`);
-  const comm2 = communications.find(c => c.basedOn?.[0]?.reference === `Appointment/${appointment2.id}`);
+  const comm1 = communications.find((c) => c.basedOn?.[0]?.reference === `Appointment/${appointment1.id}`);
+  const comm2 = communications.find((c) => c.basedOn?.[0]?.reference === `Appointment/${appointment2.id}`);
   expect(comm1).toBeDefined();
   expect(comm2).toBeDefined();
-}); 
+});

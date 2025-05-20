@@ -47,7 +47,7 @@ test('Create Zoom meeting from Appointment', async () => {
       ZOOM_ACCOUNT_ID: { name: 'ZOOM_ACCOUNT_ID', valueString: 'test-account-id' },
       ZOOM_CLIENT_ID: { name: 'ZOOM_CLIENT_ID', valueString: 'test-client-id' },
       ZOOM_CLIENT_SECRET: { name: 'ZOOM_CLIENT_SECRET', valueString: 'test-client-secret' },
-      ZOOM_USER_EMAIL: { name: 'ZOOM_USER_EMAIL', valueString: 'test-user-email' }
+      ZOOM_USER_EMAIL: { name: 'ZOOM_USER_EMAIL', valueString: 'test-user-email' },
     },
   });
 
@@ -72,7 +72,7 @@ test('Create Zoom meeting from Appointment', async () => {
       },
     ],
   });
-  
+
   // Verify appointment was updated with Zoom details
   const updatedAppointment = await medplum.readResource('Appointment', appointment.id as string);
   expect(updatedAppointment.extension?.[0]).toMatchObject({
@@ -103,12 +103,12 @@ test('Handle missing credentials', async () => {
     handler(medplum, {
       input: {
         resourceType: 'Appointment',
-        id: '123',  
+        id: '123',
         status: 'booked',
         description: 'Test Meeting',
         start: '2024-04-10T15:00:00Z',
         minutesDuration: 30,
-        participant: [{ status: 'accepted' }]
+        participant: [{ status: 'accepted' }],
       },
       bot: { reference: 'Bot/123' },
       contentType: 'application/json',
@@ -116,4 +116,3 @@ test('Handle missing credentials', async () => {
     })
   ).rejects.toThrow('Missing Zoom credentials in bot secrets');
 });
-

@@ -51,27 +51,27 @@ interface ZoomMeetingApiResponse {
  */
 async function getZoomAccessToken(accountId: string, clientId: string, clientSecret: string): Promise<string> {
   const tokenEndpoint = 'https://zoom.us/oauth/token';
-  
+
   const authHeader = `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`;
   const body = new URLSearchParams({
     grant_type: 'account_credentials',
-    account_id: accountId
+    account_id: accountId,
   }).toString();
 
   console.log('Requesting Zoom access token with:', {
     endpoint: tokenEndpoint,
     accountId,
     clientId: clientId.substring(0, 4) + '...', // Log partial client ID for security
-    body
+    body,
   });
 
   const response = await fetch(tokenEndpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
-      'Authorization': authHeader
+      Authorization: authHeader,
     },
-    body
+    body,
   });
 
   if (!response.ok) {
@@ -80,7 +80,7 @@ async function getZoomAccessToken(accountId: string, clientId: string, clientSec
       status: response.status,
       statusText: response.statusText,
       errorData,
-      headers: Object.fromEntries(response.headers.entries())
+      headers: Object.fromEntries(response.headers.entries()),
     });
     throw new Error(`Failed to get Zoom access token: ${response.statusText}. Details: ${errorData}`);
   }
@@ -97,12 +97,16 @@ async function getZoomAccessToken(accountId: string, clientId: string, clientSec
  * @param userEmail - Zoom user email
  * @returns Meeting details
  */
-async function createZoomMeeting(accessToken: string, input: ZoomMeetingInput, userEmail: string): Promise<ZoomMeetingResponse> {
+async function createZoomMeeting(
+  accessToken: string,
+  input: ZoomMeetingInput,
+  userEmail: string
+): Promise<ZoomMeetingResponse> {
   const url = `https://api.zoom.us/v2/users/${userEmail}/meetings`;
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`,
-    'Accept': 'application/json'
+    Authorization: `Bearer ${accessToken}`,
+    Accept: 'application/json',
   };
 
   console.log('Creating Zoom meeting with:', {
@@ -110,12 +114,12 @@ async function createZoomMeeting(accessToken: string, input: ZoomMeetingInput, u
     userEmail,
     headers: {
       ...headers,
-      Authorization: 'Bearer [REDACTED]'
+      Authorization: 'Bearer [REDACTED]',
     },
     body: {
       ...input,
-      settings: input.settings
-    }
+      settings: input.settings,
+    },
   });
 
   const response = await fetch(url, {
@@ -135,7 +139,7 @@ async function createZoomMeeting(accessToken: string, input: ZoomMeetingInput, u
         mute_upon_entry: input.settings?.mute_upon_entry ?? true,
         waiting_room: input.settings?.waiting_room ?? true,
       },
-    })
+    }),
   });
 
   if (!response.ok) {
@@ -144,7 +148,7 @@ async function createZoomMeeting(accessToken: string, input: ZoomMeetingInput, u
       status: response.status,
       statusText: response.statusText,
       errorData,
-      headers: Object.fromEntries(response.headers.entries())
+      headers: Object.fromEntries(response.headers.entries()),
     });
     throw new Error(`Failed to create Zoom meeting: ${response.statusText}. Details: ${errorData}`);
   }
@@ -166,24 +170,28 @@ async function createZoomMeeting(accessToken: string, input: ZoomMeetingInput, u
  * @param input - Meeting configuration
  * @returns Meeting details
  */
-async function updateZoomMeeting(accessToken: string, meetingId: string, input: ZoomMeetingInput): Promise<ZoomMeetingResponse> {
+async function updateZoomMeeting(
+  accessToken: string,
+  meetingId: string,
+  input: ZoomMeetingInput
+): Promise<ZoomMeetingResponse> {
   const url = `https://api.zoom.us/v2/meetings/${meetingId}`;
   const headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${accessToken}`,
-    'Accept': 'application/json'
+    Authorization: `Bearer ${accessToken}`,
+    Accept: 'application/json',
   };
 
   console.log('Updating Zoom meeting with:', {
     url,
     headers: {
       ...headers,
-      Authorization: 'Bearer [REDACTED]'
+      Authorization: 'Bearer [REDACTED]',
     },
     body: {
       ...input,
-      settings: input.settings
-    }
+      settings: input.settings,
+    },
   });
 
   const response = await fetch(url, {
@@ -202,7 +210,7 @@ async function updateZoomMeeting(accessToken: string, meetingId: string, input: 
         mute_upon_entry: input.settings?.mute_upon_entry ?? true,
         waiting_room: input.settings?.waiting_room ?? true,
       },
-    })
+    }),
   });
 
   if (!response.ok) {
@@ -211,7 +219,7 @@ async function updateZoomMeeting(accessToken: string, meetingId: string, input: 
       status: response.status,
       statusText: response.statusText,
       errorData,
-      headers: Object.fromEntries(response.headers.entries())
+      headers: Object.fromEntries(response.headers.entries()),
     });
     throw new Error(`Failed to update Zoom meeting: ${response.statusText}. Details: ${errorData}`);
   }
@@ -219,7 +227,7 @@ async function updateZoomMeeting(accessToken: string, meetingId: string, input: 
   // After updating, get the latest meeting details
   const getResponse = await fetch(url, {
     method: 'GET',
-    headers
+    headers,
   });
 
   if (!getResponse.ok) {
@@ -245,21 +253,21 @@ async function updateZoomMeeting(accessToken: string, meetingId: string, input: 
 async function deleteZoomMeeting(accessToken: string, meetingId: string): Promise<void> {
   const url = `https://api.zoom.us/v2/meetings/${meetingId}`;
   const headers = {
-    'Authorization': `Bearer ${accessToken}`,
-    'Accept': 'application/json'
+    Authorization: `Bearer ${accessToken}`,
+    Accept: 'application/json',
   };
 
   console.log('Deleting Zoom meeting:', {
     url,
     headers: {
       ...headers,
-      Authorization: 'Bearer [REDACTED]'
-    }
+      Authorization: 'Bearer [REDACTED]',
+    },
   });
 
   const response = await fetch(url, {
     method: 'DELETE',
-    headers
+    headers,
   });
 
   if (!response.ok) {
@@ -268,7 +276,7 @@ async function deleteZoomMeeting(accessToken: string, meetingId: string): Promis
       status: response.status,
       statusText: response.statusText,
       errorData,
-      headers: Object.fromEntries(response.headers.entries())
+      headers: Object.fromEntries(response.headers.entries()),
     });
     throw new Error(`Failed to delete Zoom meeting: ${response.statusText}. Details: ${errorData}`);
   }
@@ -282,7 +290,7 @@ async function deleteZoomMeeting(accessToken: string, meetingId: string): Promis
 function removeZoomExtensions(appointment: Appointment): Appointment {
   return {
     ...appointment,
-    extension: appointment.extension?.filter(ext => ext.url !== ZOOM_MEETING_EXTENSION_URL)
+    extension: appointment.extension?.filter((ext) => ext.url !== ZOOM_MEETING_EXTENSION_URL),
   };
 }
 
@@ -332,10 +340,7 @@ async function updateAppointmentWithZoomDetails(
  * @param event - Bot event
  * @returns Zoom meeting details
  */
-export async function handler(
-  medplum: MedplumClient,
-  event: BotEvent<Appointment>
-): Promise<Appointment> {
+export async function handler(medplum: MedplumClient, event: BotEvent<Appointment>): Promise<Appointment> {
   // Get Zoom credentials from bot secrets
   const accountId = event.secrets['ZOOM_ACCOUNT_ID']?.valueString;
   const clientId = event.secrets['ZOOM_CLIENT_ID']?.valueString;
@@ -355,9 +360,9 @@ export async function handler(
   const isDeletion = appointment.status === 'cancelled' || appointment.status === 'noshow';
 
   // Get existing meeting ID if any
-  const existingMeetingId = appointment.extension?.find(ext => ext.url === 'https://medplum.com/zoom-meeting')
-    ?.extension?.find(ext => ext.url === 'https://medplum.com/zoom-meeting-id')
-    ?.valueString;
+  const existingMeetingId = appointment.extension
+    ?.find((ext) => ext.url === 'https://medplum.com/zoom-meeting')
+    ?.extension?.find((ext) => ext.url === 'https://medplum.com/zoom-meeting-id')?.valueString;
 
   if (isDeletion && existingMeetingId) {
     // Delete the Zoom meeting
@@ -390,4 +395,4 @@ export async function handler(
 
   const updatedAppointment = await updateAppointmentWithZoomDetails(medplum, appointment, meetingDetails);
   return updatedAppointment;
-} 
+}
