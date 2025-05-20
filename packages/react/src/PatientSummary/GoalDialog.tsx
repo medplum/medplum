@@ -1,6 +1,6 @@
 import { Button, Group, Select, Stack, TextInput, Textarea } from '@mantine/core';
 import { Goal, Patient } from '@medplum/fhirtypes';
-import { useCallback } from 'react';
+import { useCallback, JSX } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 

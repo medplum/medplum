@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { HTTP_HL7_ORG, LOINC, SNOMED, createReference, formatDate } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, JSX } from 'react';
 import { killEvent } from '../utils/dom';
 import { IconChevronDown, IconPlus, IconPencil } from '@tabler/icons-react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';

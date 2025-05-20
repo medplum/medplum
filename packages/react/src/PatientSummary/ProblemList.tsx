@@ -1,14 +1,14 @@
-import { Box, Group, Modal, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Tooltip } from '@mantine/core';
+import { Box, Group, Modal, Text, Collapse, ActionIcon, UnstyledButton, Flex, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState, useRef, useEffect, JSX } from 'react';
+import { useCallback, useState, JSX } from 'react';
 import { killEvent } from '../utils/dom';
 import { ConditionDialog } from './ConditionDialog';
-import { IconChevronDown, IconPlus, IconChevronRight, IconStackForward } from '@tabler/icons-react';
+import { IconChevronDown, IconPlus, IconStackForward } from '@tabler/icons-react';
 import { getDisplayString, formatDate } from '@medplum/core';
 import styles from './PatientSummary.module.css';
-import { useNavigate } from 'react-router';
+import SummaryItem from './SummaryItem';
 
 export interface ProblemListProps {
   readonly patient: Patient;
@@ -26,7 +26,6 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
   const [editCondition, setEditCondition] = useState<Condition>();
   const [opened, { open, close }] = useDisclosure(false);
   const [collapsed, setCollapsed] = useState(false);
-  const navigate = useNavigate();
 
   const handleSubmit = useCallback(
     async (condition: Condition) => {
@@ -38,48 +37,15 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
           const newCondition = await medplum.createResource(condition);
           setProblems([newCondition, ...problems]);
         }
-        setEditCondition(undefined);
-        close();
       } catch (error) {
         console.error('Error saving condition:', error);
+      } finally { 
+        setEditCondition(undefined);
+        close();
       }
     },
     [medplum, problems, close]
   );
-  
-  // Helper function to handle click on a problem
-  const handleProblemClick = useCallback(
-    (problem: Condition, e?: React.MouseEvent) => {
-      if (e) {
-        killEvent(e);
-      }
-      
-      // Always open the edit modal
-      setEditCondition(problem);
-      open();
-    },
-    [open]
-  );
-  
-  // Helper function to get status badge color
-  const getStatusColor = (status?: string): string => {
-    if (!status) { return 'gray'; }
-    
-    switch (status) {
-      case 'active':
-      case 'recurrence':
-      case 'relapse':
-        return 'green';
-      case 'inactive':
-        return 'orange';
-      case 'remission':
-        return 'blue';
-      case 'resolved':
-        return 'teal';
-      default:
-        return 'gray';
-    }
-  };
 
   return (
     <>
@@ -123,11 +89,16 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
             <Box ml="36" mt="8" mb="16">
               <Flex direction="column" gap={8}>
                 {problems.map((problem) => (
-                  <ProblemRow
+                  <SummaryItem
                     key={problem.id}
-                    problem={problem}
-                    handleProblemClick={handleProblemClick}
-                    getStatusColor={getStatusColor}
+                    title={getDisplayString(problem)}
+                    subtitle={formatDate(problem.onsetDateTime)}
+                    status={problem.clinicalStatus?.coding?.[0]?.code}
+                    color={getStatusColor(problem.clinicalStatus?.coding?.[0]?.code)}
+                    onClick={() => {
+                      setEditCondition(problem);
+                      open();
+                    }}
                   />
                 ))}
               </Flex>
@@ -159,8 +130,7 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
               <Tooltip label="X-ray" position="top">
                 <ActionIcon variant="subtle" onClick={() => {
                   close();
-                  // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                  navigate(`/Patient/${patient.id}/Condition/${editCondition.id}/edit`);
+                  // navigate(`/Patient/${patient.id}/Condition/${editCondition.id}/edit`);
                 }} aria-label="X-ray">
                   <span style={{ color: '#868e96' }}>
                     <IconStackForward size={22} />
@@ -185,65 +155,21 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
   );
 }
 
-interface ProblemRowProps {
-  problem: Condition;
-  handleProblemClick: (problem: Condition, e?: React.MouseEvent) => void;
-  getStatusColor: (status?: string) => string;
-}
-
-function ProblemRow({ problem, handleProblemClick, getStatusColor }: ProblemRowProps): JSX.Element {
-  const [isOverflowed, setIsOverflowed] = useState(false);
-  const textRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = textRef.current;
-    if (el) {
-      setIsOverflowed(el.scrollWidth > el.clientWidth);
-    }
-  }, [problem]);
-  return (
-    <Box 
-      className={styles.patientSummaryListItem}
-      onClick={(e) => handleProblemClick(problem, e)}
-    >
-      <Tooltip label={getDisplayString(problem)} position="top-start" openDelay={650} disabled={!isOverflowed}>
-        <Box style={{ position: 'relative' }}>
-          <Text 
-            ref={textRef}
-            size="sm" 
-            className={styles.patientSummaryListItemText}
-          >
-            {getDisplayString(problem)}
-          </Text>
-          <Group mt={2} gap={4}>
-            {problem.clinicalStatus?.coding?.[0]?.code && (
-              <Badge 
-                size="xs" 
-                color={getStatusColor(problem.clinicalStatus.coding[0].code)}
-                variant="light"
-                className={styles.patientSummaryBadge}
-              >
-                {problem.clinicalStatus.coding[0].code}
-              </Badge>
-            )}
-            {problem.onsetDateTime && (
-              <Text size="xs" fw={500} color="gray.6">
-                {formatDate(problem.onsetDateTime)}
-              </Text>
-            )}
-          </Group>
-          <div className={styles.patientSummaryGradient} />
-          <div className={styles.patientSummaryChevronContainer}>
-            <ActionIcon
-              className={styles.patientSummaryChevron}
-              size="md"
-              variant="transparent"
-              tabIndex={-1}
-            >
-              <IconChevronRight size={16} stroke={2.5}/>
-            </ActionIcon>
-          </div>
-        </Box>
-      </Tooltip>
-    </Box>
-  );
-}
+const getStatusColor = (status?: string): string => {
+  if (!status) { return 'gray'; }
+  
+  switch (status) {
+    case 'active':
+    case 'recurrence':
+    case 'relapse':
+      return 'green';
+    case 'inactive':
+      return 'orange';
+    case 'remission':
+      return 'blue';
+    case 'resolved':
+      return 'teal';
+    default:
+      return 'gray';
+  }
+};

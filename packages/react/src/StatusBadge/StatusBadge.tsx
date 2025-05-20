@@ -1,4 +1,4 @@
-import { Badge, DefaultMantineColor } from '@mantine/core';
+import { Badge, BadgeVariant, DefaultMantineColor } from '@mantine/core';
 import { JSX } from 'react';
 
 /*
@@ -67,8 +67,10 @@ const statusToColor: Record<string, DefaultMantineColor> = {
 
 export interface StatusBadgeProps {
   readonly status: string;
+  readonly color?: DefaultMantineColor;
+  readonly variant?: BadgeVariant;
 }
 
 export function StatusBadge(props: StatusBadgeProps): JSX.Element {
-  return <Badge color={statusToColor[props.status]}>{props.status.replace(/-/g, ' ')}</Badge>;
+  return <Badge color={props.color || statusToColor[props.status]} variant={props.variant}>{props.status.replace(/-/g, ' ')}</Badge>;
 }

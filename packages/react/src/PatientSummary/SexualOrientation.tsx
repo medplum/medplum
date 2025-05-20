@@ -1,17 +1,13 @@
 import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import {
-  SNOMED,
-} from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, JSX } from 'react';
 import { killEvent } from '../utils/dom';
 import { IconChevronDown, IconPlus, IconPencil } from '@tabler/icons-react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
-import { ConceptBadge } from './ConceptBadge';
 
 
 export interface SexualOrientationProps {

@@ -1,13 +1,14 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Badge, Flex, Tooltip, Modal } from '@mantine/core';
+import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Modal } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Goal, Patient, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useCallback, JSX } from 'react';
 import { formatDate } from '@medplum/core';
-import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { IconChevronDown, IconPlus } from '@tabler/icons-react';
 import { killEvent } from '../utils/dom';
 import styles from './PatientSummary.module.css';
 import { GoalDialog } from './GoalDialog';
+import SummaryItem from './SummaryItem';
 
 export interface GoalsProps {
   readonly patient: Patient;
@@ -15,32 +16,13 @@ export interface GoalsProps {
   readonly onClickResource?: (resource: Resource) => void;
 }
 
-function getStatusColor(status?: string): string {
-  switch (status) {
-    case 'active':
-      return 'green';
-    case 'on-hold':
-      return 'yellow';
-    case 'completed':
-      return 'blue';
-    case 'cancelled':
-      return 'red';
-    case 'entered-in-error':
-      return 'gray';
-    default:
-      return 'gray';
-  }
-}
-
 export function Goals(props: GoalsProps): JSX.Element {
-  const medplum = useMedplum();
   const { goals: propsGoals, patient } = props;
+  const medplum = useMedplum();
   const [goals, setGoals] = useState<Goal[]>(propsGoals);
   const [editGoal, setEditGoal] = useState<Goal>();
   const [opened, { open, close }] = useDisclosure(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [overflowedGoals, setOverflowedGoals] = useState<Record<string, boolean>>({});
-  const textRefs = useRef<Record<string, HTMLSpanElement | null>>({});
 
   // Sort by start date descending
   const sortedGoals = [...goals].sort((a, b) => {
@@ -48,18 +30,6 @@ export function Goals(props: GoalsProps): JSX.Element {
     const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
     return dateB - dateA;
   });
-
-  useEffect(() => {
-    // Check for overflow on all goals
-    Object.entries(textRefs.current).forEach(([id, el]) => {
-      if (el) {
-        setOverflowedGoals(prev => ({
-          ...prev,
-          [id]: el.scrollWidth > el.clientWidth
-        }));
-      }
-    });
-  }, [goals]);
 
   const handleSubmit = useCallback(
     async (goal: Goal) => {
@@ -78,20 +48,6 @@ export function Goals(props: GoalsProps): JSX.Element {
       }
     },
     [medplum, goals, close]
-  );
-
-  // Helper function to handle click on a goal
-  const handleGoalClick = useCallback(
-    (goal: Goal, e?: React.MouseEvent) => {
-      if (e) {
-        killEvent(e);
-      }
-      
-      // Always open the edit modal
-      setEditGoal(goal);
-      open();
-    },
-    [open]
   );
 
   return (
@@ -131,60 +87,18 @@ export function Goals(props: GoalsProps): JSX.Element {
           {sortedGoals.length > 0 ? (
             <Box ml="36" mt="8" mb="16">
               <Flex direction="column" gap={8}>
-                {sortedGoals.map((goal) => {
-                  const description = goal.description?.text || 'No description';
-                  return (
-                    <Box
-                      key={goal.id}
-                      className={styles.patientSummaryListItem}
-                      onClick={(e) => handleGoalClick(goal, e)}
-                    >
-                      <Tooltip label={description} position="top-start" openDelay={650} disabled={!overflowedGoals[goal.id || '']}>
-                        <Box style={{ position: 'relative' }}>
-                          <Text
-                            size="sm"
-                            className={styles.patientSummaryListItemText}
-                            style={{ fontWeight: 500, width: '100%' }}
-                          >
-                            <span
-                              ref={(el) => {
-                                if (el) {
-                                  textRefs.current[goal.id || ''] = el;
-                                }
-                              }}
-                              style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', display: 'block' }}
-                            >
-                              {description}
-                            </span>
-                          </Text>
-                          <Group gap={8} align="center">
-                            {goal.lifecycleStatus && (
-                              <Badge size="xs" color={getStatusColor(goal.lifecycleStatus)} variant="light" className={styles.patientSummaryBadge}>
-                                {goal.lifecycleStatus}
-                              </Badge>
-                            )}
-                            {goal.startDate && (
-                              <Text size="xs" fw={500} color="gray.6">
-                                {formatDate(goal.startDate)}
-                              </Text>
-                            )}
-                          </Group>
-                          <div className={styles.patientSummaryGradient} />
-                          <div className={styles.patientSummaryChevronContainer}>
-                            <ActionIcon
-                              className={styles.patientSummaryChevron}
-                              size="md"
-                              variant="transparent"
-                              tabIndex={-1}
-                            >
-                              <IconChevronRight size={16} stroke={2.5} />
-                            </ActionIcon>
-                          </div>
-                        </Box>
-                      </Tooltip>
-                    </Box>
-                  );
-                })}
+                {sortedGoals.map((goal) => (
+                  <SummaryItem
+                    key={goal.id}
+                    title={goal.description?.text || 'No description'}
+                    subtitle={formatDate(goal.startDate)}
+                    color={getStatusColor(goal.lifecycleStatus)}
+                    onClick={() => {
+                      setEditGoal(goal);
+                      open();
+                    }}
+                  />
+                ))}
               </Flex>
             </Box>
           ) : (
@@ -194,11 +108,6 @@ export function Goals(props: GoalsProps): JSX.Element {
           )}
         </Collapse>
       </Box>
-      <style>{`
-        .mantine-UnstyledButton-root:hover .add-button {
-          opacity: 1 !important;
-        }
-      `}</style>
       <Modal 
         opened={opened} 
         onClose={close} 
@@ -214,3 +123,20 @@ export function Goals(props: GoalsProps): JSX.Element {
     </>
   );
 } 
+
+function getStatusColor(status?: string): string {
+  switch (status) {
+    case 'active':
+      return 'green';
+    case 'on-hold':
+      return 'yellow';
+    case 'completed':
+      return 'blue';
+    case 'cancelled':
+      return 'red';
+    case 'entered-in-error':
+      return 'gray';
+    default:
+      return 'gray';
+  }
+}

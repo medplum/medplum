@@ -18,8 +18,8 @@ import {
   Goal,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { IconStethoscope, IconCake, IconMenuOrder, IconSquareChevronsUp, IconSquareChevronsDown, IconEmpathize, IconBinaryTree, IconMapPin, IconLanguage, IconChevronRight } from '@tabler/icons-react';
-import { useEffect, useState, useRef } from 'react';
+import { IconStethoscope, IconCake, IconEmpathize, IconBinaryTree, IconMapPin, IconLanguage, IconChevronRight } from '@tabler/icons-react';
+import { useEffect, useState, useRef, JSX } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Contact } from './Contact';
@@ -90,19 +90,6 @@ function getEthnicity(patient: Patient): string | undefined {
     (ext) => ext.url === 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity'
   );
   return ethnicityExt?.extension?.find((subExt) => subExt.url === 'ombCategory')?.valueCoding?.display;
-}
-
-function getLanguages(patient: Patient): { preferred?: string; other?: string } {
-  const languages: { preferred?: string; other?: string } = {};
-  patient.communication?.forEach((comm) => {
-    const language = comm.language?.coding?.[0]?.display;
-    if (comm.preferred) {
-      languages.preferred = language;
-    } else {
-      languages.other = language;
-    }
-  });
-  return languages;
 }
 
 const LANGUAGE_DISPLAY_MAP: Record<string, string> = {
@@ -714,7 +701,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Divider />
             <Visits patient={patient} appointments={medicalData.appointments || []} encounters={medicalData.encounters || []} onClickResource={onClickResource} />
             <Divider />
-            <Insurance patient={patient} coverages={medicalData.coverages || []} onClickResource={onClickResource} />
+            <Insurance coverages={medicalData.coverages || []} onClickResource={onClickResource} />
             <Divider />
             <Allergies patient={patient} allergies={medicalData.allergies} onClickResource={onClickResource} />
             <Divider />
@@ -743,24 +730,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
           </>
         )}
       </Stack>
-      {/* Bottom navigation temporarily disabled
-      <div style={{ 
-        position: 'sticky',
-        bottom: 0,
-        backgroundColor: 'white',
-        zIndex: 1000,
-        padding: '12px 16px',
-        borderTop: '1px solid var(--mantine-color-gray-3)'
-      }}>
-        <Group justify="space-between">
-          <Group>
-            <IconSquareChevronsUp size={20} style={{ cursor: 'pointer' }} />
-            <IconSquareChevronsDown size={20} style={{ cursor: 'pointer' }} />
-          </Group>
-          <IconMenuOrder size={20} style={{ cursor: 'pointer' }} />
-        </Group>
-      </div>
-      */}
     </div>
   );
 }

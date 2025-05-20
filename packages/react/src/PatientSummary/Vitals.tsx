@@ -3,10 +3,9 @@ import { useDisclosure } from '@mantine/hooks';
 import { formatDate, formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, JSX } from 'react';
 import { killEvent } from '../utils/dom';
 import { IconChevronDown, IconPlus, IconChevronRight } from '@tabler/icons-react';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import {
@@ -105,7 +104,6 @@ export function Vitals(props: VitalsProps): JSX.Element {
   const [vitals, setVitals] = useState<Observation[]>(props.vitals);
   const [opened, { open, close }] = useDisclosure(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
@@ -160,8 +158,6 @@ export function Vitals(props: VitalsProps): JSX.Element {
     },
     [medplum, props.patient, props.encounter, vitals, close]
   );
-
-  const patientId = props.patient.id;
 
   return (
     <>
@@ -220,34 +216,19 @@ export function Vitals(props: VitalsProps): JSX.Element {
           {vitals.length > 0 ? (
             <Box ml="36" mt="8" mb="16">
               <Flex direction="column" gap={8}>
-                {LOINC_CODES.map((meta, index) => {
+                {LOINC_CODES.map((meta) => {
                   const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
                   if (!obs) {
                     return null;
                   }
 
-                  const loincCode = meta.code;
-                  const category = meta.name === 'respiratory' ? 'respRate' : 'vital-signs';
-                  const tableUrl = `/Patient/${patientId}/Observation?_count=20&_fields=_id,_lastUpdated,value[x]&category=${category}&category=vital-signs&patient=Patient%2F${patientId}&code=${loincCode}`;
+                  // const loincCode = meta.code;
+                  // const category = meta.name === 'respiratory' ? 'respRate' : 'vital-signs';
+                  // // const tableUrl = `/Patient/${patientId}/Observation?_count=20&_fields=_id,_lastUpdated,value[x]&category=${category}&category=vital-signs&patient=Patient%2F${patientId}&code=${loincCode}`;
 
                   return (
-                    <MedplumLink
-                      key={meta.code}
-                      to={tableUrl}
-                      style={{ textDecoration: 'none', display: 'block', color: 'black' }}
-                    >
-                      <Box
-                      className={styles.patientSummaryListItem}
-                      onMouseEnter={() => setHoverIndex(index)}
-                      onMouseLeave={() => setHoverIndex(null)}
-                        onClick={() => {
-                          if (props.onClickResource) {
-                            props.onClickResource(obs);
-                          }
-                        }}
-                        style={{ cursor: 'pointer' }}
-                    >
-                      <Group gap={4} align="center">
+                    <Box className={styles.patientSummaryListItem}>
+                      <Box style={{ position: 'relative' }}>
                         <Text size="sm" fw={500} style={{ cursor: 'pointer' }}>
                           {meta.short}:
                         </Text>
@@ -255,24 +236,25 @@ export function Vitals(props: VitalsProps): JSX.Element {
                           {formatQuantity(getObservationValue(obs, meta.component))}
                         </Text>
                         {obs?.effectiveDateTime && (
-                          <Text size="xs" fw={500} color="gray.6" ml={2}>
-                            {formatDate(obs.effectiveDateTime)}
-                          </Text>
+                          <>
+                            <Text size="xs" fw={500} color="gray.6" ml={2}>
+                              {formatDate(obs.effectiveDateTime)}
+                            </Text>
+                            <div className={styles.patientSummaryGradient} />
+                            <div className={styles.patientSummaryChevronContainer}>
+                              <ActionIcon
+                                className={styles.patientSummaryChevron}
+                                size="md"
+                                variant="transparent"
+                                tabIndex={-1}
+                              >
+                                <IconChevronRight size={16} stroke={2.5}/>
+                              </ActionIcon>
+                            </div>
+                          </>
                         )}
-                      </Group>
-                      <div className={styles.patientSummaryGradient} />
-                      <div className={styles.patientSummaryChevronContainer}>
-                        <ActionIcon
-                          className={styles.patientSummaryChevron}
-                          size="md"
-                          variant="transparent"
-                            tabIndex={-1}
-                        >
-                          <IconChevronRight size={16} stroke={2.5}/>
-                        </ActionIcon>
-                      </div>
+                      </Box>
                     </Box>
-                    </MedplumLink>
                   );
                 })}
               </Flex>
