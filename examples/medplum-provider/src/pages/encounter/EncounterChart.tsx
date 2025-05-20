@@ -25,11 +25,11 @@ import { calculateTotalPrice, fetchAndApplyChargeItemDefinitions, getCptChargeIt
 import { createClaimFromEncounter } from '../../utils/claims';
 import { createSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
-import ChageItemPanel from '../components/ChargeItem/ChageItemPanel';
 import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import classes from './EncounterChart.module.css';
+import ChargeItemPanel from '../components/ChargeItem/ChageItemPanel';
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
@@ -140,6 +140,28 @@ export const EncounterChart = (): JSX.Element => {
       }, SAVE_TIMEOUT_MS);
     },
     [chargeItems, saveChargeItem, setChargeItems, medplum, claim, setClaim, encounter]
+  );
+
+  const deleteChargeItem = useCallback(
+    async (chargeItem: ChargeItem): Promise<void> => {
+      const updatedChargeItems = chargeItems.filter((item) => item.id !== chargeItem.id);
+      setChargeItems(updatedChargeItems);
+
+      if (chargeItem.id) {
+        await medplum.deleteResource('ChargeItem', chargeItem.id);
+      }
+
+      if (claim?.id && updatedChargeItems.length > 0 && encounter) {
+        const updatedClaim: Claim = {
+          ...claim,
+          item: getCptChargeItems(updatedChargeItems, { reference: getReferenceString(encounter) }),
+          total: { value: calculateTotalPrice(updatedChargeItems) },
+        };
+        const savedClaim = await medplum.updateResource(updatedClaim);
+        setClaim(savedClaim);
+      }
+    },
+    [chargeItems, setChargeItems, claim, setClaim, encounter, medplum]
   );
 
   const handleEncounterStatusChange = useCallback(
@@ -550,7 +572,12 @@ export const EncounterChart = (): JSX.Element => {
             {chargeItems.length > 0 ? (
               <Stack gap="md">
                 {chargeItems.map((chargeItem: ChargeItem) => (
-                  <ChageItemPanel key={chargeItem.id} chargeItem={chargeItem} onChange={updateChargeItemList} />
+                  <ChargeItemPanel
+                    key={chargeItem.id}
+                    chargeItem={chargeItem}
+                    onChange={updateChargeItemList}
+                    onDelete={deleteChargeItem}
+                  />
                 ))}
 
                 <Card withBorder shadow="sm">
