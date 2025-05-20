@@ -512,6 +512,12 @@ export interface InviteRequest {
   admin?: boolean;
 }
 
+export type RateLimitInfo = {
+  name: string;
+  remainingUnits: number;
+  secondsUntilReset: number;
+};
+
 /**
  * JSONPatch patch operation.
  * Compatible with fast-json-patch and rfc6902 Operation.
@@ -3337,7 +3343,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     // Previously default for maxRetries was 3, but we will interpret maxRetries literally and not count first attempt
     // Default of 2 matches old behavior with the new semantics
     const maxRetries = options?.maxRetries ?? 2;
-    const retryDelay = 200;
 
     // We use <= since we want to retry maxRetries times and first retry is when attemptNum === 1
     for (let attemptNum = 0; attemptNum <= maxRetries; attemptNum++) {
@@ -3350,13 +3355,15 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           this.logResponse(response);
         }
 
+        // Ensure current rate limits are set before calculating retry delay
         this.setCurrentRateLimit(response);
 
         // Handle non-500 response and max retries exceeded
         // We return immediately for non-500 or 500 that has exceeded max retries
-        if (response.status < 500 || attemptNum === maxRetries) {
+        if (attemptNum >= maxRetries || !isRetryable(response)) {
           return response;
         }
+        await sleep(this.getRetryDelay(attemptNum));
       } catch (err) {
         // This is for the 1st retry to avoid multiple notifications
         if ((err as Error).message === 'Failed to fetch' && attemptNum === 0) {
@@ -3368,8 +3375,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           throw err;
         }
       }
-
-      await sleep(retryDelay);
     }
 
     throw new Error('Unreachable');
@@ -3403,11 +3408,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Reports the last-seen rate limit information from the server.
    * @returns Array of applicable rate limits.
    */
-  rateLimitStatus(): { name: string; remainingUnits: number; secondsUntilReset: number }[] {
+  rateLimitStatus(): RateLimitInfo[] {
     if (!this.currentRateLimits) {
       return [];
     }
-
     const header = this.currentRateLimits;
     return header.split(/\s*;\s*/g).map((str) => {
       const parts = str.split(/\s*,\s*/g);
@@ -3426,6 +3430,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
       return { name, remainingUnits, secondsUntilReset };
     });
+  }
+
+  private getRetryDelay(attemptNum: number): number {
+    const rateLimits = this.rateLimitStatus();
+    let retryDelay = 500 * Math.pow(1.5, attemptNum);
+    for (const limit of rateLimits) {
+      if (!limit.remainingUnits) {
+        retryDelay = Math.max(retryDelay, limit.secondsUntilReset * 1000);
+      }
+    }
+    return retryDelay;
   }
 
   private async pollStatus<T>(statusUrl: string, options: MedplumRequestOptions, state: RequestState): Promise<T> {
@@ -4312,4 +4327,8 @@ export function normalizeCreatePdfOptions(
     tableLayouts: arg3,
     fonts: arg4,
   };
+}
+
+function isRetryable(response: Response): boolean {
+  return response.status === 429 || response.status >= 500;
 }
