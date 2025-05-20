@@ -66,7 +66,7 @@ resource "azurerm_postgresql_flexible_server_configuration" "require_secure_tran
 resource "azurerm_postgresql_flexible_server_configuration" "azure_extensions" {
   name      = "azure.extensions"
   server_id = azurerm_postgresql_flexible_server.db.id
-  value     = "pg_stat_statements,btree_gin,pg_trgm"
+  value     = "pg_stat_statements,pg_trgm"
 }
 
 output "postgresql_dns_record" {

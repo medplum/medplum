@@ -6,7 +6,6 @@
 import { PoolClient } from 'pg';
 
 const statements = [
-  `CREATE EXTENSION IF NOT EXISTS btree_gin`,
   `CREATE TABLE IF NOT EXISTS "Coding" (
     id BIGSERIAL PRIMARY KEY,
     system UUID NOT NULL, -- reference to "CodeSystem".id
