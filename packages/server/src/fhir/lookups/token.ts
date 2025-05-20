@@ -1,4 +1,13 @@
-import { Operator as FhirOperator, Filter, SortRule, splitN, splitSearchOnComma, WithId } from '@medplum/core';
+import {
+  badRequest,
+  Operator as FhirOperator,
+  Filter,
+  OperationOutcomeError,
+  SortRule,
+  splitN,
+  splitSearchOnComma,
+  WithId,
+} from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { getLogger } from '../../logger';
 import {
@@ -118,6 +127,12 @@ export class TokenTable extends LookupTable {
 
     const caseInsensitive = this.isCaseInsensitive(param, resourceType);
 
+    if (filter.operator === FhirOperator.IN || filter.operator === FhirOperator.NOT_IN) {
+      throw new OperationOutcomeError(
+        badRequest(`Search filter '${filter.operator}' not supported for ${param.id ?? param.code}`)
+      );
+    }
+
     const whereExpression = buildWhereExpression({ searchParam: param, lookupTableName, caseInsensitive, filter });
     if (whereExpression) {
       conjunction.expressions.push(whereExpression);
@@ -162,7 +177,7 @@ export class TokenTable extends LookupTable {
  * @param operator - Filter operator applied to the token field
  * @returns True if the filter value should be compared to the "value" column.
  */
-export function shouldCompareTokenValue(operator: FhirOperator): boolean {
+function shouldCompareTokenValue(operator: FhirOperator): boolean {
   switch (operator) {
     case FhirOperator.MISSING:
     case FhirOperator.PRESENT:
@@ -258,12 +273,6 @@ function buildWhereCondition(context: FilterContext, query: string): Expression 
     const systemCondition = new Condition(new Column(context.lookupTableName, 'system'), '=', system);
     return value ? new Conjunction([systemCondition, buildValueCondition(context, value)]) : systemCondition;
   } else {
-    // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
-    if (operator === FhirOperator.IN) {
-      return buildInValueSetCondition(context.lookupTableName, query);
-    } else if (operator === FhirOperator.NOT_IN) {
-      return new Negation(buildInValueSetCondition(context.lookupTableName, query));
-    }
     // If we we are searching for a particular token value, build a Condition that filters the lookup table on that
     //value
     if (shouldCompareTokenValue(operator)) {
@@ -305,84 +314,4 @@ function logExpensiveQuery(context: FilterContext, value: string): void {
     filterValue: context.filter.value,
     value,
   });
-}
-
-/**
- * Builds "where" condition for token ":in" operator.
- * @param tableName - The token table name / join alias.
- * @param value - The value of the ":in" operator.
- * @returns The "where" condition.
- */
-function buildInValueSetCondition(tableName: string, value: string): Condition {
-  // This is complicated
-  //
-  // Here is an example FHIR expression:
-  //
-  //    Condition?code:in=http://hl7.org/fhir/ValueSet/condition-code
-  //
-  // The ValueSet URL is a reference to a ValueSet resource.
-  // The ValueSet resource contains a list of systems and/or codes.
-  //
-  // Consider these "ValueSet" table columns:
-  //
-  //          Column        |           Type           | Collation | Nullable | Default
-  //   ---------------------+--------------------------+-----------+----------+---------
-  //    id                  | uuid                     |           | not null |
-  //    url                 | text                     |           |          |
-  //    reference           | text[]                   |           |          |
-  //
-  // Consider these "Condition_Token" table columns:
-  //
-  //      Column   |  Type   | Collation | Nullable | Default
-  //   ------------+---------+-----------+----------+---------
-  //    resourceId | uuid    |           | not null |
-  //    code       | text    |           | not null |
-  //    system     | text    |           |          |
-  //    value      | text    |           |          |
-  //
-  // In plain english:
-  //
-  //   We want the Condition resources
-  //   with a fixed "code" column value (referring to the "code" column in the "Condition_Token" table)
-  //   where the "system" column value is in the "reference" column of the "ValueSet" table
-  //
-  // Now imagine the query for just "Condition_Token" and "ValueSet":
-  //
-  //  SELECT "Condition_Token"."resourceId"
-  //  FROM "Condition_Token"
-  //  WHERE "Condition_Token"."code"='code'
-  //  AND "Condition_Token"."system"=ANY(
-  //    (
-  //       SELECT "ValueSet"."reference"
-  //       FROM "ValueSet"
-  //       WHERE "ValueSet"."url"='http://hl7.org/fhir/ValueSet/condition-code'
-  //       LIMIT 1
-  //    )::TEXT[]
-  //  )
-  //
-  // Now we need to add the query for "Condition" and "Condition_Token" and "ValueSet":
-  //
-  //   SELECT "Condition"."id"
-  //   FROM "Condition"
-  //   LEFT JOIN "Condition_Token" ON (
-  //     "Condition_Token"."resourceId"="Condition"."id"
-  //     AND
-  //     "Condition_Token"."code"='code'
-  //     AND
-  //     "Condition_Token"."system"=ANY(
-  //       (
-  //         SELECT "ValueSet"."reference"
-  //         FROM "ValueSet"
-  //         WHERE "ValueSet"."url"='http://hl7.org/fhir/ValueSet/condition-code'
-  //         LIMIT 1
-  //       )::TEXT[]
-  //     )
-  //   )
-  //
-  return new Condition(
-    new Column(tableName, 'system'),
-    'IN_SUBQUERY',
-    new SelectQuery('ValueSet').column('reference').where('url', '=', value).limit(1),
-    'TEXT[]'
-  );
 }

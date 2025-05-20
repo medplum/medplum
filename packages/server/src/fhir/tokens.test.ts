@@ -708,10 +708,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
       );
     });
 
-    test.each([
-      [Operator.IN, true, false],
-      [Operator.NOT_IN, false, true],
-    ])('Condition.code :%s search', (operator, cond1, cond2) =>
+    test.each([[Operator.IN], [Operator.NOT_IN]])('Condition.code :%s search', (operator) =>
       withTestContext(async () => {
         // ValueSet: http://hl7.org/fhir/ValueSet/condition-code
         // compose includes codes from http://snomed.info/sct
@@ -722,37 +719,35 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
           name: [{ family: randomUUID() }],
         });
 
-        const c1 = await systemRepo.createResource<Condition>({
+        await systemRepo.createResource<Condition>({
           resourceType: 'Condition',
           subject: createReference(p),
           code: { coding: [{ system: SNOMED, code: '165002' }] },
         });
 
-        const c2 = await systemRepo.createResource<Condition>({
+        await systemRepo.createResource<Condition>({
           resourceType: 'Condition',
           subject: createReference(p),
           code: { coding: [{ system: 'https://example.com', code: 'test' }] },
         });
 
-        const bundle = await systemRepo.search({
-          resourceType: 'Condition',
-          filters: [
-            {
-              code: 'subject',
-              operator: Operator.EQUALS,
-              value: getReferenceString(p),
-            },
-            {
-              code: 'code',
-              operator: operator,
-              value: 'http://hl7.org/fhir/ValueSet/condition-code',
-            },
-          ],
-        });
-
-        expect(bundle.entry?.length).toStrictEqual(1);
-        expect(Boolean(bundleContains(bundle, c1))).toBe(cond1);
-        expect(Boolean(bundleContains(bundle, c2))).toBe(cond2);
+        await expect(
+          systemRepo.search({
+            resourceType: 'Condition',
+            filters: [
+              {
+                code: 'subject',
+                operator: Operator.EQUALS,
+                value: getReferenceString(p),
+              },
+              {
+                code: 'code',
+                operator: operator,
+                value: 'http://hl7.org/fhir/ValueSet/condition-code',
+              },
+            ],
+          })
+        ).rejects.toThrow(/not supported/);
       })
     );
 
