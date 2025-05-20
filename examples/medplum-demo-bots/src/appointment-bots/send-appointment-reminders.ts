@@ -37,7 +37,7 @@ async function sendAppointmentReminder(medplum: MedplumClient, appointment: Appo
     timeZone: 'America/Los_Angeles' // Explicitly set to Pacific Time
   });
   
-  // Optional: if you are using the zoom-create-meeting bot, you can get the zoom link from the extension
+  // Optional: if you are using the zoom-create-meeting bot from /medplum-demo-bots/zoom-bots, you can get the zoom link from the extension
   const zoomLink = appointment.extension?.find(e => e.url === 'https://medplum.com/zoom-meeting-join-url')?.valueString;
   
   let message = `Hi ${firstName}, this is a friendly reminder that you have an appointment with ${providerName} at ${appointmentTime}, PST.`
