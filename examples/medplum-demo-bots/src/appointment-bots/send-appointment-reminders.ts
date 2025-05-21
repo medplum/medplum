@@ -16,7 +16,7 @@ async function sendAppointmentReminder(medplum: MedplumClient, appointment: Appo
     throw new Error('Patient not found on appointment');
   }
   const patient = await medplum.readReference(patientRef as Reference<Patient>);
-  const firstName = patient.name?.[0]?.given?.[0];
+  const firstName = patient.name?.[0]?.given?.[0] || 'there';
 
   // Get practitioner details from the appointment participant field
   const practitionerRef = appointment.participant.find((p) => p.actor?.reference?.startsWith('Practitioner/'))?.actor;

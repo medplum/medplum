@@ -38,7 +38,7 @@ This bot is responsible for creating and updating Zoom meetings. It can be trigg
   "resourceType": "Appointment",
   "status": "arrived",
   "start": "2025-04-08T23:08:00.000Z",
-  "end": "2025-04-08T23:10:00.000Z",
+  "end": "2025-04-08T23:38:00.000Z",
   "minutesDuration": 30,
   "participant": [
     {

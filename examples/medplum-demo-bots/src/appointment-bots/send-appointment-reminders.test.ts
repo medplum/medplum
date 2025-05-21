@@ -18,7 +18,8 @@ test('Send Scheduled Reminders - Success', async () => {
     name: [{ given: ['Jane'], family: 'Smith' }],
   });
 
-  // Create dynamic dates based on current time
+  // Mock the current time to ensure consistent test behavior
+  vi.setSystemTime(new Date('2025-01-01T12:00:00Z'));
   const now = new Date();
   const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000).toISOString();
   const twelveHoursFromNow = new Date(now.getTime() + 12 * 60 * 60 * 1000).toISOString();
