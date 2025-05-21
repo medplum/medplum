@@ -372,8 +372,8 @@ export class Hl7Segment {
       }
     }
 
-    if (index >= 0 && index < this.fields.length) {
-      this.fields[index] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+    if (index > 0 && index <= this.fields.length) {
+      this.fields[index - 1] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
       return true;
     }
     return false;
