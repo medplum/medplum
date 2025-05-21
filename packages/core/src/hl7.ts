@@ -484,6 +484,10 @@ export class Hl7Field {
    * @returns true if the component was set, false otherwise
    */
   setComponent(component: number, value: string, subcomponent?: number, repetition = 0): boolean {
+    if (component < 1) {
+      return false;
+    }
+
     if (repetition >= this.components.length) {
       // Add new repetitions if needed
       while (this.components.length <= repetition) {
@@ -492,6 +496,9 @@ export class Hl7Field {
     }
 
     if (subcomponent !== undefined) {
+      if (subcomponent < 0) {
+        return false;
+      }
       // Handle subcomponent setting
       const currentValue = this.components[repetition][component - 1] || '';
       const subcomponents = currentValue.split(this.context.subcomponentSeparator);
