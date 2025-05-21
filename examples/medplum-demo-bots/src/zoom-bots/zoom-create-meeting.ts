@@ -294,7 +294,7 @@ async function updateAppointmentWithZoomDetails(
 ): Promise<Appointment> {
   // Add Zoom meeting details as extension
   // Remove any existing Zoom extensions
-  const extensions: Extension[] = (appointment.extension || []).filter(ext => ext.url !== ZOOM_MEETING_EXTENSION_URL);
+  const extensions: Extension[] = (appointment.extension || []).filter((ext) => ext.url !== ZOOM_MEETING_EXTENSION_URL);
   extensions.push({
     url: ZOOM_MEETING_EXTENSION_URL,
     extension: [
