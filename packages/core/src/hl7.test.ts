@@ -256,8 +256,11 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
   test('MSH segment replacement rules', () => {
     // Create a message with MSH and PID segments
     const msg = new Hl7Message([
-      new Hl7Segment(['MSH', '^~\\&', 'SENDING_APP', 'SENDING_FACILITY', 'RECEIVING_APP', 'RECEIVING_FACILITY'], new Hl7Context()),
-      new Hl7Segment(['PID', '1', 'PATIENT_ID'], new Hl7Context())
+      new Hl7Segment(
+        ['MSH', '^~\\&', 'SENDING_APP', 'SENDING_FACILITY', 'RECEIVING_APP', 'RECEIVING_FACILITY'],
+        new Hl7Context()
+      ),
+      new Hl7Segment(['PID', '1', 'PATIENT_ID'], new Hl7Context()),
     ]);
 
     // Test A: MSH segments can only replace MSH segments

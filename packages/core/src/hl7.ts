@@ -232,7 +232,7 @@ export class Hl7Message {
       }
     } else if (typeof index === 'number' && index === 0 && segment.name !== 'MSH') {
       return false; // Cannot replace MSH segment with non-MSH segment
-    } 
+    }
 
     if (typeof index === 'number') {
       if (index >= this.segments.length) {
