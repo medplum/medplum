@@ -49,7 +49,10 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
     const encounter = await ctx.repo.readReference<Encounter>({ reference: params.encounter });
 
     if (!encounter.basedOn?.some((ref: Reference) => ref.reference === getReferenceString(planDefinition))) {
-      encounter.basedOn = [...(encounter.basedOn || []), { reference: getReferenceString(planDefinition) }];
+      encounter.basedOn = [
+        ...(encounter.basedOn || []),
+        { reference: getReferenceString(planDefinition), display: planDefinition.title },
+      ];
       await ctx.repo.updateResource(encounter);
     }
 
