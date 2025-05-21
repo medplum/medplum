@@ -210,21 +210,44 @@ export class Hl7Message {
 
   /**
    * Sets or replaces a segment at the specified index.
+   * Only allows MSH header to be replaced as first segment.
+   * If index is a number and is larger than the length of the segments array, it will be appended as the last segment.
    * If the index is a string, replaces the first segment with that name.
    * @param index - The segment index or name
    * @param segment - The new segment to set
    * @returns true if the segment was set, false otherwise
    */
   setSegment(index: number | string, segment: Hl7Segment): boolean {
+    // Special handling for MSH segment
+    if (segment.name === 'MSH') {
+      if (typeof index === 'number') {
+        if (index !== 0) {
+          return false; // MSH can only be the first segment
+        }
+      } else {
+        const existingIndex = this.segments.findIndex((s) => s.name === index);
+        if (existingIndex !== 0) {
+          return false; // MSH can only be the first segment
+        }
+      }
+    } else if (typeof index === 'number' && index === 0 && segment.name !== 'MSH') {
+      return false; // Cannot replace MSH segment with non-MSH segment
+    } 
+
     if (typeof index === 'number') {
-      if (index >= 0 && index < this.segments.length) {
-        this.segments[index] = segment;
+      if (index >= this.segments.length) {
+        // Append as last segment
+        this.segments.push(segment);
         return true;
       }
-      return false;
+      this.segments[index] = segment;
+      return true;
     }
 
     const existingIndex = this.segments.findIndex((s) => s.name === index);
+    if (existingIndex === 0 && segment.name !== 'MSH') {
+      return false; // Cannot replace MSH segment with non-MSH segment
+    }
     if (existingIndex !== -1) {
       this.segments[existingIndex] = segment;
       return true;
@@ -344,7 +367,7 @@ export class Hl7Segment {
   }
 
   /**
-   * Sets a field at the specified index.
+   * Sets a field at the specified index. If that index does not exist, it will be added.
    * Note that the index is 1-based, not 0-based.
    * @param index - The field index
    * @param field - The new field value
@@ -364,19 +387,21 @@ export class Hl7Segment {
       if (index > 2) {
         // MSH.3 through MSH.n are offset by 1
         const actualIndex = index - 1;
-        if (actualIndex < this.fields.length) {
-          this.fields[actualIndex] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
-          return true;
+        // Add new fields if needed
+        while (this.fields.length <= actualIndex) {
+          this.fields.push(new Hl7Field([['']], this.context));
         }
-        return false;
+        this.fields[actualIndex] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+        return true;
       }
     }
 
-    if (index >= 0 && index < this.fields.length) {
-      this.fields[index] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
-      return true;
+    // Add new fields if needed
+    while (this.fields.length <= index) {
+      this.fields.push(new Hl7Field([['']], this.context));
     }
-    return false;
+    this.fields[index] = typeof field === 'string' ? Hl7Field.parse(field, this.context) : field;
+    return true;
   }
 
   /**

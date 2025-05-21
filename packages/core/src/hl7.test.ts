@@ -252,6 +252,25 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
     expect(obx.getComponent(18, 2, 0, 0)).toStrictEqual('ROCHE');
     expect(obx.getComponent(18, 2, 0, 1)).toStrictEqual('ROCHE');
   });
+
+  test('MSH segment replacement rules', () => {
+    // Create a message with MSH and PID segments
+    const msg = new Hl7Message([
+      new Hl7Segment(['MSH', '^~\\&', 'SENDING_APP', 'SENDING_FACILITY', 'RECEIVING_APP', 'RECEIVING_FACILITY'], new Hl7Context()),
+      new Hl7Segment(['PID', '1', 'PATIENT_ID'], new Hl7Context())
+    ]);
+
+    // Test A: MSH segments can only replace MSH segments
+    const newMsh = new Hl7Segment(['MSH', '^~\\&', 'NEW_APP', 'NEW_FACILITY'], new Hl7Context());
+    expect(msg.setSegment(0, newMsh)).toBe(true); // Can replace MSH with MSH at index 0
+    expect(msg.setSegment(1, newMsh)).toBe(false); // Cannot place MSH at non-zero index
+    expect(msg.setSegment('PID', newMsh)).toBe(false); // Cannot replace non-MSH segment with MSH
+
+    // Test B: No other segment can replace an MSH segment
+    const pid = new Hl7Segment(['PID', '1', 'PATIENT_ID'], new Hl7Context());
+    expect(msg.setSegment(0, pid)).toBe(false); // Cannot replace MSH with non-MSH segment
+    expect(msg.setSegment('MSH', pid)).toBe(false); // Cannot replace MSH with non-MSH segment by name
+  });
 });
 
 describe('Legacy HL7 getters', () => {
@@ -526,11 +545,12 @@ describe('HL7 Setter Functions', () => {
       expect(message.segments[1].toString()).toBe('PID|3|4');
     });
 
-    it('should return false for invalid index', () => {
+    it('should return append segment to end of message if index is larger than the length of the segments array', () => {
       const message = new Hl7Message([new Hl7Segment(['MSH', '|', '^~\\&'], context)]);
 
       const newSegment = new Hl7Segment(['PID', '1', '2'], context);
-      expect(message.setSegment(5, newSegment)).toBe(false);
+      expect(message.setSegment(5, newSegment)).toBe(true);
+      expect(message.segments[1].toString()).toBe('PID|1|2');
     });
 
     it('should return false for non-existent segment name', () => {
@@ -568,9 +588,10 @@ describe('HL7 Setter Functions', () => {
       expect(segment.setField(2, 'new value')).toBe(false);
     });
 
-    it('should return false for invalid field index', () => {
+    it('should append field if index is larger than the length of the fields array', () => {
       const segment = new Hl7Segment(['PID', '1', '2'], context);
-      expect(segment.setField(5, 'new value')).toBe(false);
+      expect(segment.setField(5, 'new value')).toBe(true);
+      expect(segment.getField(5).toString()).toBe('new value');
     });
   });
 
