@@ -262,7 +262,7 @@ export class Hl7Segment {
    * Returns an HL7 field by index.
    * @param index - The HL7 field index.
    * @returns The HL7 field.
-   * @deprecated Use getSegment() instead. This method includes the segment name in the index, which leads to confusing behavior. This method will be removed in a future release.
+   * @deprecated Use getField() instead. This method includes the segment name in the index, which leads to confusing behavior. This method will be removed in a future release.
    */
   get(index: number): Hl7Field {
     return this.fields[index];
@@ -509,20 +509,6 @@ export class Hl7Field {
     }
 
     return true;
-  }
-
-  /**
-   * Sets a component value by index.
-   * Note that the index is 1-based, not 0-based.
-   * @param component - The component index
-   * @param value - The new component value
-   * @param subcomponent - Optional subcomponent index
-   * @param repetition - Optional repetition index
-   * @returns true if the component was set, false otherwise
-   * @deprecated Use setComponent() instead. This method will be removed in a future release.
-   */
-  set(component: number, value: string, subcomponent?: number, repetition = 0): boolean {
-    return this.setComponent(component + 1, value, subcomponent, repetition);
   }
 }
 

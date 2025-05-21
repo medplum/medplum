@@ -614,24 +614,4 @@ describe('HL7 Setter Functions', () => {
       expect(segment.setComponent(5, 1, 'new value')).toBe(false);
     });
   });
-
-  describe('Hl7Field.set', () => {
-    it('should set component value', () => {
-      const field = new Hl7Field([['value1', 'value2']], context);
-      expect(field.set(0, 'new value')).toBe(true);
-      expect(field.getComponent(1)).toBe('new value');
-    });
-
-    it('should set subcomponent value', () => {
-      const field = new Hl7Field([['value1&sub1&sub2']], context);
-      expect(field.set(0, 'new sub', 1)).toBe(true);
-      expect(field.getComponent(1, 1)).toBe('new sub');
-    });
-
-    it('should handle new repetitions', () => {
-      const field = new Hl7Field([['value1']], context);
-      expect(field.set(0, 'new value', undefined, 1)).toBe(true);
-      expect(field.getComponent(1, undefined, 1)).toBe('new value');
-    });
-  });
 });
