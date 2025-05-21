@@ -378,6 +378,25 @@ export class Hl7Segment {
     }
     return false;
   }
+
+  /**
+   * Sets a component value by field index and component index.
+   * This is a shortcut for `getField(field).setComponent(component, value)`.
+   * Note that both indices are 1-based, not 0-based.
+   * @param fieldIndex - The HL7 field index
+   * @param component - The component index
+   * @param value - The new component value
+   * @param subcomponent - Optional subcomponent index
+   * @param repetition - Optional repetition index
+   * @returns true if the component was set, false otherwise
+   */
+  setComponent(fieldIndex: number, component: number, value: string, subcomponent?: number, repetition = 0): boolean {
+    const field = this.getField(fieldIndex);
+    if (!field) {
+      return false;
+    }
+    return field.setComponent(component, value, subcomponent, repetition);
+  }
 }
 
 /**
@@ -490,6 +509,20 @@ export class Hl7Field {
     }
 
     return true;
+  }
+
+  /**
+   * Sets a component value by index.
+   * Note that the index is 1-based, not 0-based.
+   * @param component - The component index
+   * @param value - The new component value
+   * @param subcomponent - Optional subcomponent index
+   * @param repetition - Optional repetition index
+   * @returns true if the component was set, false otherwise
+   * @deprecated Use setComponent() instead. This method will be removed in a future release.
+   */
+  set(component: number, value: string, subcomponent?: number, repetition = 0): boolean {
+    return this.setComponent(component + 1, value, subcomponent, repetition);
   }
 }
 
