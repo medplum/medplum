@@ -14,7 +14,6 @@ import {
   isGone,
   isNotFound,
   isString,
-  normalizeErrorString,
   normalizeOperationOutcome,
   resourceMatchesSubscriptionCriteria,
   satisfiedAccessPolicy,
@@ -269,9 +268,12 @@ export async function addSubscriptionJobs(
       logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${matches}`);
     } catch (err) {
       // If we throw when evaluating the criteria, log and continue
-      logFn(
-        `Subscription matchesCriteria error for resource ${resource.resourceType}/${resource.id} when evaluating Subscription/${subscription.id}: ${normalizeErrorString(err)}`
-      );
+      logFn('Error when evaluating matchesCriteria for resource against Subscription', {
+        resourceType: resource.resourceType,
+        resource: resource.id,
+        subscription: subscription.id,
+        err,
+      });
       continue;
     }
     if (matches) {
