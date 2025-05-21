@@ -64,7 +64,6 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
       return dateA - dateB;
     });
 
-    console.log('taskResult', taskResult);
     setTasks(taskResult);
   }, [medplum, encounter]);
 
