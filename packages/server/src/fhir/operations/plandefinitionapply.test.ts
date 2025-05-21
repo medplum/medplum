@@ -1,5 +1,13 @@
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
-import { Encounter, OperationOutcome, Patient, Questionnaire, RequestGroup, Task } from '@medplum/fhirtypes';
+import {
+  Encounter,
+  OperationOutcome,
+  Patient,
+  PlanDefinition,
+  Questionnaire,
+  RequestGroup,
+  Task,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -230,6 +238,16 @@ describe('PlanDefinition apply', () => {
     expect(resultTask.input?.[0]?.valueReference?.reference).toStrictEqual(
       getReferenceString(res1.body as Questionnaire)
     );
+    expect(resultTask.basedOn).toHaveLength(1);
+    expect(resultTask.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
+
+    // 7. Verify the encounter was updated
+    const res7 = await request(app)
+      .get(`/fhir/R4/Encounter/${res4.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res7.status).toBe(200);
+    expect(res7.body.basedOn).toHaveLength(1);
+    expect(res7.body.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
   });
 
   test('Unsupported content type', async () => {
