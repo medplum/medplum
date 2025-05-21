@@ -112,10 +112,6 @@ async function createZoomMeeting(
   console.log('Creating Zoom meeting with:', {
     url,
     userEmail,
-    headers: {
-      ...headers,
-      Authorization: 'Bearer [REDACTED]',
-    },
     body: {
       ...input,
       settings: input.settings,
@@ -184,10 +180,6 @@ async function updateZoomMeeting(
 
   console.log('Updating Zoom meeting with:', {
     url,
-    headers: {
-      ...headers,
-      Authorization: 'Bearer [REDACTED]',
-    },
     body: {
       ...input,
       settings: input.settings,
@@ -257,13 +249,7 @@ async function deleteZoomMeeting(accessToken: string, meetingId: string): Promis
     Accept: 'application/json',
   };
 
-  console.log('Deleting Zoom meeting:', {
-    url,
-    headers: {
-      ...headers,
-      Authorization: 'Bearer [REDACTED]',
-    },
-  });
+  console.log('Deleting Zoom meeting: ', url);
 
   const response = await fetch(url, {
     method: 'DELETE',
