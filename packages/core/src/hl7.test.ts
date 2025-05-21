@@ -548,10 +548,14 @@ describe('HL7 Setter Functions', () => {
       expect(segment.getField(2).toString()).toBe('new value');
     });
 
-    it('should set field in MSH segment', () => {
+    it('should handle MSH segment field indexing offset correctly', () => {
       const segment = new Hl7Segment(['MSH', '|', '^~\\&', 'SENDING_APP'], context);
+      // Field 3 is actually the first field after MSH.1 and MSH.2
       expect(segment.setField(3, 'NEW_APP')).toBe(true);
       expect(segment.getField(3).toString()).toBe('NEW_APP');
+      // Verify MSH.1 and MSH.2 are preserved
+      expect(segment.getField(1).toString()).toBe('|');
+      expect(segment.getField(2).toString()).toBe('^~\\&');
     });
 
     it('should not allow changing MSH.1', () => {
