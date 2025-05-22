@@ -36,71 +36,85 @@ interface ObservationMeta {
   readonly unit: string;
 }
 
+const BP = '85354-9';
+const SYSTOLIC = '8480-6';
+const DIASTOLIC = '8462-4';
+
 const LOINC_CODES: ObservationMeta[] = [
   {
     name: 'systolic',
-    short: 'Systolic',
-    code: '8480-6',
-    title: 'Systolic blood pressure',
+    short: 'BP Sys',
+    code: BP,
+    component: SYSTOLIC,
+    title: 'Blood Pressure',
     unit: 'mm[Hg]',
   },
   {
     name: 'diastolic',
-    short: 'Diastolic',
-    code: '8462-4',
-    title: 'Diastolic blood pressure',
+    short: 'BP Dias',
+    code: BP,
+    component: DIASTOLIC,
+    title: 'Blood Pressure',
     unit: 'mm[Hg]',
   },
   {
-    name: 'pulse',
-    short: 'Pulse',
+    name: 'heartRate',
+    short: 'HR',
     code: '8867-4',
-    title: 'Heart rate',
+    title: 'Heart Rate',
     unit: '/min',
   },
   {
-    name: 'temperature',
+    name: 'bodyTemperature',
     short: 'Temp',
     code: '8310-5',
-    title: 'Body temperature',
+    title: 'Body Temperature',
     unit: 'Cel',
   },
   {
-    name: 'respiratory',
-    short: 'Resp',
+    name: 'respiratoryRate',
+    short: 'RR',
     code: '9279-1',
-    title: 'Respiratory rate',
+    title: 'Respiratory Rate',
     unit: '/min',
   },
   {
-    name: 'oxygen',
-    short: 'O2',
-    code: '2708-6',
-    title: 'Oxygen saturation in Arterial blood',
-    unit: '%',
-  },
-  {
     name: 'height',
-    short: 'Height',
+    short: 'Ht',
     code: '8302-2',
-    title: 'Body height',
+    title: 'Height',
     unit: 'cm',
   },
   {
     name: 'weight',
-    short: 'Weight',
+    short: 'Wt',
     code: '29463-7',
-    title: 'Body weight',
+    title: 'Weight',
     unit: 'kg',
   },
   {
     name: 'bmi',
     short: 'BMI',
     code: '39156-5',
-    title: 'Body mass index (BMI) [Ratio]',
+    title: 'BMI',
     unit: 'kg/m2',
   },
+  {
+    name: 'oxygen',
+    short: 'O2',
+    code: '2708-6',
+    title: 'Oxygen',
+    unit: '%',
+  },
+  {
+    name: 'headCircumference',
+    short: 'HC',
+    code: '9843-4',
+    title: 'Head Circumference',
+    unit: 'cm',
+  },
 ];
+
 
 export interface VitalsProps {
   readonly patient: Patient;
@@ -118,7 +132,6 @@ export function Vitals(props: VitalsProps): JSX.Element {
     (formData: Record<string, string>) => {
       const observations: Observation[] = [];
 
-      // Handle blood pressure as a compound observation
       if (formData.systolic || formData.diastolic) {
         const bpObs = createCompoundObservation(props.patient, props.encounter, 'blood-pressure', 'Blood pressure', [
           {
