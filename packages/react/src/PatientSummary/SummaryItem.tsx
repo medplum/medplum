@@ -12,7 +12,8 @@ interface SummaryItemProps {
   onClick: () => void;
 }
 
-export const SummaryItem = ({ title, subtitle, status = 'unknown', color, onClick }: SummaryItemProps): JSX.Element => {
+export default function SummaryItem(props: SummaryItemProps): JSX.Element {
+  const { title, subtitle, status = 'unknown', color, onClick } = props;
   return (
     <Box className={styles.patientSummaryListItem} onClick={onClick}>
       <Tooltip label={title} position="top-start" openDelay={650}>
