@@ -1,14 +1,4 @@
-import {
-  ActionIcon,
-  Box,
-  Flex,
-  Group,
-  Modal,
-  SimpleGrid,
-  Text,
-  TextInput,
-  Textarea,
-} from '@mantine/core';
+import { ActionIcon, Box, Flex, Group, Modal, SimpleGrid, Text, TextInput, Textarea } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
@@ -175,52 +165,50 @@ export function Vitals(props: VitalsProps): JSX.Element {
     [medplum, props.patient, props.encounter, vitals, close]
   );
 
-  const vitalsContent = vitals.length > 0 ? (
-    <Flex direction="column" gap={8}>
-      {LOINC_CODES.map((meta) => {
-        const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
-        if (!obs) {
-          return null;
-        }
+  const vitalsContent =
+    vitals.length > 0 ? (
+      <Flex direction="column" gap={8}>
+        {LOINC_CODES.map((meta) => {
+          const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
+          if (!obs) {
+            return null;
+          }
 
-        return (
-          <Box key={meta.code} className={styles.patientSummaryListItem}>
-            <Box style={{ position: 'relative' }}>
-              <Text size="sm" fw={500} style={{ cursor: 'pointer' }}>
-                {meta.short}:
-              </Text>
-              <Text size="sm">{formatQuantity(getObservationValue(obs, meta.component))}</Text>
-              {obs?.effectiveDateTime && (
-                <>
-                  <Text size="xs" fw={500} color="gray.6" ml={2}>
-                    {formatDate(obs.effectiveDateTime)}
-                  </Text>
-                  <div className={styles.patientSummaryGradient} />
-                  <div className={styles.patientSummaryChevronContainer}>
-                    <ActionIcon
-                      className={styles.patientSummaryChevron}
-                      size="md"
-                      variant="transparent"
-                      tabIndex={-1}
-                    >
-                      <IconChevronRight size={16} stroke={2.5} />
-                    </ActionIcon>
-                  </div>
-                </>
-              )}
+          return (
+            <Box key={meta.code} className={styles.patientSummaryListItem}>
+              <Box style={{ position: 'relative' }}>
+                <Text size="sm" fw={500} style={{ cursor: 'pointer' }}>
+                  {meta.short}:
+                </Text>
+                <Text size="sm">{formatQuantity(getObservationValue(obs, meta.component))}</Text>
+                {obs?.effectiveDateTime && (
+                  <>
+                    <Text size="xs" fw={500} color="gray.6" ml={2}>
+                      {formatDate(obs.effectiveDateTime)}
+                    </Text>
+                    <div className={styles.patientSummaryGradient} />
+                    <div className={styles.patientSummaryChevronContainer}>
+                      <ActionIcon
+                        className={styles.patientSummaryChevron}
+                        size="md"
+                        variant="transparent"
+                        tabIndex={-1}
+                      >
+                        <IconChevronRight size={16} stroke={2.5} />
+                      </ActionIcon>
+                    </div>
+                  </>
+                )}
+              </Box>
             </Box>
-          </Box>
-        );
-      })}
-    </Flex>
-  ) : null;
+          );
+        })}
+      </Flex>
+    ) : null;
 
   return (
     <>
-      <CollapsibleSection
-        title="Vitals"
-        onAdd={open}
-      >
+      <CollapsibleSection title="Vitals" onAdd={open}>
         {vitalsContent}
       </CollapsibleSection>
 
