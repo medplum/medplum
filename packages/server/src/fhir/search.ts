@@ -1810,6 +1810,10 @@ function getCanonicalUrl(resource: Resource): string | undefined {
 }
 
 export function readFromTokenColumns(repo: Repository): typeof TokenColumnsFeature.read {
+  if (process.env['READ_FROM_TOKEN_COLUMNS']) {
+    return TokenColumnsFeature.read;
+  }
+
   const project = repo.currentProject();
   const maybeSystemSetting = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns');
 
