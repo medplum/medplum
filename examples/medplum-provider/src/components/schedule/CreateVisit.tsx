@@ -136,14 +136,12 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
 
         {planDefinitionData?.action && planDefinitionData.action.length > 0 && (
           <Card className={classes.planDefinition}>
-
             <Stack gap={0} >
                 <Text fw={500}>Included Tasks</Text>
                 {planDefinitionData?.action?.map((action: PlanDefinitionAction) => (
                   <Text key={action.id}>- {action.title}</Text>
                 ))}
               </Stack>
-            )}
           </Card>
         )}
 

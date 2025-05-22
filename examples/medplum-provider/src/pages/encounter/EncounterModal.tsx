@@ -131,6 +131,7 @@ export const EncounterModal = (): JSX.Element => {
                   name="plandefinition"
                   resourceType="PlanDefinition"
                   onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
+                  required={true}
                 />
               </Card>
             </Grid.Col>
