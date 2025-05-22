@@ -61,7 +61,7 @@ If you expunge a [`Project`](/docs/api/fhir/medplum/project), it will be _perman
 
 ### Restoring Data
 
-Sometimes you may want to restore data that has been accidentally. The following script looks at the history of a resource and restores it if it is currently deleted.  
+Sometimes you may want to restore data that has been accidentally. The following script looks at the history of a resource and restores it if it is currently deleted.
 
 ```typescript
 import { MedplumClient } from '@medplum/core';
@@ -125,33 +125,5 @@ async function restoreDeletedResource(
     throw error;
   }
 }
-
-// Example usage
-async function main() {
-  // Initialize Medplum client
-  const medplum = new MedplumClient({
-    baseUrl: process.env.MEDPLUM_BASE_URL,
-    clientId: process.env.MEDPLUM_CLIENT_ID,
-    clientSecret: process.env.MEDPLUM_CLIENT_SECRET,
-  });
-
-  // Get command line arguments
-  const resourceType = process.argv[2];
-  const resourceId = process.argv[3];
-
-  if (!resourceType || !resourceId) {
-    console.log('Usage: ts-node restoreDeleted.ts <resourceType> <resourceId>');
-    process.exit(1);
-  }
-
-  try {
-    await restoreDeletedResource(medplum, resourceType, resourceId);
-  } catch (error) {
-    console.error('Failed to restore resource:', error);
-    process.exit(1);
-  }
-}
-
-main();
 ```
 
