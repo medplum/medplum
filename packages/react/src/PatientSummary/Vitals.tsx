@@ -105,7 +105,6 @@ const LOINC_CODES: ObservationMeta[] = [
   },
 ];
 
-
 export interface VitalsProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
