@@ -22,7 +22,6 @@ import { IconStethoscope, IconCake, IconEmpathize, IconBinaryTree, IconMapPin, I
 import { useEffect, useState, useRef, JSX } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
-import { Contact } from './Contact';
 import { Insurance } from './Insurance';
 import { Medications } from './Medications';
 import { ProblemList } from './ProblemList';
@@ -688,8 +687,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                 </Box>
               </MedplumLink>
             </Stack>
-            <Divider />
-            <Contact patient={patient} onClickResource={onClickResource} />
             <Divider />
             <Insurance coverages={medicalData.coverages || []} onClickResource={onClickResource} />
             <Divider />

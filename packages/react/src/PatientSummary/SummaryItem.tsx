@@ -39,5 +39,3 @@ export const SummaryItem = ({ title, subtitle, status = 'unknown', color, onClic
     </Box>
   );
 };
-
-export default SummaryItem;
