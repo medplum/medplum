@@ -241,7 +241,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   return result;
 }
 
-function getResponseBodyFromResult(result: BotExecutionResult): string | { [key: string]: any } | any[] | boolean {
+export function getResponseBodyFromResult(result: BotExecutionResult): string | { [key: string]: any } | any[] | boolean {
   let responseBody = result.returnValue;
   if (responseBody === undefined) {
     // If the bot did not return a value, then return an OperationOutcome
@@ -555,7 +555,7 @@ async function addBotSecrets(
 
 const MIRRORED_CONTENT_TYPES: string[] = [ContentType.TEXT, ContentType.HL7_V2];
 
-function getResponseContentType(req: Request): string {
+export function getResponseContentType(req: Request): string {
   const requestContentType = req.get('Content-Type');
   if (requestContentType && MIRRORED_CONTENT_TYPES.includes(requestContentType)) {
     return requestContentType;

@@ -1,9 +1,12 @@
-import { allOk, badRequest, getStatus, isOperationOutcome } from '@medplum/core';
-import { Bot, OperationOutcome, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { allOk, badRequest, getStatus, isOperationOutcome, isResource } from '@medplum/core';
+import { Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { executeBot } from '../fhir/operations/execute';
+import { executeBot, getResponseBodyFromResult, getResponseContentType } from '../fhir/operations/execute';
+import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
+import { sendFhirResponse } from '../fhir/response';
+
 
 /**
  * Allowed signature headers are:
@@ -61,17 +64,21 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
     headers,
   });
 
-  // Unlike normal Bot $execute operations, we don't want to return the result
-  // This is an unauthenticated webhook, so we just return a 200 OK response
-  let outcome: OperationOutcome;
   if (isOperationOutcome(result)) {
-    outcome = result;
-  } else if (result.success) {
-    outcome = allOk;
-  } else {
-    outcome = badRequest(result.logResult);
+    sendOutcome(res, result);
+    return;
   }
-  res.sendStatus(getStatus(outcome));
+
+  const responseBody = getResponseBodyFromResult(result);
+  const outcome = result.success ? allOk : badRequest(result.logResult);
+
+  if (isResource(responseBody, 'Binary')) {
+    await sendFhirResponse(req, res, outcome, responseBody);
+    return;
+  }
+
+  // Send the response
+  res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
 });
 
 export const webhookRouter = Router();
