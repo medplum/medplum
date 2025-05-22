@@ -27,7 +27,6 @@ import { Insurance } from './Insurance';
 import { Medications } from './Medications';
 import { ProblemList } from './ProblemList';
 import { Vitals } from './Vitals';
-import { Procedures } from './Procedures';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import styles from './PatientSummary.module.css';
 
@@ -698,9 +697,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Divider />
             <ProblemList patient={patient} problems={medicalData.problems} onClickResource={onClickResource} />
             <Divider />
-            <Procedures patient={patient} procedures={medicalData.procedures || []} onClickResource={onClickResource} />
-            <Divider />
-           <Divider />
             <Medications
               patient={patient}
               medicationRequests={medicalData.medicationRequests}
