@@ -18,7 +18,6 @@ export async function createEncounter(
   patient: Patient,
   planDefinition: PlanDefinition
 ): Promise<Encounter> {
-
   const appointment = await medplum.createResource({
     resourceType: 'Appointment',
     status: 'booked',
@@ -107,7 +106,6 @@ async function createChargeItemFromServiceRequest(
   patient: Patient,
   serviceRequest: ServiceRequest
 ): Promise<void> {
-
   let definitionCanonical: string[] = [];
   const chargeDefinitionExtension = serviceRequest.extension?.find(
     (ext) => ext.url === 'http://medplum.com/fhir/StructureDefinition/applicable-charge-definition'

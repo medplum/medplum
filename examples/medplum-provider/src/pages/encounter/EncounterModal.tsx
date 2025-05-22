@@ -46,7 +46,6 @@ export const EncounterModal = (): JSX.Element => {
     }
   };
 
-
   return (
     <Modal
       opened={isOpen}
@@ -119,8 +118,8 @@ export const EncounterModal = (): JSX.Element => {
                   Apply care template
                 </Text>
                 <Text size="sm" color="dimmed" mb="lg">
-                  You can select template for new encounter. Tasks from the template will be automatically
-                  added to the encounter. Administrators can create and edit templates in the{' '}
+                  You can select template for new encounter. Tasks from the template will be automatically added to the
+                  encounter. Administrators can create and edit templates in the{' '}
                   <Text component="a" href="#" variant="link">
                     Medplum app
                   </Text>
