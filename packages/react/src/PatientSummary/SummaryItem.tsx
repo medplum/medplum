@@ -39,4 +39,4 @@ export default function SummaryItem(props: SummaryItemProps): JSX.Element {
       </Tooltip>
     </Box>
   );
-};
+}
