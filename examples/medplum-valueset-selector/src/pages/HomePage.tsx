@@ -1,4 +1,4 @@
-import { Title, Group, Box, Textarea, Button, Alert, Grid, TextInput } from '@mantine/core';
+import { Title, Group, Box, Textarea, Button, Alert, Grid } from '@mantine/core';
 import { ValueSet } from '@medplum/fhirtypes';
 import { CodingInput, Document, ResourceInput, ResourceName, useMedplum } from '@medplum/react';
 import { JSX, useState } from 'react';
@@ -134,7 +134,7 @@ export function HomePage(): JSX.Element {
       } else {
         setError('Code already exists in ValueSet');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to add code to ValueSet');
     }
   };
@@ -150,34 +150,6 @@ export function HomePage(): JSX.Element {
     };
     setCustomValueSet(JSON.stringify(cleared, null, 2));
     setSuccessMessage('ValueSet cleared');
-  };
-
-  const handleValueSetNameChange = async (name: string): Promise<void> => {
-    try {
-      setError(undefined);
-      setSuccessMessage(undefined);
-
-      // Search for ValueSet by name
-      const result = await medplum.search('ValueSet', { name });
-      if (result.entry?.[0]?.resource) {
-        // Found: populate JSON with the found ValueSet
-        setCustomValueSet(JSON.stringify(result.entry[0].resource, null, 2));
-      } else {
-        // Not found: update name/title/url as before
-        const valueSet = JSON.parse(customValueSet);
-        const formattedName = name.trim().replace(/\s+/g, '');
-        valueSet.name = formattedName;
-        valueSet.title = name;
-        valueSet.url = `http://example.org/fhir/ValueSet/${formattedName.toLowerCase()}`;
-        // Remove compose if include is empty
-        if (valueSet.compose && Array.isArray(valueSet.compose.include) && valueSet.compose.include.length === 0) {
-          delete valueSet.compose;
-        }
-        setCustomValueSet(JSON.stringify(valueSet, null, 2));
-      }
-    } catch (err) {
-      setError('Failed to update ValueSet name');
-    }
   };
 
   return (
