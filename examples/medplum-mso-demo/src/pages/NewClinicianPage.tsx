@@ -7,7 +7,7 @@ import { Document, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { useAdminStatus } from '../utils/admin';
+import { useAdminStatus, getProjectId } from '../utils/admin';
 
 interface NewClinicianForm {
   firstName: string;
@@ -93,7 +93,7 @@ export function NewClinicianPage(): JSX.Element {
       };
 
       // Create the practitioner with project invitation
-      const result = await medplum.post('admin/projects/:projectId/invite', {
+      const result = await medplum.invite(getProjectId(medplum), {
         resourceType: 'Practitioner',
         firstName: formData.firstName,
         lastName: formData.lastName,
@@ -113,7 +113,10 @@ export function NewClinicianPage(): JSX.Element {
         color: 'green',
       });
 
-      navigate(`/${result.profile?.reference}`)?.catch(console.error);
+      if (result.resourceType === 'ProjectMembership') {
+        navigate(`/${result.profile?.reference}`)?.catch(console.error);
+      }
+
     } catch (error) {
       console.error('Error creating clinician:', normalizeErrorString(error));
       showNotification({

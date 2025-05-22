@@ -1,4 +1,4 @@
-import { MedplumClient, normalizeErrorString } from '@medplum/core';
+import { MedplumClient, normalizeErrorString, resolveId } from '@medplum/core';
 import { useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 
@@ -43,4 +43,13 @@ export function useAdminStatus(): { isAdmin: boolean; loading: boolean } {
   }, [medplum]);
 
   return { isAdmin: isAdminUser, loading };
+}
+
+/**
+ * Returns the current project ID for the given client.
+ * @param medplum - The Medplum client.
+ * @returns The current project ID.
+ */
+export function getProjectId(medplum: MedplumClient): string {
+  return resolveId(medplum.getActiveLogin()?.project) as string;
 }

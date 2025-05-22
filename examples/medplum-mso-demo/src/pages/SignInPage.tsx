@@ -17,6 +17,7 @@ export function SignInPage(): JSX.Element {
       // Configure according to your settings
       googleClientId={getConfig().googleClientId}
       clientId={getConfig().clientId}
+      projectId={getConfig().projectId}
       onSuccess={() => navigate('/')}
     >
       <Logo size={32} />
