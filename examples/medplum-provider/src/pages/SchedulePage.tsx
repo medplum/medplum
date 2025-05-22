@@ -145,7 +145,6 @@ export function SchedulePage(): JSX.Element | null {
    */
   const handleSelectSlot = useCallback(
     (slot: SlotInfo) => {
-      console.log('slot', slot);
       createAppointmentHandlers.open();
       setAppointmentSlot(slot);
       // if (slot.action !== 'select') {
