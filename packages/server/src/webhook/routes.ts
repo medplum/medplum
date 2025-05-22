@@ -7,7 +7,6 @@ import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { sendFhirResponse } from '../fhir/response';
 
-
 /**
  * Allowed signature headers are:
  *

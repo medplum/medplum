@@ -241,7 +241,9 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   return result;
 }
 
-export function getResponseBodyFromResult(result: BotExecutionResult): string | { [key: string]: any } | any[] | boolean {
+export function getResponseBodyFromResult(
+  result: BotExecutionResult
+): string | { [key: string]: any } | any[] | boolean {
   let responseBody = result.returnValue;
   if (responseBody === undefined) {
     // If the bot did not return a value, then return an OperationOutcome
