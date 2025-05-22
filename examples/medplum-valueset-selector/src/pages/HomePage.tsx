@@ -123,7 +123,7 @@ export function HomePage(): JSX.Element {
         valueSet.expansion.contains.push({
           system: selectedCode.system,
           code: selectedCode.code,
-          display: selectedCode.display
+          display: selectedCode.display,
         });
         // Remove compose if include is empty
         if (valueSet.compose && Array.isArray(valueSet.compose.include) && valueSet.compose.include.length === 0) {
@@ -141,11 +141,11 @@ export function HomePage(): JSX.Element {
 
   const clearValueSet = (): void => {
     const cleared = {
-      resourceType: "ValueSet",
-      url: "http://example.org/fhir/ValueSet/custom",
-      name: "CustomValueSet",
-      title: "Custom Value Set",
-      status: "active"
+      resourceType: 'ValueSet',
+      url: 'http://example.org/fhir/ValueSet/custom',
+      name: 'CustomValueSet',
+      title: 'Custom Value Set',
+      status: 'active',
       // no compose property
     };
     setCustomValueSet(JSON.stringify(cleared, null, 2));
@@ -311,7 +311,9 @@ export function HomePage(): JSX.Element {
           <Box mt="md">
             <Group>
               <Button onClick={handleCreateOrUpdateValueSet}>Create/Update ValueSet</Button>
-              <Button variant="outline" onClick={clearValueSet}>Clear ValueSet</Button>
+              <Button variant="outline" onClick={clearValueSet}>
+                Clear ValueSet
+              </Button>
             </Group>
           </Box>
           {successMessage && (
