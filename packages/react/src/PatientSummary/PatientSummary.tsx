@@ -27,12 +27,7 @@ import { Insurance } from './Insurance';
 import { Medications } from './Medications';
 import { ProblemList } from './ProblemList';
 import { Vitals } from './Vitals';
-import { Visits } from './Visits';
-import { Immunizations } from './Immunizations';
 import { Procedures } from './Procedures';
-import { Devices } from './Devices';
-import { SocialHistory } from './SocialHistory';
-import { Goals } from './Goals';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import styles from './PatientSummary.module.css';
 
@@ -697,10 +692,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Divider />
             <Contact patient={patient} onClickResource={onClickResource} />
             <Divider />
-            <Immunizations patient={patient} immunizations={medicalData.immunizations || []} onClickResource={onClickResource} />
-            <Divider />
-            <Visits patient={patient} appointments={medicalData.appointments || []} encounters={medicalData.encounters || []} onClickResource={onClickResource} />
-            <Divider />
             <Insurance coverages={medicalData.coverages || []} onClickResource={onClickResource} />
             <Divider />
             <Allergies patient={patient} allergies={medicalData.allergies} onClickResource={onClickResource} />
@@ -709,21 +700,12 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Divider />
             <Procedures patient={patient} procedures={medicalData.procedures || []} onClickResource={onClickResource} />
             <Divider />
-            <Devices patient={patient} devices={medicalData.devices || []} onClickResource={onClickResource} />
-            <Divider />
+           <Divider />
             <Medications
               patient={patient}
               medicationRequests={medicalData.medicationRequests}
               onClickResource={onClickResource}
             />
-            <Divider />
-            <SocialHistory
-              patient={patient}
-              observations={medicalData.socialHistory}
-              onClickResource={onClickResource}
-            />
-            <Divider />
-            <Goals patient={patient} goals={medicalData.goals || []} onClickResource={onClickResource} />
             <Divider />
             <Vitals patient={patient} vitals={medicalData.vitals} onClickResource={onClickResource} />
             <Divider />
