@@ -165,7 +165,6 @@ export function SchedulePage(): JSX.Element | null {
    */
   const handleSelectEvent = useCallback(
     (event: ScheduleEvent) => {
-      console.log('event', event);
       const { resourceType, status, id } = event.resource;
 
       function handleSlot(): void {
