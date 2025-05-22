@@ -72,5 +72,9 @@ export interface StatusBadgeProps {
 }
 
 export function StatusBadge(props: StatusBadgeProps): JSX.Element {
-  return <Badge color={props.color || statusToColor[props.status]} variant={props.variant}>{props.status.replace(/-/g, ' ')}</Badge>;
+  return (
+    <Badge color={props.color || statusToColor[props.status]} variant={props.variant}>
+      {props.status.replace(/-/g, ' ')}
+    </Badge>
+  );
 }

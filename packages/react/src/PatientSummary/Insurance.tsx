@@ -1,28 +1,29 @@
-import { Box, Group, Text, Collapse, ActionIcon, UnstyledButton, Flex, Badge, Tooltip } from '@mantine/core';
+import { ActionIcon, Badge, Box, Collapse, Flex, Group, Text, Tooltip, UnstyledButton } from '@mantine/core';
+import { formatDate, formatHumanName } from '@medplum/core';
 import { Coverage } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
-import { useEffect, useRef, useState, JSX } from 'react';
-import { IconChevronDown, IconPlus, IconChevronRight } from '@tabler/icons-react';
-import { formatDate, formatHumanName } from '@medplum/core';
+import { IconChevronDown, IconChevronRight, IconPlus } from '@tabler/icons-react';
+import { JSX, useEffect, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import styles from './PatientSummary.module.css';
 
 // Helper to capitalize first letter of each word
 function capitalizeWords(str: string): string {
-  return str.split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+  return str
+    .split(' ')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ');
 }
 
 function formatClassInfo(coverage: Coverage): string {
   const classInfo = coverage.class
-    ?.filter(cls => cls.type?.coding?.[0]?.code !== 'plan')
-    .map(cls => {
+    ?.filter((cls) => cls.type?.coding?.[0]?.code !== 'plan')
+    .map((cls) => {
       const type = cls.type?.coding?.[0]?.code || '';
       return `${capitalizeWords(type)}: ${cls.value}`;
     })
     .join(' · ');
-  
+
   return classInfo || '';
 }
 
@@ -36,7 +37,7 @@ function CoverageItem({ coverage, onClickResource }: CoverageItemProps): JSX.Ele
   const textRef = useRef<HTMLSpanElement>(null);
   const payorRef = useRef<HTMLSpanElement>(null);
   const payorResource = useResource(coverage.payor?.[0]);
-  
+
   useEffect(() => {
     const payorEl = payorRef.current;
     if (payorEl) {
@@ -65,37 +66,42 @@ function CoverageItem({ coverage, onClickResource }: CoverageItemProps): JSX.Ele
   };
 
   return (
-    <Box 
-      className={styles.patientSummaryListItem}
-      onClick={handleClick}
-    >
+    <Box className={styles.patientSummaryListItem} onClick={handleClick}>
       <Tooltip label={payorName} position="top-start" openDelay={650} disabled={!isPayorOverflowed}>
         <Box style={{ position: 'relative' }}>
-          <Text 
-            size="sm" 
+          <Text
+            size="sm"
             className={styles.patientSummaryListItemText}
             style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0 }}
           >
             <span
               ref={payorRef}
-              style={{ fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', display: 'block' }}
+              style={{
+                fontWeight: 500,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                width: '100%',
+                display: 'block',
+              }}
             >
               {payorName}
             </span>
             <span
               ref={textRef}
-              style={{ fontWeight: 400, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}
+              style={{
+                fontWeight: 400,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                width: '100%',
+              }}
             >
               {detailsText}
             </span>
           </Text>
           <Group mt={2} gap={4}>
-            <Badge 
-              size="xs" 
-              color="green"
-              variant="light"
-              className={styles.patientSummaryBadge}
-            >
+            <Badge size="xs" color="green" variant="light" className={styles.patientSummaryBadge}>
               Active
             </Badge>
             {coverage.period?.end && (
@@ -106,13 +112,8 @@ function CoverageItem({ coverage, onClickResource }: CoverageItemProps): JSX.Ele
           </Group>
           <div className={styles.patientSummaryGradient} />
           <div className={styles.patientSummaryChevronContainer}>
-            <ActionIcon
-              className={styles.patientSummaryChevron}
-              size="md"
-              variant="transparent"
-              tabIndex={-1}
-            >
-              <IconChevronRight size={16} stroke={2.5}/>
+            <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
+              <IconChevronRight size={16} stroke={2.5} />
             </ActionIcon>
           </div>
         </Box>
@@ -131,7 +132,7 @@ export function Insurance(props: InsuranceProps): JSX.Element {
   const [collapsed, setCollapsed] = useState(false);
 
   // Filter to only show active coverages
-  const activeCoverages = coverages.filter(coverage => coverage.status === 'active');
+  const activeCoverages = coverages.filter((coverage) => coverage.status === 'active');
 
   return (
     <Box style={{ position: 'relative' }}>
@@ -147,11 +148,7 @@ export function Insurance(props: InsuranceProps): JSX.Element {
             >
               <IconChevronDown size={20} />
             </ActionIcon>
-            <Text 
-              fz="md" 
-              fw={800} 
-              onClick={() => setCollapsed((c) => !c)}
-            >
+            <Text fz="md" fw={800} onClick={() => setCollapsed((c) => !c)}>
               Insurance
             </Text>
           </Group>
@@ -185,4 +182,4 @@ export function Insurance(props: InsuranceProps): JSX.Element {
       </Collapse>
     </Box>
   );
-} 
+}

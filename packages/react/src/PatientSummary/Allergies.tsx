@@ -7,8 +7,8 @@ import { IconChevronDown, IconPlus } from '@tabler/icons-react';
 import { JSX, useCallback, useMemo, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import { AllergyDialog } from './AllergyDialog';
-import SummaryItem from './SummaryItem';
 import styles from './PatientSummary.module.css';
+import SummaryItem from './SummaryItem';
 
 export interface AllergiesProps {
   readonly patient: Patient;
@@ -108,7 +108,6 @@ export function Allergies(props: AllergiesProps): JSX.Element {
                   />
                 ))}
               </Flex>
-           
             </Box>
           ) : (
             <Box ml="36" my="4">

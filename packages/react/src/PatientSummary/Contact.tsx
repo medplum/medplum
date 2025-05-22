@@ -1,7 +1,7 @@
 import { ActionIcon, Box, Collapse, Group, Text, Tooltip, UnstyledButton } from '@mantine/core';
 import { ContactPoint, Patient, Resource } from '@medplum/fhirtypes';
 import { IconChevronDown, IconChevronRight, IconSquares } from '@tabler/icons-react';
-import { useState, JSX } from 'react';
+import { JSX, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import styles from './PatientSummary.module.css';
 
