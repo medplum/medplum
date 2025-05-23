@@ -1,14 +1,13 @@
-import { ActionIcon, Box, Flex, Group, Modal, SimpleGrid, Text, TextInput, Textarea } from '@mantine/core';
+import { Flex, Group, Modal, SimpleGrid, Text, Textarea, TextInput, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { formatDate, formatQuantity } from '@medplum/core';
+import { formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconChevronRight } from '@tabler/icons-react';
 import { JSX, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
-import { CollapsibleSection } from './CollapsibleSection'; // Import the new component
-import styles from './PatientSummary.module.css';
+import { CollapsibleSection } from './CollapsibleSection';
+import { ConceptBadge } from './ConceptBadge';
 import {
   createCompoundObservation,
   createLoincCode,
@@ -105,7 +104,6 @@ const LOINC_CODES: ObservationMeta[] = [
   },
 ];
 
-
 export interface VitalsProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
@@ -175,36 +173,19 @@ export function Vitals(props: VitalsProps): JSX.Element {
           }
 
           return (
-            <Box key={meta.code} className={styles.patientSummaryListItem}>
-              <Box style={{ position: 'relative' }}>
-                <Text size="sm" fw={500} style={{ cursor: 'pointer' }}>
-                  {meta.short}:
+            <Group key={meta.name} justify="flex-start" gap="md">
+              <Tooltip label={meta.title}>
+                <Text>
+                  {meta.short} : {formatQuantity(getObservationValue(obs, meta.component))}
                 </Text>
-                <Text size="sm">{formatQuantity(getObservationValue(obs, meta.component))}</Text>
-                {obs?.effectiveDateTime && (
-                  <>
-                    <Text size="xs" fw={500} color="gray.6" ml={2}>
-                      {formatDate(obs.effectiveDateTime)}
-                    </Text>
-                    <div className={styles.patientSummaryGradient} />
-                    <div className={styles.patientSummaryChevronContainer}>
-                      <ActionIcon
-                        className={styles.patientSummaryChevron}
-                        size="md"
-                        variant="transparent"
-                        tabIndex={-1}
-                      >
-                        <IconChevronRight size={16} stroke={2.5} />
-                      </ActionIcon>
-                    </div>
-                  </>
-                )}
-              </Box>
-            </Box>
+              </Tooltip>
+            </Group>
           );
         })}
       </Flex>
-    ) : null;
+    ) : (
+      <Text>(none)</Text>
+    );
 
   return (
     <>

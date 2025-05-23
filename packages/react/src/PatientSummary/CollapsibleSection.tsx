@@ -51,7 +51,7 @@ export function CollapsibleSection({ title, children, onAdd }: CollapsibleSectio
 
       <Collapse in={!collapsed}>
         <Box ml="var(--mantine-spacing-xl)" mt="xs" mb="md">
-          {children || <Text c="dimmed">(none)</Text>}
+          {children}
         </Box>
       </Collapse>
     </Box>
