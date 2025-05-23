@@ -23,9 +23,7 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   let rejectOnTimeout!: () => void;
   const disconnectedPromise = new Promise<void>((resolve, reject) => {
     rejectOnTimeout = () => reject(new Error('Timed out while waiting for IPC to disconnect'));
-    process.once('disconnect', () => {
-      resolve();
-    });
+    process.once('disconnect', resolve);
   });
 
   process.send({ type: 'STARTED' });
@@ -51,18 +49,9 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   clearTimeout(disconnectTimeout);
 
   try {
-    // Stop service
-    globalLogger.info('Stopping running agent service...');
-    execSync('net stop "Medplum Agent"');
-    globalLogger.info('Agent service stopped succesfully');
-  } catch (_err: unknown) {
-    globalLogger.info('Agent service not running, skipping stopping the service');
-  }
-
-  try {
     // Run installer
     globalLogger.info('Running installer silently', { binPath });
-    spawnSync(binPath, ['/S']);
+    spawnSync(`"${binPath}" /S`, { windowsHide: true, shell: true });
     globalLogger.info(`Agent version ${version} successfully installed`);
   } catch (err: unknown) {
     // Try to restart Agent service if anything goes wrong
