@@ -3363,7 +3363,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         if (attemptNum >= maxRetries || !isRetryable(response)) {
           return response;
         }
-        await sleep(this.getRetryDelay(attemptNum));
+
+        const delayMs = this.getRetryDelay(attemptNum);
+        // Return to user immediately if delay would be very long
+        if (delayMs > 2_000) {
+          return response;
+        }
+        await sleep(delayMs);
       } catch (err) {
         // This is for the 1st retry to avoid multiple notifications
         if ((err as Error).message === 'Failed to fetch' && attemptNum === 0) {
