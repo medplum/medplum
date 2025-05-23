@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-if [[ -z "${SERVER_DOCKERHUB_REPOSITORY}" ]]; then
-  echo "SERVER_DOCKERHUB_REPOSITORY is missing"
+if [[ -z "${GITHUB_SHA}" ]]; then
+  echo "GITHUB_SHA is missing"
   exit 1
 fi
 
-if [[ -z "${GITHUB_SHA}" ]]; then
-  echo "GITHUB_SHA is missing"
+if [[ -z "${SERVER_DOCKERHUB_REPOSITORY}" ]]; then
+  echo "SERVER_DOCKERHUB_REPOSITORY is missing"
   exit 1
 fi
 
@@ -36,13 +36,6 @@ tar \
   packages/server/dist \
   packages/server/static
 
-# Build app tarball
-# The -C flag rewrites the base path from packages/app/dist/ to ./
-tar \
-  --no-xattrs \
-  -czf ./packages/app/medplum-app.tar.gz \
-  -C packages/app/dist .
-
 # Supply chain attestations
 # See: https://docs.docker.com/scout/policy/#supply-chain-attestations
 ATTESTATIONS="--provenance=true --sbom=true"
@@ -68,16 +61,3 @@ if [[ "$IS_RELEASE" == "true" ]]; then
   SERVER_TAGS="$SERVER_TAGS --tag $SERVER_DOCKERHUB_REPOSITORY:$FULL_VERSION --tag $SERVER_DOCKERHUB_REPOSITORY:$MAJOR_DOT_MINOR"
 fi
 docker buildx build $ATTESTATIONS $PLATFORMS $SERVER_TAGS --push .
-
-# Only build app if APP_DOCKERHUB_REPOSITORY was passed
-# This is so we can build the staging server Dockerfile without having to build app
-if [[ -n "${APP_DOCKERHUB_REPOSITORY}" ]]; then
-  # Build and push app Docker images
-  APP_TAGS="--tag $APP_DOCKERHUB_REPOSITORY:latest --tag $APP_DOCKERHUB_REPOSITORY:$GITHUB_SHA"
-  if [[ "$IS_RELEASE" == "true" ]]; then
-    APP_TAGS="$APP_TAGS --tag $APP_DOCKERHUB_REPOSITORY:$FULL_VERSION --tag $APP_DOCKERHUB_REPOSITORY:$MAJOR_DOT_MINOR"
-  fi
-  pushd packages/app
-  docker buildx build $ATTESTATIONS $PLATFORMS $APP_TAGS --push .
-  popd
-fi
