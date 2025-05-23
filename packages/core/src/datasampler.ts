@@ -23,7 +23,7 @@ export class DataSampler {
   private code?: CodeableConcept;
   private unit?: DataUnit;
   private readonly sampling?: Omit<SampledData, 'data'>;
-  private dataPoints: number[];
+  private readonly dataPoints: number[];
 
   constructor(opts?: { code?: CodeableConcept; unit?: DataUnit; sampling?: SamplingInfo }) {
     this.dataPoints = [];

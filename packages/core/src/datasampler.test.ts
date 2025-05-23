@@ -210,6 +210,12 @@ describe('DataSampler', () => {
     ).toThrow(/does not match code/);
   });
 
+  test('Requires code for data points', () => {
+    const sample = new DataSampler();
+    sample.addData(1, 2, 3);
+    expect(() => sample.summarize({ text: 'Summary' }, (data) => data.reduce(sum, 0))).toThrow(/code .* required/i);
+  });
+
   test('Computed value with unit different from data points', () => {
     const sample = new DataSampler();
     sample.addObservation({
