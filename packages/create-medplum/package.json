@@ -1,6 +1,6 @@
 {
   "name": "create-medplum",
-  "version": "4.1.4",
+  "version": "4.1.5",
   "description": "Medplum NPM Initializer",
   "keywords": [
     "medplum",
@@ -43,7 +43,7 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@types/node": "20.17.46"
+    "@types/node": "20.17.48"
   },
   "engines": {
     "node": ">=20.0.0"

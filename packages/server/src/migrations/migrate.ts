@@ -13,7 +13,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { Client, Pool, QueryResult } from 'pg';
+import { Client, escapeIdentifier, Pool, PoolClient, QueryResult } from 'pg';
 import { getStandardAndDerivedSearchParameters } from '../fhir/lookups/util';
 import {
   ColumnSearchParameterImplementation,
@@ -23,57 +23,20 @@ import {
 } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
 import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
+import * as fns from './migrate-functions';
+import { escapeUnicode, normalizeColumnType, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
 import {
-  doubleEscapeSingleQuotes,
-  escapeUnicode,
-  parseIndexColumns,
-  quotedColumnName,
-  splitIndexColumnNames,
-} from './migrate-utils';
+  ColumnDefinition,
+  IndexDefinition,
+  IndexType,
+  IndexTypes,
+  MigrationAction,
+  MigrationActionResult,
+  SchemaDefinition,
+  TableDefinition,
+} from './types';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
-let DRY_RUN = false;
-let ALLOW_POST_DEPLOY_ACTIONS = false;
-let SKIP_POST_DEPLOY_ACTIONS = false;
-let ADD_ANALYZE_RESOURCE_TABLES = false;
-
-export interface SchemaDefinition {
-  tables: TableDefinition[];
-  functions: SqlFunctionDefinition[];
-}
-
-export interface TableDefinition {
-  name: string;
-  columns: ColumnDefinition[];
-  compositePrimaryKey?: string[];
-  indexes: IndexDefinition[];
-}
-
-export interface ColumnDefinition {
-  name: string;
-  type: string;
-  notNull?: boolean;
-  defaultValue?: string;
-  primaryKey?: boolean;
-}
-
-const IndexTypes = ['btree', 'gin', 'gist'] as const;
-type IndexType = (typeof IndexTypes)[number];
-
-export type IndexColumn = {
-  expression: string;
-  name: string;
-};
-
-export interface IndexDefinition {
-  columns: (string | IndexColumn)[];
-  indexType: IndexType;
-  unique?: boolean;
-  include?: string[];
-  where?: string;
-  indexNameSuffix?: string;
-  indexdef?: string;
-}
 
 // Custom SQL functions should be avoided unless absolutely necessary.
 // Do not add any functions to this list unless you have a really good reason for doing so.
@@ -95,10 +58,8 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
 }
 
 export async function main(): Promise<void> {
-  DRY_RUN = process.argv.includes('--dryRun');
-  ALLOW_POST_DEPLOY_ACTIONS = process.argv.includes('--allowPostDeploy');
-  SKIP_POST_DEPLOY_ACTIONS = process.argv.includes('--skipPostDeploy');
-  ADD_ANALYZE_RESOURCE_TABLES = process.argv.includes('--addAnalyzeResourceTables');
+  const dryRun = process.argv.includes('--dryRun');
+
   indexStructureDefinitionsAndSearchParameters();
 
   const dbClient = new Client({
@@ -110,7 +71,10 @@ export async function main(): Promise<void> {
   });
   const options: BuildMigrationOptions = {
     dbClient,
+    skipPostDeployActions: process.argv.includes('--skipPostDeploy'),
+    allowPostDeployActions: process.argv.includes('--allowPostDeploy'),
     dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
+    analyzeResourceTables: process.argv.includes('--analyzeResourceTables'),
   };
   await dbClient.connect();
 
@@ -118,7 +82,7 @@ export async function main(): Promise<void> {
   await buildMigration(b, options);
 
   await dbClient.end();
-  if (DRY_RUN) {
+  if (dryRun) {
     console.log(b.toString());
   } else {
     writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
@@ -127,18 +91,67 @@ export async function main(): Promise<void> {
 }
 
 export type BuildMigrationOptions = {
-  dbClient: Client | Pool;
+  dbClient: Client | Pool | PoolClient;
   dropUnmatchedIndexes?: boolean;
+  skipPostDeployActions?: boolean;
   allowPostDeployActions?: boolean;
+  analyzeResourceTables?: boolean;
 };
 
 export async function buildMigration(b: FileBuilder, options: BuildMigrationOptions): Promise<void> {
+  const actions = await generateMigrationActions(options);
+  writeActionsToBuilder(b, actions);
+}
+
+export async function generateMigrationActions(options: BuildMigrationOptions): Promise<MigrationAction[]> {
+  const ctx: GenerateActionsContext = {
+    postDeployAction: (action, description) => {
+      if (options.skipPostDeployActions) {
+        console.log(`Skipping post-deploy migration for: ${description}`);
+        return;
+      }
+
+      if (!options.allowPostDeployActions) {
+        throw new Error(`Post-deploy migration required for: ${description}`);
+      }
+
+      action();
+    },
+  };
   const startDefinition = await buildStartDefinition(options);
   const targetDefinition = buildTargetDefinition();
-  if (typeof options.allowPostDeployActions === 'boolean') {
-    ALLOW_POST_DEPLOY_ACTIONS = options.allowPostDeployActions;
+  const actions: MigrationAction[] = [];
+
+  for (const targetFunction of targetDefinition.functions) {
+    const startFunction = startDefinition.functions.find((f) => f.name === targetFunction.name);
+    if (!startFunction) {
+      actions.push({
+        type: 'CREATE_FUNCTION',
+        name: targetFunction.name,
+        createQuery: targetFunction.createQuery,
+      });
+    }
   }
-  writeMigrations(b, startDefinition, targetDefinition, options);
+
+  for (const targetTable of targetDefinition.tables) {
+    const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
+    if (!startTable) {
+      actions.push({ type: 'CREATE_TABLE', definition: targetTable });
+    } else {
+      actions.push(...generateColumnsActions(ctx, startTable, targetTable));
+      actions.push(...generateIndexesActions(ctx, startTable, targetTable, options));
+    }
+  }
+
+  if (options.analyzeResourceTables) {
+    for (const [resourceType, fhirType] of Object.entries(getAllDataTypes())) {
+      if (!isResourceTypeSchema(fhirType)) {
+        continue;
+      }
+      actions.push({ type: 'ANALYZE_TABLE', tableName: resourceType });
+    }
+  }
+  return actions;
 }
 
 async function buildStartDefinition(options: BuildMigrationOptions): Promise<SchemaDefinition> {
@@ -167,12 +180,12 @@ async function buildStartDefinition(options: BuildMigrationOptions): Promise<Sch
   return { tables, functions };
 }
 
-async function getTableNames(db: Client | Pool): Promise<string[]> {
+async function getTableNames(db: Client | Pool | PoolClient): Promise<string[]> {
   const rs = await db.query("SELECT * FROM information_schema.tables WHERE table_schema='public'");
   return rs.rows.map((row) => row.table_name);
 }
 
-async function getTableDefinition(db: Client | Pool, name: string): Promise<TableDefinition> {
+async function getTableDefinition(db: Client | Pool | PoolClient, name: string): Promise<TableDefinition> {
   return {
     name,
     columns: await getColumns(db, name),
@@ -180,7 +193,10 @@ async function getTableDefinition(db: Client | Pool, name: string): Promise<Tabl
   };
 }
 
-async function getFunctionDefinition(db: Client | Pool, name: string): Promise<SqlFunctionDefinition | undefined> {
+async function getFunctionDefinition(
+  db: Client | Pool | PoolClient,
+  name: string
+): Promise<SqlFunctionDefinition | undefined> {
   let result: QueryResult<{ pg_get_functiondef: string }>;
   try {
     result = await db.query(`SELECT pg_catalog.pg_get_functiondef('${name}'::regproc::oid);`);
@@ -202,7 +218,7 @@ async function getFunctionDefinition(db: Client | Pool, name: string): Promise<S
   return undefined;
 }
 
-async function getColumns(db: Client | Pool, tableName: string): Promise<ColumnDefinition[]> {
+async function getColumns(db: Client | Pool | PoolClient, tableName: string): Promise<ColumnDefinition[]> {
   // https://stackoverflow.com/questions/8146448/get-the-default-values-of-table-columns-in-postgres
   const rs = await db.query(`
     SELECT
@@ -234,7 +250,7 @@ async function getColumns(db: Client | Pool, tableName: string): Promise<ColumnD
   }));
 }
 
-async function getIndexes(db: Client | Pool, tableName: string): Promise<IndexDefinition[]> {
+async function getIndexes(db: Client | Pool | PoolClient, tableName: string): Promise<IndexDefinition[]> {
   const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='${tableName}'`);
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
@@ -345,6 +361,10 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
   return indexDef;
 }
 
+export function parseIndexName(indexdef: string): string | undefined {
+  return indexdef.match(/INDEX "?([^"]+)"? ON/i)?.[1];
+}
+
 function buildTargetDefinition(): SchemaDefinition {
   const result: SchemaDefinition = { tables: [], functions: TargetFunctions };
 
@@ -363,11 +383,16 @@ function buildTargetDefinition(): SchemaDefinition {
   return result;
 }
 
-export function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirType: InternalTypeSchema): void {
+export function buildCreateTables(
+  result: SchemaDefinition,
+  maybeResourceType: string,
+  fhirType: InternalTypeSchema
+): void {
   if (!isResourceTypeSchema(fhirType)) {
     // Don't create a table if fhirType is a subtype or not a resource type
     return;
   }
+  const resourceType = maybeResourceType as ResourceType;
 
   const tableDefinition: TableDefinition = {
     name: resourceType,
@@ -544,7 +569,7 @@ function getSearchParameterIndexes(
         {
           columns: [
             {
-              expression: `${TokenArrayToTextFn.name}(${quotedColumnName(impl.textSearchColumnName)}) gin_trgm_ops`,
+              expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.textSearchColumnName)}) gin_trgm_ops`,
               name: impl.columnName + 'Trgm',
             },
           ],
@@ -604,7 +629,7 @@ function getColumnDefinition(name: string, impl: SearchParameterImplementation):
   return { name, type: impl.array ? baseColumnType + '[]' : baseColumnType, notNull: false };
 }
 
-function buildSearchIndexes(result: TableDefinition, resourceType: string): void {
+function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType): void {
   if (resourceType === 'UserConfiguration') {
     const nameCol = result.columns.find((c) => c.name === 'name');
     if (!nameCol) {
@@ -614,13 +639,8 @@ function buildSearchIndexes(result: TableDefinition, resourceType: string): void
   }
 
   if (resourceType === 'User') {
-    result.indexes.push({ columns: ['email'], indexType: 'btree' });
     result.indexes.push({ columns: ['project', 'email'], indexType: 'btree', unique: true });
     result.indexes.push({ columns: ['project', 'externalId'], indexType: 'btree', unique: true });
-  }
-
-  if (resourceType === 'Coding') {
-    result.indexes.push({ columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id', 'foo'] });
   }
 
   if (resourceType === 'Encounter') {
@@ -722,16 +742,19 @@ function buildHumanNameTable(result: SchemaDefinition): void {
         columns: [{ expression: "to_tsvector('simple'::regconfig, name)", name: 'name' }],
         indexType: 'gin',
         unique: false,
+        indexNameSuffix: 'idx_tsv',
       },
       {
         columns: [{ expression: "to_tsvector('simple'::regconfig, given)", name: 'given' }],
         indexType: 'gin',
         unique: false,
+        indexNameSuffix: 'idx_tsv',
       },
       {
         columns: [{ expression: "to_tsvector('simple'::regconfig, family)", name: 'family' }],
         indexType: 'gin',
         unique: false,
+        indexNameSuffix: 'idx_tsv',
       },
     ]
   );
@@ -790,7 +813,6 @@ function buildCodingPropertyTable(result: SchemaDefinition): void {
       { name: 'target', type: 'BIGINT' },
       { name: 'value', type: 'TEXT' },
     ],
-    compositePrimaryKey: ['target', 'property', 'coding'],
     indexes: [
       { columns: ['coding', 'property', 'target', 'value'], indexType: 'btree', unique: true },
       { columns: ['target', 'property', 'coding'], indexType: 'btree', unique: false, where: 'target IS NOT NULL' },
@@ -812,12 +834,71 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
   });
 }
 
-function writeMigrations(
-  b: FileBuilder,
-  startDefinition: SchemaDefinition,
-  targetDefinition: SchemaDefinition,
-  options: BuildMigrationOptions
-): void {
+export async function executeMigrationActions(
+  client: Client | Pool | PoolClient,
+  actions: MigrationAction[]
+): Promise<MigrationActionResult[]> {
+  const results: MigrationActionResult[] = [];
+  for (const action of actions) {
+    switch (action.type) {
+      case 'ANALYZE_TABLE':
+        await fns.analyzeTable(client, results, action.tableName);
+        break;
+      case 'CREATE_FUNCTION': {
+        await fns.query(client, results, action.createQuery);
+        break;
+      }
+      case 'CREATE_TABLE': {
+        const queries = getCreateTableQueries(action.definition);
+        for (const query of queries) {
+          await fns.query(client, results, query);
+        }
+        break;
+      }
+      case 'ADD_COLUMN': {
+        const query = getAddColumnQuery(action.tableName, action.columnDefinition);
+        await fns.query(client, results, query);
+        break;
+      }
+      case 'DROP_COLUMN': {
+        const query = getDropColumnQuery(action.tableName, action.columnName);
+        await fns.query(client, results, query);
+        break;
+      }
+      case 'ALTER_COLUMN_SET_DEFAULT': {
+        const query = getAlterColumnSetDefaultQuery(action.tableName, action.columnName, action.defaultValue);
+        await fns.query(client, results, query);
+        break;
+      }
+      case 'ALTER_COLUMN_DROP_DEFAULT': {
+        const query = getAlterColumnDropDefaultQuery(action.tableName, action.columnName);
+        await fns.query(client, results, query);
+        break;
+      }
+      case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
+        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+        await fns.query(client, results, query);
+        break;
+      }
+      case 'ALTER_COLUMN_TYPE': {
+        const query = getAlterColumnTypeQuery(action.tableName, action.columnName, action.columnType);
+        await fns.query(client, results, query);
+        break;
+      }
+      case 'CREATE_INDEX': {
+        await fns.idempotentCreateIndex(client, results, action.indexName, action.createIndexSql);
+        break;
+      }
+      case 'DROP_INDEX': {
+        await fns.query(client, results, getDropIndexQuery(action.indexName));
+        break;
+      }
+    }
+  }
+  return results;
+}
+
+function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
   b.append("import { PoolClient } from 'pg';");
   b.append("import * as fns from '../migrate-functions';");
   b.newLine();
@@ -826,24 +907,67 @@ function writeMigrations(
   b.indentCount++;
   b.append('const actions: { name: string; durationMs: number }[] = []');
 
-  for (const targetFunction of targetDefinition.functions) {
-    const startFunction = startDefinition.functions.find((f) => f.name === targetFunction.name);
-    if (!startFunction) {
-      writeCreateFunction(b, targetFunction);
-    }
-  }
-
-  for (const targetTable of targetDefinition.tables) {
-    const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
-    migrateTable(b, startTable, targetTable, options);
-  }
-
-  if (ADD_ANALYZE_RESOURCE_TABLES) {
-    for (const [resourceType, fhirType] of Object.entries(getAllDataTypes())) {
-      if (!isResourceTypeSchema(fhirType)) {
-        continue;
+  for (const action of actions) {
+    switch (action.type) {
+      case 'ANALYZE_TABLE':
+        b.appendNoWrap(`await fns.analyzeTable(client, actions, '${action.tableName}');`);
+        break;
+      case 'CREATE_FUNCTION': {
+        b.appendNoWrap(`await fns.query(client, actions, \`${escapeUnicode(action.createQuery)}\`);`);
+        break;
       }
-      b.appendNoWrap(`await fns.analyzeTable(client, actions, '${resourceType}');`);
+      case 'CREATE_TABLE': {
+        const queries = getCreateTableQueries(action.definition);
+        for (const query of queries) {
+          b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        }
+        break;
+      }
+      case 'ADD_COLUMN': {
+        const query = getAddColumnQuery(action.tableName, action.columnDefinition);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        break;
+      }
+      case 'DROP_COLUMN': {
+        const query = getDropColumnQuery(action.tableName, action.columnName);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        break;
+      }
+      case 'ALTER_COLUMN_SET_DEFAULT': {
+        const query = getAlterColumnSetDefaultQuery(action.tableName, action.columnName, action.defaultValue);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        break;
+      }
+      case 'ALTER_COLUMN_DROP_DEFAULT': {
+        const query = getAlterColumnDropDefaultQuery(action.tableName, action.columnName);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        break;
+      }
+      case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
+        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        break;
+      }
+      case 'ALTER_COLUMN_TYPE': {
+        const query = getAlterColumnTypeQuery(action.tableName, action.columnName, action.columnType);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        break;
+      }
+      case 'CREATE_INDEX': {
+        b.appendNoWrap(
+          `await fns.idempotentCreateIndex(client, actions, '${action.indexName}', \`${action.createIndexSql}\`);`
+        );
+        break;
+      }
+      case 'DROP_INDEX': {
+        const query = getDropIndexQuery(action.indexName);
+        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        break;
+      }
+      default: {
+        action satisfies never;
+        throw new Error('Unsupported action type', { cause: action });
+      }
     }
   }
 
@@ -851,141 +975,171 @@ function writeMigrations(
   b.append('}');
 }
 
-function migrateTable(
-  b: FileBuilder,
-  startTable: TableDefinition | undefined,
-  targetTable: TableDefinition,
-  options: BuildMigrationOptions
-): void {
-  if (!startTable) {
-    writeCreateTable(b, targetTable);
-  } else {
-    migrateColumns(b, startTable, targetTable);
-    migrateIndexes(b, startTable, targetTable, options);
-  }
-}
-
-function writeCreateFunction(b: FileBuilder, functionDefinition: SqlFunctionDefinition): void {
-  b.appendNoWrap(`await fns.query(client, actions, \`${escapeUnicode(functionDefinition.createQuery)}\`);`);
-  b.newLine();
-}
-
-function writeCreateTable(b: FileBuilder, tableDefinition: TableDefinition): void {
-  b.newLine();
-  b.appendNoWrap(`await fns.query(client, actions, \`CREATE TABLE IF NOT EXISTS "${tableDefinition.name}" (`);
-  b.indentCount++;
-  for (let i = 0; i < tableDefinition.columns.length; i++) {
-    b.append(
-      `"${tableDefinition.columns[i].name}" ${tableDefinition.columns[i].type}` +
-        (i !== tableDefinition.columns.length - 1 ? ',' : '')
-    );
-  }
-  b.indentCount--;
-  b.append(')`);');
-  b.newLine();
-
-  if (tableDefinition.compositePrimaryKey !== undefined && tableDefinition.compositePrimaryKey.length > 0) {
-    writeAddPrimaryKey(b, tableDefinition, tableDefinition.compositePrimaryKey);
-  }
-
-  for (const indexDefinition of tableDefinition.indexes) {
-    writeAddIndex(b, tableDefinition, indexDefinition);
-  }
-  b.newLine();
-}
-
-function migrateColumns(b: FileBuilder, startTable: TableDefinition, targetTable: TableDefinition): void {
+function generateColumnsActions(
+  ctx: GenerateActionsContext,
+  startTable: TableDefinition,
+  targetTable: TableDefinition
+): MigrationAction[] {
+  const actions: MigrationAction[] = [];
   for (const targetColumn of targetTable.columns) {
     const startColumn = startTable.columns.find((c) => c.name === targetColumn.name);
     if (!startColumn) {
-      writeAddColumn(b, targetTable, targetColumn);
+      actions.push({ type: 'ADD_COLUMN', tableName: targetTable.name, columnDefinition: targetColumn });
     } else if (!columnDefinitionsEqual(startColumn, targetColumn)) {
-      writeUpdateColumn(b, targetTable, startColumn, targetColumn);
+      actions.push(...generateAlterColumnActions(ctx, targetTable, startColumn, targetColumn));
     }
   }
   for (const startColumn of startTable.columns) {
     if (!targetTable.columns.some((c) => c.name === startColumn.name)) {
-      writeDropColumn(b, targetTable, startColumn);
+      actions.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
     }
   }
+  return actions;
 }
 
-function normalizeColumnType(colType: string): string {
-  return colType.toLocaleUpperCase().replace('TIMESTAMP WITH TIME ZONE', 'TIMESTAMPTZ').trim();
-}
+type GenerateActionsContext = {
+  /**
+   * Guard function that should be called before writes of post-deploy actions.
+   * If `--skipPostDeploy` is provided, the action is skipped.
+   * If `--allowPostDeploy` is not provided, the action is performed.
+   * Otherwise, an error is thrown to halt the migration generation process.
+   * @param action - The post-deploy action to perform if the guard passes.
+   * @param description - A human-readable description of the action that is being checked
+   */
+  postDeployAction: (action: () => void, description: string) => void;
+};
 
-function writeAddColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
-  const { name, type, notNull, primaryKey, defaultValue } = columnDefinition;
-  b.appendNoWrap(
-    `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ADD COLUMN IF NOT EXISTS "${name}" ${type}${notNull ? ' NOT NULL' : ''}${primaryKey ? ' PRIMARY KEY' : ''}${defaultValue ? ' DEFAULT ' + defaultValue : ''}');`
-  );
-}
-
-function writeUpdateColumn(
-  b: FileBuilder,
+function generateAlterColumnActions(
+  ctx: GenerateActionsContext,
   tableDefinition: TableDefinition,
   startDef: ColumnDefinition,
   targetDef: ColumnDefinition
-): void {
+): MigrationAction[] {
+  const actions: MigrationAction[] = [];
   if (startDef.defaultValue !== targetDef.defaultValue) {
-    postDeployAction(() => {
+    ctx.postDeployAction(() => {
       if (targetDef.defaultValue) {
-        b.appendNoWrap(
-          `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" SET DEFAULT ${targetDef.defaultValue}');`
-        );
+        actions.push({
+          type: 'ALTER_COLUMN_SET_DEFAULT',
+          tableName: tableDefinition.name,
+          columnName: targetDef.name,
+          defaultValue: targetDef.defaultValue,
+        });
       } else {
-        b.appendNoWrap(
-          `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" DROP DEFAULT');`
-        );
+        actions.push({
+          type: 'ALTER_COLUMN_DROP_DEFAULT',
+          tableName: tableDefinition.name,
+          columnName: targetDef.name,
+        });
       }
     }, `Change default value of ${tableDefinition.name}.${targetDef.name}`);
   }
 
   if (startDef.notNull !== targetDef.notNull) {
-    postDeployAction(() => {
-      b.appendNoWrap(
-        `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" ${targetDef.notNull ? 'SET' : 'DROP'} NOT NULL');`
-      );
+    ctx.postDeployAction(() => {
+      actions.push({
+        type: 'ALTER_COLUMN_UPDATE_NOT_NULL',
+        tableName: tableDefinition.name,
+        columnName: targetDef.name,
+        notNull: targetDef.notNull ?? false,
+      });
     }, `Change NOT NULL of ${tableDefinition.name}.${targetDef.name}`);
   }
 
   if (startDef.type !== targetDef.type) {
-    postDeployAction(() => {
-      b.appendNoWrap(
-        `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" TYPE ${targetDef.type}');`
-      );
+    ctx.postDeployAction(() => {
+      actions.push({
+        type: 'ALTER_COLUMN_TYPE',
+        tableName: tableDefinition.name,
+        columnName: targetDef.name,
+        columnType: targetDef.type,
+      });
     }, `Change type of ${tableDefinition.name}.${targetDef.name}`);
   }
+  return actions;
 }
 
-function writeDropColumn(b: FileBuilder, tableDefinition: TableDefinition, columnDefinition: ColumnDefinition): void {
-  b.appendNoWrap(
-    `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" DROP COLUMN IF EXISTS "${columnDefinition.name}"');`
-  );
+function getCreateTableQueries(tableDef: TableDefinition): string[] {
+  const queries: string[] = [];
+  const createTableParts = [`CREATE TABLE IF NOT EXISTS "${tableDef.name}" (`];
+  for (let i = 0; i < tableDef.columns.length; i++) {
+    const column = tableDef.columns[i];
+    createTableParts.push(`  "${column.name}" ${column.type}` + (i !== tableDef.columns.length - 1 ? ',' : ''));
+  }
+  createTableParts.push(')');
+  queries.push(createTableParts.join('\n'));
+
+  if (tableDef.compositePrimaryKey !== undefined && tableDef.compositePrimaryKey.length > 0) {
+    queries.push(
+      `ALTER TABLE IF EXISTS "${tableDef.name}" ADD PRIMARY KEY (${tableDef.compositePrimaryKey.map((c) => `"${c}"`).join(', ')})`
+    );
+  }
+
+  for (const indexDef of tableDef.indexes) {
+    const indexName = getIndexName(tableDef.name, indexDef);
+    const createIndexSql = buildIndexSql(tableDef.name, indexName, indexDef);
+    queries.push(createIndexSql);
+  }
+
+  return queries;
 }
 
-function writeAddPrimaryKey(b: FileBuilder, tableDefinition: TableDefinition, primaryKeyColumns: string[]): void {
-  postDeployAction(
-    () => {
-      b.appendNoWrap(
-        `await fns.query(client, actions, 'ALTER TABLE IF EXISTS "${tableDefinition.name}" ADD PRIMARY KEY (${primaryKeyColumns.map((c) => `"${c}"`).join(', ')})');`
-      );
-    },
-    `ADD PRIMARY KEY ${tableDefinition.name} (${primaryKeyColumns.join(', ')})`
-  );
+function getAddColumnQuery(tableName: string, columnDefinition: ColumnDefinition): string {
+  const { name, type, notNull, primaryKey, defaultValue } = columnDefinition;
+  return `ALTER TABLE IF EXISTS "${tableName}" ADD COLUMN IF NOT EXISTS "${name}" ${type}${notNull ? ' NOT NULL' : ''}${primaryKey ? ' PRIMARY KEY' : ''}${defaultValue ? ' DEFAULT ' + defaultValue : ''}`;
 }
 
-function migrateIndexes(
-  b: FileBuilder,
+function getDropColumnQuery(tableName: string, columnName: string): string {
+  return `ALTER TABLE IF EXISTS "${tableName}" DROP COLUMN IF EXISTS "${columnName}"`;
+}
+
+function getAlterColumnSetDefaultQuery(tableName: string, columnName: string, defaultValue: string): string {
+  return `ALTER TABLE IF EXISTS "${tableName}" ALTER COLUMN "${columnName}" SET DEFAULT ${defaultValue}`;
+}
+
+function getAlterColumnDropDefaultQuery(tableName: string, columnName: string): string {
+  return `ALTER TABLE IF EXISTS "${tableName}" ALTER COLUMN "${columnName}" DROP DEFAULT`;
+}
+
+function getAlterColumnUpdateNotNullQuery(tableName: string, columnName: string, notNull: boolean): string {
+  return `ALTER TABLE IF EXISTS "${tableName}" ALTER COLUMN "${columnName}" ${notNull ? 'SET' : 'DROP'} NOT NULL`;
+}
+
+function getAlterColumnTypeQuery(tableName: string, columnName: string, columnType: string): string {
+  return `ALTER TABLE IF EXISTS "${tableName}" ALTER COLUMN "${columnName}" TYPE ${columnType}`;
+}
+
+function getDropIndexQuery(indexName: string): string {
+  return `DROP INDEX CONCURRENTLY IF EXISTS "${indexName}"`;
+}
+
+function generateIndexesActions(
+  ctx: GenerateActionsContext,
   startTable: TableDefinition,
   targetTable: TableDefinition,
   options: BuildMigrationOptions
-): void {
+): MigrationAction[] {
+  const actions: MigrationAction[] = [];
+
   const matchedIndexes = new Set<IndexDefinition>();
+  const seenIndexNames = new Set<string>();
+
   for (const targetIndex of targetTable.indexes) {
+    const indexName = getIndexName(targetTable.name, targetIndex);
+    if (seenIndexNames.has(indexName)) {
+      throw new Error('Duplicate index name: ' + indexName, { cause: targetIndex });
+    }
+    seenIndexNames.add(indexName);
+
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (!startIndex) {
-      writeAddIndex(b, targetTable, targetIndex);
+      ctx.postDeployAction(
+        () => {
+          const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex);
+          actions.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
+        },
+        `CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapeIdentifier(targetTable.name)} ...`
+      );
     } else {
       matchedIndexes.add(startIndex);
     }
@@ -998,35 +1152,22 @@ function migrateIndexes(
         startIndex.indexdef || JSON.stringify(startIndex)
       );
       if (options?.dropUnmatchedIndexes) {
-        const indexName = startIndex.indexdef?.match(/INDEX "?(.+)"? ON/)?.[1];
+        const indexName = parseIndexName(startIndex.indexdef ?? '');
         if (!indexName) {
-          throw new Error('Could not extract index name from ' + startIndex.indexdef);
+          throw new Error('Could not extract index name from ' + startIndex.indexdef, { cause: startIndex });
         }
-        writeDropIndex(b, indexName);
+        actions.push({ type: 'DROP_INDEX', indexName });
       }
     }
   }
-}
-
-function writeAddIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDefinition: IndexDefinition): void {
-  postDeployAction(
-    () => {
-      const indexName = getIndexName(tableDefinition.name, indexDefinition);
-      const createIndexSql = buildIndexSql(tableDefinition.name, indexName, indexDefinition);
-      b.appendNoWrap(`await fns.idempotentCreateIndex(client, actions, '${indexName}', '${createIndexSql}');`);
-    },
-    `CREATE INDEX ${tableDefinition.name} (${indexDefinition.columns.map((c) =>
-      typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)
-    )})`
-  );
-}
-
-function writeDropIndex(b: FileBuilder, indexName: string): void {
-  b.appendNoWrap(`await fns.query(client, actions, 'DROP INDEX CONCURRENTLY IF EXISTS "${indexName}"');`);
+  return actions;
 }
 
 function getIndexName(tableName: string, index: IndexDefinition): string {
-  let indexName = applyAbbreviations(tableName, TableAbbrieviations) + '_';
+  let indexName = tableName;
+
+  indexName = applyAbbreviations(indexName, TableAbbrieviations) + '_';
+
   indexName += index.columns
     .map((c) => (typeof c === 'string' ? c : c.name))
     .map((c) => applyAbbreviations(c, ColumnNameAbbreviations))
@@ -1058,9 +1199,7 @@ function buildIndexSql(tableName: string, indexName: string, index: IndexDefinit
   }
 
   result += '(';
-  result += index.columns
-    .map((c) => (typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)))
-    .join(', ');
+  result += index.columns.map((c) => (typeof c === 'string' ? `"${c}"` : c.expression)).join(', ');
   result += ')';
 
   if (index.include) {
@@ -1071,7 +1210,7 @@ function buildIndexSql(tableName: string, indexName: string, index: IndexDefinit
 
   if (index.where) {
     result += ' WHERE (';
-    result += doubleEscapeSingleQuotes(index.where);
+    result += index.where;
     result += ')';
   }
 
@@ -1153,6 +1292,12 @@ const ColumnNameAbbreviations: Record<string, string | undefined> = {
 
 function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
   let result = name;
+
+  // Shorten _References suffix to _Refs
+  if (result.endsWith('_References')) {
+    result = result.slice(0, -'References'.length) + 'Refs';
+  }
+
   for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>)) {
     result = result.replace(original, abbrev);
   }
@@ -1164,6 +1309,12 @@ function expandAbbreviations(name: string, abbreviations: Record<string, string 
   for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>).reverse()) {
     result = result.replace(abbrev, original);
   }
+
+  // Expand _Refs suffix back to _References
+  if (result.endsWith('_Refs')) {
+    result = result.slice(0, -'Refs'.length) + 'References';
+  }
+
   return result;
 }
 
@@ -1172,25 +1323,4 @@ if (require.main === module) {
     console.error(reason);
     process.exit(1);
   });
-}
-
-/**
- * Guard function that should be called before writes of post-deploy actions.
- * If `--skipPostDeploy` is provided, the action is skipped.
- * If `--allowPostDeploy` is not provided, the action is performed.
- * Otherwise, an error is thrown to halt the migration generation process.
- * @param action - The post-deploy action to perform if the guard passes.
- * @param description - A human-readable description of the action that is being checked
- */
-function postDeployAction(action: () => void, description: string): void {
-  if (SKIP_POST_DEPLOY_ACTIONS) {
-    console.log(`Skipping post-deploy migration for: ${description}`);
-    return;
-  }
-
-  if (!ALLOW_POST_DEPLOY_ACTIONS) {
-    throw new Error(`Post-deploy migration required for: ${description}`);
-  }
-
-  action();
 }

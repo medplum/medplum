@@ -6,18 +6,24 @@ import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import {
-  CustomMigrationResult,
   CustomPostDeployMigrationJobData,
+  DynamicPostDeployJobData,
   PostDeployJobData,
   PostDeployJobRunResult,
   PostDeployMigration,
 } from '../migrations/data/types';
-import { getPostDeployMigration, MigrationDefinitionNotFoundError } from '../migrations/migration-utils';
+import { executeMigrationActions } from '../migrations/migrate';
+import {
+  getPostDeployMigration,
+  MigrationDefinitionNotFoundError,
+  withLongRunningDatabaseClient,
+} from '../migrations/migration-utils';
+import { MigrationAction, MigrationActionResult } from '../migrations/types';
 import {
   addVerboseQueueLogging,
   isJobActive,
   isJobCompatible,
-  moveToDelayed,
+  moveToDelayedAndThrow,
   queueRegistry,
   WorkerInitializer,
 } from './utils';
@@ -58,13 +64,8 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
 export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
 
-  const migrationNumber = asyncJob.dataVersion;
-  if (!migrationNumber) {
-    throw new Error(`Post-deploy migration number (AsyncJob.dataVersion) not found in ${getReferenceString(asyncJob)}`);
-  }
-
   if (!isJobCompatible(asyncJob)) {
-    await moveToDelayed(job, 'Post-deploy migration delayed since this worker is not compatible');
+    await moveToDelayedAndThrow(job, 'Post-deploy migration delayed since this worker is not compatible');
   }
 
   if (!isJobActive(asyncJob)) {
@@ -72,23 +73,29 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
       jobId: job.id,
       ...getJobDataLoggingFields(job),
       asyncJobStatus: asyncJob.status,
-      version: migrationNumber,
     });
     return;
   }
 
-  globalLogger.info(`${PostDeployMigrationQueueName} processor`, {
-    jobId: job.id,
-    ...getJobDataLoggingFields(job),
-    version: migrationNumber,
-  });
+  if (job.data.type === 'dynamic') {
+    await runDynamicMigration(getSystemRepo(), job as Job<DynamicPostDeployJobData>);
+    return;
+  }
+
+  const migrationNumber = asyncJob.dataVersion;
+  if (!migrationNumber) {
+    throw new Error(`Post-deploy migration number (AsyncJob.dataVersion) not found in ${getReferenceString(asyncJob)}`);
+  }
 
   let migration: PostDeployMigration;
   try {
     migration = getPostDeployMigration(migrationNumber);
   } catch (err: any) {
     if (err instanceof MigrationDefinitionNotFoundError) {
-      await moveToDelayed(job, 'Post-deploy migration delayed since migration definition was not found on this worker');
+      await moveToDelayedAndThrow(
+        job,
+        'Post-deploy migration delayed since migration definition was not found on this worker'
+      );
     }
     throw err;
   }
@@ -101,7 +108,7 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
 
   switch (result) {
     case 'ineligible': {
-      await moveToDelayed(job, 'Post-deploy migration delayed since worker is not eligible to execute it');
+      await moveToDelayedAndThrow(job, 'Post-deploy migration delayed since worker is not eligible to execute it');
       break;
     }
     case 'finished':
@@ -113,25 +120,17 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   }
 }
 
-export async function runCustomMigration(
+async function runDynamicMigration(
   repo: Repository,
-  job: Job<CustomPostDeployMigrationJobData> | undefined,
-  jobData: CustomPostDeployMigrationJobData,
-  callback: (
-    job: Job<CustomPostDeployMigrationJobData> | undefined,
-    jobData: CustomPostDeployMigrationJobData
-  ) => Promise<CustomMigrationResult>
-): Promise<'finished' | 'ineligible' | 'interrupted'> {
-  const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
-
-  if (!isJobActive(asyncJob)) {
-    return 'interrupted';
-  }
-
+  job: Job<DynamicPostDeployJobData>
+): Promise<PostDeployJobRunResult> {
+  const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
   const exec = new AsyncJobExecutor(repo, asyncJob);
   try {
-    const result = await callback(job, jobData);
-    const output = getAsyncJobOutputFromCustomMigrationResults(result);
+    const results = await withLongRunningDatabaseClient(async (client) => {
+      return executeMigrationActions(client, job.data.migrationActions);
+    });
+    const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
   } catch (err: any) {
     await exec.failJob(repo, err);
@@ -139,10 +138,31 @@ export async function runCustomMigration(
   return 'finished';
 }
 
-function getAsyncJobOutputFromCustomMigrationResults(result: CustomMigrationResult): Parameters {
+export async function runCustomMigration(
+  repo: Repository,
+  job: Job<CustomPostDeployMigrationJobData> | undefined,
+  jobData: CustomPostDeployMigrationJobData,
+  callback: (
+    job: Job<CustomPostDeployMigrationJobData> | undefined,
+    jobData: CustomPostDeployMigrationJobData
+  ) => Promise<MigrationActionResult[]>
+): Promise<PostDeployJobRunResult> {
+  const asyncJob = await repo.readResource<AsyncJob>('AsyncJob', jobData.asyncJobId);
+  const exec = new AsyncJobExecutor(repo, asyncJob);
+  try {
+    const results = await callback(job, jobData);
+    const output = getAsyncJobOutputFromMigrationActionResults(results);
+    await exec.completeJob(repo, output);
+  } catch (err: any) {
+    await exec.failJob(repo, err);
+  }
+  return 'finished';
+}
+
+function getAsyncJobOutputFromMigrationActionResults(results: MigrationActionResult[]): Parameters {
   return {
     resourceType: 'Parameters',
-    parameter: result.actions.map((r) => {
+    parameter: results.map((r) => {
       return {
         name: r.name,
         part: [
@@ -160,6 +180,20 @@ export function prepareCustomMigrationJobData(asyncJob: WithId<AsyncJob>): Custo
   const { requestId, traceId } = getRequestContext();
   return {
     type: 'custom',
+    asyncJobId: asyncJob.id,
+    requestId,
+    traceId,
+  };
+}
+
+export function prepareDynamicMigrationJobData(
+  asyncJob: WithId<AsyncJob>,
+  migrationActions: MigrationAction[]
+): DynamicPostDeployJobData {
+  const { requestId, traceId } = getRequestContext();
+  return {
+    type: 'dynamic',
+    migrationActions,
     asyncJobId: asyncJob.id,
     requestId,
     traceId,
