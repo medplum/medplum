@@ -118,4 +118,15 @@ describe('Anonymous webhooks', () => {
       .send(allOk);
     expect(res.status).toBe(200);
   });
+
+  test('Response contains a body', async () => {
+    const input = { test: 'response' };
+    const res = await request(app)
+      .post(`/webhook/${botMembership.id}`)
+      .set('Content-Type', ContentType.JSON)
+      .set('x-signature', 'signature')
+      .send(JSON.stringify(input));
+    expect(res.body).toEqual(input);
+    expect(res.header['content-type']).toContain('application/json');
+  });
 });

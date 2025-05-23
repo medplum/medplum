@@ -1,8 +1,9 @@
 import { allOk, badRequest, getStatus, isOperationOutcome } from '@medplum/core';
-import { Bot, OperationOutcome, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { executeBot } from '../fhir/operations/execute';
+import { executeBot, getResponseBodyFromResult, getResponseContentType } from '../fhir/operations/execute';
+import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 
 /**
@@ -13,14 +14,17 @@ import { getSystemRepo } from '../fhir/repo';
  *      - See: https://consensus.stoplight.io/docs/fax-services/1c4979f1d8ca0-fax-inbound-notification
  *   - `X-Cal-Signature-256` - Cal.com specific signature header
  *      - See: https://cal.com/docs/developing/guides/automation/webhooks
- *   - `X-Twilio-Email-Event-Webhook-Signature` - Twilio specific signature header
+ *   - `X-Twilio-Email-Event-Webhook-Signature` - Twilio SendGrid specific signature header
  *     - See: https://www.twilio.com/docs/sendgrid/for-developers/tracking-events/getting-started-event-webhook-security-features
+ *   - `X-Twilio-Signature` - Twilio specific signature header
+ *     - See: https://www.twilio.com/docs/usage/webhooks/webhooks-security
  */
 const SIGNATURE_HEADERS = [
   'x-signature',
   'x-hmac-signature',
   'x-cal-signature-256',
   'x-twilio-email-event-webhook-signature',
+  'x-twilio-signature',
 ];
 
 /**
@@ -58,17 +62,15 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
     headers,
   });
 
-  // Unlike normal Bot $execute operations, we don't want to return the result
-  // This is an unauthenticated webhook, so we just return a 200 OK response
-  let outcome: OperationOutcome;
   if (isOperationOutcome(result)) {
-    outcome = result;
-  } else if (result.success) {
-    outcome = allOk;
-  } else {
-    outcome = badRequest(result.logResult);
+    sendOutcome(res, result);
+    return;
   }
-  res.sendStatus(getStatus(outcome));
+
+  const responseBody = getResponseBodyFromResult(result);
+  const outcome = result.success ? allOk : badRequest(result.logResult);
+
+  res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
 });
 
 export const webhookRouter = Router();
