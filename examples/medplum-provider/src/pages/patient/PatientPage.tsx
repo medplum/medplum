@@ -81,8 +81,6 @@ export function PatientPage(): JSX.Element {
       <div className={classes.sidebar}>
         <ScrollArea className={classes.scrollArea}>
           <PatientSummary
-            w={350}
-            mb="auto"
             patient={patient}
             appointmentsUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('appointments'))}
             encountersUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('encounter'))}
