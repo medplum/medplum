@@ -61,7 +61,7 @@ export class DataSampler {
       this.addData(obs.valueInteger);
     } else if (obs.valueSampledData?.data) {
       this.checkUnit(obs.valueSampledData.origin);
-      this.addData(...obs.valueSampledData.data.split(' ').map(parseFloat));
+      this.addData(...expandSampledData(obs.valueSampledData));
     }
   }
 
@@ -112,4 +112,8 @@ export class DataSampler {
 
 function codesOverlap(a: CodeableConcept, b: CodeableConcept): boolean {
   return Boolean(a.coding?.some((c) => b.coding?.some((t) => c.system === t.system && c.code === t.code)));
+}
+
+function expandSampledData(sample: SampledData): number[] {
+  return sample.data?.split(' ').map((d) => parseFloat(d) * (sample.factor ?? 1) + (sample.origin.value ?? 0)) ?? [];
 }

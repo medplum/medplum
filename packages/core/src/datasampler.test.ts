@@ -338,6 +338,52 @@ describe('DataSampler', () => {
     );
   });
 
+  test('Adjusts for SampledData scaling', () => {
+    const sample = new DataSampler();
+    sample.addObservation({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+      valueQuantity: { value: 72, unit: 'bpm' },
+    });
+    sample.addObservation({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+      valueSampledData: {
+        origin: { value: 60, unit: 'bpm' },
+        period: 0,
+        dimensions: 1,
+        factor: 0.5,
+        data: '6 14 -20',
+      },
+    });
+    const result = sample.summarize(
+      { coding: [{ system: 'http://loinc.org', code: '41920-0' }] },
+      (data) => data.reduce(sum, 0) / data.length
+    );
+
+    expect(result).toStrictEqual(
+      expect.objectContaining<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: 'http://loinc.org', code: '41920-0' }] },
+        valueQuantity: { value: 63, unit: 'bpm' },
+        component: [
+          {
+            code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+            valueSampledData: {
+              origin: { value: 0, unit: 'bpm' },
+              dimensions: 1,
+              period: 0,
+              data: '72 63 67 50',
+            },
+          },
+        ],
+      })
+    );
+  });
+
   test('summarizeObservations', () => {
     const obs: Observation[] = [
       {
