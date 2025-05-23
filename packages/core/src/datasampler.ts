@@ -1,18 +1,19 @@
 import { CodeableConcept, Observation, Quantity, SampledData } from '@medplum/fhirtypes';
 
-export type StatsFn = (data: number[]) => number;
-
-const defaultSampling: Omit<SampledData, 'data'> = Object.freeze({});
+export type StatsFn = (data: number[]) => number | Quantity;
+export type DataUnit = Pick<Quantity, 'unit' | 'code' | 'system'>;
+export type SamplingInfo = Omit<SampledData, 'data'>;
 
 export class DataSampler {
   private code?: CodeableConcept;
-  private unit?: Pick<Quantity, 'unit' | 'code' | 'system'>;
-  private readonly sampling: Omit<SampledData, 'data'>;
+  private unit?: DataUnit;
+  private readonly sampling?: Omit<SampledData, 'data'>;
   private dataPoints: number[];
 
-  constructor(opts?: { code?: CodeableConcept; sampling: Omit<SampledData, 'data'> }) {
-    this.code = opts?.code;
+  constructor(opts?: { code?: CodeableConcept; unit?: DataUnit; sampling?: SamplingInfo }) {
     this.dataPoints = [];
+    this.code = opts?.code;
+    this.unit = opts?.unit;
     this.sampling = opts?.sampling;
   }
 
@@ -52,19 +53,21 @@ export class DataSampler {
       throw new Error('Code is required for data points');
     }
 
+    const computedValue = fn(this.dataPoints);
     return {
       resourceType: 'Observation',
       status: 'final',
       code,
-      valueQuantity: { ...this.unit, value: fn(this.dataPoints) },
+      valueQuantity: typeof computedValue === 'number' ? { ...this.unit, value: computedValue } : computedValue,
       component: [
         {
           code: this.code,
           valueSampledData: {
             origin: { ...this.unit, value: 0 },
             dimensions: 1,
-            period: 60_000,
-            data: this.dataPoints.join(' '),
+            period: 0,
+            ...this.sampling,
+            data: this.dataPoints.length ? this.dataPoints.join(' ') : undefined,
           },
         },
       ],
