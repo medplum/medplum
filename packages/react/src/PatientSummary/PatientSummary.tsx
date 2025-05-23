@@ -35,6 +35,8 @@ import { Insurance } from './Insurance';
 import { Medications } from './Medications';
 import styles from './PatientSummary.module.css';
 import { ProblemList } from './ProblemList';
+import { SexualOrientation } from './SexualOrientation';
+import { SmokingStatus } from './SmokingStatus';
 import { Vitals } from './Vitals';
 
 export interface PatientSummaryProps {
@@ -845,6 +847,18 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Medications
               patient={patient}
               medicationRequests={medicalData.medicationRequests}
+              onClickResource={onClickResource}
+            />
+            <Divider />
+            <SexualOrientation
+              patient={patient}
+              sexualOrientation={medicalData.sexualOrientation}
+              onClickResource={onClickResource}
+            />
+            <Divider />
+            <SmokingStatus
+              patient={patient}
+              smokingStatus={medicalData.smokingStatus}
               onClickResource={onClickResource}
             />
             <Divider />

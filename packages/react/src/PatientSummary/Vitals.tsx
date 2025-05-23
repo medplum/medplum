@@ -1,4 +1,4 @@
-import { Flex, Group, Modal, SimpleGrid, Text, Textarea, TextInput, Tooltip } from '@mantine/core';
+import { Group, Modal, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
@@ -7,7 +7,6 @@ import { JSX, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { CollapsibleSection } from './CollapsibleSection';
-import { ConceptBadge } from './ConceptBadge';
 import {
   createCompoundObservation,
   createLoincCode,
@@ -113,84 +112,73 @@ export interface VitalsProps {
 
 export function Vitals(props: VitalsProps): JSX.Element {
   const medplum = useMedplum();
+  const { patient, encounter } = props;
   const [vitals, setVitals] = useState<Observation[]>(props.vitals);
   const [opened, { open, close }] = useDisclosure(false);
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      const observations: Observation[] = [];
+      const newObservations = [];
 
-      if (formData.systolic || formData.diastolic) {
-        const bpObs = createCompoundObservation(props.patient, props.encounter, 'blood-pressure', 'Blood pressure', [
+      // Blood pressure is special because it has two components
+      newObservations.push(
+        createCompoundObservation(patient, encounter, BP, 'Blood pressure', [
           {
-            code: createLoincCode('8480-6', 'Systolic blood pressure'),
-            valueQuantity: createQuantity(parseFloat(formData.systolic), 'mm[Hg]'),
+            code: createLoincCode(SYSTOLIC, 'Systolic blood pressure'),
+            valueQuantity: createQuantity(parseFloat(formData['systolic']), 'mm[Hg]'),
           },
           {
-            code: createLoincCode('8462-4', 'Diastolic blood pressure'),
-            valueQuantity: createQuantity(parseFloat(formData.diastolic), 'mm[Hg]'),
+            code: createLoincCode(DIASTOLIC, 'Diastolic blood pressure'),
+            valueQuantity: createQuantity(parseFloat(formData['diastolic']), 'mm[Hg]'),
           },
-        ]);
-        if (bpObs) {
-          observations.push(bpObs);
+        ])
+      );
+
+      for (const meta of LOINC_CODES) {
+        if (meta.component) {
+          continue;
         }
-      }
-
-      // Handle all other vitals as individual observations
-      LOINC_CODES.filter((meta) => meta.name !== 'systolic' && meta.name !== 'diastolic').forEach((meta) => {
-        const value = formData[meta.name];
-        if (value) {
-          const obs = createObservation(
-            props.patient,
-            props.encounter,
+        newObservations.push(
+          createObservation(
+            patient,
+            encounter,
             meta.code,
             meta.title,
-            createQuantity(parseFloat(value), meta.unit)
-          );
-          if (obs) {
-            observations.push(obs);
-          }
-        }
-      });
+            createQuantity(parseFloat(formData[meta.name]), meta.unit)
+          )
+        );
+      }
 
-      Promise.all(observations.map((obs) => medplum.createResource(obs)))
-        .then((newVitals) => {
-          setVitals([...vitals, ...newVitals]);
-          close();
-        })
+      Promise.all(newObservations.filter(Boolean).map((obs) => medplum.createResource<Observation>(obs as Observation)))
+        .then((newVitals) => setVitals([...newVitals, ...vitals]))
         .catch(console.error);
+
+      close();
     },
-    [medplum, props.patient, props.encounter, vitals, close]
+    [medplum, patient, encounter, vitals, close]
   );
-
-  const vitalsContent =
-    vitals.length > 0 ? (
-      <Flex direction="column" gap={8}>
-        {LOINC_CODES.map((meta) => {
-          const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
-          if (!obs) {
-            return null;
-          }
-
-          return (
-            <Group key={meta.name} justify="flex-start" gap="md">
-              <Tooltip label={meta.title}>
-                <Text>
-                  {meta.short} : {formatQuantity(getObservationValue(obs, meta.component))}
-                </Text>
-              </Tooltip>
-            </Group>
-          );
-        })}
-      </Flex>
-    ) : (
-      <Text>(none)</Text>
-    );
 
   return (
     <>
-      <CollapsibleSection title="Vitals" onAdd={open}>
-        {vitalsContent}
+      <CollapsibleSection
+        title="Vitals"
+        onAdd={() => {
+          open();
+        }}
+      >
+        <Stack>
+          {LOINC_CODES.map((meta) => {
+            const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
+            return (
+              <Group align="center">
+                <Text c="dimmed">
+                  {meta.short}
+                </Text>
+                {obs && <Text>{formatQuantity(getObservationValue(obs, meta.component))}</Text>}
+              </Group>
+            );
+          })}
+        </Stack>
       </CollapsibleSection>
 
       <Modal opened={opened} onClose={close} title="Add Vitals">

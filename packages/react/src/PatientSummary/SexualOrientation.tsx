@@ -1,13 +1,36 @@
-import { ActionIcon, Box, Collapse, Flex, Group, Modal, Text, UnstyledButton } from '@mantine/core';
+import { Box, Flex, Group, Modal, Radio, Stack, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { IconChevronDown, IconPencil, IconPlus } from '@tabler/icons-react';
 import { JSX, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { killEvent } from '../utils/dom';
+import { CollapsibleSection } from './CollapsibleSection';
+
+const NULLFLAVOR = HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-NullFlavor';
+
+type SexualOrientationCode = '38628009' | '20430005' | '42035005' | 'OTH' | 'UNK' | 'ASKU';
+// Sexual orientation widget
+// See: https://hl7.org/fhir/us/core/STU5.0.1/StructureDefinition-us-core-observation-sexual-orientation.html
+const CodesToText: Record<SexualOrientationCode, string> = {
+  '38628009': 'Homosexual',
+  '20430005': 'Heterosexual',
+  '42035005': 'Bisexual',
+  OTH: 'Other',
+  UNK: 'Unknown',
+  ASKU: 'Asked but no answer',
+};
+
+const CodesToSystem: Record<SexualOrientationCode, string> = {
+  38628009: SNOMED,
+  20430005: SNOMED,
+  42035005: SNOMED,
+  OTH: NULLFLAVOR,
+  UNK: NULLFLAVOR,
+  ASKU: NULLFLAVOR,
+};
 
 export interface SexualOrientationProps {
   readonly patient: Patient;
@@ -17,23 +40,27 @@ export interface SexualOrientationProps {
 }
 
 export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
+  const { patient, encounter } = props;
   const medplum = useMedplum();
   const [sexualOrientation, setSexualOrientation] = useState<Observation | undefined>(props.sexualOrientation);
   const [opened, { open, close }] = useDisclosure(false);
-  const [collapsed, setCollapsed] = useState(false);
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
+      const code = formData.sexualOrientation as SexualOrientationCode;
       medplum
         .createResource<Observation>({
           resourceType: 'Observation',
+          meta: {
+            profile: [HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-sexual-orientation'],
+          },
           status: 'final',
           category: [
             {
               coding: [
                 {
-                  system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+                  system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/observation-category',
                   code: 'social-history',
                   display: 'Social History',
                 },
@@ -44,24 +71,24 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
           code: {
             coding: [
               {
-                system: 'http://loinc.org',
+                system: LOINC,
                 code: '76690-7',
                 display: 'Sexual orientation',
               },
             ],
             text: 'Sexual orientation',
           },
-          subject: { reference: `Patient/${props.patient.id}` },
-          encounter: props.encounter ? { reference: `Encounter/${props.encounter.id}` } : undefined,
+          subject: createReference(patient),
+          encounter: encounter ? createReference(encounter) : undefined,
           effectiveDateTime: new Date().toISOString(),
           valueCodeableConcept: {
             coding: [
               {
-                system: 'http://terminology.hl7.org/CodeSystem/v3-NullFlavor',
+                system: CodesToSystem[code],
                 code: formData.sexualOrientation,
               },
             ],
-            text: formData.sexualOrientation,
+            text: CodesToText[code],
           },
         })
         .then((newSexualOrientation) => {
@@ -70,137 +97,52 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
         })
         .catch(console.error);
     },
-    [medplum, props.patient.id, props.encounter, close]
+    [medplum, patient, encounter, close]
   );
 
   return (
     <>
-      <Box style={{ position: 'relative' }}>
-        <UnstyledButton
-          style={{
-            width: '100%',
-            cursor: 'default',
-            '&:hover .add-button': {
-              opacity: 1,
-            },
-            '& .mantine-ActionIcon-root, & .mantine-Text-root': {
-              cursor: 'pointer',
-              margin: '0',
-            },
-          }}
-        >
-          <Group justify="space-between">
-            <Group gap={8}>
-              <ActionIcon
-                variant="subtle"
-                onClick={() => setCollapsed((c) => !c)}
-                aria-label={collapsed ? 'Show sexual orientation' : 'Hide sexual orientation'}
-                style={{ transition: 'transform 0.2s', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}
-                size="md"
+      <CollapsibleSection
+        title="Sexual Orientation"
+        onAdd={() => {
+          open();
+        }}
+      >
+        {sexualOrientation ? (
+          <Flex direction="column" gap={8}>
+            <Box onMouseEnter={() => setHoverIndex(0)} onMouseLeave={() => setHoverIndex(null)}>
+              <UnstyledButton
+                onClick={(e) => {
+                  killEvent(e);
+                  if (props.onClickResource) {
+                    props.onClickResource(sexualOrientation);
+                  }
+                }}
               >
-                <IconChevronDown size={20} />
-              </ActionIcon>
-              <Text fz="md" fw={700} onClick={() => setCollapsed((c) => !c)} style={{ cursor: 'pointer' }}>
-                Sexual Orientation
-              </Text>
-            </Group>
-            <ActionIcon
-              className="add-button"
-              variant="subtle"
-              onClick={(e) => {
-                killEvent(e);
-                open();
-              }}
-              style={{
-                opacity: 0,
-                transition: 'opacity 0.2s',
-                position: 'absolute',
-                right: 0,
-                top: 0,
-                transform: 'none',
-                strokeWidth: 1,
-              }}
-              size="md"
-            >
-              <IconPlus size={18} />
-            </ActionIcon>
-          </Group>
-        </UnstyledButton>
-        <Collapse in={!collapsed}>
-          {sexualOrientation ? (
-            <Box ml="36" mt="8" mb="16">
-              <Flex direction="column" gap={8}>
-                <Box
-                  style={{ position: 'relative' }}
-                  onMouseEnter={() => setHoverIndex(0)}
-                  onMouseLeave={() => setHoverIndex(null)}
-                >
-                  <MedplumLink
-                    to={`/Observation/${sexualOrientation.id}`}
-                    style={{ textDecoration: 'none', display: 'block', color: 'black' }}
-                  >
-                    <UnstyledButton
-                      style={{
-                        width: '100%',
-                        textAlign: 'left',
-                        position: 'relative',
-                        padding: 0,
-                        background: 'none',
-                        border: 'none',
-                        boxShadow: 'none',
-                      }}
-                      onClick={(e) => {
-                        killEvent(e);
-                        if (props.onClickResource) {
-                          props.onClickResource(sexualOrientation);
-                        }
-                      }}
-                    >
-                      <Box pr={hoverIndex === 0 ? 24 : 0} style={{ transition: 'padding-right 0.2s' }}>
-                        <Text size="sm" fw={500}>
-                          {sexualOrientation.valueCodeableConcept?.text || 'Unknown'}
-                        </Text>
-
-                        {hoverIndex === 0 && (
-                          <ActionIcon
-                            style={{
-                              position: 'absolute',
-                              right: 0,
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              zIndex: 2,
-                            }}
-                            onClick={(e) => {
-                              killEvent(e);
-                              open();
-                            }}
-                            size="xs"
-                            variant="transparent"
-                          >
-                            <IconPencil size={14} />
-                          </ActionIcon>
-                        )}
-                      </Box>
-                    </UnstyledButton>
-                  </MedplumLink>
+                <Box pr={hoverIndex === 0 ? 24 : 0}>
+                  <Text size="sm" fw={500}>
+                    {sexualOrientation.valueCodeableConcept?.text || 'Unknown'}
+                  </Text>
                 </Box>
-              </Flex>
+              </UnstyledButton>
             </Box>
-          ) : (
-            <Box ml="36" my="4">
-              <Text>(none)</Text>
-            </Box>
-          )}
-        </Collapse>
-        <style>{`
-          .mantine-UnstyledButton-root:hover .add-button {
-            opacity: 1 !important;
-          }
-        `}</style>
-      </Box>
-      <Modal opened={opened} onClose={close} title="Add Sexual Orientation">
+          </Flex>
+        ) : (
+          <Text>(none)</Text>
+        )}
+      </CollapsibleSection>
+      <Modal opened={opened} onClose={close} title="Set Sexual Orientation">
         <Form onSubmit={handleSubmit}>
-          <SubmitButton>Save</SubmitButton>
+          <Stack>
+            <Radio.Group name="sexualOrientation" label="Sexual Orientation" required>
+              {Object.entries(CodesToText).map(([code, text]) => (
+                <Radio key={code} value={code} label={text} my="xs" />
+              ))}
+            </Radio.Group>
+            <Group justify="flex-end" gap={4} mt="md">
+              <SubmitButton>Save</SubmitButton>
+            </Group>
+          </Stack>
         </Form>
       </Modal>
     </>
