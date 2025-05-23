@@ -38,7 +38,7 @@ export class FhirRateLimiter {
 
     this.logger = logger;
     this.logThreshold = Math.floor(userLimit * 0.1); // Log requests that consume at least 10% of the user's total limit
-    this.enabled = Boolean(authState.project.systemSetting?.find((s) => s.name === 'enableFhirQuota')?.valueBoolean);
+    this.enabled = authState.project.systemSetting?.find((s) => s.name === 'enableFhirQuota')?.valueBoolean !== false;
   }
 
   private setState(result: RateLimiterRes, ...others: RateLimiterRes[]): void {
