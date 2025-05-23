@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
-if [[ -z "${GITHUB_SHA}" ]]; then
-  echo "GITHUB_SHA is missing"
+if [[ -z "${SERVER_DOCKERHUB_REPOSITORY}" ]]; then
+  echo "SERVER_DOCKERHUB_REPOSITORY is missing"
   exit 1
 fi
 
-if [[ -z "${SERVER_DOCKERHUB_REPOSITORY}" ]]; then
-  echo "SERVER_DOCKERHUB_REPOSITORY is missing"
+if [[ -z "${GITHUB_SHA}" ]]; then
+  echo "GITHUB_SHA is missing"
   exit 1
 fi
 
