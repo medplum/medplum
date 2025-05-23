@@ -127,6 +127,6 @@ describe('Anonymous webhooks', () => {
       .set('x-signature', 'signature')
       .send(JSON.stringify(input));
     expect(res.body).toEqual(input);
-    expect(res.header['content-type']).toContain("application/json")
+    expect(res.header['content-type']).toContain('application/json');
   });
 });
