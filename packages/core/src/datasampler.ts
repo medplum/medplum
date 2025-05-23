@@ -4,6 +4,15 @@ export type StatsFn = (data: number[]) => number | Quantity;
 export type DataUnit = Pick<Quantity, 'unit' | 'code' | 'system'>;
 export type SamplingInfo = Omit<SampledData, 'data'>;
 
+/**
+ * Summarizes a group of Observations into a single computed summary value, with the individual values
+ * preserved in `Observation.component.valueSampledData`.
+ *
+ * @param observations - The Observations to summarize.
+ * @param summaryCode - The code for the summarized value.
+ * @param summarizeFn - Function to summarize the data points.
+ * @returns - The summary Observation resource.
+ */
 export function summarizeObservations(
   observations: Observation[] | Bundle<Observation>,
   summaryCode: CodeableConcept,
@@ -25,6 +34,12 @@ export class DataSampler {
   private readonly sampling?: Omit<SampledData, 'data'>;
   private readonly dataPoints: number[];
 
+  /**
+   * @param opts - Optional parameters.
+   * @param opts.code - Code for data points.
+   * @param opts.unit - Unit for data points.
+   * @param opts.sampling - Sampling information for high-frequency Observations.
+   */
   constructor(opts?: { code?: CodeableConcept; unit?: DataUnit; sampling?: SamplingInfo }) {
     this.dataPoints = [];
     this.code = opts?.code;
