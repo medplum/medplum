@@ -1,12 +1,14 @@
-import { Flex, Modal, Text } from '@mantine/core';
+import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { getDisplayString } from '@medplum/core';
 import { Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { JSX, useCallback, useState } from 'react';
 import { CollapsibleSection } from './CollapsibleSection';
 import { MedicationDialog } from './MedicationDialog';
 import SummaryItem from './SummaryItem';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
+import styles from './SummaryItem.module.css';
+import { getDisplayString } from '@medplum/core';
 
 export interface MedicationsProps {
   readonly patient: Patient;
@@ -51,14 +53,20 @@ export function Medications(props: MedicationsProps): JSX.Element {
             {medicationRequests.map((medication) => (
               <SummaryItem
                 key={medication.id}
-                title={getDisplayString(medication)}
-                status={medication.status}
-                color={getStatusColor(medication.status)}
                 onClick={() => {
                   setEditMedication(medication);
                   open();
                 }}
-              />
+              >
+              <Box>
+              <Text fw={500} className={styles.itemText}>
+              {getDisplayString(medication)}
+              </Text>
+              <Group mt={2} gap={4}>
+                {medication.status && <StatusBadge color={getStatusColor(medication.status)} variant="light" status={medication.status} />}
+              </Group>
+            </Box>
+              </SummaryItem>
             ))}
           </Flex>
         ) : (

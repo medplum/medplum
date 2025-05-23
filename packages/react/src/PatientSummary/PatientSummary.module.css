@@ -1,3 +1,16 @@
+.panel {
+  height: 100%;
+}
+
+[data-mantine-color-scheme='dark'] .panel {
+  background-color: var(--mantine-color-dark-8);
+}
+
+[data-mantine-color-scheme='light'] .panel {
+  background-color: var(--mantine-color-white);
+}
+
+
 .patientSummaryGradient {
   position: absolute;
   right: 28px;

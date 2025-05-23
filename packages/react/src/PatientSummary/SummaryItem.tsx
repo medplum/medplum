@@ -1,42 +1,24 @@
-import { ActionIcon, Box, Group, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Box } from '@mantine/core';
 import { IconChevronRight } from '@tabler/icons-react';
-import { JSX } from 'react';
-import { StatusBadge } from '../StatusBadge/StatusBadge';
-import styles from './PatientSummary.module.css';
+import { JSX, ReactNode } from 'react';
+import styles from './SummaryItem.module.css';
 
 interface SummaryItemProps {
-  title: string;
-  subtitle?: string;
-  status?: string;
-  color?: string;
+  children: ReactNode;
   onClick: () => void;
 }
 
 export default function SummaryItem(props: SummaryItemProps): JSX.Element {
-  const { title, subtitle, status = 'unknown', color, onClick } = props;
+  const { children, onClick } = props;
   return (
-    <Box className={styles.patientSummaryListItem} onClick={onClick}>
-      <Tooltip label={title} position="top-start" openDelay={650}>
-        <Box style={{ position: 'relative' }}>
-          <Text fw={500} className={styles.patientSummaryListItemText}>
-            {title}
-          </Text>
-          <Group mt={2} gap={4}>
-            {status && <StatusBadge color={color} variant="light" status={status} />}
-            {subtitle && (
-              <Text size="xs" fw={500} color="gray.6">
-                {subtitle}
-              </Text>
-            )}
-          </Group>
-          <div className={styles.patientSummaryGradient} />
-          <div className={styles.patientSummaryChevronContainer}>
-            <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
-              <IconChevronRight size={16} stroke={2.5} />
-            </ActionIcon>
-          </div>
-        </Box>
-      </Tooltip>
+    <Box className={styles.item} onClick={onClick}>
+      {children}
+      <div className={styles.gradient} />
+      <div className={styles.container}>
+        <ActionIcon className={styles.chevron} size="md" variant="transparent" tabIndex={-1}>
+          <IconChevronRight size={16} stroke={2.5} />
+        </ActionIcon>
+      </div>
     </Box>
   );
 }

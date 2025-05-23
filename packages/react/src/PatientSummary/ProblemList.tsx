@@ -1,4 +1,4 @@
-import { Flex, Modal, Text } from '@mantine/core';
+import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, getDisplayString } from '@medplum/core';
 import { Condition, Encounter, Patient } from '@medplum/fhirtypes';
@@ -7,6 +7,8 @@ import { JSX, useCallback, useState } from 'react';
 import { CollapsibleSection } from './CollapsibleSection';
 import { ConditionDialog } from './ConditionDialog';
 import SummaryItem from './SummaryItem';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
+import styles from './SummaryItem.module.css';
 
 export interface ProblemListProps {
   readonly patient: Patient;
@@ -58,15 +60,29 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
             {problems.map((problem) => (
               <SummaryItem
                 key={problem.id}
-                title={getDisplayString(problem)}
-                subtitle={formatDate(problem.onsetDateTime)}
-                status={problem.clinicalStatus?.coding?.[0]?.code}
-                color={getStatusColor(problem.clinicalStatus?.coding?.[0]?.code)}
                 onClick={() => {
                   setEditCondition(problem);
                   open();
                 }}
-              />
+              >
+                <Box>
+                  <Text fw={500} className={styles.itemText}>
+                    {getDisplayString(problem)}
+                  </Text>
+                  <Group mt={2} gap={4}>
+                    {problem.clinicalStatus?.coding?.[0]?.code && (
+                      <StatusBadge
+                        color={getStatusColor(problem.clinicalStatus?.coding?.[0]?.code)}
+                        variant="light"
+                        status={problem.clinicalStatus?.coding?.[0]?.code}
+                      />
+                    )}
+                    <Text size="xs" fw={500} c="dimmed">
+                      {formatDate(problem.onsetDateTime)}
+                    </Text>
+                  </Group>
+                </Box>
+              </SummaryItem>
             ))}
           </Flex>
         ) : (

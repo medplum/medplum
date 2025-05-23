@@ -1,4 +1,4 @@
-import { ActionIcon, Box, Divider, Group, Stack, Text, Tooltip } from '@mantine/core';
+import { Box, Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { calculateAgeString, formatHumanName, resolveId } from '@medplum/core';
 import {
   AllergyIntolerance,
@@ -21,14 +21,12 @@ import { useMedplum, useResource } from '@medplum/react-hooks';
 import {
   IconBinaryTree,
   IconCake,
-  IconChevronRight,
   IconEmpathize,
   IconLanguage,
   IconMapPin,
   IconStethoscope,
 } from '@tabler/icons-react';
 import { JSX, useEffect, useRef, useState } from 'react';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Insurance } from './Insurance';
@@ -37,6 +35,7 @@ import styles from './PatientSummary.module.css';
 import { ProblemList } from './ProblemList';
 import { SexualOrientation } from './SexualOrientation';
 import { SmokingStatus } from './SmokingStatus';
+import SummaryItem from './SummaryItem';
 import { Vitals } from './Vitals';
 
 export interface PatientSummaryProps {
@@ -438,7 +437,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const patient = useResource(propsPatient);
   const [medicalData, setMedicalData] = useState<PatientMedicalData>();
   const [createdDate, setCreatedDate] = useState<string | undefined>();
-  const patientId = resolveId(patient);
   const nameRef = useRef<HTMLDivElement>(null);
   const [isNameOverflowed, setIsNameOverflowed] = useState(false);
 
@@ -530,75 +528,49 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   }
 
   return (
-    <div
-      style={{
-        height: '100%',
-        width: '100%',
-        minWidth: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: 'white',
-      }}
-    >
-      <MedplumLink
-        to={`/Patient/${patientId}/edit`}
-        style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+    <Flex direction="column" gap="xs" w="100%" h="100%" className={styles.panel}>
+      <SummaryItem
+        onClick={() => {
+          onClickResource?.(patient);
+        }}
       >
-        <div
-          style={{
-            position: 'sticky',
-            top: 0,
-            backgroundColor: 'white',
-            zIndex: 1,
-            padding: '16px 16px 0 16px',
-            cursor: 'pointer',
-            minWidth: 0,
-          }}
-          className={styles.patientSummaryListItem}
-        >
-          <Group align="center" gap="sm" mb={16} style={{ position: 'relative', minWidth: 0 }}>
-            <ResourceAvatar value={patient} size={48} radius={48} style={{ border: '2px solid white' }} />
-            <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-              <Tooltip
-                label={formatHumanName(patient.name?.[0] as HumanName)}
-                position="top-start"
-                openDelay={650}
-                disabled={!isNameOverflowed}
-              >
-                <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }} ref={nameRef}>
-                  {formatHumanName(patient.name?.[0] as HumanName)}
+        <Group align="center" gap="sm" p={16}>
+          <ResourceAvatar value={patient} size={48} radius={48} style={{ border: '2px solid white' }} />
+          <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
+            <Tooltip
+              label={formatHumanName(patient.name?.[0] as HumanName)}
+              position="top-start"
+              openDelay={650}
+              disabled={!isNameOverflowed}
+            >
+              <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }} ref={nameRef}>
+                {formatHumanName(patient.name?.[0] as HumanName)}
+              </Text>
+            </Tooltip>
+            {(() => {
+              const dateString = typeof createdDate === 'string' && createdDate.length > 0 ? createdDate : undefined;
+              if (!dateString) {
+                return null;
+              }
+              const d = new Date(dateString);
+              return (
+                <Text fz="xs" mt={-2} fw={500} c="gray.6" truncate style={{ minWidth: 0 }}>
+                  Patient since {d.getMonth() + 1}/{d.getDate()}/{d.getFullYear()}
                 </Text>
-              </Tooltip>
-              {(() => {
-                const dateString = typeof createdDate === 'string' && createdDate.length > 0 ? createdDate : undefined;
-                if (!dateString) {
-                  return null;
-                }
-                const d = new Date(dateString);
-                return (
-                  <Text fz="xs" mt={-2} fw={500} c="gray.6" truncate style={{ minWidth: 0 }}>
-                    Patient since {d.getMonth() + 1}/{d.getDate()}/{d.getFullYear()}
-                  </Text>
-                );
-              })()}
-            </Stack>
-            <div className={styles.patientSummaryGradient} />
-            <div className={styles.patientSummaryChevronContainer} style={{ alignItems: 'center' }}>
-              <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
-                <IconChevronRight size={16} stroke={2.5} />
-              </ActionIcon>
-            </div>
-          </Group>
-          <Divider />
-        </div>
-      </MedplumLink>
+              );
+            })()}
+          </Stack>
+        </Group>
+      </SummaryItem>
+      <Divider />
       <Stack gap="xs" px={16} pt={12} pb={16} style={{ flex: 2, overflowY: 'auto', minHeight: 0 }}>
         {medicalData && (
           <>
             <Stack gap="xs" py={8}>
-              <MedplumLink
-                to={`/Patient/${patientId}/edit`}
-                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              <SummaryItem
+                onClick={() => {
+                  onClickResource?.(patient);
+                }}
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Birthdate & Age" position="top-start" openDelay={650}>
@@ -638,18 +610,13 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                       </Text>
                     </Group>
                   </Tooltip>
-                  <div className={styles.patientSummaryGradient} />
-                  <div className={styles.patientSummaryChevronContainer}>
-                    <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
-                      <IconChevronRight size={16} stroke={2.5} />
-                    </ActionIcon>
-                  </div>
                 </Box>
-              </MedplumLink>
+              </SummaryItem>
 
-              <MedplumLink
-                to={`/Patient/${patientId}/edit`}
-                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              <SummaryItem
+                onClick={() => {
+                  onClickResource?.(patient);
+                }}
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Gender & Identity" position="top-start" openDelay={650}>
@@ -677,18 +644,13 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                       </Text>
                     </Group>
                   </Tooltip>
-                  <div className={styles.patientSummaryGradient} />
-                  <div className={styles.patientSummaryChevronContainer}>
-                    <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
-                      <IconChevronRight size={16} stroke={2.5} />
-                    </ActionIcon>
-                  </div>
                 </Box>
-              </MedplumLink>
+              </SummaryItem>
 
-              <MedplumLink
-                to={`/Patient/${patientId}/edit`}
-                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              <SummaryItem
+                onClick={() => {
+                  onClickResource?.(patient);
+                }}
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Race & Ethnicity" position="top-start" openDelay={650}>
@@ -715,18 +677,13 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                       </Text>
                     </Group>
                   </Tooltip>
-                  <div className={styles.patientSummaryGradient} />
-                  <div className={styles.patientSummaryChevronContainer}>
-                    <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
-                      <IconChevronRight size={16} stroke={2.5} />
-                    </ActionIcon>
-                  </div>
                 </Box>
-              </MedplumLink>
+              </SummaryItem>
 
-              <MedplumLink
-                to={`/Patient/${patientId}/edit`}
-                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              <SummaryItem
+                onClick={() => {
+                  onClickResource?.(patient);
+                }}
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Location" position="top-start" openDelay={650}>
@@ -756,18 +713,13 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                       </Text>
                     </Group>
                   </Tooltip>
-                  <div className={styles.patientSummaryGradient} />
-                  <div className={styles.patientSummaryChevronContainer}>
-                    <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
-                      <IconChevronRight size={16} stroke={2.5} />
-                    </ActionIcon>
-                  </div>
                 </Box>
-              </MedplumLink>
+              </SummaryItem>
 
-              <MedplumLink
-                to={`/Patient/${patientId}/edit`}
-                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              <SummaryItem
+                onClick={() => {
+                  onClickResource?.(patient);
+                }}
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Language" position="top-start" openDelay={650}>
@@ -792,18 +744,13 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                       </Text>
                     </Group>
                   </Tooltip>
-                  <div className={styles.patientSummaryGradient} />
-                  <div className={styles.patientSummaryChevronContainer}>
-                    <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
-                      <IconChevronRight size={16} stroke={2.5} />
-                    </ActionIcon>
-                  </div>
                 </Box>
-              </MedplumLink>
+              </SummaryItem>
 
-              <MedplumLink
-                to={`/Patient/${patientId}/edit`}
-                style={{ textDecoration: 'none', display: 'block', color: 'black' }}
+              <SummaryItem
+                onClick={() => {
+                  onClickResource?.(patient);
+                }}
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="General Practitioner" position="top-start" openDelay={650}>
@@ -828,14 +775,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                       </Text>
                     </Group>
                   </Tooltip>
-                  <div className={styles.patientSummaryGradient} />
-                  <div className={styles.patientSummaryChevronContainer}>
-                    <ActionIcon className={styles.patientSummaryChevron} size="md" variant="transparent" tabIndex={-1}>
-                      <IconChevronRight size={16} stroke={2.5} />
-                    </ActionIcon>
-                  </div>
                 </Box>
-              </MedplumLink>
+              </SummaryItem>
             </Stack>
             <Divider />
             <Insurance coverages={medicalData.coverages || []} onClickResource={onClickResource} />
@@ -867,6 +808,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
           </>
         )}
       </Stack>
-    </div>
+    </Flex>
   );
 }

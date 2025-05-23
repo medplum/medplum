@@ -1,12 +1,14 @@
-import { Box, Flex, Modal, Text } from '@mantine/core';
+import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { getDisplayString } from '@medplum/core';
 import { AllergyIntolerance, Encounter, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { JSX, useCallback, useMemo, useState } from 'react';
 import { AllergyDialog } from './AllergyDialog';
 import { CollapsibleSection } from './CollapsibleSection';
 import SummaryItem from './SummaryItem';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
+import styles from './SummaryItem.module.css';
+import { getDisplayString } from '@medplum/core';
 
 export interface AllergiesProps {
   readonly patient: Patient;
@@ -67,17 +69,27 @@ export function Allergies(props: AllergiesProps): JSX.Element {
         {sortedAllergies.length > 0 ? (
           <Box>
             <Flex direction="column" gap={8}>
-              {sortedAllergies.map((allergy) => (
-                <SummaryItem
-                  title={getDisplayString(allergy)}
-                  status={allergy.clinicalStatus?.coding?.[0]?.code || 'unknown'}
-                  color={getClinicalStatusColor(allergy.clinicalStatus?.coding?.[0]?.code)}
+              {sortedAllergies.map((allergy) => {
+
+                const status = allergy.clinicalStatus?.coding?.[0]?.code || 'unknown';
+                
+                return (<SummaryItem
                   onClick={() => {
                     setEditAllergy(allergy);
                     open();
                   }}
-                />
-              ))}
+                >
+                   <Box>
+                      <Text fw={500} className={styles.itemText}>
+                      {getDisplayString(allergy)}
+                      </Text>
+                      <Group mt={2} gap={4}>
+                        {status && <StatusBadge color={getClinicalStatusColor(status)} variant="light" status={status} />}
+                      </Group>
+                    </Box>
+                </SummaryItem>
+              );
+            })}
             </Flex>
           </Box>
         ) : (
