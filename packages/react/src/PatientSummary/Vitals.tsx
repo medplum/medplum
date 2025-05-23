@@ -7,7 +7,6 @@ import { JSX, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { CollapsibleSection } from './CollapsibleSection';
-import { ConceptBadge } from './ConceptBadge';
 import {
   createCompoundObservation,
   createLoincCode,
