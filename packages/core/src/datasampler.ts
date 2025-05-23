@@ -102,7 +102,7 @@ export class DataSampler {
             dimensions: 1,
             period: 0,
             ...this.sampling,
-            data: this.dataPoints.length ? this.dataPoints.join(' ') : undefined,
+            data: compressSampledData(this.dataPoints, this.sampling),
           },
         },
       ],
@@ -116,4 +116,11 @@ function codesOverlap(a: CodeableConcept, b: CodeableConcept): boolean {
 
 function expandSampledData(sample: SampledData): number[] {
   return sample.data?.split(' ').map((d) => parseFloat(d) * (sample.factor ?? 1) + (sample.origin.value ?? 0)) ?? [];
+}
+
+function compressSampledData(data: number[], sampling?: SamplingInfo): string | undefined {
+  if (!data.length) {
+    return undefined;
+  }
+  return data.map((d) => (d - (sampling?.origin.value ?? 0)) / (sampling?.factor ?? 1)).join(' ');
 }

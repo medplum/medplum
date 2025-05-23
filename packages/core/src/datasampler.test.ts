@@ -339,7 +339,7 @@ describe('DataSampler', () => {
   });
 
   test('Adjusts for SampledData scaling', () => {
-    const sample = new DataSampler();
+    const sample = new DataSampler({ sampling: { origin: { value: 50, unit: 'bpm' }, period: 0, dimensions: 1 } });
     sample.addObservation({
       resourceType: 'Observation',
       status: 'final',
@@ -373,10 +373,10 @@ describe('DataSampler', () => {
           {
             code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
             valueSampledData: {
-              origin: { value: 0, unit: 'bpm' },
+              origin: { value: 50, unit: 'bpm' },
               dimensions: 1,
               period: 0,
-              data: '72 63 67 50',
+              data: '22 13 17 0',
             },
           },
         ],
