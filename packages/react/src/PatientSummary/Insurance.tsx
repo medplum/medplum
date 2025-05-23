@@ -3,10 +3,10 @@ import { formatDate, formatHumanName } from '@medplum/core';
 import { Coverage } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
 import { JSX } from 'react';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { CollapsibleSection } from './CollapsibleSection';
 import styles from './PatientSummary.module.css';
 import SummaryItem from './SummaryItem';
-import { StatusBadge } from '../StatusBadge/StatusBadge';
 
 export interface InsuranceProps {
   readonly coverages: Coverage[];
@@ -76,7 +76,6 @@ export function Insurance(props: InsuranceProps): JSX.Element {
     </CollapsibleSection>
   );
 }
-
 
 function capitalizeWords(str: string): string {
   return str

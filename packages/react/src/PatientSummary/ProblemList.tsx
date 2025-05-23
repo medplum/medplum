@@ -4,10 +4,10 @@ import { formatDate, getDisplayString } from '@medplum/core';
 import { Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { JSX, useCallback, useState } from 'react';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { CollapsibleSection } from './CollapsibleSection';
 import { ConditionDialog } from './ConditionDialog';
 import SummaryItem from './SummaryItem';
-import { StatusBadge } from '../StatusBadge/StatusBadge';
 import styles from './SummaryItem.module.css';
 
 export interface ProblemListProps {
