@@ -42,11 +42,13 @@ export class DataSampler {
     if (obs.valueQuantity?.value !== undefined) {
       this.checkUnit(obs.valueQuantity);
       this.addData(obs.valueQuantity.value);
+    } else if (obs.valueInteger !== undefined) {
+      this.addData(obs.valueInteger);
     }
   }
 
-  addData(data: number): void {
-    this.dataPoints.push(data);
+  addData(...data: number[]): void {
+    this.dataPoints.push(...data);
   }
 
   private checkUnit(quantity: Quantity): void {

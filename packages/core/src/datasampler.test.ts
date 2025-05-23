@@ -59,8 +59,7 @@ describe('DataSampler', () => {
 
   test('Sum of two data points', () => {
     const sample = new DataSampler({ code: { text: 'Data' } });
-    sample.addData(1);
-    sample.addData(1);
+    sample.addData(1, 1);
     const result = sample.summarize({ text: 'Test' }, (data) => data.reduce(sum, 0));
 
     expect(result).toStrictEqual<Observation>(
@@ -233,6 +232,46 @@ describe('DataSampler', () => {
         status: 'final',
         code: { text: 'Skewness' },
         valueQuantity: { value: 0, unit: 'skew' },
+        component: [
+          {
+            code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+            valueSampledData: {
+              origin: { value: 0, unit: 'bpm' },
+              dimensions: 1,
+              period: 0,
+              data: '72 55',
+            },
+          },
+        ],
+      })
+    );
+  });
+
+  test('Allow recording plain integer values from Observation', () => {
+    const sample = new DataSampler();
+    sample.addObservation({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+      valueQuantity: { value: 72, unit: 'bpm' },
+    });
+    sample.addObservation({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+      valueInteger: 55,
+    });
+    const result = sample.summarize(
+      { coding: [{ system: 'http://loinc.org', code: '41920-0' }] },
+      (data) => data.reduce(sum, 0) / data.length
+    );
+
+    expect(result).toStrictEqual(
+      expect.objectContaining<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: 'http://loinc.org', code: '41920-0' }] },
+        valueQuantity: { value: 63.5, unit: 'bpm' },
         component: [
           {
             code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
