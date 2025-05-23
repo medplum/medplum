@@ -39,7 +39,7 @@ export class DataSampler {
       throw new Error('Observation does not match code of sampled data');
     }
 
-    if (obs.valueQuantity?.value) {
+    if (obs.valueQuantity?.value !== undefined) {
       this.checkUnit(obs.valueQuantity);
       this.addData(obs.valueQuantity.value);
     }
