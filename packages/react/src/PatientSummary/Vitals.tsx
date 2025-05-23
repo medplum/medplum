@@ -171,9 +171,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
             const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
             return (
               <Group align="center">
-                <Text c="dimmed">
-                  {meta.short}
-                </Text>
+                <Text c="dimmed">{meta.short}</Text>
                 {obs && <Text>{formatQuantity(getObservationValue(obs, meta.component))}</Text>}
               </Group>
             );
