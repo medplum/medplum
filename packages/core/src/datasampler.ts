@@ -44,6 +44,9 @@ export class DataSampler {
       this.addData(obs.valueQuantity.value);
     } else if (obs.valueInteger !== undefined) {
       this.addData(obs.valueInteger);
+    } else if (obs.valueSampledData?.data) {
+      this.checkUnit(obs.valueSampledData.origin);
+      this.addData(...obs.valueSampledData.data.split(' ').map(parseFloat));
     }
   }
 

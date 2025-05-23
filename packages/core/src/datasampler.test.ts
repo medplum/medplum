@@ -287,6 +287,51 @@ describe('DataSampler', () => {
     );
   });
 
+  test('Allow recording full data set from SampledData', () => {
+    const sample = new DataSampler();
+    sample.addObservation({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+      valueQuantity: { value: 72, unit: 'bpm' },
+    });
+    sample.addObservation({
+      resourceType: 'Observation',
+      status: 'final',
+      code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+      valueSampledData: {
+        origin: { value: 0, unit: 'bpm' },
+        period: 0,
+        dimensions: 1,
+        data: '55 88 11',
+      },
+    });
+    const result = sample.summarize(
+      { coding: [{ system: 'http://loinc.org', code: '41920-0' }] },
+      (data) => data.reduce(sum, 0) / data.length
+    );
+
+    expect(result).toStrictEqual(
+      expect.objectContaining<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: 'http://loinc.org', code: '41920-0' }] },
+        valueQuantity: { value: 56.5, unit: 'bpm' },
+        component: [
+          {
+            code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+            valueSampledData: {
+              origin: { value: 0, unit: 'bpm' },
+              dimensions: 1,
+              period: 0,
+              data: '72 55 88 11',
+            },
+          },
+        ],
+      })
+    );
+  });
+
   test('summarizeObservations', () => {
     const obs: Observation[] = [
       {
