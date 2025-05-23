@@ -1,11 +1,10 @@
-import { allOk, badRequest, getStatus, isOperationOutcome, isResource } from '@medplum/core';
+import { allOk, badRequest, getStatus, isOperationOutcome } from '@medplum/core';
 import { Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { executeBot, getResponseBodyFromResult, getResponseContentType } from '../fhir/operations/execute';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
-import { sendFhirResponse } from '../fhir/response';
 
 /**
  * Allowed signature headers are:
@@ -71,12 +70,6 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
   const responseBody = getResponseBodyFromResult(result);
   const outcome = result.success ? allOk : badRequest(result.logResult);
 
-  if (isResource(responseBody, 'Binary')) {
-    await sendFhirResponse(req, res, outcome, responseBody);
-    return;
-  }
-
-  // Send the response
   res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
 });
 
