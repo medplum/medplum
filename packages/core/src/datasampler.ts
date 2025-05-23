@@ -1,8 +1,23 @@
-import { CodeableConcept, Observation, Quantity, SampledData } from '@medplum/fhirtypes';
+import { Bundle, CodeableConcept, Observation, Quantity, SampledData } from '@medplum/fhirtypes';
 
 export type StatsFn = (data: number[]) => number | Quantity;
 export type DataUnit = Pick<Quantity, 'unit' | 'code' | 'system'>;
 export type SamplingInfo = Omit<SampledData, 'data'>;
+
+export function summarizeObservations(
+  observations: Observation[] | Bundle<Observation>,
+  summaryCode: CodeableConcept,
+  summarizeFn: StatsFn
+): Observation {
+  const sampler = new DataSampler();
+  if (!Array.isArray(observations)) {
+    observations = observations.entry?.map((e) => e.resource as Observation) ?? [];
+  }
+  for (const obs of observations) {
+    sampler.addObservation(obs);
+  }
+  return sampler.summarize(summaryCode, summarizeFn);
+}
 
 export class DataSampler {
   private code?: CodeableConcept;

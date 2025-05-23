@@ -1,6 +1,6 @@
-import { Observation } from '@medplum/fhirtypes';
+import { Bundle, Observation } from '@medplum/fhirtypes';
 import { UCUM } from './constants';
-import { DataSampler } from './datasampler';
+import { DataSampler, summarizeObservations } from './datasampler';
 
 function sum(x: number, y: number): number {
   return x + y;
@@ -226,6 +226,90 @@ describe('DataSampler', () => {
       valueQuantity: { value: 55, unit: 'bpm' },
     });
     const result = sample.summarize({ text: 'Skewness' }, (_data) => ({ value: 0, unit: 'skew' }));
+
+    expect(result).toStrictEqual(
+      expect.objectContaining<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'Skewness' },
+        valueQuantity: { value: 0, unit: 'skew' },
+        component: [
+          {
+            code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+            valueSampledData: {
+              origin: { value: 0, unit: 'bpm' },
+              dimensions: 1,
+              period: 0,
+              data: '72 55',
+            },
+          },
+        ],
+      })
+    );
+  });
+
+  test('summarizeObservations', () => {
+    const obs: Observation[] = [
+      {
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+        valueQuantity: { value: 72, unit: 'bpm' },
+      },
+      {
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+        valueQuantity: { value: 55, unit: 'bpm' },
+      },
+    ];
+    const result = summarizeObservations(obs, { text: 'Skewness' }, (_data) => ({ value: 0, unit: 'skew' }));
+
+    expect(result).toStrictEqual(
+      expect.objectContaining<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'Skewness' },
+        valueQuantity: { value: 0, unit: 'skew' },
+        component: [
+          {
+            code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+            valueSampledData: {
+              origin: { value: 0, unit: 'bpm' },
+              dimensions: 1,
+              period: 0,
+              data: '72 55',
+            },
+          },
+        ],
+      })
+    );
+  });
+
+  test('summarizeObservations with Bundle', () => {
+    const obs: Bundle<Observation> = {
+      resourceType: 'Bundle',
+      type: 'collection',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Observation',
+            status: 'final',
+            code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+            valueQuantity: { value: 72, unit: 'bpm' },
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Observation',
+            status: 'final',
+            code: { coding: [{ system: 'http://loinc.org', code: '8867-4' }] },
+            valueQuantity: { value: 55, unit: 'bpm' },
+          },
+        },
+      ],
+    };
+    const result = summarizeObservations(obs, { text: 'Skewness' }, (_data) => ({ value: 0, unit: 'skew' }));
 
     expect(result).toStrictEqual(
       expect.objectContaining<Observation>({
