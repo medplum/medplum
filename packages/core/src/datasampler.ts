@@ -1,7 +1,7 @@
 import { Bundle, CodeableConcept, Observation, Quantity, SampledData } from '@medplum/fhirtypes';
 
 export type StatsFn = (data: number[]) => number | Quantity;
-export type DataUnit = Pick<Quantity, 'unit' | 'code' | 'system'>;
+export type QuantityUnit = Pick<Quantity, 'unit' | 'code' | 'system'>;
 export type SamplingInfo = Omit<SampledData, 'data'>;
 
 /**
@@ -30,7 +30,7 @@ export function summarizeObservations(
 
 export class DataSampler {
   private code?: CodeableConcept;
-  private unit?: DataUnit;
+  private unit?: QuantityUnit;
   private readonly sampling?: Omit<SampledData, 'data'>;
   private readonly dataPoints: number[];
 
@@ -40,7 +40,7 @@ export class DataSampler {
    * @param opts.unit - Unit for data points.
    * @param opts.sampling - Sampling information for high-frequency Observations.
    */
-  constructor(opts?: { code?: CodeableConcept; unit?: DataUnit; sampling?: SamplingInfo }) {
+  constructor(opts?: { code?: CodeableConcept; unit?: QuantityUnit; sampling?: SamplingInfo }) {
     this.dataPoints = [];
     this.code = opts?.code;
     this.unit = opts?.unit;
