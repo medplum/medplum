@@ -384,7 +384,16 @@ class ResourceValidator implements CrawlerVisitor {
       return;
     }
 
-    const referenceResourceType = reference.reference.split('/')[0];
+    if (reference.reference.startsWith('#')) {
+      // Silently ignore contained references
+      return;
+    }
+
+    // Pick out the resource type from the reference, either as a conditional reference or a literal reference
+    const referenceResourceType = reference.reference.includes('?')
+      ? reference.reference.split('?')[0]
+      : reference.reference.split('/')[0];
+    
     if (!referenceResourceType) {
       // Silently ignore empty references - that will get picked up by constraint validation
       return;
