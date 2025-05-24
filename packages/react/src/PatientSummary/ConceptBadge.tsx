@@ -11,15 +11,16 @@ export interface ConceptBadgeProps<T extends Resource> {
   readonly display?: string;
   readonly onClick?: (resource: T) => void;
   readonly onEdit?: (resource: T) => void;
+  readonly hideEditIcon?: boolean; // Add this new prop
 }
 
 export function ConceptBadge<T extends Resource = Resource>(props: ConceptBadgeProps<T>): JSX.Element {
-  const { resource, display, onClick, onEdit } = props;
+  const { resource, display, onClick, onEdit, hideEditIcon } = props;
 
   let rightSection: ReactNode | undefined = undefined;
-  if (onEdit) {
+  if (onEdit && !hideEditIcon) {
     rightSection = (
-      <ActionIcon variant="subtle" size={12} radius="xl">
+      <ActionIcon variant="transparent" size={0} radius="xl" p={0} mx={0}>
         <IconPencil
           aria-label={`Edit ${getDisplayString(resource)}`}
           size={12}

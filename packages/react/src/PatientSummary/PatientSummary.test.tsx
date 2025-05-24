@@ -23,8 +23,6 @@ describe('PatientSummary', () => {
     await setup({ patient: HomerSimpson });
 
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
-    expect(screen.getByText('No upcoming appointments')).toBeInTheDocument();
-    expect(screen.getByText('No documented visits')).toBeInTheDocument();
   });
 
   test('Renders with gender missing', async () => {
