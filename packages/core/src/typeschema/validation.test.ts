@@ -870,6 +870,44 @@ describe('FHIR resource validation', () => {
     }
   });
 
+  test('Empty object', () => {
+    const p1: Patient = { resourceType: 'Patient', maritalStatus: { text: 'Single' } };
+    const p2: Patient = { resourceType: 'Patient', maritalStatus: {} };
+
+    expect(() => validateResource(p1)).not.toThrow();
+    expect(() => validateResource(p2)).not.toThrow();
+  });
+
+  test('Empty object in array element', () => {
+    const p1: Patient = { resourceType: 'Patient', address: [] };
+    const p3: Patient = { resourceType: 'Patient', address: [{}, { use: 'home' }, {}] };
+    const p2: Patient = { resourceType: 'Patient', address: [{}] };
+
+    expect(() => validateResource(p1)).not.toThrow();
+
+    try {
+      validateResource(p2);
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.length).toBe(1);
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.address[0]');
+    }
+
+    try {
+      validateResource(p3);
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.length).toBe(2);
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.address[0]');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Patient.address[2]');
+    }
+  });
+
   test('Deep nested null array element', () => {
     try {
       validateResource({
