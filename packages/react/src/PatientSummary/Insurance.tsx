@@ -15,16 +15,12 @@ interface CoverageItemProps {
 
 function CoverageItem({ coverage, onClickResource }: CoverageItemProps): JSX.Element {
   const payorResource = useResource(coverage.payor?.[0]);
-  
+
   let payorName = 'Unknown Payor';
   if (payorResource) {
     if ('name' in payorResource && typeof payorResource.name === 'string') {
       payorName = payorResource.name;
-    } else if (
-      'name' in payorResource &&
-      Array.isArray(payorResource.name) &&
-      payorResource.name.length > 0
-    ) {
+    } else if ('name' in payorResource && Array.isArray(payorResource.name) && payorResource.name.length > 0) {
       payorName = formatHumanName(payorResource.name[0]);
     }
   }
@@ -64,7 +60,7 @@ export interface InsuranceProps {
 
 export function Insurance(props: InsuranceProps): JSX.Element {
   const { coverages, onClickResource } = props;
-  
+
   // Filter to only show active coverages
   const activeCoverages = coverages.filter((coverage) => coverage.status === 'active');
 
@@ -78,11 +74,7 @@ export function Insurance(props: InsuranceProps): JSX.Element {
       {activeCoverages.length > 0 ? (
         <Flex direction="column" gap={8}>
           {activeCoverages.map((coverage) => (
-            <CoverageItem
-              key={coverage.id}
-              coverage={coverage}
-              onClickResource={onClickResource}
-            />
+            <CoverageItem key={coverage.id} coverage={coverage} onClickResource={onClickResource} />
           ))}
         </Flex>
       ) : (
