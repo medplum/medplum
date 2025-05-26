@@ -1,5 +1,5 @@
 import { Box, Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
-import { calculateAgeString, formatHumanName, HTTP_HL7_ORG, resolveId } from '@medplum/core';
+import { formatHumanName, resolveId } from '@medplum/core';
 import {
   AllergyIntolerance,
   Appointment,
@@ -36,6 +36,7 @@ import { SexualOrientation } from './SexualOrientation';
 import { SmokingStatus } from './SmokingStatus';
 import SummaryItem from './SummaryItem';
 import { Vitals } from './Vitals';
+import { getBirthSex, getEthnicity, getGenderIdentity, getGeneralPractitioner, getPatientAgeDisplay, getRace } from './PatientSummary.util';
 
 export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
@@ -63,38 +64,6 @@ interface PatientMedicalData {
   readonly devices?: Device[];
   readonly socialHistory: Observation[];
   readonly goals?: Goal[];
-}
-
-function getGenderIdentity(patient: Patient): string | undefined {
-  const genderIdentityExt = patient.extension?.find(
-    (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`
-  );
-  return genderIdentityExt?.valueCodeableConcept?.coding?.[0]?.display;
-}
-
-function getBirthSex(patient: Patient): string | undefined {
-  const birthSexExt = patient.extension?.find(
-    (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`
-  );
-  return birthSexExt?.valueCode;
-}
-
-function getRace(patient: Patient): string | undefined {
-  const raceExt = patient.extension?.find(
-    (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-race`
-  );
-  return raceExt?.extension?.find((subExt) => subExt.url === 'ombCategory')?.valueCoding?.display;
-}
-
-function getEthnicity(patient: Patient): string | undefined {
-  const ethnicityExt = patient.extension?.find(
-    (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-ethnicity`
-  );
-  return ethnicityExt?.extension?.find((subExt) => subExt.url === 'ombCategory')?.valueCoding?.display;
-}
-
-function getGeneralPractitioner(patient: Patient): string | undefined {
-  return patient.generalPractitioner?.[0]?.display;
 }
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
@@ -253,20 +222,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                         c={patient.birthDate ? 'inherit' : 'var(--mantine-color-gray-6)'}
                       >
                         {patient.birthDate
-                          ? new Date(patient.birthDate).toLocaleDateString('en-US', {
-                              month: 'numeric',
-                              day: 'numeric',
-                              year: 'numeric',
-                            }) +
-                            ' · ' +
-                            (() => {
-                              const ageStr = calculateAgeString(patient.birthDate);
-                              if (!ageStr) {
-                                return '0 years old';
-                              }
-                              const age = parseInt(ageStr, 10);
-                              return `${isNaN(age) ? '0' : age} years old`;
-                            })()
+                          ? getPatientAgeDisplay(patient.birthDate)
                           : 'Add Birthdate'}
                       </Text>
                     </Group>
@@ -380,7 +336,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                           flex: 1,
                           minWidth: 0,
                           color: getGeneralPractitioner(patient) ? 'inherit' : 'var(--mantine-color-gray-6)',
-                        }}
+                        }}  
                       >
                         {getGeneralPractitioner(patient) || 'Add a General Practitioner'}
                       </Text>
