@@ -358,6 +358,4 @@ describe('PatientSummary - Insurance', () => {
 
     expect(screen.getByText('Blue Cross Blue Shield')).toBeInTheDocument();
   });
-
-  
 });
