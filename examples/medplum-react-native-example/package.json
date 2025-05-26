@@ -36,5 +36,9 @@
     "@babel/core": "7.27.1",
     "babel-preset-expo": "13.1.11",
     "typescript": "5.8.3"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

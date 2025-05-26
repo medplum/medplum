@@ -28,13 +28,13 @@
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
+  "type": "module",
   "bin": {
     "medplum": "./dist/esm/index.mjs"
   },
   "files": [
     "dist"
   ],
-  "type": "module",
   "scripts": {
     "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",

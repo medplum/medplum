@@ -33,10 +33,10 @@
     "constructs": "10.4.2",
     "object-hash": "3.0.0"
   },
-  "engines": {
-    "node": ">=20.0.0"
-  },
   "devDependencies": {
     "@types/object-hash": "3.0.6"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
