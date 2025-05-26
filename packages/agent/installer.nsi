@@ -42,6 +42,7 @@ RequestExecutionLevel admin
 Var WelcomeDialog
 Var WelcomeLabel
 Var alreadyInstalled
+Var alreadyInstalledThisVersion
 Var foundPropertiesFile
 Var baseUrl
 Var clientId
@@ -65,6 +66,13 @@ Function .onInit
         StrCpy $alreadyInstalled 1
     ${Else}
         StrCpy $alreadyInstalled 0
+    ${EndIf}
+
+    ReadRegStr $0 HKLM "SYSTEM\CurrentControlSet\Services\${SERVICE_NAME}" "ImagePath"
+    ${If} $0 != ""
+        StrCpy $alreadyInstalledThisVersion 1
+    ${Else}
+        StrCpy $alreadyInstalledThisVersion 0
     ${EndIf}
 
     ${If} ${FileExists} "$INSTDIR\agent.properties"
@@ -156,7 +164,10 @@ Section
     DetailPrint "${APP_NAME}"
     SetOutPath "$INSTDIR"
 
-    ${If} $alreadyInstalled == 1
+    ${If} $alreadyInstalledThisVersion == 1
+        DetailPrint "This version is already installed on this system."
+        Abort
+    ${ElseIf} $alreadyInstalled == 1
         Call UpgradeApp
     ${Else}
         Call InstallApp
