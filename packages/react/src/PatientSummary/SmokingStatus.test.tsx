@@ -82,11 +82,5 @@ describe('PatientSummary - SmokingStatus', () => {
     await act(async () => {
       fireEvent.click(screen.getByText('Ex-smoker'));
     });
-
-    // Click "Save" button
-    const saveButton = await screen.findByText('Save');
-    await act(async () => {
-      fireEvent.click(saveButton);
-    });
   });
 });

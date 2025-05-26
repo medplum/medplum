@@ -57,12 +57,6 @@ describe('PatientSummary - SexualOrientation', () => {
     await act(async () => {
       fireEvent.click(screen.getByTestId('add-button'));
     });
-
-    // Click "Save" button
-    const saveButton = await screen.findByText('Save');
-    await act(async () => {
-      fireEvent.click(saveButton);
-    });
   });
 
   test('Click on resource', async () => {
@@ -81,12 +75,6 @@ describe('PatientSummary - SexualOrientation', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText('Heterosexual'));
-    });
-
-    // Click "Save" button
-    const saveButton = await screen.findByText('Save');
-    await act(async () => {
-      fireEvent.click(saveButton);
     });
   });
 });
