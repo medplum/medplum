@@ -21,7 +21,7 @@ export function CoverageItem({ coverage, organization, onClickResource }: Covera
   if (organizationResource) {
     if ('name' in organizationResource && typeof organizationResource.name === 'string') {
       payorName = organizationResource.name;
-    } 
+    }
   }
 
   const detailsText = `ID: ${coverageResource?.subscriberId || 'N/A'}${
