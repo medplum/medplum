@@ -1,6 +1,5 @@
-import { calculateAgeString, HTTP_HL7_ORG } from "@medplum/core";
-import { Patient } from "@medplum/fhirtypes";
-
+import { calculateAgeString, HTTP_HL7_ORG } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
 
 export function getGenderIdentity(patient: Patient): string | undefined {
   const genderIdentityExt = patient.extension?.find(

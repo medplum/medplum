@@ -25,12 +25,19 @@ import { Allergies } from './Allergies';
 import { Insurance } from './Insurance';
 import { Medications } from './Medications';
 import styles from './PatientSummary.module.css';
+import {
+  getBirthSex,
+  getEthnicity,
+  getGenderIdentity,
+  getGeneralPractitioner,
+  getPatientAgeDisplay,
+  getRace,
+} from './PatientSummary.util';
 import { ProblemList } from './ProblemList';
 import { SexualOrientation } from './SexualOrientation';
 import { SmokingStatus } from './SmokingStatus';
 import SummaryItem from './SummaryItem';
 import { Vitals } from './Vitals';
-import { getBirthSex, getEthnicity, getGenderIdentity, getGeneralPractitioner, getPatientAgeDisplay, getRace } from './PatientSummary.util';
 
 export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
@@ -212,9 +219,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                     >
                       <IconCake size={16} stroke={2} color="var(--mantine-color-gray-6)" />
                       <Text fz="sm" fw={400} truncate c={patient.birthDate ? 'inherit' : 'var(--mantine-color-gray-6)'}>
-                        {patient.birthDate
-                          ? getPatientAgeDisplay(patient.birthDate)
-                          : 'Add Birthdate'}
+                        {patient.birthDate ? getPatientAgeDisplay(patient.birthDate) : 'Add Birthdate'}
                       </Text>
                     </Group>
                   </Tooltip>
@@ -337,7 +342,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                           flex: 1,
                           minWidth: 0,
                           color: getGeneralPractitioner(patient) ? 'inherit' : 'var(--mantine-color-gray-6)',
-                        }}  
+                        }}
                       >
                         {getGeneralPractitioner(patient) || 'Add a General Practitioner'}
                       </Text>
