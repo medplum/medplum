@@ -1,6 +1,6 @@
 import { Box, Flex, Group, Text } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
-import { Coverage } from '@medplum/fhirtypes';
+import { Coverage, Organization, Reference } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
 import { JSX } from 'react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
@@ -8,31 +8,34 @@ import { CollapsibleSection } from './CollapsibleSection';
 import styles from './PatientSummary.module.css';
 import SummaryItem from './SummaryItem';
 
-interface CoverageItemProps {
-  coverage: Coverage;
+export interface CoverageItemProps {
+  coverage: Coverage | Reference<Coverage>;
+  organization?: Organization | Reference<Organization>;
   onClickResource?: (resource: Coverage) => void;
-}
+} 
 
-function CoverageItem({ coverage, onClickResource }: CoverageItemProps): JSX.Element {
-  const payorResource = useResource(coverage.payor?.[0]);
-
+export function CoverageItem({ coverage, organization, onClickResource }: CoverageItemProps): JSX.Element {
+  const coverageResource = useResource(coverage);
+  const organizationResource = useResource(organization);
   let payorName = 'Unknown Payor';
-  if (payorResource) {
-    if ('name' in payorResource && typeof payorResource.name === 'string') {
-      payorName = payorResource.name;
-    } else if ('name' in payorResource && Array.isArray(payorResource.name) && payorResource.name.length > 0) {
-      payorName = formatHumanName(payorResource.name[0]);
+  if (organizationResource) {
+    if ('name' in organizationResource && typeof organizationResource.name === 'string') {
+      payorName = organizationResource.name;
+    } else if ('name' in organizationResource && Array.isArray(organizationResource.name) && organizationResource.name.length > 0) {
+      payorName = formatHumanName(organizationResource.name[0]);
     }
   }
 
-  const detailsText = `ID: ${coverage.subscriberId || 'N/A'}${
-    formatClassInfo(coverage) ? ` · ${formatClassInfo(coverage)}` : ''
+  const detailsText = `ID: ${coverageResource?.subscriberId || 'N/A'}${
+    formatClassInfo(coverageResource) ? ` · ${formatClassInfo(coverageResource)}` : ''
   }`;
 
   return (
     <SummaryItem
       onClick={() => {
-        onClickResource?.(coverage);
+        if (coverageResource) {
+          onClickResource?.(coverageResource);
+        }
       }}
     >
       <Box>
@@ -45,7 +48,7 @@ function CoverageItem({ coverage, onClickResource }: CoverageItemProps): JSX.Ele
         <Group mt={2} gap={4}>
           <StatusBadge color="green" variant="light" status="Active" />
           <Text size="xs" fw={500} color="gray.6">
-            Ends {formatDate(coverage.period?.end)}
+            Ends {formatDate(coverageResource?.period?.end)}
           </Text>
         </Group>
       </Box>
@@ -54,7 +57,7 @@ function CoverageItem({ coverage, onClickResource }: CoverageItemProps): JSX.Ele
 }
 
 export interface InsuranceProps {
-  readonly coverages: Coverage[];
+  readonly coverages: Coverage[]
   readonly onClickResource?: (resource: Coverage) => void;
 }
 
@@ -71,7 +74,12 @@ export function Insurance(props: InsuranceProps): JSX.Element {
       {activeCoverages.length > 0 ? (
         <Flex direction="column" gap={8}>
           {activeCoverages.map((coverage) => (
-            <CoverageItem key={coverage.id} coverage={coverage} onClickResource={onClickResource} />
+            <CoverageItem 
+              key={coverage.id} 
+              coverage={coverage} 
+              organization={coverage.payor?.[0] as Reference<Organization>} 
+              onClickResource={onClickResource} 
+            />
           ))}
         </Flex>
       ) : (
@@ -88,7 +96,10 @@ function capitalizeWords(str: string): string {
     .join(' ');
 }
 
-function formatClassInfo(coverage: Coverage): string {
+function formatClassInfo(coverage: Coverage | undefined): string {
+  if (!coverage) {
+    return '';
+  }
   const classInfo = coverage.class
     ?.filter((cls) => cls.type?.coding?.[0]?.code !== 'plan')
     .map((cls) => {

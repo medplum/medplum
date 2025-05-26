@@ -64,4 +64,29 @@ describe('PatientSummary - SexualOrientation', () => {
       fireEvent.click(saveButton);
     });
   });
+
+  test('Click on resource', async () => {
+    await setup(
+      <SexualOrientation
+        patient={HomerSimpson}
+        sexualOrientation={{
+          resourceType: 'Observation',
+          id: 'sexualOrientation',
+          status: 'final',
+          code: { text: 'Sexual orientation' },
+          valueCodeableConcept: { text: 'Heterosexual' },
+        }}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Heterosexual'));
+    });
+
+    // Click "Save" button
+    const saveButton = await screen.findByText('Save');
+    await act(async () => {
+      fireEvent.click(saveButton);
+    });
+  });
 });

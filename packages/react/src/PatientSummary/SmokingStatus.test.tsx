@@ -64,4 +64,29 @@ describe('PatientSummary - SmokingStatus', () => {
       fireEvent.click(saveButton);
     });
   });
+
+  test('Click on resource', async () => {
+    await setup(
+      <SmokingStatus
+        patient={HomerSimpson}
+        smokingStatus={{
+          resourceType: 'Observation',
+          id: 'smokingStatus',
+          status: 'final',
+          code: { text: 'Smoking Status' },
+          valueCodeableConcept: { text: 'Ex-smoker' },
+        }}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Ex-smoker'));
+    });
+
+    // Click "Save" button
+    const saveButton = await screen.findByText('Save');
+    await act(async () => {
+      fireEvent.click(saveButton);
+    });
+  });
 });

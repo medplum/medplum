@@ -1,5 +1,5 @@
 import { Box, Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
-import { calculateAgeString, formatHumanName, resolveId } from '@medplum/core';
+import { calculateAgeString, formatHumanName, HTTP_HL7_ORG, resolveId } from '@medplum/core';
 import {
   AllergyIntolerance,
   Appointment,
@@ -67,29 +67,29 @@ interface PatientMedicalData {
 }
 
 function getGenderIdentity(patient: Patient): string | undefined {
-  const genderIdentityExt = patient.extension?.find(
-    (ext) => ext.url === 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-genderIdentity'
+  const genderIdentityExt = patient.extension?.find(  
+    (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`
   );
   return genderIdentityExt?.valueCodeableConcept?.coding?.[0]?.display;
 }
 
 function getBirthSex(patient: Patient): string | undefined {
   const birthSexExt = patient.extension?.find(
-    (ext) => ext.url === 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex'
+    (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`
   );
   return birthSexExt?.valueCode;
 }
 
 function getRace(patient: Patient): string | undefined {
   const raceExt = patient.extension?.find(
-    (ext) => ext.url === 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race'
+    (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-race`
   );
   return raceExt?.extension?.find((subExt) => subExt.url === 'ombCategory')?.valueCoding?.display;
 }
 
 function getEthnicity(patient: Patient): string | undefined {
   const ethnicityExt = patient.extension?.find(
-    (ext) => ext.url === 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity'
+    (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-ethnicity`
   );
   return ethnicityExt?.extension?.find((subExt) => subExt.url === 'ombCategory')?.valueCoding?.display;
 }
