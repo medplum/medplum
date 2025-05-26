@@ -65,7 +65,7 @@
     "dev": "storybook dev -p 6006",
     "lint": "eslint .",
     "storybook": "storybook build",
-    "test": "jest --verbose"
+    "test": "jest"
   },
   "devDependencies": {
     "@mantine/core": "7.17.7",

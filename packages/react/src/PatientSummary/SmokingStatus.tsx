@@ -97,7 +97,7 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
         }}
       >
         {smokingStatus?.valueCodeableConcept ? (
-          <UnstyledButton onClick={() => props.onClickResource?.(smokingStatus)}>
+          <UnstyledButton data-testid="smoking-status-button" onClick={() => props.onClickResource?.(smokingStatus)}>
             <Text>{formatCodeableConcept(smokingStatus.valueCodeableConcept)}</Text>
           </UnstyledButton>
         ) : (

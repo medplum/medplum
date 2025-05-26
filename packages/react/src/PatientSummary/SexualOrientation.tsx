@@ -112,6 +112,7 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
           <Flex direction="column" gap={8}>
             <Box onMouseEnter={() => setHoverIndex(0)} onMouseLeave={() => setHoverIndex(null)}>
               <UnstyledButton
+                data-testid="sexual-orientation-button"
                 onClick={(e) => {
                   killEvent(e);
                   if (props.onClickResource) {

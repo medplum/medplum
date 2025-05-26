@@ -1,5 +1,5 @@
 import { Box, Flex, Group, Text } from '@mantine/core';
-import { formatDate, formatHumanName } from '@medplum/core';
+import { formatDate } from '@medplum/core';
 import { Coverage, Organization, Reference } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react-hooks';
 import { JSX } from 'react';
@@ -21,13 +21,7 @@ export function CoverageItem({ coverage, organization, onClickResource }: Covera
   if (organizationResource) {
     if ('name' in organizationResource && typeof organizationResource.name === 'string') {
       payorName = organizationResource.name;
-    } else if (
-      'name' in organizationResource &&
-      Array.isArray(organizationResource.name) &&
-      organizationResource.name.length > 0
-    ) {
-      payorName = formatHumanName(organizationResource.name[0]);
-    }
+    } 
   }
 
   const detailsText = `ID: ${coverageResource?.subscriberId || 'N/A'}${

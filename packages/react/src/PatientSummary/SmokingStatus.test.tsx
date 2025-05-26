@@ -66,6 +66,7 @@ describe('PatientSummary - SmokingStatus', () => {
   });
 
   test('Click on resource', async () => {
+    const mockOnClickResource = jest.fn();
     await setup(
       <SmokingStatus
         patient={HomerSimpson}
@@ -76,11 +77,14 @@ describe('PatientSummary - SmokingStatus', () => {
           code: { text: 'Smoking Status' },
           valueCodeableConcept: { text: 'Ex-smoker' },
         }}
+        onClickResource={mockOnClickResource}
       />
     );
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Ex-smoker'));
+      fireEvent.click(screen.getByTestId('smoking-status-button'));
     });
+
+    expect(mockOnClickResource).toHaveBeenCalled();
   });
 });
