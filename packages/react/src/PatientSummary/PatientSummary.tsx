@@ -67,7 +67,7 @@ interface PatientMedicalData {
 }
 
 function getGenderIdentity(patient: Patient): string | undefined {
-  const genderIdentityExt = patient.extension?.find(  
+  const genderIdentityExt = patient.extension?.find(
     (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`
   );
   return genderIdentityExt?.valueCodeableConcept?.coding?.[0]?.display;
