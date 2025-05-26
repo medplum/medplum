@@ -9,6 +9,7 @@ import {
   QuestionnaireResponse,
   SearchParameter,
   ServiceRequest,
+  Task,
 } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
@@ -779,6 +780,107 @@ describe('Search matching', () => {
           filters: [{ code: 'birthdate', operator: Operator.LESS_THAN_OR_EQUALS, value: '1990-01-01' }],
         };
         expect(matchesSearchRequest(patient, search)).toBe(true);
+      });
+    });
+  });
+
+  describe('Period', () => {
+    describe('missing', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-05-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-06-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+    });
+
+    describe('invalid', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+        restriction: { period: { start: '2025-05-15T12:00:00.000Z' } },
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '.' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '.' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+    });
+
+    describe('start greater than', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+        restriction: { period: { start: '2025-05-15T12:00:00.000Z' } },
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-05-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(true);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-06-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
+      });
+    });
+
+    describe('end greater than', () => {
+      const task: Task = {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+        restriction: { period: { end: '2025-05-15T12:00:00.000Z' } },
+      };
+
+      test('true', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-05-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(true);
+      });
+
+      test('false', () => {
+        const search: SearchRequest = {
+          resourceType: 'Task',
+          filters: [{ code: 'due-date', operator: Operator.GREATER_THAN, value: '2025-06-01' }],
+        };
+        expect(matchesSearchRequest(task, search)).toBe(false);
       });
     });
   });

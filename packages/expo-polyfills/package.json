@@ -62,7 +62,7 @@
     "jest-expo": "53.0.5",
     "jest-websocket-mock": "2.5.0",
     "react-native": "0.79.2",
-    "ts-jest": "29.3.3"
+    "ts-jest": "29.3.4"
   },
   "peerDependencies": {
     "@medplum/core": "4.1.5",

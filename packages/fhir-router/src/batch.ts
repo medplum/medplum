@@ -378,7 +378,8 @@ class BatchProcessor {
 
     let errors = 0;
 
-    for (const entryIndex of bundleInfo.ordering) {
+    for (let n = 0; n < bundleInfo.ordering.length; n++) {
+      const entryIndex = bundleInfo.ordering[n];
       const entry = entries[entryIndex];
       const rewritten = this.rewriteIdsInObject(entry);
       try {
@@ -386,6 +387,16 @@ class BatchProcessor {
       } catch (err) {
         if (this.isTransaction()) {
           throw err;
+        }
+
+        if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 429) {
+          // Rate limit reached; terminate batch and finish to avoid further load on server
+          for (let i = n; i < bundleInfo.ordering.length; i++) {
+            const entryIndex = bundleInfo.ordering[i];
+            resultEntries[entryIndex] = buildBundleResponse(err.outcome);
+          }
+          errors += bundleInfo.ordering.length - n;
+          break;
         }
 
         errors++;

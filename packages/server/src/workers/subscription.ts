@@ -262,9 +262,21 @@ export async function addSubscriptionJobs(
       logFn('Subscription does not match options.subscription');
       continue;
     }
-    const criteria = await matchesCriteria(resource, previousVersion, subscription, context);
-    logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${criteria}`);
-    if (criteria) {
+    let matches: boolean;
+    try {
+      matches = await matchesCriteria(resource, previousVersion, subscription, context);
+      logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${matches}`);
+    } catch (err) {
+      // If we throw when evaluating the criteria, log and continue
+      logFn('Error when evaluating matchesCriteria for resource against Subscription', {
+        resourceType: resource.resourceType,
+        resource: resource.id,
+        subscription: subscription.id,
+        err,
+      });
+      continue;
+    }
+    if (matches) {
       if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
         logFn(`Subscription satisfiesAccessPolicy(${resource.id}) = false`);
         continue;
