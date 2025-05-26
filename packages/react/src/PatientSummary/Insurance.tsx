@@ -67,9 +67,6 @@ export function Insurance(props: InsuranceProps): JSX.Element {
   return (
     <CollapsibleSection
       title="Insurance"
-      onAdd={() => {
-        // TODO: Handle add new coverage
-      }}
     >
       {activeCoverages.length > 0 ? (
         <Flex direction="column" gap={8}>

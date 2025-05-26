@@ -72,6 +72,7 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
                   <Group mt={2} gap={4}>
                     {problem.clinicalStatus?.coding?.[0]?.code && (
                       <StatusBadge
+                        data-testid="status-badge"
                         color={getStatusColor(problem.clinicalStatus?.coding?.[0]?.code)}
                         variant="light"
                         status={problem.clinicalStatus?.coding?.[0]?.code}
