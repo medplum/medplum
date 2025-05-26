@@ -68,9 +68,7 @@ export function Insurance(props: InsuranceProps): JSX.Element {
   const activeCoverages = coverages.filter((coverage) => coverage.status === 'active');
 
   return (
-    <CollapsibleSection
-      title="Insurance"
-    >
+    <CollapsibleSection title="Insurance">
       {activeCoverages.length > 0 ? (
         <Flex direction="column" gap={8}>
           {activeCoverages.map((coverage) => (

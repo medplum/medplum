@@ -140,60 +140,73 @@ describe('PatientSummary - ProblemList', () => {
   });
 
   test('Problem status colors', async () => {
-    await setup(<ProblemList patient={HomerSimpson} problems={[
-      {
-        resourceType: 'Condition',
-        id: 'active',
-        subject: createReference(HomerSimpson),
-        code: { text: 'Active Problem' },
-        clinicalStatus: { 
-          coding: [{ 
-            code: 'active',
-            system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-            display: 'Active'
-          }] 
-        }
-      },
-      {
-        resourceType: 'Condition',
-        id: 'inactive',
-        subject: createReference(HomerSimpson),
-        code: { text: 'Inactive Problem' },
-        clinicalStatus: { 
-          coding: [{ 
-            code: 'inactive',
-            system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-            display: 'Inactive'
-          }] 
-        }
-      },
-      {
-        resourceType: 'Condition',
-        id: 'remission',
-        subject: createReference(HomerSimpson),
-        code: { text: 'Remission Problem' },
-        clinicalStatus: { 
-          coding: [{ 
-            code: 'remission',
-            system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-            display: 'Remission'
-          }] 
-        }
-      },
-      {
-        resourceType: 'Condition',
-        id: 'resolved',
-        subject: createReference(HomerSimpson),
-        code: { text: 'Resolved Problem' },
-        clinicalStatus: { 
-          coding: [{ 
-            code: 'resolved',
-            system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
-            display: 'Resolved'
-          }] 
-        }
-      }
-    ]} />);
+    await setup(
+      <ProblemList
+        patient={HomerSimpson}
+        problems={[
+          {
+            resourceType: 'Condition',
+            id: 'active',
+            subject: createReference(HomerSimpson),
+            code: { text: 'Active Problem' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'active',
+                  system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                  display: 'Active',
+                },
+              ],
+            },
+          },
+          {
+            resourceType: 'Condition',
+            id: 'inactive',
+            subject: createReference(HomerSimpson),
+            code: { text: 'Inactive Problem' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'inactive',
+                  system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                  display: 'Inactive',
+                },
+              ],
+            },
+          },
+          {
+            resourceType: 'Condition',
+            id: 'remission',
+            subject: createReference(HomerSimpson),
+            code: { text: 'Remission Problem' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'remission',
+                  system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                  display: 'Remission',
+                },
+              ],
+            },
+          },
+          {
+            resourceType: 'Condition',
+            id: 'resolved',
+            subject: createReference(HomerSimpson),
+            code: { text: 'Resolved Problem' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'resolved',
+                  system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                  display: 'Resolved',
+                },
+              ],
+            },
+          },
+        ]}
+      />
+    );
 
     const activeBadge = screen.getByText('active').closest('[class*="mantine-Badge-root"]');
     expect(activeBadge).toHaveStyle({ '--badge-color': 'var(--mantine-color-green-light-color)' });
@@ -205,7 +218,6 @@ describe('PatientSummary - ProblemList', () => {
     expect(remissionBadge).toHaveStyle({ '--badge-color': 'var(--mantine-color-blue-light-color)' });
 
     const resolvedBadge = screen.getByText('resolved').closest('[class*="mantine-Badge-root"]');
-    expect(resolvedBadge).toHaveStyle({ '--badge-color': 'var(--mantine-color-teal-light-color)' });  
+    expect(resolvedBadge).toHaveStyle({ '--badge-color': 'var(--mantine-color-teal-light-color)' });
   });
-
 });
