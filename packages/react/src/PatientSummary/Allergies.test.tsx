@@ -58,7 +58,7 @@ describe('PatientSummary - Allergies', () => {
     await setup(<Allergies patient={HomerSimpson} allergies={[]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByText('+ Add'));
+      fireEvent.click(screen.getByTestId('add-button'));
     });
 
     const input = (await screen.findAllByRole('searchbox'))[0] as HTMLInputElement;
@@ -102,7 +102,7 @@ describe('PatientSummary - Allergies', () => {
     await setup(<Allergies patient={HomerSimpson} allergies={[allergy]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Edit Peanut'));
+      fireEvent.click(screen.getByText('Peanut'));
     });
 
     const input = (await screen.findAllByRole('searchbox'))[0] as HTMLInputElement;

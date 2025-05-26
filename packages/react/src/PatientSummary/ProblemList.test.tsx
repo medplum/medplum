@@ -33,7 +33,7 @@ describe('PatientSummary - ProblemList', () => {
 
   test('Renders empty', async () => {
     await setup(<ProblemList patient={HomerSimpson} problems={[]} />);
-    expect(screen.getByText('Problem List')).toBeInTheDocument();
+    expect(screen.getByText('Problems')).toBeInTheDocument();
   });
 
   test('Renders existing', async () => {
@@ -50,7 +50,7 @@ describe('PatientSummary - ProblemList', () => {
         ]}
       />
     );
-    expect(screen.getByText('Problem List')).toBeInTheDocument();
+    expect(screen.getByText('Problems')).toBeInTheDocument();
     expect(screen.getByText('Peanut')).toBeInTheDocument();
   });
 
@@ -58,7 +58,7 @@ describe('PatientSummary - ProblemList', () => {
     await setup(<ProblemList patient={HomerSimpson} problems={[]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByText('+ Add'));
+      fireEvent.click(screen.getByTestId('add-button'));
     });
 
     // Enter problem "Dizziness"
@@ -104,7 +104,7 @@ describe('PatientSummary - ProblemList', () => {
     await setup(<ProblemList patient={HomerSimpson} problems={[condition]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Edit Dizziness'));
+      fireEvent.click(screen.getByText('Dizziness'));
     });
 
     // Enter problem "Dizziness"

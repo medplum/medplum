@@ -35,6 +35,7 @@ export function CollapsibleSection({ title, children, onAdd }: CollapsibleSectio
 
           {onAdd && (
             <ActionIcon
+              data-testid="add-button"
               className={classes.addButton}
               variant="subtle"
               onClick={(e) => {

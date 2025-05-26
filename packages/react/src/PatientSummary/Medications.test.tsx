@@ -60,7 +60,7 @@ describe('PatientSummary - Medications', () => {
     await setup(<Medications patient={HomerSimpson} medicationRequests={[]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByText('+ Add'));
+      fireEvent.click(screen.getByTestId('add-button'));
     });
 
     const input = (await screen.findByRole('searchbox')) as HTMLInputElement;
@@ -106,7 +106,7 @@ describe('PatientSummary - Medications', () => {
     await setup(<Medications patient={HomerSimpson} medicationRequests={[medication]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Edit Tylenol'));
+      fireEvent.click(screen.getByText('Tylenol'));
     });
 
     const input = (await screen.findByRole('searchbox')) as HTMLInputElement;

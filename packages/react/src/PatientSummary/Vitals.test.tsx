@@ -57,7 +57,7 @@ describe('PatientSummary - Vitals', () => {
     await setup(<Vitals patient={HomerSimpson} vitals={[]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByText('+ Add'));
+      fireEvent.click(screen.getByTestId('add-button'));
     });
 
     await screen.findByLabelText('BP Sys');
