@@ -12,7 +12,7 @@ export interface CoverageItemProps {
   coverage: Coverage | Reference<Coverage>;
   organization?: Organization | Reference<Organization>;
   onClickResource?: (resource: Coverage) => void;
-} 
+}
 
 export function CoverageItem({ coverage, organization, onClickResource }: CoverageItemProps): JSX.Element {
   const coverageResource = useResource(coverage);
@@ -21,7 +21,11 @@ export function CoverageItem({ coverage, organization, onClickResource }: Covera
   if (organizationResource) {
     if ('name' in organizationResource && typeof organizationResource.name === 'string') {
       payorName = organizationResource.name;
-    } else if ('name' in organizationResource && Array.isArray(organizationResource.name) && organizationResource.name.length > 0) {
+    } else if (
+      'name' in organizationResource &&
+      Array.isArray(organizationResource.name) &&
+      organizationResource.name.length > 0
+    ) {
       payorName = formatHumanName(organizationResource.name[0]);
     }
   }
@@ -57,7 +61,7 @@ export function CoverageItem({ coverage, organization, onClickResource }: Covera
 }
 
 export interface InsuranceProps {
-  readonly coverages: Coverage[]
+  readonly coverages: Coverage[];
   readonly onClickResource?: (resource: Coverage) => void;
 }
 
@@ -72,11 +76,11 @@ export function Insurance(props: InsuranceProps): JSX.Element {
       {activeCoverages.length > 0 ? (
         <Flex direction="column" gap={8}>
           {activeCoverages.map((coverage) => (
-            <CoverageItem 
-              key={coverage.id} 
-              coverage={coverage} 
-              organization={coverage.payor?.[0] as Reference<Organization>} 
-              onClickResource={onClickResource} 
+            <CoverageItem
+              key={coverage.id}
+              coverage={coverage}
+              organization={coverage.payor?.[0] as Reference<Organization>}
+              onClickResource={onClickResource}
             />
           ))}
         </Flex>
