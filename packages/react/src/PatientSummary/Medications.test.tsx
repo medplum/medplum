@@ -140,72 +140,77 @@ describe('PatientSummary - Medications', () => {
   });
 
   test('Medication status colors', async () => {
-    await setup(<Medications patient={HomerSimpson} medicationRequests={[
-      {
-        resourceType: 'MedicationRequest',
-        id: 'active',
-        status: 'active',
-        intent: 'order',
-        subject: createReference(HomerSimpson),
-        medicationCodeableConcept: { text: 'Active Medication' }
-      },
-      {
-        resourceType: 'MedicationRequest',
-        id: 'on-hold',
-        status: 'on-hold',
-        intent: 'order',
-        subject: createReference(HomerSimpson),
-        medicationCodeableConcept: { text: 'On Hold Medication' }
-      },
-      {
-        resourceType: 'MedicationRequest',
-        id: 'cancelled',
-        status: 'cancelled',
-        intent: 'order',
-        subject: createReference(HomerSimpson),
-        medicationCodeableConcept: { text: 'Cancelled Medication' }
-      },
-      {
-        resourceType: 'MedicationRequest',
-        id: 'completed',
-        status: 'completed',
-        intent: 'order',
-        subject: createReference(HomerSimpson),
-        medicationCodeableConcept: { text: 'Completed Medication' }
-      },
-      {
-        resourceType: 'MedicationRequest',
-        id: 'entered-in-error',
-        status: 'entered-in-error',
-        intent: 'order',
-        subject: createReference(HomerSimpson),
-        medicationCodeableConcept: { text: 'Error Medication' }
-      },
-      {
-        resourceType: 'MedicationRequest',
-        id: 'draft',
-        status: 'draft',
-        intent: 'order',
-        subject: createReference(HomerSimpson),
-        medicationCodeableConcept: { text: 'Draft Medication' }
-      },
-      {
-        resourceType: 'MedicationRequest',
-        id: 'stopped',
-        status: 'stopped',
-        intent: 'order',
-        subject: createReference(HomerSimpson),
-        medicationCodeableConcept: { text: 'Stopped Medication' }
-      },
-      {
-        resourceType: 'MedicationRequest',
-        id: 'unknown',
-        status: 'unknown',
-        intent: 'order',
-        subject: createReference(HomerSimpson),
-        medicationCodeableConcept: { text: 'Unknown Medication' }
-      }
-    ]} />);
+    await setup(
+      <Medications
+        patient={HomerSimpson}
+        medicationRequests={[
+          {
+            resourceType: 'MedicationRequest',
+            id: 'active',
+            status: 'active',
+            intent: 'order',
+            subject: createReference(HomerSimpson),
+            medicationCodeableConcept: { text: 'Active Medication' },
+          },
+          {
+            resourceType: 'MedicationRequest',
+            id: 'on-hold',
+            status: 'on-hold',
+            intent: 'order',
+            subject: createReference(HomerSimpson),
+            medicationCodeableConcept: { text: 'On Hold Medication' },
+          },
+          {
+            resourceType: 'MedicationRequest',
+            id: 'cancelled',
+            status: 'cancelled',
+            intent: 'order',
+            subject: createReference(HomerSimpson),
+            medicationCodeableConcept: { text: 'Cancelled Medication' },
+          },
+          {
+            resourceType: 'MedicationRequest',
+            id: 'completed',
+            status: 'completed',
+            intent: 'order',
+            subject: createReference(HomerSimpson),
+            medicationCodeableConcept: { text: 'Completed Medication' },
+          },
+          {
+            resourceType: 'MedicationRequest',
+            id: 'entered-in-error',
+            status: 'entered-in-error',
+            intent: 'order',
+            subject: createReference(HomerSimpson),
+            medicationCodeableConcept: { text: 'Error Medication' },
+          },
+          {
+            resourceType: 'MedicationRequest',
+            id: 'draft',
+            status: 'draft',
+            intent: 'order',
+            subject: createReference(HomerSimpson),
+            medicationCodeableConcept: { text: 'Draft Medication' },
+          },
+          {
+            resourceType: 'MedicationRequest',
+            id: 'stopped',
+            status: 'stopped',
+            intent: 'order',
+            subject: createReference(HomerSimpson),
+            medicationCodeableConcept: { text: 'Stopped Medication' },
+          },
+          {
+            resourceType: 'MedicationRequest',
+            id: 'unknown',
+            status: 'unknown',
+            intent: 'order',
+            subject: createReference(HomerSimpson),
+            medicationCodeableConcept: { text: 'Unknown Medication' },
+          },
+        ]}
+      />
+    );
 
     const activeBadge = screen.getByText('active').closest('[class*="mantine-Badge-root"]');
     expect(activeBadge).toHaveStyle({ '--badge-color': 'var(--mantine-color-green-light-color)' });

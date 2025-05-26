@@ -136,60 +136,73 @@ describe('PatientSummary - Allergies', () => {
   });
 
   test('Allergy status colors', async () => {
-    await setup(<Allergies patient={HomerSimpson} allergies={[
-      {
-        resourceType: 'AllergyIntolerance',
-        id: 'active',
-        patient: createReference(HomerSimpson),
-        code: { text: 'Active Allergy' },
-        clinicalStatus: { 
-          coding: [{ 
-            code: 'active',
-            system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-            display: 'Active'
-          }] 
-        }
-      },
-      {
-        resourceType: 'AllergyIntolerance',
-        id: 'inactive',
-        patient: createReference(HomerSimpson),
-        code: { text: 'Inactive Allergy' },
-        clinicalStatus: { 
-          coding: [{ 
-            code: 'inactive',
-            system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-            display: 'Inactive'
-          }] 
-        }
-      },
-      {
-        resourceType: 'AllergyIntolerance',
-        id: 'resolved',
-        patient: createReference(HomerSimpson),
-        code: { text: 'Resolved Allergy' },
-        clinicalStatus: { 
-          coding: [{ 
-            code: 'resolved',
-            system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-            display: 'Resolved'
-          }] 
-        }
-      },
-      {
-        resourceType: 'AllergyIntolerance',
-        id: 'unknown',
-        patient: createReference(HomerSimpson),
-        code: { text: 'Unknown Allergy' },
-        clinicalStatus: { 
-          coding: [{ 
-            code: 'unknown',
-            system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-            display: 'Unknown'
-          }] 
-        }
-      }
-    ]} />);
+    await setup(
+      <Allergies
+        patient={HomerSimpson}
+        allergies={[
+          {
+            resourceType: 'AllergyIntolerance',
+            id: 'active',
+            patient: createReference(HomerSimpson),
+            code: { text: 'Active Allergy' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'active',
+                  system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+                  display: 'Active',
+                },
+              ],
+            },
+          },
+          {
+            resourceType: 'AllergyIntolerance',
+            id: 'inactive',
+            patient: createReference(HomerSimpson),
+            code: { text: 'Inactive Allergy' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'inactive',
+                  system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+                  display: 'Inactive',
+                },
+              ],
+            },
+          },
+          {
+            resourceType: 'AllergyIntolerance',
+            id: 'resolved',
+            patient: createReference(HomerSimpson),
+            code: { text: 'Resolved Allergy' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'resolved',
+                  system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+                  display: 'Resolved',
+                },
+              ],
+            },
+          },
+          {
+            resourceType: 'AllergyIntolerance',
+            id: 'unknown',
+            patient: createReference(HomerSimpson),
+            code: { text: 'Unknown Allergy' },
+            clinicalStatus: {
+              coding: [
+                {
+                  code: 'unknown',
+                  system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+                  display: 'Unknown',
+                },
+              ],
+            },
+          },
+        ]}
+      />
+    );
 
     const activeBadge = screen.getByText('active').closest('[class*="mantine-Badge-root"]');
     expect(activeBadge).toHaveStyle({ '--badge-color': 'var(--mantine-color-red-light-color)' });

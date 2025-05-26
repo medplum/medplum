@@ -18,7 +18,6 @@ const mockInsuranceOrg: Organization = {
 
 describe('PatientSummary - Insurance', () => {
   async function setup(children: ReactNode): Promise<void> {
-    
     await act(async () => {
       render(
         <MemoryRouter>
@@ -41,7 +40,7 @@ describe('PatientSummary - Insurance', () => {
 
   test('Renders empty when no coverages', async () => {
     await setup(<Insurance coverages={[]} />);
-    
+
     expect(screen.getByText('Insurance')).toBeInTheDocument();
     expect(screen.getByText('(none)')).toBeInTheDocument();
   });
@@ -59,7 +58,7 @@ describe('PatientSummary - Insurance', () => {
     ];
 
     await setup(<Insurance coverages={inactiveCoverages} />);
-    
+
     expect(screen.getByText('Insurance')).toBeInTheDocument();
     expect(screen.getByText('(none)')).toBeInTheDocument();
   });
@@ -80,7 +79,7 @@ describe('PatientSummary - Insurance', () => {
     ];
 
     await setup(<Insurance coverages={activeCoverages} />);
-    
+
     expect(screen.getByText('Insurance')).toBeInTheDocument();
     expect(screen.getByText('ID: 123456789')).toBeInTheDocument();
     expect(screen.getByText('Active')).toBeInTheDocument();
@@ -99,7 +98,7 @@ describe('PatientSummary - Insurance', () => {
     ];
 
     await setup(<Insurance coverages={activeCoverages} />);
-    
+
     expect(screen.getByText('Unknown Payor')).toBeInTheDocument();
   });
 
@@ -115,7 +114,7 @@ describe('PatientSummary - Insurance', () => {
     ];
 
     await setup(<Insurance coverages={activeCoverages} />);
-    
+
     expect(screen.getByText('ID: N/A')).toBeInTheDocument();
   });
 
@@ -156,7 +155,7 @@ describe('PatientSummary - Insurance', () => {
     ];
 
     await setup(<Insurance coverages={activeCoverages} />);
-    
+
     expect(screen.getByText('ID: 123456789 · Group: EMPLOYEE · Subgroup: FULL_TIME')).toBeInTheDocument();
   });
 
@@ -197,7 +196,7 @@ describe('PatientSummary - Insurance', () => {
     ];
 
     await setup(<Insurance coverages={activeCoverages} />);
-    
+
     // Should only show group, not plan
     expect(screen.getByText('ID: 123456789 · Group: EMPLOYEE')).toBeInTheDocument();
     expect(screen.queryByText('PREMIUM_PLAN')).not.toBeInTheDocument();
@@ -224,7 +223,7 @@ describe('PatientSummary - Insurance', () => {
     ];
 
     await setup(<Insurance coverages={activeCoverages} />);
-    
+
     expect(screen.getByText('ID: 123456789')).toBeInTheDocument();
     expect(screen.getByText('ID: 987654321')).toBeInTheDocument();
   });
@@ -244,7 +243,7 @@ describe('PatientSummary - Insurance', () => {
 
     await setup(<Insurance coverages={activeCoverages} onClickResource={mockOnClickResource} />);
     await act(async () => {
-      fireEvent.click(screen.getByText('ID: 123456789')); 
+      fireEvent.click(screen.getByText('ID: 123456789'));
     });
 
     expect(mockOnClickResource).toHaveBeenCalledWith(activeCoverages[0]);
@@ -263,12 +262,13 @@ describe('PatientSummary - Insurance', () => {
     ];
 
     await setup(<Insurance coverages={activeCoverages} />);
-    
+
     // Find the first clickable summary item by looking for elements with SummaryItem class or role
-    const summaryItems = screen.getAllByRole('button').length > 0 
-      ? screen.getAllByRole('button') 
-      : document.querySelectorAll('[class*="SummaryItem"], [data-testid*="summary-item"]');
-    
+    const summaryItems =
+      screen.getAllByRole('button').length > 0
+        ? screen.getAllByRole('button')
+        : document.querySelectorAll('[class*="SummaryItem"], [data-testid*="summary-item"]');
+
     // Should not throw error when clicking
     await act(async () => {
       fireEvent.click(summaryItems[0] as HTMLElement);
@@ -291,7 +291,7 @@ describe('PatientSummary - Insurance', () => {
     ];
 
     await setup(<Insurance coverages={activeCoverages} />);
-    
+
     expect(screen.getByText('Ends')).toBeInTheDocument();
   });
 
@@ -321,7 +321,7 @@ describe('PatientSummary - Insurance', () => {
     ];
 
     await setup(<Insurance coverages={activeCoverages} />);
-    
+
     // Should capitalize each word properly
     expect(screen.getByText('ID: 123456789 · Sub Group: TEST_VALUE')).toBeInTheDocument();
   });
