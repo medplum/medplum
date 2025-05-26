@@ -21,16 +21,19 @@ import {
   typedValueToString,
 } from '@medplum/core';
 import {
+  Coding,
   QuestionnaireItem,
   QuestionnaireItemAnswerOption,
   QuestionnaireItemInitial,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
+  ValueSet,
+  ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
-import { ChangeEvent, JSX, useContext } from 'react';
+import { useMedplum } from '@medplum/react-hooks';
+import { ChangeEvent, JSX, useContext, useEffect, useState } from 'react';
 import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
 import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
-import { CodingInput } from '../../CodingInput/CodingInput';
 import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
 import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
@@ -43,7 +46,11 @@ import {
   getQuestionnaireItemReferenceTargetTypes,
   QuestionnaireItemType,
 } from '../../utils/questionnaire';
+import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
 import { QuestionnaireFormContext } from '../QuestionnaireForm.context';
+
+const MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS = 30;
+const MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS = 50;
 
 export interface QuestionnaireFormItemProps {
   readonly item: QuestionnaireItem;
@@ -249,9 +256,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
       break;
     case QuestionnaireItemType.choice:
     case QuestionnaireItemType.openChoice:
-      if (isDropDownChoice(item) && !item.answerValueSet) {
+      if (isCheckboxChoice(item)) {
         formComponent = (
-          <QuestionnaireChoiceDropDownInput
+          <QuestionnaireCheckboxInput
             name={name}
             item={item}
             initial={initial}
@@ -259,9 +266,10 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             onChangeAnswer={(e) => onChangeAnswer(e)}
           />
         );
-      } else if (isMultiSelectChoice(item) && !item.answerValueSet) {
+      } else if (isDropdownChoice(item) || (item.answerValueSet && !isRadiobuttonChoice(item))) {
+        // defaults answervalueset items to dropdown and everything else to radio button
         formComponent = (
-          <QuestionnaireMultiSelectInput
+          <QuestionnaireDropdownInput
             name={name}
             item={item}
             initial={initial}
@@ -271,7 +279,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         );
       } else {
         formComponent = (
-          <QuestionnaireChoiceSetInput
+          <QuestionnaireRadiobuttonInput
             name={name}
             item={item}
             initial={initial}
@@ -307,28 +315,43 @@ interface QuestionnaireChoiceInputProps {
   ) => void;
 }
 
-function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, response } = props;
+function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+  const { name, item, initial, onChangeAnswer, response } = props;
 
-  if (!item.answerOption?.length) {
+  if (!item.answerOption?.length && !item.answerValueSet) {
     return <NoAnswerDisplay />;
   }
 
   const initialValue = getItemInitialValue(initial);
+  const defaultValue = getCurrentAnswer(response) ?? initialValue;
+  const currentAnswer = getCurrentMultiSelectAnswer(response);
+  const isMultiSelect = item.repeats || isMultiSelectChoice(item);
 
-  const data = [''];
-
-  for (const option of item.answerOption) {
-    const optionValue = getItemAnswerOptionValue(option);
-    data.push(typedValueToString(optionValue) as string);
+  if (item.answerValueSet) {
+    return (
+      <ValueSetAutocomplete
+        name={name}
+        placeholder="Select items"
+        binding={item.answerValueSet}
+        maxValues={isMultiSelect ? undefined : 1}
+        onChange={(values) => {
+          if (isMultiSelect) {
+            if (values.length === 0) {
+              onChangeAnswer({});
+            } else {
+              onChangeAnswer(values.map((coding) => ({ valueCoding: coding })));
+            }
+          } else {
+            onChangeAnswer({ valueCoding: values[0] });
+          }
+        }}
+        defaultValue={defaultValue?.value}
+      />
+    );
   }
 
-  const defaultValue = getCurrentAnswer(response) ?? initialValue;
-
-  if (item.repeats) {
-    const { propertyName, data } = formatSelectData(props.item);
-    const currentAnswer = getCurrentMultiSelectAnswer(response);
-
+  if (isMultiSelect) {
+    const { propertyName, data } = formatSelectData(item);
     return (
       <MultiSelect
         data={data}
@@ -336,145 +359,295 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
         searchable
         defaultValue={currentAnswer || [typedValueToString(initialValue)]}
         onChange={(selected) => {
-          const values = getNewMultiSelectValues(selected, propertyName, item);
-          props.onChangeAnswer(values);
+          if (selected.length === 0) {
+            onChangeAnswer({});
+          } else {
+            const values = getNewMultiSelectValues(selected, propertyName, item);
+            onChangeAnswer(values);
+          }
         }}
       />
     );
-  }
-
-  return (
-    <NativeSelect
-      id={name}
-      name={name}
-      onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-        const index = e.currentTarget.selectedIndex;
-        if (index === 0) {
-          props.onChangeAnswer({});
-          return;
-        }
-        const option = (item.answerOption as QuestionnaireItemAnswerOption[])[index - 1];
+  } else {
+    const data = [''];
+    if (item.answerOption) {
+      for (const option of item.answerOption) {
         const optionValue = getItemAnswerOptionValue(option);
-        const propertyName = 'value' + capitalize(optionValue.type);
-        props.onChangeAnswer({ [propertyName]: optionValue.value });
-      }}
-      defaultValue={formatCoding(defaultValue?.value) || defaultValue?.value}
-      data={data}
-    />
-  );
-}
-
-function QuestionnaireMultiSelectInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { item, initial, response } = props;
-
-  if (!item.answerOption?.length) {
-    return <NoAnswerDisplay />;
-  }
-
-  const initialValue = getItemInitialValue(initial);
-  const { propertyName, data } = formatSelectData(props.item);
-  const currentAnswer = getCurrentMultiSelectAnswer(response);
-
-  return (
-    <MultiSelect
-      data={data}
-      placeholder="Select items"
-      searchable
-      defaultValue={currentAnswer || [typedValueToString(initialValue)]}
-      onChange={(selected) => {
-        const values = getNewMultiSelectValues(selected, propertyName, item);
-        props.onChangeAnswer(values);
-      }}
-    />
-  );
-}
-
-function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, onChangeAnswer, response } = props;
-
-  if (!item.answerOption?.length && !item.answerValueSet) {
-    return <NoAnswerDisplay />;
-  }
-
-  if (item.answerValueSet) {
+        data.push(typedValueToString(optionValue) as string);
+      }
+    }
     return (
-      <CodingInput
-        path=""
+      <NativeSelect
+        id={name}
         name={name}
-        binding={item.answerValueSet}
-        response={response}
-        onChange={(code) => onChangeAnswer({ valueCoding: code })}
-        creatable={item.type === QuestionnaireItemType.openChoice}
+        onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+          const index = e.currentTarget.selectedIndex;
+          if (index === 0) {
+            onChangeAnswer({});
+            return;
+          }
+          const option = (item.answerOption as QuestionnaireItemAnswerOption[])[index - 1];
+          const optionValue = getItemAnswerOptionValue(option);
+          const propertyName = 'value' + capitalize(optionValue.type);
+          onChangeAnswer({ [propertyName]: optionValue.value });
+        }}
+        defaultValue={formatCoding(defaultValue?.value) || defaultValue?.value}
+        data={data}
       />
     );
   }
-  return (
-    <QuestionnaireChoiceRadioInput
-      name={response?.id ?? name}
-      item={item}
-      initial={initial}
-      response={response}
-      onChangeAnswer={onChangeAnswer}
-    />
-  );
 }
 
-function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+function getValueSetOptions(
+  valueSetUrl: string | undefined,
+  medplum: ReturnType<typeof useMedplum>
+): Promise<ValueSetExpansionContains[]> {
+  if (!valueSetUrl) {
+    return Promise.resolve([]);
+  }
+
+  return medplum
+    .valueSetExpand({
+      url: valueSetUrl,
+      count: MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS + 1,
+    })
+    .then((valueSet: ValueSet) => valueSet.expansion?.contains ?? []);
+}
+
+function useValueSetOptions(valueSetUrl: string | undefined): [ValueSetExpansionContains[], boolean] {
+  const medplum = useMedplum();
+  const [valueSetOptions, setValueSetOptions] = useState<ValueSetExpansionContains[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    async function loadValueSet(): Promise<void> {
+      if (!valueSetUrl) {
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const options = await getValueSetOptions(valueSetUrl, medplum);
+        setValueSetOptions(options);
+      } catch (err) {
+        console.error('Error loading value set:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadValueSet().catch(console.error);
+  }, [valueSetUrl, medplum]);
+
+  return [valueSetOptions, isLoading];
+}
+
+function getOptionsFromValueSet(valueSetOptions: ValueSetExpansionContains[], name: string): [string, TypedValue][] {
+  return valueSetOptions.map((option, i) => {
+    const optionName = `${name}-valueset-${i}`;
+    const optionValue = {
+      type: 'Coding',
+      value: {
+        system: option.system,
+        code: option.code,
+        display: option.display,
+      },
+    };
+    return [optionName, optionValue];
+  });
+}
+
+function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const initialValue = getItemInitialValue(initial);
+  const [valueSetOptions, isLoading] = useValueSetOptions(item.answerValueSet);
 
   const options: [string, TypedValue][] = [];
   let defaultValue = undefined;
-  if (item.answerOption) {
-    for (let i = 0; i < item.answerOption.length; i++) {
-      const option = item.answerOption[i];
-      const optionName = `${name}-option-${i}`;
-      const optionValue = getItemAnswerOptionValue(option);
 
-      if (!optionValue?.value) {
-        continue;
-      }
+  if (item.answerValueSet) {
+    options.push(...getOptionsFromValueSet(valueSetOptions, name));
+  } else if (item.answerOption) {
+    const mappedOptions = item.answerOption
+      .slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)
+      .map((option, i) => {
+        const optionName = `${name}-option-${i}`;
+        const optionValue = getItemAnswerOptionValue(option);
+        if (!optionValue?.value) {
+          return null;
+        }
+        if (initialValue && stringify(optionValue) === stringify(initialValue)) {
+          defaultValue = optionName;
+        }
+        return [optionName, optionValue] as [string, TypedValue];
+      })
+      .filter((option): option is [string, TypedValue] => option !== null);
 
-      if (initialValue && stringify(optionValue) === stringify(initialValue)) {
-        defaultValue = optionName;
-      }
-      options.push([optionName, optionValue]);
-    }
+    options.push(...mappedOptions);
   }
 
   const defaultAnswer = getCurrentAnswer(response);
   const answerLinkId = getCurrentRadioAnswer(options, defaultAnswer);
 
+  if (isLoading) {
+    return <Text>Loading options...</Text>;
+  }
+
+  if (options.length === 0) {
+    return <NoAnswerDisplay />;
+  }
+
+  const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS);
+
   return (
-    <Radio.Group
-      name={name}
-      value={answerLinkId ?? defaultValue}
-      onChange={(newValue) => {
-        const option = options.find((option) => option[0] === newValue);
-        if (option) {
-          const optionValue = option[1];
-          const propertyName = 'value' + capitalize(optionValue.type);
-          onChangeAnswer({ [propertyName]: optionValue.value });
-        }
-      }}
-    >
-      {options.map(([optionName, optionValue]) => (
-        <Radio
-          key={optionName}
-          id={optionName}
-          value={optionName}
-          py={4}
-          label={
-            <ResourcePropertyDisplay
-              property={valueElementDefinition}
-              propertyType={optionValue.type}
-              value={optionValue.value}
-            />
+    <>
+      <Radio.Group
+        name={name}
+        value={answerLinkId ?? defaultValue}
+        onChange={(newValue) => {
+          const option = options.find((option) => option[0] === newValue);
+          if (option) {
+            const optionValue = option[1];
+            const propertyName = 'value' + capitalize(optionValue.type);
+            onChangeAnswer({ [propertyName]: optionValue.value });
           }
-        />
-      ))}
-    </Radio.Group>
+        }}
+      >
+        {limitedOptions.map(([optionName, optionValue]) => (
+          <Radio
+            key={optionName}
+            id={optionName}
+            value={optionName}
+            py={4}
+            label={
+              <ResourcePropertyDisplay
+                property={valueElementDefinition}
+                propertyType={optionValue.type}
+                value={optionValue.value}
+              />
+            }
+          />
+        ))}
+      </Radio.Group>
+      {((item.answerValueSet && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS) ||
+        (item.answerOption && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)) && (
+        <Text size="sm" c="dimmed" mt="xs">
+          Showing first {MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS} options
+        </Text>
+      )}
+    </>
+  );
+}
+
+function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+  const { name, item, onChangeAnswer, response } = props;
+  const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
+  const [valueSetOptions, isLoading] = useValueSetOptions(item.answerValueSet);
+
+  // Get initial values from response
+  const initialSelectedValues = item.answerValueSet
+    ? (response.answer?.map((a) => a.valueCoding) || []).filter((c): c is Coding => c !== undefined)
+    : getCurrentMultiSelectAnswer(response);
+
+  const [selectedValues, setSelectedValues] = useState(initialSelectedValues);
+
+  const options: [string, TypedValue][] = [];
+
+  if (item.answerValueSet) {
+    options.push(...getOptionsFromValueSet(valueSetOptions, name));
+  } else if (item.answerOption) {
+    const mappedOptions = item.answerOption
+      .slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)
+      .map((option, i) => {
+        const optionName = `${name}-option-${i}`;
+        const optionValue = getItemAnswerOptionValue(option);
+        return optionValue?.value ? ([optionName, optionValue] as [string, TypedValue]) : null;
+      })
+      .filter((option): option is [string, TypedValue] => option !== null);
+
+    options.push(...mappedOptions);
+  }
+
+  if (isLoading) {
+    return <Text>Loading options...</Text>;
+  }
+
+  if (options.length === 0) {
+    return <NoAnswerDisplay />;
+  }
+
+  const limitedOptions = options.slice(0, MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS);
+
+  const handleCheckboxChange = (optionValue: TypedValue, selected: boolean): void => {
+    if (item.answerValueSet) {
+      const currentCodings = selectedValues as Coding[];
+      let newCodings: Coding[];
+
+      if (selected) {
+        newCodings = [...currentCodings, optionValue.value as Coding];
+      } else {
+        newCodings = currentCodings.filter((c) => !deepEquals(c, optionValue.value));
+      }
+
+      setSelectedValues(newCodings);
+      if (newCodings.length === 0) {
+        onChangeAnswer({});
+      } else {
+        onChangeAnswer(newCodings.map((coding) => ({ valueCoding: coding })));
+      }
+    } else {
+      const currentValues = selectedValues as string[];
+      const optionValueStr = typedValueToString(optionValue);
+      let newValues: string[];
+
+      if (selected) {
+        newValues = [...currentValues, optionValueStr];
+      } else {
+        newValues = currentValues.filter((v) => v !== optionValueStr);
+      }
+
+      setSelectedValues(newValues);
+      if (newValues.length === 0) {
+        onChangeAnswer({});
+      } else {
+        const values = getNewMultiSelectValues(newValues, 'value' + capitalize(optionValue.type), item);
+        onChangeAnswer(values);
+      }
+    }
+  };
+
+  return (
+    <Group style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+      {limitedOptions.map(([optionName, optionValue]) => {
+        const optionValueStr = typedValueToString(optionValue);
+        const isChecked = item.answerValueSet
+          ? (selectedValues as Coding[]).some((coding) => deepEquals(coding, optionValue.value))
+          : (selectedValues as string[]).includes(optionValueStr);
+
+        return (
+          <Checkbox
+            key={optionName}
+            id={optionName}
+            label={
+              <ResourcePropertyDisplay
+                property={valueElementDefinition}
+                propertyType={optionValue.type}
+                value={optionValue.value}
+              />
+            }
+            checked={isChecked}
+            onChange={(event) => handleCheckboxChange(optionValue, event.currentTarget.checked)}
+          />
+        );
+      })}
+      {((item.answerValueSet && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS) ||
+        (item.answerOption && options.length > MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS)) && (
+        <Text size="sm" c="dimmed">
+          Showing first {MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS} options
+        </Text>
+      )}
+    </Group>
   );
 }
 
@@ -500,20 +673,30 @@ function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: T
   return options.find((option) => deepEquals(option[1].value, defaultAnswer?.value))?.[0];
 }
 
-function isDropDownChoice(item: QuestionnaireItem): boolean {
+type ChoiceType = 'check-box' | 'drop-down' | 'radio-button' | 'multi-select' | undefined;
+
+function hasChoiceType(item: QuestionnaireItem, type: ChoiceType): boolean {
   return !!item.extension?.some(
     (e) =>
       e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
-      e.valueCodeableConcept?.coding?.[0]?.code === 'drop-down'
+      e.valueCodeableConcept?.coding?.[0]?.code === type
   );
 }
 
+function isDropdownChoice(item: QuestionnaireItem): boolean {
+  return hasChoiceType(item, 'drop-down');
+}
+
+function isCheckboxChoice(item: QuestionnaireItem): boolean {
+  return hasChoiceType(item, 'check-box');
+}
+
+function isRadiobuttonChoice(item: QuestionnaireItem): boolean {
+  return hasChoiceType(item, 'radio-button');
+}
+
 function isMultiSelectChoice(item: QuestionnaireItem): boolean {
-  return !!item.extension?.some(
-    (e) =>
-      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
-      e.valueCodeableConcept?.coding?.[0]?.code === 'multi-select'
-  );
+  return hasChoiceType(item, 'multi-select');
 }
 
 interface FormattedData {
