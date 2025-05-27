@@ -1,6 +1,7 @@
 import { calculateAgeString, HTTP_HL7_ORG } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import {
+  formatPatientAddressDisplay,
   formatPatientGenderDisplay,
   formatPatientRaceEthnicityDisplay,
   getBirthSex,
@@ -9,7 +10,6 @@ import {
   getGeneralPractitioner,
   getPatientAgeDisplay,
   getRace,
-  formatPatientAddressDisplay,
 } from './PatientSummary.utils';
 
 jest.mock('@medplum/core', () => ({

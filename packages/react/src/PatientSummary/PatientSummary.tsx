@@ -18,25 +18,28 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import {
-  IconBinaryTree,
-  IconCake,
-  IconEmpathize,
-  IconMapPin,
-  IconStethoscope,
-} from '@tabler/icons-react';
+import { IconBinaryTree, IconCake, IconEmpathize, IconMapPin, IconStethoscope } from '@tabler/icons-react';
 import { JSX, useEffect, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Insurance } from './Insurance';
 import { Medications } from './Medications';
 import styles from './PatientSummary.module.css';
+import {
+  formatPatientAddressDisplay,
+  formatPatientGenderDisplay,
+  formatPatientRaceEthnicityDisplay,
+  getEthnicity,
+  getGenderIdentity,
+  getGeneralPractitioner,
+  getPatientAgeDisplay,
+  getRace,
+} from './PatientSummary.utils';
 import { ProblemList } from './ProblemList';
 import { SexualOrientation } from './SexualOrientation';
 import { SmokingStatus } from './SmokingStatus';
 import SummaryItem from './SummaryItem';
 import { Vitals } from './Vitals';
-import { formatPatientAddressDisplay, formatPatientGenderDisplay, formatPatientRaceEthnicityDisplay, getEthnicity, getGenderIdentity, getGeneralPractitioner, getPatientAgeDisplay, getRace } from './PatientSummary.utils';
 
 export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
@@ -155,14 +158,10 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   }
 
   function filterSocialHistoryObservations(observations: Observation[]): Observation[] {
-    return observations.filter(obs => 
-      obs.category?.some(cat => 
-        cat.coding?.some(coding => 
-          coding.code === 'social-history'
-        )
-      )
+    return observations.filter((obs) =>
+      obs.category?.some((cat) => cat.coding?.some((coding) => coding.code === 'social-history'))
     );
-   }
+  }
 
   if (!patient) {
     return null;
@@ -178,12 +177,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         <Group align="center" gap="sm" p={16}>
           <ResourceAvatar value={patient} size={48} radius={48} style={{ border: '2px solid white' }} />
           <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
-            <Tooltip
-              label={formatHumanName(patient.name?.[0] as HumanName)}
-              position="top-start"
-              openDelay={650}
-            >
-              <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }} >
+            <Tooltip label={formatHumanName(patient.name?.[0] as HumanName)} position="top-start" openDelay={650}>
+              <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }}>
                 {formatHumanName(patient.name?.[0] as HumanName)}
               </Text>
             </Tooltip>
@@ -214,21 +209,16 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Birthdate & Age" position="top-start" openDelay={650}>
-                    <Group gap="sm" align="center" ml={6} mr={2} style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <IconCake
-                        size={16}
-                        stroke={2}
-                        color="var(--mantine-color-gray-6)"
-                      />
-                      <Text
-                        fz="sm"
-                        fw={400}
-                        truncate
-                        c={getItemColor(patient.birthDate)}
-                      >
-                        {patient.birthDate
-                          ? getPatientAgeDisplay(patient.birthDate)
-                          : 'Add Birthdate'}
+                    <Group
+                      gap="sm"
+                      align="center"
+                      ml={6}
+                      mr={2}
+                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
+                    >
+                      <IconCake size={16} stroke={2} color="var(--mantine-color-gray-6)" />
+                      <Text fz="sm" fw={400} truncate c={getItemColor(patient.birthDate)}>
+                        {patient.birthDate ? getPatientAgeDisplay(patient.birthDate) : 'Add Birthdate'}
                       </Text>
                     </Group>
                   </Tooltip>
@@ -242,18 +232,15 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Gender & Identity" position="top-start" openDelay={650}>
-                    <Group gap="sm" align="center" ml={6} mr={2} style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <IconEmpathize
-                        size={16}
-                        stroke={2}
-                        color="var(--mantine-color-gray-6)"
-                      />
-                      <Text
-                        fz="sm"
-                        fw={400}
-                        truncate
-                        c={getItemColor(patient.gender || getGenderIdentity(patient))}
-                      >
+                    <Group
+                      gap="sm"
+                      align="center"
+                      ml={6}
+                      mr={2}
+                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
+                    >
+                      <IconEmpathize size={16} stroke={2} color="var(--mantine-color-gray-6)" />
+                      <Text fz="sm" fw={400} truncate c={getItemColor(patient.gender || getGenderIdentity(patient))}>
                         {patient.gender || getGenderIdentity(patient)
                           ? formatPatientGenderDisplay(patient)
                           : 'Add Gender & Identity'}
@@ -270,18 +257,15 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Race & Ethnicity" position="top-start" openDelay={650}>
-                    <Group gap="sm" align="center" ml={6} mr={2} style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <IconBinaryTree
-                        size={16}
-                        stroke={2}
-                        color="var(--mantine-color-gray-6)"
-                      />
-                      <Text
-                        fz="sm"
-                        fw={400}
-                        truncate
-                        c={getItemColor(getRace(patient) || getEthnicity(patient))}
-                      >
+                    <Group
+                      gap="sm"
+                      align="center"
+                      ml={6}
+                      mr={2}
+                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
+                    >
+                      <IconBinaryTree size={16} stroke={2} color="var(--mantine-color-gray-6)" />
+                      <Text fz="sm" fw={400} truncate c={getItemColor(getRace(patient) || getEthnicity(patient))}>
                         {getRace(patient) || getEthnicity(patient)
                           ? formatPatientRaceEthnicityDisplay(patient)
                           : 'Add Race & Ethnicity'}
@@ -298,12 +282,14 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="Location" position="top-start" openDelay={650}>
-                    <Group gap="sm" align="center" ml={6} mr={2} style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <IconMapPin
-                        size={16}
-                        stroke={2}
-                        color="var(--mantine-color-gray-6)"
-                      />
+                    <Group
+                      gap="sm"
+                      align="center"
+                      ml={6}
+                      mr={2}
+                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
+                    >
+                      <IconMapPin size={16} stroke={2} color="var(--mantine-color-gray-6)" />
                       <Text
                         fz="sm"
                         fw={400}
@@ -326,18 +312,15 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="General Practitioner" position="top-start" openDelay={650}>
-                    <Group gap="sm" align="center" ml={6} mr={2} style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
-                      <IconStethoscope
-                        size={16}
-                        stroke={2}
-                        color="var(--mantine-color-gray-6)"
-                      />
-                      <Text
-                        fz="sm"
-                        fw={400}
-                        truncate
-                        c={getItemColor(getGeneralPractitioner(patient))}
-                      >
+                    <Group
+                      gap="sm"
+                      align="center"
+                      ml={6}
+                      mr={2}
+                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
+                    >
+                      <IconStethoscope size={16} stroke={2} color="var(--mantine-color-gray-6)" />
+                      <Text fz="sm" fw={400} truncate c={getItemColor(getGeneralPractitioner(patient))}>
                         {getGeneralPractitioner(patient) || 'Add a General Practitioner'}
                       </Text>
                     </Group>

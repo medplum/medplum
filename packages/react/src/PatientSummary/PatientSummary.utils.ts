@@ -44,59 +44,57 @@ export function getPatientAgeDisplay(birthDate: string): string {
 }
 
 export function formatPatientGenderDisplay(patient: Patient): string {
-  const capitalizedGender = patient.gender 
-    ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) 
-    : '';
-  
+  const capitalizedGender = patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : '';
+
   const genderIdentity = getGenderIdentity(patient);
   const birthSex = getBirthSex(patient);
-  
+
   const parts: string[] = [];
-  
+
   if (capitalizedGender) {
     parts.push(capitalizedGender);
   }
-  
+
   if (genderIdentity) {
     parts.push(genderIdentity);
   }
-  
+
   if (birthSex) {
     parts.push(`Born as ${birthSex}`);
   }
-  
+
   return parts.join(' · ');
 }
 
 export function formatPatientRaceEthnicityDisplay(patient: Patient): string {
   const race = getRace(patient);
   const ethnicity = getEthnicity(patient);
-  
+
   const parts: string[] = [];
-  
+
   if (race) {
     parts.push(race);
   }
   if (ethnicity) {
     parts.push(ethnicity);
   }
-  
+
   return parts.join(' · ');
 }
 
 export function formatPatientAddressDisplay(patient: Patient): string {
   const city = patient.address?.[0]?.city || '';
   const state = patient.address?.[0]?.state || '';
-  
+
   const parts: string[] = [];
-  
+
   if (city) {
     parts.push(city);
   }
-  
+
   if (state) {
     parts.push(state);
   }
-  
+
   return parts.join(', ');
- }
+}
