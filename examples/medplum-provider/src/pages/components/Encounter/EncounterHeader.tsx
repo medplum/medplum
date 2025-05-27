@@ -47,7 +47,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       <Flex justify="space-between" align="center" p="lg">
         <Stack gap={0}>
           <Text fw={800} size="lg">
-            {encounter.serviceType?.coding?.[0]?.display || 'Visit'}
+            {encounter.basedOn?.[0]?.display || 'Visit'}
           </Text>
           <Text fw={500} size="xs" c="dimmed">
             {encounterDetail}
