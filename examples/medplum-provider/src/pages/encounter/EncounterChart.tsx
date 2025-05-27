@@ -65,11 +65,11 @@ export const EncounterChart = (): JSX.Element => {
         return;
       }
 
-      const diagnosisReferences = encounter.diagnosis?.map(d => d.condition?.reference).filter(Boolean) || [];
+      const diagnosisReferences = encounter.diagnosis?.map((d) => d.condition?.reference).filter(Boolean) || [];
       const conditionsResult = await Promise.all(
-        diagnosisReferences.map(ref => medplum.readReference({ reference: ref }))
+        diagnosisReferences.map((ref) => medplum.readReference({ reference: ref }))
       );
-      
+
       if (conditionsResult.length > 0 && encounter?.diagnosis) {
         const diagnosisMap = new Map<string, number>();
 
