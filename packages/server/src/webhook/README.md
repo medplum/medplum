@@ -23,7 +23,8 @@ For security, all webhook requests must include one of the following signature h
 - `X-Signature` - standard generic signature header
 - `X-HMAC-Signature` - standard HMAC signature header
 - `X-Cal-Signature-256` - Cal.com specific signature header
-- `X-Twilio-Email-Event-Webhook-Signature` - Twilio specific signature header
+- `X-Twilio-Email-Event-Webhook-Signature` - Twilio SendGrid specific signature header
+- `X-Twilio-Signature` - Twilio specific signature header
 
 ### Response
 

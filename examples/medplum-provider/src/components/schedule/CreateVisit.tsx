@@ -53,7 +53,6 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
   }, [appointmentSlot]);
 
   async function handleSubmit(): Promise<void> {
-
     if (!patient || !planDefinitionData || !encounterClass || !start || !end) {
       showNotification({
         color: 'yellow',
