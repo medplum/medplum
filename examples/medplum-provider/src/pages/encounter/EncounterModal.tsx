@@ -38,7 +38,7 @@ export const EncounterModal = (): JSX.Element => {
     try {
       const encounter = await createEncounter(medplum, start, end, encounterClass, patient, planDefinitionData);
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Encounter created' });
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`)?.catch(console.error);
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {
       showNotification({ color: 'red', icon: <IconCircleOff />, title: 'Error', message: normalizeErrorString(err) });
     } finally {
