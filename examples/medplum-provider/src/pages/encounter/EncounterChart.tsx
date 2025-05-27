@@ -1,4 +1,4 @@
-import { Box, Button, Card, Drawer, Flex, Group, Menu, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Box, Button, Card, Flex, Group, Menu, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString } from '@medplum/core';
 import {
@@ -30,7 +30,6 @@ import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import classes from './EncounterChart.module.css';
 import ChargeItemPanel from '../components/ChargeItem/ChageItemPanel';
-import { useDisclosure } from '@mantine/hooks';
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
@@ -55,7 +54,6 @@ export const EncounterChart = (): JSX.Element => {
     setChargeItems,
   } = useEncounterChart(patientId, encounterId);
   const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
-  const [opened, { open, close }] = useDisclosure(false);
 
   useEffect(() => {
     if (claim?.diagnosis) {
@@ -384,14 +382,6 @@ export const EncounterChart = (): JSX.Element => {
               maxRows={8}
             />
           </Card>
-
-          <Drawer opened={opened} onClose={close} title="Authentication" position="right">
-            {/* Drawer content */}
-          </Drawer>
-
-          <Button variant="default" onClick={open}>
-            Open Drawer
-          </Button>
 
           {tasks.map((task: Task) => (
             <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />

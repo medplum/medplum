@@ -128,7 +128,6 @@ export function SchedulePage(): JSX.Element | null {
           ],
           { cache }
         );
-        console.log('appointments', appointments);
         setAppointmentEvents(appointmentsToEvents(appointments));
       }
 
