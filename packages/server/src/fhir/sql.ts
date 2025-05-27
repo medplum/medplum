@@ -935,9 +935,15 @@ export class InsertQuery extends BaseQuery {
 
 export class DeleteQuery extends BaseQuery {
   usingTables?: string[];
+  returnColumns?: string[];
 
   using(...tableNames: string[]): this {
     this.usingTables = tableNames;
+    return this;
+  }
+
+  returnColumn(column: Column | string): this {
+    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
     return this;
   }
 
@@ -959,6 +965,10 @@ export class DeleteQuery extends BaseQuery {
     }
 
     this.buildConditions(sql);
+
+    if (this.returnColumns) {
+      sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
+    }
     return (await sql.execute(conn)).rows;
   }
 }

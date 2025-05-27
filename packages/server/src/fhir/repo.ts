@@ -1204,8 +1204,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await lookupTable.purgeValuesBefore(client, resourceType, before);
     }
 
-    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(client);
+    const results = await new DeleteQuery(resourceType)
+      .where('lastUpdated', '<=', before)
+      .returnColumn('id')
+      .execute(client);
     await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
+
+    if (results.length) {
+      await this.deleteCacheEntries(
+        resourceType,
+        results.map((r) => r.id)
+      );
+    }
   }
 
   async search<T extends Resource>(

@@ -1,5 +1,5 @@
 import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
-import { Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { AuditEvent, Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { Queue } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -486,17 +486,43 @@ describe('Super Admin routes', () => {
     expect(res.body.issue[0].details.text).toBe('Invalid resource type');
   });
 
-  test('Purge logins success', async () => {
+  test('Purge success', async () => {
+    const eventRes = await request(app)
+      .post('/fhir/R4/AuditEvent')
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .type('json')
+      .send({
+        resourceType: 'AuditEvent',
+        meta: {
+          lastUpdated: '2018-01-01T00:00:00Z',
+        },
+        type: {
+          system: 'http://terminology.hl7.org/CodeSystem/audit-event-type',
+          code: 'rest',
+          display: 'Restful Operation',
+        },
+        recorded: '2018-01-01T00:00:00Z',
+        agent: [{ who: { reference: 'Practitioner/abc' }, requestor: true }],
+        source: { observer: { identifier: { value: 'https://api.medplum.com/' } } },
+      } satisfies AuditEvent);
+    expect(eventRes.status).toBe(201);
+
+    const auditEvent = eventRes.body as Login;
     const res = await request(app)
       .post('/admin/super/purge')
       .set('Authorization', 'Bearer ' + adminAccessToken)
       .type('json')
       .send({
-        resourceType: 'Login',
+        resourceType: 'AuditEvent',
         before: '2020-01-01',
       });
-
     expect(res.status).toBe(200);
+
+    const readRes = await request(app)
+      .get('/fhir/R4/AuditEvent/' + auditEvent.id)
+      .set('Authorization', 'Bearer ' + adminAccessToken)
+      .send();
+    expect(readRes.status).toBe(404);
   });
 
   test('Remove Bot Id from Jobs Queue access denied', async () => {
