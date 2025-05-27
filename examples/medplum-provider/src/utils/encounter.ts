@@ -29,14 +29,14 @@ export async function createEncounter(
       {
         actor: {
           reference: getReferenceString(patient),
-          display: formatHumanName(patient.name?.[0] as HumanName)
+          display: formatHumanName(patient.name?.[0] as HumanName),
         },
         status: 'accepted',
       },
       {
         actor: {
           reference: getReferenceString(medplum.getProfile() as Practitioner),
-          display: formatHumanName(medplum.getProfile()?.name as HumanName)
+          display: formatHumanName(medplum.getProfile()?.name as HumanName),
         },
         status: 'accepted',
       },
@@ -54,7 +54,7 @@ export async function createEncounter(
     participant: [
       {
         individual: {
-          reference: getReferenceString(medplum.getProfile() as Practitioner)
+          reference: getReferenceString(medplum.getProfile() as Practitioner),
         },
       },
     ],
