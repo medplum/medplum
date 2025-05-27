@@ -47,13 +47,22 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
   let encounterRef: Reference<Encounter> | undefined = undefined;
   if (params.encounter) {
     const encounter = await ctx.repo.readReference<Encounter>({ reference: params.encounter });
+
+    if (!encounter.basedOn?.some((ref: Reference) => ref.reference === getReferenceString(planDefinition))) {
+      encounter.basedOn = [
+        ...(encounter.basedOn || []),
+        { reference: getReferenceString(planDefinition), display: planDefinition.title },
+      ];
+      await ctx.repo.updateResource(encounter);
+    }
+
     encounterRef = createReference(encounter);
   }
 
   const actions: RequestGroupAction[] = [];
   if (planDefinition.action) {
     for (const action of planDefinition.action) {
-      actions.push(await createAction(ctx.repo, ctx.profile, subjectRef, action, encounterRef));
+      actions.push(await createAction(ctx.repo, planDefinition, ctx.profile, subjectRef, action, encounterRef));
     }
   }
 
@@ -73,6 +82,7 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
 /**
  * Creates a Task and RequestGroup action for the given PlanDefinition action.
  * @param repo - The repository configured for the current user.
+ * @param planDefinition - The plan definition.
  * @param requester - The user who requested the plan definition.
  * @param subject - The subject of the plan definition.
  * @param action - The PlanDefinition action.
@@ -81,22 +91,24 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
  */
 async function createAction(
   repo: Repository,
+  planDefinition: PlanDefinition,
   requester: Reference<ProfileResource | Bot | ClientApplication>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
   encounter?: Reference<Encounter>
 ): Promise<RequestGroupAction> {
   if (action.definitionCanonical?.startsWith('Questionnaire/')) {
-    return createQuestionnaireTask(repo, requester, subject, action, encounter);
+    return createQuestionnaireTask(repo, planDefinition, requester, subject, action, encounter);
   } else if (action.definitionCanonical?.startsWith('ActivityDefinition/')) {
-    return createActivityDefinitionTask(repo, requester, subject, action, encounter);
+    return createActivityDefinitionTask(repo, planDefinition, requester, subject, action, encounter);
   }
-  return createTask(repo, requester, subject, action, encounter);
+  return createTask(repo, planDefinition, requester, subject, action, encounter);
 }
 
 /**
  * Creates a Task and RequestGroup action to complete a Questionnaire.
  * @param repo - The repository configured for the current user.
+ * @param planDefinition - The plan definition.
  * @param requester - The user who requested the plan definition.
  * @param subject - The subject of the plan definition.
  * @param action - The PlanDefinition action.
@@ -105,12 +117,13 @@ async function createAction(
  */
 async function createQuestionnaireTask(
   repo: Repository,
+  planDefinition: PlanDefinition,
   requester: Reference<ProfileResource | Bot | ClientApplication>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
   encounter?: Reference<Encounter>
 ): Promise<RequestGroupAction> {
-  return createTask(repo, requester, subject, action, encounter, [
+  return createTask(repo, planDefinition, requester, subject, action, encounter, [
     {
       type: {
         text: 'Questionnaire',
@@ -126,6 +139,7 @@ async function createQuestionnaireTask(
 /**
  * Creates a Task and RequestGroup action to request a resource.
  * @param repo - The repository configured for the current user.
+ * @param planDefinition - The plan definition.
  * @param requester - The user who requested the plan definition.
  * @param subject - The subject of the plan definition.
  * @param action - The PlanDefinition action.
@@ -134,6 +148,7 @@ async function createQuestionnaireTask(
  */
 async function createActivityDefinitionTask(
   repo: Repository,
+  planDefinition: PlanDefinition,
   requester: Reference<Bot | ClientApplication | ProfileResource>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
@@ -153,7 +168,7 @@ async function createActivityDefinitionTask(
         extension: activityDefinition.extension,
       });
 
-      return createTask(repo, requester, subject, action, encounter, [
+      return createTask(repo, planDefinition, requester, subject, action, encounter, [
         {
           type: {
             text: 'ServiceRequest',
@@ -167,13 +182,14 @@ async function createActivityDefinitionTask(
     }
 
     default:
-      return createTask(repo, requester, subject, action, encounter);
+      return createTask(repo, planDefinition, requester, subject, action, encounter);
   }
 }
 
 /**
  * Creates a Task and RequestGroup action for a PlanDefinition action.
  * @param repo - The repository configured for the current user.
+ * @param planDefinition - The plan definition.
  * @param requester - The requester profile.
  * @param subject - The subject of the plan definition.
  * @param action - The PlanDefinition action.
@@ -183,6 +199,7 @@ async function createActivityDefinitionTask(
  */
 async function createTask(
   repo: Repository,
+  planDefinition: PlanDefinition,
   requester: Reference<ProfileResource | Bot | ClientApplication>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
@@ -204,6 +221,12 @@ async function createTask(
     description: action.description,
     focus: input?.[0]?.valueReference,
     input,
+    basedOn: [
+      {
+        reference: getReferenceString(planDefinition),
+        display: planDefinition.title,
+      },
+    ],
   });
 
   return {
