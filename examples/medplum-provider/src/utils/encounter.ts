@@ -1,11 +1,13 @@
-import { getReferenceString, MedplumClient, createReference } from '@medplum/core';
+import { getReferenceString, MedplumClient, createReference, formatHumanName } from '@medplum/core';
 import {
   ChargeItem,
   ClinicalImpression,
   Coding,
   Encounter,
+  HumanName,
   Patient,
   PlanDefinition,
+  Practitioner,
   ServiceRequest,
   Task,
 } from '@medplum/fhirtypes';
@@ -28,6 +30,14 @@ export async function createEncounter(
       {
         actor: {
           reference: getReferenceString(patient),
+          display: formatHumanName(patient.name?.[0] as HumanName)
+        },
+        status: 'accepted',
+      },
+      {
+        actor: {
+          reference: getReferenceString(medplum.getProfile() as Practitioner),
+          display: formatHumanName(medplum.getProfile()?.name as HumanName)
         },
         status: 'accepted',
       },
@@ -42,6 +52,13 @@ export async function createEncounter(
     class: classification,
     subject: createReference(patient),
     appointment: [createReference(appointment)],
+    participant: [
+      {
+        individual: {
+          reference: getReferenceString(medplum.getProfile() as Practitioner)
+        },
+      },
+    ],
   });
 
   const clinicalImpressionData: ClinicalImpression = {

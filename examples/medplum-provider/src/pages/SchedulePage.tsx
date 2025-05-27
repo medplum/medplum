@@ -128,6 +128,7 @@ export function SchedulePage(): JSX.Element | null {
           ],
           { cache }
         );
+        console.log('appointments', appointments);
         setAppointmentEvents(appointmentsToEvents(appointments));
       }
 
@@ -147,10 +148,6 @@ export function SchedulePage(): JSX.Element | null {
     (slot: SlotInfo) => {
       createAppointmentHandlers.open();
       setAppointmentSlot(slot);
-      // if (slot.action !== 'select') {
-      //   return;
-      // }
-      // createUpdateSlotHandlers.open();
     },
     [createAppointmentHandlers]
   );
@@ -318,13 +315,6 @@ export function SchedulePage(): JSX.Element | null {
         handlers={slotDetailsHandlers}
         onSlotsUpdated={() => refreshEvents('no-cache')}
       />
-      {/* <CreateAppointment
-        schedule={schedule}
-        event={selectedEvent}
-        opened={createAppointmentOpened}
-        handlers={createAppointmentHandlers}
-        onAppointmentsUpdated={() => refreshEvents('no-cache')}
-        /> */}
 
       <Drawer
         opened={createAppointmentOpened}
