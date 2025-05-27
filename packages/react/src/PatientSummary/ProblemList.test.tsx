@@ -58,7 +58,7 @@ describe('PatientSummary - ProblemList', () => {
     await setup(<ProblemList patient={HomerSimpson} problems={[]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('add-button'));
+      fireEvent.click(screen.getByLabelText('Add item'));
     });
 
     // Enter problem "Dizziness"

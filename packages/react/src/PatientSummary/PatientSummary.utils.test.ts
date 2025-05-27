@@ -1,23 +1,14 @@
-import { calculateAgeString, HTTP_HL7_ORG } from '@medplum/core';
+import { HTTP_HL7_ORG } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import {
-  formatPatientAddressDisplay,
   formatPatientGenderDisplay,
   formatPatientRaceEthnicityDisplay,
   getBirthSex,
   getEthnicity,
   getGenderIdentity,
   getGeneralPractitioner,
-  getPatientAgeDisplay,
   getRace,
 } from './PatientSummary.utils';
-
-jest.mock('@medplum/core', () => ({
-  ...jest.requireActual('@medplum/core'),
-  calculateAgeString: jest.fn(),
-}));
-
-const mockCalculateAgeString = calculateAgeString as jest.Mock;
 
 describe('Patient Utilities', () => {
   beforeEach(() => {
@@ -330,65 +321,6 @@ describe('Patient Utilities', () => {
     });
   });
 
-  describe('getPatientAgeDisplay', () => {
-    it('should return formatted age when calculateAgeString returns valid age', () => {
-      mockCalculateAgeString.mockReturnValue('25');
-
-      const result = getPatientAgeDisplay('1998-01-15');
-      expect(result).toBe('25 years old');
-      expect(calculateAgeString).toHaveBeenCalledWith('1998-01-15');
-    });
-
-    it("should return '0 years old' when calculateAgeString returns null", () => {
-      mockCalculateAgeString.mockReturnValue(null);
-
-      const result = getPatientAgeDisplay('invalid-date');
-      expect(result).toBe('0 years old');
-    });
-
-    it("should return '0 years old' when calculateAgeString returns undefined", () => {
-      mockCalculateAgeString.mockReturnValue(undefined);
-
-      const result = getPatientAgeDisplay('invalid-date');
-      expect(result).toBe('0 years old');
-    });
-
-    it("should return '0 years old' when calculateAgeString returns empty string", () => {
-      mockCalculateAgeString.mockReturnValue('');
-
-      const result = getPatientAgeDisplay('invalid-date');
-      expect(result).toBe('0 years old');
-    });
-
-    it('should handle non-numeric age strings', () => {
-      mockCalculateAgeString.mockReturnValue('invalid');
-
-      const result = getPatientAgeDisplay('1990-01-01');
-      expect(result).toBe('0 years old');
-    });
-
-    it('should handle decimal age strings by parsing integer part', () => {
-      mockCalculateAgeString.mockReturnValue('25.5');
-
-      const result = getPatientAgeDisplay('1998-06-15');
-      expect(result).toBe('25 years old');
-    });
-
-    it('should handle zero age', () => {
-      mockCalculateAgeString.mockReturnValue('0');
-
-      const result = getPatientAgeDisplay('2023-12-01');
-      expect(result).toBe('0 years old');
-    });
-
-    it('should handle large ages', () => {
-      mockCalculateAgeString.mockReturnValue('100');
-
-      const result = getPatientAgeDisplay('1923-01-01');
-      expect(result).toBe('100 years old');
-    });
-  });
-
   describe('Integration tests with multiple extensions', () => {
     it('should handle patient with all extensions present', () => {
       const patient: Patient = {
@@ -610,56 +542,6 @@ describe('Patient Utilities', () => {
       };
 
       expect(formatPatientRaceEthnicityDisplay(patient)).toBe('');
-    });
-  });
-
-  describe('Patient Address Display', () => {
-    it('should format patient address display with both city and state present', () => {
-      const patient: Patient = {
-        resourceType: 'Patient',
-        address: [
-          {
-            city: 'Boston',
-            state: 'MA',
-          },
-        ],
-      };
-
-      expect(formatPatientAddressDisplay(patient)).toBe('Boston, MA');
-    });
-
-    it('should format patient address display with only city present', () => {
-      const patient: Patient = {
-        resourceType: 'Patient',
-        address: [
-          {
-            city: 'Boston',
-          },
-        ],
-      };
-
-      expect(formatPatientAddressDisplay(patient)).toBe('Boston');
-    });
-
-    it('should format patient address display with only state present', () => {
-      const patient: Patient = {
-        resourceType: 'Patient',
-        address: [
-          {
-            state: 'MA',
-          },
-        ],
-      };
-
-      expect(formatPatientAddressDisplay(patient)).toBe('MA');
-    });
-
-    it('should return empty string for patient with no address information', () => {
-      const patient: Patient = {
-        resourceType: 'Patient',
-      };
-
-      expect(formatPatientAddressDisplay(patient)).toBe('');
     });
   });
 });

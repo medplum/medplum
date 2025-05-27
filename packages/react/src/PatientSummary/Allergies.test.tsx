@@ -58,7 +58,7 @@ describe('PatientSummary - Allergies', () => {
     await setup(<Allergies patient={HomerSimpson} allergies={[]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('add-button'));
+      fireEvent.click(screen.getByLabelText('Add item'));
     });
 
     const input = (await screen.findAllByRole('searchbox'))[0] as HTMLInputElement;

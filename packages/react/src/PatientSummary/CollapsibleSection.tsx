@@ -35,7 +35,8 @@ export function CollapsibleSection(props: CollapsibleSectionProps): JSX.Element 
 
         {onAdd && (
           <ActionIcon
-            data-testid="add-button"
+            role="button"
+            aria-label="Add item"
             className={classes.addButton}
             variant="subtle"
             onClick={(e) => {

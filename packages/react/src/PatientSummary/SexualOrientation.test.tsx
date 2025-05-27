@@ -55,7 +55,7 @@ describe('PatientSummary - SexualOrientation', () => {
     await setup(<SexualOrientation patient={HomerSimpson} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('add-button'));
+      fireEvent.click(screen.getByLabelText('Add item'));
     });
 
     // Click "Save" button

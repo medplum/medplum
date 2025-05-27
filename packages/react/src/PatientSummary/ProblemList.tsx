@@ -28,20 +28,15 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
 
   const handleSubmit = useCallback(
     async (condition: Condition) => {
-      try {
-        if (condition.id) {
-          const updatedCondition = await medplum.updateResource(condition);
-          setProblems(problems.map((p) => (p.id === updatedCondition.id ? updatedCondition : p)));
-        } else {
-          const newCondition = await medplum.createResource(condition);
-          setProblems([newCondition, ...problems]);
-        }
-      } catch (error) {
-        console.error('Error saving condition:', error);
-      } finally {
-        setEditCondition(undefined);
-        close();
+      if (condition.id) {
+        const updatedCondition = await medplum.updateResource(condition);
+        setProblems(problems.map((p) => (p.id === updatedCondition.id ? updatedCondition : p)));
+      } else {
+        const newCondition = await medplum.createResource(condition);
+        setProblems([newCondition, ...problems]);
       }
+      setEditCondition(undefined);
+      close();
     },
     [medplum, problems, close]
   );

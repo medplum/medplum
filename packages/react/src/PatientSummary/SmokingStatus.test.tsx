@@ -55,7 +55,7 @@ describe('PatientSummary - SmokingStatus', () => {
     await setup(<SmokingStatus patient={HomerSimpson} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('add-button'));
+      fireEvent.click(screen.getByLabelText('Add item'));
     });
 
     // Click "Save" button

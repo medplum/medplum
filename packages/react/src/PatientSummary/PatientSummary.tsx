@@ -1,5 +1,5 @@
 import { Box, Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
-import { formatHumanName, resolveId } from '@medplum/core';
+import { calculateAgeString, formatAddress, formatHumanName, resolveId } from '@medplum/core';
 import {
   AllergyIntolerance,
   Appointment,
@@ -26,13 +26,11 @@ import { Insurance } from './Insurance';
 import { Medications } from './Medications';
 import styles from './PatientSummary.module.css';
 import {
-  formatPatientAddressDisplay,
   formatPatientGenderDisplay,
   formatPatientRaceEthnicityDisplay,
   getEthnicity,
   getGenderIdentity,
   getGeneralPractitioner,
-  getPatientAgeDisplay,
   getRace,
 } from './PatientSummary.utils';
 import { ProblemList } from './ProblemList';
@@ -205,7 +203,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                     >
                       <IconCake size={16} stroke={2} color="var(--mantine-color-gray-6)" />
                       <Text fz="sm" fw={400} truncate c={getItemColor(patient.birthDate)}>
-                        {patient.birthDate ? getPatientAgeDisplay(patient.birthDate) : 'Add Birthdate'}
+                        {patient.birthDate ? calculateAgeString(patient.birthDate) : 'Add Birthdate'}
                       </Text>
                     </Group>
                   </Tooltip>
@@ -283,9 +281,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                         truncate
                         c={getItemColor(patient.address?.[0]?.city || patient.address?.[0]?.state)}
                       >
-                        {patient.address?.[0]?.city || patient.address?.[0]?.state
-                          ? formatPatientAddressDisplay(patient)
-                          : 'Add Location'}
+                        {patient.address?.[0] ? formatAddress(patient.address[0]) : 'Add Location'}
                       </Text>
                     </Group>
                   </Tooltip>

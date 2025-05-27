@@ -60,7 +60,7 @@ describe('PatientSummary - Medications', () => {
     await setup(<Medications patient={HomerSimpson} medicationRequests={[]} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('add-button'));
+      fireEvent.click(screen.getByLabelText('Add item'));
     });
 
     const input = (await screen.findByRole('searchbox')) as HTMLInputElement;
