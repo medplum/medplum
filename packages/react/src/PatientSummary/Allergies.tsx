@@ -74,6 +74,7 @@ export function Allergies(props: AllergiesProps): JSX.Element {
 
                 return (
                   <SummaryItem
+                    key={allergy.id}
                     onClick={() => {
                       setEditAllergy(allergy);
                       open();

@@ -1,12 +1,15 @@
 import { calculateAgeString, HTTP_HL7_ORG } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import {
+  formatPatientGenderDisplay,
+  formatPatientRaceEthnicityDisplay,
   getBirthSex,
   getEthnicity,
   getGenderIdentity,
   getGeneralPractitioner,
   getPatientAgeDisplay,
   getRace,
+  formatPatientAddressDisplay,
 } from './PatientSummary.utils';
 
 jest.mock('@medplum/core', () => ({
@@ -459,6 +462,204 @@ describe('Patient Utilities', () => {
       expect(getRace(patient)).toBe('Black or African American');
       expect(getEthnicity(patient)).toBeUndefined();
       expect(getGeneralPractitioner(patient)).toBeUndefined();
+    });
+  });
+
+  describe('Patient Gender Display', () => {
+    it('should format patient gender display with all fields present', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        gender: 'female',
+        extension: [
+          {
+            url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`,
+            valueCodeableConcept: {
+              coding: [{ display: 'Female' }],
+            },
+          },
+          {
+            url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`,
+            valueCode: 'F',
+          },
+        ],
+      };
+
+      expect(formatPatientGenderDisplay(patient)).toBe('Female · Female · Born as F');
+    });
+
+    it('should format patient gender display with only gender present', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        gender: 'male',
+      };
+
+      expect(formatPatientGenderDisplay(patient)).toBe('Male');
+    });
+
+    it('should format patient gender display with gender and gender identity', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        gender: 'male',
+        extension: [
+          {
+            url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`,
+            valueCodeableConcept: {
+              coding: [{ display: 'Male' }],
+            },
+          },
+        ],
+      };
+
+      expect(formatPatientGenderDisplay(patient)).toBe('Male · Male');
+    });
+
+    it('should format patient gender display with gender and birth sex', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        gender: 'male',
+        extension: [
+          {
+            url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`,
+            valueCode: 'M',
+          },
+        ],
+      };
+
+      expect(formatPatientGenderDisplay(patient)).toBe('Male · Born as M');
+    });
+
+    it('should return empty string for patient with no gender information', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+      };
+
+      expect(formatPatientGenderDisplay(patient)).toBe('');
+    });
+  });
+
+  describe('Patient Race Ethnicity Display', () => {
+    it('should format patient race ethnicity display with only race present', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        extension: [
+          {
+            url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-race`,
+            extension: [
+              {
+                url: 'ombCategory',
+                valueCoding: { display: 'White' },
+              },
+            ],
+          },
+        ],
+      };
+
+      expect(formatPatientRaceEthnicityDisplay(patient)).toBe('White');
+    });
+
+    it('should format patient race ethnicity display with only ethnicity present', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        extension: [
+          {
+            url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-ethnicity`,
+            extension: [
+              {
+                url: 'ombCategory',
+                valueCoding: { display: 'Hispanic or Latino' },
+              },
+            ],
+          },
+        ],
+      };
+
+      expect(formatPatientRaceEthnicityDisplay(patient)).toBe('Hispanic or Latino');
+    });
+
+    it('should format patient race ethnicity display with both race and ethnicity present', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        extension: [
+          {
+            url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-race`,
+            extension: [
+              {
+                url: 'ombCategory',
+                valueCoding: { display: 'White' },
+              },
+            ],
+          },
+          {
+            url: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-ethnicity`,
+            extension: [
+              {
+                url: 'ombCategory',
+                valueCoding: { display: 'Hispanic or Latino' },
+              },
+            ],
+          },
+        ],
+      };
+
+      expect(formatPatientRaceEthnicityDisplay(patient)).toBe('White · Hispanic or Latino');
+    });
+
+    it('should return empty string for patient with no race or ethnicity information', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+      };
+
+      expect(formatPatientRaceEthnicityDisplay(patient)).toBe('');
+    });
+  });
+
+  describe('Patient Address Display', () => {
+    it('should format patient address display with both city and state present', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        address: [
+          {
+            city: 'Boston',
+            state: 'MA',
+          },
+        ],
+      };
+
+      expect(formatPatientAddressDisplay(patient)).toBe('Boston, MA');
+    });
+
+    it('should format patient address display with only city present', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        address: [
+          {
+            city: 'Boston',
+          },
+        ],
+      };
+
+      expect(formatPatientAddressDisplay(patient)).toBe('Boston');
+    });
+
+    it('should format patient address display with only state present', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        address: [
+          {
+            state: 'MA',
+          },
+        ],
+      };
+
+      expect(formatPatientAddressDisplay(patient)).toBe('MA');
+    });
+
+    it('should return empty string for patient with no address information', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+      };
+
+      expect(formatPatientAddressDisplay(patient)).toBe('');
     });
   });
 });

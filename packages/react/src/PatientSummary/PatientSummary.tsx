@@ -25,7 +25,7 @@ import {
   IconMapPin,
   IconStethoscope,
 } from '@tabler/icons-react';
-import { JSX, useEffect, useRef, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Insurance } from './Insurance';
@@ -36,7 +36,7 @@ import { SexualOrientation } from './SexualOrientation';
 import { SmokingStatus } from './SmokingStatus';
 import SummaryItem from './SummaryItem';
 import { Vitals } from './Vitals';
-import { getBirthSex, getEthnicity, getGenderIdentity, getGeneralPractitioner, getPatientAgeDisplay, getRace } from './PatientSummary.utils';
+import { formatPatientAddressDisplay, formatPatientGenderDisplay, formatPatientRaceEthnicityDisplay, getEthnicity, getGenderIdentity, getGeneralPractitioner, getPatientAgeDisplay, getRace } from './PatientSummary.utils';
 
 export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
@@ -72,8 +72,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const patient = useResource(propsPatient);
   const [medicalData, setMedicalData] = useState<PatientMedicalData>();
   const [createdDate, setCreatedDate] = useState<string | undefined>();
-  const nameRef = useRef<HTMLDivElement>(null);
-  const [isNameOverflowed, setIsNameOverflowed] = useState(false);
 
   useEffect(() => {
     const id = resolveId(propsPatient) as string;
@@ -130,9 +128,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
           procedures: results[8],
           devices: results[9],
           goals: results[10],
-          socialHistory: observations.filter((obs) =>
-            obs.category?.some((cat) => cat.coding?.some((coding) => coding.code === 'social-history'))
-          ),
+          socialHistory: filterSocialHistoryObservations(observations),
         });
       })
       .catch(console.error);
@@ -151,12 +147,22 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     }
   }, [patient?.id, medplum]);
 
-  useEffect(() => {
-    const el = nameRef.current;
-    if (el) {
-      setIsNameOverflowed(el.scrollWidth > el.clientWidth);
+  function getItemColor(value: string | undefined): string {
+    if (!value) {
+      return 'var(--mantine-color-gray-6)';
     }
-  }, [patient]);
+    return 'inherit';
+  }
+
+  function filterSocialHistoryObservations(observations: Observation[]): Observation[] {
+    return observations.filter(obs => 
+      obs.category?.some(cat => 
+        cat.coding?.some(coding => 
+          coding.code === 'social-history'
+        )
+      )
+    );
+   }
 
   if (!patient) {
     return null;
@@ -176,9 +182,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
               label={formatHumanName(patient.name?.[0] as HumanName)}
               position="top-start"
               openDelay={650}
-              disabled={!isNameOverflowed}
             >
-              <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }} ref={nameRef}>
+              <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }} >
                 {formatHumanName(patient.name?.[0] as HumanName)}
               </Text>
             </Tooltip>
@@ -219,7 +224,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                         fz="sm"
                         fw={400}
                         truncate
-                        c={patient.birthDate ? 'inherit' : 'var(--mantine-color-gray-6)'}
+                        c={getItemColor(patient.birthDate)}
                       >
                         {patient.birthDate
                           ? getPatientAgeDisplay(patient.birthDate)
@@ -247,10 +252,10 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                         fz="sm"
                         fw={400}
                         truncate
-                        c={patient.gender || getGenderIdentity(patient) ? 'inherit' : 'var(--mantine-color-gray-6)'}
+                        c={getItemColor(patient.gender || getGenderIdentity(patient))}
                       >
                         {patient.gender || getGenderIdentity(patient)
-                          ? `${patient.gender ? patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1) : ''}${patient.gender && getGenderIdentity(patient) ? ' · ' : ''}${getGenderIdentity(patient) ? `${getGenderIdentity(patient)}` : ''}${getBirthSex(patient) ? ` · Born as ${getBirthSex(patient)}` : ''}`
+                          ? formatPatientGenderDisplay(patient)
                           : 'Add Gender & Identity'}
                       </Text>
                     </Group>
@@ -275,10 +280,10 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                         fz="sm"
                         fw={400}
                         truncate
-                        c={getRace(patient) || getEthnicity(patient) ? 'inherit' : 'var(--mantine-color-gray-6)'}
+                        c={getItemColor(getRace(patient) || getEthnicity(patient))}
                       >
                         {getRace(patient) || getEthnicity(patient)
-                          ? `${getRace(patient) || ''}${getRace(patient) && getEthnicity(patient) ? ' · ' : ''}${getEthnicity(patient) || ''}`
+                          ? formatPatientRaceEthnicityDisplay(patient)
                           : 'Add Race & Ethnicity'}
                       </Text>
                     </Group>
@@ -303,10 +308,10 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                         fz="sm"
                         fw={400}
                         truncate
-                        c={patient.address?.[0]?.city || patient.address?.[0]?.state ? 'inherit' : 'var(--mantine-color-gray-6)'}
+                        c={getItemColor(patient.address?.[0]?.city || patient.address?.[0]?.state)}
                       >
                         {patient.address?.[0]?.city || patient.address?.[0]?.state
-                          ? `${patient.address[0].city || ''}${patient.address[0].city && patient.address[0].state ? ', ' : ''}${patient.address[0].state || ''}`
+                          ? formatPatientAddressDisplay(patient)
                           : 'Add Location'}
                       </Text>
                     </Group>
@@ -321,10 +326,9 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
               >
                 <Box className={styles.patientSummaryListItem}>
                   <Tooltip label="General Practitioner" position="top-start" openDelay={650}>
-                    <Group gap="sm" align="center" style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
+                    <Group gap="sm" align="center" ml={6} mr={2} style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}>
                       <IconStethoscope
                         size={16}
-                        style={{ marginLeft: '6', marginRight: '2' }}
                         stroke={2}
                         color="var(--mantine-color-gray-6)"
                       />
@@ -332,11 +336,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                         fz="sm"
                         fw={400}
                         truncate
-                        style={{
-                          flex: 1,
-                          minWidth: 0,
-                          color: getGeneralPractitioner(patient) ? 'inherit' : 'var(--mantine-color-gray-6)',
-                        }}  
+                        c={getItemColor(getGeneralPractitioner(patient))}
                       >
                         {getGeneralPractitioner(patient) || 'Add a General Practitioner'}
                       </Text>
