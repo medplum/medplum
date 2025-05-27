@@ -6,11 +6,7 @@ import { JSX, useCallback, useEffect, useState } from 'react';
 import { Location, Outlet, useLocation, useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
-import {
-  PatientPageTabInfo,
-  PatientPageTabs,
-  formatPatientPageTabUrl,
-} from './PatientPage.utils';
+import { PatientPageTabInfo, PatientPageTabs, formatPatientPageTabUrl } from './PatientPage.utils';
 import { PatientTabsNavigation } from './PatientTabsNavigation';
 
 function getTabFromLocation(location: Location): PatientPageTabInfo | undefined {
