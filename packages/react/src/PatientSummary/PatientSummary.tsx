@@ -184,7 +184,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         </Group>
         <Divider />
       </SummaryItem>
-      
+
       <Stack gap="xs" px={16} pt={12} pb={16} style={{ flex: 2, overflowY: 'auto', minHeight: 0 }}>
         {medicalData && (
           <>

@@ -16,38 +16,38 @@ export function CollapsibleSection(props: CollapsibleSectionProps): JSX.Element 
 
   return (
     <Box className={classes.root}>
-        <Group justify="space-between" className={classes.header}>
-          <Group gap={8}>
-            <ActionIcon
-              variant="subtle"
-              onClick={() => setCollapsed((c) => !c)}
-              aria-label={collapsed ? `Show ${title.toLowerCase()}` : `Hide ${title.toLowerCase()}`}
-              className={classes.chevron}
-              data-collapsed={collapsed || undefined}
-              size="md"
-            >
-              <IconChevronDown size={20} />
-            </ActionIcon>
-            <Text fz="md" fw={800} onClick={() => setCollapsed((c) => !c)} className={classes.title}>
-              {title}
-            </Text>
-          </Group>
-
-          {onAdd && (
-            <ActionIcon
-              data-testid="add-button"
-              className={classes.addButton}
-              variant="subtle"
-              onClick={(e) => {
-                killEvent(e);
-                onAdd();
-              }}
-              size="md"
-            >
-              <IconPlus size={18} />
-            </ActionIcon>
-          )}
+      <Group justify="space-between" className={classes.header}>
+        <Group gap={8}>
+          <ActionIcon
+            variant="subtle"
+            onClick={() => setCollapsed((c) => !c)}
+            aria-label={collapsed ? `Show ${title.toLowerCase()}` : `Hide ${title.toLowerCase()}`}
+            className={classes.chevron}
+            data-collapsed={collapsed || undefined}
+            size="md"
+          >
+            <IconChevronDown size={20} />
+          </ActionIcon>
+          <Text fz="md" fw={800} onClick={() => setCollapsed((c) => !c)} className={classes.title}>
+            {title}
+          </Text>
         </Group>
+
+        {onAdd && (
+          <ActionIcon
+            data-testid="add-button"
+            className={classes.addButton}
+            variant="subtle"
+            onClick={(e) => {
+              killEvent(e);
+              onAdd();
+            }}
+            size="md"
+          >
+            <IconPlus size={18} />
+          </ActionIcon>
+        )}
+      </Group>
 
       <Collapse in={!collapsed}>
         <Box ml="var(--mantine-spacing-xl)" mt="xs" mb="md">
