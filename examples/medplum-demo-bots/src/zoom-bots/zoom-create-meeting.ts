@@ -127,7 +127,7 @@ async function createZoomMeeting(
       duration: input.duration || 30,
       start_time: input.startTime,
       timezone: input.timezone,
-      password: input.password ? Math.random().toString(36).slice(-8) : undefined,
+      password: crypto.randomUUID().slice(0, 8),
       settings: {
         host_video: input.settings?.host_video ?? true,
         participant_video: input.settings?.participant_video ?? true,
