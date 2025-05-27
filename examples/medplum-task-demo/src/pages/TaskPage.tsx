@@ -91,17 +91,7 @@ interface PatientProfileProps {
 }
 
 function PatientProfile({ patient }: PatientProfileProps): JSX.Element {
-  return (
-    <>
-      {patient ? (
-        <PatientSummary
-          patient={patient}
-        />
-      ) : (
-        <Skeleton visible={true} height={100} />
-      )}
-    </>
-  );
+  return <>{patient ? <PatientSummary patient={patient} /> : <Skeleton visible={true} height={100} />}</>;
 }
 
 interface TaskDetailsProps {
