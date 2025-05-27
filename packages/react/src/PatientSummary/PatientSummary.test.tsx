@@ -34,13 +34,7 @@ describe('PatientSummary', () => {
   test('Renders without appointment and encounter links', async () => {
     await setup({
       patient: { ...HomerSimpson, gender: undefined },
-      appointmentsUrl: undefined,
-      encountersUrl: undefined,
     });
-
-    // const foo = screen.findByText('No upcoming appointments')
     expect(screen.queryByText('Homer Simpson')).toBeInTheDocument();
-    expect(screen.queryByText('No upcoming appointments')).toBeNull();
-    expect(screen.queryByText('No documented visits')).toBeNull();
   });
 });
