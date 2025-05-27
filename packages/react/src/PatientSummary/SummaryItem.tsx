@@ -15,7 +15,7 @@ export default function SummaryItem(props: SummaryItemProps): JSX.Element {
       {children}
       <div className={styles.gradient} />
       <div className={styles.container}>
-        <ActionIcon className={styles.chevron} size="md" variant="transparent" tabIndex={-1}>
+        <ActionIcon className={styles.chevron} size="md" variant="transparent" tabIndex={-1} >
           <IconChevronRight size={16} stroke={2.5} />
         </ActionIcon>
       </div>

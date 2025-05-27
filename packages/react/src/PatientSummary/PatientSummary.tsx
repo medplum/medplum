@@ -158,10 +158,22 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   }
 
   function filterSocialHistoryObservations(observations: Observation[]): Observation[] {
-    return observations.filter((obs) =>
-      obs.category?.some((cat) => cat.coding?.some((coding) => coding.code === 'social-history'))
-    );
+    const isSocialHistoryObservation = (obs: Observation): boolean => {
+      if (!obs.category) {
+        return false;
+      }
+      
+      return obs.category.some(category => {
+        if (!category.coding) {
+          return false;
+        }
+        return category.coding.some(coding => coding.code === 'social-history');
+      });
+    };
+  
+    return observations.filter(isSocialHistoryObservation);
   }
+  
 
   if (!patient) {
     return null;
@@ -196,8 +208,9 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             })()}
           </Stack>
         </Group>
+        <Divider />
       </SummaryItem>
-      <Divider />
+      
       <Stack gap="xs" px={16} pt={12} pb={16} style={{ flex: 2, overflowY: 'auto', minHeight: 0 }}>
         {medicalData && (
           <>

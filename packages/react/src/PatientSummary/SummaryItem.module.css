@@ -27,7 +27,7 @@
   width: 28px;
   z-index: 2;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   opacity: 0;
   pointer-events: none;
@@ -46,11 +46,12 @@
   position: static;
   margin: 0;
   padding: 0;
-  z-index: 3;
   transition: opacity 0.2s;
   opacity: 1;
   cursor: pointer;
-  margin-top: -4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .item:hover .gradient,

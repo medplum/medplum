@@ -170,7 +170,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
           {LOINC_CODES.map((meta) => {
             const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
             return (
-              <Group align="center">
+              <Group align="center" key={meta.name}>
                 <Text c="dimmed">{meta.short}</Text>
                 {obs && <Text>{formatQuantity(getObservationValue(obs, meta.component))}</Text>}
               </Group>
