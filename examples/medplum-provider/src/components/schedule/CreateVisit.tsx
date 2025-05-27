@@ -66,7 +66,7 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
     try {
       const encounter = await createEncounter(medplum, start, end, encounterClass, patient, planDefinitionData);
       showNotification({ icon: <IconCircleCheck />, title: 'Success', message: 'Visit created' });
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`)?.catch(console.error);
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {
       showErrorNotification(err);
     } finally {
