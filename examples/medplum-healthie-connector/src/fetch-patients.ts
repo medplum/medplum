@@ -101,15 +101,26 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     };
     const medications = await healthie.fetchMedications(patient.id);
     for (const medication of medications) {
+      const medicationStatus = (() => {
+        if (!medication.active) {
+          return 'unknown';
+        }
+        const now = new Date();
+        const startDate = medication.start_date ? new Date(medication.start_date) : null;
+        const endDate = medication.end_date ? new Date(medication.end_date) : null;
+        
+        if (endDate && now > endDate) {
+          return 'completed';
+        }
+        if (startDate && now < startDate) {
+          return 'draft';
+        }
+        return 'active';
+      })();
       const fhirMedication: MedicationRequest = {
         resourceType: 'MedicationRequest',
         identifier: [{ system: HEALTHIE_MEDICATION_ID_SYSTEM, value: medication.id }],
-        // TODO: Modify this code to use the following logic
-        // If medication.active is true
-        //   current date after end date: completed
-        //   current date is before start date: 'draft'
-        // If medication.active is false, then status is unknown
-        status: medication.active ? 'active' : 'unknown',
+        status: medicationStatus,
         intent: 'proposal',
         subject: {
           reference: `Patient?identifier=${HEALTHIE_USER_ID_SYSTEM}|${patient.id}`,

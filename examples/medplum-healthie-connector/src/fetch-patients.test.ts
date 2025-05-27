@@ -243,6 +243,184 @@ describe('fetch-patients handler', () => {
     expect(inactiveMed.dosageInstruction?.[0].doseAndRate?.[0].doseQuantity?.unit).toBe('MG');
   });
 
+  describe('medication status logic', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    test('sets status to unknown for inactive medications', async () => {
+      const event = {
+        input: {},
+        contentType: 'application/json',
+        secrets: {
+          HEALTHIE_API_URL: { name: 'HEALTHIE_API_URL', valueString: 'https://api.example.com' },
+          HEALTHIE_CLIENT_SECRET: { name: 'HEALTHIE_CLIENT_SECRET', valueString: 'test-secret' },
+        },
+        bot: { reference: 'Bot/test-bot' } as Reference<Bot>,
+      };
+
+      // Mock medication with active: false
+      vi.mocked(HealthieClient.prototype.query)
+        .mockResolvedValueOnce(MOCK_PATIENT_RESPONSE)
+        .mockResolvedValueOnce({
+          medications: [{
+            id: '42030',
+            name: 'Test Medication',
+            active: false,
+            start_date: '2024-01-01',
+            end_date: '2024-12-31',
+          }]
+        });
+
+      await handler(medplum, event);
+
+      const medications = await medplum.searchResources('MedicationRequest', {
+        identifier: 'https://www.gethealthie.com/medicationId|42030',
+      });
+      expect(medications[0].status).toBe('unknown');
+    });
+
+    test('sets status to completed for past end date', async () => {
+      const event = {
+        input: {},
+        contentType: 'application/json',
+        secrets: {
+          HEALTHIE_API_URL: { name: 'HEALTHIE_API_URL', valueString: 'https://api.example.com' },
+          HEALTHIE_CLIENT_SECRET: { name: 'HEALTHIE_CLIENT_SECRET', valueString: 'test-secret' },
+        },
+        bot: { reference: 'Bot/test-bot' } as Reference<Bot>,
+      };
+
+      // Set current date to after end date
+      vi.setSystemTime(new Date('2025-01-01'));
+
+      // Mock medication with end date in the past
+      vi.mocked(HealthieClient.prototype.query)
+        .mockResolvedValueOnce(MOCK_PATIENT_RESPONSE)
+        .mockResolvedValueOnce({
+          medications: [{
+            id: '42030',
+            name: 'Test Medication',
+            active: true,
+            start_date: '2024-01-01',
+            end_date: '2024-12-31',
+          }]
+        });
+
+      await handler(medplum, event);
+
+      const medications = await medplum.searchResources('MedicationRequest', {
+        identifier: 'https://www.gethealthie.com/medicationId|42030',
+      });
+      expect(medications[0].status).toBe('completed');
+    });
+
+    test('sets status to draft for future start date', async () => {
+      const event = {
+        input: {},
+        contentType: 'application/json',
+        secrets: {
+          HEALTHIE_API_URL: { name: 'HEALTHIE_API_URL', valueString: 'https://api.example.com' },
+          HEALTHIE_CLIENT_SECRET: { name: 'HEALTHIE_CLIENT_SECRET', valueString: 'test-secret' },
+        },
+        bot: { reference: 'Bot/test-bot' } as Reference<Bot>,
+      };
+
+      // Set current date to before start date
+      vi.setSystemTime(new Date('2023-12-31'));
+
+      // Mock medication with start date in the future
+      vi.mocked(HealthieClient.prototype.query)
+        .mockResolvedValueOnce(MOCK_PATIENT_RESPONSE)
+        .mockResolvedValueOnce({
+          medications: [{
+            id: '42030',
+            name: 'Test Medication',
+            active: true,
+            start_date: '2024-01-01',
+            end_date: '2024-12-31',
+          }]
+        });
+
+      await handler(medplum, event);
+
+      const medications = await medplum.searchResources('MedicationRequest', {
+        identifier: 'https://www.gethealthie.com/medicationId|42030',
+      });
+      expect(medications[0].status).toBe('draft');
+    });
+
+    test('sets status to active for current medication', async () => {
+      const event = {
+        input: {},
+        contentType: 'application/json',
+        secrets: {
+          HEALTHIE_API_URL: { name: 'HEALTHIE_API_URL', valueString: 'https://api.example.com' },
+          HEALTHIE_CLIENT_SECRET: { name: 'HEALTHIE_CLIENT_SECRET', valueString: 'test-secret' },
+        },
+        bot: { reference: 'Bot/test-bot' } as Reference<Bot>,
+      };
+
+      // Set current date to between start and end date
+      vi.setSystemTime(new Date('2024-06-15'));
+
+      // Mock medication with current dates
+      vi.mocked(HealthieClient.prototype.query)
+        .mockResolvedValueOnce(MOCK_PATIENT_RESPONSE)
+        .mockResolvedValueOnce({
+          medications: [{
+            id: '42030',
+            name: 'Test Medication',
+            active: true,
+            start_date: '2024-01-01',
+            end_date: '2024-12-31',
+          }]
+        });
+
+      await handler(medplum, event);
+
+      const medications = await medplum.searchResources('MedicationRequest', {
+        identifier: 'https://www.gethealthie.com/medicationId|42030',
+      });
+      expect(medications[0].status).toBe('active');
+    });
+
+    test('handles missing dates correctly', async () => {
+      const event = {
+        input: {},
+        contentType: 'application/json',
+        secrets: {
+          HEALTHIE_API_URL: { name: 'HEALTHIE_API_URL', valueString: 'https://api.example.com' },
+          HEALTHIE_CLIENT_SECRET: { name: 'HEALTHIE_CLIENT_SECRET', valueString: 'test-secret' },
+        },
+        bot: { reference: 'Bot/test-bot' } as Reference<Bot>,
+      };
+
+      // Mock medication with missing dates
+      vi.mocked(HealthieClient.prototype.query)
+        .mockResolvedValueOnce(MOCK_PATIENT_RESPONSE)
+        .mockResolvedValueOnce({
+          medications: [{
+            id: '42030',
+            name: 'Test Medication',
+            active: true,
+            // No start_date or end_date
+          }]
+        });
+
+      await handler(medplum, event);
+
+      const medications = await medplum.searchResources('MedicationRequest', {
+        identifier: 'https://www.gethealthie.com/medicationId|42030',
+      });
+      expect(medications[0].status).toBe('active');
+    });
+  });
+
   test('handles missing secrets', async () => {
     const event = {
       input: {},
