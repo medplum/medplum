@@ -122,7 +122,7 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
               >
                 <Box pr={hoverIndex === 0 ? 24 : 0}>
                   <Text size="sm" fw={500}>
-                    {sexualOrientation.valueCodeableConcept?.text || 'Unknown'}
+                    {sexualOrientation.valueCodeableConcept?.text ?? 'Unknown'}
                   </Text>
                 </Box>
               </UnstyledButton>

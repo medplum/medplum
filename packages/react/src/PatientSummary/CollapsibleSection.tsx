@@ -1,22 +1,22 @@
-import { ActionIcon, Box, Collapse, Group, Text, UnstyledButton } from '@mantine/core';
+import { ActionIcon, Box, Collapse, Group, Text } from '@mantine/core';
 import { IconChevronDown, IconPlus } from '@tabler/icons-react';
 import { JSX, ReactNode, useState } from 'react';
 import { killEvent } from '../utils/dom';
 import classes from './CollapsibleSection.module.css';
 
 export interface CollapsibleSectionProps {
-  title: string;
-  children: ReactNode;
-  onAdd?: () => void;
+  readonly title: string;
+  readonly children: ReactNode;
+  readonly onAdd?: () => void;
 }
 
-export function CollapsibleSection({ title, children, onAdd }: CollapsibleSectionProps): JSX.Element {
+export function CollapsibleSection(props: CollapsibleSectionProps): JSX.Element {
+  const { title, children, onAdd } = props;
   const [collapsed, setCollapsed] = useState(false);
 
   return (
     <Box className={classes.root}>
-      <UnstyledButton className={classes.header}>
-        <Group justify="space-between">
+        <Group justify="space-between" className={classes.header}>
           <Group gap={8}>
             <ActionIcon
               variant="subtle"
@@ -48,7 +48,6 @@ export function CollapsibleSection({ title, children, onAdd }: CollapsibleSectio
             </ActionIcon>
           )}
         </Group>
-      </UnstyledButton>
 
       <Collapse in={!collapsed}>
         <Box ml="var(--mantine-spacing-xl)" mt="xs" mb="md">

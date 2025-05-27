@@ -83,8 +83,8 @@ export function formatPatientRaceEthnicityDisplay(patient: Patient): string {
 }
 
 export function formatPatientAddressDisplay(patient: Patient): string {
-  const city = patient.address?.[0]?.city || '';
-  const state = patient.address?.[0]?.state || '';
+  const city = patient.address?.[0]?.city ?? '';
+  const state = patient.address?.[0]?.state ?? '';
 
   const parts: string[] = [];
 

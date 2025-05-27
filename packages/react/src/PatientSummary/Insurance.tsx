@@ -9,12 +9,13 @@ import styles from './PatientSummary.module.css';
 import SummaryItem from './SummaryItem';
 
 export interface CoverageItemProps {
-  coverage: Coverage | Reference<Coverage>;
-  organization?: Organization | Reference<Organization>;
-  onClickResource?: (resource: Coverage) => void;
+  readonly coverage: Coverage | Reference<Coverage>;
+  readonly organization?: Organization | Reference<Organization>;
+  readonly onClickResource?: (resource: Coverage) => void;
 }
 
-export function CoverageItem({ coverage, organization, onClickResource }: CoverageItemProps): JSX.Element {
+export function CoverageItem(props: CoverageItemProps): JSX.Element {
+  const { coverage, organization, onClickResource } = props;
   const coverageResource = useResource(coverage);
   const organizationResource = useResource(organization);
   let payorName = 'Unknown Payor';
@@ -24,7 +25,7 @@ export function CoverageItem({ coverage, organization, onClickResource }: Covera
     }
   }
 
-  const detailsText = `ID: ${coverageResource?.subscriberId || 'N/A'}${
+  const detailsText = `ID: ${coverageResource?.subscriberId ?? 'N/A'}${
     formatClassInfo(coverageResource) ? ` · ${formatClassInfo(coverageResource)}` : ''
   }`;
 
@@ -99,9 +100,9 @@ function formatClassInfo(coverage: Coverage | undefined): string {
   const classInfo = coverage.class
     ?.filter((cls) => cls.type?.coding?.[0]?.code !== 'plan')
     .map((cls) => {
-      const type = cls.type?.coding?.[0]?.code || '';
+      const type = cls.type?.coding?.[0]?.code ?? '';
       return `${capitalizeWords(type)}: ${cls.value}`;
     })
     .join(' · ');
-  return classInfo || '';
+  return classInfo ?? '';
 }

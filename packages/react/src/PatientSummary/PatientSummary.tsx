@@ -43,12 +43,6 @@ import { Vitals } from './Vitals';
 
 export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
-  readonly background?: string;
-  /** The URL that the upcoming appointments link should navigate to or `undefined` to not show the link. */
-  readonly appointmentsUrl?: string;
-  /** The URL that the documented visits (encounters) link should navigate to or `undefined` to not show the link. */
-  readonly encountersUrl?: string;
-  /** Callback when a resource is clicked in the list */
   readonly onClickResource?: (resource: Resource) => void;
 }
 
@@ -65,7 +59,6 @@ interface PatientMedicalData {
   readonly immunizations?: Immunization[];
   readonly procedures?: Procedure[];
   readonly devices?: Device[];
-  readonly socialHistory: Observation[];
   readonly goals?: Goal[];
 }
 
@@ -131,7 +124,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
           procedures: results[8],
           devices: results[9],
           goals: results[10],
-          socialHistory: filterSocialHistoryObservations(observations),
         });
       })
       .catch(console.error);
@@ -156,24 +148,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     }
     return 'inherit';
   }
-
-  function filterSocialHistoryObservations(observations: Observation[]): Observation[] {
-    const isSocialHistoryObservation = (obs: Observation): boolean => {
-      if (!obs.category) {
-        return false;
-      }
-      
-      return obs.category.some(category => {
-        if (!category.coding) {
-          return false;
-        }
-        return category.coding.some(coding => coding.code === 'social-history');
-      });
-    };
-  
-    return observations.filter(isSocialHistoryObservation);
-  }
-  
 
   if (!patient) {
     return null;
@@ -334,7 +308,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                     >
                       <IconStethoscope size={16} stroke={2} color="var(--mantine-color-gray-6)" />
                       <Text fz="sm" fw={400} truncate c={getItemColor(getGeneralPractitioner(patient))}>
-                        {getGeneralPractitioner(patient) || 'Add a General Practitioner'}
+                        {getGeneralPractitioner(patient) ?? 'Add a General Practitioner'}
                       </Text>
                     </Group>
                   </Tooltip>
