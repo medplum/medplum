@@ -10,7 +10,6 @@ import {
   PatientPageTabInfo,
   PatientPageTabs,
   formatPatientPageTabUrl,
-  getPatientPageTabOrThrow,
 } from './PatientPage.utils';
 import { PatientTabsNavigation } from './PatientTabsNavigation';
 
@@ -82,8 +81,6 @@ export function PatientPage(): JSX.Element {
         <ScrollArea className={classes.scrollArea}>
           <PatientSummary
             patient={patient}
-            appointmentsUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('appointments'))}
-            encountersUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('encounter'))}
             onClickResource={(resource) =>
               navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
             }
