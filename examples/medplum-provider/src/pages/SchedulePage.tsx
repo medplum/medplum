@@ -273,8 +273,6 @@ export function SchedulePage(): JSX.Element | null {
     return result;
   }
 
-  
-
   return (
     <Box pos="relative" bg="white" p="md" style={{ height }}>
       <Calendar
@@ -323,7 +321,7 @@ export function SchedulePage(): JSX.Element | null {
         position="right"
         h="100%"
       >
-       <CreateVisit appointmentSlot={appointmentSlot} />
+        <CreateVisit appointmentSlot={appointmentSlot} />
       </Drawer>
     </Box>
   );

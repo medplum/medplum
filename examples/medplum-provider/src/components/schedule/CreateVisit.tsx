@@ -2,7 +2,7 @@ import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@me
 import { useState, useEffect, JSX } from 'react';
 import { SlotInfo } from 'react-big-calendar';
 import { Button, Card, Flex, Stack, Text, Title } from '@mantine/core';
-import { Coding, Patient, PlanDefinition, PlanDefinitionAction, } from '@medplum/fhirtypes';
+import { Coding, Patient, PlanDefinition, PlanDefinitionAction } from '@medplum/fhirtypes';
 import { IconAlertSquareRounded, IconCircleCheck, IconCirclePlus } from '@tabler/icons-react';
 import classes from './CreateVisit.module.css';
 import { createEncounter } from '../../utils/encounter';
@@ -53,7 +53,6 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
   }, [appointmentSlot]);
 
   async function handleSubmit(): Promise<void> {
-
     if (!patient || !planDefinitionData || !encounterClass || !start || !end) {
       showNotification({
         color: 'yellow',
@@ -136,12 +135,12 @@ export function CreateVisit(props: CreateVisitProps): JSX.Element {
 
         {planDefinitionData?.action && planDefinitionData.action.length > 0 && (
           <Card className={classes.planDefinition}>
-            <Stack gap={0} >
-                <Text fw={500}>Included Tasks</Text>
-                {planDefinitionData?.action?.map((action: PlanDefinitionAction) => (
-                  <Text key={action.id}>- {action.title}</Text>
-                ))}
-              </Stack>
+            <Stack gap={0}>
+              <Text fw={500}>Included Tasks</Text>
+              {planDefinitionData?.action?.map((action: PlanDefinitionAction) => (
+                <Text key={action.id}>- {action.title}</Text>
+              ))}
+            </Stack>
           </Card>
         )}
 
