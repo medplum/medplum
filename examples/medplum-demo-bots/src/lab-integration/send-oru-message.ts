@@ -284,7 +284,6 @@ function createPidSegment(patient: Patient): Hl7Segment {
 /**
  * Creates a PV1 (Patient Visit) segment
  *
- * @param serviceRequest - The ServiceRequest resource
  * @param interpreter - The ordering Practitioner
  * @returns An HL7 PV1 segment
  */
