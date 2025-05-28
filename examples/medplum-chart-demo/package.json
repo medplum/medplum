@@ -53,5 +53,9 @@
     "typescript": "5.8.3",
     "vite": "6.3.5",
     "vitest": "3.1.4"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

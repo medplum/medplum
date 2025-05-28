@@ -8,8 +8,8 @@
     "build:bots": "npm run clean && tsc --project tsconfig-bots.json && node --no-warnings esbuild-script.mjs && node --loader ts-node/esm src/scripts/deploy-bots.ts",
     "clean": "rimraf dist",
     "dev": "vite",
-    "preview": "vite preview",
     "lint": "eslint src/",
+    "preview": "vite preview",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
@@ -48,5 +48,9 @@
     "typescript": "5.8.3",
     "vite": "6.3.5",
     "vitest": "3.1.4"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

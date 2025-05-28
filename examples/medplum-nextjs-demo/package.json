@@ -41,5 +41,9 @@
     "postcss": "8.5.3",
     "postcss-preset-mantine": "1.17.0",
     "typescript": "5.8.3"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

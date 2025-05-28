@@ -3,8 +3,8 @@
   "version": "4.1.5",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "tsc -b && vite build",
+    "dev": "vite",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -40,5 +40,9 @@
     "react-router": "7.6.1",
     "typescript": "5.8.3",
     "vite": "6.3.5"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.0.0"
   }
 }

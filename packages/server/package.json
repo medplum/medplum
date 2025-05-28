@@ -15,11 +15,11 @@
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
     "build": "npm run clean && tsc && tsc --project tsconfig.build.json",
+    "circular": "npx madge --circular dist/index.js",
     "clean": "rimraf dist",
     "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/otel/instrumentation.ts src/index.ts",
     "lint": "eslint .",
     "migrate": "ts-node --transpileOnly src/migrations/migrate.ts",
-    "circular": "npx madge --circular dist/index.js",
     "start": "node --require ./dist/otel/instrumentation.js dist/index.js",
     "test": "jest",
     "test:seed": "jest seed.test.ts --testTimeout=400000"

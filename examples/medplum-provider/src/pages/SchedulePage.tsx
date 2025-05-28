@@ -1,4 +1,4 @@
-import { Box, Button, Group, SegmentedControl, Title } from '@mantine/core';
+import { Box, Button, Drawer, Group, SegmentedControl, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { createReference, getReferenceString, WithId } from '@medplum/core';
 import { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
@@ -10,10 +10,10 @@ import { Calendar, dayjsLocalizer, Event, SlotInfo, ToolbarProps, View } from 'r
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router';
 import { BlockAvailability } from '../components/schedule/BlockAvailability';
-import { CreateAppointment } from '../components/schedule/CreateAppointment';
 import { CreateUpdateSlot } from '../components/schedule/CreateUpdateSlot';
 import { SetAvailability } from '../components/schedule/SetAvailability';
 import { SlotDetails } from '../components/schedule/SlotDetails';
+import { CreateVisit } from '../components/schedule/CreateVisit';
 
 type AppointmentEvent = Event & { type: 'appointment'; appointment: Appointment; start: Date; end: Date };
 type SlotEvent = Event & { type: 'slot'; status: string; start: Date; end: Date };
@@ -42,6 +42,8 @@ export function SchedulePage(): JSX.Element | null {
   const [slotEvents, setSlotEvents] = useState<ScheduleEvent[]>();
   const [appointmentEvents, setAppointmentEvents] = useState<ScheduleEvent[]>();
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent>();
+
+  const [appointmentSlot, setAppointmentSlot] = useState<SlotInfo>();
 
   useEffect(() => {
     if (medplum.isLoading() || !profile) {
@@ -143,12 +145,10 @@ export function SchedulePage(): JSX.Element | null {
    */
   const handleSelectSlot = useCallback(
     (slot: SlotInfo) => {
-      if (slot.action !== 'select') {
-        return;
-      }
-      createUpdateSlotHandlers.open();
+      createAppointmentHandlers.open();
+      setAppointmentSlot(slot);
     },
-    [createUpdateSlotHandlers]
+    [createAppointmentHandlers]
   );
 
   /**
@@ -312,13 +312,16 @@ export function SchedulePage(): JSX.Element | null {
         handlers={slotDetailsHandlers}
         onSlotsUpdated={() => refreshEvents('no-cache')}
       />
-      <CreateAppointment
-        schedule={schedule}
-        event={selectedEvent}
+
+      <Drawer
         opened={createAppointmentOpened}
-        handlers={createAppointmentHandlers}
-        onAppointmentsUpdated={() => refreshEvents('no-cache')}
-      />
+        onClose={createAppointmentHandlers.close}
+        title="New Calendar Event"
+        position="right"
+        h="100%"
+      >
+        <CreateVisit appointmentSlot={appointmentSlot} />
+      </Drawer>
     </Box>
   );
 }

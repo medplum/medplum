@@ -1,20 +1,19 @@
-import { Box, Button, Card, Flex, Group, Menu, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Box, Button, Card, Flex, Group, Menu, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getReferenceString } from '@medplum/core';
+import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import {
   ChargeItem,
   Claim,
   ClaimDiagnosis,
   ClinicalImpression,
-  CodeableConcept,
-  Coding,
+  Condition,
   Coverage,
   Encounter,
   Organization,
   Practitioner,
   Task,
 } from '@medplum/fhirtypes';
-import { CodeableConceptInput, Loading, useMedplum } from '@medplum/react';
+import { Loading, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { Outlet, useParams } from 'react-router';
@@ -29,6 +28,9 @@ import { EncounterHeader } from '../components/Encounter/EncounterHeader';
 import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
 import { TaskPanel } from '../components/Task/TaskPanel';
 import classes from './EncounterChart.module.css';
+import ConditionModal from '../components/Conditions/ConditionModal';
+import ConditionItem from '../components/Conditions/ConditionItem';
+import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import ChargeItemPanel from '../components/ChargeItem/ChageItemPanel';
 
 export const EncounterChart = (): JSX.Element => {
@@ -39,7 +41,7 @@ export const EncounterChart = (): JSX.Element => {
   const [activeTab, setActiveTab] = useState<string>('notes');
   const [coverage, setCoverage] = useState<Coverage | undefined>();
   const [organization, setOrganization] = useState<Organization | undefined>();
-  const [diagnosis, setDiagnosis] = useState<CodeableConcept | undefined>();
+  const [conditions, setConditions] = useState<Condition[] | undefined>();
   const {
     encounter,
     claim,
@@ -54,21 +56,61 @@ export const EncounterChart = (): JSX.Element => {
     setChargeItems,
   } = useEncounterChart(patientId, encounterId);
   const [chartNote, setChartNote] = useState<string | undefined>(clinicalImpression?.note?.[0]?.text);
+  const [opened, setOpened] = useState(false);
+  const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
 
   useEffect(() => {
-    if (claim?.diagnosis) {
-      const mergedCoding = claim.diagnosis.reduce<Coding[]>((acc, diag) => {
-        if (diag.diagnosisCodeableConcept?.coding) {
-          return [...acc, ...diag.diagnosisCodeableConcept.coding];
-        }
-        return acc;
-      }, []);
+    const fetchConditions = async (): Promise<void> => {
+      if (!encounter) {
+        return;
+      }
 
-      setDiagnosis(mergedCoding.length > 0 ? { coding: mergedCoding } : undefined);
-    } else {
-      setDiagnosis({ coding: [] });
-    }
-  }, [claim]);
+      const diagnosisReferences = encounter.diagnosis?.map((d) => d.condition?.reference).filter(Boolean) || [];
+      const conditionsResult = await Promise.all(
+        diagnosisReferences.map((ref) => medplum.readReference({ reference: ref }))
+      );
+
+      if (conditionsResult.length > 0 && encounter?.diagnosis) {
+        const diagnosisMap = new Map<string, number>();
+
+        const diagnosisReferences = encounter.diagnosis?.map((d) => d.condition?.reference) || [];
+        const conditionsInDiagnosis = conditionsResult.filter((condition) =>
+          diagnosisReferences.includes(getReferenceString(condition))
+        );
+
+        encounter.diagnosis.forEach((diagnosis, index) => {
+          if (diagnosis.condition?.reference) {
+            diagnosisMap.set(diagnosis.condition.reference, diagnosis.rank || index);
+          }
+        });
+
+        conditionsInDiagnosis.sort((a, b) => {
+          const aRef = getReferenceString(a);
+          const bRef = getReferenceString(b);
+
+          if (diagnosisMap.has(aRef) && diagnosisMap.has(bRef)) {
+            const aValue = diagnosisMap.get(aRef) ?? 0;
+            const bValue = diagnosisMap.get(bRef) ?? 0;
+            return aValue - bValue;
+          }
+
+          if (diagnosisMap.has(aRef)) {
+            return -1;
+          }
+
+          if (diagnosisMap.has(bRef)) {
+            return 1;
+          }
+
+          return 0;
+        });
+
+        setConditions(conditionsInDiagnosis as Condition[]);
+      }
+    };
+
+    fetchConditions().catch((err) => showErrorNotification(err));
+  }, [encounter, medplum]);
 
   useEffect(() => {
     const fetchCoverage = async (): Promise<void> => {
@@ -279,26 +321,31 @@ export const EncounterChart = (): JSX.Element => {
     }, SAVE_TIMEOUT_MS);
   };
 
-  const handleDiagnosisChange = (value: CodeableConcept | undefined): void => {
-    setDiagnosis(value ? value : { coding: [] });
+  const handleConditionSubmit = async (condition: Condition): Promise<void> => {
+    try {
+      const newCondition = await medplum.createResource(condition);
+      if (encounter) {
+        const updatedEncounter: Encounter = {
+          ...encounter,
+          diagnosis: [
+            ...(encounter.diagnosis || []),
+            {
+              condition: {
+                reference: `Condition/${newCondition.id}`,
+              },
+              rank: encounter.diagnosis?.length ? encounter.diagnosis.length + 1 : 1,
+            },
+          ],
+        };
 
-    if (!claim) {
-      return;
-    }
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(async () => {
-      try {
-        const diagnosisArray = createDiagnosisArray(value);
-        const savedClaim = await medplum.updateResource({ ...claim, diagnosis: diagnosisArray });
-        setClaim(savedClaim as Claim);
-      } catch (err) {
-        showErrorNotification(err);
+        const savedEncounter = await medplum.updateResource(updatedEncounter);
+        setEncounter(savedEncounter);
       }
-    }, SAVE_TIMEOUT_MS);
+    } catch (err) {
+      showErrorNotification(err);
+    } finally {
+      setOpened(false);
+    }
   };
 
   const exportClaimAsCMS1500 = async (): Promise<void> => {
@@ -324,7 +371,7 @@ export const EncounterChart = (): JSX.Element => {
       }
     }
 
-    const diagnosisArray = createDiagnosisArray(diagnosis);
+    const diagnosisArray = createDiagnosisArray(conditions || []);
     const claimToExport: Claim = {
       ...claim,
       insurance: [
@@ -336,6 +383,7 @@ export const EncounterChart = (): JSX.Element => {
       ],
       diagnosis: diagnosisArray,
     };
+
     const response = await medplum.post(medplum.fhirUrl('Claim', '$export'), {
       resourceType: 'Parameters',
       parameter: [{ name: 'resource', resource: claimToExport }],
@@ -349,19 +397,79 @@ export const EncounterChart = (): JSX.Element => {
     }
   };
 
-  const createDiagnosisArray = (value?: CodeableConcept): ClaimDiagnosis[] | undefined => {
-    return value?.coding
-      ? value.coding.map((coding, index) => ({
-          diagnosisCodeableConcept: {
-            coding: [coding],
-          },
-          sequence: index + 1,
-          type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }],
-        }))
-      : undefined;
+  const createDiagnosisArray = (conditions: Condition[]): ClaimDiagnosis[] => {
+    return conditions.map((condition, index) => {
+      const icd10Coding = condition.code?.coding?.find((c) => c.system === `${HTTP_HL7_ORG}/fhir/sid/icd-10`);
+      return {
+        diagnosisCodeableConcept: {
+          coding: icd10Coding ? [icd10Coding] : [],
+        },
+        sequence: index + 1,
+        type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }],
+      };
+    });
   };
 
-  if (!patient || !encounter || !clinicalImpression) {
+  /*
+   * Re-orders the conditions in the conditions array and updates the encounter diagnosis.
+   */
+  const updateDiagnosis = async (condition: Condition, value: string): Promise<void> => {
+    if (!conditions || conditions.length === 0 || !encounter) {
+      return;
+    }
+
+    const newRank = Number(value);
+    const maxAllowedRank = conditions.length;
+    const validRank = Math.max(1, Math.min(newRank, maxAllowedRank));
+
+    const updatedConditions = [...conditions];
+    const conditionIndex = updatedConditions.findIndex((c) => getReferenceString(c) === getReferenceString(condition));
+
+    if (conditionIndex === -1) {
+      return;
+    }
+
+    const conditionToMove = updatedConditions.splice(conditionIndex, 1)[0];
+    updatedConditions.splice(validRank - 1, 0, conditionToMove);
+    setConditions(updatedConditions);
+
+    const updatedEncounter: Encounter = {
+      ...encounter,
+      diagnosis: updatedConditions.map((c, index) => ({
+        condition: { reference: `Condition/${c.id}` },
+        rank: index + 1,
+      })),
+    };
+
+    setEncounter(updatedEncounter);
+    await debouncedUpdateResource(updatedEncounter);
+  };
+
+  const removeDiagnosis = async (condition: Condition): Promise<void> => {
+    if (!encounter) {
+      return;
+    }
+
+    setConditions(conditions?.filter((c) => c.id !== condition.id));
+    const updatedDiagnosis = encounter.diagnosis?.filter(
+      (d) => d.condition?.reference !== getReferenceString(condition)
+    );
+    const reindexedDiagnosis = updatedDiagnosis?.map((d, index) => ({
+      ...d,
+      rank: index + 1,
+    }));
+
+    const updatedEncounter: Encounter = {
+      ...encounter,
+      diagnosis: reindexedDiagnosis,
+    };
+
+    setEncounter(updatedEncounter);
+    await medplum.deleteResource('Condition', condition.id as string);
+    await debouncedUpdateResource(updatedEncounter);
+  };
+
+  if (!patient || !encounter) {
     return <Loading />;
   }
 
@@ -369,19 +477,21 @@ export const EncounterChart = (): JSX.Element => {
     if (activeTab === 'notes') {
       return (
         <Stack gap="md">
-          <Card withBorder shadow="sm" mt="md">
-            <Text fw={600} size="lg" mb="md">
-              Fill chart note
-            </Text>
-            <Textarea
-              defaultValue={clinicalImpression.note?.[0]?.text}
-              value={chartNote}
-              onChange={handleChartNoteChange}
-              autosize
-              minRows={4}
-              maxRows={8}
-            />
-          </Card>
+          {clinicalImpression && (
+            <Card withBorder shadow="sm" mt="md">
+              <Text fw={600} size="lg" mb="md">
+                Fill chart note
+              </Text>
+              <Textarea
+                defaultValue={clinicalImpression.note?.[0]?.text}
+                value={chartNote}
+                onChange={handleChartNoteChange}
+                autosize
+                minRows={4}
+                maxRows={8}
+              />
+            </Card>
+          )}
 
           {tasks.map((task: Task) => (
             <TaskPanel key={task.id} task={task} onUpdateTask={updateTaskList} />
@@ -545,22 +655,31 @@ export const EncounterChart = (): JSX.Element => {
             />
           </Group>
 
-          {diagnosis && (
+          {encounter && (
             <Stack gap={0}>
               <Text fw={600} size="lg" mb="md">
                 Diagnosis
               </Text>
 
               <Card withBorder shadow="sm">
-                <CodeableConceptInput
-                  binding="http://hl7.org/fhir/ValueSet/icd-10"
-                  placeholder="Search to add a diagnosis"
-                  name="diagnosis"
-                  path="diagnosis"
-                  clearable
-                  defaultValue={diagnosis}
-                  onChange={handleDiagnosisChange}
-                />
+                <Stack gap="md">
+                  {conditions &&
+                    conditions.length > 0 &&
+                    conditions.map((condition, idx) => (
+                      <ConditionItem
+                        key={condition.id ?? idx}
+                        condition={condition}
+                        rank={idx + 1}
+                        total={conditions.length}
+                        onChange={updateDiagnosis}
+                        onRemove={removeDiagnosis}
+                      />
+                    ))}
+
+                  <Flex>
+                    <Button onClick={() => setOpened(true)}>Add Diagnosis</Button>
+                  </Flex>
+                </Stack>
               </Card>
             </Stack>
           )}
@@ -617,6 +736,9 @@ export const EncounterChart = (): JSX.Element => {
           <Outlet />
         </Box>
       </Stack>
+      <Modal opened={opened} onClose={() => setOpened(false)} title={'Add Diagnosis'}>
+        <ConditionModal patient={patient} encounter={encounter} onSubmit={handleConditionSubmit} />
+      </Modal>
     </>
   );
 };
