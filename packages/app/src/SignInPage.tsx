@@ -2,7 +2,7 @@ import { Title } from '@mantine/core';
 import { Logo, SignInForm, useMedplumProfile } from '@medplum/react';
 import { JSX, useCallback, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router';
-import { getConfig, isRegisterEnabled } from './config';
+import { getConfig } from './config';
 
 export function SignInPage(): JSX.Element {
   const profile = useMedplumProfile();
@@ -27,7 +27,13 @@ export function SignInPage(): JSX.Element {
     <SignInForm
       onSuccess={() => navigateToNext()}
       onForgotPassword={() => navigate('/resetpassword')?.catch(console.error)}
-      onRegister={isRegisterEnabled() ? () => navigate('/register')?.catch(console.error) : undefined}
+      // onRegister={isRegisterEnabled() ? () => navigate('/register')?.catch(console.error) : undefined}
+      onRegister={
+        ((e: React.MouseEvent<HTMLAnchorElement>) => {
+          console.log('Register mouse event', e);
+          navigate('/register')?.catch(console.error);
+        }) as () => void
+      }
       googleClientId={config.googleClientId}
       login={searchParams.get('login') || undefined}
       projectId={searchParams.get('project') || undefined}
