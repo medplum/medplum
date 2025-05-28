@@ -74,7 +74,7 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
   if (result.returnValue?.resourceType === 'Binary') {
     await sendBinaryResponse(res, result.returnValue as Binary);
   } else {
-    res.status(getStatus(outcome)).type(getResponseContentType(req)).send(responseBody);
+    res.status(getStatus(outcome)).contentType(getResponseContentType(req)).send(responseBody);
   }
 });
 
