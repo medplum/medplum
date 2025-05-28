@@ -2,7 +2,10 @@ import { capitalize, getExtension, HTTP_HL7_ORG } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 
 export function getGenderIdentity(patient: Patient): string | undefined {
-  const genderIdentityExt = getExtension(patient, `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`);
+  const genderIdentityExt = getExtension(
+    patient,
+    `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`
+  );
   return genderIdentityExt?.valueCodeableConcept?.coding?.[0]?.display;
 }
 
@@ -24,7 +27,6 @@ export function getEthnicity(patient: Patient): string | undefined {
 export function getGeneralPractitioner(patient: Patient): string | undefined {
   return patient.generalPractitioner?.[0]?.display;
 }
-
 
 export function formatPatientGenderDisplay(patient: Patient): string {
   const capitalizedGender = patient.gender ? capitalize(patient.gender) : '';
