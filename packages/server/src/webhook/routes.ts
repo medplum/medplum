@@ -1,5 +1,5 @@
 import { allOk, badRequest, getStatus, isOperationOutcome } from '@medplum/core';
-import { Bot, ProjectMembership, Reference, Binary } from '@medplum/fhirtypes';
+import { Binary, Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { executeBot, getResponseBodyFromResult, getResponseContentType } from '../fhir/operations/execute';

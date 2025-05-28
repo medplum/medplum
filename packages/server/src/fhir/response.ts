@@ -30,11 +30,11 @@ export function sendResponseHeaders(_req: Request, res: Response, outcome: Opera
 }
 
 export async function sendBinaryResponse(res: Response, binaryResource: Binary): Promise<void> {
-    res.contentType(binaryResource.contentType as string);
-    if (binaryResource.data) {
-      res.send(Buffer.from(binaryResource.data, 'base64'));
-    } else {
-      const stream = await getBinaryStorage().readBinary(binaryResource);
+  res.contentType(binaryResource.contentType as string);
+  if (binaryResource.data) {
+    res.send(Buffer.from(binaryResource.data, 'base64'));
+  } else {
+    const stream = await getBinaryStorage().readBinary(binaryResource);
     stream.pipe(res);
   }
 }
