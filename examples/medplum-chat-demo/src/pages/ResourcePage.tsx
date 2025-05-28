@@ -71,7 +71,7 @@ export function ResourcePage(): JSX.Element | null {
       <Grid>
         {resource.resourceType === 'Encounter' && shouldShowPatientSummary(resource) ? (
           <Grid.Col span={4}>
-            <PatientSummary patient={resource.subject as Reference<Patient>} m="sm" />
+            <PatientSummary patient={resource.subject as Reference<Patient>} />
           </Grid.Col>
         ) : null}
         <Grid.Col span={resource.resourceType === 'Encounter' && shouldShowPatientSummary(resource) ? 8 : 12}>

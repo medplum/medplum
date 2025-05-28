@@ -6,12 +6,7 @@ import { JSX, useCallback, useEffect, useState } from 'react';
 import { Location, Outlet, useLocation, useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
-import {
-  PatientPageTabInfo,
-  PatientPageTabs,
-  formatPatientPageTabUrl,
-  getPatientPageTabOrThrow,
-} from './PatientPage.utils';
+import { PatientPageTabInfo, PatientPageTabs, formatPatientPageTabUrl } from './PatientPage.utils';
 import { PatientTabsNavigation } from './PatientTabsNavigation';
 
 function getTabFromLocation(location: Location): PatientPageTabInfo | undefined {
@@ -81,11 +76,7 @@ export function PatientPage(): JSX.Element {
       <div className={classes.sidebar}>
         <ScrollArea className={classes.scrollArea}>
           <PatientSummary
-            w={350}
-            mb="auto"
             patient={patient}
-            appointmentsUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('appointments'))}
-            encountersUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('encounter'))}
             onClickResource={(resource) =>
               navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
             }
