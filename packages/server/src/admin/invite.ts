@@ -5,6 +5,7 @@ import {
   createReference,
   getReferenceString,
   InviteRequest,
+  isCreated,
   normalizeErrorString,
   OperationOutcomeError,
   Operator,
@@ -17,7 +18,7 @@ import { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import Mail from 'nodemailer/lib/mailer';
 import { resetPassword } from '../auth/resetpassword';
-import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
+import { bcryptHashPassword, createProjectMembership } from '../auth/utils';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
@@ -96,17 +97,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     passwordResetUrl = await resetPassword(user, 'invite');
   }
 
-  let profile = await searchForExistingProfile(request);
-  if (!profile) {
-    logger.info('Creating profile for invite request', {
-      project: getReferenceString(project),
-      email,
-      profileType: request.resourceType,
-    });
-    profile = await createProfile(project, request.resourceType, request.firstName, request.lastName, email);
-
-    logger.info('Profile  created', { reference: getReferenceString(profile) });
-  }
+  const profile = await upsertProfileResource(request);
 
   const membershipTemplate = request.membership ?? {};
   if (request.externalId !== undefined) {
@@ -165,40 +156,68 @@ async function createUser(request: ServerInviteRequest): Promise<WithId<User>> {
   });
 }
 
-async function searchForExistingProfile(request: ServerInviteRequest): Promise<WithId<ProfileResource> | undefined> {
-  const { project, resourceType, membership, email } = request;
+async function upsertProfileResource(request: ServerInviteRequest): Promise<WithId<ProfileResource>> {
   const systemRepo = getSystemRepo();
-
-  if (membership?.profile) {
-    const result = await systemRepo.readReference(membership.profile);
-    if (result.meta?.project !== project.id) {
+  if (request.membership?.profile) {
+    const profile = await systemRepo.readReference(request.membership.profile);
+    if (profile.meta?.project !== request.project.id) {
       throw new OperationOutcomeError(badRequest('Profile does not belong to project'));
     }
-    if (result.resourceType !== resourceType) {
+    if (profile.resourceType !== request.resourceType) {
       throw new OperationOutcomeError(badRequest('Profile resourceType does not match request'));
     }
-    return result;
-  }
-
-  if (email) {
-    return systemRepo.searchOne<ProfileResource>({
+    return profile;
+  } else {
+    const { resourceType, firstName, lastName, project, email } = request;
+    const resource = {
       resourceType,
-      filters: [
+      meta: {
+        project: project.id,
+      },
+      name: [
         {
-          code: '_project',
-          operator: Operator.EQUALS,
-          value: project.id,
-        },
-        {
-          code: 'email',
-          operator: Operator.EQUALS,
-          value: email,
+          given: [firstName],
+          family: lastName,
         },
       ],
-    });
-  }
+      telecom: email ? [{ system: 'email', use: 'work', value: email }] : undefined,
+    } as ProfileResource;
 
-  return undefined;
+    if (email) {
+      const { resource: result, outcome } = await systemRepo.conditionalCreate<ProfileResource>(resource, {
+        resourceType,
+        filters: [
+          {
+            code: '_project',
+            operator: Operator.EQUALS,
+            value: project.id,
+          },
+          {
+            code: 'email',
+            operator: Operator.EQUALS,
+            value: email,
+          },
+        ],
+      });
+
+      if (isCreated(outcome)) {
+        getLogger().info('Profile created', {
+          reference: getReferenceString(result),
+          project: getReferenceString(project),
+          email,
+        });
+      }
+      return result;
+    } else {
+      const profile = await systemRepo.createResource(resource);
+      getLogger().info('Profile created', {
+        reference: getReferenceString(profile),
+        project: getReferenceString(project),
+        email,
+      });
+      return profile;
+    }
+  }
 }
 
 async function createOrUpdateProjectMembership(
