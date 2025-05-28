@@ -40,5 +40,9 @@
     "eslint": "8.57.1",
     "eslint-config-next": "15.3.2",
     "typescript": "5.8.3"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
