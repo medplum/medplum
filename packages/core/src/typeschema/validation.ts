@@ -393,7 +393,7 @@ class ResourceValidator implements CrawlerVisitor {
     const referenceResourceType = reference.reference.includes('?')
       ? reference.reference.split('?')[0]
       : reference.reference.split('/')[0];
-    
+
     if (!referenceResourceType) {
       // Silently ignore empty references - that will get picked up by constraint validation
       return;
