@@ -248,7 +248,7 @@ export function HomePage(): JSX.Element {
         </Grid.Col>
 
         <Grid.Col span={6}>
-          <Title order={2}>Create Custom ValueSet</Title>
+          <Title order={2}>Create/Update ValueSet</Title>
           <p style={{ marginBottom: '1rem' }}>
             Define your own ValueSet by editing the JSON below. The example shows a ValueSet for RxNorm branded drugs.
           </p>
