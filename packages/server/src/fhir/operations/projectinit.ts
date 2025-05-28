@@ -159,7 +159,7 @@ export async function createProject(
       admin.lastName as string,
       admin.email as string
     );
-    const membership = await createProjectMembership(admin, project, profile, { admin: true });
+    const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });
     return { project, profile, membership, client };
   }
   return { project, client };
