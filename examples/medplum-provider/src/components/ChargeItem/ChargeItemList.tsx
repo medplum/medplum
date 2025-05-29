@@ -1,6 +1,6 @@
 import { Box, Card, Flex, Stack, Text, TextInput } from '@mantine/core';
 import { ChargeItem } from '@medplum/fhirtypes';
-import ChargeItemPanel from './ChageItemPanel';
+import ChargeItemPanel from './ChargeItemPanel';
 import { calculateTotalPrice } from '../../utils/chargeitems';
 import { JSX, useCallback, useEffect, useState } from 'react';
 
