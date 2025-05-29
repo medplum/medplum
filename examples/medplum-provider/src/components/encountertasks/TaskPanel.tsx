@@ -6,7 +6,7 @@ import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
 import { JSX, useRef } from 'react';
 import { useNavigate } from 'react-router';
-import { SAVE_TIMEOUT_MS } from '../../../config/constants';
+import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { SimpleTask } from './SimpleTask';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { TaskStatusPanel } from './TaskStatusPanel';

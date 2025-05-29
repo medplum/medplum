@@ -1,4 +1,4 @@
-import { Box, Button, Card, Flex, Group, Menu, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Box, Button, Card, Flex, Group, Menu, Modal, Stack, Text, Textarea } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import {
@@ -20,18 +20,18 @@ import { Outlet, useParams } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { usePatient } from '../../hooks/usePatient';
-import { calculateTotalPrice, fetchAndApplyChargeItemDefinitions, getCptChargeItems } from '../../utils/chargeitems';
-import { createClaimFromEncounter } from '../../utils/claims';
+import { ChargeItemList } from '../../components/ChargeItem/ChargeItemList';
+import { createClaimFromEncounter, getCptChargeItems } from '../../utils/claims';
 import { createSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
-import { EncounterHeader } from '../components/Encounter/EncounterHeader';
-import { VisitDetailsPanel } from '../components/Encounter/VisitDetailsPanel';
-import { TaskPanel } from '../components/Task/TaskPanel';
+import { EncounterHeader } from '../../components/Encounter/EncounterHeader';
+import { VisitDetailsPanel } from '../../components/Encounter/VisitDetailsPanel';
+import { TaskPanel } from '../../components/encountertasks/TaskPanel';
 import classes from './EncounterChart.module.css';
-import ConditionModal from '../components/Conditions/ConditionModal';
-import ConditionItem from '../components/Conditions/ConditionItem';
+import ConditionModal from '../../components/Conditions/ConditionModal';
+import ConditionItem from '../../components/Conditions/ConditionItem';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
-import ChargeItemPanel from '../components/ChargeItem/ChageItemPanel';
+import { calculateTotalPrice } from '../../utils/chargeitems';
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
@@ -142,68 +142,6 @@ export const EncounterChart = (): JSX.Element => {
       setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
     },
     [tasks, setTasks]
-  );
-
-  const saveChargeItem = useCallback(
-    async (chargeItem: ChargeItem): Promise<ChargeItem> => {
-      try {
-        return await medplum.updateResource(chargeItem);
-      } catch (err) {
-        showErrorNotification(err);
-        return chargeItem;
-      }
-    },
-    [medplum]
-  );
-
-  const updateChargeItemList = useCallback(
-    (updatedChargeItem: ChargeItem): void => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-
-      saveTimeoutRef.current = setTimeout(async () => {
-        const savedChargeItem = await saveChargeItem(updatedChargeItem);
-        const updatedChargeItems = await fetchAndApplyChargeItemDefinitions(
-          medplum,
-          chargeItems.map((item) => (item.id === savedChargeItem.id ? savedChargeItem : item))
-        );
-        setChargeItems(updatedChargeItems);
-
-        if (claim?.id && updatedChargeItems.length > 0 && encounter) {
-          const updatedClaim: Claim = {
-            ...claim,
-            item: getCptChargeItems(updatedChargeItems, { reference: getReferenceString(encounter) }),
-            total: { value: calculateTotalPrice(updatedChargeItems) },
-          };
-          const savedClaim = await medplum.updateResource(updatedClaim);
-          setClaim(savedClaim);
-        }
-      }, SAVE_TIMEOUT_MS);
-    },
-    [chargeItems, saveChargeItem, setChargeItems, medplum, claim, setClaim, encounter]
-  );
-
-  const deleteChargeItem = useCallback(
-    async (chargeItem: ChargeItem): Promise<void> => {
-      const updatedChargeItems = chargeItems.filter((item) => item.id !== chargeItem.id);
-      setChargeItems(updatedChargeItems);
-
-      if (chargeItem.id) {
-        await medplum.deleteResource('ChargeItem', chargeItem.id);
-      }
-
-      if (claim?.id && updatedChargeItems.length > 0 && encounter) {
-        const updatedClaim: Claim = {
-          ...claim,
-          item: getCptChargeItems(updatedChargeItems, { reference: getReferenceString(encounter) }),
-          total: { value: calculateTotalPrice(updatedChargeItems) },
-        };
-        const savedClaim = await medplum.updateResource(updatedClaim);
-        setClaim(savedClaim);
-      }
-    },
-    [chargeItems, setChargeItems, claim, setClaim, encounter, medplum]
   );
 
   const handleEncounterStatusChange = useCallback(
@@ -469,6 +407,22 @@ export const EncounterChart = (): JSX.Element => {
     await debouncedUpdateResource(updatedEncounter);
   };
 
+  const updateChargeItems = useCallback(
+    async (updatedChargeItems: ChargeItem[]): Promise<void> => {
+      setChargeItems(updatedChargeItems);
+      if (claim?.id && updatedChargeItems.length > 0 && encounter) {
+        const updatedClaim: Claim = {
+          ...claim,
+          item: getCptChargeItems(updatedChargeItems, { reference: getReferenceString(encounter) }),
+          total: { value: calculateTotalPrice(updatedChargeItems) },
+        };
+        setClaim(updatedClaim);
+        await debouncedUpdateResource(updatedClaim);
+      }
+    },
+    [setChargeItems, claim, encounter, setClaim, debouncedUpdateResource]
+  );
+
   if (!patient || !encounter) {
     return <Loading />;
   }
@@ -684,38 +638,7 @@ export const EncounterChart = (): JSX.Element => {
             </Stack>
           )}
 
-          <Stack gap={0}>
-            <Text fw={600} size="lg" mb="md">
-              Charge Items
-            </Text>
-            {chargeItems.length > 0 ? (
-              <Stack gap="md">
-                {chargeItems.map((chargeItem: ChargeItem) => (
-                  <ChargeItemPanel
-                    key={chargeItem.id}
-                    chargeItem={chargeItem}
-                    onChange={updateChargeItemList}
-                    onDelete={deleteChargeItem}
-                  />
-                ))}
-
-                <Card withBorder shadow="sm">
-                  <Flex justify="space-between" align="center">
-                    <Text size="lg" fw={500}>
-                      Total Calculated Price to Bill
-                    </Text>
-                    <Box>
-                      <TextInput w={300} value={`$${calculateTotalPrice(chargeItems)}`} readOnly />
-                    </Box>
-                  </Flex>
-                </Card>
-              </Stack>
-            ) : (
-              <Card withBorder shadow="sm">
-                <Text c="dimmed">No charge items available</Text>
-              </Card>
-            )}
-          </Stack>
+          <ChargeItemList chargeItems={chargeItems} updateChargeItems={updateChargeItems} />
         </Stack>
       );
     }
