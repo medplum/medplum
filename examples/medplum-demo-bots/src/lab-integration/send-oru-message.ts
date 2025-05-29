@@ -17,6 +17,7 @@ import {
   Reference,
   ServiceRequest,
   Specimen,
+  Attachment,
 } from '@medplum/fhirtypes';
 
 // Constants
@@ -34,16 +35,13 @@ const FACILITY_PATIENT_ID = new URL('patientId', FACILITY_URL).toString();
  * @param event - The BotEvent object
  * @returns The result of the operation
  */
-export async function handler(
-  medplum: MedplumClient,
-  event: BotEvent<DiagnosticReport>
-): Promise<Hl7Message | undefined> {
+export async function handler(medplum: MedplumClient, event: BotEvent<DiagnosticReport>): Promise<Hl7Message | undefined> {
   try {
     // The event input is a DiagnosticReport
     const diagnosticReport = event.input;
 
     // Get the related resources
-    const { serviceRequest, observations, specimen, patient, interpreter } = await fetchRelatedResources(
+    const { serviceRequest, observations, specimen, patient, interpreter, presentedFormAttachments } = await fetchRelatedResources(
       diagnosticReport,
       medplum
     );
@@ -59,7 +57,7 @@ export async function handler(
     }
 
     // Create the ORU message
-    const oruMessage = createOruMessage(diagnosticReport, serviceRequest, observations, specimen, patient, interpreter);
+    const oruMessage = createOruMessage(diagnosticReport, serviceRequest, observations, specimen, patient, interpreter, presentedFormAttachments);
 
     return oruMessage;
   } catch (error: any) {
@@ -84,6 +82,7 @@ async function fetchRelatedResources(
   specimen?: Specimen;
   patient?: Patient;
   interpreter?: Practitioner;
+  presentedFormAttachments?: Attachment[];
 }> {
   // Get the ServiceRequest from the basedOn reference
   let serviceRequest: ServiceRequest | undefined;
@@ -103,6 +102,20 @@ async function fetchRelatedResources(
         try {
           const obs = await medplum.readReference(obsRef as Reference<Observation>);
           observations.push(obs);
+          
+          // If this observation has child observations, fetch them as well
+          if (obs.hasMember && obs.hasMember.length > 0) {
+            await Promise.all(
+              obs.hasMember.map(async (memberRef) => {
+                try {
+                  const childObs = await medplum.readReference(memberRef as Reference<Observation>);
+                  observations.push(childObs);
+                } catch (err) {
+                  console.warn(`Could not find child Observation: ${getReferenceString(memberRef)}`, err);
+                }
+              })
+            );
+          }
         } catch (err) {
           console.warn(`Could not find Observation: ${getReferenceString(obsRef)}`, err);
         }
@@ -140,7 +153,36 @@ async function fetchRelatedResources(
     }
   }
 
-  return { serviceRequest, observations, specimen, patient, interpreter };
+  // Get the PDF attachments content as base64 encoded strings
+  let presentedFormAttachments: Attachment[] = [];
+  if (diagnosticReport.presentedForm) {
+    presentedFormAttachments = await Promise.all(
+      diagnosticReport.presentedForm
+        .filter((form) => form.contentType === 'application/pdf')
+        .map(async (form) => {
+          if (form.data) {
+            // If data is directly provided, clean up the data URL prefix
+            return {
+              ...form,
+              data: form.data.replace(/^data:.*?;base64,/, ''),
+            };
+          }
+          // If URL is provided, fetch the contents and return the base64 encoded string
+          if (!form.url) {
+            throw new Error('PDF attachment must have either data or url');
+          }
+          const response = await fetch(form.url);
+          const arrayBuffer = await response.arrayBuffer();
+          const base64Content = Buffer.from(arrayBuffer).toString('base64');
+          return {
+            ...form,
+            data: base64Content,
+          };
+        })
+    );
+  }
+
+  return { serviceRequest, observations, specimen, patient, interpreter, presentedFormAttachments };
 }
 
 /**
@@ -152,6 +194,7 @@ async function fetchRelatedResources(
  * @param specimen - The Specimen resource (optional)
  * @param patient - The Patient resource
  * @param interpreter - The ordering Practitioner (optional)
+ * @param presentedFormAttachments - The PDF attachments
  * @returns The HL7 ORU message
  */
 export function createOruMessage(
@@ -160,7 +203,8 @@ export function createOruMessage(
   observations: Observation[],
   specimen?: Specimen,
   patient?: Patient,
-  interpreter?: Practitioner
+  interpreter?: Practitioner,
+  presentedFormAttachments?: Attachment[]
 ): Hl7Message | undefined {
   if (!patient) {
     console.error('Patient resource is required for ORU message');
@@ -222,6 +266,16 @@ export function createOruMessage(
       });
     }
   });
+
+  // Add diagnostic report presented for as OBX segment, with base64 encoded contents
+  if (presentedFormAttachments) {
+    const obxIndex = observations.length;
+    presentedFormAttachments.map((form, index) => {
+        const segment = createObxPdfSegment(form, obxIndex + index + 1);
+        segments.push(segment);
+        return segment;
+      });
+  }
 
   return new Hl7Message(segments, context);
 }
@@ -666,4 +720,31 @@ function mapFhirStatusToHl7(status: string | undefined): string {
     default:
       return 'P'; // Default to preliminary
   }
+}
+
+/**
+ * Creates an OBX segment for a PDF attachment
+ * 
+ * @param form - The Attachment containing the PDF data or URL
+ * @param setId - The set ID for this observation
+ * @returns An HL7 OBX segment for the PDF
+ */
+function createObxPdfSegment(form: Attachment, setId: number): Hl7Segment {
+  let base64Content = '';
+  
+  if (form.data) {
+    // If data is directly provided, use it after removing data URL prefix
+    base64Content = form.data.replace(/^data:.*?;base64,/, '');
+  } else {
+    throw new Error('Parsed presentedForm attachments must have data');
+  }
+  
+  return new Hl7Segment([
+    'OBX', // OBX
+    setId.toString(), // Set ID
+    'ED', // Value Type (ED = Encapsulated Data)
+    'PDF^PDFBASE64', // Observation Identifier (PDF^PDFBASE64)
+    '1', // Observation Sub-ID
+    `${base64Content}`, // Observation Value (<content>)
+  ]);
 }

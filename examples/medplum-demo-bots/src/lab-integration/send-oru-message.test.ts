@@ -409,7 +409,7 @@ describe('Send ORU Message to Partner', () => {
     const specimen = ctx.specimen as Specimen;
     const orderer = ctx.orderer as Practitioner;
 
-    const oruMessage = createOruMessage(diagnosticReport, serviceRequest, observations, specimen, patient, orderer);
+    const oruMessage = await createOruMessage(diagnosticReport, serviceRequest, observations, specimen, patient, orderer);
 
     // Verify message exists
     expect(oruMessage).toBeDefined();
@@ -417,6 +417,263 @@ describe('Send ORU Message to Partner', () => {
     const messageString = oruMessage?.toString() || '';
 
     expect(messageString).toBe(TEST_MESSAGE);
+  });
+
+  test('Create ORU message with child observations', async (ctx: any) => {
+    const medplum = ctx.medplum as MedplumClient;
+    const patient = ctx.patient as Patient;
+    const serviceRequest = ctx.serviceRequest as ServiceRequest;
+    const specimen = ctx.specimen as Specimen;
+    const orderer = ctx.orderer as Practitioner;
+
+    // Create child observations
+    const childObs1 = await medplum.createResource({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient),
+      basedOn: [createReference(serviceRequest)],
+      specimen: createReference(specimen),
+      category: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+              code: 'laboratory',
+              display: 'Laboratory',
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            system: LOINC,
+            code: '2339-1',
+            display: 'Glucose Fasting',
+          },
+        ],
+        text: 'Glucose Fasting',
+      },
+      valueQuantity: {
+        value: 92,
+        unit: 'mg/dL',
+        system: UCUM,
+        code: 'mg/dL',
+      },
+      issued: '2023-04-16T10:00:00Z',
+    });
+
+    const childObs2 = await medplum.createResource({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient),
+      basedOn: [createReference(serviceRequest)],
+      specimen: createReference(specimen),
+      category: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+              code: 'laboratory',
+              display: 'Laboratory',
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            system: LOINC,
+            code: '2339-2',
+            display: 'Glucose Post-Meal',
+          },
+        ],
+        text: 'Glucose Post-Meal',
+      },
+      valueQuantity: {
+        value: 98,
+        unit: 'mg/dL',
+        system: UCUM,
+        code: 'mg/dL',
+      },
+      issued: '2023-04-16T10:00:00Z',
+    });
+
+    // Create parent observation with child observations
+    const parentObs = await medplum.createResource({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient),
+      basedOn: [createReference(serviceRequest)],
+      specimen: createReference(specimen),
+      category: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+              code: 'laboratory',
+              display: 'Laboratory',
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            system: LOINC,
+            code: '2339-0',
+            display: 'Glucose Panel',
+          },
+        ],
+        text: 'Glucose Panel',
+      },
+      hasMember: [createReference(childObs1), createReference(childObs2)],
+      issued: '2023-04-16T10:00:00Z',
+    });
+
+    // Create diagnostic report with parent observation
+    const diagnosticReport = await medplum.createResource({
+      resourceType: 'DiagnosticReport',
+      status: 'final',
+      code: {
+        coding: [
+          {
+            system: 'https://lab.medplum.com/orderCode',
+            code: 'PANEL-CHEM',
+            display: 'Comprehensive Chemistry Panel',
+          },
+        ],
+        text: 'Comprehensive Chemistry Panel',
+      },
+      subject: createReference(patient),
+      resultsInterpreter: [createReference(orderer)],
+      basedOn: [createReference(serviceRequest)],
+      specimen: [createReference(specimen)],
+      result: [createReference(parentObs)],
+      issued: '2023-04-16T10:30:00Z',
+      performer: [
+        {
+          display: 'MEDPLUM_LAB',
+        },
+      ],
+    });
+
+    const oruMessage = createOruMessage(
+      diagnosticReport,
+      serviceRequest,
+      [parentObs, childObs1, childObs2],
+      specimen,
+      patient,
+      orderer
+    );
+
+    // Verify message exists
+    expect(oruMessage).toBeDefined();
+
+    const messageString = oruMessage?.toString() || '';
+
+    // Verify that both parent and child observations are in the message
+    expect(messageString).toContain('2339-0^Glucose Panel^http://loinc.org');
+    expect(messageString).toContain('2339-1^Glucose Fasting^http://loinc.org');
+    expect(messageString).toContain('2339-2^Glucose Post-Meal^http://loinc.org');
+  });
+
+  test('Create ORU message with PDF attachments', async (ctx: any) => {
+    const medplum = ctx.medplum as MedplumClient;
+    const patient = ctx.patient as Patient;
+    const serviceRequest = ctx.serviceRequest as ServiceRequest;
+    const specimen = ctx.specimen as Specimen;
+    const orderer = ctx.orderer as Practitioner;
+
+    // Create a simple observation
+    const observation = await medplum.createResource({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient),
+      basedOn: [createReference(serviceRequest)],
+      specimen: createReference(specimen),
+      category: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/observation-category',
+              code: 'laboratory',
+              display: 'Laboratory',
+            },
+          ],
+        },
+      ],
+      code: {
+        coding: [
+          {
+            system: LOINC,
+            code: '2339-0',
+            display: 'Glucose',
+          },
+        ],
+        text: 'Glucose',
+      },
+      valueQuantity: {
+        value: 95,
+        unit: 'mg/dL',
+        system: UCUM,
+        code: 'mg/dL',
+      },
+      issued: '2023-04-16T10:00:00Z',
+    });
+
+    // Create diagnostic report with PDF attachment
+    const diagnosticReport = await medplum.createResource({
+      resourceType: 'DiagnosticReport',
+      status: 'final',
+      code: {
+        coding: [
+          {
+            system: 'https://lab.medplum.com/orderCode',
+            code: 'PANEL-CHEM',
+            display: 'Comprehensive Chemistry Panel',
+          },
+        ],
+        text: 'Comprehensive Chemistry Panel',
+      },
+      subject: createReference(patient),
+      resultsInterpreter: [createReference(orderer)],
+      basedOn: [createReference(serviceRequest)],
+      specimen: [createReference(specimen)],
+      result: [createReference(observation)],
+      issued: '2023-04-16T10:30:00Z',
+      performer: [
+        {
+          display: 'MEDPLUM_LAB',
+        },
+      ],
+      presentedForm: [
+        {
+          contentType: 'application/pdf',
+          data: 'JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwog', // Sample base64 PDF content
+          title: 'DiagnosticReport-2011e7673174e366cfbb17b3.pdf'
+        }
+      ],
+    });
+
+    const oruMessage = createOruMessage(
+      diagnosticReport,
+      serviceRequest,
+      [observation],
+      specimen,
+      patient,
+      orderer,
+      diagnosticReport.presentedForm,
+    );
+
+    // Verify message exists
+    expect(oruMessage).toBeDefined();
+
+    const messageString = oruMessage?.toString() || '';
+
+    // Verify that both the observation and PDF attachment are in the message
+    expect(messageString).toContain('2339-0^Glucose^http://loinc.org');
+    expect(messageString).toContain('OBX|2|ED|PDF^PDFBASE64|1|JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwog');
   });
 
   test('Handle missing related resources', async (ctx: any) => {
