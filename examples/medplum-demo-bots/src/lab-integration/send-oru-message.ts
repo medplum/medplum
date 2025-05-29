@@ -171,8 +171,8 @@ async function fetchRelatedResources(
           if (!form.url) {
             throw new Error('PDF attachment must have either data or url');
           }
-          const response = await fetch(form.url);
-          const arrayBuffer = await response.arrayBuffer();
+          const binaryData = await medplum.download(form.url);
+          const arrayBuffer = await binaryData.arrayBuffer();
           const base64Content = Buffer.from(arrayBuffer).toString('base64');
           return {
             ...form,
@@ -733,8 +733,7 @@ function createObxPdfSegment(form: Attachment, setId: number): Hl7Segment {
   let base64Content = '';
   
   if (form.data) {
-    // If data is directly provided, use it after removing data URL prefix
-    base64Content = form.data.replace(/^data:.*?;base64,/, '');
+    base64Content = form.data;
   } else {
     throw new Error('Parsed presentedForm attachments must have data');
   }
