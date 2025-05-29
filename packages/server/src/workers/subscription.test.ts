@@ -81,6 +81,7 @@ describe('Subscription Worker', () => {
       extendedMode: true,
       projects: [botProjectDetails.project.id],
       author: createReference(botProjectDetails.client),
+      currentProject: botProjectDetails.project,
     });
 
     mockLambdaClient = mockClient(LambdaClient);
