@@ -233,21 +233,8 @@ export async function addSubscriptionJobs(
   const ctx = tryGetRequestContext();
   const logger = getLogger();
   const logFn = options?.verbose ? logger.info : logger.debug;
-  const systemRepo = getSystemRepo();
-  let project: WithId<Project> | undefined;
-  try {
-    const projectId = resource.meta?.project;
-    if (projectId) {
-      project = await systemRepo.readResource<Project>('Project', projectId);
-    }
-  } catch (err: unknown) {
-    const resourceReference = getReferenceString(resource);
-    globalLogger.error(`[Subscription]: No project found for '${resourceReference}' -- something is very wrong.`, {
-      error: err,
-      resource: resourceReference,
-    });
-    return;
-  }
+
+  const project = context?.project;
   if (!project) {
     return;
   }

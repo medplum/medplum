@@ -72,6 +72,7 @@ import { getConfig } from '../config/loader';
 import { r4ProjectId } from '../constants';
 import { tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { FhirRateLimiter } from '../fhirquota';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
@@ -155,7 +156,7 @@ export interface RepositoryContext {
   projects?: string[];
 
   /** Current Project of the authenticated user, or none for the system repository. */
-  currentProject?: Project;
+  currentProject?: WithId<Project>;
 
   /**
    * Optional compartment restriction.
@@ -267,12 +268,36 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.mode = mode;
   }
 
-  currentProject(): Project | undefined {
+  rateLimiter(): FhirRateLimiter | undefined {
+    if (this.isSuperAdmin()) {
+      return undefined;
+    }
+    return tryGetRequestContext()?.fhirRateLimiter;
+  }
+
+  currentProject(): WithId<Project> | undefined {
     return this.context.currentProject;
   }
 
+  /**
+   * Returns a project by ID.
+   * This handles the common case where the project ID is the same as the current project ID,
+   * but also supports the super admin case where the project ID is different.
+   * @param projectId - The project ID to look up.
+   * @returns The project, or undefined if not found.
+   */
+  private async getProjectById(projectId: string | undefined): Promise<WithId<Project> | undefined> {
+    if (!projectId) {
+      return undefined;
+    }
+    if (projectId === this.context.currentProject?.id) {
+      return this.context.currentProject;
+    }
+    return getSystemRepo().readResource<Project>('Project', projectId);
+  }
+
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
+    await this.rateLimiter()?.recordWrite();
 
     const resourceWithId = {
       ...resource,
@@ -303,7 +328,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     options?: ReadResourceOptions
   ): Promise<WithId<T>> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordRead();
+    await this.rateLimiter()?.recordRead();
 
     const startTime = Date.now();
     try {
@@ -391,7 +416,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(T | Error)[]> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordRead(references.length);
+    await this.rateLimiter()?.recordRead(references.length);
     const cacheEntries = await this.getCacheEntries(references);
     const result: (T | Error)[] = new Array(references.length);
 
@@ -477,7 +502,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns Operation outcome and a history bundle.
    */
   async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string, limit = 100): Promise<Bundle<T>> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordHistory();
+    await this.rateLimiter()?.recordHistory();
     const startTime = Date.now();
     try {
       let resource: T | undefined = undefined;
@@ -550,7 +575,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordRead();
+    await this.rateLimiter()?.recordRead();
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
     try {
@@ -588,7 +613,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
+    await this.rateLimiter()?.recordWrite();
 
     const startTime = Date.now();
     try {
@@ -695,7 +720,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.handleStorage(result, create);
     await this.postCommit(async () => {
       await this.handleBinaryUpdate(existing, result);
-      await addBackgroundJobs(result, existing, { interaction: create ? 'create' : 'update' });
+      await addBackgroundJobs(result, existing, {
+        project: await this.getProjectById(result.meta?.project),
+        interaction: create ? 'create' : 'update',
+      });
     });
 
     const output = deepClone(result);
@@ -1034,11 +1062,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       previousVersion = history.entry?.[1]?.resource;
     }
 
-    return addSubscriptionJobs(resource, previousVersion, { interaction }, options);
+    return addSubscriptionJobs(
+      resource,
+      previousVersion,
+      {
+        project: await this.getProjectById(resource.meta?.project),
+        interaction,
+      },
+      options
+    );
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
+    await this.rateLimiter()?.recordWrite();
 
     const startTime = Date.now();
     let resource: WithId<T>;
@@ -1094,7 +1130,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
       });
 
-      await addSubscriptionJobs(resource, resource, { interaction: 'delete' });
+      await addSubscriptionJobs(resource, resource, {
+        project: await this.getProjectById(resource.meta?.project),
+        interaction: 'delete',
+      });
     } catch (err) {
       const durationMs = Date.now() - startTime;
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err, {
@@ -1111,7 +1150,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     patch: Operation[],
     options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordWrite();
+    await this.rateLimiter()?.recordWrite();
 
     const startTime = Date.now();
     try {
@@ -1212,7 +1251,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchRequest: SearchRequest<T>,
     options?: SearchOptions
   ): Promise<Bundle<WithId<T>>> {
-    await tryGetRequestContext()?.fhirRateLimiter?.recordSearch();
+    await this.rateLimiter()?.recordSearch();
 
     const startTime = Date.now();
     try {
