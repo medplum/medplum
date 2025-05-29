@@ -7,9 +7,8 @@ fi
 
 # Only build app if APP_DOCKERHUB_REPOSITORY was passed
 if [[ -z "${APP_DOCKERHUB_REPOSITORY}" ]]; then
-  echo "APP_DOCKERHUB_REPOSITORY env var not configured. Skipping..."
-  # Don't fail if no APP_DOCKERHUB_REPOSITORY present
-  exit 0
+  echo "APP_DOCKERHUB_REPOSITORY is missing"
+  exit 1
 fi
 
 # Fail on error
