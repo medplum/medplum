@@ -9,11 +9,7 @@ export const CPT = 'http://www.ama-assn.org/go/cpt';
  * @param chargeItem - Current charge item
  * @returns Promise with updated charge items
  */
-export async function applyChargeItemDefinition(
-  medplum: MedplumClient,
-  chargeItem: ChargeItem
-): Promise<ChargeItem> {
- 
+export async function applyChargeItemDefinition(medplum: MedplumClient, chargeItem: ChargeItem): Promise<ChargeItem> {
   if (!chargeItem.definitionCanonical || chargeItem.definitionCanonical.length === 0) {
     return chargeItem;
   }
@@ -52,7 +48,9 @@ export async function getChargeItemsForEncounter(medplum: MedplumClient, encount
   }
 
   const chargeItems = await medplum.searchResources('ChargeItem', `context=${getReferenceString(encounter)}`);
-  const updatedChargeItems = await Promise.all(chargeItems.map(chargeItem => applyChargeItemDefinition(medplum, chargeItem)));
+  const updatedChargeItems = await Promise.all(
+    chargeItems.map((chargeItem) => applyChargeItemDefinition(medplum, chargeItem))
+  );
   return updatedChargeItems;
 }
 

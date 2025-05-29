@@ -21,7 +21,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
   const [modifierExtensionValue, setModifierExtensionValue] = useState<CodeableConcept | undefined>();
   const [cptCodes, setCptCodes] = useState<CodeableConcept>();
   const [price, setPrice] = useState<Money | undefined>();
-  
+
   useEffect(() => {
     setPrice(chargeItem.priceOverride);
     setModifierExtensionValue(getModifierExtension(chargeItem));
@@ -32,8 +32,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
 
   const updateCptCodes = (value: CodeableConcept | undefined): void => {
     const updatedChargeItem = { ...chargeItem };
-    const existingNonCptCodes =
-      chargeItem.code?.coding?.filter((coding) => coding.system !== CPT_CODE_SYSTEM) ?? [];
+    const existingNonCptCodes = chargeItem.code?.coding?.filter((coding) => coding.system !== CPT_CODE_SYSTEM) ?? [];
     updatedChargeItem.code = {
       ...(value ?? {}),
       coding: [...(value?.coding ?? []), ...existingNonCptCodes],
@@ -67,7 +66,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
     await medplum.updateResource(updatedChargeItem);
     const appliedChargeItem = await applyChargeItemDefinition(medplum, updatedChargeItem);
     onChange(appliedChargeItem);
-  }
+  };
 
   const deleteChargeItem = async (): Promise<void> => {
     await medplum.deleteResource('ChargeItem', chargeItem.id as string);
@@ -141,10 +140,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
             <Text size="sm" fw={500} mb={8}>
               Calculated Price
             </Text>
-            <TextInput
-              value={price?.value ? `$${price.value.toFixed(2)}` : 'N/A'}
-              readOnly
-            />
+            <TextInput value={price?.value ? `$${price.value.toFixed(2)}` : 'N/A'} readOnly />
           </Grid.Col>
         </Grid>
       </Stack>
