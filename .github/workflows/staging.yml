@@ -53,26 +53,12 @@ jobs:
         uses: docker/setup-buildx-action@v2
 
       - name: Build App Docker Image
-        run: |
-          set -e
-          set -x
-
-          # We create a subshell for the build since we need to set the env vars to our placeholders for the Docker build
-          # We will replace the placeholders later with our actual env vars in deploy-app.sh
-          (
-            export BASE_URL="__MEDPLUM_BASE_URL__"
-            export CLIENT_ID="__MEDPLUM_CLIENT_ID__"
-            export REGISTER_ENABLED="__MEDPLUM_REGISTER_ENABLED__"
-            export AWS_TEXTRACT_ENABLED="__MEDPLUM_AWS_TEXTRACT_ENABLED__"
-            export GOOGLE_CLIENT_ID="__GOOGLE_CLIENT_ID__"
-            export RECAPTCHA_SITE_KEY="__RECAPTCHA_SITE_KEY__"
-            npm run build -- --force --filter=@medplum/app
-          )
-          source ./scripts/build-docker-app.sh
+        run: ./scripts/build-docker-app.sh
         env:
+          # TODO: Un-hardcode
           APP_DOCKERHUB_REPOSITORY: 'medplum/medplum-app-staging'
 
-      - name: Build App Docker
+      - name: Deploy App
         run: ./scripts/deploy-app.sh
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
