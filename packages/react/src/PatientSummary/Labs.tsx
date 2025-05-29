@@ -29,28 +29,24 @@ export function Labs(props: LabsProps): JSX.Element {
   // Collect requisition numbers with a completed ServiceRequest
   const completedRequisitionNumbers = new Set(
     serviceRequests
-      .filter(req => req.status === 'completed' && req.requisition?.value)
-      .map(req => req.requisition?.value)
+      .filter((req) => req.status === 'completed' && req.requisition?.value)
+      .map((req) => req.requisition?.value)
   );
 
   console.log('Completed requisition numbers:', Array.from(completedRequisitionNumbers));
 
   // Filter out ServiceRequests with completed, draft, entered-in-error, or completed requisition numbers
   const filteredServiceRequests = serviceRequests
-    .filter(request => {
+    .filter((request) => {
       const requisitionNumber = request.requisition?.value;
       console.log('Checking request:', {
         id: request.id,
         status: request.status,
         requisitionNumber,
-        isCompletedRequisition: requisitionNumber ? completedRequisitionNumbers.has(requisitionNumber) : false
+        isCompletedRequisition: requisitionNumber ? completedRequisitionNumbers.has(requisitionNumber) : false,
       });
 
-      if (
-        request.status === 'completed' ||
-        request.status === 'draft' ||
-        request.status === 'entered-in-error'
-      ) {
+      if (request.status === 'completed' || request.status === 'draft' || request.status === 'entered-in-error') {
         return false;
       }
       if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
@@ -62,8 +58,8 @@ export function Labs(props: LabsProps): JSX.Element {
       // If this request is based on another request
       if (current.basedOn?.[0]?.reference) {
         const basedOnId = current.basedOn[0].reference.split('/')[1];
-        const existingIndex = acc.findIndex(req => req.id === basedOnId);
-        
+        const existingIndex = acc.findIndex((req) => req.id === basedOnId);
+
         if (existingIndex !== -1) {
           // Replace the older version with the newer one
           acc[existingIndex] = current;
@@ -115,10 +111,7 @@ export function Labs(props: LabsProps): JSX.Element {
       >
         <Flex direction="column" gap={8}>
           {filteredServiceRequests.map((serviceRequest) => (
-            <SummaryItem
-              key={serviceRequest.id}
-              onClick={() => handleServiceRequestClick(serviceRequest)}
-            >
+            <SummaryItem key={serviceRequest.id} onClick={() => handleServiceRequestClick(serviceRequest)}>
               <Box>
                 <Text fw={500} className={styles.itemText}>
                   {getDisplayString(serviceRequest)}
@@ -140,21 +133,14 @@ export function Labs(props: LabsProps): JSX.Element {
           ))}
 
           {diagnosticReports.map((report) => (
-            <SummaryItem
-              key={report.id}
-              onClick={() => handleDiagnosticReportClick(report)}
-            >
+            <SummaryItem key={report.id} onClick={() => handleDiagnosticReportClick(report)}>
               <Box>
                 <Text fw={500} className={styles.itemText}>
                   {report.basedOn?.[0]?.display || report.code?.coding?.[0]?.display || 'Diagnostic Report'}
                 </Text>
                 <Group mt={2} gap={4}>
                   {report.status && (
-                    <StatusBadge
-                      color={getStatusColor(report.status)}
-                      variant="light"
-                      status={report.status}
-                    />
+                    <StatusBadge color={getStatusColor(report.status)} variant="light" status={report.status} />
                   )}
                   <Text size="xs" fw={500} c="dimmed">
                     {formatDate(report.issued)}
@@ -164,9 +150,7 @@ export function Labs(props: LabsProps): JSX.Element {
             </SummaryItem>
           ))}
 
-          {filteredServiceRequests.length === 0 && diagnosticReports.length === 0 && (
-            <Text>(none)</Text>
-          )}
+          {filteredServiceRequests.length === 0 && diagnosticReports.length === 0 && <Text>(none)</Text>}
         </Flex>
       </CollapsibleSection>
       <Modal opened={opened} onClose={close} title={editServiceRequest ? 'Edit Lab Order' : 'Add Lab Order'}>
@@ -179,4 +163,4 @@ export function Labs(props: LabsProps): JSX.Element {
       />
     </>
   );
-} 
+}
