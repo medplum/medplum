@@ -1,4 +1,4 @@
-import { Alert, Box, Button, Grid, Group, Textarea, Title } from '@mantine/core';
+import { Title, Group, Box, Textarea, Button, Alert, Grid } from '@mantine/core';
 import { ValueSet } from '@medplum/fhirtypes';
 import { CodingInput, Document, ResourceInput, ResourceName, useMedplum } from '@medplum/react';
 import { JSX, useState } from 'react';
@@ -53,7 +53,7 @@ export function HomePage(): JSX.Element {
     setSuccessMessage(undefined);
   };
 
-  const handleCreateValueSet = async (): Promise<void> => {
+  const handleCreateOrUpdateValueSet = async (): Promise<void> => {
     try {
       setError(undefined);
       setSuccessMessage(undefined);
@@ -67,22 +67,89 @@ export function HomePage(): JSX.Element {
       });
 
       if (existingValueSet.entry?.[0]?.resource) {
-        setError(`A ValueSet with URL "${valueSetData.url}" already exists`);
-        return;
+        // Update the existing ValueSet
+        valueSetData.id = existingValueSet.entry[0].resource.id;
+        await medplum.updateResource(valueSetData as ValueSet);
+        setSuccessMessage('ValueSet updated successfully');
+      } else {
+        // Create the ValueSet resource
+        await medplum.createResource(valueSetData as ValueSet);
+        setSuccessMessage('ValueSet created successfully');
       }
-
-      // Create the ValueSet resource
-      const newValueSet = await medplum.createResource(valueSetData as ValueSet);
-      setSuccessMessage('ValueSet created successfully');
 
       // Update the search if the current search term matches the new ValueSet's URL
       if (searchTerm === valueSetData.url) {
-        setCurrentValueSet(newValueSet);
+        setCurrentValueSet(valueSetData);
         setSelectedValueSet(valueSetData.url);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create ValueSet');
+      setError(err instanceof Error ? err.message : 'Failed to create or update ValueSet');
     }
+  };
+
+  const handleAddCode = (): void => {
+    if (!selectedCode) {
+      return;
+    }
+
+    try {
+      const valueSet = JSON.parse(customValueSet);
+
+      // Ensure compose.include exists
+      if (!valueSet.compose) {
+        valueSet.compose = { include: [] };
+      }
+      if (!valueSet.compose.include) {
+        valueSet.compose.include = [];
+      }
+
+      // Ensure expansion.exists and contains is an array
+      if (!valueSet.expansion) {
+        valueSet.expansion = { contains: [] };
+      }
+      if (!valueSet.expansion.contains) {
+        valueSet.expansion.contains = [];
+      }
+
+      // Set expansion.timestamp
+      valueSet.expansion.timestamp = new Date().toISOString();
+
+      // Check if code already exists
+      const exists = valueSet.expansion.contains.some(
+        (item: any) => item.system === selectedCode.system && item.code === selectedCode.code
+      );
+
+      if (!exists) {
+        valueSet.expansion.contains.push({
+          system: selectedCode.system,
+          code: selectedCode.code,
+          display: selectedCode.display,
+        });
+        // Remove compose if include is empty
+        if (valueSet.compose && Array.isArray(valueSet.compose.include) && valueSet.compose.include.length === 0) {
+          delete valueSet.compose;
+        }
+        setCustomValueSet(JSON.stringify(valueSet, null, 2));
+        setSuccessMessage('Code added to ValueSet');
+      } else {
+        setError('Code already exists in ValueSet');
+      }
+    } catch (_err) {
+      setError('Failed to add code to ValueSet');
+    }
+  };
+
+  const clearValueSet = (): void => {
+    const cleared = {
+      resourceType: 'ValueSet',
+      url: 'http://example.org/fhir/ValueSet/custom',
+      name: 'CustomValueSet',
+      title: 'Custom Value Set',
+      status: 'active',
+      // no compose property
+    };
+    setCustomValueSet(JSON.stringify(cleared, null, 2));
+    setSuccessMessage('ValueSet cleared');
   };
 
   return (
@@ -171,6 +238,9 @@ export function HomePage(): JSX.Element {
                   >
                     {JSON.stringify(selectedCode, null, 2)}
                   </pre>
+                  <Button mt="md" onClick={handleAddCode}>
+                    Add to Custom ValueSet
+                  </Button>
                 </Box>
               )}
             </Box>
@@ -178,10 +248,23 @@ export function HomePage(): JSX.Element {
         </Grid.Col>
 
         <Grid.Col span={6}>
-          <Title order={2}>Create Custom ValueSet</Title>
+          <Title order={2}>Create/Update ValueSet</Title>
           <p style={{ marginBottom: '1rem' }}>
             Define your own ValueSet by editing the JSON below. The example shows a ValueSet for RxNorm branded drugs.
           </p>
+          <Box mb="md">
+            <ResourceInput<ValueSet>
+              resourceType="ValueSet"
+              name="valueset-name"
+              label="ValueSet Name"
+              placeholder="Type to search ValueSet names..."
+              onChange={async (valueSet) => {
+                if (valueSet) {
+                  setCustomValueSet(JSON.stringify(valueSet, null, 2));
+                }
+              }}
+            />
+          </Box>
           <Textarea
             label="Custom ValueSet (JSON)"
             placeholder="Enter custom ValueSet JSON..."
@@ -198,7 +281,12 @@ export function HomePage(): JSX.Element {
             }}
           />
           <Box mt="md">
-            <Button onClick={handleCreateValueSet}>Create ValueSet</Button>
+            <Group>
+              <Button onClick={handleCreateOrUpdateValueSet}>Create/Update ValueSet</Button>
+              <Button variant="outline" onClick={clearValueSet}>
+                Clear ValueSet
+              </Button>
+            </Group>
           </Box>
           {successMessage && (
             <Alert color="green" mt="md">

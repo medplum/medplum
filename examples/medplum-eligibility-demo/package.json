@@ -46,5 +46,9 @@
     "rimraf": "6.0.1",
     "typescript": "5.8.3",
     "vite": "6.3.5"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
