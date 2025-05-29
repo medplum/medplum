@@ -35,16 +35,17 @@ const FACILITY_PATIENT_ID = new URL('patientId', FACILITY_URL).toString();
  * @param event - The BotEvent object
  * @returns The result of the operation
  */
-export async function handler(medplum: MedplumClient, event: BotEvent<DiagnosticReport>): Promise<Hl7Message | undefined> {
+export async function handler(
+  medplum: MedplumClient,
+  event: BotEvent<DiagnosticReport>
+): Promise<Hl7Message | undefined> {
   try {
     // The event input is a DiagnosticReport
     const diagnosticReport = event.input;
 
     // Get the related resources
-    const { serviceRequest, observations, specimen, patient, interpreter, presentedFormAttachments } = await fetchRelatedResources(
-      diagnosticReport,
-      medplum
-    );
+    const { serviceRequest, observations, specimen, patient, interpreter, presentedFormAttachments } =
+      await fetchRelatedResources(diagnosticReport, medplum);
 
     if (!serviceRequest || !patient) {
       throw new Error('Could not find required resources for ORU message');
@@ -57,7 +58,15 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Diagnostic
     }
 
     // Create the ORU message
-    const oruMessage = createOruMessage(diagnosticReport, serviceRequest, observations, specimen, patient, interpreter, presentedFormAttachments);
+    const oruMessage = createOruMessage(
+      diagnosticReport,
+      serviceRequest,
+      observations,
+      specimen,
+      patient,
+      interpreter,
+      presentedFormAttachments
+    );
 
     return oruMessage;
   } catch (error: any) {
@@ -102,7 +111,7 @@ async function fetchRelatedResources(
         try {
           const obs = await medplum.readReference(obsRef as Reference<Observation>);
           observations.push(obs);
-          
+
           // If this observation has child observations, fetch them as well
           if (obs.hasMember && obs.hasMember.length > 0) {
             await Promise.all(
@@ -271,10 +280,10 @@ export function createOruMessage(
   if (presentedFormAttachments) {
     const obxIndex = observations.length;
     presentedFormAttachments.map((form, index) => {
-        const segment = createObxPdfSegment(form, obxIndex + index + 1);
-        segments.push(segment);
-        return segment;
-      });
+      const segment = createObxPdfSegment(form, obxIndex + index + 1);
+      segments.push(segment);
+      return segment;
+    });
   }
 
   return new Hl7Message(segments, context);
@@ -724,20 +733,20 @@ function mapFhirStatusToHl7(status: string | undefined): string {
 
 /**
  * Creates an OBX segment for a PDF attachment
- * 
+ *
  * @param form - The Attachment containing the PDF data or URL
  * @param setId - The set ID for this observation
  * @returns An HL7 OBX segment for the PDF
  */
 function createObxPdfSegment(form: Attachment, setId: number): Hl7Segment {
   let base64Content = '';
-  
+
   if (form.data) {
     base64Content = form.data;
   } else {
     throw new Error('Parsed presentedForm attachments must have data');
   }
-  
+
   return new Hl7Segment([
     'OBX', // OBX
     setId.toString(), // Set ID

@@ -409,7 +409,14 @@ describe('Send ORU Message to Partner', () => {
     const specimen = ctx.specimen as Specimen;
     const orderer = ctx.orderer as Practitioner;
 
-    const oruMessage = await createOruMessage(diagnosticReport, serviceRequest, observations, specimen, patient, orderer);
+    const oruMessage = await createOruMessage(
+      diagnosticReport,
+      serviceRequest,
+      observations,
+      specimen,
+      patient,
+      orderer
+    );
 
     // Verify message exists
     expect(oruMessage).toBeDefined();
@@ -651,8 +658,8 @@ describe('Send ORU Message to Partner', () => {
         {
           contentType: 'application/pdf',
           data: 'JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwog', // Sample base64 PDF content
-          title: 'DiagnosticReport-2011e7673174e366cfbb17b3.pdf'
-        }
+          title: 'DiagnosticReport-2011e7673174e366cfbb17b3.pdf',
+        },
       ],
     });
 
@@ -663,7 +670,7 @@ describe('Send ORU Message to Partner', () => {
       specimen,
       patient,
       orderer,
-      diagnosticReport.presentedForm,
+      diagnosticReport.presentedForm
     );
 
     // Verify message exists
@@ -673,7 +680,9 @@ describe('Send ORU Message to Partner', () => {
 
     // Verify that both the observation and PDF attachment are in the message
     expect(messageString).toContain('2339-0^Glucose^http://loinc.org');
-    expect(messageString).toContain('OBX|2|ED|PDF^PDFBASE64|1|JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwog');
+    expect(messageString).toContain(
+      'OBX|2|ED|PDF^PDFBASE64|1|JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwog'
+    );
   });
 
   test('Handle missing related resources', async (ctx: any) => {
