@@ -1,11 +1,14 @@
-import { Anchor, Grid, Group, Modal, Text } from '@mantine/core';
+import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { formatDate, getDisplayString } from '@medplum/core';
 import { Condition, Encounter, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { Fragment, JSX, useCallback, useState } from 'react';
-import { killEvent } from '../utils/dom';
-import { ConceptBadge } from './ConceptBadge';
+import { JSX, useCallback, useState } from 'react';
+import { StatusBadge } from '../StatusBadge/StatusBadge';
+import { CollapsibleSection } from './CollapsibleSection';
 import { ConditionDialog } from './ConditionDialog';
+import SummaryItem from './SummaryItem';
+import styles from './SummaryItem.module.css';
 
 export interface ProblemListProps {
   readonly patient: Patient;
@@ -17,7 +20,9 @@ export interface ProblemListProps {
 export function ProblemList(props: ProblemListProps): JSX.Element {
   const medplum = useMedplum();
   const { patient, encounter } = props;
-  const [problems, setProblems] = useState<Condition[]>(props.problems);
+  const [problems, setProblems] = useState<Condition[]>(
+    props.problems.filter((c) => c.verificationStatus?.coding?.[0]?.code !== 'entered-in-error')
+  );
   const [editCondition, setEditCondition] = useState<Condition>();
   const [opened, { open, close }] = useDisclosure(false);
 
@@ -28,7 +33,7 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
         setProblems(problems.map((p) => (p.id === updatedCondition.id ? updatedCondition : p)));
       } else {
         const newCondition = await medplum.createResource(condition);
-        setProblems([...problems, newCondition]);
+        setProblems([newCondition, ...problems]);
       }
       setEditCondition(undefined);
       close();
@@ -38,46 +43,72 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
 
   return (
     <>
-      <Group justify="space-between">
-        <Text fz="md" fw={700}>
-          Problem List
-        </Text>
-        <Anchor
-          component="button"
-          onClick={(e) => {
-            killEvent(e);
-            setEditCondition(undefined);
-            open();
-          }}
-        >
-          + Add
-        </Anchor>
-      </Group>
-      {problems.length > 0 ? (
-        <Grid gutter="xs">
-          {problems.map((problem) => (
-            <Fragment key={problem.id}>
-              <Grid.Col span={2}>{problem.onsetDateTime?.substring(0, 4)}</Grid.Col>
-              <Grid.Col span={10}>
-                <ConceptBadge<Condition>
-                  key={problem.id}
-                  resource={problem}
-                  onClick={props.onClickResource}
-                  onEdit={(c) => {
-                    setEditCondition(c);
-                    open();
-                  }}
-                />
-              </Grid.Col>
-            </Fragment>
-          ))}
-        </Grid>
-      ) : (
-        <Text>(none)</Text>
-      )}
+      <CollapsibleSection
+        title="Problems"
+        onAdd={() => {
+          setEditCondition(undefined);
+          open();
+        }}
+      >
+        {problems.length > 0 ? (
+          <Flex direction="column" gap={8}>
+            {problems.map((problem) => (
+              <SummaryItem
+                key={problem.id}
+                onClick={() => {
+                  setEditCondition(problem);
+                  open();
+                }}
+              >
+                <Box>
+                  <Text fw={500} className={styles.itemText}>
+                    {getDisplayString(problem)}
+                  </Text>
+                  <Group mt={2} gap={4}>
+                    {problem.clinicalStatus?.coding?.[0]?.code && (
+                      <StatusBadge
+                        data-testid="status-badge"
+                        color={getStatusColor(problem.clinicalStatus?.coding?.[0]?.code)}
+                        variant="light"
+                        status={problem.clinicalStatus?.coding?.[0]?.code}
+                      />
+                    )}
+                    <Text size="xs" fw={500} c="dimmed">
+                      {formatDate(problem.onsetDateTime)}
+                    </Text>
+                  </Group>
+                </Box>
+              </SummaryItem>
+            ))}
+          </Flex>
+        ) : (
+          <Text>(none)</Text>
+        )}
+      </CollapsibleSection>
       <Modal opened={opened} onClose={close} title={editCondition ? 'Edit Problem' : 'Add Problem'}>
         <ConditionDialog patient={patient} encounter={encounter} condition={editCondition} onSubmit={handleSubmit} />
       </Modal>
     </>
   );
 }
+
+const getStatusColor = (status?: string): string => {
+  if (!status) {
+    return 'gray';
+  }
+
+  switch (status) {
+    case 'active':
+    case 'recurrence':
+    case 'relapse':
+      return 'green';
+    case 'inactive':
+      return 'orange';
+    case 'remission':
+      return 'blue';
+    case 'resolved':
+      return 'teal';
+    default:
+      return 'gray';
+  }
+};

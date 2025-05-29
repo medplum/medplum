@@ -1,5 +1,6 @@
-import { ActionIcon, Box, Button, Flex, Group, Menu, Paper, SegmentedControl, Text } from '@mantine/core';
-import { Encounter, Practitioner } from '@medplum/fhirtypes';
+import { ActionIcon, Box, Button, Flex, Group, Menu, Paper, SegmentedControl, Stack, Text } from '@mantine/core';
+import { formatDate, formatHumanName } from '@medplum/core';
+import { Encounter, HumanName, Practitioner } from '@medplum/fhirtypes';
 import { IconChevronDown, IconLock, IconTrash } from '@tabler/icons-react';
 import { JSX, useState } from 'react';
 
@@ -11,7 +12,7 @@ interface EncounterHeaderProps {
 }
 
 export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
-  const { encounter, onStatusChange, onTabChange } = props;
+  const { encounter, practitioner, onStatusChange, onTabChange } = props;
   const [status, setStatus] = useState<Encounter['status']>(encounter.status);
   const [activeTab, setActiveTab] = useState<string>('notes');
 
@@ -35,14 +36,23 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     return 'blue';
   };
 
+  const practitionerName = practitioner?.name?.[0]
+    ? formatHumanName(practitioner.name[0] as HumanName)
+    : 'Unknown Provider';
+  const formattedDate = formatDate(encounter.period?.start);
+  const encounterDetail = formattedDate ? `${formattedDate} · ${practitionerName}` : practitionerName;
+
   return (
     <Paper shadow="sm" p={0}>
       <Flex justify="space-between" align="center" p="lg">
-        <Group gap="xs">
-          <Text fw={600} size="lg">
-            {encounter.serviceType?.coding?.[0]?.display || 'Visit'}
+        <Stack gap={0}>
+          <Text fw={800} size="lg">
+            {encounter.basedOn?.[0]?.display || 'Visit'}
           </Text>
-        </Group>
+          <Text fw={500} size="xs" c="dimmed">
+            {encounterDetail}
+          </Text>
+        </Stack>
         <Group>
           <ActionIcon
             variant={status === 'finished' ? 'filled' : 'subtle'}

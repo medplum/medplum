@@ -1,13 +1,12 @@
-import { Anchor, Grid, Group, Modal, SimpleGrid, Text, Textarea, TextInput, Tooltip } from '@mantine/core';
+import { Group, Modal, SimpleGrid, Stack, Text, Textarea, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { Fragment, JSX, useCallback, useState } from 'react';
+import { JSX, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
-import { killEvent } from '../utils/dom';
-import { ConceptBadge } from './ConceptBadge';
+import { CollapsibleSection } from './CollapsibleSection';
 import {
   createCompoundObservation,
   createLoincCode,
@@ -150,7 +149,6 @@ export function Vitals(props: VitalsProps): JSX.Element {
         );
       }
 
-      // Execute all create requests in parallel to take advantage of autobatching
       Promise.all(newObservations.filter(Boolean).map((obs) => medplum.createResource<Observation>(obs as Observation)))
         .then((newVitals) => setVitals([...newVitals, ...vitals]))
         .catch(console.error);
@@ -162,46 +160,25 @@ export function Vitals(props: VitalsProps): JSX.Element {
 
   return (
     <>
-      <Group justify="space-between">
-        <Text fz="md" fw={700}>
-          Vitals
-        </Text>
-        <Anchor
-          href="#"
-          onClick={(e) => {
-            killEvent(e);
-            open();
-          }}
-        >
-          + Add
-        </Anchor>
-      </Group>
-      <Grid align="center">
-        {LOINC_CODES.map((meta) => {
-          const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
-          return (
-            <Fragment key={meta.name}>
-              <Grid.Col span={2} ta="right">
-                <Tooltip label={meta.title}>
-                  <Text c="dimmed" size="xs">
-                    {meta.short}
-                  </Text>
-                </Tooltip>
-              </Grid.Col>
-              <Grid.Col span={4} p={1}>
-                {obs && (
-                  <ConceptBadge<Observation>
-                    key={meta.name}
-                    resource={obs}
-                    display={formatQuantity(getObservationValue(obs, meta.component))}
-                    onClick={props.onClickResource}
-                  />
-                )}
-              </Grid.Col>
-            </Fragment>
-          );
-        })}
-      </Grid>
+      <CollapsibleSection
+        title="Vitals"
+        onAdd={() => {
+          open();
+        }}
+      >
+        <Stack>
+          {LOINC_CODES.map((meta) => {
+            const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
+            return (
+              <Group align="center" key={meta.name}>
+                <Text c="dimmed">{meta.short}</Text>
+                {obs && <Text>{formatQuantity(getObservationValue(obs, meta.component))}</Text>}
+              </Group>
+            );
+          })}
+        </Stack>
+      </CollapsibleSection>
+
       <Modal opened={opened} onClose={close} title="Add Vitals">
         <Form onSubmit={handleSubmit}>
           <SimpleGrid cols={2}>
