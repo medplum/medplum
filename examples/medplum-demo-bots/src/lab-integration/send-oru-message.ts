@@ -34,8 +34,10 @@ const FACILITY_PATIENT_ID = new URL('patientId', FACILITY_URL).toString();
  * @param event - The BotEvent object
  * @returns The result of the operation
  */
-export async function handler(medplum: MedplumClient, event: BotEvent<DiagnosticReport>): Promise<Hl7Message | undefined> {
-
+export async function handler(
+  medplum: MedplumClient,
+  event: BotEvent<DiagnosticReport>
+): Promise<Hl7Message | undefined> {
   try {
     // The event input is a DiagnosticReport
     const diagnosticReport = event.input;

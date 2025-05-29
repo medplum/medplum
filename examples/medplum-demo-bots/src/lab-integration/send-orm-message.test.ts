@@ -131,12 +131,14 @@ describe('Send to Partner Lab', () => {
     vi.setSystemTime(new Date('2023-02-10T09:25:00Z'));
 
     // Test with missing patient
-    expect(() => createOrmMessage(serviceRequest, undefined as unknown as Patient, ctx.specimen as Specimen))
-      .toThrow('Patient is required');
+    expect(() => createOrmMessage(serviceRequest, undefined as unknown as Patient, ctx.specimen as Specimen)).toThrow(
+      'Patient is required'
+    );
 
     // Test with missing specimen
-    expect(() => createOrmMessage(serviceRequest, ctx.patient as Patient, undefined as unknown as Specimen))
-      .toThrow('Specimen is required');
+    expect(() => createOrmMessage(serviceRequest, ctx.patient as Patient, undefined as unknown as Specimen)).toThrow(
+      'Specimen is required'
+    );
   });
 });
 
