@@ -55,8 +55,7 @@ jobs:
       - name: Build App Docker Image
         run: ./scripts/build-docker-app.sh
         env:
-          # TODO: Un-hardcode
-          APP_DOCKERHUB_REPOSITORY: 'medplum/medplum-app-staging'
+          APP_DOCKERHUB_REPOSITORY: ${{ secrets.STAGING_APP_DOCKERHUB_REPOSITORY }}
 
       - name: Deploy App
         run: ./scripts/deploy-app.sh
