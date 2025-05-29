@@ -14,6 +14,7 @@ const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
     '@medplum/react$': path.resolve(__dirname, '../../packages/react/src'),
     '@medplum/react/styles.css': path.resolve(__dirname, '../../packages/react/dist/styles.css'),
     '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),
+    '@medplum/patient-summary': path.resolve(__dirname, '../../packages/patient-summary/src'),
   }).filter(([, relPath]) => existsSync(relPath))
 );
 

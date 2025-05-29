@@ -1,12 +1,21 @@
 .table {
   border: 0.1px solid var(--mantine-color-gray-5);
   border-collapse: collapse;
+  table-layout: auto;
 
   & td,
   & th {
     border: 0.1px solid var(--mantine-color-gray-5);
     padding: 4px;
   }
+}
+
+.statusCell {
+  white-space: nowrap;
+  min-width: 80px;
+  max-width: 1%;
+  width: 1%;
+  overflow: visible;
 }
 
 .criticalRow {
