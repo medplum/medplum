@@ -16,10 +16,6 @@
         "RECAPTCHA_SITE_KEY"
       ]
     },
-    "dev": {
-      "cache": false,
-      "persistent": true
-    },
     "test": {
       "dependsOn": ["build"],
       "outputs": ["coverage/**"],
