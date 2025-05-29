@@ -35,6 +35,7 @@ import {
   forbidden,
   notFound,
   serverError,
+  tooManyRequests,
   unauthorized,
   unauthorizedTokenAudience,
   unauthorizedTokenExpired,
@@ -2994,7 +2995,44 @@ describe('Client', () => {
     jest.useRealTimers();
 
     expect(patientPromise.isOk()).toBe(true);
+    await patientPromise;
     expect(fetch).toHaveBeenCalledTimes(2);
+  });
+
+  test('Skip long retry delay', async () => {
+    jest.useFakeTimers();
+    let count = 0;
+
+    const fetch = jest.fn(async (): Promise<Partial<Response>> => {
+      if (count === 0) {
+        count++;
+        return {
+          status: 429,
+          headers: new Headers({ ratelimit: '"requests",r=0,t=30; "fhirInteractions",r=12,t=30' }),
+          text: jest.fn().mockReturnValue(tooManyRequests),
+        };
+      }
+      return {
+        status: 200,
+        headers: new Headers({ 'content-type': ContentType.FHIR_JSON }),
+        json: async () => ({ resourceType: 'Patient' }),
+      };
+    });
+
+    const client = new MedplumClient({ fetch });
+
+    let err: Error | undefined;
+    const patientPromise = client.readResource('Patient', '123').catch((e) => {
+      err = e;
+    });
+
+    // Promise should resolve immediately without delay
+    await jest.advanceTimersByTimeAsync(0);
+    await expect(err).toStrictEqual(new OperationOutcomeError(tooManyRequests));
+    jest.useRealTimers();
+
+    await patientPromise;
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   test('Dispatch on bad connection', async () => {
