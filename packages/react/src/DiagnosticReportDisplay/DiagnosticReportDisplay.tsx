@@ -65,11 +65,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
   return (
     <Stack>
       <Title fw={800}>
-        {diagnosticReport.code ? (
-          <CodeableConceptDisplay value={diagnosticReport.code} />
-        ) : (
-          'Diagnostic Report'
-        )}
+        {diagnosticReport.code ? <CodeableConceptDisplay value={diagnosticReport.code} /> : 'Diagnostic Report'}
       </Title>
       <DiagnosticReportHeader value={diagnosticReport} />
       {specimens && !props.hideSpecimenInfo && SpecimenInfo(specimens)}

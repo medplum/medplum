@@ -1,9 +1,9 @@
-import { Modal, Group, Tooltip, ActionIcon, Flex, Text } from '@mantine/core';
+import { ActionIcon, Flex, Group, Modal, Text, Tooltip } from '@mantine/core';
 import { DiagnosticReport } from '@medplum/fhirtypes';
-import { JSX } from 'react';
-import { IconStackForward, IconX } from '@tabler/icons-react';
-import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { useMedplumNavigate } from '@medplum/react-hooks';
+import { IconStackForward, IconX } from '@tabler/icons-react';
+import { JSX } from 'react';
+import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 
 export interface DiagnosticReportDialogProps {
   readonly diagnosticReport?: DiagnosticReport;
@@ -47,12 +47,7 @@ export function DiagnosticReportDialog(props: DiagnosticReportDialogProps): JSX.
               </ActionIcon>
             </Tooltip>
           )}
-          <ActionIcon
-            onClick={onClose}
-            variant="subtle"
-            color="gray"
-            aria-label="Close"
-          >
+          <ActionIcon onClick={onClose} variant="subtle" color="gray" aria-label="Close">
             <IconX size={22} />
           </ActionIcon>
         </Group>
@@ -60,4 +55,4 @@ export function DiagnosticReportDialog(props: DiagnosticReportDialogProps): JSX.
       {diagnosticReport && <DiagnosticReportDisplay value={diagnosticReport} />}
     </Modal>
   );
-} 
+}
