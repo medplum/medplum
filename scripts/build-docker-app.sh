@@ -5,12 +5,6 @@ if [[ -z "${GITHUB_SHA}" ]]; then
   exit 1
 fi
 
-# Only build app if APP_DOCKERHUB_REPOSITORY was passed
-if [[ -z "${APP_DOCKERHUB_REPOSITORY}" ]]; then
-  echo "APP_DOCKERHUB_REPOSITORY is missing"
-  exit 1
-fi
-
 # Fail on error
 set -e
 
@@ -28,6 +22,13 @@ set -x
   export RECAPTCHA_SITE_KEY="__RECAPTCHA_SITE_KEY__"
   npm run build -- --force --filter=@medplum/app
 )
+
+# Only build app if APP_DOCKERHUB_REPOSITORY was passed
+if [[ -z "${APP_DOCKERHUB_REPOSITORY}" ]]; then
+  echo "APP_DOCKERHUB_REPOSITORY env var not configured. Skipping..."
+  # Don't fail if no APP_DOCKERHUB_REPOSITORY present
+  exit 0
+fi
 
 # Build app tarball
 # The -C flag rewrites the base path from packages/app/dist/ to ./
