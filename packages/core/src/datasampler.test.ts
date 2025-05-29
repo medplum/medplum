@@ -1,6 +1,6 @@
 import { Bundle, Observation } from '@medplum/fhirtypes';
-import { UCUM } from './constants';
-import { DataSampler, summarizeObservations } from './datasampler';
+import { LOINC, SNOMED, UCUM } from './constants';
+import { DataSampler, expandSampledObservation, summarizeObservations } from './datasampler';
 
 function sum(x: number, y: number): number {
   return x + y;
@@ -465,6 +465,243 @@ describe('DataSampler', () => {
           },
         ],
       })
+    );
+  });
+
+  test('expandSampledObservation with single data stream', () => {
+    const obs: Observation = {
+      resourceType: 'Observation',
+      status: 'amended',
+      code: { text: 'Eye position' },
+      effectiveDateTime: '2025-05-29T13:44:31-07:00',
+      encounter: { reference: 'Encounter/abc' },
+      valueSampledData: {
+        origin: { value: 0, unit: 'mm' },
+        dimensions: 2,
+        period: 100,
+        factor: 0.25,
+        data: '0 0 5 -1 8 1',
+      },
+    };
+
+    const results = expandSampledObservation(obs);
+    expect(results).toHaveLength(6);
+    expect(results).toStrictEqual<Observation[]>(
+      expect.arrayContaining([
+        {
+          resourceType: 'Observation',
+          status: 'amended',
+          code: { text: 'Eye position' },
+          encounter: { reference: 'Encounter/abc' },
+          effectiveDateTime: '2025-05-29T20:44:31.000Z',
+          valueQuantity: { value: 0, unit: 'mm' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'amended',
+          code: { text: 'Eye position' },
+          encounter: { reference: 'Encounter/abc' },
+          effectiveDateTime: '2025-05-29T20:44:31.000Z',
+          valueQuantity: { value: 0, unit: 'mm' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'amended',
+          code: { text: 'Eye position' },
+          encounter: { reference: 'Encounter/abc' },
+          effectiveDateTime: '2025-05-29T20:44:31.100Z',
+          valueQuantity: { value: 1.25, unit: 'mm' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'amended',
+          code: { text: 'Eye position' },
+          encounter: { reference: 'Encounter/abc' },
+          effectiveDateTime: '2025-05-29T20:44:31.100Z',
+          valueQuantity: { value: -0.25, unit: 'mm' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'amended',
+          code: { text: 'Eye position' },
+          encounter: { reference: 'Encounter/abc' },
+          effectiveDateTime: '2025-05-29T20:44:31.200Z',
+          valueQuantity: { value: 2, unit: 'mm' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'amended',
+          code: { text: 'Eye position' },
+          encounter: { reference: 'Encounter/abc' },
+          effectiveDateTime: '2025-05-29T20:44:31.200Z',
+          valueQuantity: { value: 0.25, unit: 'mm' },
+        },
+      ])
+    );
+  });
+
+  test('expand Observation with components', () => {
+    const obs: Observation = {
+      resourceType: 'Observation',
+      id: 'bp-pct',
+      status: 'final',
+      effectivePeriod: {
+        start: '2025-05-29T14:00:00Z',
+        end: '2025-05-29T14:30:00Z',
+      },
+      code: { coding: [{ system: LOINC, code: '71896-5', display: 'Pediatric blood pressure percentile' }] },
+      valueQuantity: { value: 54, unit: '%', system: UCUM, code: '%' },
+      derivedFrom: [{ reference: 'Media/rawData' }],
+      subject: { reference: 'Patient/baby' },
+      component: [
+        {
+          code: {
+            coding: [
+              { system: SNOMED, code: '72313002', display: 'Systolic arterial pressure' },
+              { system: LOINC, code: '8480-6', display: 'Systolic blood pressure' },
+            ],
+          },
+          valueSampledData: {
+            origin: { value: 0, unit: 'mmHg', system: UCUM, code: 'mm[Hg]' },
+            dimensions: 1,
+            period: 10 * 60 * 1000, // 10 minutes
+            data: '120 132 141 139',
+          },
+        },
+        {
+          code: {
+            coding: [
+              { system: SNOMED, code: '1091811000000102', display: 'Diastolic arterial pressure' },
+              { system: LOINC, code: '8462-4', display: 'Diastolic blood pressure' },
+            ],
+          },
+          valueSampledData: {
+            origin: { value: 0, unit: 'mmHg', system: UCUM, code: 'mm[Hg]' },
+            dimensions: 1,
+            period: 10 * 60 * 1000, // 10 minutes
+            data: '78 76 87 83',
+          },
+        },
+      ],
+    };
+
+    const results = expandSampledObservation(obs);
+    expect(results).toHaveLength(8);
+    expect(results).toStrictEqual(
+      expect.arrayContaining([
+        {
+          resourceType: 'Observation',
+          status: 'final',
+          effectiveDateTime: '2025-05-29T14:00:00.000Z',
+          code: {
+            coding: [
+              { system: SNOMED, code: '72313002', display: 'Systolic arterial pressure' },
+              { system: LOINC, code: '8480-6', display: 'Systolic blood pressure' },
+            ],
+          },
+          valueQuantity: { value: 120, unit: 'mmHg', system: UCUM, code: 'mm[Hg]' },
+          derivedFrom: [{ reference: 'Media/rawData' }, { reference: 'Observation/bp-pct' }],
+          subject: { reference: 'Patient/baby' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'final',
+          effectiveDateTime: '2025-05-29T14:10:00.000Z',
+          code: {
+            coding: [
+              { system: SNOMED, code: '72313002', display: 'Systolic arterial pressure' },
+              { system: LOINC, code: '8480-6', display: 'Systolic blood pressure' },
+            ],
+          },
+          valueQuantity: { value: 132, unit: 'mmHg', system: UCUM, code: 'mm[Hg]' },
+          derivedFrom: [{ reference: 'Media/rawData' }, { reference: 'Observation/bp-pct' }],
+          subject: { reference: 'Patient/baby' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'final',
+          effectiveDateTime: '2025-05-29T14:20:00.000Z',
+          code: {
+            coding: [
+              { system: SNOMED, code: '72313002', display: 'Systolic arterial pressure' },
+              { system: LOINC, code: '8480-6', display: 'Systolic blood pressure' },
+            ],
+          },
+          valueQuantity: { value: 141, unit: 'mmHg', system: UCUM, code: 'mm[Hg]' },
+          derivedFrom: [{ reference: 'Media/rawData' }, { reference: 'Observation/bp-pct' }],
+          subject: { reference: 'Patient/baby' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'final',
+          effectiveDateTime: '2025-05-29T14:30:00.000Z',
+          code: {
+            coding: [
+              { system: SNOMED, code: '72313002', display: 'Systolic arterial pressure' },
+              { system: LOINC, code: '8480-6', display: 'Systolic blood pressure' },
+            ],
+          },
+          valueQuantity: { value: 139, unit: 'mmHg', system: UCUM, code: 'mm[Hg]' },
+          derivedFrom: [{ reference: 'Media/rawData' }, { reference: 'Observation/bp-pct' }],
+          subject: { reference: 'Patient/baby' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'final',
+          effectiveDateTime: '2025-05-29T14:00:00.000Z',
+          code: {
+            coding: [
+              { system: SNOMED, code: '1091811000000102', display: 'Diastolic arterial pressure' },
+              { system: LOINC, code: '8462-4', display: 'Diastolic blood pressure' },
+            ],
+          },
+          valueQuantity: { value: 78, unit: 'mmHg', system: UCUM, code: 'mm[Hg]' },
+          derivedFrom: [{ reference: 'Media/rawData' }, { reference: 'Observation/bp-pct' }],
+          subject: { reference: 'Patient/baby' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'final',
+          effectiveDateTime: '2025-05-29T14:10:00.000Z',
+          code: {
+            coding: [
+              { system: SNOMED, code: '1091811000000102', display: 'Diastolic arterial pressure' },
+              { system: LOINC, code: '8462-4', display: 'Diastolic blood pressure' },
+            ],
+          },
+          valueQuantity: { value: 76, unit: 'mmHg', system: UCUM, code: 'mm[Hg]' },
+          derivedFrom: [{ reference: 'Media/rawData' }, { reference: 'Observation/bp-pct' }],
+          subject: { reference: 'Patient/baby' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'final',
+          effectiveDateTime: '2025-05-29T14:20:00.000Z',
+          code: {
+            coding: [
+              { system: SNOMED, code: '1091811000000102', display: 'Diastolic arterial pressure' },
+              { system: LOINC, code: '8462-4', display: 'Diastolic blood pressure' },
+            ],
+          },
+          valueQuantity: { value: 87, unit: 'mmHg', system: UCUM, code: 'mm[Hg]' },
+          derivedFrom: [{ reference: 'Media/rawData' }, { reference: 'Observation/bp-pct' }],
+          subject: { reference: 'Patient/baby' },
+        },
+        {
+          resourceType: 'Observation',
+          status: 'final',
+          effectiveDateTime: '2025-05-29T14:30:00.000Z',
+          code: {
+            coding: [
+              { system: SNOMED, code: '1091811000000102', display: 'Diastolic arterial pressure' },
+              { system: LOINC, code: '8462-4', display: 'Diastolic blood pressure' },
+            ],
+          },
+          valueQuantity: { value: 83, unit: 'mmHg', system: UCUM, code: 'mm[Hg]' },
+          derivedFrom: [{ reference: 'Media/rawData' }, { reference: 'Observation/bp-pct' }],
+          subject: { reference: 'Patient/baby' },
+        },
+      ])
     );
   });
 });

@@ -1,4 +1,5 @@
 import { Bundle, CodeableConcept, Observation, Quantity, SampledData } from '@medplum/fhirtypes';
+import { getReferenceString } from './utils';
 
 export type StatsFn = (data: number[]) => number | Quantity;
 export type QuantityUnit = Pick<Quantity, 'unit' | 'code' | 'system'>;
@@ -114,7 +115,7 @@ function codesOverlap(a: CodeableConcept, b: CodeableConcept): boolean {
   return Boolean(a.coding?.some((c) => b.coding?.some((t) => c.system === t.system && c.code === t.code)));
 }
 
-function expandSampledData(sample: SampledData): number[] {
+export function expandSampledData(sample: SampledData): number[] {
   return sample.data?.split(' ').map((d) => parseFloat(d) * (sample.factor ?? 1) + (sample.origin.value ?? 0)) ?? [];
 }
 
@@ -123,4 +124,48 @@ function compressSampledData(data: number[], sampling?: SamplingInfo): string | 
     return undefined;
   }
   return data.map((d) => (d - (sampling?.origin.value ?? 0)) / (sampling?.factor ?? 1)).join(' ');
+}
+
+export function expandSampledObservation(obs: Observation): Observation[] {
+  const results: Observation[] = [];
+  const obsTimestamp = obs.effectiveInstant ?? obs.effectiveDateTime ?? obs.effectivePeriod?.start;
+  const startTime = obsTimestamp ? Date.parse(obsTimestamp).valueOf() : 0;
+
+  if (obs.valueSampledData) {
+    results.push(...convertSampleToObservations(obs.valueSampledData, startTime, obs));
+  }
+  if (obs.component) {
+    for (const component of obs.component) {
+      if (component.valueSampledData) {
+        results.push(...convertSampleToObservations(component.valueSampledData, startTime, { ...obs, ...component }));
+      }
+    }
+  }
+  return results;
+}
+
+function convertSampleToObservations(sample: SampledData, startTime: number, template: Observation): Observation[] {
+  const results: Observation[] = [];
+  const values = expandSampledData(sample);
+  const parentObservation = getReferenceString(template);
+
+  for (let i = 0; i < values.length; i++) {
+    const value = values[i];
+    const dataPointTime = startTime + Math.floor(i / sample.dimensions) * sample.period;
+    results.push({
+      ...template,
+      id: undefined,
+      effectiveInstant: undefined,
+      effectivePeriod: undefined,
+      effectiveTiming: undefined,
+      effectiveDateTime: dataPointTime ? new Date(dataPointTime).toISOString() : undefined,
+      valueQuantity: { ...sample.origin, value },
+      valueSampledData: undefined,
+      component: undefined,
+      derivedFrom: parentObservation
+        ? [...(template.derivedFrom ?? []), { reference: parentObservation }]
+        : template.derivedFrom,
+    });
+  }
+  return results;
 }
