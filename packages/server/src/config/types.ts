@@ -88,6 +88,9 @@ export interface MedplumServerConfig {
   /** Number of milliseconds to use as a base for exponential backoff in transaction retries */
   transactionExpBackoffBaseDelayMs?: number;
 
+  /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
+  autoDownloadEnabled?: boolean;
+
   /** @deprecated */
   auditEventLogGroup?: string;
 

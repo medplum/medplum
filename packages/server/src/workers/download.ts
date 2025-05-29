@@ -95,6 +95,10 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * @param resource - The resource that was created or updated.
  */
 export async function addDownloadJobs(resource: WithId<Resource>): Promise<void> {
+  if (!getConfig().autoDownloadEnabled) {
+    return;
+  }
+
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
     if (isExternalUrl(attachment.url)) {
