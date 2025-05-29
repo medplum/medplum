@@ -19,8 +19,6 @@ import {
   Specimen,
 } from '@medplum/fhirtypes';
 
-import Client from 'ssh2-sftp-client';
-
 // Constants
 const FACILITY_CODE = 'MEDPLUM_LAB';
 const FACILITY_URL = 'https://lab.medplum.com';
@@ -28,7 +26,7 @@ const FACILITY_ORDER_ID = new URL('orderId', FACILITY_URL).toString();
 const FACILITY_PATIENT_ID = new URL('patientId', FACILITY_URL).toString();
 
 /**
- * This Bot demonstrates how to create and send lab results to an SFTP server in the form of HL7v2 ORU messages
+ * This Bot demonstrates how to create and send lab results in the form of HL7v2 ORU messages
  *
  * See: https://v2plus.hl7.org/2021Jan/message-structure/ORU_R01.html
  *
@@ -36,24 +34,9 @@ const FACILITY_PATIENT_ID = new URL('patientId', FACILITY_URL).toString();
  * @param event - The BotEvent object
  * @returns The result of the operation
  */
-export async function handler(medplum: MedplumClient, event: BotEvent<DiagnosticReport>): Promise<any> {
-  // Get SFTP connection details from secrets
-  const host = event.secrets['SFTP_HOST'].valueString;
-  const user = event.secrets['SFTP_USER'].valueString;
-  const key = event.secrets['SFTP_PRIVATE_KEY'].valueString;
+export async function handler(medplum: MedplumClient, event: BotEvent<DiagnosticReport>): Promise<Hl7Message | undefined> {
 
   try {
-    // Connect to SFTP client
-    const client = new Client();
-    await client.connect({
-      host: host,
-      username: user,
-      privateKey: key,
-      retries: 5,
-      retry_factor: 2,
-      retry_minTimeout: 1000,
-    });
-
     // The event input is a DiagnosticReport
     const diagnosticReport = event.input;
 
@@ -76,13 +59,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Diagnostic
     // Create the ORU message
     const oruMessage = createOruMessage(diagnosticReport, serviceRequest, observations, specimen, patient, interpreter);
 
-    if (oruMessage) {
-      console.log('[ORU Message] Writing Message', `${orderId}.oru`, oruMessage.toString());
-      await writeHL7ToSftp(client, oruMessage, `./in/${orderId}.oru`);
-      return { status: 'success', message: `ORU message created and sent for order: ${orderId}` };
-    } else {
-      return { status: 'error', message: 'Failed to create ORU message' };
-    }
+    return oruMessage;
   } catch (error: any) {
     console.error(error.message);
     throw error;
@@ -422,18 +399,6 @@ function createNteSegment(text: string, setId: number): Hl7Segment {
     '', // Source of Comment
     text, // Comment
   ]);
-}
-
-/* SFTP Handling */
-
-async function writeHL7ToSftp(client: Client, message: Hl7Message, dstPath: string): Promise<void> {
-  try {
-    console.log('Writing HL7 message to SFTP:');
-    console.log(message.toString().replaceAll('\r', '\n'));
-    await client.put(Buffer.from(message.toString()), dstPath);
-  } catch (error) {
-    throw new Error(`Error writing to SFTP: ${error}`);
-  }
 }
 
 /* Helper Functions */
