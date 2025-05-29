@@ -155,7 +155,7 @@ export interface RepositoryContext {
   projects?: string[];
 
   /** Current Project of the authenticated user, or none for the system repository. */
-  currentProject?: Project;
+  currentProject?: WithId<Project>;
 
   /**
    * Optional compartment restriction.
@@ -267,8 +267,25 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.mode = mode;
   }
 
-  currentProject(): Project | undefined {
+  currentProject(): WithId<Project> | undefined {
     return this.context.currentProject;
+  }
+
+  /**
+   * Returns a project by ID.
+   * This handles the common case where the project ID is the same as the current project ID,
+   * but also supports the super admin case where the project ID is different.
+   * @param projectId - The project ID to look up.
+   * @returns The project, or undefined if not found.
+   */
+  private async getProjectById(projectId: string | undefined): Promise<WithId<Project> | undefined> {
+    if (!projectId) {
+      return undefined;
+    }
+    if (projectId === this.context.currentProject?.id) {
+      return this.context.currentProject;
+    }
+    return getSystemRepo().readResource<Project>('Project', projectId);
   }
 
   async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
@@ -695,7 +712,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.handleStorage(result, create);
     await this.postCommit(async () => {
       await this.handleBinaryUpdate(existing, result);
-      await addBackgroundJobs(result, existing, { interaction: create ? 'create' : 'update' });
+      await addBackgroundJobs(result, existing, {
+        project: await this.getProjectById(result.meta?.project),
+        interaction: create ? 'create' : 'update',
+      });
     });
 
     const output = deepClone(result);
@@ -1034,7 +1054,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       previousVersion = history.entry?.[1]?.resource;
     }
 
-    return addSubscriptionJobs(resource, previousVersion, { interaction }, options);
+    return addSubscriptionJobs(
+      resource,
+      previousVersion,
+      {
+        project: await this.getProjectById(resource.meta?.project),
+        interaction,
+      },
+      options
+    );
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
@@ -1094,7 +1122,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
       });
 
-      await addSubscriptionJobs(resource, resource, { interaction: 'delete' });
+      await addSubscriptionJobs(resource, resource, {
+        project: await this.getProjectById(resource.meta?.project),
+        interaction: 'delete',
+      });
     } catch (err) {
       const durationMs = Date.now() - startTime;
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err, {

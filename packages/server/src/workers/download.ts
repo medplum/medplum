@@ -1,5 +1,6 @@
 import {
   arrayify,
+  BackgroundJobContext,
   crawlTypedValue,
   isGone,
   normalizeOperationOutcome,
@@ -93,9 +94,16 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the download.
  * @param resource - The resource that was created or updated.
+ * @param context - The background job context.
  */
-export async function addDownloadJobs(resource: WithId<Resource>): Promise<void> {
+export async function addDownloadJobs(resource: WithId<Resource>, context: BackgroundJobContext): Promise<void> {
   if (!getConfig().autoDownloadEnabled) {
+    return;
+  }
+
+  // Adding a new feature for project that allows users to add a cron
+  const project = context?.project;
+  if (!project?.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
     return;
   }
 
