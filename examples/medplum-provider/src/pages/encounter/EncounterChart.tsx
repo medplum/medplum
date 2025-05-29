@@ -418,7 +418,6 @@ export const EncounterChart = (): JSX.Element => {
         };
         setClaim(updatedClaim);
         await debouncedUpdateResource(updatedClaim);
-        
       }
     },
     [setChargeItems, claim, encounter, setClaim, debouncedUpdateResource]

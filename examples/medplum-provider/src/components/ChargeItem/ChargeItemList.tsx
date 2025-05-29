@@ -1,15 +1,15 @@
-import { Box, Card, Flex, Stack, Text, TextInput } from "@mantine/core";
-import { ChargeItem } from "@medplum/fhirtypes";
-import ChargeItemPanel from "./ChageItemPanel";
-import { calculateTotalPrice } from "../../utils/chargeitems";
-import { JSX, useCallback, useEffect, useState } from "react";
+import { Box, Card, Flex, Stack, Text, TextInput } from '@mantine/core';
+import { ChargeItem } from '@medplum/fhirtypes';
+import ChargeItemPanel from './ChageItemPanel';
+import { calculateTotalPrice } from '../../utils/chargeitems';
+import { JSX, useCallback, useEffect, useState } from 'react';
 
 interface ChargeItemListProps {
   chargeItems: ChargeItem[];
   updateChargeItems: (chargeItems: ChargeItem[]) => void;
 }
 
-export const ChargeItemList = ( props : ChargeItemListProps): JSX.Element => {
+export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
   const { chargeItems, updateChargeItems } = props;
   const [chargeItemsState, setChargeItemsState] = useState<ChargeItem[]>(chargeItems);
 
@@ -19,8 +19,9 @@ export const ChargeItemList = ( props : ChargeItemListProps): JSX.Element => {
 
   const updateChargeItemList = useCallback(
     async (updatedChargeItem: ChargeItem): Promise<void> => {
-
-      const updatedChargeItems = chargeItemsState.map((item) => (item.id === updatedChargeItem.id ? updatedChargeItem : item));
+      const updatedChargeItems = chargeItemsState.map((item) =>
+        item.id === updatedChargeItem.id ? updatedChargeItem : item
+      );
       updateChargeItems(updatedChargeItems);
     },
     [chargeItemsState, updateChargeItems]
