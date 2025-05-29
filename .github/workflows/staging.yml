@@ -52,7 +52,7 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build Docker Images
+      - name: Build App Docker Image
         run: |
           set -e
           set -x
@@ -69,14 +69,10 @@ jobs:
             npm run build -- --force --filter=@medplum/app
           )
           source ./scripts/build-docker-app.sh
-
-          npm run build -- --force --filter=@medplum/server
-          source ./scripts/build-docker-server.sh
         env:
-          SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.STAGING_DOCKERHUB_REPOSITORY }}
           APP_DOCKERHUB_REPOSITORY: 'medplum/medplum-app-staging'
 
-      - name: Deploy App
+      - name: Build App Docker
         run: ./scripts/deploy-app.sh
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
@@ -85,6 +81,11 @@ jobs:
           RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
           APP_BUCKET: ${{ secrets.STAGING_APP_BUCKET }}
           AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
+
+      - name: Build Server Docker Image
+        run: ./scripts/build-docker-server.sh
+        env:
+          SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.STAGING_DOCKERHUB_REPOSITORY }}
 
       - name: Deploy Server
         run: ./scripts/deploy-server.sh
