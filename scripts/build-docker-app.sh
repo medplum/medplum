@@ -50,4 +50,6 @@ APP_TAGS="--tag $APP_DOCKERHUB_REPOSITORY:latest --tag $APP_DOCKERHUB_REPOSITORY
 if [[ "$IS_RELEASE" == "true" ]]; then
   APP_TAGS="$APP_TAGS --tag $APP_DOCKERHUB_REPOSITORY:$FULL_VERSION --tag $APP_DOCKERHUB_REPOSITORY:$MAJOR_DOT_MINOR"
 fi
+pushd packages/app
 docker buildx build $ATTESTATIONS $PLATFORMS $APP_TAGS --push .
+popd
