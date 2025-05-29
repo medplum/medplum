@@ -26,7 +26,6 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
     setPrice(chargeItem.priceOverride);
     setModifierExtensionValue(getModifierExtension(chargeItem));
     const cptCodes = chargeItem?.code?.coding?.filter((coding) => coding.system === CPT_CODE_SYSTEM) ?? [];
-    console.log('cptCodes', cptCodes);
     setCptCodes({ coding: cptCodes });
   }, [chargeItem]);
 
