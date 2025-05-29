@@ -16,6 +16,8 @@ set -e
 # Echo commands
 set -x
 
+npm run build -- --force --filter=@medplum/server
+
 # Build server tarball
 tar \
   --no-xattrs \
