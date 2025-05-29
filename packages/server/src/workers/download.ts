@@ -101,9 +101,10 @@ export async function addDownloadJobs(resource: WithId<Resource>, context: Backg
     return;
   }
 
-  // Adding a new feature for project that allows users to add a cron
+  // Check if the project has a setting for "autoDownloadEnabled" and if it is set to false.
+  // Auto-download is enabled by default, but can be disabled per project.
   const project = context?.project;
-  if (!project?.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
+  if (project?.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
     return;
   }
 
