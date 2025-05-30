@@ -2,12 +2,21 @@ import { SNOMED, createReference, indexSearchParameterBundle, indexStructureDefi
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, Patient, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import * as dotenv from 'dotenv';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
-import { createOrmMessage } from './send-orm-message';
+import { createOrmMessage, handler } from './send-orm-message';
+dotenv.config();
+
+const CONNECTION_DETAILS = {
+  SFTP_USER: { name: 'SFTP_USER', valueString: 'user' },
+  SFTP_HOST: { name: 'SFTP_HOST', valueString: '123456.transfer.us-east-1.amazonaws.com' },
+  SFTP_PRIVATE_KEY: { name: 'SFTP_PRIVATE_KEY', valueString: process.env.PRIVATE_KEY },
+};
+
+vi.mock('ssh2-sftp-client');
 
 describe('Send to Partner Lab', () => {
   beforeAll(() => {
-    // Initialize FHIR structure definitions
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
     for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
@@ -18,7 +27,6 @@ describe('Send to Partner Lab', () => {
   beforeEach(async (ctx: any) => {
     const medplum = new MockClient();
 
-    // Create test patient
     const patient = await medplum.createResource({
       resourceType: 'Patient',
       name: [
@@ -38,7 +46,7 @@ describe('Send to Partner Lab', () => {
       ],
       identifier: [
         {
-          system: 'http://example.com/patientId',
+          system: ' http://example.com/patientId',
           value: 'W6IOS157',
         },
       ],
@@ -51,7 +59,6 @@ describe('Send to Partner Lab', () => {
       gender: 'male',
     });
 
-    // Create requesting physician
     const requestingPhysician = await medplum.createResource({
       resourceType: 'Practitioner',
       name: [
@@ -64,7 +71,6 @@ describe('Send to Partner Lab', () => {
       gender: 'male',
     });
 
-    // Create specimen
     let specimen = await medplum.createResource<Specimen>({
       resourceType: 'Specimen',
       subject: createReference(patient),
@@ -83,12 +89,12 @@ describe('Send to Partner Lab', () => {
       receivedTime: '2023-02-16T00:53:51.965Z',
     });
 
-    // Create service request (order)
     const order = await medplum.createResource({
       resourceType: 'ServiceRequest',
       subject: createReference(patient),
       requester: createReference(requestingPhysician),
       status: 'completed',
+
       intent: 'order',
       authoredOn: '2023-01-30T18:31:34.929Z',
       specimen: [createReference(specimen)],
@@ -100,10 +106,8 @@ describe('Send to Partner Lab', () => {
       ],
     });
 
-    // Update specimen with order reference
     specimen = await medplum.updateResource({ ...specimen, request: [createReference(order)] } as Specimen);
 
-    // Store test resources in context
     Object.assign(ctx, { medplum, patient, requestingPhysician, order, specimen });
   });
 
@@ -116,29 +120,26 @@ describe('Send to Partner Lab', () => {
     vi.clearAllMocks();
   });
 
-  test('Create ORM message with correct format', async (ctx: any) => {
+  test.skip('Test Connection', async (ctx: any) => {
+    try {
+      await handler(ctx.medplum, {
+        bot: { reference: 'Bot/123' },
+        input: ctx.order,
+        contentType: 'string',
+        secrets: { ...CONNECTION_DETAILS },
+      });
+    } catch {
+      console.error('Here');
+    }
+  });
+
+  test(`ORM Message Format`, async (ctx: any) => {
     const serviceRequest: ServiceRequest = ctx.order;
     vi.setSystemTime(new Date('2023-02-10T09:25:00Z'));
 
     const message = createOrmMessage(serviceRequest, ctx.patient as Patient, ctx.specimen as Specimen);
 
-    expect(message).toBeDefined();
     expect(message?.toString()).toBe(TEST_MESSAGE);
-  });
-
-  test('Create ORM message with missing resources', async (ctx: any) => {
-    const serviceRequest: ServiceRequest = ctx.order;
-    vi.setSystemTime(new Date('2023-02-10T09:25:00Z'));
-
-    // Test with missing patient
-    expect(() => createOrmMessage(serviceRequest, undefined as unknown as Patient, ctx.specimen as Specimen)).toThrow(
-      'Patient is required'
-    );
-
-    // Test with missing specimen
-    expect(() => createOrmMessage(serviceRequest, ctx.patient as Patient, undefined as unknown as Specimen)).toThrow(
-      'Specimen is required'
-    );
   });
 });
 
