@@ -5,7 +5,45 @@ if [[ -z "${APP_BUCKET}" ]]; then
   exit 1
 fi
 
+# Exit on error
+set -e
+
 pushd packages/app
+
+# Check that all required variables are set to avoid missing env vars not set in deploy.yml
+if [[ -z "${MEDPLUM_BASE_URL}" ]]; then
+  echo "MEDPLUM_BASE_URL is missing"
+  exit 1
+fi
+
+if [[ -z "${GOOGLE_CLIENT_ID}" ]]; then
+  echo "GOOGLE_CLIENT_ID is missing"
+  exit 1
+fi
+
+if [[ -z "${RECAPTCHA_SITE_KEY}" ]]; then
+  echo "RECAPTCHA_SITE_KEY is missing"
+  exit 1
+fi
+
+# Setting defaults for the replacements of placeholders which should have defaults
+: ${MEDPLUM_REGISTER_ENABLED:="true"}
+: ${MEDPLUM_AWS_TEXTRACT_ENABLED:="true"}
+
+# Inject the env vars into our build output
+# Find all JS files in the assets directory
+# Update the app config
+# Recursively apply to all text files in the app dist directory
+find "./dist" -type f -exec sed -i \
+  -e "s|__MEDPLUM_BASE_URL__|${MEDPLUM_BASE_URL}|g" \
+  -e "s|__MEDPLUM_CLIENT_ID__||g" \
+  -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
+  -e "s|__RECAPTCHA_SITE_KEY__|${RECAPTCHA_SITE_KEY}|g" \
+  -e "s|__MEDPLUM_REGISTER_ENABLED__|${MEDPLUM_REGISTER_ENABLED}|g" \
+  -e "s|__MEDPLUM_AWS_TEXTRACT_ENABLED__|${MEDPLUM_AWS_TEXTRACT_ENABLED}|g" \
+  {} \;
+
+echo "Environment variable replacement complete."
 
 # First deploy hashed files that are cached forever
 # It is important to deploy these files first,

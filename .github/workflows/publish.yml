@@ -78,10 +78,14 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build and push Docker images
-        run: ./scripts/build-docker.sh --release
+      - name: Build and push server Docker image
+        run: ./scripts/build-docker-server.sh --release
         env:
           SERVER_DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
+
+      - name: Build and push app Docker image
+        run: ./scripts/build-docker-app.sh --release
+        env:
           APP_DOCKERHUB_REPOSITORY: ${{ secrets.APP_DOCKERHUB_REPOSITORY }}
 
       - name: Configure AWS Credentials
