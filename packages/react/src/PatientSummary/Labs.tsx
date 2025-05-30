@@ -103,7 +103,7 @@ export function Labs(props: LabsProps): JSX.Element {
               </Box>
             </SummaryItem>
           ))}
-          
+
           {filteredServiceRequests.length === 0 && diagnosticReports.length === 0 && <Text>(none)</Text>}
         </Flex>
       </CollapsibleSection>
@@ -123,7 +123,6 @@ const getStatusColor = (status: string): string => {
   switch (status) {
     case 'active':
       return 'indigo';
-    case 'completed':
     case 'final':
       return 'teal';
     case 'cancelled':
