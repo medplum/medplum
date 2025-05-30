@@ -13,7 +13,7 @@ import { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
@@ -51,6 +51,7 @@ export async function createProfile(
 }
 
 export async function createProjectMembership(
+  repo: Repository,
   user: User,
   project: Project,
   profile: ProfileResource,
@@ -59,8 +60,7 @@ export async function createProjectMembership(
   const logger = getLogger();
   logger.info('Creating project membership', { name: project.name });
 
-  const systemRepo = getSystemRepo();
-  const result = await systemRepo.createResource<ProjectMembership>({
+  const result = await repo.createResource<ProjectMembership>({
     ...details,
     resourceType: 'ProjectMembership',
     project: createReference(project),
