@@ -1,9 +1,12 @@
-import { fetchLatestVersionString, isValidMedplumSemver, Logger, normalizeErrorString } from '@medplum/core';
+import { fetchLatestVersionString, isValidMedplumSemver, normalizeErrorString } from '@medplum/core';
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { platform } from 'node:os';
 import process from 'node:process';
+import { getGlobalLogger } from './logger';
 import { downloadRelease, getReleaseBinPath } from './upgrader-utils';
+
+const globalLogger = getGlobalLogger();
 
 export async function upgraderMain(argv: string[]): Promise<void> {
   // TODO: Add support for Linux
@@ -12,8 +15,6 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   }
 
   // NOTE: Windows past this point, for now
-
-  const globalLogger = new Logger((msg) => console.log(msg));
 
   if (!process.send) {
     globalLogger.error('Upgrader not started as a child process with Node IPC enabled. Aborting...');
