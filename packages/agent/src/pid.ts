@@ -1,5 +1,5 @@
-import { Logger } from '@medplum/core';
-import fs from 'node:fs';
+import { Logger, sleep } from '@medplum/core';
+import fs, { existsSync } from 'node:fs';
 import { platform, tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -9,7 +9,7 @@ const EXIT_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP'] as const;
 export type AppPidState = 'running' | 'stale' | 'clean';
 
 export const pidLogger = new Logger((msg) => `[PID]: ${msg}`);
-const pidFilePaths = new Set<string>();
+const pidFileApps = new Set<string>();
 const processExitListener = (): void => {
   removeAllPidFiles();
 };
@@ -44,10 +44,11 @@ export function getPidFilePath(appName: string): string {
 }
 
 /**
- * Remove the PID file
- * @param pidFilePath - Path to the PID file
+ * Remove the PID file for a given app name.
+ * @param appName - The name of the app.
  */
-export function removePidFile(pidFilePath: string): void {
+export function removePidFile(appName: string): void {
+  const pidFilePath = getPidFilePath(appName);
   if (fs.existsSync(pidFilePath)) {
     try {
       fs.unlinkSync(pidFilePath);
@@ -56,7 +57,7 @@ export function removePidFile(pidFilePath: string): void {
       pidLogger.error(`Error removing PID file: ${pidFilePath}`, err as Error);
     }
   }
-  pidFilePaths.delete(pidFilePath);
+  pidFileApps.delete(appName);
 }
 
 /**
@@ -174,7 +175,7 @@ export function createPidFile(appName: string): string {
 
   pidLogger.info(`PID file created at: ${pidFilePath}`);
 
-  pidFilePaths.add(pidFilePath);
+  pidFileApps.add(appName);
 
   return pidFilePath;
 }
@@ -193,11 +194,22 @@ export function ensureDirectoryExists(directoryPath: string): void {
 }
 
 /**
+ * Waits for a given app's PID file to be present in the filesystem.
+ * @param appName - The name of the app associated with the PID file you want to wait for.
+ */
+export async function waitForPidFile(appName: string): Promise<void> {
+  // Wait for agent PID file to exist
+  while (!existsSync(getPidFilePath(appName))) {
+    await sleep(0);
+  }
+}
+
+/**
  * Cleans up all PID files and removes them from the list of PID files to cleanup when the process ends.
  */
 export function removeAllPidFiles(): void {
-  for (const pidFilePath of pidFilePaths) {
-    removePidFile(pidFilePath);
+  for (const appName of pidFileApps) {
+    removePidFile(appName);
   }
 }
 

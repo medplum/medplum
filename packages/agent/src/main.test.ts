@@ -31,6 +31,7 @@ describe('Main', () => {
     const upgradeMainSpy = jest.spyOn(upgraderFile, 'upgraderMain');
     const createPidSpy = jest.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
     const registerCleanupSpy = jest.spyOn(pidFile, 'registerAgentCleanup');
+    const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
     // Invalid number of args
     await expect(main(['node', 'main.ts', 'https://example.com/', randomUUID()])).rejects.toThrow('process.exit');
@@ -42,6 +43,7 @@ describe('Main', () => {
 
     agentMainSpy.mockRestore();
     upgradeMainSpy.mockRestore();
+    existsSyncSpy.mockRestore();
   });
 
   test('Calling main with --upgrade', async () => {

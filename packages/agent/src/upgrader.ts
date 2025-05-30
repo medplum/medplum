@@ -26,8 +26,6 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     process.once('disconnect', resolve);
   });
 
-  process.send({ type: 'STARTED' });
-
   // Make sure if version is given, it matches semver
   if (argv[3] && !isValidMedplumSemver(argv[3])) {
     throw new Error('Invalid version specified');
@@ -42,6 +40,8 @@ export async function upgraderMain(argv: string[]): Promise<void> {
     await downloadRelease(version, binPath);
     globalLogger.info('Release successfully downloaded');
   }
+
+  process.send({ type: 'STARTED' });
 
   globalLogger.info('Waiting for parent to disconnect from IPC...');
   const disconnectTimeout = setTimeout(rejectOnTimeout, 5000);

@@ -31,7 +31,7 @@ import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from '.
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import { createPidFile, forceKillApp, getPidFilePath, isAppRunning, removePidFile } from './pid';
+import { createPidFile, forceKillApp, getPidFilePath, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -131,10 +131,9 @@ export class App {
 
       await this.tryToCreateAgentPidFile();
 
-      // Wait for upgrading agent PID file to exist
-      while (!existsSync(getPidFilePath('medplum-upgrading-agent'))) {
-        await sleep(0);
-      }
+      // Wait for upgrading agent PID file since it could have been created just a few ms ago
+      await waitForPidFile('medplum-upgrading-agent');
+
       // Now make sure to remove it
       removePidFile('medplum-upgrading-agent');
     }
@@ -703,10 +702,6 @@ export class App {
       // We unref the child process so that this process can close before the child has closed (since we want the child to be able to close the parent process)
       child.unref();
 
-      child.on('error', (err) => {
-        this.log.error(normalizeErrorString(err));
-      });
-
       await new Promise<void>((resolve, reject) => {
         const childTimeout = setTimeout(
           () => reject(new Error('Timed out while waiting for message from child')),
@@ -719,6 +714,11 @@ export class App {
           } else {
             reject(new Error(`Received unexpected message type ${msg.type} when expected type STARTED`));
           }
+        });
+
+        child.on('error', (err) => {
+          this.log.error(normalizeErrorString(err));
+          reject(err);
         });
       });
     } catch (err) {
