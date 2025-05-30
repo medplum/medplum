@@ -623,6 +623,16 @@ To make changes to settings that affect your deployed Medplum App, you must _als
 Once you have made these changes, you will need to restart your server for them to take effect. The easiest way to do this in a zero-downtime manner is by using the `medplum aws update-server` command. For more details on this command see the [Upgrade the Server docs](/docs/self-hosting/install-on-aws#upgrade-the-server).
 :::
 
+### autoDownloadEnabled
+
+Optional flag to enable automatic download of resources when they are requested. This is useful for large resources that are not needed immediately, such as images or videos.
+
+Downloaded content will be stored as a FHIR `Binary` resource, and the `contentUrl` will be updated accordingly.
+
+This feature can be disabled if you want to preserve the original external URL of the resource, or if you want to control the download process manually.
+
+**Default:** `true`
+
 ### AWS Secrets
 
 Postgres and Redis connection details have special cases due the way CDK exposes them.

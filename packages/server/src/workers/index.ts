@@ -51,6 +51,6 @@ export async function addBackgroundJobs(
   context: BackgroundJobContext
 ): Promise<void> {
   await addSubscriptionJobs(resource, previousVersion, context);
-  await addDownloadJobs(resource);
-  await addCronJobs(resource, previousVersion);
+  await addDownloadJobs(resource, context);
+  await addCronJobs(resource, previousVersion, context);
 }

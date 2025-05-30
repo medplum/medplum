@@ -1,4 +1,4 @@
-import { Bundle, Parameters, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
+import { Bundle, Parameters, Project, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { MedplumClient } from '../client';
 import { TypedEventTarget } from '../eventtarget';
 import { evalFhirPathTyped } from '../fhirpath/parse';
@@ -7,7 +7,7 @@ import { Logger } from '../logger';
 import { normalizeErrorString, OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
-import { deepEquals, getExtension, getReferenceString, ProfileResource, resolveId } from '../utils';
+import { deepEquals, getExtension, getReferenceString, ProfileResource, resolveId, WithId } from '../utils';
 import {
   IReconnectingWebSocket,
   IReconnectingWebSocketCtor,
@@ -494,6 +494,7 @@ export class SubscriptionManager {
 export type BackgroundJobInteraction = 'create' | 'update' | 'delete';
 
 export interface BackgroundJobContext {
+  project?: WithId<Project>;
   interaction: BackgroundJobInteraction;
 }
 
