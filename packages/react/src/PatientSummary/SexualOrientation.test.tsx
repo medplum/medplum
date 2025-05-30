@@ -58,6 +58,7 @@ describe('PatientSummary - SexualOrientation', () => {
       fireEvent.click(screen.getByLabelText('Add item'));
     });
 
+    screen.debug();
     // Click "Save" button
     const saveButton = await screen.findByText('Save');
     await act(async () => {

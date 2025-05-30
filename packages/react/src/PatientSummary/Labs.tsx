@@ -1,13 +1,13 @@
-import { Box, Flex, Group, Text } from '@mantine/core';
+import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, getDisplayString } from '@medplum/core';
 import { DiagnosticReport, Encounter, Patient, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { JSX, useState } from 'react';
+import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { CollapsibleSection } from './CollapsibleSection';
 import SummaryItem from './SummaryItem';
 import styles from './SummaryItem.module.css';
-import { DiagnosticReportDialog } from './DiagnosticReportDialog';
 
 export interface LabsProps {
   readonly patient: Patient;
@@ -62,9 +62,7 @@ export function Labs(props: LabsProps): JSX.Element {
 
   return (
     <>
-      <CollapsibleSection
-        title="Labs"
-      >
+      <CollapsibleSection title="Labs">
         <Flex direction="column" gap={8}>
           {filteredServiceRequests.map((serviceRequest) => (
             <SummaryItem key={serviceRequest.id} onClick={() => onClickResource?.(serviceRequest)}>
@@ -92,7 +90,7 @@ export function Labs(props: LabsProps): JSX.Element {
             <SummaryItem key={report.id} onClick={() => handleDiagnosticReportClick(report)}>
               <Box>
                 <Text fw={500} className={styles.itemText}>
-                  {report.basedOn?.[0]?.display ?? report.code?.coding?.[0]?.display ?? 'Diagnostic Report'}
+                  {getDisplayString(report)}
                 </Text>
                 <Group mt={2} gap={4}>
                   {report.status && (
@@ -105,14 +103,18 @@ export function Labs(props: LabsProps): JSX.Element {
               </Box>
             </SummaryItem>
           ))}
+          
           {filteredServiceRequests.length === 0 && diagnosticReports.length === 0 && <Text>(none)</Text>}
         </Flex>
       </CollapsibleSection>
-      <DiagnosticReportDialog
+      {/* <DiagnosticReportDialog
         diagnosticReport={selectedReport}
         opened={reportDialogOpened}
         onClose={closeReportDialog}
-      />
+      /> */}
+      <Modal opened={reportDialogOpened} onClose={closeReportDialog} size="80%">
+        {selectedReport && <DiagnosticReportDisplay value={selectedReport} hideSubject={true} />}
+      </Modal>
     </>
   );
 }
