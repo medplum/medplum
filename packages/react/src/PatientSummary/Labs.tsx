@@ -5,9 +5,9 @@ import { DiagnosticReport, Encounter, Patient, Resource, ServiceRequest } from '
 import { JSX, useState } from 'react';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { CollapsibleSection } from './CollapsibleSection';
+import { DiagnosticReportDialog } from './DiagnosticReportDialog';
 import SummaryItem from './SummaryItem';
 import styles from './SummaryItem.module.css';
-import { DiagnosticReportDialog } from './DiagnosticReportDialog';
 
 export interface LabsProps {
   readonly patient: Patient;
@@ -62,9 +62,7 @@ export function Labs(props: LabsProps): JSX.Element {
 
   return (
     <>
-      <CollapsibleSection
-        title="Labs"
-      >
+      <CollapsibleSection title="Labs">
         <Flex direction="column" gap={8}>
           {filteredServiceRequests.map((serviceRequest) => (
             <SummaryItem key={serviceRequest.id} onClick={() => onClickResource?.(serviceRequest)}>
