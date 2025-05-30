@@ -6,6 +6,7 @@ import {
   Condition,
   Coverage,
   Device,
+  DiagnosticReport,
   Encounter,
   Goal,
   HumanName,
@@ -16,6 +17,7 @@ import {
   Procedure,
   Reference,
   Resource,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconBinaryTree, IconCake, IconEmpathize, IconMapPin, IconStethoscope } from '@tabler/icons-react';
@@ -23,6 +25,7 @@ import { JSX, useEffect, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Insurance } from './Insurance';
+import { Labs } from './Labs';
 import { Medications } from './Medications';
 import styles from './PatientSummary.module.css';
 import {
@@ -58,6 +61,8 @@ interface PatientMedicalData {
   readonly procedures?: Procedure[];
   readonly devices?: Device[];
   readonly goals?: Goal[];
+  readonly serviceRequests: ServiceRequest[];
+  readonly diagnosticReports: DiagnosticReport[];
 }
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
@@ -105,6 +110,14 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         subject: ref,
         ...searchMeta,
       }),
+      medplum.searchResources('ServiceRequest', {
+        subject: ref,
+        ...searchMeta,
+      }),
+      medplum.searchResources('DiagnosticReport', {
+        subject: ref,
+        ...searchMeta,
+      }),
     ])
       .then((results) => {
         const observations = results[3];
@@ -122,6 +135,8 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
           procedures: results[8],
           devices: results[9],
           goals: results[10],
+          serviceRequests: results[11],
+          diagnosticReports: results[12],
         });
       })
       .catch(console.error);
@@ -321,6 +336,13 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Medications
               patient={patient}
               medicationRequests={medicalData.medicationRequests}
+              onClickResource={onClickResource}
+            />
+            <Divider />
+            <Labs
+              patient={patient}
+              serviceRequests={medicalData.serviceRequests}
+              diagnosticReports={medicalData.diagnosticReports}
               onClickResource={onClickResource}
             />
             <Divider />
