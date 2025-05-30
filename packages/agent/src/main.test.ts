@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import fs from 'node:fs';
 import os from 'node:os';
 import * as agentMainFile from './agent-main';
 import { App } from './app';
@@ -30,6 +31,7 @@ describe('Main', () => {
     const upgradeMainSpy = jest.spyOn(upgraderFile, 'upgraderMain');
     const createPidSpy = jest.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
     const registerCleanupSpy = jest.spyOn(pidFile, 'registerAgentCleanup');
+    const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
     // Invalid number of args
     await expect(main(['node', 'main.ts', 'https://example.com/', randomUUID()])).rejects.toThrow('process.exit');
@@ -41,6 +43,7 @@ describe('Main', () => {
 
     agentMainSpy.mockRestore();
     upgradeMainSpy.mockRestore();
+    existsSyncSpy.mockRestore();
   });
 
   test('Calling main with --upgrade', async () => {
@@ -62,5 +65,43 @@ describe('Main', () => {
     platformSpy.mockRestore();
     agentMainSpy.mockRestore();
     upgradeMainSpy.mockRestore();
+  });
+
+  test('main creates "medplum-upgrading-agent" PID if upgrade manifest exists', async () => {
+    const agentMainSpy = jest
+      .spyOn(agentMainFile, 'agentMain')
+      .mockImplementation((_argv: string[]) => Promise.resolve() as unknown as Promise<App>);
+    const createPidSpy = jest.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
+    const registerCleanupSpy = jest.spyOn(pidFile, 'registerAgentCleanup');
+    const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+
+    await expect(main(['node', 'main.ts', 'https://example.com/', 'foo'])).resolves.toBeUndefined();
+
+    expect(createPidSpy).toHaveBeenCalledWith('medplum-upgrading-agent');
+    expect(agentMainSpy).toHaveBeenCalledWith(['node', 'main.ts', 'https://example.com/', 'foo']);
+    expect(registerCleanupSpy).toHaveBeenCalled();
+
+    agentMainSpy.mockRestore();
+    createPidSpy.mockRestore();
+    existsSyncSpy.mockRestore();
+  });
+
+  test('main creates "medplum-agent" PID if upgrade manifest does not exist', async () => {
+    const agentMainSpy = jest
+      .spyOn(agentMainFile, 'agentMain')
+      .mockImplementation((_argv: string[]) => Promise.resolve() as unknown as Promise<App>);
+    const createPidSpy = jest.spyOn(pidFile, 'createPidFile').mockReturnValue('/tmp/test.pid');
+    const registerCleanupSpy = jest.spyOn(pidFile, 'registerAgentCleanup');
+    const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(false);
+
+    await expect(main(['node', 'main.ts', 'https://example.com/', 'foo'])).resolves.toBeUndefined();
+
+    expect(createPidSpy).toHaveBeenCalledWith('medplum-agent');
+    expect(agentMainSpy).toHaveBeenCalledWith(['node', 'main.ts', 'https://example.com/', 'foo']);
+    expect(registerCleanupSpy).toHaveBeenCalled();
+
+    agentMainSpy.mockRestore();
+    createPidSpy.mockRestore();
+    existsSyncSpy.mockRestore();
   });
 });

@@ -27,11 +27,20 @@ import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
 import { AgentHl7Channel } from './hl7';
+import * as pidModule from './pid';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 
 jest.mock('./constants', () => ({
   ...jest.requireActual('./constants'),
   RETRY_WAIT_DURATION_MS: 200,
+}));
+
+jest.mock('./pid', () => ({
+  createPidFile: jest.fn(),
+  getPidFilePath: jest.fn(() => 'pid/file/path'),
+  waitForPidFile: jest.fn(async () => undefined),
+  removePidFile: jest.fn(),
+  isAppRunning: jest.fn(() => false),
 }));
 
 jest.mock('node:process', () => {
@@ -2118,8 +2127,9 @@ describe('App', () => {
     });
 
     test('Upgrading -- Manifest present on startup, version is wrong (Error)', async () => {
-      const rmSyncSpy = jest.spyOn(fs, 'rmSync');
+      const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
       const originalConsoleLog = console.log;
+      const createPidFileSpy = jest.spyOn(pidModule, 'createPidFile');
       console.log = jest.fn();
 
       const state = {
@@ -2199,19 +2209,21 @@ describe('App', () => {
       clearTimeout(timeout);
 
       expect(state.agentError.body).toMatch(/Failed to upgrade to version*/);
-      expect(rmSyncSpy).toHaveBeenCalledWith(resolve(__dirname, 'upgrade.json'));
+      expect(unlinkSyncSpy).toHaveBeenCalledWith(resolve(__dirname, 'upgrade.json'));
+      expect(createPidFileSpy).toHaveBeenCalledWith('medplum-agent');
 
       await app.stop();
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
 
-      rmSyncSpy.mockRestore();
+      unlinkSyncSpy.mockRestore();
+      createPidFileSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
     test('Upgrading -- Manifest present on startup, version is correct (Success)', async () => {
-      const rmSyncSpy = jest.spyOn(fs, 'rmSync');
+      const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
@@ -2291,14 +2303,14 @@ describe('App', () => {
       }
       clearTimeout(timeout);
 
-      expect(rmSyncSpy).toHaveBeenCalledWith(resolve(__dirname, 'upgrade.json'));
+      expect(unlinkSyncSpy).toHaveBeenCalledWith(resolve(__dirname, 'upgrade.json'));
 
       await app.stop();
       await new Promise<void>((resolve) => {
         mockServer.stop(resolve);
       });
 
-      rmSyncSpy.mockRestore();
+      unlinkSyncSpy.mockRestore();
       console.log = originalConsoleLog;
     });
   });
