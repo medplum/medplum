@@ -1,7 +1,6 @@
 .table {
   border: 0.1px solid var(--mantine-color-gray-5);
   border-collapse: collapse;
-  table-layout: auto;
 
   & td,
   & th {
