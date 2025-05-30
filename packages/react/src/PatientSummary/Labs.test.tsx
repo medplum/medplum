@@ -73,7 +73,7 @@ describe('PatientSummary - Labs', () => {
         subject: {
           reference: 'Patient/123',
         },
-      }
+      },
     ];
 
     const reports: DiagnosticReport[] = [
@@ -91,7 +91,7 @@ describe('PatientSummary - Labs', () => {
         resourceType: 'DiagnosticReport',
         status: 'preliminary',
         code: { text: 'Test Report Preliminary' },
-      }
+      },
     ];
     await setup(<Labs patient={HomerSimpson} serviceRequests={requests} diagnosticReports={reports} />);
 
