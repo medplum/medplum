@@ -125,6 +125,19 @@ curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHO
 
 if [[ "$DEPLOY_APP" = true ]]; then
   echo "Deploy app"
+
+  # We create a subshell for the build since we need to set the env vars to our placeholders for the Docker build
+  # We will replace the placeholders later with our actual env vars in deploy-app.sh
+  (
+    export MEDPLUM_BASE_URL="__MEDPLUM_BASE_URL__"
+    export MEDPLUM_CLIENT_ID="__MEDPLUM_CLIENT_ID__"
+    export MEDPLUM_REGISTER_ENABLED="__MEDPLUM_REGISTER_ENABLED__"
+    export MEDPLUM_AWS_TEXTRACT_ENABLED="__MEDPLUM_AWS_TEXTRACT_ENABLED__"
+    export GOOGLE_CLIENT_ID="__GOOGLE_CLIENT_ID__"
+    export RECAPTCHA_SITE_KEY="__RECAPTCHA_SITE_KEY__"
+    npm run build -- --force --filter=@medplum/app
+  )
+
   source ./scripts/build-docker-app.sh
   source ./scripts/deploy-app.sh
 fi
@@ -137,6 +150,7 @@ fi
 
 if [[ "$DEPLOY_SERVER" = true ]]; then
   echo "Deploy server"
+  npm run build -- --force --filter=@medplum/server
   source ./scripts/build-docker-server.sh
   source ./scripts/deploy-server.sh
 fi

@@ -38,6 +38,16 @@ jobs:
       - name: Install dependencies
         run: npm ci --maxsockets 1
 
+      - name: Build
+        run: npm run build:all
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          MEDPLUM_AWS_TEXTRACT_ENABLED: '__MEDPLUM_AWS_TEXTRACT_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
