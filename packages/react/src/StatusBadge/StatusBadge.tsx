@@ -71,12 +71,9 @@ export interface StatusBadgeProps extends Omit<BadgeProps, 'children'> {
 
 export function StatusBadge(props: StatusBadgeProps): JSX.Element {
   const { status, ...badgeProps } = props;
-  
+
   return (
-    <Badge 
-      color={props.color || statusToColor[status]} 
-      {...badgeProps}
-    >
+    <Badge color={props.color || statusToColor[status]} {...badgeProps}>
       {status.replace(/-/g, ' ')}
     </Badge>
   );
