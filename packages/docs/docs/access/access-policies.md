@@ -192,6 +192,14 @@ The AccessPolicy below grants access to all `Observation` resources that belong 
 }
 ```
 
+### Binaries
+
+The FHIR `Binary` resource is a special case. It is used to store arbitrary binary data, such as images or documents. Unlike other resources, `Binary` resources are not searchable, and therefore do not have search parameters, and therefore cannot use the `criteria` field in an `AccessPolicy`.
+
+To control access to `Binary` resources, you must use the `securityContext` field. This field is a reference to another resource, such as a `Patient`, `Practitioner`, or `Organization`, that defines the context in which the binary data is relevant.
+
+See [Binary Security Context](/docs/access/binary-security-context) for more information on how to use the `securityContext` field to control access to `Binary` resources.
+
 ### Parameterized Policies
 
 For more advanced access control configurations, You can use `%` variables to parameterize the access policy.
@@ -366,6 +374,12 @@ Patient Access is disabled by default. See our article on [enabling open patient
 
 :::
 
+:::danger Binary Access
+
+Binary resources cannot use compartment-based access controls. They require explicit `securityContext` declaration. See the [Binary Security Context](/docs/access/binary-security-context) documentation for more information.
+
+:::
+
 ```json
 {
   "resourceType": "AccessPolicy",
@@ -467,6 +481,7 @@ The [patient access policy](#patient-access) above can be combined with [policy 
   ]
 }
 ```
+
 ### Streamlined linkage and RBAC Control with AccessPolicy.basedOn
 
 In Medplum, users can attach one or more parameterized AccessPolicy resources to their ProjectMembership. During runtime, the Medplum server consolidates these resources into a single enforceable AccessPolicy.  
@@ -474,19 +489,19 @@ The recent enhancements introduce the **AccessPolicy.basedOn element**, which en
 
 This update allows for more granular control and visibility in RBAC implementations, where users have varying access levels based on their group or policy.
 
-
 - **Endpoint: /auth/me**
-    - This endpoint provides access to the user's AccessPolicy information, including the basedOn element.
+
+  - This endpoint provides access to the user's AccessPolicy information, including the basedOn element.
 
 - **AccessPolicy.basedOn**
-    - This element is an array containing references to original AccessPolicy resources.
-    - It provides traceability by linking the resolved AccessPolicy back to its source policies.
-    - At runtime, Medplum resolves all nested and parameterized policies to build the basedOn array.
+
+  - This element is an array containing references to original AccessPolicy resources.
+  - It provides traceability by linking the resolved AccessPolicy back to its source policies.
+  - At runtime, Medplum resolves all nested and parameterized policies to build the basedOn array.
 
 - **Client-Side**
-    - The introduction of AccessPolicy.basedOn allows for client-side changes based on the user's group/policy.
-    - This is especially useful for Role-Based Access Control (RBAC) implementations where different users may have varying access levels.
-
+  - The introduction of AccessPolicy.basedOn allows for client-side changes based on the user's group/policy.
+  - This is especially useful for Role-Based Access Control (RBAC) implementations where different users may have varying access levels.
 
 ## Related Resources
 
