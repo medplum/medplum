@@ -6,7 +6,6 @@ import { JSX, useState } from 'react';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import { CollapsibleSection } from './CollapsibleSection';
-import { DiagnosticReportDialog } from './DiagnosticReportDialog';
 import SummaryItem from './SummaryItem';
 import styles from './SummaryItem.module.css';
 
