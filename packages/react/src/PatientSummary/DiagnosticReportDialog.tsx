@@ -1,7 +1,6 @@
-import { ActionIcon, Flex, Group, Modal, Text, Tooltip } from '@mantine/core';
+import { ActionIcon, Flex, Modal, Text } from '@mantine/core';
 import { DiagnosticReport } from '@medplum/fhirtypes';
-import { useMedplumNavigate } from '@medplum/react-hooks';
-import { IconStackForward, IconX } from '@tabler/icons-react';
+import { IconX } from '@tabler/icons-react';
 import { JSX } from 'react';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 
@@ -13,46 +12,16 @@ export interface DiagnosticReportDialogProps {
 
 export function DiagnosticReportDialog(props: DiagnosticReportDialogProps): JSX.Element {
   const { diagnosticReport, opened, onClose } = props;
-  const navigate = useMedplumNavigate();
-
-  // Compute the resource URL
-  let resourceUrl = '';
-  if (diagnosticReport?.subject?.reference && diagnosticReport.id) {
-    // subject.reference is like 'Patient/123', so split to get the id
-    const patientId = diagnosticReport.subject.reference.split('/')[1];
-    resourceUrl = `/Patient/${patientId}/DiagnosticReport/${diagnosticReport.id}`;
-  }
-
-  const handleXRayClick = (): void => {
-    if (resourceUrl) {
-      navigate(resourceUrl);
-      onClose();
-    }
-  };
 
   return (
-    <Modal opened={opened} onClose={onClose} size="xl" withCloseButton={false}>
+    <Modal opened={opened} onClose={onClose} size="80%" withCloseButton={false}>
       <Flex align="center" justify="space-between" style={{ minHeight: 40, paddingBottom: 8 }}>
         <Text fw={500}>Lab Results</Text>
-        <Group gap={12}>
-          {resourceUrl && (
-            <Tooltip label="X-Ray" withArrow>
-              <ActionIcon
-                onClick={handleXRayClick}
-                variant="subtle"
-                color="gray"
-                aria-label="Open Diagnostic Report Resource Page"
-              >
-                <IconStackForward size={22} />
-              </ActionIcon>
-            </Tooltip>
-          )}
-          <ActionIcon onClick={onClose} variant="subtle" color="gray" aria-label="Close">
-            <IconX size={22} />
-          </ActionIcon>
-        </Group>
+        <ActionIcon onClick={onClose} variant="subtle" color="gray" aria-label="Close">
+          <IconX size={22} />
+        </ActionIcon>
       </Flex>
-      {diagnosticReport && <DiagnosticReportDisplay value={diagnosticReport} />}
+      {diagnosticReport && <DiagnosticReportDisplay value={diagnosticReport} hideSubject={true} />}
     </Modal>
   );
 }

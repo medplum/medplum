@@ -8,5 +8,5 @@
     "noEmit": false,
     "emitDeclarationOnly": true
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "../../examples/medplum-provider/src/pages/components/DiagnosticReportDialog.tsx"]
 }

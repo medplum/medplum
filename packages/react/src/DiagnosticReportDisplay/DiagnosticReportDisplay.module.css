@@ -10,14 +10,6 @@
   }
 }
 
-.statusCell {
-  white-space: nowrap;
-  min-width: 80px;
-  max-width: 1%;
-  width: 1%;
-  overflow: visible;
-}
-
 .criticalRow {
   background: light-dark(var(--mantine-color-red-1), var(--mantine-color-red-7));
   border: 0.1px solid var(--mantine-color-red-5);

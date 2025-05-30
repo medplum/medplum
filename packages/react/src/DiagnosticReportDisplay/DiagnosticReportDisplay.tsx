@@ -1,5 +1,5 @@
 import { Group, List, Stack, Text, Title } from '@mantine/core';
-import { formatDateTime, formatObservationValue, isReference } from '@medplum/core';
+import { formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
 import {
   Annotation,
   DiagnosticReport,
@@ -16,6 +16,7 @@ import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConcep
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
+import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
 import classes from './DiagnosticReportDisplay.module.css';
@@ -24,11 +25,13 @@ export interface DiagnosticReportDisplayProps {
   readonly value?: DiagnosticReport | Reference<DiagnosticReport>;
   readonly hideObservationNotes?: boolean;
   readonly hideSpecimenInfo?: boolean;
+  readonly hideSubject?: boolean;
 }
 
 DiagnosticReportDisplay.defaultProps = {
   hideObservationNotes: false,
   hideSpecimenInfo: false,
+  hideSubject: false,
 } as DiagnosticReportDisplayProps;
 
 export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JSX.Element | null {
@@ -64,10 +67,8 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
 
   return (
     <Stack>
-      <Title fw={800}>
-        {diagnosticReport.code ? <CodeableConceptDisplay value={diagnosticReport.code} /> : 'Diagnostic Report'}
-      </Title>
-      <DiagnosticReportHeader value={diagnosticReport} />
+      <Title>Diagnostic Report</Title>
+      <DiagnosticReportHeader value={diagnosticReport} hideSubject={props.hideSubject} />
       {specimens && !props.hideSpecimenInfo && SpecimenInfo(specimens)}
       {diagnosticReport.result && (
         <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
@@ -79,11 +80,20 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
 
 interface DiagnosticReportHeaderProps {
   readonly value: DiagnosticReport;
+  readonly hideSubject?: boolean;
 }
 
-function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Element {
+function DiagnosticReportHeader({ value, hideSubject = false }: DiagnosticReportHeaderProps): JSX.Element {
   return (
-    <Group mb="sm" gap={30}>
+    <Group mt="md" gap={30}>
+      {value.subject && !hideSubject && (
+        <div>
+          <Text size="xs" tt="uppercase" c="dimmed">
+            Subject
+          </Text>
+          <ResourceBadge value={value.subject} link={true} />
+        </div>
+      )}
       {value.resultsInterpreter?.map((interpreter) => (
         <div key={interpreter.reference}>
           <Text size="xs" tt="uppercase" c="dimmed">
@@ -97,7 +107,7 @@ function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Ele
           <Text size="xs" tt="uppercase" c="dimmed">
             Performer
           </Text>
-          <Text>{performer.display ?? performer.reference}</Text>
+          <ResourceBadge value={performer} link={true} />
         </div>
       ))}
       {value.issued && (
@@ -160,7 +170,9 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
           <th>Value</th>
           <th>Reference Range</th>
           <th>Interpretation</th>
-          <th className={classes.statusCell}>Status</th>
+          <th>Category</th>
+          <th>Performer</th>
+          <th>Status</th>
         </tr>
       </thead>
       <tbody>
@@ -231,9 +243,21 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
             <CodeableConceptDisplay value={observation.interpretation[0]} />
           )}
         </td>
-        <td className={classes.statusCell}>
-          {observation.status && <StatusBadge status={observation.status} variant="light" />}
+        <td>
+          {observation.category && observation.category.length > 0 && (
+            <>
+              {observation.category.map((concept) => (
+                <div key={`category-${formatCodeableConcept(concept)}`}>
+                  <CodeableConceptDisplay value={concept} />
+                </div>
+              ))}
+            </>
+          )}
         </td>
+        <td>
+          {observation.performer?.map((performer) => <ReferenceDisplay key={performer.reference} value={performer} />)}
+        </td>
+        <td>{observation.status && <StatusBadge status={observation.status} />}</td>
       </tr>
       {observation.hasMember && (
         <ObservationRowGroup
@@ -246,7 +270,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
       )}
       {displayNotes && (
         <tr>
-          <td colSpan={5}>
+          <td colSpan={6}>
             <NoteDisplay value={observation.note} />
           </td>
         </tr>
