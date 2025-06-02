@@ -19,7 +19,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
-import { initTestAuth, waitForAsyncJob } from '../test.setup';
+import { createTestProject, initTestAuth, waitForAsyncJob } from '../test.setup';
 import { BatchJobData, execBatchJob, getBatchQueue } from '../workers/batch';
 
 describe('Batch and Transaction processing', () => {
@@ -1195,5 +1195,53 @@ describe('Batch and Transaction processing', () => {
 
     expect(query.status).toBe(200);
     expect(query.body.entry).toHaveLength(1);
+  });
+
+  test('Rate limited during batch execution', async () => {
+    const { accessToken } = await createTestProject({
+      withAccessToken: true,
+      project: {
+        systemSetting: [
+          { name: 'userFhirQuota', valueInteger: 100 },
+          { name: 'enableFhirQuota', valueBoolean: true },
+        ],
+      },
+    });
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+        {
+          request: { method: 'POST', url: 'Patient' },
+          resource: { resourceType: 'Patient' },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toStrictEqual('Bundle');
+
+    const results = res.body as Bundle;
+    expect(results.entry).toHaveLength(4);
+    expect(results.type).toStrictEqual('batch-response');
+    expect(results.entry?.map((e) => parseInt(e.response?.status ?? '', 10))).toStrictEqual([201, 429, 429, 429]);
   });
 });

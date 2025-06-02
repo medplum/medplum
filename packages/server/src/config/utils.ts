@@ -31,6 +31,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
+  config.autoDownloadEnabled ??= true;
 
   // History:
   // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"

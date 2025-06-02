@@ -81,6 +81,7 @@ describe('Subscription Worker', () => {
       extendedMode: true,
       projects: [botProjectDetails.project.id],
       author: createReference(botProjectDetails.client),
+      currentProject: botProjectDetails.project,
     });
 
     mockLambdaClient = mockClient(LambdaClient);
@@ -1363,6 +1364,68 @@ describe('Subscription Worker', () => {
       await repo.updateResource({ ...patient, name: [{ given: ['Bob'], family: 'Smith' }] });
 
       expect(queue.add).not.toHaveBeenCalled();
+    }));
+
+  test('Error during FhirPath evaluation should not result in other Subscriptions not firing', () =>
+    withTestContext(async () => {
+      const url = 'https://example.com/subscription';
+
+      const subscription1 = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+        extension: [
+          {
+            url: 'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression',
+            valueString:
+              '%current.address.postalCode.all(%previous.address.postalCode.contains(%current.address.postalCode)).not()',
+          },
+        ],
+      });
+
+      // We create this subscription second so that if the loop to evaluate the subscription exits early, this subscription won't be evaluated
+      const subscription2 = await repo.createResource<Subscription>({
+        resourceType: 'Subscription',
+        reason: 'test',
+        status: 'active',
+        criteria: 'Patient',
+        channel: {
+          type: 'rest-hook',
+          endpoint: url,
+        },
+      });
+
+      expect(subscription1).toBeDefined();
+      expect(subscription2).toBeDefined();
+
+      // Create the patient
+      let patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        // Add address with multiple values, this would cause the FHIRPath expression to throw
+        // since you cannot call contains on an array (must be called on a singleton)
+        address: [{ postalCode: '94134' }, { postalCode: '94135' }],
+      });
+      expect(patient).toBeDefined();
+
+      const queue = getSubscriptionQueue() as any;
+
+      // Clear mock because we only care about updates for this test, when %previous is not empty from the start
+      queue.add.mockClear();
+
+      patient = await repo.updateResource<Patient>({
+        ...patient,
+        address: [{ postalCode: '94134' }, { postalCode: '94136' }],
+      });
+      expect(patient).toBeDefined();
+
+      expect(queue.add).toHaveBeenCalledTimes(1);
+      expect(queue.add.mock.calls[0][1]?.id).toStrictEqual(patient.id);
     }));
 
   test('Subscription -- Unexpected throw inside of satisfiesAccessPolicy (regression in #3978, see #4003)', () =>

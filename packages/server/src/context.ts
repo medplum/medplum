@@ -5,7 +5,7 @@ import { NextFunction, Request, Response } from 'express';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
-import { FhirRateLimiter } from './fhirinteractionlimit';
+import { FhirRateLimiter } from './fhirquota';
 import { globalLogger, systemLogger } from './logger';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { getRedis } from './redis';

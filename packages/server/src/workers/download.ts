@@ -1,5 +1,6 @@
 import {
   arrayify,
+  BackgroundJobContext,
   crawlTypedValue,
   isGone,
   normalizeOperationOutcome,
@@ -93,8 +94,20 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the download.
  * @param resource - The resource that was created or updated.
+ * @param context - The background job context.
  */
-export async function addDownloadJobs(resource: WithId<Resource>): Promise<void> {
+export async function addDownloadJobs(resource: WithId<Resource>, context: BackgroundJobContext): Promise<void> {
+  if (!getConfig().autoDownloadEnabled) {
+    return;
+  }
+
+  // Check if the project has a setting for "autoDownloadEnabled" and if it is set to false.
+  // Auto-download is enabled by default, but can be disabled per project.
+  const project = context?.project;
+  if (project?.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
+    return;
+  }
+
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
     if (isExternalUrl(attachment.url)) {

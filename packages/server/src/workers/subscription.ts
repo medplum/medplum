@@ -233,21 +233,8 @@ export async function addSubscriptionJobs(
   const ctx = tryGetRequestContext();
   const logger = getLogger();
   const logFn = options?.verbose ? logger.info : logger.debug;
-  const systemRepo = getSystemRepo();
-  let project: WithId<Project> | undefined;
-  try {
-    const projectId = resource.meta?.project;
-    if (projectId) {
-      project = await systemRepo.readResource<Project>('Project', projectId);
-    }
-  } catch (err: unknown) {
-    const resourceReference = getReferenceString(resource);
-    globalLogger.error(`[Subscription]: No project found for '${resourceReference}' -- something is very wrong.`, {
-      error: err,
-      resource: resourceReference,
-    });
-    return;
-  }
+
+  const project = context?.project;
   if (!project) {
     return;
   }
@@ -262,9 +249,21 @@ export async function addSubscriptionJobs(
       logFn('Subscription does not match options.subscription');
       continue;
     }
-    const criteria = await matchesCriteria(resource, previousVersion, subscription, context);
-    logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${criteria}`);
-    if (criteria) {
+    let matches: boolean;
+    try {
+      matches = await matchesCriteria(resource, previousVersion, subscription, context);
+      logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${matches}`);
+    } catch (err) {
+      // If we throw when evaluating the criteria, log and continue
+      logFn('Error when evaluating matchesCriteria for resource against Subscription', {
+        resourceType: resource.resourceType,
+        resource: resource.id,
+        subscription: subscription.id,
+        err,
+      });
+      continue;
+    }
+    if (matches) {
       if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
         logFn(`Subscription satisfiesAccessPolicy(${resource.id}) = false`);
         continue;

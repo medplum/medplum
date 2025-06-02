@@ -37,7 +37,10 @@ import {
 } from '@medplum/fhirtypes';
 import { mapCcdaToFhirDate, mapCcdaToFhirDateTime } from './datetime';
 import {
+  OID_ALLERGIES_SECTION_ENTRIES_OPTIONAL,
+  OID_ALLERGIES_SECTION_ENTRIES_OPTIONAL_V2,
   OID_ALLERGIES_SECTION_ENTRIES_REQUIRED,
+  OID_ALLERGIES_SECTION_ENTRIES_REQUIRED_V2,
   OID_CARE_TEAMS_SECTION,
   OID_GOAL_OBSERVATION,
   OID_GOALS_SECTION,
@@ -49,7 +52,10 @@ import {
   OID_NOTES_SECTION,
   OID_PAYERS_SECTION,
   OID_PLAN_OF_CARE_SECTION,
+  OID_PROBLEMS_SECTION_ENTRIES_OPTIONAL,
   OID_PROBLEMS_SECTION_ENTRIES_REQUIRED,
+  OID_PROBLEMS_SECTION_V2_ENTRIES_OPTIONAL,
+  OID_PROBLEMS_SECTION_V2_ENTRIES_REQUIRED,
   OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
   OID_REASON_FOR_REFERRAL,
 } from './oids';
@@ -111,6 +117,10 @@ import {
 } from './types';
 import { convertToCompactXml } from './xml';
 
+export interface CcdaToFhirOptions {
+  ignoreUnsupportedSections?: boolean;
+}
+
 /**
  * Converts C-CDA documents to FHIR resources
  * Following Medplum TypeScript rules:
@@ -119,19 +129,22 @@ import { convertToCompactXml } from './xml';
  * - Adds proper metadata and timestamps
  *
  * @param ccda - The C-CDA document to convert
+ * @param options - Optional conversion options
  * @returns The converted FHIR resources
  */
-export function convertCcdaToFhir(ccda: Ccda): Bundle {
-  return new CcdaToFhirConverter(ccda).convert();
+export function convertCcdaToFhir(ccda: Ccda, options?: CcdaToFhirOptions): Bundle {
+  return new CcdaToFhirConverter(ccda, options).convert();
 }
 
 class CcdaToFhirConverter {
   private readonly ccda: Ccda;
+  private readonly options: CcdaToFhirOptions | undefined;
   private readonly resources: Resource[] = [];
   private patient?: Patient;
 
-  constructor(ccda: Ccda) {
+  constructor(ccda: Ccda, options?: CcdaToFhirOptions) {
     this.ccda = ccda;
+    this.options = options;
   }
 
   convert(): Bundle {
@@ -373,8 +386,14 @@ class CcdaToFhirConverter {
     const templateId = section.templateId[0]['@_root'];
     switch (templateId) {
       case OID_ALLERGIES_SECTION_ENTRIES_REQUIRED:
+      case OID_ALLERGIES_SECTION_ENTRIES_OPTIONAL:
+      case OID_ALLERGIES_SECTION_ENTRIES_REQUIRED_V2:
+      case OID_ALLERGIES_SECTION_ENTRIES_OPTIONAL_V2:
         return this.processAllergyIntoleranceAct(act);
       case OID_PROBLEMS_SECTION_ENTRIES_REQUIRED:
+      case OID_PROBLEMS_SECTION_ENTRIES_OPTIONAL:
+      case OID_PROBLEMS_SECTION_V2_ENTRIES_REQUIRED:
+      case OID_PROBLEMS_SECTION_V2_ENTRIES_OPTIONAL:
         return this.processConditionAct(act);
       case OID_PLAN_OF_CARE_SECTION:
         return this.processCarePlanAct(act);
@@ -392,6 +411,9 @@ class CcdaToFhirConverter {
         // This is part of USCDI v3, which is optional, and not yet implemented
         return undefined;
       default:
+        if (this.options?.ignoreUnsupportedSections) {
+          return undefined;
+        }
         throw new Error('Unhandled act templateId: ' + templateId);
     }
   }
@@ -544,6 +566,9 @@ class CcdaToFhirConverter {
       case OID_IMMUNIZATIONS_SECTION_ENTRIES_REQUIRED:
         return this.processImmunizationSubstanceAdministration(substanceAdmin);
       default:
+        if (this.options?.ignoreUnsupportedSections) {
+          return undefined;
+        }
         throw new Error('Unhandled substance administration templateId: ' + templateId);
     }
   }

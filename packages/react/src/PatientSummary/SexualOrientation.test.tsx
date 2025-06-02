@@ -55,7 +55,7 @@ describe('PatientSummary - SexualOrientation', () => {
     await setup(<SexualOrientation patient={HomerSimpson} />);
 
     await act(async () => {
-      fireEvent.click(screen.getByText('+ Edit'));
+      fireEvent.click(screen.getByLabelText('Add item'));
     });
 
     // Click "Save" button
@@ -63,5 +63,28 @@ describe('PatientSummary - SexualOrientation', () => {
     await act(async () => {
       fireEvent.click(saveButton);
     });
+  });
+
+  test('Click on resource', async () => {
+    const mockOnClickResource = jest.fn();
+    await setup(
+      <SexualOrientation
+        patient={HomerSimpson}
+        sexualOrientation={{
+          resourceType: 'Observation',
+          id: 'sexualOrientation',
+          status: 'final',
+          code: { text: 'Sexual orientation' },
+          valueCodeableConcept: { text: 'Heterosexual' },
+        }}
+        onClickResource={mockOnClickResource}
+      />
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('sexual-orientation-button'));
+    });
+
+    expect(mockOnClickResource).toHaveBeenCalled();
   });
 });

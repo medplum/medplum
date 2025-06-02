@@ -1804,7 +1804,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const promise = new ReadablePromise<void>(
       (async () => {
         const query = `{
-      StructureDefinitionList(name: "${resourceType}") {
+      StructureDefinitionList(_filter: "name eq ${resourceType}") {
         resourceType,
         name,
         kind,
@@ -1847,7 +1847,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
         const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
-        indexStructureDefinitionBundle(response.data.StructureDefinitionList.filter((sd) => sd.name === resourceType));
+        indexStructureDefinitionBundle(response.data.StructureDefinitionList);
 
         for (const searchParameter of response.data.SearchParameterList) {
           indexSearchParameter(searchParameter);
