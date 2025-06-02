@@ -1,5 +1,5 @@
 import { DiagnosticReport, ServiceRequest } from '@medplum/fhirtypes';
-import { HomerDiagnosticReport, HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
+import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router';
@@ -53,7 +53,17 @@ describe('PatientSummary - Labs', () => {
   });
 
   test('Renders DiagnosticReport', async () => {
-    await setup(<Labs patient={HomerSimpson} serviceRequests={[]} diagnosticReports={[HomerDiagnosticReport]} />);
+
+    const reports: DiagnosticReport[] = [
+      {
+        resourceType: 'DiagnosticReport',
+        status: 'final',
+        code: { text: 'Test Report' },
+        category: [{ coding: [{ code: 'laboratory' }] }],
+      }
+    ]
+
+    await setup(<Labs patient={HomerSimpson} serviceRequests={[]} diagnosticReports={reports} />);
     expect(screen.getByText('final')).toBeInTheDocument();
     await act(async () => {
       fireEvent.click(screen.getByText('Test Report'));
@@ -61,6 +71,52 @@ describe('PatientSummary - Labs', () => {
 
     const modalTitle = await screen.findByText('Diagnostic Report');
     expect(modalTitle).toBeInTheDocument();
+  });
+
+  test('Renders only first ServiceRequest when multiple have same requisition number', async () => {
+    const requests: ServiceRequest[] = [
+      {
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        code: { text: 'Test Request Active 1' },
+        requisition: {
+          value: '123456',
+        },
+        intent: 'order',
+        subject: {
+          reference: 'Patient/123',
+        },
+      },
+      {
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        code: { text: 'Test Request Active 2' },
+        requisition: {
+          value: '123456',
+        },
+        intent: 'order',
+        subject: {
+          reference: 'Patient/123',
+        },
+      },
+      {
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        code: { text: 'Test Request Active 3' },
+        requisition: {
+          value: '123456',
+        },
+        intent: 'order',
+        subject: {
+          reference: 'Patient/123',
+        },
+      },
+    ];
+    
+    await setup(<Labs patient={HomerSimpson} serviceRequests={requests} diagnosticReports={[]} />);
+    
+    expect(screen.getByText('Test Request Active 1')).toBeInTheDocument();
+    expect(screen.queryByText('Test Request Active 2')).not.toBeInTheDocument();
   });
 
   test('Status Badge colors', async () => {
@@ -81,16 +137,19 @@ describe('PatientSummary - Labs', () => {
         resourceType: 'DiagnosticReport',
         status: 'final',
         code: { text: 'Test Report Final' },
+        category: [{ coding: [{ code: 'laboratory' }] }],
       },
       {
         resourceType: 'DiagnosticReport',
         status: 'cancelled',
         code: { text: 'Test Report Cancelled' },
+        category: [{ coding: [{ code: 'laboratory' }] }],
       },
       {
         resourceType: 'DiagnosticReport',
         status: 'preliminary',
         code: { text: 'Test Report Preliminary' },
+        category: [{ coding: [{ code: 'laboratory' }] }],
       },
     ];
     await setup(<Labs patient={HomerSimpson} serviceRequests={requests} diagnosticReports={reports} />);

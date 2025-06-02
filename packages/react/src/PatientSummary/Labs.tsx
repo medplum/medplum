@@ -1,7 +1,7 @@
 import { Box, Flex, Group, Modal, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { formatDate, getDisplayString } from '@medplum/core';
-import { DiagnosticReport, Encounter, Patient, Resource, ServiceRequest } from '@medplum/fhirtypes';
+import { CodeableConcept, DiagnosticReport, Patient, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { JSX, useState } from 'react';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
@@ -11,7 +11,6 @@ import styles from './SummaryItem.module.css';
 
 export interface LabsProps {
   readonly patient: Patient;
-  readonly encounter?: Encounter;
   readonly serviceRequests: ServiceRequest[];
   readonly diagnosticReports: DiagnosticReport[];
   readonly onClickResource?: (resource: Resource) => void;
@@ -22,38 +21,20 @@ export function Labs(props: LabsProps): JSX.Element {
   const [selectedReport, setSelectedReport] = useState<DiagnosticReport | undefined>();
   const [reportDialogOpened, { open: openReportDialog, close: closeReportDialog }] = useDisclosure(false);
 
-  const completedRequisitionNumbers = new Set(
-    serviceRequests
-      .filter((req) => req.status === 'completed' && req.requisition?.value)
-      .map((req) => req.requisition?.value)
-  );
+  const filteredDiagnosticReports = diagnosticReports.filter((report) => {
+    return isLaboratoryReport(report);
+  });
 
+  const completedRequisitionNumbers = new Set<string>();
   const filteredServiceRequests = serviceRequests
-    .filter((request) => {
-      const requisitionNumber = request.requisition?.value;
+  .filter(request => {
+    const shouldFilter = shouldFilterRequest(request, completedRequisitionNumbers);
+    if (!shouldFilter && request.requisition?.value) {
+      completedRequisitionNumbers.add(request.requisition?.value);
+    }
+    return !shouldFilter;
+  });
 
-      if (request.status === 'completed' || request.status === 'draft' || request.status === 'entered-in-error') {
-        return false;
-      }
-      if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
-        return false;
-      }
-      return true;
-    })
-    .reduce<ServiceRequest[]>((acc, current) => {
-      if (current.basedOn?.[0]?.reference) {
-        const basedOnId = current.basedOn[0].reference.split('/')[1];
-        const existingIndex = acc.findIndex((req) => req.id === basedOnId);
-        if (existingIndex !== -1) {
-          acc[existingIndex] = current;
-        } else {
-          acc.push(current);
-        }
-      } else {
-        acc.push(current);
-      }
-      return acc;
-    }, []);
 
   const handleDiagnosticReportClick = (report: DiagnosticReport): void => {
     setSelectedReport(report);
@@ -86,7 +67,7 @@ export function Labs(props: LabsProps): JSX.Element {
             </SummaryItem>
           ))}
 
-          {diagnosticReports.map((report) => (
+          {filteredDiagnosticReports.map((report) => (
             <SummaryItem key={report.id} onClick={() => handleDiagnosticReportClick(report)}>
               <Box>
                 <Text fw={500} className={styles.itemText}>
@@ -104,14 +85,9 @@ export function Labs(props: LabsProps): JSX.Element {
             </SummaryItem>
           ))}
 
-          {filteredServiceRequests.length === 0 && diagnosticReports.length === 0 && <Text>(none)</Text>}
+          {filteredServiceRequests.length === 0 && filteredDiagnosticReports.length === 0 && <Text>(none)</Text>}
         </Flex>
       </CollapsibleSection>
-      {/* <DiagnosticReportDialog
-        diagnosticReport={selectedReport}
-        opened={reportDialogOpened}
-        onClose={closeReportDialog}
-      /> */}
       <Modal opened={reportDialogOpened} onClose={closeReportDialog} size="80%">
         {selectedReport && <DiagnosticReportDisplay value={selectedReport} hideSubject={true} />}
       </Modal>
@@ -131,3 +107,45 @@ const getStatusColor = (status: string): string => {
       return 'gray';
   }
 };
+
+
+function hasLaboratoryCategory(category: CodeableConcept): boolean {
+  if (!category.coding || !Array.isArray(category.coding)) {
+    return false;
+  }
+  
+  for (const coding of category.coding) {
+    if (coding.code === 'laboratory') {
+      return true;
+    }
+  }
+  
+  return false;
+}
+   
+function isLaboratoryReport(report: DiagnosticReport): boolean {
+  if (!report.category || !Array.isArray(report.category)) {
+    return false;
+  }
+  for (const category of report.category) {
+    if (hasLaboratoryCategory(category)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+function shouldFilterRequest(request: ServiceRequest, completedRequisitionNumbers: Set<string>): boolean {
+
+  if (['completed', 'draft', 'entered-in-error'].includes(request.status)) {
+    return true;
+  }
+
+  const requisitionNumber = request.requisition?.value;
+  if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
+    return true;
+  }
+  
+  return false;
+}
