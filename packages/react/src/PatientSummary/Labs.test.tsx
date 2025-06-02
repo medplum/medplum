@@ -53,15 +53,14 @@ describe('PatientSummary - Labs', () => {
   });
 
   test('Renders DiagnosticReport', async () => {
-
     const reports: DiagnosticReport[] = [
       {
         resourceType: 'DiagnosticReport',
         status: 'final',
         code: { text: 'Test Report' },
         category: [{ coding: [{ code: 'laboratory' }] }],
-      }
-    ]
+      },
+    ];
 
     await setup(<Labs patient={HomerSimpson} serviceRequests={[]} diagnosticReports={reports} />);
     expect(screen.getByText('final')).toBeInTheDocument();
@@ -112,9 +111,9 @@ describe('PatientSummary - Labs', () => {
         },
       },
     ];
-    
+
     await setup(<Labs patient={HomerSimpson} serviceRequests={requests} diagnosticReports={[]} />);
-    
+
     expect(screen.getByText('Test Request Active 1')).toBeInTheDocument();
     expect(screen.queryByText('Test Request Active 2')).not.toBeInTheDocument();
   });

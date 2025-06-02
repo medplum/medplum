@@ -26,15 +26,13 @@ export function Labs(props: LabsProps): JSX.Element {
   });
 
   const completedRequisitionNumbers = new Set<string>();
-  const filteredServiceRequests = serviceRequests
-  .filter(request => {
+  const filteredServiceRequests = serviceRequests.filter((request) => {
     const shouldFilter = shouldFilterRequest(request, completedRequisitionNumbers);
     if (!shouldFilter && request.requisition?.value) {
       completedRequisitionNumbers.add(request.requisition?.value);
     }
     return !shouldFilter;
   });
-
 
   const handleDiagnosticReportClick = (report: DiagnosticReport): void => {
     setSelectedReport(report);
@@ -108,21 +106,20 @@ const getStatusColor = (status: string): string => {
   }
 };
 
-
 function hasLaboratoryCategory(category: CodeableConcept): boolean {
   if (!category.coding || !Array.isArray(category.coding)) {
     return false;
   }
-  
+
   for (const coding of category.coding) {
     if (coding.code === 'laboratory') {
       return true;
     }
   }
-  
+
   return false;
 }
-   
+
 function isLaboratoryReport(report: DiagnosticReport): boolean {
   if (!report.category || !Array.isArray(report.category)) {
     return false;
@@ -132,12 +129,11 @@ function isLaboratoryReport(report: DiagnosticReport): boolean {
       return true;
     }
   }
-  
+
   return false;
 }
 
 function shouldFilterRequest(request: ServiceRequest, completedRequisitionNumbers: Set<string>): boolean {
-
   if (['completed', 'draft', 'entered-in-error'].includes(request.status)) {
     return true;
   }
@@ -146,6 +142,6 @@ function shouldFilterRequest(request: ServiceRequest, completedRequisitionNumber
   if (requisitionNumber && completedRequisitionNumbers.has(requisitionNumber)) {
     return true;
   }
-  
+
   return false;
 }
