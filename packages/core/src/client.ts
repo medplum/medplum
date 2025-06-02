@@ -373,6 +373,11 @@ export interface MedplumRequestOptions extends RequestInit {
   maxRetries?: number;
 
   /**
+   * Optional maximum time to wait between retries, in milliseconds; defaults to `2000` (2 s).
+   */
+  maxRetryTime?: number;
+
+  /**
    * Optional flag to disable auto-batching for this specific request.
    * Only applies when the client is configured with auto-batching enabled.
    */
@@ -3365,8 +3370,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
 
         const delayMs = this.getRetryDelay(attemptNum);
+        const maxRetryTime = options.maxRetryTime ?? 2_000;
         // Return to user immediately if delay would be very long
-        if (delayMs > 2_000) {
+        if (delayMs > maxRetryTime) {
           return response;
         }
         await sleep(delayMs);
