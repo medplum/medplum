@@ -1,12 +1,12 @@
 import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
-import fs, { writeFileSync } from 'fs';
 import { DOMWindow, JSDOM } from 'jsdom';
 import * as mkdirp from 'mkdirp';
 import fetch from 'node-fetch';
-import * as path from 'path';
-import { resolve } from 'path/posix';
+import fs, { writeFileSync } from 'node:fs';
+import * as path from 'node:path';
+import { resolve } from 'node:path/posix';
 import * as unzipper from 'unzipper';
 
 import {
@@ -15,6 +15,8 @@ import {
   PropertyTypeDocInfo,
   ResourceDocsProps,
 } from '../../docs/src/types/documentationTypes';
+
+const REPORT_PERCENTAGE_INCREMENT = 5; // every 5%
 
 const searchParams: SearchParameter[] = [];
 for (const entry of readJson('fhir/r4/search-parameters.json').entry as BundleEntry<SearchParameter>[]) {
@@ -260,9 +262,10 @@ function writeDocs(
   resourceIntroductions?: Record<string, any>
 ): void {
   console.info('Writing JS and Markdown files...');
+  const reporter = new ProgressReporter();
   definitions.forEach((definition, i) => {
     const resourceType = definition.name;
-    printProgress(Math.round((i / definitions.length) * 100));
+    reporter.printProgress(Math.round((i / definitions.length) * 100));
     writeFileSync(
       resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceType.toLowerCase()}.json`),
       JSON.stringify(definition, null, 2) + '\n',
@@ -275,6 +278,10 @@ function writeDocs(
       'utf8'
     );
   });
+  // If in a TTY, add a new line to close out the loader
+  if (process.stdout.isTTY) {
+    process.stdout.write('\n');
+  }
 }
 
 function filterDefinitions(bundle: Bundle): StructureDefinition[] {
@@ -457,8 +464,9 @@ function extractResourceDescriptions(
   const results: Record<string, Record<string, string | string[] | undefined>> = {};
 
   console.info('Extracting HTML descriptions...');
+  const reporter = new ProgressReporter();
   for (let i = 0; i < definitions.length; i++) {
-    printProgress(Math.round((i / definitions.length) * 100));
+    reporter.printProgress(Math.round((i / definitions.length) * 100));
     const definition = definitions[i];
     const resourceType = definition.name;
     const fileName = path.resolve(htmlDirectory, `${resourceType?.toLowerCase()}.html`);
@@ -501,6 +509,11 @@ function extractResourceDescriptions(
       }
       results[resourceType] = resourceContents;
     }
+  }
+
+  // If in a TTY, add a newline to finish the loader's line
+  if (process.stdout.isTTY) {
+    process.stdout.write('\n');
   }
 
   console.info('Done');
@@ -636,10 +649,26 @@ function getMedplumDocsPath(typeName: string): string {
   return `/docs/api/fhir/${location}/${typeName.toLowerCase()}`;
 }
 
-function printProgress(progress: number): void {
-  process.stdout.clearLine(0);
-  process.stdout.cursorTo(0);
-  process.stdout.write(progress + '%');
+class ProgressReporter {
+  private lastReportedProgress = 0;
+
+  printProgress(progress: number): boolean {
+    // If we are not in a TTY
+    // Or we have not reached the reporting threshold
+    // Don't print
+    if (!process.stdout.isTTY && progress < this.lastReportedProgress + REPORT_PERCENTAGE_INCREMENT) {
+      return false;
+    }
+    this.lastReportedProgress = progress;
+    // We clear the previous output and reset the cursor for pretty terminal loader
+    if (process.stdout.isTTY) {
+      process.stdout.clearLine(0);
+      process.stdout.cursorTo(0);
+    }
+    // We conditionally add a \n character only if not in a TTY (so it doesn't put all output on one line)
+    process.stdout.write(progress + '%' + (process.stdout.isTTY ? '' : '\n'));
+    return true;
+  }
 }
 
 if (process.argv[1].endsWith('docs.ts')) {
