@@ -14,6 +14,7 @@ import { CreateUpdateSlot } from '../components/schedule/CreateUpdateSlot';
 import { SetAvailability } from '../components/schedule/SetAvailability';
 import { SlotDetails } from '../components/schedule/SlotDetails';
 import { CreateVisit } from '../components/schedule/CreateVisit';
+import { showErrorNotification } from '../utils/notifications';
 
 type AppointmentEvent = Event & { type: 'appointment'; appointment: Appointment; start: Date; end: Date };
 type SlotEvent = Event & { type: 'slot'; status: string; start: Date; end: Date };
@@ -188,7 +189,7 @@ export function SchedulePage(): JSX.Element | null {
       }
 
       if (resourceType === 'Appointment') {
-        handleAppointment().catch(console.error);
+        handleAppointment().catch((err) => showErrorNotification(err));
       }
     },
     [slotDetailsHandlers, createAppointmentHandlers, navigate, medplum]
