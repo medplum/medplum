@@ -18,12 +18,20 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { IconBinaryTree, IconCake, IconEmpathize, IconLanguage, IconMapPin, IconStethoscope } from '@tabler/icons-react';
+import {
+  IconBinaryTree,
+  IconCake,
+  IconEmpathize,
+  IconLanguage,
+  IconMapPin,
+  IconStethoscope,
+} from '@tabler/icons-react';
 import { JSX, useEffect, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Insurance } from './Insurance';
 import { Medications } from './Medications';
+import { PatientInfoItem } from './PatientInfoItem';
 import styles from './PatientSummary.module.css';
 import {
   formatPatientGenderDisplay,
@@ -38,7 +46,6 @@ import { SexualOrientation } from './SexualOrientation';
 import { SmokingStatus } from './SmokingStatus';
 import SummaryItem from './SummaryItem';
 import { Vitals } from './Vitals';
-import { PatientInfoItem } from './PatientInfoItem';
 
 export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
@@ -185,7 +192,9 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Stack gap="xs" py={8}>
               <PatientInfoItem
                 patient={patient}
-                value={patient.birthDate ? `${patient.birthDate} (${calculateAgeString(patient.birthDate)})` : undefined}
+                value={
+                  patient.birthDate ? `${patient.birthDate} (${calculateAgeString(patient.birthDate)})` : undefined
+                }
                 icon={<IconCake size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
                 placeholder="Add Birthdate"
                 label="Birthdate & Age"
@@ -202,13 +211,15 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
 
               <PatientInfoItem
                 patient={patient}
-                value={getRace(patient) || getEthnicity(patient) ? formatPatientRaceEthnicityDisplay(patient) : undefined}
+                value={
+                  getRace(patient) || getEthnicity(patient) ? formatPatientRaceEthnicityDisplay(patient) : undefined
+                }
                 icon={<IconBinaryTree size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
                 placeholder="Add Race & Ethnicity"
                 label="Race & Ethnicity"
                 onClickResource={onClickResource}
               />
-            
+
               <PatientInfoItem
                 patient={patient}
                 value={patient.address?.[0] ? formatAddress(patient.address[0]) : undefined}

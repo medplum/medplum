@@ -75,11 +75,10 @@ export const getPreferredLanguage = (patient: Patient): string | undefined => {
     return undefined;
   }
 
-  const preferred = patient.communication?.find(comm => comm.preferred === true);
+  const preferred = patient.communication?.find((comm) => comm.preferred === true);
   if (preferred?.language?.coding?.[0]?.display) {
     return preferred.language.coding[0].display;
   }
-  
+
   return patient.communication[0]?.language?.coding?.[0]?.display;
 };
-
