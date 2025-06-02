@@ -1,11 +1,13 @@
 import { ActionIcon, Box, Card, Flex, Grid, Menu, Stack, Text, TextInput } from '@mantine/core';
 import { HTTP_HL7_ORG } from '@medplum/core';
-import { ChargeItem, CodeableConcept } from '@medplum/fhirtypes';
-import { CodeableConceptInput } from '@medplum/react';
+import { ChargeItem, CodeableConcept, Money } from '@medplum/fhirtypes';
+import { CodeableConceptInput, useMedplum } from '@medplum/react';
 import { IconTrash } from '@tabler/icons-react';
-import { JSX } from 'react';
+import { JSX, useEffect, useState } from 'react';
+import { applyChargeItemDefinition } from '../../utils/chargeitems';
 
 const CHARGE_ITEM_MODIFIER_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/chargeitem-modifier`;
+const CPT_CODE_SYSTEM = 'http://www.ama-assn.org/go/cpt';
 
 interface ChargeItemPanelProps {
   chargeItem: ChargeItem;
@@ -15,13 +17,21 @@ interface ChargeItemPanelProps {
 
 export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Element {
   const { chargeItem, onChange, onDelete } = props;
-  const cptCodes =
-    chargeItem?.code?.coding?.filter((coding) => coding.system === 'http://www.ama-assn.org/go/cpt') ?? [];
+  const medplum = useMedplum();
+  const [modifierExtensionValue, setModifierExtensionValue] = useState<CodeableConcept | undefined>();
+  const [cptCodes, setCptCodes] = useState<CodeableConcept>();
+  const [price, setPrice] = useState<Money | undefined>();
+
+  useEffect(() => {
+    setPrice(chargeItem.priceOverride);
+    setModifierExtensionValue(getModifierExtension(chargeItem));
+    const cptCodes = chargeItem?.code?.coding?.filter((coding) => coding.system === CPT_CODE_SYSTEM) ?? [];
+    setCptCodes({ coding: cptCodes });
+  }, [chargeItem]);
 
   const updateCptCodes = (value: CodeableConcept | undefined): void => {
     const updatedChargeItem = { ...chargeItem };
-    const existingNonCptCodes =
-      chargeItem.code?.coding?.filter((coding) => coding.system !== 'http://www.ama-assn.org/go/cpt') ?? [];
+    const existingNonCptCodes = chargeItem.code?.coding?.filter((coding) => coding.system !== CPT_CODE_SYSTEM) ?? [];
     updatedChargeItem.code = {
       ...(value ?? {}),
       coding: [...(value?.coding ?? []), ...existingNonCptCodes],
@@ -29,11 +39,11 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
     onChange(updatedChargeItem);
   };
 
-  const updateModifierExtension = (value: CodeableConcept | undefined): void => {
+  const updateModifiers = async (value: CodeableConcept | undefined): Promise<void> => {
     if (!value) {
       const updatedChargeItem = { ...chargeItem };
       updatedChargeItem.extension = undefined;
-      onChange(updatedChargeItem);
+      await updateChargeItem(updatedChargeItem);
       return;
     }
     const updatedChargeItem = { ...chargeItem };
@@ -48,7 +58,18 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
     } else {
       updatedChargeItem.extension.push(modifierExtension);
     }
-    onChange(updatedChargeItem);
+    await updateChargeItem(updatedChargeItem);
+  };
+
+  const updateChargeItem = async (updatedChargeItem: ChargeItem): Promise<void> => {
+    await medplum.updateResource(updatedChargeItem);
+    const appliedChargeItem = await applyChargeItemDefinition(medplum, updatedChargeItem);
+    onChange(appliedChargeItem);
+  };
+
+  const deleteChargeItem = async (): Promise<void> => {
+    await medplum.deleteResource('ChargeItem', chargeItem.id as string);
+    onDelete(chargeItem);
   };
 
   const getModifierExtension = (item: ChargeItem): CodeableConcept | undefined => {
@@ -59,7 +80,8 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
     return undefined;
   };
 
-  const modifierExtensionValue = getModifierExtension(chargeItem);
+  const cptCodeKey = `cpt-${chargeItem.id}-${JSON.stringify(cptCodes?.coding)}`;
+  const modifierKey = `modifier-${chargeItem.id}-${JSON.stringify(modifierExtensionValue)}`;
 
   return (
     <Card withBorder shadow="sm" p={0}>
@@ -67,12 +89,15 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
         <Flex justify="space-between">
           <Box flex={1} mr="md">
             <CodeableConceptInput
+              key={cptCodeKey}
               binding="http://medplum.com/fhir/ValueSet/cpt-codes"
               label="CPT Code"
               name="cptCode"
               path="cptCode"
-              defaultValue={cptCodes.length > 0 ? { coding: cptCodes } : undefined}
+              defaultValue={cptCodes}
               onChange={updateCptCodes}
+              readOnly
+              disabled={true}
             />
           </Box>
 
@@ -84,7 +109,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
             </Menu.Target>
 
             <Menu.Dropdown>
-              <Menu.Item color="red" leftSection={<IconTrash size={16} />} onClick={() => onDelete(chargeItem)}>
+              <Menu.Item color="red" leftSection={<IconTrash size={16} />} onClick={deleteChargeItem}>
                 Delete
               </Menu.Item>
             </Menu.Dropdown>
@@ -92,12 +117,13 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
         </Flex>
 
         <CodeableConceptInput
+          key={modifierKey}
           binding="http://hl7.org/fhir/ValueSet/claim-modifiers"
           label="Modifiers"
           name="modifiers"
           path="modifiers"
           defaultValue={modifierExtensionValue}
-          onChange={updateModifierExtension}
+          onChange={updateModifiers}
         />
 
         <Grid columns={12} mt="md">
@@ -113,10 +139,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
             <Text size="sm" fw={500} mb={8}>
               Calculated Price
             </Text>
-            <TextInput
-              value={chargeItem.priceOverride?.value ? `$${chargeItem.priceOverride.value.toFixed(2)}` : 'N/A'}
-              readOnly
-            />
+            <TextInput value={price?.value ? `$${price.value.toFixed(2)}` : 'N/A'} readOnly />
           </Grid.Col>
         </Grid>
       </Stack>
