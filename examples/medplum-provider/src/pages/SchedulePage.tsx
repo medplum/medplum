@@ -176,9 +176,9 @@ export function SchedulePage(): JSX.Element | null {
           ['appointment', getReferenceString(event.resource)],
           ['_count', '1'],
         ]);
-        const patient = encounters[0].subject;
+        const patient = encounters?.[0]?.subject;
         if (patient?.reference) {
-          navigate(`/${patient.reference}/Encounter/${encounters[0].id}`)?.catch(console.error);
+          navigate(`/${patient.reference}/Encounter/${encounters?.[0]?.id}`)?.catch(console.error);
         }
       }
 
