@@ -9,6 +9,7 @@ export * from './config';
 export * from './constants';
 export * from './contenttype';
 export * from './crypto';
+export * from './datasampler';
 export * from './default-values';
 export * from './elements-context';
 export * from './eventtarget';
