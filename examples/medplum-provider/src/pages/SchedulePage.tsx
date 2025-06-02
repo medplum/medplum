@@ -172,7 +172,6 @@ export function SchedulePage(): JSX.Element | null {
       }
 
       async function handleAppointment(): Promise<void> {
-       
         const encounters = await medplum.searchResources('Encounter', [
           ['appointment', getReferenceString(event.resource)],
           ['_count', '1'],
