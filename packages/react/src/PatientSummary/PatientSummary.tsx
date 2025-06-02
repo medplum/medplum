@@ -201,7 +201,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                       <Text fz="sm" fw={400} truncate c={getItemColor(patient.birthDate)}>
                         {patient.birthDate
                           ? `${patient.birthDate} (${calculateAgeString(patient.birthDate)})`
-                        : 'Add Birthdate'}
+                          : 'Add Birthdate'}
                       </Text>
                     </Group>
                   </Tooltip>
@@ -273,8 +273,15 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                       style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
                     >
                       <IconMapPin size={16} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text fz="sm" fw={400} truncate c={getItemColor(patient.address?.[0]?.city || patient.address?.[0]?.state)}>
-                        {patient.address?.[0] ? patient.address[0].city + ', ' + patient.address[0].state : 'Add Location'}
+                      <Text
+                        fz="sm"
+                        fw={400}
+                        truncate
+                        c={getItemColor(patient.address?.[0]?.city || patient.address?.[0]?.state)}
+                      >
+                        {patient.address?.[0]
+                          ? patient.address[0].city + ', ' + patient.address[0].state
+                          : 'Add Location'}
                       </Text>
                     </Group>
                   </Tooltip>
@@ -296,12 +303,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                       style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
                     >
                       <IconMapPin size={16} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text
-                        fz="sm"
-                        fw={400}
-                        truncate
-                        c={getItemColor(languageDisplay)}
-                      >
+                      <Text fz="sm" fw={400} truncate c={getItemColor(languageDisplay)}>
                         {languageDisplay ? languageDisplay : 'Add Language'}
                       </Text>
                     </Group>
