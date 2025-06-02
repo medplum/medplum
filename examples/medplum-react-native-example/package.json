@@ -33,7 +33,7 @@
     "react-native-web": "0.20.0"
   },
   "devDependencies": {
-    "@babel/core": "7.27.1",
+    "@babel/core": "7.27.4",
     "babel-preset-expo": "13.1.11",
     "typescript": "5.8.3"
   },
