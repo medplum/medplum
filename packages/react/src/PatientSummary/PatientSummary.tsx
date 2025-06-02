@@ -31,6 +31,7 @@ import {
   getEthnicity,
   getGenderIdentity,
   getGeneralPractitioner,
+  getPreferredLanguage,
   getRace,
 } from './PatientSummary.utils';
 import { ProblemList } from './ProblemList';
@@ -140,12 +141,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     }
   }, [patient?.id, medplum]);
 
-  function getItemColor(value: string | undefined): string {
-    if (!value) {
-      return 'var(--mantine-color-gray-6)';
-    }
-    return 'inherit';
-  }
+  const languageDisplay = patient ? getPreferredLanguage(patient) : undefined;
 
   if (!patient) {
     return null;
@@ -203,7 +199,9 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                     >
                       <IconCake size={16} stroke={2} color="var(--mantine-color-gray-6)" />
                       <Text fz="sm" fw={400} truncate c={getItemColor(patient.birthDate)}>
-                        {patient.birthDate ? calculateAgeString(patient.birthDate) : 'Add Birthdate'}
+                        {patient.birthDate
+                          ? `${patient.birthDate} (${calculateAgeString(patient.birthDate)})`
+                        : 'Add Birthdate'}
                       </Text>
                     </Group>
                   </Tooltip>
@@ -254,6 +252,57 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                         {getRace(patient) || getEthnicity(patient)
                           ? formatPatientRaceEthnicityDisplay(patient)
                           : 'Add Race & Ethnicity'}
+                      </Text>
+                    </Group>
+                  </Tooltip>
+                </Box>
+              </SummaryItem>
+
+              <SummaryItem
+                onClick={() => {
+                  onClickResource?.(patient);
+                }}
+              >
+                <Box className={styles.patientSummaryListItem}>
+                  <Tooltip label="Location" position="top-start" openDelay={650}>
+                    <Group
+                      gap="sm"
+                      align="center"
+                      ml={6}
+                      mr={2}
+                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
+                    >
+                      <IconMapPin size={16} stroke={2} color="var(--mantine-color-gray-6)" />
+                      <Text fz="sm" fw={400} truncate c={getItemColor(patient.address?.[0]?.city || patient.address?.[0]?.state)}>
+                        {patient.address?.[0] ? patient.address[0].city + ', ' + patient.address[0].state : 'Add Location'}
+                      </Text>
+                    </Group>
+                  </Tooltip>
+                </Box>
+              </SummaryItem>
+
+              <SummaryItem
+                onClick={() => {
+                  onClickResource?.(patient);
+                }}
+              >
+                <Box className={styles.patientSummaryListItem}>
+                  <Tooltip label="Language" position="top-start" openDelay={650}>
+                    <Group
+                      gap="sm"
+                      align="center"
+                      ml={6}
+                      mr={2}
+                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
+                    >
+                      <IconMapPin size={16} stroke={2} color="var(--mantine-color-gray-6)" />
+                      <Text
+                        fz="sm"
+                        fw={400}
+                        truncate
+                        c={getItemColor(languageDisplay)}
+                      >
+                        {languageDisplay ? languageDisplay : 'Add Language'}
                       </Text>
                     </Group>
                   </Tooltip>
@@ -343,4 +392,11 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
       </Stack>
     </Flex>
   );
+}
+
+function getItemColor(value: string | undefined): string {
+  if (!value) {
+    return 'var(--mantine-color-gray-6)';
+  }
+  return 'inherit';
 }
