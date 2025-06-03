@@ -1,8 +1,7 @@
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { CodeableConcept, Identifier, Reference, Resource } from '@medplum/fhirtypes';
-import { MedplumLink, useResource } from '@medplum/react';
-import { ReactNode } from 'react';
-import { InfoBar } from './InfoBar';
+import { InfoBar, MedplumLink, useResource } from '@medplum/react';
+import { JSX, ReactNode } from 'react';
 
 export interface ResourceHeaderProps {
   readonly resource: Resource | Reference;

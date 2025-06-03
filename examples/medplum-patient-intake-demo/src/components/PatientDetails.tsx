@@ -4,10 +4,11 @@ import { normalizeErrorString } from '@medplum/core';
 import { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useNavigate } from 'react-router-dom';
+import { JSX } from 'react';
+import { useNavigate } from 'react-router';
 import { PatientConsents } from './PatientConsents';
-import { PatientObservations } from './PatientObservations';
 import { PatientImmunizations } from './PatientImmunizations';
+import { PatientObservations } from './PatientObservations';
 
 interface PatientDetailsProps {
   patient: Patient;
@@ -32,7 +33,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
   const currentTab = tab && tabs.map((t) => t[0]).includes(tab) ? tab : tabs[0][0];
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/Patient/${id}/${newTab ?? ''}`);
+    navigate(`/Patient/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   function handlePatientEdit(resource: Resource): void {
@@ -46,7 +47,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
           title: 'Success',
           message: 'Patient edited',
         });
-        navigate(`/Patient/${id}/details`);
+        navigate(`/Patient/${id}/details`)?.catch(console.error);
         window.scrollTo(0, 0);
       })
       .catch((err) => {

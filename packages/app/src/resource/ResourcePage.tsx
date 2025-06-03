@@ -1,11 +1,10 @@
-import { Badge, Button, Group, Paper, ScrollArea, Tabs, Title, useMantineTheme } from '@mantine/core';
+import { Button, Paper, ScrollArea, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
-import { Document, OperationOutcomeAlert, useMedplum, useResource } from '@medplum/react';
-import { useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
-import { PatientHeader } from '../components/PatientHeader';
+import { Document, OperationOutcomeAlert, PatientHeader, useMedplum, useResource } from '@medplum/react';
+import { JSX, useState } from 'react';
+import { Outlet, useNavigate, useParams } from 'react-router';
 import { QuickServiceRequests } from '../components/QuickServiceRequests';
 import { QuickStatus } from '../components/QuickStatus';
 import { ResourceHeader } from '../components/ResourceHeader';
@@ -45,10 +44,13 @@ function getTabs(resourceType: string): string[] {
   }
 
   result.push('Details', 'Edit', 'Event', 'History', 'Blame', 'JSON', 'Apps', 'Profiles');
+
+  if (resourceType === 'Patient') {
+    result.push('Export');
+  }
+
   return result;
 }
-
-const BETA_TABS: string[] = [];
 
 export function ResourcePage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -62,7 +64,6 @@ export function ResourcePage(): JSX.Element | null {
     const tab = window.location.pathname.split('/').pop();
     return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
   });
-  const theme = useMantineTheme();
 
   async function restoreResource(): Promise<void> {
     const historyBundle = await medplum.readHistory(resourceType, id);
@@ -110,7 +111,7 @@ export function ResourcePage(): JSX.Element | null {
       newTabName = tabs[0].toLowerCase();
     }
     setCurrentTab(newTabName);
-    navigate(`/${resourceType}/${id}/${newTabName}`);
+    navigate(`/${resourceType}/${id}/${newTabName}`)?.catch(console.error);
   }
 
   function onStatusChange(status: string): void {
@@ -150,16 +151,7 @@ export function ResourcePage(): JSX.Element | null {
               <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
                 {tabs.map((t) => (
                   <Tabs.Tab key={t} value={t.toLowerCase()}>
-                    {BETA_TABS.includes(t) ? (
-                      <Group gap="xs" wrap="nowrap">
-                        {t}
-                        <Badge color={theme.primaryColor} size="sm">
-                          Beta
-                        </Badge>
-                      </Group>
-                    ) : (
-                      t
-                    )}
+                    {t}
                   </Tabs.Tab>
                 ))}
               </Tabs.List>

@@ -2,8 +2,8 @@ import { ContentType, flatMapFilter, isNotFound, notFound, OperationOutcomeError
 import { AsyncJob, BulkDataExport } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { rewriteAttachments, RewriteMode } from './rewrite';
 import { getAuthenticatedContext } from '../context';
+import { rewriteAttachments, RewriteMode } from './rewrite';
 
 // Bulk Data API
 // https://hl7.org/fhir/uv/bulkdata/STU2/

@@ -1,19 +1,19 @@
-import { ContentType, getReferenceString } from '@medplum/core';
+import { ContentType, getReferenceString, WithId } from '@medplum/core';
 import { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
-import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
+import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
 
 const app = express();
 let accessToken: string;
 let legacyJsonResponseAccessToken: string;
 let searchOnReaderAccessToken: string;
-let testPatient: Patient;
+let testPatient: WithId<Patient>;
 let patientId: string;
 let patientVersionId: string;
 
@@ -45,8 +45,8 @@ describe('FHIR Routes', () => {
         });
       expect(res.status).toBe(201);
       if (token === accessToken) {
-        testPatient = res.body as Patient;
-        patientId = testPatient.id as string;
+        testPatient = res.body as WithId<Patient>;
+        patientId = testPatient.id;
         patientVersionId = (testPatient.meta as Meta).versionId as string;
       }
     }
@@ -86,11 +86,16 @@ describe('FHIR Routes', () => {
     expect(res.headers['content-type']).toStrictEqual('application/json; charset=utf-8');
 
     // Required fields: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#response
-    expect(res.body.authorization_endpoint).toBeDefined();
-    expect(res.body.grant_types_supported).toBeDefined();
-    expect(res.body.token_endpoint).toBeDefined();
+    expect(res.body.authorization_endpoint).toMatch(/\/oauth2\/authorize$/);
+    expect(res.body.grant_types_supported).toEqual(
+      expect.arrayContaining(['authorization_code', 'refresh_token', 'client_credentials'])
+    );
+    expect(res.body.token_endpoint).toMatch(/\/oauth2\/token$/);
     expect(res.body.capabilities).toBeDefined();
-    expect(res.body.code_challenge_methods_supported).toBeDefined();
+    expect(res.body.code_challenge_methods_supported).toEqual(expect.arrayContaining(['S256']));
+
+    // Additional fields
+    expect(res.body.introspection_endpoint).toMatch(/\/oauth2\/introspect$/);
 
     const res2 = await request(app).get(`/fhir/R4/.well-known/smart-styles.json`);
     expect(res2.status).toBe(200);

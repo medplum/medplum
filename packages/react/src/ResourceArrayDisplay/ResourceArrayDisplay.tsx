@@ -1,11 +1,11 @@
 import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName, isPopulated } from '@medplum/core';
-import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
-import { useState, useContext, useEffect, useMemo } from 'react';
-import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
-import { prepareSlices, assignValuesIntoSlices } from '../ResourceArrayInput/ResourceArrayInput.utils';
 import { useMedplum } from '@medplum/react-hooks';
-import { SliceDisplay } from '../SliceDisplay/SliceDisplay';
+import { JSX, useContext, useEffect, useMemo, useState } from 'react';
 import { DescriptionListEntry } from '../DescriptionList/DescriptionList';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { assignValuesIntoSlices, prepareSlices } from '../ResourceArrayInput/ResourceArrayInput.utils';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { SliceDisplay } from '../SliceDisplay/SliceDisplay';
 
 export interface ResourceArrayDisplayProps {
   /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */

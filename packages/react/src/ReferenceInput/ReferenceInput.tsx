@@ -10,7 +10,7 @@ import {
 } from '@medplum/core';
 import { Reference, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { JSX, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
 import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
 
@@ -153,50 +153,54 @@ export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
   }, [targetTypes]);
 
   return (
-    <Group gap="xs" grow wrap="nowrap">
-      {targetTypes && targetTypes.length > 1 && (
-        <NativeSelect
+    <>
+      {props.name && <input type="hidden" name={props.name} value={value?.reference ?? ''} />}
+      <Group gap="xs" grow wrap="nowrap">
+        {targetTypes && targetTypes.length > 1 && (
+          <NativeSelect
+            name={props.name + '-resourceType'}
+            disabled={props.disabled}
+            data-autofocus={props.autoFocus}
+            data-testid="reference-input-resource-type-select"
+            defaultValue={targetType?.resourceType}
+            autoFocus={props.autoFocus}
+            onChange={(e) => {
+              const newValue = e.currentTarget.value;
+              const newTargetType = targetTypes.find((tt) => tt.value === newValue);
+              setTargetType(newTargetType);
+            }}
+            data={typeSelectOptions}
+          />
+        )}
+        {!targetTypes && (
+          <ResourceTypeInput
+            disabled={props.disabled}
+            autoFocus={props.autoFocus}
+            testId="reference-input-resource-type-input"
+            defaultValue={targetType?.resourceType as ResourceType}
+            onChange={(newResourceType) => {
+              if (newResourceType) {
+                setTargetType({ type: 'resourceType', value: newResourceType, resourceType: newResourceType });
+              } else {
+                setTargetType(undefined);
+              }
+            }}
+            name={props.name + '-resourceType'}
+            placeholder="Resource Type"
+          />
+        )}
+        <ResourceInput
+          resourceType={targetType?.resourceType as ResourceType}
+          name={props.name + '-id'}
+          required={props.required}
+          placeholder={props.placeholder}
+          defaultValue={value}
+          searchCriteria={searchCriteria}
+          onChange={setValueHelper}
           disabled={props.disabled}
-          data-autofocus={props.autoFocus}
-          data-testid="reference-input-resource-type-select"
-          defaultValue={targetType?.resourceType}
-          autoFocus={props.autoFocus}
-          onChange={(e) => {
-            const newValue = e.currentTarget.value;
-            const newTargetType = targetTypes.find((tt) => tt.value === newValue);
-            setTargetType(newTargetType);
-          }}
-          data={typeSelectOptions}
         />
-      )}
-      {!targetTypes && (
-        <ResourceTypeInput
-          disabled={props.disabled}
-          autoFocus={props.autoFocus}
-          testId="reference-input-resource-type-input"
-          defaultValue={targetType?.resourceType as ResourceType}
-          onChange={(newResourceType) => {
-            if (newResourceType) {
-              setTargetType({ type: 'resourceType', value: newResourceType, resourceType: newResourceType });
-            } else {
-              setTargetType(undefined);
-            }
-          }}
-          name={props.name + '-resourceType'}
-          placeholder="Resource Type"
-        />
-      )}
-      <ResourceInput
-        resourceType={targetType?.resourceType as ResourceType}
-        name={props.name + '-id'}
-        required={props.required}
-        placeholder={props.placeholder}
-        defaultValue={value}
-        searchCriteria={searchCriteria}
-        onChange={setValueHelper}
-        disabled={props.disabled}
-      />
-    </Group>
+      </Group>
+    </>
   );
 }
 

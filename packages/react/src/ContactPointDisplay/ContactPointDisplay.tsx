@@ -1,4 +1,5 @@
 import { ContactPoint } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 
 export interface ContactPointDisplayProps {
   readonly value?: ContactPoint;

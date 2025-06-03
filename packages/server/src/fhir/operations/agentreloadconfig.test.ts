@@ -4,6 +4,7 @@ import {
   AgentReloadConfigResponse,
   AgentTransmitResponse,
   ContentType,
+  WithId,
   allOk,
   badRequest,
   serverError,
@@ -15,7 +16,7 @@ import { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
 import request, { Response } from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 import {
   MockAgentResponseHandle,
@@ -29,7 +30,7 @@ const NUM_DEFAULT_AGENTS = 2;
 
 describe('Agent/$reload-config', () => {
   const app = express();
-  const agents = [] as Agent[];
+  const agents = [] as WithId<Agent>[];
   let server: Server;
   let port: number;
   let accessToken: string;
@@ -113,7 +114,7 @@ describe('Agent/$reload-config', () => {
     );
 
     const res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$reload-config`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(200);
@@ -155,7 +156,7 @@ describe('Agent/$reload-config', () => {
 
     // Agent by ID
     res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$reload-config`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(400);
@@ -203,7 +204,7 @@ describe('Agent/$reload-config', () => {
 
     // Single agent by ID
     res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$reload-config`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$reload-config`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(500);

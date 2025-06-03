@@ -40,6 +40,9 @@ tsconfig.tsbuildinfo
 # Server tarball
 medplum-server.tar.gz
 
+# App tarball
+medplum-app.tar.gz
+
 # Deb files
 *.deb
 
@@ -96,3 +99,6 @@ terraform.rc
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Cursor
+.cursor/

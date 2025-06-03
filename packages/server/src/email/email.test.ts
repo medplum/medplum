@@ -9,9 +9,9 @@ import nodemailer, { Transporter } from 'nodemailer';
 import Mail from 'nodemailer/lib/mailer';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
-import { getConfig, loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
-import { getBinaryStorage } from '../fhir/storage';
+import { getBinaryStorage } from '../storage/loader';
 import { withTestContext } from '../test.setup';
 import { sendEmail } from './email';
 
@@ -113,6 +113,28 @@ describe('Email', () => {
     expect(parsed.text).toBe('Hello Alice');
     expect(parsed.attachments).toHaveLength(1);
     expect(parsed.attachments[0].filename).toBe('text1.txt');
+  });
+
+  test('Send with replyTo', async () => {
+    const fromAddress = 'gibberish@example.com';
+    const toAddresses = 'alice@example.com';
+    const replyToAddress = 'reply-test@example.com';
+    await sendEmail(systemRepo, {
+      from: fromAddress,
+      to: toAddresses,
+      replyTo: replyToAddress,
+      subject: 'Hello',
+      text: 'Hello Alice',
+    });
+
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+
+    expect(inputArgs?.FromEmailAddress).toBe(getConfig().supportEmail);
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe('alice@example.com');
+    expect(inputArgs?.ReplyToAddresses?.[0] ?? '').toBe(replyToAddress);
   });
 
   test('Array of addresses', async () => {

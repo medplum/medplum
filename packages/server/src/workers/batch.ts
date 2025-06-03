@@ -5,17 +5,19 @@ import {
   isOk,
   OperationOutcomeError,
   serverError,
+  WithId,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
 import { AsyncJob, Bundle, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import { MedplumServerConfig } from '../config';
+import { getUserConfiguration } from '../auth/me';
 import { getAuthenticatedContext, tryRunInRequestContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
 import { uploadBinaryData } from '../fhir/binary';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
+import { queueRegistry, WorkerInitializer } from './utils';
 
 /*
  * The batch worker runs a batch asynchronously,
@@ -23,37 +25,29 @@ import { getLogger } from '../logger';
  */
 
 export interface BatchJobData {
-  readonly asyncJob: AsyncJob;
+  readonly asyncJob: WithId<AsyncJob>;
   readonly bundle: Bundle;
   readonly login: Login;
-  readonly project: Project;
-  readonly membership: ProjectMembership;
+  readonly project: WithId<Project>;
+  readonly membership: WithId<ProjectMembership>;
   readonly requestId?: string;
   readonly traceId?: string;
 }
 
 const queueName = 'BatchQueue';
 const jobName = 'BatchJobData';
-let queue: Queue<BatchJobData> | undefined = undefined;
-let worker: Worker<BatchJobData> | undefined = undefined;
 
-/**
- * Initializes the batch worker.
- * Sets up the BullMQ job queue.
- * Sets up the BullMQ worker.
- * @param config - The Medplum server config to use.
- */
-export function initBatchWorker(config: MedplumServerConfig): void {
+export const initBatchWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<BatchJobData>(queueName, {
+  const queue = new Queue<BatchJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: { attempts: 1 },
   });
 
-  worker = new Worker<BatchJobData>(
+  const worker = new Worker<BatchJobData>(
     queueName,
     (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execBatchJob(job)),
     {
@@ -61,24 +55,9 @@ export function initBatchWorker(config: MedplumServerConfig): void {
       ...config.bullmq,
     }
   );
-}
 
-/**
- * Shuts down the batch worker.
- * Closes the BullMQ job queue.
- * Closes the BullMQ worker.
- */
-export async function closeBatchWorker(): Promise<void> {
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-}
+  return { queue, worker, name: queueName };
+};
 
 /**
  * Returns the batch queue instance.
@@ -86,7 +65,7 @@ export async function closeBatchWorker(): Promise<void> {
  * @returns The batch queue (if available).
  */
 export function getBatchQueue(): Queue<BatchJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 /**
@@ -95,13 +74,14 @@ export function getBatchQueue(): Queue<BatchJobData> | undefined {
  * @returns The enqueued job.
  */
 async function addBatchJobData(job: BatchJobData): Promise<Job<BatchJobData>> {
+  const queue = queueRegistry.get<BatchJobData>(queueName);
   if (!queue) {
-    throw new Error('Job queue not available');
+    throw new Error(`Job queue ${queueName} not available`);
   }
   return queue.add(jobName, job);
 }
 
-export async function queueBatchProcessing(batch: Bundle, asyncJob: AsyncJob): Promise<Job<BatchJobData>> {
+export async function queueBatchProcessing(batch: Bundle, asyncJob: WithId<AsyncJob>): Promise<Job<BatchJobData>> {
   const { requestId, traceId, login, project, membership } = getAuthenticatedContext();
   return addBatchJobData({
     bundle: batch,
@@ -123,7 +103,8 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   const logger = getLogger();
 
   // Prepare the original submitting user's repo
-  const repo = await getRepoForLogin({ login, project, membership });
+  const userConfig = await getUserConfiguration(getSystemRepo(), project, membership);
+  const repo = await getRepoForLogin({ login, project, membership, userConfig });
   const router = new FhirRouter();
   const req: FhirRequest = {
     method: 'POST',

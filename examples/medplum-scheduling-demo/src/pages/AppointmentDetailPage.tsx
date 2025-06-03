@@ -1,7 +1,8 @@
 import { Grid, Loader } from '@mantine/core';
 import { Appointment, Patient, Reference } from '@medplum/fhirtypes';
 import { Document, PatientSummary, useResource } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { JSX } from 'react';
+import { useParams } from 'react-router';
 import { AppointmentDetails } from '../components/AppointmentDetails';
 import { AppointmentActions } from '../components/actions/AppointmentActions';
 

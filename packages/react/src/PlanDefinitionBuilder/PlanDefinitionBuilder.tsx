@@ -1,17 +1,24 @@
-import { Anchor, Button, NativeSelect, Stack, TextInput } from '@mantine/core';
-import { InternalSchemaElement, getReferenceString } from '@medplum/core';
+import {
+  Anchor,
+  Box,
+  Button,
+  CloseButton,
+  Flex,
+  Group,
+  NativeSelect,
+  Paper,
+  Stack,
+  Text,
+  TextInput,
+} from '@mantine/core';
+import { getReferenceString } from '@medplum/core';
 import { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import cx from 'clsx';
-import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
+import { JSX, MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
-import { FormSection } from '../FormSection/FormSection';
-import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
-import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
+import { SubmitButton } from '../Form/SubmitButton';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
-import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
-import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
-import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
 import { killEvent } from '../utils/dom';
 import classes from './PlanDefinitionBuilder.module.css';
 
@@ -36,7 +43,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
     setSelectedKey(undefined);
   }
 
-  const valueRef = useRef<PlanDefinition>();
+  const valueRef = useRef<PlanDefinition>(value);
   valueRef.current = value;
 
   useEffect(() => {
@@ -72,6 +79,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
       <Form testid="questionnaire-form" onSubmit={() => props.onSubmit(value)}>
         <TextInput
           label="Plan Title"
+          py="md"
           defaultValue={value.title}
           onChange={(e) => changeProperty('title', e.currentTarget.value)}
         />
@@ -83,7 +91,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
           setHoverKey={setHoverKey}
           onChange={(x) => changeProperty('action', x)}
         />
-        <Button type="submit">Save</Button>
+        <SubmitButton>Save</SubmitButton>
       </Form>
     </div>
   );
@@ -99,7 +107,7 @@ interface ActionArrayBuilderProps {
 }
 
 function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
-  const actionsRef = useRef<PlanDefinitionAction[]>();
+  const actionsRef = useRef<PlanDefinitionAction[]>(props.actions);
   actionsRef.current = props.actions;
 
   function changeAction(changedAction: PlanDefinitionAction): void {
@@ -118,32 +126,31 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
   }
 
   return (
-    <div className={classes.section}>
+    <Stack gap="md" className={classes.section}>
       {props.actions.map((action) => (
-        <div key={action.id}>
-          <ActionBuilder
-            action={action}
-            selectedKey={props.selectedKey}
-            setSelectedKey={props.setSelectedKey}
-            hoverKey={props.hoverKey}
-            setHoverKey={props.setHoverKey}
-            onChange={changeAction}
-            onRemove={() => removeAction(action)}
-          />
-        </div>
+        <ActionBuilder
+          key={action.id}
+          action={action}
+          selectedKey={props.selectedKey}
+          setSelectedKey={props.setSelectedKey}
+          hoverKey={props.hoverKey}
+          setHoverKey={props.setHoverKey}
+          onChange={changeAction}
+          onRemove={() => removeAction(action)}
+        />
       ))}
-      <div className={classes.bottomActions}>
-        <Anchor
-          href="#"
+      <div>
+        <Button
+          variant="outline"
           onClick={(e: MouseEvent) => {
             killEvent(e);
             addAction({ id: generateId() });
           }}
         >
           Add action
-        </Anchor>
+        </Button>
       </div>
-    </div>
+    </Stack>
   );
 }
 
@@ -160,8 +167,6 @@ interface ActionBuilderProps {
 function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   const { action } = props;
   const actionType = getInitialActionType(action);
-  const editing = props.selectedKey === props.action.id;
-  const hovering = props.hoverKey === props.action.id;
 
   function onClick(e: SyntheticEvent): void {
     e.stopPropagation();
@@ -173,75 +178,16 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
     props.setHoverKey(props.action.id);
   }
 
-  const className = cx(classes.section, {
-    [classes.editing]: editing,
-    [classes.hovering]: hovering && !editing,
-  });
-
   return (
-    <div data-testid={action.id} className={className} onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
-      {editing ? (
-        <ActionEditor
-          action={action}
-          actionType={actionType}
-          onChange={props.onChange}
-          selectedKey={props.selectedKey}
-          setSelectedKey={props.setSelectedKey}
-          hoverKey={props.hoverKey}
-          setHoverKey={props.setHoverKey}
-          onRemove={props.onRemove}
-        />
-      ) : (
-        <ActionDisplay action={action} actionType={actionType} />
-      )}
-      <div className={classes.bottomActions}>
-        <Anchor
-          href="#"
-          onClick={(e: MouseEvent) => {
-            e.preventDefault();
-            props.onRemove();
-          }}
-        >
-          Remove
-        </Anchor>
-      </div>
-    </div>
-  );
-}
-
-const timingProperty: InternalSchemaElement = {
-  path: 'PlanDefinition.action.timing[x]',
-  min: 0,
-  max: 1,
-  description: '',
-  isArray: false,
-  constraints: [],
-  type: ['dateTime', 'Period', 'Range', 'Timing'].map((t) => ({ code: t })),
-};
-
-interface ActionDisplayProps {
-  readonly action: PlanDefinitionAction;
-  readonly actionType: string | undefined;
-}
-
-function ActionDisplay(props: ActionDisplayProps): JSX.Element {
-  const { action, actionType } = props;
-  const [propertyValue, propertyType] = getActionTiming(action);
-  return (
-    <div>
-      <div>
-        {action.title || 'Untitled'} {actionType && `(${actionType})`}
-      </div>
-      {action.definitionCanonical && (
-        <div>
-          <ReferenceDisplay value={{ reference: action.definitionCanonical }} />
-        </div>
-      )}
-      {propertyValue && (
-        <div>
-          <ResourcePropertyDisplay property={timingProperty} propertyType={propertyType} value={propertyValue} />
-        </div>
-      )}
+    <div onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
+      <ActionEditor
+        action={action}
+        actionType={actionType}
+        onChange={props.onChange}
+        selectedKey={props.selectedKey}
+        hoverKey={props.hoverKey}
+        onRemove={props.onRemove}
+      />
     </div>
   );
 }
@@ -250,9 +196,7 @@ interface ActionEditorProps {
   readonly action: PlanDefinitionAction;
   readonly actionType: string | undefined;
   readonly selectedKey: string | undefined;
-  readonly setSelectedKey: (key: string | undefined) => void;
   readonly hoverKey: string | undefined;
-  readonly setHoverKey: (key: string | undefined) => void;
   readonly onChange: (action: PlanDefinitionAction) => void;
   readonly onRemove: () => void;
 }
@@ -260,6 +204,8 @@ interface ActionEditorProps {
 function ActionEditor(props: ActionEditorProps): JSX.Element {
   const { action } = props;
   const [actionType, setActionType] = useState<string | undefined>(props.actionType);
+  const editing = props.selectedKey === props.action.id;
+  const hovering = props.hoverKey === props.action.id;
 
   function changeProperty(property: string, value: any): void {
     props.onChange({
@@ -268,95 +214,94 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
     } as PlanDefinitionAction);
   }
 
+  const className = cx(classes.section, {
+    [classes.hovering]: hovering && !editing,
+  });
+
   return (
-    <Stack gap="xl">
-      <TextInput
-        name={`actionTitle-${action.id}`}
-        label="Title"
-        defaultValue={action.title}
-        onChange={(e) => changeProperty('title', e.currentTarget.value)}
-      />
-      <TextInput
-        name={`actionDescription-${action.id}`}
-        label="Description"
-        defaultValue={action.description}
-        onChange={(e) => changeProperty('description', e.currentTarget.value)}
-      />
-      <NativeSelect
-        label="Type of Action"
-        description="The type of the action to be performed."
-        name={`actionType-${action.id}`}
-        defaultValue={actionType}
-        onChange={(e) => setActionType(e.currentTarget.value)}
-        data={['', 'appointment', 'lab', 'questionnaire', 'task']}
-      />
-      {action.action && action.action.length > 0 && (
-        <ActionArrayBuilder
-          actions={action.action}
-          selectedKey={props.selectedKey}
-          setSelectedKey={props.setSelectedKey}
-          hoverKey={props.hoverKey}
-          setHoverKey={props.setHoverKey}
-          onChange={(x) => changeProperty('action', x)}
+    <Paper data-testid={action.id} className={className} p={0} radius="sm" withBorder>
+      <Flex w="100%" p="xs" bg="gray.0" gap="md" align="center" justify="space-between">
+        <TextInput
+          w="100%"
+          name={`actionTitle-${action.id}`}
+          defaultValue={action.title}
+          placeholder="Title"
+          onChange={(e) => changeProperty('title', e.currentTarget.value)}
         />
+        <CloseButton data-testid="close-button" onClick={props.onRemove} />
+      </Flex>
+
+      {editing && (
+        <Stack gap="xl" p="md">
+          <Box>
+            <TextInput
+              label="Task Description"
+              placeholder="Enter task description"
+              name={`actionDescription-${action.id}`}
+              defaultValue={action.description}
+              onChange={(e) => changeProperty('description', e.currentTarget.value)}
+            />
+          </Box>
+
+          <Box>
+            <NativeSelect
+              label="Type of Action"
+              value={actionType}
+              onChange={(e) => {
+                const value = e.currentTarget.value === 'standard' ? undefined : e.currentTarget.value;
+                setActionType(value);
+                props.onChange({
+                  ...props.action,
+                  definitionCanonical: value === 'standard' ? undefined : props.action.definitionCanonical,
+                });
+              }}
+              data={[
+                { value: 'standard', label: 'Standard task' },
+                { value: 'questionnaire', label: 'Task with Questionnaire' },
+                { value: 'activitydefinition', label: 'Task with Activity Definition' },
+              ]}
+            />
+          </Box>
+
+          {actionType === 'questionnaire' && (
+            <Stack gap={0}>
+              <Group gap={0} mb="xs">
+                <Text fw={600}>Select questionnaire</Text>
+                <Text c="red">*</Text>
+              </Group>
+              <Text size="sm" c="dimmed" mb="sm">
+                Questionnaire to be shown in the task in Encounter view. You can create new one from{' '}
+                <Anchor href="/Questionnaire" target="_blank" c="blue">
+                  questionnaires list
+                </Anchor>
+              </Text>
+              <ActionResourceTypeBuilder resourceType="Questionnaire" action={action} onChange={props.onChange} />
+            </Stack>
+          )}
+
+          {actionType === 'activitydefinition' && (
+            <Stack gap={0}>
+              <Group gap={0} mb="xs">
+                <Text fw={600}>Select activity definition</Text>
+                <Text c="red">*</Text>
+              </Group>
+              <Text size="sm" c="dimmed" mb="sm">
+                ActivityDefinition.kind resource to be shown in the task in Encounter view. You can create new one from{' '}
+                <Anchor href="/ActivityDefinition" target="_blank" c="blue">
+                  activity definitions list
+                </Anchor>
+              </Text>
+              <ActionResourceTypeBuilder resourceType="ActivityDefinition" action={action} onChange={props.onChange} />
+            </Stack>
+          )}
+        </Stack>
       )}
-      {(() => {
-        switch (actionType) {
-          case 'appointment':
-            return (
-              <ActionResourceTypeBuilder
-                title="Appointment"
-                description="The subject must schedule an appointment from the schedule."
-                resourceType="Schedule"
-                action={action}
-                onChange={props.onChange}
-              />
-            );
-          case 'lab':
-            return (
-              <ActionResourceTypeBuilder
-                title="Lab"
-                description="The subject must complete the following lab panel."
-                resourceType="ActivityDefinition"
-                action={action}
-                onChange={props.onChange}
-              />
-            );
-          case 'questionnaire':
-            return (
-              <ActionResourceTypeBuilder
-                title="Questionnaire"
-                description="The subject must complete the selected questionnaire."
-                resourceType="Questionnaire"
-                action={action}
-                onChange={props.onChange}
-              />
-            );
-          case 'task':
-            return (
-              <ActionResourceTypeBuilder
-                title="Task"
-                description="The subject must complete the following task."
-                resourceType="ActivityDefinition"
-                action={action}
-                onChange={props.onChange}
-              />
-            );
-          default:
-            return null;
-        }
-      })()}
-      <FormSection title="Timing" description="When the action should take place.">
-        <ActionTimingInput name={'timing-' + action.id} action={action} onChange={props.onChange} />
-      </FormSection>
-    </Stack>
+    </Paper>
   );
 }
 
 interface ActionResourceTypeBuilderProps {
   readonly action: PlanDefinitionAction;
-  readonly title: string;
-  readonly description: string;
   readonly resourceType: ResourceType;
   readonly onChange: (action: PlanDefinitionAction) => void;
 }
@@ -371,7 +316,6 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
       name={id as string}
       resourceType={props.resourceType}
       defaultValue={reference}
-      loadOnFocus={true}
       onChange={(newValue) => {
         if (newValue) {
           props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });
@@ -383,49 +327,16 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
   );
 }
 
-interface ActionTimingInputProps {
-  readonly name: string;
-  readonly action: PlanDefinitionAction;
-  readonly onChange: (action: PlanDefinitionAction) => void;
-}
-
-function ActionTimingInput(props: ActionTimingInputProps): JSX.Element {
-  const value = props.action;
-  const key = 'timing';
-  const [propertyValue, propertyType] = getActionTiming(value);
-  return (
-    <ResourcePropertyInput
-      property={timingProperty}
-      name="timing[x]"
-      path="PlanDefinition.timing[x]"
-      defaultValue={propertyValue}
-      defaultPropertyType={propertyType}
-      onChange={(newValue: any, propName?: string) => {
-        props.onChange(setPropertyValue(value, key, propName ?? key, timingProperty, newValue));
-      }}
-      outcome={undefined}
-    />
-  );
-}
-
 function getInitialActionType(action: PlanDefinitionAction): string | undefined {
-  if (action.definitionCanonical?.startsWith('Schedule')) {
-    return 'appointment';
-  }
-
-  if (action.definitionCanonical?.startsWith('Questionnaire/')) {
+  if (action.definitionCanonical?.startsWith('Questionnaire')) {
     return 'questionnaire';
   }
 
-  if (action.definitionCanonical?.startsWith('ActivityDefinition/')) {
-    return 'task';
+  if (action.definitionCanonical?.startsWith('ActivityDefinition')) {
+    return 'activitydefinition';
   }
 
-  return undefined;
-}
-
-function getActionTiming(action: PlanDefinitionAction): [any, string] {
-  return getValueAndType({ type: 'PlanDefinitionAction', value: action }, 'timing');
+  return 'standard';
 }
 
 let nextId = 1;

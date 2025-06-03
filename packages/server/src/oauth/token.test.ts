@@ -1,11 +1,13 @@
 import {
   ContentType,
   createReference,
+  encodeBase64,
   OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
   parseJWTPayload,
   parseSearchRequest,
+  WithId,
 } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
 import express from 'express';
@@ -17,7 +19,8 @@ import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
-import { loadTestConfig, MedplumServerConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret, verifyJwt } from './keys';
@@ -64,8 +67,8 @@ describe('OAuth2 Token', () => {
   const password = randomUUID();
   const redirectUri = `https://${domain}/auth/callback`;
   let config: MedplumServerConfig;
-  let project: Project;
-  let client: ClientApplication;
+  let project: WithId<Project>;
+  let client: WithId<ClientApplication>;
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
 
@@ -76,9 +79,15 @@ describe('OAuth2 Token', () => {
     // Create a test project
     ({ project, client } = await createTestProject({ withClient: true }));
 
+    // Add secondary secret for testing
+    client.retiringSecret = generateSecret(32);
+    client = await systemRepo.updateResource(client);
+
     // Create a 2nd client with PKCE optional
     pkceOptionalClient = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
+      secret: generateSecret(32),
+      retiringSecret: generateSecret(32),
       pkceOptional: true,
     });
 
@@ -214,6 +223,17 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid secret');
+  });
+
+  test('Token for client credentials with secondary client_secret', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.retiringSecret,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
   });
 
   test('Token for client credentials authentication header success', async () => {
@@ -450,17 +470,37 @@ describe('OAuth2 Token', () => {
     expect(idToken.email).toBe(email);
   });
 
-  test('Authorization code token with code challenge and PKCE optional', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
+  test('Authorization code token with incorrect code verifier and client secret', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid profile email',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app)
+      .post('/oauth2/token')
+      .set('Authorization', 'Basic ' + encodeBase64(client.id + ':' + client.secret))
+      .type('form')
       .send({
-        clientId: pkceOptionalClient.id as string,
-        email,
-        password,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
+        grant_type: 'authorization_code',
+        code: res.body.code,
+        code_verifier: 'incorrect',
       });
+    expect(res2.status).toBe(400);
+    expect(res2.body.access_token).toBeUndefined();
+  });
+
+  test('Authorization code token with code challenge and PKCE optional', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: pkceOptionalClient.id,
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -478,7 +518,7 @@ describe('OAuth2 Token', () => {
 
   test('Authorization code token with wrong client secret', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: client.id,
+      clientId: pkceOptionalClient.id,
       email,
       password,
     });
@@ -487,7 +527,7 @@ describe('OAuth2 Token', () => {
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
-      client_id: client.id,
+      client_id: pkceOptionalClient.id,
       client_secret: 'wrong',
     });
     expect(res2.status).toBe(400);
@@ -495,9 +535,9 @@ describe('OAuth2 Token', () => {
     expect(res2.body.error_description).toBe('Invalid secret');
   });
 
-  test('Authorization code token with client secret success', async () => {
+  test('Authorization code token with secondary client secret', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: client.id,
+      clientId: pkceOptionalClient.id,
       email,
       password,
     });
@@ -506,8 +546,27 @@ describe('OAuth2 Token', () => {
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
-      client_id: client.id,
-      client_secret: client.secret,
+      client_id: pkceOptionalClient.id,
+      client_secret: pkceOptionalClient.retiringSecret,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.error).toBeUndefined();
+    expect(res2.body.access_token).toBeDefined();
+  });
+
+  test('Authorization code token with client secret success', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: pkceOptionalClient.id,
+      email,
+      password,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      client_id: pkceOptionalClient.id,
+      client_secret: pkceOptionalClient.secret,
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
@@ -623,27 +682,21 @@ describe('OAuth2 Token', () => {
   });
 
   test('Authorization code token success with client ID', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        clientId: client.id as string,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      clientId: client.id,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
     expect(res.status).toBe(200);
 
-    const res2 = await request(app)
-      .post('/oauth2/token')
-      .type('form')
-      .send({
-        grant_type: 'authorization_code',
-        client_id: client.id as string,
-        code: res.body.code,
-        code_verifier: 'xyz',
-      });
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      client_id: client.id,
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
@@ -796,17 +849,14 @@ describe('OAuth2 Token', () => {
     const code = randomUUID();
     const codeHash = hashCode(code);
 
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        clientId: client.id as string,
-        codeChallenge: codeHash,
-        codeChallengeMethod: 'S256',
-        scope: 'openid offline',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      clientId: client.id,
+      codeChallenge: codeHash,
+      codeChallengeMethod: 'S256',
+      scope: 'openid offline',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -821,17 +871,14 @@ describe('OAuth2 Token', () => {
     const code = randomUUID();
     const codeHash = hashCode(code);
 
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        clientId: client.id as string,
-        codeChallenge: codeHash,
-        codeChallengeMethod: 'S256',
-        scope: 'openid offline',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      clientId: client.id,
+      codeChallenge: codeHash,
+      codeChallengeMethod: 'S256',
+      scope: 'openid offline',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -906,17 +953,14 @@ describe('OAuth2 Token', () => {
   });
 
   test('Refresh token Basic auth success', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        clientId: client.id as string,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
-        scope: 'openid offline',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      clientId: client.id,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -950,17 +994,14 @@ describe('OAuth2 Token', () => {
   });
 
   test('Refresh token Basic auth failure wrong auth type', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        clientId: client.id as string,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
-        scope: 'openid offline',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      clientId: client.id,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -990,17 +1031,14 @@ describe('OAuth2 Token', () => {
   });
 
   test('Refresh token Basic auth failure wrong client ID', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        clientId: client.id as string,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
-        scope: 'openid offline',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      clientId: client.id,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -1030,17 +1068,14 @@ describe('OAuth2 Token', () => {
   });
 
   test('Refresh token Basic auth failure wrong secret', async () => {
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        clientId: client.id as string,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
-        scope: 'openid offline',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      clientId: client.id,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
     expect(res.status).toBe(200);
 
     const res2 = await request(app).post('/oauth2/token').type('form').send({
@@ -1077,17 +1112,14 @@ describe('OAuth2 Token', () => {
     // 5) Verify that the first refresh token is invalid
 
     // 1) Authorize
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email,
-        password,
-        clientId: client.id as string,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
-        scope: 'openid offline',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      clientId: client.id,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
     expect(res.status).toBe(200);
 
     // 2) Get tokens with grant_type=authorization_code
@@ -1150,29 +1182,23 @@ describe('OAuth2 Token', () => {
     expect(validLifetimeClient?.id).toBeDefined();
     expect(validLifetimeClient?.secret).toBeDefined();
 
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        clientId: validLifetimeClient.id as string,
-        email,
-        password,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
-        scope: 'openid offline',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: validLifetimeClient.id,
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
     expect(res.status).toBe(200);
 
-    const res2 = await request(app)
-      .post('/oauth2/token')
-      .type('form')
-      .send({
-        grant_type: 'authorization_code',
-        client_id: validLifetimeClient.id as string,
-        code: res.body.code,
-        code_verifier: 'xyz',
-        scope: 'openid offline',
-      });
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      client_id: validLifetimeClient.id,
+      code: res.body.code,
+      code_verifier: 'xyz',
+      scope: 'openid offline',
+    });
 
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
@@ -1220,29 +1246,23 @@ describe('OAuth2 Token', () => {
     expect(validLifetimeClient?.id).toBeDefined();
     expect(validLifetimeClient?.secret).toBeDefined();
 
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        clientId: validLifetimeClient.id as string,
-        email,
-        password,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
-        scope: 'openid offline',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: validLifetimeClient.id,
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
     expect(res.status).toBe(200);
 
-    const res2 = await request(app)
-      .post('/oauth2/token')
-      .type('form')
-      .send({
-        grant_type: 'authorization_code',
-        client_id: validLifetimeClient.id as string,
-        code: res.body.code,
-        code_verifier: 'xyz',
-        scope: 'openid offline',
-      });
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      client_id: validLifetimeClient.id,
+      code: res.body.code,
+      code_verifier: 'xyz',
+      scope: 'openid offline',
+    });
 
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
@@ -1301,17 +1321,14 @@ describe('OAuth2 Token', () => {
     });
 
     // Authenticate
-    const res = await request(app)
-      .post('/auth/login')
-      .type('json')
-      .send({
-        email: patientEmail,
-        password: patientPassword,
-        clientId: client.id as string,
-        codeChallenge: 'xyz',
-        codeChallengeMethod: 'plain',
-        scope: 'openid offline',
-      });
+    const res = await request(app).post('/auth/login').type('json').send({
+      email: patientEmail,
+      password: patientPassword,
+      clientId: client.id,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline',
+    });
     expect(res.status).toBe(200);
 
     // Get tokens
@@ -1340,8 +1357,8 @@ describe('OAuth2 Token', () => {
     const jwt = await new SignJWT({ 'urn:example:claim': true })
       .setProtectedHeader({ alg: 'ES384' })
       .setIssuedAt()
-      .setIssuer(client2.id as string)
-      .setSubject(client2.id as string)
+      .setIssuer(client2.id)
+      .setSubject(client2.id)
       .setAudience('http://localhost:8103/oauth2/token')
       .setExpirationTime('2h')
       .sign(keyPair.privateKey);
@@ -1392,8 +1409,8 @@ describe('OAuth2 Token', () => {
     const jwt = await new SignJWT({ 'urn:example:claim': true })
       .setProtectedHeader({ alg: 'ES384' })
       .setIssuedAt()
-      .setIssuer(client.id as string)
-      .setSubject(client.id as string)
+      .setIssuer(client.id)
+      .setSubject(client.id)
       .setAudience('http://localhost:8103/oauth2/token')
       .setExpirationTime('2h')
       .sign(keyPair.privateKey);
@@ -1426,8 +1443,8 @@ describe('OAuth2 Token', () => {
     const jwt = await new SignJWT({ 'urn:example:claim': true })
       .setProtectedHeader({ alg: 'ES384' })
       .setIssuedAt()
-      .setIssuer(client2.id as string)
-      .setSubject(client2.id as string)
+      .setIssuer(client2.id)
+      .setSubject(client2.id)
       .setAudience('https://invalid-audience.com')
       .setExpirationTime('2h')
       .sign(keyPair.privateKey);
@@ -1461,7 +1478,7 @@ describe('OAuth2 Token', () => {
       .setProtectedHeader({ alg: 'ES384' })
       .setIssuedAt()
       .setIssuer('invalid-issuer')
-      .setSubject(client2.id as string)
+      .setSubject(client2.id)
       .setAudience('http://localhost:8103/oauth2/token')
       .setExpirationTime('2h')
       .sign(keyPair.privateKey);
@@ -1494,8 +1511,8 @@ describe('OAuth2 Token', () => {
     const jwt = await new SignJWT({ invalid: true })
       .setProtectedHeader({ alg: 'ES384' })
       .setIssuedAt()
-      .setIssuer(client2.id as string)
-      .setSubject(client2.id as string)
+      .setIssuer(client2.id)
+      .setSubject(client2.id)
       .setAudience('http://localhost:8103/oauth2/token')
       .setExpirationTime('2h')
       .sign(keyPair.privateKey);
@@ -1528,8 +1545,8 @@ describe('OAuth2 Token', () => {
     const jwt = await new SignJWT({ multipleMatching: true, successVerified: true })
       .setProtectedHeader({ alg: 'ES384' })
       .setIssuedAt()
-      .setIssuer(client2.id as string)
-      .setSubject(client2.id as string)
+      .setIssuer(client2.id)
+      .setSubject(client2.id)
       .setAudience('http://localhost:8103/oauth2/token')
       .setExpirationTime('2h')
       .sign(keyPair.privateKey);
@@ -1542,7 +1559,7 @@ describe('OAuth2 Token', () => {
       client_assertion: jwt,
     });
     expect(res.status).toBe(200);
-    expect(jwtVerify).toHaveBeenCalledTimes(4);
+    expect(jwtVerify).toHaveBeenCalledTimes(3);
   });
 
   test('Client assertion multiple inner error', async () => {
@@ -1559,8 +1576,8 @@ describe('OAuth2 Token', () => {
     const jwt = await new SignJWT({ multipleMatching: true })
       .setProtectedHeader({ alg: 'ES384' })
       .setIssuedAt()
-      .setIssuer(client2.id as string)
-      .setSubject(client2.id as string)
+      .setIssuer(client2.id)
+      .setSubject(client2.id)
       .setAudience('http://localhost:8103/oauth2/token')
       .setExpirationTime('2h')
       .sign(keyPair.privateKey);
@@ -1590,8 +1607,8 @@ describe('OAuth2 Token', () => {
     const jwt = await new SignJWT({ invalid: true })
       .setProtectedHeader({ alg: 'ES384' })
       .setIssuedAt()
-      .setIssuer(client2.id as string)
-      .setSubject(client2.id as string)
+      .setIssuer(client2.id)
+      .setSubject(client2.id)
       .setAudience('http://localhost:8103/oauth2/token')
       .setExpirationTime('2h')
       .sign(keyPair.privateKey);
@@ -1642,7 +1659,7 @@ describe('OAuth2 Token', () => {
       systemRepo.createResource<SmartAppLaunch>({
         resourceType: 'SmartAppLaunch',
         patient: { reference: `Patient/${randomUUID()}` },
-        encounter: { reference: `Patient/${randomUUID()}` },
+        encounter: { reference: `Encounter/${randomUUID()}` },
       })
     );
 
@@ -1651,6 +1668,8 @@ describe('OAuth2 Token', () => {
       launch: launch.id,
       email,
       password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 
@@ -1659,6 +1678,7 @@ describe('OAuth2 Token', () => {
       code: res.body.code,
       client_id: client.id,
       client_secret: client.secret,
+      code_verifier: 'xyz',
     });
     expect(res2.status).toBe(200);
     expect(res2.body.patient).toBeDefined();
@@ -1670,6 +1690,8 @@ describe('OAuth2 Token', () => {
       clientId: client.id,
       email,
       password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
     });
     expect(res.status).toBe(200);
 
@@ -1678,6 +1700,7 @@ describe('OAuth2 Token', () => {
       code: res.body.code,
       client_id: client.id,
       client_secret: client.secret,
+      code_verifier: 'xyz',
     });
     expect(res2.status).toBe(200);
   });

@@ -16,16 +16,16 @@ interface LogEvent extends InputLogEvent {
 
 /** @deprecated */
 export class CloudWatchLogger {
+  private readonly logGroupName: string;
+  private readonly logStreamName: string;
   private client: CloudWatchLogsClient;
   private queue: LogEvent[];
   private initPromise?: Promise<void>;
   private timer?: NodeJS.Timeout;
 
-  constructor(
-    region: string,
-    private logGroupName: string,
-    private logStreamName: string = hostname()
-  ) {
+  constructor(region: string, logGroupName: string, logStreamName: string = hostname()) {
+    this.logGroupName = logGroupName;
+    this.logStreamName = logStreamName;
     this.client = new CloudWatchLogsClient({ region });
     this.queue = [];
   }

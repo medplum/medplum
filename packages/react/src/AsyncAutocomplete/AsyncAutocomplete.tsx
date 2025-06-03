@@ -12,7 +12,17 @@ import {
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { IconCheck } from '@tabler/icons-react';
-import { KeyboardEvent, ReactNode, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  JSX,
+  KeyboardEvent,
+  ReactNode,
+  SyntheticEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { killEvent } from '../utils/dom';
 import { AsyncAutocompleteTestIds } from './AsyncAutocomplete.utils';
 
@@ -90,22 +100,22 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const PillComponent = pillComponent ?? DefaultPillComponent;
   const EmptyComponent = emptyComponent ?? DefaultEmptyComponent;
 
-  const searchRef = useRef<string>();
+  const searchRef = useRef<string>(search);
   searchRef.current = search;
 
-  const lastLoadOptionsRef = useRef<AsyncAutocompleteProps<T>['loadOptions']>();
-  const lastValueRef = useRef<string>();
+  const lastLoadOptionsRef = useRef<AsyncAutocompleteProps<T>['loadOptions']>(undefined);
+  const lastValueRef = useRef<string>(undefined);
 
-  const timerRef = useRef<number>();
+  const timerRef = useRef<number>(timer);
   timerRef.current = timer;
 
-  const abortControllerRef = useRef<AbortController>();
+  const abortControllerRef = useRef<AbortController>(abortController);
   abortControllerRef.current = abortController;
 
-  const autoSubmitRef = useRef<boolean>();
+  const autoSubmitRef = useRef<boolean>(autoSubmit);
   autoSubmitRef.current = autoSubmit;
 
-  const optionsRef = useRef<AsyncAutocompleteOption<T>[]>();
+  const optionsRef = useRef<AsyncAutocompleteOption<T>[]>(options);
   optionsRef.current = options;
 
   const handleTimer = useCallback((): void => {
@@ -379,9 +389,9 @@ function DefaultPillComponent<T>({
   disabled,
   onRemove,
 }: {
-  item: AsyncAutocompleteOption<T>;
-  disabled?: boolean;
-  onRemove: () => void;
+  readonly item: AsyncAutocompleteOption<T>;
+  readonly disabled?: boolean;
+  readonly onRemove: () => void;
 }): JSX.Element {
   return (
     <Pill withRemoveButton={!disabled} onRemove={onRemove}>

@@ -20,7 +20,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [20, 22]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -54,7 +54,7 @@ jobs:
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
       - name: Log npm stats
         run: |
           echo "node version: $(node --version)"
@@ -111,7 +111,7 @@ jobs:
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
       - id: build
         name: Build
         run: npm run build
@@ -155,8 +155,8 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [18, 20]
-        pg-version: [12, 14, 16]
+        node-version: [20, 22]
+        pg-version: [14, 16]
         redis-version: [6, 7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
@@ -219,7 +219,7 @@ jobs:
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
       - name: Wait for PostgreSQL
         run: |
           until pg_isready -h localhost -p 5432; do
@@ -314,7 +314,7 @@ jobs:
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
       - name: Wait for PostgreSQL
         run: |
           until pg_isready -h localhost -p 5432; do
@@ -335,7 +335,7 @@ jobs:
           npm run start &
           popd
           pushd packages/app
-          npm run dev &
+          npm run preview &
           popd
         env:
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
@@ -362,7 +362,7 @@ jobs:
           npm run test:smoke
           popd
       - name: Upload test results
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
+        if: ${{ failure() || (matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7) }}
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-results
@@ -410,7 +410,7 @@ jobs:
         run: |
           echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
           echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
       - name: Build Project
         run: ./scripts/build-docs.sh
         env:

@@ -11,7 +11,7 @@ import { FhirFilterComparison, FhirFilterConnective, FhirFilterExpression, FhirF
  */
 const operatorMap: Record<string, Operator | undefined> = {
   // eq - an item in the set has an equal value
-  eq: Operator.EQUALS,
+  eq: Operator.EXACT,
   // ne - An item in the set has an unequal value
   ne: Operator.NOT_EQUALS,
   // co - An item in the set contains this value
@@ -59,7 +59,11 @@ function getOperator(value: string): Operator {
 }
 
 class FilterParameterParser {
-  constructor(readonly parser: Parser) {}
+  readonly parser: Parser;
+
+  constructor(parser: Parser) {
+    this.parser = parser;
+  }
 
   parse(): FhirFilterExpression {
     let result: FhirFilterExpression;

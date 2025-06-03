@@ -1,0 +1,155 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "IMMUNIZATIONS",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "11369-6",
+                  "display": "History of immunizations"
+                }
+              ],
+              "text": "History of immunizations"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><content ID=\"immunSect\"/><table border=\"1\" width=\"100%\"><thead><tr><th>Vaccine</th><th>Lot Number</th><th>Date</th><th>Status</th></tr></thead><tbody><tr ID=\"immun1\"><td ID=\"ImmunizationProduct_100\">Influenza Virus Vaccine</td><td>1</td><td>8/15/2010</td><td>Completed</td></tr></tbody></table></div>"
+            },
+            "entry": [
+              {
+                "reference": "Immunization/e6f1ba43-c0ed-4b9b-9f12-f435d8ad8f92"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "ce862cfe-6559-411e-92e9-e8d005b1c226",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": ["Katherine"]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "7ae96c77-6b8f-4e5a-9938-2f6392857789",
+        "name": [
+          {
+            "family": "Assigned",
+            "given": ["Amanda"]
+          }
+        ],
+        "address": [
+          {
+            "line": ["1021 Health Drive"],
+            "city": "Ann Arbor",
+            "state": "MI",
+            "postalCode": "99099",
+            "country": "US"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Organization",
+        "id": "7ae96c77-6b8f-4e5a-9938-2f6392857789",
+        "name": "Good Health Clinic"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "7ae96c77-6b8f-4e5a-9938-2f6392857789",
+        "practitioner": {
+          "reference": "Practitioner/7ae96c77-6b8f-4e5a-9938-2f6392857789",
+          "display": "Amanda Assigned"
+        },
+        "organization": {
+          "reference": "Organization/7ae96c77-6b8f-4e5a-9938-2f6392857789",
+          "display": "Good Health Clinic"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "e6f1ba43-c0ed-4b9b-9f12-f435d8ad8f92",
+        "status": "completed",
+        "vaccineCode": {
+          "coding": [
+            {
+              "system": "http://nucc.org/cvx",
+              "code": "88",
+              "display": "influenza virus vaccine, unspecified formulation"
+            }
+          ],
+          "text": "influenza virus vaccine, unspecified formulation"
+        },
+        "patient": {
+          "reference": "Patient/ce862cfe-6559-411e-92e9-e8d005b1c226",
+          "display": "Katherine Madison"
+        },
+        "occurrenceDateTime": "2010-08-15T00:00:00Z",
+        "lotNumber": "1",
+        "performer": [
+          {
+            "actor": {
+              "reference": "PractitionerRole/7ae96c77-6b8f-4e5a-9938-2f6392857789"
+            }
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#immun1"
+          }
+        ],
+        "manufacturer": {
+          "display": "Health LS - Immuno Inc."
+        }
+      }
+    }
+  ]
+}

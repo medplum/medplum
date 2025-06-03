@@ -14,8 +14,8 @@ import {
 } from '@medplum/fhirtypes';
 import { ResourceForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { JSX, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { getAttenders } from '../../utils';
 
 interface CreateEncounterProps {
@@ -44,7 +44,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
         message: 'Encounter created.',
       });
       handlers.close();
-      navigate(`/Encounter/${encounter.id}`);
+      navigate(`/Encounter/${encounter.id}`)?.catch(console.error);
     } catch (err) {
       showNotification({
         icon: <IconCircleOff />,

@@ -1,7 +1,7 @@
-import { lazy, ContentType, createReference } from '@medplum/core';
+import { ContentType, createReference, lazy, WithId } from '@medplum/core';
 import { Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 
-export const TestOrganization: Organization = {
+export const TestOrganization: WithId<Organization> = {
   resourceType: 'Organization',
   id: '123',
   meta: {
@@ -10,7 +10,7 @@ export const TestOrganization: Organization = {
   name: 'Test Organization',
 };
 
-export const DifferentOrganization: Organization = {
+export const DifferentOrganization: WithId<Organization> = {
   resourceType: 'Organization',
   id: '456',
   meta: {
@@ -19,7 +19,7 @@ export const DifferentOrganization: Organization = {
   name: 'Different',
 };
 
-export const DrAliceSmith: Practitioner = {
+export const DrAliceSmith: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: '123',
   meta: {
@@ -43,7 +43,7 @@ export const DrAliceSmith: Practitioner = {
   ],
 };
 
-export const DrAliceSmithPreviousVersion: Practitioner = {
+export const DrAliceSmithPreviousVersion: WithId<Practitioner> = {
   resourceType: 'Practitioner',
   id: '123',
   meta: {
@@ -56,7 +56,7 @@ export const DrAliceSmithPreviousVersion: Practitioner = {
   name: [{ given: ['Medplum'], family: 'Admin' }],
 };
 
-export const DrAliceSmithSchedule: Schedule = {
+export const DrAliceSmithSchedule: WithId<Schedule> = {
   resourceType: 'Schedule',
   id: 'alice-smith-schedule',
   actor: [
@@ -67,9 +67,9 @@ export const DrAliceSmithSchedule: Schedule = {
   ],
 };
 
-export const makeDrAliceSmithSlots = lazy((): Slot[] => {
+export const makeDrAliceSmithSlots = lazy((): WithId<Slot>[] => {
   const schedule = createReference(DrAliceSmithSchedule);
-  const result: Slot[] = [];
+  const result: (Slot & { id: string })[] = [];
   const slotDate = new Date();
   for (let day = 0; day < 60; day++) {
     for (const hour of [9, 10, 11, 13, 14, 15]) {

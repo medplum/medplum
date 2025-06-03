@@ -1,8 +1,8 @@
 import { Button, Stack, Text } from '@mantine/core';
-import { getReferenceString, isReference } from '@medplum/core';
+import { getReferenceString, isReference, WithId } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { useResource, useSearchResources } from '@medplum/react-hooks';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { CalendarInput } from '../CalendarInput/CalendarInput';
 import { getStartMonth } from '../CalendarInput/CalendarInput.utils';
 import { QuestionnaireForm } from '../QuestionnaireForm/QuestionnaireForm';
@@ -32,7 +32,7 @@ export function Scheduler(props: SchedulerProps): JSX.Element | null {
         'schedule',
         isReference(props.schedule)
           ? (props.schedule.reference as string)
-          : getReferenceString(props.schedule as Schedule),
+          : getReferenceString(props.schedule as WithId<Schedule>),
       ],
       ['start', 'gt' + getStart(month)],
       ['start', 'lt' + getEnd(month)],

@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { loadTestConfig } from './config';
+import { loadTestConfig } from './config/loader';
 import {
   RequestContext,
   buildTracingExtension,

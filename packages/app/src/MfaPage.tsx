@@ -4,7 +4,7 @@ import { normalizeErrorString } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import { useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useState } from 'react';
 import { MfaForm, MfaFormFields } from '../../react/src/auth/MfaForm';
 
 export function MfaPage(): JSX.Element | null {
@@ -86,7 +86,7 @@ export function MfaPage(): JSX.Element | null {
       <Form onSubmit={enableMfa}>
         <Title>Multi Factor Auth Setup</Title>
         <Center>
-          <img src={qrCodeUrl as string} />
+          <img src={qrCodeUrl as string} alt="Multi Factor Auth QR Code" />
         </Center>
         <TextInput name="token" label="Code" />
         <Group justify="flex-end" mt="xl">

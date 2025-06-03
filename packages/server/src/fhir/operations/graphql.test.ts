@@ -5,7 +5,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
@@ -22,9 +22,9 @@ let encounter2: Encounter;
 let bobAccessToken: string;
 
 describe('GraphQL', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       await initApp(app, config);
 
       // Setup a new project
@@ -40,7 +40,7 @@ describe('GraphQL', () => {
 
       const aliceRepo = new Repository({
         author: createReference(aliceRegistration.profile),
-        projects: [aliceRegistration.project.id as string],
+        projects: [aliceRegistration.project.id],
       });
 
       // Create a profile picture
@@ -120,8 +120,8 @@ describe('GraphQL', () => {
         ],
       });
       bobAccessToken = bobRegistration.accessToken;
-    })
-  );
+    });
+  });
 
   afterEach(() => {
     jest.restoreAllMocks();

@@ -3,6 +3,7 @@ import { Patient, Resource } from '@medplum/fhirtypes';
 import { LabOrderInputErrors, LabOrganization } from '@medplum/health-gorilla-core';
 import { useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '@medplum/react';
+import { JSX } from 'react';
 
 export type PractitionerInputProps = {
   patient: Patient | undefined;
@@ -33,7 +34,7 @@ export function PerformingLabInput({ patient, error }: PractitionerInputProps): 
 
 function resourceToOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
   return {
-    value: getReferenceString(resource),
+    value: getReferenceString(resource) ?? '',
     label: getDisplayString(resource),
     resource,
   };

@@ -384,9 +384,8 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     if (isReferenceOfType('Patient', opts.patient)) {
       return opts.patient;
     } else if (isResource(opts.patient)) {
-      return createReference(opts.patient) as Reference<Patient> & { reference: string };
+      return createReference(opts.patient);
     } else {
-      opts.patient satisfies undefined;
       return undefined;
     }
   }, [opts.patient]);
@@ -411,7 +410,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     ) {
       return opts.requestingLocation;
     } else if (isResource(opts.requestingLocation)) {
-      return createReference(opts.requestingLocation) as Reference<Location | Organization> & { reference: string };
+      return createReference(opts.requestingLocation);
     } else {
       return undefined;
     }

@@ -9,6 +9,7 @@ import {
   SearchParameterType,
   SearchRequest,
   TypedValue,
+  WithId,
   allOk,
   arrayify,
   badRequest,
@@ -22,7 +23,6 @@ import {
   forbidden,
   formatSearchQuery,
   getReferenceString,
-  getSearchParameters,
   getStatus,
   gone,
   isGone,
@@ -31,6 +31,8 @@ import {
   isOk,
   isReference,
   isResource,
+  isResourceWithId,
+  isUUID,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
@@ -66,13 +68,15 @@ import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
 import { v7 } from 'uuid';
-import validator from 'validator';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
+import { r4ProjectId } from '../constants';
+import { tryGetRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { FhirRateLimiter } from '../fhirquota';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
-import { r4ProjectId } from '../seed';
+import { getBinaryStorage } from '../storage/loader';
 import {
   AuditEventOutcome,
   AuditEventSubtype,
@@ -92,12 +96,14 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { TokenTable } from './lookups/token';
+import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
-import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { SearchOptions, buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
+import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
   DeleteQuery,
@@ -109,9 +115,11 @@ import {
   normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
-import { getBinaryStorage } from './storage';
+import { buildTokenColumns } from './token-column';
+import { TokenColumnsFeature, isLegacyTokenColumnSearchParameter } from './tokens';
 
-const transactionAttempts = 2;
+const defaultTransactionAttempts = 2;
+const defaultExpBackoffBaseDelayMs = 50;
 const retryableTransactionErrorCodes = ['40001'];
 
 /**
@@ -148,7 +156,7 @@ export interface RepositoryContext {
   projects?: string[];
 
   /** Current Project of the authenticated user, or none for the system repository. */
-  currentProject?: Project;
+  currentProject?: WithId<Project>;
 
   /**
    * Optional compartment restriction.
@@ -260,11 +268,37 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.mode = mode;
   }
 
-  currentProject(): Project | undefined {
+  rateLimiter(): FhirRateLimiter | undefined {
+    if (this.isSuperAdmin()) {
+      return undefined;
+    }
+    return tryGetRequestContext()?.fhirRateLimiter;
+  }
+
+  currentProject(): WithId<Project> | undefined {
     return this.context.currentProject;
   }
 
-  async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<T> {
+  /**
+   * Returns a project by ID.
+   * This handles the common case where the project ID is the same as the current project ID,
+   * but also supports the super admin case where the project ID is different.
+   * @param projectId - The project ID to look up.
+   * @returns The project, or undefined if not found.
+   */
+  private async getProjectById(projectId: string | undefined): Promise<WithId<Project> | undefined> {
+    if (!projectId) {
+      return undefined;
+    }
+    if (projectId === this.context.currentProject?.id) {
+      return this.context.currentProject;
+    }
+    return getSystemRepo().readResource<Project>('Project', projectId);
+  }
+
+  async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<WithId<T>> {
+    await this.rateLimiter()?.recordWrite();
+
     const resourceWithId = {
       ...resource,
       id: options?.assignedId && resource.id ? resource.id : this.generateId(),
@@ -293,7 +327,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     resourceType: T['resourceType'],
     id: string,
     options?: ReadResourceOptions
-  ): Promise<T> {
+  ): Promise<WithId<T>> {
+    await this.rateLimiter()?.recordRead();
+
     const startTime = Date.now();
     try {
       const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, options));
@@ -314,8 +350,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     resourceType: T['resourceType'],
     id: string,
     options?: ReadResourceOptions
-  ): Promise<T> {
-    if (!id || !validator.isUUID(id)) {
+  ): Promise<WithId<T>> {
+    if (!id || !isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
 
@@ -347,7 +383,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
-    if (!validator.isUUID(id)) {
+    if (!isUUID(id)) {
       throw new OperationOutcomeError(notFound);
     }
 
@@ -364,16 +400,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(gone);
     }
 
-    const resource = JSON.parse(rows[0].content as string) as T;
+    const resource = JSON.parse(rows[0].content as string) as WithId<T>;
     await this.setCacheEntry(resource);
     return resource;
   }
 
   private canReadCacheEntry(cacheEntry: CacheEntry): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-    if (!this.context.projects?.includes(cacheEntry.projectId)) {
+    if (!this.isSuperAdmin() && !this.context.projects?.includes(cacheEntry.projectId)) {
       return false;
     }
     if (!satisfiedAccessPolicy(cacheEntry.resource, AccessPolicyInteraction.READ, this.context.accessPolicy)) {
@@ -382,9 +415,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return true;
   }
 
-  async readReferences(references: Reference[]): Promise<(Resource | Error)[]> {
+  async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(T | Error)[]> {
+    await this.rateLimiter()?.recordRead(references.length);
     const cacheEntries = await this.getCacheEntries(references);
-    const result: (Resource | Error)[] = new Array(references.length);
+    const result: (T | Error)[] = new Array(references.length);
 
     for (let i = 0; i < result.length; i++) {
       const startTime = Date.now();
@@ -403,7 +437,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         entryResult = this.removeHiddenFields(entryResult);
         this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: entryResult, durationMs });
       }
-      result[i] = entryResult;
+      result[i] = entryResult as T | Error;
     }
 
     return result;
@@ -413,6 +447,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     reference: Reference,
     cacheEntry: CacheEntry | undefined
   ): Promise<Resource | Error> {
+    if (!reference.reference?.match(/^[A-Z][a-zA-Z]+\//)) {
+      // Non-local references cannot be resolved
+      return new OperationOutcomeError(notFound);
+    }
+
     try {
       const [resourceType, id] = parseReference(reference);
       validateResourceType(resourceType);
@@ -430,13 +469,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return await this.readResourceFromDatabase(resourceType, id);
     } catch (err) {
       if (err instanceof OperationOutcomeError) {
-        return err;
+        if (isNotFound(err.outcome) || isGone(err.outcome)) {
+          // Only return "not found" or "gone" errors
+          return err;
+        }
+        // Other errors should be treated as database errors
+        throw err;
       }
-      return new OperationOutcomeError(normalizeOperationOutcome(err), err);
+      throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
     }
   }
 
-  async readReference<T extends Resource>(reference: Reference<T>): Promise<T> {
+  async readReference<T extends Resource>(reference: Reference<T>): Promise<WithId<T>> {
     let parts: [T['resourceType'], string];
     try {
       parts = parseReference(reference);
@@ -458,6 +502,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns Operation outcome and a history bundle.
    */
   async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string, limit = 100): Promise<Bundle<T>> {
+    await this.rateLimiter()?.recordHistory();
     const startTime = Date.now();
     try {
       let resource: T | undefined = undefined;
@@ -530,10 +575,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
+    await this.rateLimiter()?.recordRead();
     const startTime = Date.now();
     const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
     try {
-      if (!validator.isUUID(id) || !validator.isUUID(vid)) {
+      if (!isUUID(id) || !isUUID(vid)) {
         throw new OperationOutcomeError(notFound);
       }
 
@@ -566,10 +612,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
+  async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<WithId<T>> {
+    await this.rateLimiter()?.recordWrite();
+
     const startTime = Date.now();
     try {
-      let result: T;
+      let result: WithId<T>;
       if (options?.ifMatch) {
         // Conditional update requires transaction
         result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options.ifMatch));
@@ -588,12 +636,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private async updateResourceImpl<T extends Resource>(resource: T, create: boolean, versionId?: string): Promise<T> {
-    const { resourceType, id } = resource;
-    if (!id) {
+  private async updateResourceImpl<T extends Resource>(
+    resource: T,
+    create: boolean,
+    versionId?: string
+  ): Promise<WithId<T>> {
+    if (!isResourceWithId(resource)) {
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
-    if (!validator.isUUID(id)) {
+    const { resourceType, id } = resource;
+    if (!isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
 
@@ -621,7 +673,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
-    let updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
+    let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, {
       ...this.restoreReadonlyFields(resource, existing),
     });
     updated = await replaceConditionalReferences(this, updated);
@@ -634,7 +686,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       onBehalfOf: this.context.onBehalfOf,
     };
 
-    const result: T = { ...updated, meta: resultMeta };
+    const result = { ...updated, meta: resultMeta };
 
     const project = this.getProjectId(existing, updated);
     if (project) {
@@ -668,7 +720,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.handleStorage(result, create);
     await this.postCommit(async () => {
       await this.handleBinaryUpdate(existing, result);
-      await addBackgroundJobs(result, existing, { interaction: create ? 'create' : 'update' });
+      await addBackgroundJobs(result, existing, {
+        project: await this.getProjectById(result.meta?.project),
+        interaction: create ? 'create' : 'update',
+      });
     });
 
     const output = deepClone(result);
@@ -724,7 +779,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource to store.
    * @param create - Whether the resource is being create, or updated in place.
    */
-  private async handleStorage(resource: Resource, create: boolean): Promise<void> {
+  private async handleStorage(resource: WithId<Resource>, create: boolean): Promise<void> {
     if (!this.isCacheOnly(resource)) {
       await this.writeToDatabase(resource, create);
     }
@@ -774,7 +829,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async validateResourceStrictly(resource: Resource): Promise<void> {
     const logger = getLogger();
-    const start = Date.now();
+    const start = process.hrtime.bigint();
 
     const issues = validateResource(resource);
     for (const issue of issues) {
@@ -786,7 +841,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.validateProfiles(resource, profileUrls);
     }
 
-    const durationMs = Date.now() - start;
+    const durationMs = Number(process.hrtime.bigint() - start) / 1e6; // Convert nanoseconds to milliseconds
+    recordHistogramValue('medplum.server.validationDurationMs', durationMs, { options: { unit: 'ms' } });
     if (durationMs > 10) {
       logger.debug('High validator latency', {
         resourceType: resource.resourceType,
@@ -868,7 +924,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource to write to the database.
    * @param create - If true, then the resource is being created.
    */
-  private async writeToDatabase<T extends Resource>(resource: T, create: boolean): Promise<void> {
+  private async writeToDatabase<T extends WithId<Resource>>(resource: T, create: boolean): Promise<void> {
     await this.ensureInTransaction(async (client) => {
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
@@ -890,7 +946,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async checkExistingResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string
-  ): Promise<T | undefined> {
+  ): Promise<WithId<T> | undefined> {
     try {
       return await this.readResourceImpl<T>(resourceType, id);
     } catch (err) {
@@ -954,12 +1010,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param conn - Database client to use for reindex operations.
    * @param resources - The resource(s) to reindex.
    */
-  async reindexResources<T extends Resource>(conn: PoolClient, resources: T[]): Promise<void> {
-    let resource: Resource;
+  async reindexResources<T extends Resource>(conn: PoolClient, resources: WithId<T>[]): Promise<void> {
+    if (!this.isSuperAdmin()) {
+      throw new OperationOutcomeError(forbidden);
+    }
+
     // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < resources.length; i++) {
-      resource = resources[i];
+      const resource = resources[i];
       const meta = resource.meta as Meta;
       meta.compartment = this.getCompartments(resource);
 
@@ -967,9 +1026,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         const projectRef = meta.compartment.find((r) => r.reference?.startsWith('Project/'));
         meta.project = resolveId(projectRef);
       }
-
-      await this.writeLookupTables(conn, resource, false);
     }
+
+    await this.batchWriteLookupTables(conn, resources, false);
     await this.batchWriteResources(conn, resources);
   }
 
@@ -1003,12 +1062,22 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       previousVersion = history.entry?.[1]?.resource;
     }
 
-    return addSubscriptionJobs(resource, previousVersion, { interaction }, options);
+    return addSubscriptionJobs(
+      resource,
+      previousVersion,
+      {
+        project: await this.getProjectById(resource.meta?.project),
+        interaction,
+      },
+      options
+    );
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+    await this.rateLimiter()?.recordWrite();
+
     const startTime = Date.now();
-    let resource: Resource;
+    let resource: WithId<T>;
     try {
       resource = await this.readResourceImpl<T>(resourceType, id);
     } catch (err) {
@@ -1038,11 +1107,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           content,
         };
 
-        const searchParams = getSearchParameters(resourceType);
-        if (searchParams) {
-          for (const searchParam of Object.values(searchParams)) {
-            this.buildColumn({ resourceType } as Resource, columns, searchParam);
-          }
+        for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
+          this.buildColumn({ resourceType } as Resource, columns, searchParam);
         }
 
         await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(conn);
@@ -1064,7 +1130,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
       });
 
-      await addSubscriptionJobs(resource, resource, { interaction: 'delete' });
+      await addSubscriptionJobs(resource, resource, {
+        project: await this.getProjectById(resource.meta?.project),
+        interaction: 'delete',
+      });
     } catch (err) {
       const durationMs = Date.now() - startTime;
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err, {
@@ -1075,12 +1144,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  async patchResource<T extends Resource = Resource>(
+  async patchResource<T extends Resource>(
     resourceType: T['resourceType'],
     id: string,
     patch: Operation[],
     options?: UpdateResourceOptions
-  ): Promise<T> {
+  ): Promise<WithId<T>> {
+    await this.rateLimiter()?.recordWrite();
+
     const startTime = Date.now();
     try {
       return await this.withTransaction(async () => {
@@ -1133,6 +1204,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
+    if (ids.length === 0) {
+      return;
+    }
     await this.withTransaction(async (client) => {
       for (const id of ids) {
         await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
@@ -1143,6 +1217,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(db);
       await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
     });
+    incrementCounter(
+      `medplum.fhir.interaction.delete.count`,
+      { attributes: { resourceType, result: 'success' } },
+      ids.length
+    );
   }
 
   /**
@@ -1168,11 +1247,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
   }
 
-  async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
+  async search<T extends Resource>(
+    searchRequest: SearchRequest<T>,
+    options?: SearchOptions
+  ): Promise<Bundle<WithId<T>>> {
+    await this.rateLimiter()?.recordSearch();
+
     const startTime = Date.now();
     try {
       // Resource type validation is performed in the searchImpl function
-      const result = await searchImpl(this, searchRequest);
+      const result = await searchImpl(this, searchRequest, options);
       const durationMs = Date.now() - startTime;
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
       return result;
@@ -1185,7 +1269,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async processAllResources<T extends Resource>(
     initialSearchRequest: SearchRequest<T>,
-    process: (resource: T) => Promise<void>,
+    process: (resource: WithId<T>) => Promise<void>,
     options?: ProcessAllResourcesOptions
   ): Promise<void> {
     let searchRequest: SearchRequest<T> | undefined = initialSearchRequest;
@@ -1196,7 +1280,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
       for (const entry of bundle.entry) {
         if (entry.resource?.id) {
-          await process(entry.resource);
+          await process(entry.resource as WithId<T>);
         }
       }
       const nextLink = bundle.link?.find((b) => b.relation === 'next');
@@ -1215,10 +1299,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     searchRequest: SearchRequest<T>,
     referenceField: string,
     references: string[]
-  ): Promise<Record<string, T[]>> {
+  ): Promise<Record<string, WithId<T>[]>> {
     const startTime = Date.now();
     try {
-      const result = await searchByReferenceImpl<T>(this, searchRequest, referenceField, references);
+      const result = await searchByReferenceImpl(this, searchRequest, referenceField, references);
       const durationMs = Date.now() - startTime;
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
       return result;
@@ -1243,12 +1327,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resourceType - The resource type for compartments.
    */
   addSecurityFilters(builder: SelectQuery, resourceType: string): void {
-    if (this.isSuperAdmin()) {
-      // No compartment restrictions for admins.
-      return;
+    // No compartment restrictions for admins.
+    if (!this.isSuperAdmin()) {
+      this.addProjectFilters(builder);
     }
-
-    this.addProjectFilters(builder);
     this.addAccessPolicyFilters(builder, resourceType);
   }
 
@@ -1258,7 +1340,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private addProjectFilters(builder: SelectQuery): void {
     if (this.context.projects?.length) {
-      builder.where('compartments', 'ARRAY_CONTAINS', this.context.projects, 'UUID[]');
+      builder.where('projectId', 'IN', this.context.projects);
     }
   }
 
@@ -1281,7 +1363,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         if (policyCompartmentId) {
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
-          expressions.push(new Condition('compartments', 'ARRAY_CONTAINS', policyCompartmentId, 'UUID[]'));
+          expressions.push(
+            new Condition('compartments', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', policyCompartmentId, 'UUID[]')
+          );
         } else if (policy.criteria) {
           if (!policy.criteria.startsWith(policy.resourceType + '?')) {
             getLogger().warn('Invalid access policy criteria', {
@@ -1320,6 +1404,21 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
+  /**
+   * The version to be set on resources when they are inserted/updated into the database.
+   * The value should be incremented each time there is a change in the schema (really just columns)
+   * of the resource tables or when there are code changes to `buildResourceRow`.
+   *
+   * Version history:
+   *
+   * 1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
+   * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
+   * 3. 04/09/25 - Added columns for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
+   * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
+   * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
+   */
+  static readonly VERSION: number = 5;
+
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
@@ -1333,13 +1432,22 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       projectId: meta.project,
       compartments,
       content,
+      __version: Repository.VERSION,
     };
 
-    const searchParams = getSearchParameters(resourceType);
-    if (searchParams) {
-      for (const searchParam of Object.values(searchParams)) {
+    const searchParams = getStandardAndDerivedSearchParameters(resourceType);
+    if (searchParams.length > 0) {
+      const startTime = process.hrtime.bigint();
+      for (const searchParam of searchParams) {
         this.buildColumn(resource, row, searchParam);
       }
+      recordHistogramValue(
+        'medplum.server.indexingDurationMs',
+        Number(process.hrtime.bigint() - startTime) / 1e6, // High resolution time, converted from ns to ms
+        {
+          options: { unit: 'ms' },
+        }
+      );
     }
     return row;
   }
@@ -1396,19 +1504,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource.
    * @returns The list of compartments for the resource.
    */
-  private getCompartments(resource: Resource): Reference[] {
+  private getCompartments(resource: WithId<Resource>): Reference[] {
     const compartments = new Set<string>();
 
-    if (resource.meta?.project && validator.isUUID(resource.meta.project)) {
+    if (resource.meta?.project && isUUID(resource.meta.project)) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       compartments.add('Project/' + resource.meta.project);
     }
 
-    if (
-      resource.resourceType === 'User' &&
-      resource.project?.reference &&
-      validator.isUUID(resolveId(resource.project) ?? '')
-    ) {
+    if (resource.resourceType === 'User' && resource.project?.reference && isUUID(resolveId(resource.project) ?? '')) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       compartments.add(resource.project.reference);
     }
@@ -1416,35 +1520,21 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (resource.meta?.accounts) {
       for (const account of resource.meta.accounts) {
         const id = resolveId(account);
-        if (!account.reference?.startsWith('Project/') && id && validator.isUUID(id)) {
+        if (!account.reference?.startsWith('Project/') && id && isUUID(id)) {
           compartments.add(account.reference as string);
         }
       }
     } else if (resource.meta?.account && !resource.meta.account.reference?.startsWith('Project/')) {
       const id = resolveId(resource.meta.account);
-      if (id && validator.isUUID(id)) {
+      if (id && isUUID(id)) {
         compartments.add(resource.meta.account.reference as string);
       }
     }
 
     for (const patient of getPatients(resource)) {
       const patientId = resolveId(patient);
-      if (patientId && validator.isUUID(patientId)) {
+      if (patientId && isUUID(patientId)) {
         compartments.add(patient.reference);
-      }
-    }
-
-    // Carry forward anything added to the resource compartments array
-    if (resource.meta?.compartment?.length) {
-      for (const compartment of resource.meta.compartment) {
-        const id = resolveId(compartment);
-        if (
-          id &&
-          validator.isUUID(id) &&
-          (compartment.reference?.startsWith('Organization/') || compartment.reference?.startsWith('Location/'))
-        ) {
-          compartments.add(compartment.reference as string);
-        }
       }
     }
 
@@ -1465,30 +1555,49 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param searchParam - The search parameter definition.
    */
   private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
-    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
-
     if (
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment' ||
-      searchParam.type === 'composite' ||
-      impl.searchStrategy === 'lookup-table'
+      searchParam.code === '_compartment:identifier' ||
+      searchParam.type === 'composite'
     ) {
       return;
     }
 
-    const values = evalFhirPath(searchParam.expression as string, resource);
-    let columnValue = null;
-
-    if (values.length > 0) {
-      if (impl.array) {
-        columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
-      } else {
-        columnValue = this.buildColumnValue(searchParam, impl, values[0]);
-      }
+    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
+    if (impl.searchStrategy === 'lookup-table') {
+      return;
     }
 
-    columns[impl.columnName] = columnValue;
+    const values = evalFhirPath(impl.parsedExpression, resource);
+
+    let columnImpl: ColumnSearchParameterImplementation | undefined;
+    if (impl.searchStrategy === 'token-column') {
+      if (TokenColumnsFeature.write) {
+        buildTokenColumns(searchParam, impl, columns, resource);
+      }
+
+      if (isLegacyTokenColumnSearchParameter(searchParam, resource.resourceType)) {
+        // This is a legacy search parameter that should be indexed as a regular string column as well
+        columnImpl = getSearchParameterImplementation(resource.resourceType, searchParam, true);
+      }
+    } else {
+      impl satisfies ColumnSearchParameterImplementation;
+      columnImpl = impl;
+    }
+
+    if (columnImpl) {
+      let columnValue = undefined;
+      if (values.length > 0) {
+        if (columnImpl.array) {
+          columnValue = values.map((v) => this.buildColumnValue(searchParam, columnImpl, v));
+        } else {
+          columnValue = this.buildColumnValue(searchParam, columnImpl, values[0]);
+        }
+      }
+      columns[columnImpl.columnName] = columnValue;
+    }
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
@@ -1715,14 +1824,43 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return undefined;
   }
 
+  private disableTokenTableWrites: boolean | undefined;
+  private skipTokenTableWrite(): boolean {
+    if (this.disableTokenTableWrites === undefined) {
+      const project = this.currentProject();
+      const maybeWriteBoolean = project?.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')?.valueBoolean;
+      // If the Project.systemSetting exists, use its value. Otherwise, default to false
+      this.disableTokenTableWrites = maybeWriteBoolean ?? false;
+    }
+    return this.disableTokenTableWrites;
+  }
+
   /**
    * Writes resources values to the lookup tables.
    * @param client - The database client inside the transaction.
    * @param resource - The resource to index.
    * @param create - If true, then the resource is being created.
    */
-  private async writeLookupTables(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    await Promise.all(lookupTables.map((lookupTable) => lookupTable.indexResource(client, resource, create)));
+  private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
+    for (const lookupTable of lookupTables) {
+      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
+        continue;
+      }
+      await lookupTable.indexResource(client, resource, create);
+    }
+  }
+
+  private async batchWriteLookupTables<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    for (const lookupTable of lookupTables) {
+      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
+        continue;
+      }
+      await lookupTable.batchIndexResources(client, resources, create);
+    }
   }
 
   /**
@@ -1827,19 +1965,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param updated - The incoming updated resource.
    * @returns The account values.
    */
-  private async getAccounts(existing: Resource | undefined, updated: Resource): Promise<Reference[] | undefined> {
-    const updatedAccounts = this.extractAccountReferences(updated.meta);
-    if (updatedAccounts && this.canWriteAccount()) {
-      if (updated.resourceType !== 'Patient') {
-        // Log intentional writes to accounts on non-Patient resources
-        if (
-          !existing ||
-          new Set(this.extractAccountReferences(existing.meta)).symmetricDifference(new Set(updatedAccounts)).size > 0
-        ) {
-          getLogger().warn('Write to accounts within compartment', { resource: getReferenceString(updated) });
-        }
-      }
-      // If the user specifies an account, allow it if they have permission.
+  private async getAccounts(
+    existing: WithId<Resource> | undefined,
+    updated: WithId<Resource>
+  ): Promise<Reference[] | undefined> {
+    if (updated.meta && this.canWriteAccount()) {
+      // If the user specifies accounts, allow it if they have permission.
+      const updatedAccounts = this.extractAccountReferences(updated.meta);
       return updatedAccounts;
     }
 
@@ -1926,7 +2058,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private canWriteAccount(): boolean {
-    return this.isSuperAdmin() || this.isProjectAdmin();
+    return Boolean(this.context.extendedMode && (this.isSuperAdmin() || this.isProjectAdmin()));
   }
 
   /**
@@ -1935,10 +2067,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can read the specified resource type.
    */
   canReadResourceType(resourceType: string): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-    if (protectedResourceTypes.includes(resourceType)) {
+    if (!this.isSuperAdmin() && protectedResourceTypes.includes(resourceType)) {
       return false;
     }
     if (!this.context.accessPolicy) {
@@ -1955,10 +2084,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can write the specified resource type.
    */
   private canWriteResourceType(resourceType: string): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-    if (protectedResourceTypes.includes(resourceType)) {
+    if (!this.isSuperAdmin() && protectedResourceTypes.includes(resourceType)) {
       return false;
     }
     if (!this.context.accessPolicy) {
@@ -1974,15 +2100,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can write the specified resource type.
    */
   private canWriteToResource(resource: Resource): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
     const resourceType = resource.resourceType;
-    if (protectedResourceTypes.includes(resourceType)) {
-      return false;
-    }
-    if (resource.meta?.project !== this.context.projects?.[0]) {
-      return false;
+    if (!this.isSuperAdmin()) {
+      if (protectedResourceTypes.includes(resourceType)) {
+        return false;
+      }
+      if (resource.meta?.project !== this.context.projects?.[0]) {
+        return false;
+      }
     }
     return !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
   }
@@ -1994,11 +2119,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns True if the current user can write the specified resource type.
    */
   private isResourceWriteable(previous: Resource | undefined, current: Resource): boolean {
-    if (this.isSuperAdmin()) {
-      return true;
-    }
-
-    if (current.meta?.project !== this.context.projects?.[0]) {
+    if (!this.isSuperAdmin() && current.meta?.project !== this.context.projects?.[0]) {
       return false;
     }
 
@@ -2270,8 +2391,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     callback: (client: PoolClient) => Promise<TResult>,
     options?: { serializable: boolean }
   ): Promise<TResult> {
+    const config = getConfig();
+    const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
     let error: OperationOutcomeError | undefined;
-    for (let i = 0; i < transactionAttempts; i++) {
+    for (let attempt = 0; attempt < transactionAttempts; attempt++) {
       try {
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
         const result = await callback(client);
@@ -2289,6 +2412,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       } finally {
         this.endTransaction();
+      }
+
+      if (attempt + 1 < transactionAttempts) {
+        const baseDelayMs = config.transactionExpBackoffBaseDelayMs ?? defaultExpBackoffBaseDelayMs;
+        // Attempts are 0-indexed, so first wait after first attempt will be somewhere between 75% and 100% of baseDelayMs
+        // This calculation results in something like this for the default values:
+        // Attempt 1: 50 * (2^0) = 50 * [0.75, 1] = **[37.5, 50] ms**
+        // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
+        // etc...
+        const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.25));
+        await sleep(delayMs);
       }
     }
 
@@ -2418,13 +2552,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async getCacheEntry<T extends Resource>(
     resourceType: string,
     id: string
-  ): Promise<CacheEntry<T> | undefined> {
+  ): Promise<CacheEntry<WithId<T>> | undefined> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
       return undefined;
     }
     const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
-    return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
+    return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<WithId<T>>) : undefined;
   }
 
   /**
@@ -2451,7 +2585,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Writes a cache entry to Redis.
    * @param resource - The resource to cache.
    */
-  private async setCacheEntry(resource: Resource): Promise<void> {
+  private async setCacheEntry(resource: WithId<Resource>): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
       const cachedResource = deepClone(resource);
@@ -2463,7 +2597,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const projectId = resource.meta?.project;
     await getRedis().set(
-      getCacheKey(resource.resourceType, resource.id as string),
+      getCacheKey(resource.resourceType, resource.id),
       stringify({ resource, projectId }),
       'EX',
       REDIS_CACHE_EX_SECONDS
@@ -2517,7 +2651,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.context;
   }
 
-  [Symbol.dispose](): void {
+  [Symbol.dispose](removeConnection?: boolean): void {
     this.assertNotClosed();
     if (this.disposable) {
       if (this.transactionDepth > 0) {
@@ -2526,7 +2660,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         this.releaseConnection(new Error('Closing Repository with active transaction'));
       } else {
         // Good state, return healthy connection to pool
-        this.releaseConnection();
+        this.releaseConnection(removeConnection);
       }
     }
     this.closed = true;

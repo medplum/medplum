@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
@@ -30,10 +30,7 @@ describe('ResourceVersionPage', () => {
       await jest.runAllTimersAsync();
     });
 
-    await act(async () => {
-      expect(await screen.findByText('Resource not found')).toBeInTheDocument();
-    });
-
+    expect(await screen.findByText('Resource not found')).toBeInTheDocument();
     expect(screen.getByText('Resource not found')).toBeInTheDocument();
   });
 
@@ -42,10 +39,7 @@ describe('ResourceVersionPage', () => {
       setup('/Practitioner/123/_history/3');
     });
 
-    await act(async () => {
-      expect(await screen.findByText('Version not found')).toBeInTheDocument();
-    });
-
+    expect(await screen.findByText('Version not found')).toBeInTheDocument();
     expect(screen.getByText('Version not found')).toBeInTheDocument();
   });
 
@@ -54,10 +48,7 @@ describe('ResourceVersionPage', () => {
       setup('/Practitioner/123/_history/1');
     });
 
-    await act(async () => {
-      expect(await screen.findByText('Diff')).toBeInTheDocument();
-    });
-
+    expect(await screen.findByText('Diff')).toBeInTheDocument();
     expect(screen.getByText('Diff')).toBeInTheDocument();
   });
 
@@ -66,10 +57,7 @@ describe('ResourceVersionPage', () => {
       setup('/Practitioner/123/_history/2');
     });
 
-    await act(async () => {
-      expect(await screen.findByText('Diff')).toBeInTheDocument();
-    });
-
+    expect(await screen.findByText('Diff')).toBeInTheDocument();
     expect(screen.getByText('Diff')).toBeInTheDocument();
   });
 
@@ -78,10 +66,7 @@ describe('ResourceVersionPage', () => {
       setup('/Practitioner/123/_history/1/raw');
     });
 
-    await act(async () => {
-      expect(await screen.findByText('Raw')).toBeInTheDocument();
-    });
-
+    expect(await screen.findByText('Raw')).toBeInTheDocument();
     expect(screen.getByText('Raw')).toBeInTheDocument();
   });
 
@@ -90,9 +75,7 @@ describe('ResourceVersionPage', () => {
       setup('/Practitioner/123/_history/1');
     });
 
-    await act(async () => {
-      expect(await screen.findByText('Diff')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Diff')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Raw'));

@@ -1,8 +1,8 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { decodeBase64, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Claim, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Claim, DocumentReference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { getInsurerInfo, getPatientInfo, getProviderInfo, getReferralInfo, handler } from './cms-1500';
+import { handler } from './cms-1500';
 import { fullAnswer } from './cms-1500-test-data';
 
 const medplum = new MockClient();
@@ -20,7 +20,7 @@ describe('CMS 1500 tests', async () => {
     const result = await medplum.executeBatch(fullAnswer);
     console.log(result);
     const claim = (await medplum.searchOne('Claim', {
-      identifier: 'example-claim',
+      identifier: 'example-claim-cms1500',
     })) as Claim;
 
     const response = await handler(medplum, {
@@ -32,76 +32,23 @@ describe('CMS 1500 tests', async () => {
 
     expect(response).toBeDefined();
     expect(response.resourceType).toBe('DocumentReference');
-  });
 
-  test('Get patient info', async () => {
-    const patientInfo = getPatientInfo({
-      resourceType: 'Patient',
-      name: [{ given: ['Homer'], family: 'Simpson' }],
-      gender: 'male',
-    });
+    const DocumentReference = response as DocumentReference;
+    const attachment = DocumentReference.content?.[0]?.attachment;
 
-    expect(patientInfo.patientName).toBe('Homer Simpson');
-    expect(patientInfo.patientSex).toBe('male');
-    expect(patientInfo.patientDob).toBe('');
-    expect(patientInfo.patientAddress).toBe('');
-  });
+    const binaryId = attachment?.url?.split('/').pop();
+    const binary = await medplum.readResource('Binary', binaryId as string);
+    expect(binary).toBeDefined();
+    expect(binary.data).toBeDefined();
 
-  test('Insurer is not an organization', async () => {
-    const insurerInfo = getInsurerInfo({
-      resourceType: 'Patient',
-    });
-
-    expect(insurerInfo.serviceNPI).toBe('');
-    expect(insurerInfo.serviceLocation).toBe('');
-    expect(insurerInfo.fedTaxNumber).toBe('');
-    expect(insurerInfo.fedTaxType).toBe('');
-  });
-
-  test('Referrer is not a practitioner or organization', async () => {
-    const patientReferralInfo = getReferralInfo({
-      resourceType: 'Patient',
-    });
-    const organizationReferralInfo = getReferralInfo({
-      resourceType: 'Organization',
-      name: 'Referrer',
-      identifier: [
-        {
-          type: {
-            coding: [{ code: 'NPI' }],
-          },
-          value: 'org-npi-code',
-        },
-      ],
-    });
-    const practitionerReferralInfo = getReferralInfo({
-      resourceType: 'Practitioner',
-      name: [{ given: ['Kevin'], family: 'Smith' }],
-      identifier: [
-        {
-          type: {
-            coding: [{ code: 'NPI' }],
-          },
-          value: 'practitioner-npi-code',
-        },
-      ],
-    });
-
-    expect(patientReferralInfo.referrerName).toBe('');
-    expect(patientReferralInfo.referrerNpi).toBe('');
-    expect(organizationReferralInfo.referrerName).toBe('Referrer');
-    expect(organizationReferralInfo.referrerNpi).toBe('org-npi-code');
-    expect(practitionerReferralInfo.referrerName).toBe('Kevin Smith');
-    expect(practitionerReferralInfo.referrerNpi).toBe('practitioner-npi-code');
-  });
-
-  test('Practitioner Role for provider', async () => {
-    const providerInfo = getProviderInfo({
-      resourceType: 'PractitionerRole',
-    });
-
-    expect(providerInfo.billingLocation).toBe('');
-    expect(providerInfo.billingPhoneNumber).toBe('');
-    expect(providerInfo.providerNpi).toBe('');
+    const str = decodeBase64(binary.data as string);
+    const expected = `2,Patient's Name,Full name of the patient,Homer Simpson
+3,Patient's Birth Date,Date of birth of patient,5/12/1956
+3,Patient's Sex,Gender of the patient,male
+4,Insured's Name,Full name of the insured person,Marge Simpson
+5,Patient's Address,Address of the patient,742 Evergreen Terrace, Springfield, IL, 62704
+6,Patient Relationship to Insured,Relationship of the patient to the insured,Spouse
+7,Insured's Address,Address of the insured person,742 Evergreen Terrace, Springfield, IL, 62704`;
+    expect(str.includes(expected)).toBe(true);
   });
 });

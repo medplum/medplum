@@ -5,10 +5,10 @@ import { randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
-import { closeDownloadWorker, execDownloadJob, getDownloadQueue } from './download';
+import { execDownloadJob, getDownloadQueue } from './download';
 
 jest.mock('node-fetch');
 
@@ -24,11 +24,11 @@ describe('Download Worker', () => {
 
   afterAll(async () => {
     await shutdownApp();
-    await closeDownloadWorker(); // Double close to ensure quite ignore
   });
 
   beforeEach(async () => {
     (fetch as unknown as jest.Mock).mockClear();
+    getConfig().autoDownloadEnabled = true;
   });
 
   test('Download external URL', () =>
@@ -169,7 +169,7 @@ describe('Download Worker', () => {
 
       // At this point the job should be in the queue
       // But let's delete the resource
-      await repo.deleteResource('Media', media.id as string);
+      await repo.deleteResource('Media', media.id);
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       await execDownloadJob(job);
@@ -209,5 +209,25 @@ describe('Download Worker', () => {
 
       // Fetch should not have been called
       expect(fetch).not.toHaveBeenCalled();
+    }));
+
+  test('Ignore if disabled', () =>
+    withTestContext(async () => {
+      const config = getConfig();
+      config.autoDownloadEnabled = false;
+
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
     }));
 });

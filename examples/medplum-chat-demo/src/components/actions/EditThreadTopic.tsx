@@ -5,6 +5,7 @@ import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@
 import { CodeableConcept, Communication, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 
 interface EditTopicThreadProps {
   readonly communication: Communication;

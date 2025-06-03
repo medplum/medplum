@@ -1,14 +1,14 @@
 import { getDataType, InternalTypeSchema } from '@medplum/core';
+import { ResourceType } from '@medplum/fhirtypes';
 import {
   buildCreateTables,
-  IndexDefinition,
+  columnDefinitionsEqual,
   indexDefinitionsEqual,
   indexStructureDefinitionsAndSearchParameters,
   parseIndexDefinition,
-  SchemaDefinition,
-  TableDefinition,
+  parseIndexName,
 } from './migrate';
-import { ResourceType } from '@medplum/fhirtypes';
+import { ColumnDefinition, IndexDefinition, SchemaDefinition, TableDefinition } from './types';
 
 describe('Generator', () => {
   describe('buildCreateTables', () => {
@@ -17,7 +17,7 @@ describe('Generator', () => {
     });
 
     test('Patient', () => {
-      const result: SchemaDefinition = { tables: [] };
+      const result: SchemaDefinition = { tables: [], functions: [] };
       const dataTypes: [ResourceType, InternalTypeSchema][] = [['Patient', getDataType('Patient')]];
       for (const [resourceType, typeSchema] of dataTypes) {
         buildCreateTables(result, resourceType, typeSchema);
@@ -32,7 +32,7 @@ describe('Generator', () => {
       const table = result.tables.find((t) => t.name === 'Patient') as TableDefinition;
       expect(table).toBeDefined();
 
-      const expectedColumns = [
+      const expectedColumns: ColumnDefinition[] = [
         {
           name: 'id',
           type: 'UUID',
@@ -63,6 +63,10 @@ describe('Generator', () => {
         {
           name: 'projectId',
           type: 'UUID',
+        },
+        {
+          name: '__version',
+          type: 'INTEGER',
         },
         {
           name: '_source',
@@ -132,9 +136,67 @@ describe('Generator', () => {
           type: 'TEXT[]',
           notNull: false,
         },
+        {
+          name: '__tokens',
+          type: 'TEXT[]',
+        },
+        {
+          name: '__tokensText',
+          type: 'TEXT[]',
+        },
+        {
+          name: '___securitySort',
+          type: 'TEXT',
+        },
+        {
+          name: '___tagSort',
+          type: 'TEXT',
+        },
+        {
+          name: '__emailSort',
+          type: 'TEXT',
+        },
+        {
+          name: '__identifierSort',
+          type: 'TEXT',
+        },
+        {
+          name: '__languageSort',
+          type: 'TEXT',
+        },
+        {
+          name: '__phoneSort',
+          type: 'TEXT',
+        },
+        {
+          name: '__telecomSort',
+          type: 'TEXT',
+        },
+        {
+          name: '___compartmentIdentifierSort',
+          type: 'TEXT',
+        },
+        {
+          name: '__generalPractitionerIdentifierSort',
+          type: 'TEXT',
+        },
+        {
+          name: '__linkIdentifierSort',
+          type: 'TEXT',
+        },
+        {
+          name: '__organizationIdentifierSort',
+          type: 'TEXT',
+        },
       ];
 
-      expect(table.columns).toStrictEqual(expectedColumns);
+      const sortFn = (a: { name: string }, b: { name: string }): number => a.name.localeCompare(b.name);
+      const actual: ColumnDefinition[] = toSorted(table.columns, sortFn);
+      const expected = toSorted(expectedColumns, sortFn);
+      expect(actual.map((c) => c.name)).toStrictEqual(expected.map((c) => c.name));
+      for (let i = 0; i < actual.length; i++) {
+        expect(columnDefinitionsEqual(actual[i], expected[i])).toBe(true);
+      }
     });
   });
 
@@ -206,4 +268,24 @@ describe('Generator', () => {
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
     });
   });
+
+  describe('parseIndexName', () => {
+    test('parse index name with quotes', () => {
+      const indexdef = 'CREATE INDEX "Account_Token_code_idx" ON "Account_Token" USING btree (code)';
+      const indexName = parseIndexName(indexdef);
+      expect(indexName).toBe('Account_Token_code_idx');
+    });
+
+    test('parse index name without quotes', () => {
+      const indexdef = 'CREATE INDEX account_token_code_idx ON account_token USING btree (code)';
+      const indexName = parseIndexName(indexdef);
+      expect(indexName).toBe('account_token_code_idx');
+    });
+  });
 });
+
+function toSorted<T>(array: T[], sortFn: (a: T, b: T) => number): T[] {
+  const newArray = Array.from(array);
+  newArray.sort(sortFn);
+  return newArray;
+}

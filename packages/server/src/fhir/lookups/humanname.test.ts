@@ -1,12 +1,12 @@
-import { Operator } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { Operator, WithId } from '@medplum/core';
+import { HumanName, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { bundleContains, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
-import { PoolClient } from 'pg';
-import { HumanNameTable } from './humanname';
+import { HumanNameTable, HumanNameTableRow } from './humanname';
 
 describe('HumanName Lookup Table', () => {
   const systemRepo = getSystemRepo();
@@ -257,5 +257,69 @@ describe('HumanName Lookup Table', () => {
     await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');
 
     expect(db.query).not.toHaveBeenCalled();
+  });
+
+  test('extractValues defensive against nullish values', () => {
+    const table = new HumanNameTable();
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      name: undefined,
+    };
+    let result: any[] = [];
+    table.extractValues(result, r1);
+    expect(result).toStrictEqual([]);
+
+    const r2: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '2',
+      name: [{}, null, undefined, { family: 'Family' }, { family: 'Family' }] as unknown as HumanName[],
+    };
+
+    result = [];
+    table.extractValues(result, r2);
+    expect(result).toStrictEqual([
+      {
+        resourceId: '2',
+        name: 'Family',
+        given: undefined,
+        family: 'Family',
+      },
+    ]);
+  });
+
+  test('extractValues multiple resources with identical name', () => {
+    const table = new HumanNameTable();
+
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      name: [{ given: ['Alice'], family: 'Smith', use: 'official', prefix: ['Ms'] }],
+    };
+
+    const r2: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '2',
+      name: [{ given: ['Alice'], family: 'Smith', use: 'official', prefix: ['Ms'] }],
+    };
+
+    const result: HumanNameTableRow[] = [];
+    table.extractValues(result, r1);
+    table.extractValues(result, r2);
+
+    expect(result).toStrictEqual([
+      {
+        resourceId: '1',
+        name: 'Ms Alice Smith',
+        given: 'Alice',
+        family: 'Smith',
+      },
+      {
+        resourceId: '2',
+        name: 'Ms Alice Smith',
+        given: 'Alice',
+        family: 'Smith',
+      },
+    ]);
   });
 });

@@ -1,0 +1,125 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "978a95c6-248e-49d1-b5dd-7c13282bd938",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "Procedures",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "47519-4",
+                  "display": "HISTORY OF PROCEDURES"
+                }
+              ],
+              "text": "HISTORY OF PROCEDURES"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table><thead><tr><th>Description</th><th>Date and Time (Range)</th><th>Status</th></tr></thead><tbody><tr ID=\"Procedure2\"><td ID=\"ProcedureDesc2\">Electrocardiogram (12-Lead)</td><td>29 Mar 2014 09:15am</td><td>Completed</td></tr></tbody></table></div>"
+            },
+            "entry": [
+              {
+                "reference": "Observation/c03e5445-af1b-4911-a419-e2782f21448c",
+                "display": "12 lead electrocardiogram"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": ["Katherine"]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "c03e5445-af1b-4911-a419-e2782f21448c",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "exam",
+                "display": "Procedure Activity Observation"
+              }
+            ],
+            "text": "Procedure Activity Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "268400002",
+              "display": "12 lead electrocardiogram"
+            }
+          ],
+          "text": "12 lead electrocardiogram"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "251135002",
+              "display": "Borderline normal electrocardiogram"
+            }
+          ],
+          "text": "Borderline normal electrocardiogram"
+        },
+        "effectiveDateTime": "2014-03-29T09:15:22-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Procedure2"
+          }
+        ]
+      }
+    }
+  ]
+}

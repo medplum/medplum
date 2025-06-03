@@ -6,6 +6,24 @@ set -e
 # Echo commands
 set -x
 
+# Initialize additional exclusions variable
+ADDITIONAL_EXCLUDES=""
+
+# Parse command line arguments
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --exclude=*)
+            ADDITIONAL_EXCLUDES="${1#*=}"
+            shift
+            ;;
+        *)
+            echo "Error: Unknown argument '$1'"
+            echo "Usage: $0 [--exclude=\"package1 package2 package3\"]"
+            exit 1
+            ;;
+    esac
+done
+
 # Use the Github gh tool to make sure the user is logged in
 gh auth status
 
@@ -56,19 +74,24 @@ LAST_STEP=$(get_last_step "$BRANCH_NAME")
 echo "Last completed step: $LAST_STEP"
 
 # Exclude known problem packages
-# @types/express - version 5+ incompatible with express 4, waiting for express 5 upgrade
-# @types/react - version 19+ incompatible with react 18, waiting for fix
-# eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
-# node-fetch - version 3+ requires ESM, holding back until server supports ESM
-# react - version 18.3+ incompatible with react-native, waiting for fix
-# react-router-dom - version 7+ has breaking changes, will fix separately
-# rimraf - version 6+ requires Node 20+, holding back until Medplum v4
-# supertest - version 7+ incompatible with superwstest, waiting for fix
 # @tabler/icons-react - to avoid bad interaction with vite https://github.com/tabler/tabler-icons/issues/1233
-# react-native - 0.76.x is broken with an error caused by flow parser breaking when using `expo-crypto`: `SyntaxError: {..}/react-native/Libraries/vendor/emitter/EventEmitter.js: Unexpected token, expected "]" (39:5)`
-# storybook-addon-mantine - 4.1.0 seems to accidentally backported requirement for React 19 from v5: https://github.com/josiahayres/storybook-addon-mantine/issues/18
+EXCLUDE="@tabler/icons-react"
+
+# Append any additional excludes from the command line
+if [ -n "$ADDITIONAL_EXCLUDES" ]; then
+    echo "Adding additional excludes: $ADDITIONAL_EXCLUDES"
+    EXCLUDE="$EXCLUDE $ADDITIONAL_EXCLUDES"
+fi
+
+# @mantine/core - Holding back Mantine 8 until Medplum 5
+# @types/express - version 5+ incompatible with express 4, waiting for express 5 upgrade
+# @types/node - We specifically don't want to increment major version for Node types since we need to make sure we satisfy backwards compat with the minimum version of Node that we support
 # commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
-EXCLUDE="@types/express @types/react @types/react-dom eslint node-fetch react react-dom react-router-dom rimraf supertest @tabler/icons-react react-native storybook-addon-mantine commander"
+# eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
+# jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
+# node-fetch - version 3+ requires ESM, holding back until server supports ESM
+# express - version 5 is now latest and has some breaking changes -- we need to make sure middleware and other related deps work with new version
+MAJOR_EXCLUDE="@mantine/core @mantine/dropzone @mantine/hooks @mantine/notifications @types/express @types/node commander eslint express jose node-fetch npm"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
@@ -120,7 +143,7 @@ if [ "$LAST_STEP" -lt 3 ]; then
     # Next, optimistically upgrade to the latest versions
     # "latest" - Upgrade to whatever the package's "latest" git tag points to.
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
-    npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target latest --enginesNode
+    npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE $MAJOR_EXCLUDE" --target latest --enginesNode
 
     # Check for changes in the working directory
     if git diff --quiet; then

@@ -2,8 +2,8 @@ import { createReference } from '@medplum/core';
 import { OperationOutcome, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { ReactNode, useRef, useState } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { JSX, ReactNode, useRef, useState } from 'react';
+import { MemoryRouter } from 'react-router';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { useResource } from './useResource';
 

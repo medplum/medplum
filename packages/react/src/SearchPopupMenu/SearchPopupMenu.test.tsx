@@ -3,15 +3,15 @@ import { Filter, Operator, SearchRequest, globalSchema } from '@medplum/core';
 import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { getFieldDefinitions } from '../SearchControl/SearchControlField';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
 import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
 
 const medplum = new MockClient();
 
 describe('SearchPopupMenu', () => {
-  function setup(partialProps: Partial<SearchPopupMenuProps>): void {
+  async function setup(partialProps: Partial<SearchPopupMenuProps>): Promise<void> {
     const props = {
       visible: true,
       x: 0,
@@ -25,7 +25,7 @@ describe('SearchPopupMenu', () => {
     render(
       <MemoryRouter>
         <MedplumProvider medplum={medplum}>
-          <Menu>
+          <Menu closeOnItemClick={false}>
             <Menu.Target>
               <Button>Toggle menu</Button>
             </Menu.Target>
@@ -34,16 +34,18 @@ describe('SearchPopupMenu', () => {
         </MedplumProvider>
       </MemoryRouter>
     );
+
+    await toggleMenu();
   }
 
-  test('Invalid resource', () => {
-    setup({
+  test('Invalid resource', async () => {
+    await setup({
       search: { resourceType: 'xyz' as ResourceType },
     });
   });
 
-  test('Invalid property', () => {
-    setup({
+  test('Invalid property', async () => {
+    await setup({
       search: { resourceType: 'Patient' },
     });
   });
@@ -53,13 +55,11 @@ describe('SearchPopupMenu', () => {
       resourceType: 'Patient',
     };
 
-    setup({
+    await setup({
       search: currSearch,
       searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
-
-    await toggleMenu();
 
     const sortOldest = await screen.findByText('Sort Oldest to Newest');
     await act(async () => {
@@ -70,8 +70,6 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.sortRules?.length).toEqual(1);
     expect(currSearch.sortRules?.[0].code).toEqual('birthdate');
     expect(currSearch.sortRules?.[0].descending).toEqual(false);
-
-    await toggleMenu();
 
     const sortNewest = await screen.findByText('Sort Newest to Oldest');
     await act(async () => {
@@ -88,7 +86,7 @@ describe('SearchPopupMenu', () => {
     const searchParam = globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter;
     const onPrompt = jest.fn();
 
-    setup({
+    await setup({
       search: {
         resourceType: 'Patient',
       },
@@ -107,8 +105,6 @@ describe('SearchPopupMenu', () => {
     for (const option of options) {
       onPrompt.mockClear();
 
-      await toggleMenu();
-
       const optionButton = await screen.findByText(option.text);
       await act(async () => {
         fireEvent.click(optionButton);
@@ -122,47 +118,51 @@ describe('SearchPopupMenu', () => {
     }
   });
 
-  test.each(['Tomorrow', 'Today', 'Yesterday', 'Next Month', 'This Month', 'Last Month', 'Year to date'])(
-    '%s shortcut',
-    async (option) => {
-      let currSearch: SearchRequest = {
-        resourceType: 'Patient',
-      };
+  test.each([
+    'Tomorrow',
+    'Today',
+    'Yesterday',
+    'Next 24 Hours',
+    'Next Month',
+    'This Month',
+    'Last Month',
+    'Year to date',
+  ])('%s shortcut', async (option) => {
+    let currSearch: SearchRequest = {
+      resourceType: 'Patient',
+    };
 
-      setup({
-        search: currSearch,
-        searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
-        onChange: (e) => (currSearch = e),
-      });
+    await setup({
+      search: currSearch,
+      searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
+      onChange: (e) => (currSearch = e),
+    });
 
-      await toggleMenu();
+    const optionButton = await screen.findByText(option);
+    await act(async () => {
+      fireEvent.click(optionButton);
+    });
 
-      const optionButton = await screen.findByText(option);
-      await act(async () => {
-        fireEvent.click(optionButton);
-      });
-
-      expect(currSearch.filters).toBeDefined();
-      expect(currSearch.filters?.length).toEqual(2);
-      expect(currSearch.filters).toMatchObject([
-        {
-          code: 'birthdate',
-          operator: Operator.GREATER_THAN_OR_EQUALS,
-        },
-        {
-          code: 'birthdate',
-          operator: Operator.LESS_THAN_OR_EQUALS,
-        },
-      ]);
-    }
-  );
+    expect(currSearch.filters).toBeDefined();
+    expect(currSearch.filters?.length).toEqual(2);
+    expect(currSearch.filters).toMatchObject([
+      {
+        code: 'birthdate',
+        operator: Operator.GREATER_THAN_OR_EQUALS,
+      },
+      {
+        code: 'birthdate',
+        operator: Operator.LESS_THAN_OR_EQUALS,
+      },
+    ]);
+  });
 
   test('Date missing', async () => {
     let currSearch: SearchRequest = {
       resourceType: 'Patient',
     };
 
-    setup({
+    await setup({
       search: currSearch,
       searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
@@ -170,8 +170,6 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
-      await toggleMenu();
-
       const optionButton = await screen.findByText(option);
       await act(async () => {
         fireEvent.click(optionButton);
@@ -200,13 +198,11 @@ describe('SearchPopupMenu', () => {
       ],
     };
 
-    setup({
+    await setup({
       search: currSearch,
       searchParams: [globalSchema.types['Patient'].searchParams?.['birthdate'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
-
-    await toggleMenu();
 
     const clearButton = await screen.findByText('Clear filters');
     await act(async () => {
@@ -223,13 +219,11 @@ describe('SearchPopupMenu', () => {
       resourceType: 'Patient',
     };
 
-    setup({
+    await setup({
       search: currSearch,
       searchParams: [searchParam],
       onChange: (e) => (currSearch = e),
     });
-
-    await toggleMenu();
 
     const sortSmallest = await screen.findByText('Sort Smallest to Largest');
     await act(async () => {
@@ -240,8 +234,6 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.sortRules?.length).toEqual(1);
     expect(currSearch.sortRules?.[0].code).toEqual('value-quantity');
     expect(currSearch.sortRules?.[0].descending).toEqual(false);
-
-    await toggleMenu();
 
     const sortLargest = await screen.findByText('Sort Largest to Smallest');
     await act(async () => {
@@ -258,7 +250,7 @@ describe('SearchPopupMenu', () => {
     const searchParam = globalSchema.types['Observation'].searchParams?.['value-quantity'] as SearchParameter;
     const onPrompt = jest.fn();
 
-    setup({
+    await setup({
       search: {
         resourceType: 'Observation',
       },
@@ -277,8 +269,6 @@ describe('SearchPopupMenu', () => {
 
     for (const option of options) {
       onPrompt.mockClear();
-
-      await toggleMenu();
 
       const optionButton = await screen.findByText(option.text);
       await act(async () => {
@@ -300,7 +290,7 @@ describe('SearchPopupMenu', () => {
       resourceType: 'Observation',
     };
 
-    setup({
+    await setup({
       search: currSearch,
       searchParams: [searchParam],
       onChange: (e) => (currSearch = e),
@@ -308,8 +298,6 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
-      await toggleMenu();
-
       const optionButton = await screen.findByText(option);
       await act(async () => {
         fireEvent.click(optionButton);
@@ -340,13 +328,11 @@ describe('SearchPopupMenu', () => {
       ],
     };
 
-    setup({
+    await setup({
       search: currSearch,
       searchParams: [searchParam],
       onChange: (e) => (currSearch = e),
     });
-
-    await toggleMenu();
 
     const clearButton = await screen.findByText('Clear filters');
     await act(async () => {
@@ -368,13 +354,11 @@ describe('SearchPopupMenu', () => {
       ],
     };
 
-    setup({
+    await setup({
       search: currSearch,
       searchParams: [globalSchema.types['Patient'].searchParams?.['organization'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
-
-    await toggleMenu();
 
     const clearButton = await screen.findByText('Clear filters');
     await act(async () => {
@@ -388,7 +372,7 @@ describe('SearchPopupMenu', () => {
     const searchParam = globalSchema.types['Patient'].searchParams?.['organization'] as SearchParameter;
     const onPrompt = jest.fn();
 
-    setup({
+    await setup({
       search: {
         resourceType: 'Patient',
       },
@@ -403,8 +387,6 @@ describe('SearchPopupMenu', () => {
 
     for (const option of options) {
       onPrompt.mockClear();
-
-      await toggleMenu();
 
       const optionButton = await screen.findByText(option.text);
       await act(async () => {
@@ -426,7 +408,7 @@ describe('SearchPopupMenu', () => {
       resourceType: 'Patient',
     };
 
-    setup({
+    await setup({
       search: currSearch,
       searchParams: [searchParam],
       onChange: (e) => (currSearch = e),
@@ -434,8 +416,6 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
-      await toggleMenu();
-
       const optionButton = await screen.findByText(option);
       await act(async () => {
         fireEvent.click(optionButton);
@@ -457,13 +437,11 @@ describe('SearchPopupMenu', () => {
       resourceType: 'Patient',
     };
 
-    setup({
+    await setup({
       search: currSearch,
       searchParams: [globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
-
-    await toggleMenu();
 
     const sortAtoZ = await screen.findByText('Sort A to Z');
     await act(async () => {
@@ -474,8 +452,6 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.sortRules?.length).toEqual(1);
     expect(currSearch.sortRules?.[0].code).toEqual('name');
     expect(currSearch.sortRules?.[0].descending).toEqual(false);
-
-    await toggleMenu();
 
     const sortZtoA = await screen.findByText('Sort Z to A');
     await act(async () => {
@@ -500,13 +476,11 @@ describe('SearchPopupMenu', () => {
       ],
     };
 
-    setup({
+    await setup({
       search: currSearch,
       searchParams: [globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter],
       onChange: (e) => (currSearch = e),
     });
-
-    await toggleMenu();
 
     const clearButton = await screen.findByText('Clear filters');
     await act(async () => {
@@ -520,7 +494,7 @@ describe('SearchPopupMenu', () => {
     const searchParam = globalSchema.types['Patient'].searchParams?.['name'] as SearchParameter;
     const onPrompt = jest.fn();
 
-    setup({
+    await setup({
       search: {
         resourceType: 'Patient',
       },
@@ -537,8 +511,6 @@ describe('SearchPopupMenu', () => {
 
     for (const option of options) {
       onPrompt.mockClear();
-
-      await toggleMenu();
 
       const optionButton = await screen.findByText(option.text);
       await act(async () => {
@@ -560,7 +532,7 @@ describe('SearchPopupMenu', () => {
       resourceType: 'Patient',
     };
 
-    setup({
+    await setup({
       search: currSearch,
       searchParams: [searchParam],
       onChange: (e) => (currSearch = e),
@@ -568,8 +540,6 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
-      await toggleMenu();
-
       const optionButton = await screen.findByText(option);
       await act(async () => {
         fireEvent.click(optionButton);
@@ -594,12 +564,10 @@ describe('SearchPopupMenu', () => {
 
     const fields = getFieldDefinitions(search);
 
-    setup({
+    await setup({
       search,
       searchParams: fields[0].searchParams,
     });
-
-    await toggleMenu();
 
     expect(await screen.findByText('Equals...')).toBeDefined();
   });
@@ -612,14 +580,12 @@ describe('SearchPopupMenu', () => {
 
     const fields = getFieldDefinitions(search);
 
-    setup({
+    await setup({
       search: {
         resourceType: 'Patient',
       },
       searchParams: fields[0].searchParams,
     });
-
-    await toggleMenu();
 
     expect(await screen.findByText('Before...')).toBeDefined();
     expect(await screen.findByText('After...')).toBeDefined();
@@ -633,14 +599,12 @@ describe('SearchPopupMenu', () => {
 
     const fields = getFieldDefinitions(search);
 
-    setup({
+    await setup({
       search: {
         resourceType: 'Observation',
       },
       searchParams: fields[0].searchParams,
     });
-
-    await toggleMenu();
 
     expect(await screen.findByText('Value Quantity')).toBeDefined();
     expect(await screen.findByText('Value String')).toBeDefined();
@@ -663,14 +627,12 @@ describe('SearchPopupMenu', () => {
 
     const fields = getFieldDefinitions(search);
 
-    setup({
+    await setup({
       search: {
         resourceType: 'Observation',
       },
       searchParams: fields[0].searchParams,
     });
-
-    await toggleMenu();
 
     expect(await screen.findByText('Equals...')).toBeDefined();
     expect(screen.queryByText('Patient')).toBeNull();
@@ -679,7 +641,5 @@ describe('SearchPopupMenu', () => {
 
 async function toggleMenu(): Promise<void> {
   const toggleMenuButton = await screen.findByText('Toggle menu');
-  await act(async () => {
-    fireEvent.click(toggleMenuButton);
-  });
+  await userEvent.click(toggleMenuButton);
 }

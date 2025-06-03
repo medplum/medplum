@@ -2,6 +2,7 @@ import { Anchor } from '@mantine/core';
 import { ContentType } from '@medplum/core';
 import { Attachment } from '@medplum/fhirtypes';
 import { useCachedBinaryUrl } from '@medplum/react-hooks';
+import { JSX } from 'react';
 import { CcdaDisplay } from '../CcdaDisplay/CcdaDisplay';
 
 export interface AttachmentDisplayProps {
@@ -32,6 +33,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
         contentType === 'application/pdf') && (
         <div data-testid="attachment-iframe" style={{ maxWidth: props.maxWidth, minHeight: 400 }}>
           <iframe
+            title="Attachment"
             width="100%"
             height="400"
             src={url + '#navpanes=0'}

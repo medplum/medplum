@@ -29,27 +29,29 @@ export const projectAdminResourceTypes = [
  *
  * Codes taken from http://hl7.org/fhir/codesystem-restful-interaction.html
  */
-export enum AccessPolicyInteraction {
-  READ = 'read',
-  VREAD = 'vread',
-  UPDATE = 'update',
-  PATCH = 'patch',
-  DELETE = 'delete',
-  HISTORY = 'history',
-  HISTORY_INSTANCE = 'history-instance',
-  HISTORY_TYPE = 'history-type',
-  HISTORY_SYSTEM = 'history-system',
-  CREATE = 'create',
-  SEARCH = 'search',
-  SEARCH_TYPE = 'search-type',
-  SEARCH_SYSTEM = 'search-system',
-  SEARCH_COMPARTMENT = 'search-compartment',
-  CAPABILITIES = 'capabilities',
-  TRANSACTION = 'transaction',
-  BATCH = 'batch',
-  OPERATION = 'operation',
-}
-const resourceReadInteractions = [
+export const AccessPolicyInteraction = {
+  READ: 'read',
+  VREAD: 'vread',
+  UPDATE: 'update',
+  PATCH: 'patch',
+  DELETE: 'delete',
+  HISTORY: 'history',
+  HISTORY_INSTANCE: 'history-instance',
+  HISTORY_TYPE: 'history-type',
+  HISTORY_SYSTEM: 'history-system',
+  CREATE: 'create',
+  SEARCH: 'search',
+  SEARCH_TYPE: 'search-type',
+  SEARCH_SYSTEM: 'search-system',
+  SEARCH_COMPARTMENT: 'search-compartment',
+  CAPABILITIES: 'capabilities',
+  TRANSACTION: 'transaction',
+  BATCH: 'batch',
+  OPERATION: 'operation',
+} as const;
+export type AccessPolicyInteraction = (typeof AccessPolicyInteraction)[keyof typeof AccessPolicyInteraction];
+
+const resourceReadInteractions: AccessPolicyInteraction[] = [
   AccessPolicyInteraction.READ,
   AccessPolicyInteraction.VREAD,
   AccessPolicyInteraction.HISTORY,
@@ -107,32 +109,7 @@ export function canWriteResource(accessPolicy: AccessPolicy, resource: Resource)
   if (!canWriteResourceType(accessPolicy, resourceType)) {
     return false;
   }
-  return matchesAccessPolicy(accessPolicy, resource, false);
-}
-
-/**
- * Returns true if the resource satisfies the current access policy.
- * @param accessPolicy - The access policy.
- * @param resource - The resource.
- * @param readonlyMode - True if the resource is being read.
- * @returns True if the resource matches the access policy.
- * @deprecated Use satisfiedAccessPolicy() instead.
- */
-export function matchesAccessPolicy(accessPolicy: AccessPolicy, resource: Resource, readonlyMode: boolean): boolean {
-  if (accessPolicy.resource) {
-    for (const resourcePolicy of accessPolicy.resource) {
-      if (
-        matchesAccessPolicyResourcePolicy(
-          resource,
-          readonlyMode ? AccessPolicyInteraction.READ : AccessPolicyInteraction.UPDATE,
-          resourcePolicy
-        )
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return Boolean(satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, accessPolicy));
 }
 
 /**

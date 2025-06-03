@@ -3,21 +3,29 @@ import { EventEmitter } from 'node:events';
 import { Duplex } from 'node:stream';
 import pg, { Pool, PoolClient, PoolConfig, QueryArrayResult, QueryConfig, QueryResult, QueryResultRow } from 'pg';
 import { Readable, Writable } from 'stream';
-import { loadConfig, loadTestConfig, MedplumDatabaseConfig, MedplumDatabaseSslConfig } from './config';
+import { loadConfig, loadTestConfig } from './config/loader';
+import { MedplumDatabaseConfig, MedplumDatabaseSslConfig } from './config/types';
 import {
   acquireAdvisoryLock,
   closeDatabase,
   DatabaseMode,
   getDatabasePool,
+  getDefaultStatementTimeout,
   initDatabase,
   releaseAdvisoryLock,
 } from './database';
+import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 
 describe('Database config', () => {
   let poolSpy: jest.SpyInstance<pg.Pool, [config?: pg.PoolConfig | undefined]>;
   let advisoryLockResponse = true;
 
   beforeAll(() => {
+    // to appease jest, the name must start with "mock"
+    const mockQueries = {
+      GetVersionSql,
+      GetDataVersionSql,
+    };
     jest.useFakeTimers();
     jest.mock('pg');
     poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig) => {
@@ -34,6 +42,9 @@ describe('Database config', () => {
           };
           if (sql === 'SELECT pg_try_advisory_lock($1)') {
             result.rows = [{ pg_try_advisory_lock: advisoryLockResponse } as unknown as R];
+          }
+          if (sql === mockQueries.GetDataVersionSql) {
+            result.rows = [{ dataVersion: 1 } as unknown as R];
           }
 
           return result;
@@ -182,6 +193,19 @@ describe('Database config', () => {
     jest.runAllTimersAsync().catch((reason) => console.error('Unexpected error in jest.runAllTimersAsync', reason));
 
     await expect(initDBPromise).rejects.toThrow('Failed to acquire migration lock');
+  });
+
+  test('getDefaultStatementTimeout', async () => {
+    const config = await loadTestConfig();
+    config.database.disableConnectionConfiguration = true;
+    expect(getDefaultStatementTimeout(config.database)).toBe('DEFAULT');
+
+    config.database.disableConnectionConfiguration = false;
+    config.database.queryTimeout = 5000;
+    expect(getDefaultStatementTimeout(config.database)).toBe(5000);
+
+    config.database.queryTimeout = undefined;
+    expect(getDefaultStatementTimeout(config.database)).toBe(60000);
   });
 });
 

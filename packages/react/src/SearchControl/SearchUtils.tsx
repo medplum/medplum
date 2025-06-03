@@ -9,6 +9,8 @@ import {
   SearchRequest,
 } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import { JSX } from 'react';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { SearchControlField } from './SearchControlField';
@@ -243,6 +245,18 @@ function addDayFilter(definition: SearchRequest, field: string, delta: number): 
   endTime.setTime(endTime.getTime() - 1);
 
   return addDateFilterBetween(definition, field, startTime, endTime);
+}
+
+/**
+ * Adds a filter that constrains the specified field to "next 24 hours".
+ * @param definition - The original search request.
+ * @param field - The field key name.
+ * @returns The updated search request.
+ */
+export function addNext24HoursFilter(definition: SearchRequest, field: string): SearchRequest {
+  const now = new Date();
+  const endTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  return addDateFilterBetween(definition, field, now, endTime);
 }
 
 /**
@@ -511,7 +525,7 @@ export function buildFieldNameString(key: string): string {
 export function renderValue(resource: Resource, field: SearchControlField): string | JSX.Element | null | undefined {
   const key = field.name;
   if (key === 'id') {
-    return resource.id;
+    return <MedplumLink to={`/${resource.resourceType}/${resource.id}`}>{resource.id}</MedplumLink>;
   }
 
   if (key === 'meta.versionId') {

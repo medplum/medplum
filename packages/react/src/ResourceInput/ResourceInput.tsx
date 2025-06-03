@@ -2,7 +2,7 @@ import { Group, Text } from '@mantine/core';
 import { getDisplayString, getReferenceString, isPopulated } from '@medplum/core';
 import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { forwardRef, ReactNode, useCallback, useState } from 'react';
+import { forwardRef, JSX, ReactNode, useCallback, useState } from 'react';
 import {
   AsyncAutocomplete,
   AsyncAutocompleteOption,
@@ -84,7 +84,6 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly defaultValue?: T | Reference<T>;
   readonly searchCriteria?: Record<string, string>;
   readonly placeholder?: string;
-  readonly loadOnFocus?: boolean;
   readonly required?: boolean;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
   readonly onChange?: (value: T | undefined) => void;
@@ -95,7 +94,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
 
 function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
   return {
-    value: getReferenceString(resource),
+    value: getReferenceString(resource) ?? '',
     label: getDisplayString(resource),
     resource,
   };

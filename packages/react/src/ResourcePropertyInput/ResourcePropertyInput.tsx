@@ -11,7 +11,7 @@ import {
   PropertyType,
 } from '@medplum/core';
 import { ElementDefinitionBinding, ElementDefinitionType } from '@medplum/fhirtypes';
-import { useContext, useMemo, useState } from 'react';
+import { JSX, useContext, useMemo, useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
 import { AttachmentArrayInput } from '../AttachmentArrayInput/AttachmentArrayInput';
@@ -42,9 +42,9 @@ import { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from '
 export interface ResourcePropertyInputProps extends BaseInputProps {
   readonly property: ExtendedInternalSchemaElement;
   readonly name: string;
-  readonly defaultPropertyType?: string | undefined;
+  readonly defaultPropertyType?: string;
   readonly defaultValue: any;
-  readonly arrayElement?: boolean | undefined;
+  readonly arrayElement?: boolean;
   readonly onChange?: (value: any, propName?: string) => void;
 }
 

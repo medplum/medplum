@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 
 const app = express();
@@ -174,9 +174,7 @@ describe('CSV Export', () => {
 
   test('Invalid query string param', async () => {
     const res = await request(app)
-      .get(
-        `/fhir/R4/ClientApplication/$csv?_count=20&_fields=id,_lastUpdated,=cmd|'/C%20calc'!A0&_offset=0&_sort=-_lastUpdated`
-      )
+      .get(`/fhir/R4/Patient/$csv?_count=20&_fields=id,_lastUpdated,=cmd|'/C%20calc'!A0&_offset=0&_sort=-_lastUpdated`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toStrictEqual('Invalid FHIRPath expression');

@@ -4,8 +4,8 @@ import { ContentType, MedplumClient, PatchOperation, isUUID, normalizeErrorStrin
 import { Bot } from '@medplum/fhirtypes';
 import { sendCommand, useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
-import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { JSX, SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router';
 import classes from './BotEditor.module.css';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';
@@ -76,8 +76,16 @@ export function BotEditor(): JSX.Element | null {
       try {
         const code = await getCode();
         const codeOutput = await getCodeOutput();
-        const sourceCode = await medplum.createAttachment(code, 'index.ts', 'text/typescript');
-        const executableCode = await medplum.createAttachment(codeOutput, 'index.js', 'text/typescript');
+        const sourceCode = await medplum.createAttachment({
+          data: code,
+          filename: 'index.ts',
+          contentType: 'text/typescript',
+        });
+        const executableCode = await medplum.createAttachment({
+          data: codeOutput,
+          filename: 'index.js',
+          contentType: 'text/typescript',
+        });
         const operations: PatchOperation[] = [
           {
             op: 'add',

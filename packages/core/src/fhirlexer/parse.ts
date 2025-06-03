@@ -12,10 +12,13 @@ export interface Atom {
 }
 
 export abstract class PrefixOperatorAtom implements Atom {
-  constructor(
-    public readonly operator: string,
-    public readonly child: Atom
-  ) {}
+  readonly operator: string;
+  readonly child: Atom;
+
+  constructor(operator: string, child: Atom) {
+    this.operator = operator;
+    this.child = child;
+  }
 
   abstract eval(context: AtomContext, input: TypedValue[]): TypedValue[];
 
@@ -25,16 +28,20 @@ export abstract class PrefixOperatorAtom implements Atom {
 }
 
 export abstract class InfixOperatorAtom implements Atom {
-  constructor(
-    public readonly operator: string,
-    public readonly left: Atom,
-    public readonly right: Atom
-  ) {}
+  readonly operator: string;
+  readonly left: Atom;
+  readonly right: Atom;
+
+  constructor(operator: string, left: Atom, right: Atom) {
+    this.operator = operator;
+    this.left = left;
+    this.right = right;
+  }
 
   abstract eval(context: AtomContext, input: TypedValue[]): TypedValue[];
 
   toString(): string {
-    return `${this.left.toString()} ${this.operator} ${this.right.toString()}`;
+    return `(${this.left.toString()} ${this.operator} ${this.right.toString()})`;
   }
 }
 
@@ -91,8 +98,8 @@ export class ParserBuilder {
 
 export class Parser {
   private tokens: Token[];
-  private prefixParselets: Record<string, PrefixParselet>;
-  private infixParselets: Record<string, InfixParselet>;
+  private readonly prefixParselets: Record<string, PrefixParselet>;
+  private readonly infixParselets: Record<string, InfixParselet>;
 
   constructor(
     tokens: Token[],

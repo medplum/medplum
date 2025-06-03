@@ -1,11 +1,19 @@
-import { getReferenceString, Operator, ProfileResource } from '@medplum/core';
-import { Login, Project, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
+import { getReferenceString, Operator, ProfileResource, WithId } from '@medplum/core';
+import {
+  Login,
+  Project,
+  ProjectMembership,
+  Reference,
+  User,
+  UserConfiguration,
+  UserConfigurationMenu,
+} from '@medplum/fhirtypes';
+import Bowser from 'bowser';
 import { Request, Response } from 'express';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-import Bowser from 'bowser';
 
 interface UserSession {
   id: string;
@@ -29,7 +37,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   const profile = await systemRepo.readReference<ProfileResource>(profileRef);
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
-  let user: User | undefined = undefined;
+  let user: WithId<User> | undefined = undefined;
 
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {
@@ -75,29 +83,38 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, result));
 }
 
-async function getUserConfiguration(
+export async function getUserConfiguration(
   systemRepo: Repository,
   project: Project,
   membership: ProjectMembership
 ): Promise<UserConfiguration> {
+  let result: UserConfiguration;
+
   if (membership.userConfiguration) {
-    return systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
+    result = await systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
+  } else {
+    result = { resourceType: 'UserConfiguration' };
   }
 
+  if (!result.menu) {
+    result.menu = getUserConfigurationMenu(project, membership);
+  }
+
+  return result;
+}
+
+export function getUserConfigurationMenu(project: Project, membership: ProjectMembership): UserConfigurationMenu[] {
   const favorites = ['Patient', 'Practitioner', 'Organization', 'ServiceRequest', 'DiagnosticReport', 'Questionnaire'];
 
-  const result = {
-    resourceType: 'UserConfiguration',
-    menu: [
-      {
-        title: 'Favorites',
-        link: favorites.map((resourceType) => ({ name: resourceType, target: '/' + resourceType })),
-      },
-    ],
-  } satisfies UserConfiguration;
+  const result = [
+    {
+      title: 'Favorites',
+      link: favorites.map((resourceType) => ({ name: resourceType, target: '/' + resourceType })),
+    },
+  ];
 
   if (membership.admin) {
-    result.menu.push({
+    result.push({
       title: 'Admin',
       link: [
         { name: 'Project', target: '/admin/project' },
@@ -110,7 +127,7 @@ async function getUserConfiguration(
   }
 
   if (project.superAdmin) {
-    result.menu.push({
+    result.push({
       title: 'Super Admin',
       link: [
         { name: 'Projects', target: '/Project' },
@@ -122,7 +139,7 @@ async function getUserConfiguration(
   return result;
 }
 
-async function getSessions(systemRepo: Repository, user: User): Promise<UserSession[]> {
+async function getSessions(systemRepo: Repository, user: WithId<User>): Promise<UserSession[]> {
   const logins = await systemRepo.searchResources<Login>({
     resourceType: 'Login',
     filters: [
@@ -149,7 +166,7 @@ async function getSessions(systemRepo: Repository, user: User): Promise<UserSess
     const browser = login.userAgent ? Bowser.getParser(login.userAgent) : undefined;
 
     result.push({
-      id: login.id as string,
+      id: login.id,
       lastUpdated: login.meta?.lastUpdated as string,
       authMethod: login.authMethod as string,
       remoteAddress: login.remoteAddress as string,

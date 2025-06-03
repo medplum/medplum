@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { Table, Button } from '@mantine/core';
-import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { Button, Table } from '@mantine/core';
 import { InternalSchemaElement, TypedValue } from '@medplum/core';
+import { JSX, useState } from 'react';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import classes from './ResourceDiffRow.module.css';
 
 export interface ResourceDiffRowProps {

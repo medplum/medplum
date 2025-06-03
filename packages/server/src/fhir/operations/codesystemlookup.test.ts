@@ -1,11 +1,11 @@
-import { CodeSystem, OperationOutcome, Parameters } from '@medplum/fhirtypes';
-import express from 'express';
-import { loadTestConfig } from '../../config';
-import { initApp, shutdownApp } from '../../app';
-import { initTestAuth } from '../../test.setup';
-import request from 'supertest';
-import { randomUUID } from 'crypto';
 import { ContentType } from '@medplum/core';
+import { CodeSystem, OperationOutcome, Parameters } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
+import express from 'express';
+import request from 'supertest';
+import { initApp, shutdownApp } from '../../app';
+import { loadTestConfig } from '../../config/loader';
+import { initTestAuth } from '../../test.setup';
 
 const app = express();
 
@@ -28,7 +28,15 @@ const testCodeSystem: CodeSystem = {
       code: 'abstract',
       uri: 'http://hl7.org/fhir/concept-properties#notSelectable',
       description: 'Code is not a real thing',
-      type: 'string',
+      type: 'boolean',
+    },
+    {
+      code: 'publishedOn',
+      type: 'dateTime',
+    },
+    {
+      code: 'rank',
+      type: 'integer',
     },
   ],
   concept: [
@@ -66,7 +74,7 @@ describe('CodeSystem lookup', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
 
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ membership: { admin: true } });
     expect(accessToken).toBeDefined();
 
     const res = await request(app)
@@ -142,7 +150,7 @@ describe('CodeSystem lookup', () => {
           name: 'property',
           part: [
             { name: 'code', valueCode: 'abstract' },
-            { name: 'value', valueString: 'true' },
+            { name: 'value', valueBoolean: true },
             { name: 'description', valueString: 'Code is not a real thing' },
           ],
         },
@@ -365,6 +373,90 @@ describe('CodeSystem lookup', () => {
     expect(res.body).toMatchObject<OperationOutcome>({
       resourceType: 'OperationOutcome',
       issue: [{ severity: 'error', code: 'not-found', details: { text: 'Not found' } }],
+    });
+  });
+
+  test('Correctly renders imported properties of different types', async () => {
+    const res = await request(app)
+      .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'property',
+            part: [
+              { name: 'code', valueCode: '1' },
+              { name: 'property', valueCode: 'abstract' },
+              { name: 'value', valueString: 'false' },
+            ],
+          },
+          {
+            name: 'property',
+            part: [
+              { name: 'code', valueCode: '1' },
+              { name: 'property', valueCode: 'publishedOn' },
+              { name: 'value', valueString: '2020-01-01' },
+            ],
+          },
+          {
+            name: 'property',
+            part: [
+              { name: 'code', valueCode: '1' },
+              { name: 'property', valueCode: 'rank' },
+              { name: 'value', valueString: '418' },
+            ],
+          },
+        ],
+      } as Parameters);
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/CodeSystem/${codeSystem.id}/$lookup`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'code', valueCode: '1' }],
+      } as Parameters);
+    expect(res2.status).toStrictEqual(200);
+    expect(res2.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: expect.arrayContaining([
+        { name: 'name', valueString: 'Test Code System' },
+        { name: 'display', valueString: 'Biopsy of brain' },
+        {
+          name: 'property',
+          part: [
+            { name: 'code', valueCode: 'parent' },
+            { name: 'value', valueCode: '2' },
+            { name: 'description', valueString: 'Biopsy of head' },
+          ],
+        },
+        {
+          name: 'property',
+          part: [
+            { name: 'code', valueCode: 'abstract' },
+            { name: 'value', valueBoolean: false },
+            { name: 'description', valueString: 'Code is not a real thing' },
+          ],
+        },
+        {
+          name: 'property',
+          part: [
+            { name: 'code', valueCode: 'publishedOn' },
+            { name: 'value', valueDateTime: '2020-01-01' },
+          ],
+        },
+        {
+          name: 'property',
+          part: [
+            { name: 'code', valueCode: 'rank' },
+            { name: 'value', valueInteger: 418 },
+          ],
+        },
+      ]),
     });
   });
 });

@@ -1,13 +1,14 @@
-import { badRequest, ContentType } from '@medplum/core';
+import { badRequest, ContentType, getReferenceString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
+import { inviteUser } from './admin/invite';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
-import { getConfig, loadTestConfig } from './config';
+import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
-import { initTestAuth } from './test.setup';
+import { createTestProject, initTestAuth } from './test.setup';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
@@ -148,6 +149,41 @@ describe('App', () => {
       const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
       const logObj = JSON.parse(logLine);
       expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 201 });
+    });
+
+    test('Authenticated request with On-Behalf-Of', async () => {
+      const { accessToken, project, client } = await createTestProject({
+        withAccessToken: true,
+        withClient: true,
+        membership: { admin: true },
+      });
+
+      const { profile } = await inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Test',
+        lastName: 'Person',
+      });
+
+      (process.stdout.write as jest.Mock).mockClear();
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        name: [{ family: 'Simpson', given: ['Lisa'] }],
+      };
+      const res1 = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum-On-Behalf-Of', getReferenceString(profile))
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(patient);
+      expect(res1.status).toBe(201);
+      expect(res1.body).toMatchObject(patient);
+      expect(process.stdout.write).toHaveBeenCalledTimes(1);
+
+      const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
+      const logObj = JSON.parse(logLine);
+      expect(logObj).toMatchObject({ profile: `${getReferenceString(client)} (as ${getReferenceString(profile)})` });
     });
   });
 

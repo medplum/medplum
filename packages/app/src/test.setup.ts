@@ -4,8 +4,35 @@ import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import '@testing-library/jest-dom';
 import { TextDecoder, TextEncoder } from 'node:util';
 
-(globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+class Request {
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  body?: any;
+  signal: any;
 
+  constructor(
+    input: string | { url?: string },
+    init: { method?: string; headers?: any; body?: any; signal?: any } = {}
+  ) {
+    this.url = typeof input === 'string' ? input : (input?.url ?? '');
+    this.method = (init.method ?? 'GET').toUpperCase();
+    this.headers = (init.headers ?? {}) as Record<string, string>;
+    this.body = init.body;
+    this.signal = init.signal ?? null;
+  }
+
+  clone(): Request {
+    return new Request(this.url, {
+      method: this.method,
+      headers: { ...this.headers },
+      body: this.body,
+      signal: this.signal,
+    });
+  }
+}
+
+Object.defineProperty(globalThis.window, 'Request', { value: Request });
 Object.defineProperty(globalThis.window, 'TextDecoder', { value: TextDecoder });
 Object.defineProperty(globalThis.window, 'TextEncoder', { value: TextEncoder });
 

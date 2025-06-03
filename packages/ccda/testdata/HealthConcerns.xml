@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="CDA.xsl"?>
+<ClinicalDocument
+    xmlns = "urn:hl7-org:v3"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:voc = "urn:hl7-org:v3/voc"
+    xmlns:sdtc = "urn:hl7-org:sdtc">
+    <realmCode code = "US"/>
+    <typeId extension = "POCD_HD000040" root = "2.16.840.1.113883.1.3"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1" extension = "2015-08-01"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.2" extension = "2015-08-01"/>
+    <templateId root="2.16.840.1.113883.10.20.22.1.2" />
+    <id root="3db70aff-83f5-4caf-91dc-d23fcc5e03bb" />
+    <code code="34133-9" displayName="Summarization of Episode Note"
+        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+    <title>Medical Summary</title>
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
+    <recordTarget>
+        <patientRole>
+            <id root="ce862cfe-6559-411e-92e9-e8d005b1c226" />
+            <id extension="111223333" root="2.16.840.1.113883.4.1" />
+            <telecom nullFlavor="UNK" />
+            <addr nullFlavor="UNK" />
+            <patient>
+                <name use="L">
+                    <given>Katherine</given>
+                    <family>Madison</family>
+                </name>
+            </patient>
+        </patientRole>
+    </recordTarget>
+    <component>
+        <structuredBody>
+            <component>
+                <section>
+                    <!-- Health Concerns Section (V2)-->
+                    <templateId root="2.16.840.1.113883.10.20.22.2.58" extension="2015-08-01"/>
+                    <templateId root="2.16.840.1.113883.10.20.22.2.58"/>
+                    <code code="75310-3" displayName="Health Concerns Document" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+                    <title>Health Concerns Section</title>
+                    <text>
+                        <table border="1" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>Health Concern</th>
+                                    <th>Date</th>
+                                    <th>Related Problem</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ID="Concern1">
+                                    <td ID="Concern1Issue1">Patient is concerned about being contagious and infecting roommate.</td>
+                                    <td>Concern from 03/02/2014</td>
+                                    <!-- Providing this as a link to the related problem in problem list is an option using base CDA implementation guidance. -->
+                                    <td>Community Acquired Pneumonia</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </text>
+                    <entry>
+                        <!-- Health Concern Act -->
+                        <act classCode="ACT" moodCode="EVN">
+                            <templateId root="2.16.840.1.113883.10.20.22.4.132" extension="2015-08-01"/>
+                            <templateId root="2.16.840.1.113883.10.20.22.4.132"/>
+                            <id root="63c5e137-3024-46cc-951f-885ec69d9030"/>
+                            <code code="75310-3" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" displayName="Health Concern"/>
+                            <!-- This Health Concern has a statusCode of active because it is an active concern -->
+                            <statusCode code="active"/>
+                            <!-- The effective time is the date that the Health Concern started being followed - 
+            							 this does not necessarily correlate to the onset date of the contained health issues-->
+                            <effectiveTime value="20140302"/>
+                            <entryRelationship typeCode="REFR">
+                                <observation classCode="OBS" moodCode="EVN">
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.4"/>
+                                    <id root="59c5ca3e-662f-4e33-943f-2777ebc6227e"/>
+                                    <code codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" code="55607006" displayName="Problem">
+                                        <translation codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" code="75326-9" displayName="Problem"/>
+                                    </code>
+                                    <text>
+                                        <reference value="#Concern1" />
+                                    </text>
+                                    <statusCode code="completed"/>
+                                    <effectiveTime>
+                                        <low value="20140302"/>
+                                    </effectiveTime>
+                                    <value xsi:type="CD" nullFlavor="OTH">
+            			<originalText>
+            				<reference value="#Concern1Issue1" />
+            			</originalText>
+                                    </value>						
+                                </observation>
+                            </entryRelationship>
+                            <!-- Health Concern Problem: Community Acquired Pneumonia -->
+                            <!-- This Entry Reference refers to a problem observation present in Problem List that the Health Concern is related to-->
+                            <entryRelationship typeCode="REFR">
+                                <act classCode="ACT" moodCode="EVN">
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.122" />
+                                    <!-- This ID equals the ID of the Community Acquired Pneumonia problem -->
+                                    <id root="49c5ca3e-662f-4e33-948f-2777ebc6727e" />
+                                    <!-- The code is nulled to "NP" Not Present" -->
+                                    <code nullFlavor="NP"/>
+                                    <statusCode code="completed" />
+                                </act>
+                            </entryRelationship>
+                        </act>
+                    </entry>
+                </section>
+            </component>
+            <component> 
+                <section>
+                    <!-- Located elsewhere in the document -->
+                    <!-- Taken directly (changed observation/id) from prior example https://github.com/brettmarquard/HL7-C-CDA-Task-Force-Examples/blob/master/Problem_List_Active_Problem.xml -->
+                    <templateId root="2.16.840.1.113883.10.20.22.2.5.1" extension="2015-08-01"/>
+                    <code code="11450-4" codeSystem="2.16.840.1.113883.6.1" displayName="Problem List"/>
+                    <title>Problem List</title>
+                    <text>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Dates</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ID="Problem1">
+                                    <td>Community Acquired Pneumonia</td>
+                                    <td>
+                                        <content>Onset: 02/27/2014</content>
+                                    </td>
+                                    <td>Active</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </text>
+                    <entry>
+                        <act classCode="ACT" moodCode="EVN">
+                            <templateId root="2.16.840.1.113883.10.20.22.4.3" extension="2015-08-01"/>
+                            <templateId root="2.16.840.1.113883.10.20.22.4.3"/>
+                            <id root="102ca2e9-884c-4523-a2b4-1b6c3469c397" />
+                            <code code="CONC" codeSystem="2.16.840.1.113883.5.6" />
+                            <!-- Since this is an active problem, the concern status is active. -->
+                            <!-- While clinicians can track resolved problems, generally active problems will have active concern status and resolved concerns will be completed -->
+                            <statusCode code="active" />
+                            <effectiveTime>
+                                <!-- This equates to the time the concern was authored in the patient's chart. This may frequently be an EHR timestamp-->
+                                <low value="20140302124536-0500" />
+                            </effectiveTime>
+                            <entryRelationship typeCode="SUBJ">
+                                <observation classCode="OBS" moodCode="EVN">
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.4" extension="2015-08-01"/>
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.4"/>
+                                    <id root="49c5ca3e-662f-4e33-948f-2777ebc6727e"/>
+                                    <code codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" code="55607006" displayName="Problem">
+                                        <translation codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" code="75326-9" displayName="Problem"/>
+                                    </code>
+                                    <text>
+                                        <reference value="#Problem1" />
+                                    </text>
+                                    <statusCode code="completed"/>
+                                    <effectiveTime>
+                                        <!-- This represents the date of biological onset. -->
+                                        <low value="20140227"/>
+                                    </effectiveTime>
+                                    <!-- This is a SNOMED code as the primary vocabulary for problem lists-->
+                                    <value xsi:type="CD" code="385093006" codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT" displayName="Community acquired pneumonia"/>							
+                                </observation>
+                            </entryRelationship>
+                        </act>
+                    </entry>
+                </section>
+            </component>
+        </structuredBody>
+    </component>
+</ClinicalDocument>

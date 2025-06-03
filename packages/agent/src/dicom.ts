@@ -16,11 +16,7 @@ export class AgentDicomChannel extends BaseChannel {
   readonly tempDir: string;
   readonly log: Logger;
 
-  constructor(
-    readonly app: App,
-    definition: AgentChannel,
-    endpoint: Endpoint
-  ) {
+  constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
 
     class DcmjsDimseScp extends dimse.Scp {
@@ -96,7 +92,11 @@ export class AgentDicomChannel extends BaseChannel {
 
             // Upload the Medplum as a FHIR Binary
             const medplum = App.instance.medplum;
-            binary = await medplum.createBinary(buffer, 'dicom.dcm', 'application/dicom');
+            binary = await medplum.createBinary({
+              data: buffer,
+              filename: 'dicom.dcm',
+              contentType: 'application/dicom',
+            });
 
             // Parse the DICOM file into DICOM JSON
             const dicomDict = dcmjs.data.DicomMessage.readFile(buffer.buffer);

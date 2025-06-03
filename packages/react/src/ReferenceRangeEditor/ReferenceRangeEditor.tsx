@@ -1,10 +1,11 @@
-import { ActionIcon, Button, Divider, Group, NativeSelect, Stack, Text, TextInput } from '@mantine/core';
+import { ActionIcon, Divider, Group, NativeSelect, Stack, Text, TextInput } from '@mantine/core';
 import { formatRange, getCodeBySystem } from '@medplum/core';
 import { CodeableConcept, ObservationDefinition, ObservationDefinitionQualifiedInterval } from '@medplum/fhirtypes';
 import { IconCircleMinus, IconCirclePlus } from '@tabler/icons-react';
-import { MouseEvent, useEffect, useState } from 'react';
+import { JSX, MouseEvent, useEffect, useState } from 'react';
 import { Container } from '../Container/Container';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { RangeInput } from '../RangeInput/RangeInput';
 import { killEvent } from '../utils/dom';
 import classes from './ReferenceRangeEditor.module.css';
@@ -76,7 +77,7 @@ export function ReferenceRangeEditor(props: ReferenceRangeEditorProps): JSX.Elem
       </ActionIcon>
 
       <Group justify="flex-end">
-        <Button type="submit">Save</Button>
+        <SubmitButton>Save</SubmitButton>
       </Group>
     </Form>
   );

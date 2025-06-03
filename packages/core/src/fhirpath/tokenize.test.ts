@@ -85,9 +85,16 @@ describe('Tokenizer', () => {
     expect(tokenize("'\\\\\\/\\f\\r\\n\\t\\\"\\`\\'\\u002a'")).toMatchObject([
       {
         id: 'String',
-        value: '\\\\\\/\\f\\r\\n\\t\\"\\`\\\'\\u002a',
+        value: '\\\\\\/\\f\\r\\n\\t\\"\\`\\\'*',
       },
     ]);
+  });
+
+  test('Literal unicode', () => {
+    expect(tokenize("'P\u0065ter'")).toMatchObject([{ id: 'String', value: 'Peter' }]);
+    expect(tokenize("'P\\u0065ter'")).toMatchObject([{ id: 'String', value: 'Peter' }]);
+    expect(tokenize("'P\\\u0065ter'")).toMatchObject([{ id: 'String', value: 'P\\eter' }]);
+    expect(tokenize("'P\\\\u0065ter'")).toMatchObject([{ id: 'String', value: 'P\\eter' }]);
   });
 
   test('FHIR Path', () => {

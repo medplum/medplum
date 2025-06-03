@@ -5,6 +5,7 @@ import { normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Communication, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { checkForInvalidRecipient, getRecipients } from '../../utils';
 
 interface AddParticipantProps {

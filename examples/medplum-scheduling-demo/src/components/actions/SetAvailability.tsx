@@ -10,7 +10,7 @@ import {
 } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useContext } from 'react';
+import { JSX, useContext } from 'react';
 import { SetAvailabilityEvent } from '../../bots/core/set-availability';
 import { ScheduleContext } from '../../Schedule.context';
 

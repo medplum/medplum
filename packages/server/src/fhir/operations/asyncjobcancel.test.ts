@@ -4,7 +4,7 @@ import { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { asyncJobCancelHandler } from './asyncjobcancel';
@@ -45,13 +45,13 @@ describe('AsyncJob/$cancel', () => {
     const asyncJob = res.body as AsyncJob;
 
     const res2 = await request(app)
-      .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$cancel`)
+      .post(`/fhir/R4/AsyncJob/${asyncJob.id}/$cancel`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toStrictEqual(200);
     expect(res2.body).toMatchObject<OperationOutcome>(allOk);
 
     const res3 = await request(app)
-      .get(`/fhir/R4/AsyncJob/${asyncJob.id as string}`)
+      .get(`/fhir/R4/AsyncJob/${asyncJob.id}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
 
@@ -82,13 +82,13 @@ describe('AsyncJob/$cancel', () => {
     const asyncJob = res.body as AsyncJob;
 
     const res2 = await request(app)
-      .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$cancel`)
+      .post(`/fhir/R4/AsyncJob/${asyncJob.id}/$cancel`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toStrictEqual(200);
     expect(res2.body).toMatchObject<OperationOutcome>(allOk);
 
     const res3 = await request(app)
-      .get(`/fhir/R4/AsyncJob/${asyncJob.id as string}`)
+      .get(`/fhir/R4/AsyncJob/${asyncJob.id}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
 
@@ -119,7 +119,7 @@ describe('AsyncJob/$cancel', () => {
     const asyncJob = res.body as AsyncJob;
 
     const res2 = await request(app)
-      .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$cancel`)
+      .post(`/fhir/R4/AsyncJob/${asyncJob.id}/$cancel`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toStrictEqual(400);
 
@@ -155,7 +155,7 @@ describe('AsyncJob/$cancel', () => {
       });
 
       const res2 = await request(app)
-        .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$cancel`)
+        .post(`/fhir/R4/AsyncJob/${asyncJob.id}/$cancel`)
         .set('Authorization', 'Bearer ' + accessToken)
         .set('X-Medplum', 'extended');
       expect(res2.status).toStrictEqual(200);
@@ -168,7 +168,7 @@ describe('AsyncJob/$cancel', () => {
 
       expect(res3.status).toStrictEqual(200);
       expect(res3.body).toStrictEqual({
-        id: asyncJob.id as string,
+        id: asyncJob.id,
         resourceType: 'AsyncJob',
         requestTime: asyncJob.requestTime,
         request: 'random-request',

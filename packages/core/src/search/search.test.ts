@@ -6,9 +6,7 @@ import {
   Operator,
   SearchRequest,
   formatSearchQuery,
-  parseSearchDefinition,
   parseSearchRequest,
-  parseSearchUrl,
   parseXFhirQuery,
   splitSearchOnComma,
 } from './search';
@@ -82,35 +80,35 @@ describe('Search Utils', () => {
     });
   });
 
-  test('parseSearchUrl', () => {
-    expect(() => parseSearchUrl(null as unknown as URL)).toThrow('Invalid search URL');
-    expect(() => parseSearchUrl(undefined as unknown as URL)).toThrow('Invalid search URL');
+  test('parseSearchRequest with URL', () => {
+    expect(() => parseSearchRequest(null as unknown as URL)).toThrow('Invalid search URL');
+    expect(() => parseSearchRequest(undefined as unknown as URL)).toThrow('Invalid search URL');
 
-    expect(parseSearchUrl(new URL('https://example.com/Patient'))).toMatchObject({ resourceType: 'Patient' });
-    expect(parseSearchUrl(new URL('https://example.com/Patient?name=alice'))).toMatchObject({
+    expect(parseSearchRequest(new URL('https://example.com/Patient'))).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchRequest(new URL('https://example.com/Patient?name=alice'))).toMatchObject({
       resourceType: 'Patient',
       filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
     });
-    expect(parseSearchUrl(new URL('https://example.com/Patient?_fields=id,name,birthDate'))).toMatchObject({
+    expect(parseSearchRequest(new URL('https://example.com/Patient?_fields=id,name,birthDate'))).toMatchObject({
       resourceType: 'Patient',
       fields: ['id', 'name', 'birthDate'],
     });
   });
 
   test('Parse Patient search', () => {
-    const result = parseSearchDefinition('/x/y/z/Patient');
+    const result = parseSearchRequest('/x/y/z/Patient');
     expect(result.resourceType).toBe('Patient');
     expect(result.filters).toBeUndefined();
   });
 
   test('Parse Patient search with trailing slash', () => {
-    const result = parseSearchDefinition('/Patient/');
+    const result = parseSearchRequest('/Patient/');
     expect(result.resourceType).toBe('Patient');
     expect(result.filters).toBeUndefined();
   });
 
   test('Parse Patient search name', () => {
-    const result = parseSearchDefinition('Patient?name=alice');
+    const result = parseSearchRequest('Patient?name=alice');
     expect(result.resourceType).toBe('Patient');
     expect(result.filters).toStrictEqual([
       {
@@ -122,38 +120,38 @@ describe('Search Utils', () => {
   });
 
   test('Parse Patient search fields', () => {
-    const result = parseSearchDefinition('Patient?_fields=id,name,birthDate');
+    const result = parseSearchRequest('Patient?_fields=id,name,birthDate');
     expect(result.resourceType).toBe('Patient');
     expect(result.fields).toStrictEqual(['id', 'name', 'birthDate']);
   });
 
   test('Parse Patient search sort', () => {
-    const result = parseSearchDefinition('Patient?_sort=birthDate');
+    const result = parseSearchRequest('Patient?_sort=birthDate');
     expect(result.resourceType).toBe('Patient');
     expect(result.sortRules).toStrictEqual([{ code: 'birthDate', descending: false }]);
   });
 
   test('Parse Patient search sort descending', () => {
-    const result = parseSearchDefinition('Patient?_sort=-birthDate');
+    const result = parseSearchRequest('Patient?_sort=-birthDate');
     expect(result.resourceType).toBe('Patient');
     expect(result.sortRules).toStrictEqual([{ code: 'birthDate', descending: true }]);
   });
 
   test('Parse Patient search total', () => {
-    const result = parseSearchDefinition('Patient?_total=accurate');
+    const result = parseSearchRequest('Patient?_total=accurate');
     expect(result.resourceType).toBe('Patient');
     expect(result.total).toBe('accurate');
   });
 
   test('Parse Patient count and offset', () => {
-    const result = parseSearchDefinition('Patient?_count=10&_offset=20');
+    const result = parseSearchRequest('Patient?_count=10&_offset=20');
     expect(result.resourceType).toBe('Patient');
     expect(result.offset).toBe(20);
     expect(result.count).toBe(10);
   });
 
   test('Parse Patient cursor', () => {
-    const result = parseSearchDefinition('Patient?_count=10&_cursor=foo');
+    const result = parseSearchRequest('Patient?_count=10&_cursor=foo');
     expect(result.resourceType).toBe('Patient');
     expect(result.count).toBe(10);
     expect(result.cursor).toBe('foo');
@@ -161,7 +159,7 @@ describe('Search Utils', () => {
   });
 
   test('Parse modifier operator', () => {
-    const result = parseSearchDefinition('Patient?name:contains=alice');
+    const result = parseSearchRequest('Patient?name:contains=alice');
     expect(result).toMatchObject({
       resourceType: 'Patient',
       filters: [
@@ -175,7 +173,7 @@ describe('Search Utils', () => {
   });
 
   test('Parse prefix operator', () => {
-    const result = parseSearchDefinition('Patient?birthdate=gt2000-01-01');
+    const result = parseSearchRequest('Patient?birthdate=gt2000-01-01');
     expect(result).toMatchObject({
       resourceType: 'Patient',
       filters: [
@@ -189,7 +187,7 @@ describe('Search Utils', () => {
   });
 
   test('Parse prefix operator does not work on string', () => {
-    const result = parseSearchDefinition('Patient?name=leslie');
+    const result = parseSearchRequest('Patient?name=leslie');
     expect(result).toMatchObject({
       resourceType: 'Patient',
       filters: [
@@ -203,7 +201,7 @@ describe('Search Utils', () => {
   });
 
   test('Parse multiple filters same code', () => {
-    const result = parseSearchDefinition(
+    const result = parseSearchRequest(
       'Patient?_lastUpdated=ge2023-04-01T07%3A00%3A00.000Z&_lastUpdated=le2023-05-01T06%3A59%3A59.999Z'
     );
     expect(result).toMatchObject({
@@ -224,7 +222,7 @@ describe('Search Utils', () => {
   });
 
   test('Parse chained search parameters', () => {
-    const searchReq = parseSearchDefinition(
+    const searchReq = parseSearchRequest(
       'Patient?organization.name=Kaiser%20Permanente&_has:Observation:subject:performer:Practitioner.name=Alice'
     );
 
@@ -384,6 +382,12 @@ describe('Search Utils', () => {
         filters: [{ code: 'code', operator: Operator.NOT, value: 'x' }],
       })
     ).toStrictEqual('?code:not=x');
+  });
+
+  test('Format types', () => {
+    expect(formatSearchQuery({ resourceType: 'Patient', types: ['Patient', 'Practitioner', 'Organization'] })).toEqual(
+      '?_type=Patient,Practitioner,Organization'
+    );
   });
 
   const maritalStatus = 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus';

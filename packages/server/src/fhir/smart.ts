@@ -6,10 +6,11 @@
 import { ContentType, deepClone, OAuthGrantType, OAuthTokenAuthMethod, splitN } from '@medplum/core';
 import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { getConfig } from '../config';
 import qs from 'node:querystring';
+import { getConfig } from '../config/loader';
+import { PopulatedAccessPolicy } from './accesspolicy';
 
-const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(\*|c?r?u?d?s?)$/;
+const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
 
 export interface SmartScope {
   readonly permissionType: 'patient' | 'user' | 'system';
@@ -58,6 +59,7 @@ export function smartConfigurationHandler(_req: Request, res: Response): void {
         'online_access',
       ],
       response_types_supported: ['code'],
+      introspection_endpoint: config.introspectUrl,
       capabilities: [
         'authorize-post',
         'permission-v1',
@@ -114,28 +116,50 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
 
   if (scope) {
     for (const scopeTerm of scope.split(' ')) {
-      const [baseScope, query] = splitN(scopeTerm, '?', 2);
-      const match = smartScopeFormat.exec(baseScope);
-
-      let criteria: string | undefined;
-      if (query) {
-        // Parse and normalize query parameters, without affecting string encoding, for safety
-        const parsed = qs.parse(query, '&', '=', { decodeURIComponent: (s) => s });
-        criteria = qs.stringify(parsed, '&', '=', { encodeURIComponent: (s) => s });
-      }
-
-      if (match) {
-        result.push({
-          permissionType: match[1] as 'patient' | 'user' | 'system',
-          resourceType: match[2],
-          scope: match[3] === '*' ? 'cruds' : match[3],
-          criteria,
-        });
+      const parsed = parseSmartScopeString(scopeTerm);
+      if (parsed) {
+        result.push(parsed);
       }
     }
   }
 
   return result;
+}
+
+export function parseSmartScopeString(scope: string): SmartScope | undefined {
+  const [baseScope, query] = splitN(scope, '?', 2);
+  const match = smartScopeFormat.exec(baseScope);
+
+  if (!match) {
+    return undefined;
+  }
+
+  let criteria: string | undefined;
+  if (query) {
+    // Parse and normalize query parameters, without affecting string encoding, for safety
+    const parsed = qs.parse(query, '&', '=', { decodeURIComponent: (s) => s });
+    criteria = qs.stringify(parsed, '&', '=', { encodeURIComponent: (s) => s });
+  }
+
+  return {
+    permissionType: match[1] as 'patient' | 'user' | 'system',
+    resourceType: match[2],
+    scope: normalizeV2ScopeString(match[3]),
+    criteria,
+  };
+}
+
+function normalizeV2ScopeString(str: string): string {
+  switch (str) {
+    case '*':
+      return 'cruds';
+    case 'read':
+      return 'rs';
+    case 'write':
+      return 'cud';
+    default:
+      return str;
+  }
 }
 
 /**
@@ -147,7 +171,10 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
  * @param scope - The OAuth scope string.
  * @returns Updated access policy with the OAuth scope applied.
  */
-export function applySmartScopes(accessPolicy: AccessPolicy, scope: string | undefined): AccessPolicy {
+export function applySmartScopes(
+  accessPolicy: PopulatedAccessPolicy,
+  scope: string | undefined
+): PopulatedAccessPolicy {
   const smartScopes = parseSmartScopes(scope);
   if (smartScopes.length === 0) {
     // No SMART scopes, so no changes to the access policy
@@ -158,14 +185,14 @@ export function applySmartScopes(accessPolicy: AccessPolicy, scope: string | und
   return intersectSmartScopes(accessPolicy, smartScopes);
 }
 
-function intersectSmartScopes(accessPolicy: AccessPolicy, smartScope: SmartScope[]): AccessPolicy {
+function intersectSmartScopes(accessPolicy: AccessPolicy, smartScope: SmartScope[]): PopulatedAccessPolicy {
   // Build list of AccessPolicy entries
   if (!accessPolicy.resource) {
     // If none specified, generate an AccessPolicy from scratch
     return generateSmartScopesPolicy(smartScope);
   }
 
-  const result: AccessPolicy & { resource: AccessPolicyResource[] } = { ...accessPolicy, resource: [] };
+  const result: PopulatedAccessPolicy = { ...accessPolicy, resource: [] };
   for (const policy of accessPolicy.resource) {
     const scope = getScopeForResourceType(smartScope, policy.resourceType);
     if (scope) {
@@ -202,8 +229,8 @@ function getScopeForResourceType(scopes: SmartScope[], resourceType: string): Sm
   return scopes.find((s) => s.resourceType === resourceType) ?? scopes.find((s) => s.resourceType === '*');
 }
 
-function generateSmartScopesPolicy(smartScopes: SmartScope[]): AccessPolicy {
-  const result: AccessPolicy = {
+function generateSmartScopesPolicy(smartScopes: SmartScope[]): PopulatedAccessPolicy {
+  const result: PopulatedAccessPolicy = {
     resourceType: 'AccessPolicy',
     resource: [],
   };

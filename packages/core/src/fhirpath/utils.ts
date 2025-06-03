@@ -429,7 +429,17 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     return false;
   }
 
-  switch (desiredType) {
+  let cleanType = desiredType;
+
+  if (cleanType.startsWith('System.')) {
+    cleanType = cleanType.substring('System.'.length);
+  }
+
+  if (cleanType.startsWith('FHIR.')) {
+    cleanType = cleanType.substring('FHIR.'.length);
+  }
+
+  switch (cleanType) {
     case 'Boolean':
       return typeof value === 'boolean';
     case 'Decimal':
@@ -446,7 +456,7 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     case 'Quantity':
       return isQuantity(value);
     default:
-      return typedValue.type === desiredType || (typeof value === 'object' && value?.resourceType === desiredType);
+      return typedValue.type === cleanType || (typeof value === 'object' && value?.resourceType === cleanType);
   }
 }
 

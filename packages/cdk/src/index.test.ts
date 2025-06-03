@@ -1,9 +1,9 @@
+import { MedplumSourceInfraConfig } from '@medplum/core';
+import { App } from 'aws-cdk-lib';
 import { unlinkSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { main, MedplumStack } from './index';
-import { App } from 'aws-cdk-lib';
 import { normalizeInfraConfig } from './config';
-import { MedplumSourceInfraConfig } from '@medplum/core';
+import { main, MedplumStack } from './index';
 
 function writeConfig(filename: string, config: any): string {
   const resolvedPath = resolve(filename);

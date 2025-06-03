@@ -1,8 +1,8 @@
 import { Alert, Title } from '@mantine/core';
 import { Document, Logo, RegisterForm, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { JSX, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { getConfig, isRegisterEnabled } from './config';
 
 export function RegisterPage(): JSX.Element | null {
@@ -12,7 +12,7 @@ export function RegisterPage(): JSX.Element | null {
 
   useEffect(() => {
     if (medplum.getProfile()) {
-      navigate('/signin?project=new');
+      navigate('/signin?project=new')?.catch(console.error);
     }
   }, [medplum, navigate]);
 
@@ -30,7 +30,11 @@ export function RegisterPage(): JSX.Element | null {
     <RegisterForm
       type="project"
       projectId="new"
-      onSuccess={() => navigate('/')}
+      onSuccess={() => {
+        // Use window.location.href to force a reload
+        // Otherwise we get caught in a React render loop
+        window.location.href = '/';
+      }}
       googleClientId={config.googleClientId}
       recaptchaSiteKey={config.recaptchaSiteKey}
     >

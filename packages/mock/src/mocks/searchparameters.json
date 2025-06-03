@@ -154,6 +154,15 @@
   },
   {
     "resourceType": "SearchParameter",
+    "id": "Questionnaire-url",
+    "name": "url",
+    "code": "url",
+    "base": ["Questionnaire"],
+    "type": "uri",
+    "expression": "Questionnaire.url"
+  },
+  {
+    "resourceType": "SearchParameter",
     "id": "Schedule-identifier",
     "name": "identifier",
     "code": "identifier",

@@ -1,6 +1,6 @@
 import { Paper, PaperProps } from '@mantine/core';
 import cx from 'clsx';
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import classes from './Panel.module.css';
 
 export interface PanelProps extends PaperProps {

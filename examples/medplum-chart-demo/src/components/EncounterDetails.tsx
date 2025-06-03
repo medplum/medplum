@@ -2,8 +2,8 @@ import { Tabs } from '@mantine/core';
 import { getQuestionnaireAnswers, getReferenceString } from '@medplum/core';
 import { Encounter, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import { Document, Loading, QuestionnaireForm, ResourceHistoryTable, ResourceTable, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { JSX, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { EncounterNoteDisplay } from './EncounterNoteDisplay';
 
 interface EncounterDetailsProps {
@@ -46,7 +46,7 @@ export function EncounterDetails(props: EncounterDetailsProps): JSX.Element {
   }, [response, questionnaire, encounterType, medplum, props.encounter]);
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/Encounter/${id}/${newTab ?? ''}`);
+    navigate(`/Encounter/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {

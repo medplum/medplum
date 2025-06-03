@@ -1,5 +1,7 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { LRUCache } from '../cache';
 import { HTTP_HL7_ORG, UCUM } from '../constants';
+import { FhirPathAtom } from '../fhirpath/atoms';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import {
@@ -55,6 +57,8 @@ export const fhirTypeToJsType = {
   'http://hl7.org/fhirpath/System.String': 'string', // Not actually a FHIR type, but included in some StructureDefinition resources
 } as const satisfies Record<string, 'string' | 'boolean' | 'number'>;
 
+const fhirPathCache = new LRUCache<FhirPathAtom>(1_000);
+
 /**
  * Returns true if the type code is a primitive type.
  * @param code - The type code to check.
@@ -80,9 +84,9 @@ export const validationRegexes: Record<string, RegExp> = {
   id: /^[A-Za-z0-9\-.]{1,64}$/,
   instant:
     /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00))$/,
-  markdown: /^[\s\S]+$/,
+  markdown: /^[\r\n\t\u0020-\uFFFF]+$/,
   oid: /^urn:oid:[0-2](\.(0|[1-9]\d*))+$/,
-  string: /^[\s\S]+$/,
+  string: /^[\r\n\t\u0020-\uFFFF]+$/,
   time: /^([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?$/,
   uri: /^\S*$/,
   url: /^\S*$/,
@@ -116,8 +120,8 @@ export function validateTypedValue(typedValue: TypedValue, options?: ValidatorOp
 }
 
 class ResourceValidator implements CrawlerVisitor {
-  private issues: OperationOutcomeIssue[];
-  private root: TypedValue;
+  private readonly issues: OperationOutcomeIssue[];
+  private readonly root: TypedValue;
   private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
 
@@ -380,7 +384,16 @@ class ResourceValidator implements CrawlerVisitor {
       return;
     }
 
-    const referenceResourceType = reference.reference.split('/')[0];
+    if (reference.reference.startsWith('#')) {
+      // Silently ignore contained references
+      return;
+    }
+
+    // Pick out the resource type from the reference, either as a conditional reference or a literal reference
+    const referenceResourceType = reference.reference.includes('?')
+      ? reference.reference.split('?')[0]
+      : reference.reference.split('/')[0];
+
     if (!referenceResourceType) {
       // Silently ignore empty references - that will get picked up by constraint validation
       return;
@@ -447,7 +460,7 @@ class ResourceValidator implements CrawlerVisitor {
     }
 
     try {
-      const evalValues = evalFhirPathTyped(constraint.expression, [value], variables);
+      const evalValues = evalFhirPathTyped(constraint.expression, [value], variables, fhirPathCache);
 
       return evalValues.length === 1 && evalValues[0].value === true;
     } catch (e: any) {

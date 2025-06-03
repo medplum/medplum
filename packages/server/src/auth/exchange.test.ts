@@ -1,4 +1,4 @@
-import { ContentType } from '@medplum/core';
+import { ContentType, WithId } from '@medplum/core';
 import { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -7,7 +7,7 @@ import request from 'supertest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -19,15 +19,15 @@ const domain = randomUUID() + '.example.com';
 const email = `text@${domain}`;
 const redirectUri = `https://${domain}/auth/callback`;
 const externalId = `google-oauth2|${randomUUID()}`;
-let project: Project;
+let project: WithId<Project>;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
 let subjectAuthClient: ClientApplication;
 
 describe('Token Exchange', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       await initApp(app, config);
 
       // Create a new project
@@ -85,8 +85,8 @@ describe('Token Exchange', () => {
         firstName: 'External',
         lastName: 'User',
       });
-    })
-  );
+    });
+  });
 
   afterAll(async () => {
     await shutdownApp();

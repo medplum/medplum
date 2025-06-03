@@ -8,7 +8,7 @@ This repo is similar to [medplum-client-oauth-demo](https://github.com/medplum/m
 
 ## Setup
 
-Setup your external authentication provider (Auth0, AWS Cognito, Okta, etc).  Use "https://api.medplum.com/auth/external" as the "redirect URI". Note the following details:
+Setup your external authentication provider (Auth0, AWS Cognito, Okta, etc). Use "https://api.medplum.com/auth/external" as the "redirect URI". Note the following details:
 
 - Authorize URL
 - Token URL

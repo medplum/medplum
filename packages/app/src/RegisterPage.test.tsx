@@ -2,13 +2,14 @@ import { MedplumClient } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import crypto from 'crypto';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
 import { getConfig } from './config';
-import { act, fireEvent, render, screen } from './test-utils/render';
+import { act, render, screen, userEvent, UserEvent } from './test-utils/render';
 
-async function setup(medplum: MedplumClient): Promise<void> {
+async function setup(medplum: MedplumClient): Promise<UserEvent> {
+  const user = userEvent.setup();
   await act(async () => {
     render(
       <MemoryRouter initialEntries={['/register']} initialIndex={0}>
@@ -18,6 +19,8 @@ async function setup(medplum: MedplumClient): Promise<void> {
       </MemoryRouter>
     );
   });
+
+  return user;
 }
 
 describe('RegisterPage', () => {
@@ -52,7 +55,7 @@ describe('RegisterPage', () => {
     const medplum = new MockClient();
     medplum.getProfile = jest.fn(() => undefined) as any;
     medplum.startNewUser = jest.fn(() => Promise.resolve({ login: '1' }));
-    await setup(medplum);
+    const user = await setup(medplum);
 
     Object.defineProperty(global, 'grecaptcha', {
       value: {
@@ -65,32 +68,16 @@ describe('RegisterPage', () => {
       },
     });
 
-    await act(async () => {
-      fireEvent.change(screen.getByLabelText('First name *'), {
-        target: { value: 'George' },
-      });
-      fireEvent.change(screen.getByLabelText('Last name *'), {
-        target: { value: 'Washington' },
-      });
-      fireEvent.change(screen.getByLabelText('Email *'), {
-        target: { value: 'george@example.com' },
-      });
-      fireEvent.change(screen.getByLabelText('Password *'), {
-        target: { value: 'password' },
-      });
-    });
+    await user.type(screen.getByLabelText('First name *'), 'George');
+    await user.type(screen.getByLabelText('Last name *'), 'Washington');
+    await user.type(screen.getByLabelText('Email *'), 'george@example.com');
+    await user.type(screen.getByLabelText('Password *'), 'password');
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button'));
-    });
+    await user.click(screen.getByRole('button'));
 
-    fireEvent.change(screen.getByLabelText('Project Name *'), {
-      target: { value: 'Test Project' },
-    });
+    await user.type(screen.getByLabelText('Project Name *'), 'Test Project');
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button'));
-    });
+    await user.click(screen.getByRole('button'));
   });
 
   test('Register disabled', async () => {

@@ -1,10 +1,11 @@
 import { readJson } from '@medplum/definitions';
 import { Attachment, Bundle, Coding, Observation, Patient } from '@medplum/fhirtypes';
+import { LOINC } from '../constants';
+import { toTypedValue } from '../fhirpath/utils';
 import { TypedValue } from '../types';
 import { arrayify, sleep } from '../utils';
-import { crawlResource, crawlResourceAsync } from './crawler';
+import { crawlTypedValue, crawlTypedValueAsync } from './crawler';
 import { indexStructureDefinitionBundle } from './types';
-import { LOINC } from '../constants';
 
 describe('ResourceCrawler', () => {
   beforeAll(() => {
@@ -18,16 +19,13 @@ describe('ResourceCrawler', () => {
     let enteredResource = false;
     let exitedResource = false;
 
-    crawlResource(
-      { resourceType: 'Patient' },
-      {
-        onEnterObject: () => (enteredObject = true),
-        onExitObject: () => (exitedObject = true),
-        onEnterResource: () => (enteredResource = true),
-        onExitResource: () => (exitedResource = true),
-        visitProperty: () => {},
-      }
-    );
+    crawlTypedValue(toTypedValue({ resourceType: 'Patient' }), {
+      onEnterObject: () => (enteredObject = true),
+      onExitObject: () => (exitedObject = true),
+      onEnterResource: () => (enteredResource = true),
+      onExitResource: () => (exitedResource = true),
+      visitProperty: () => {},
+    });
 
     expect(enteredObject).toBe(true);
     expect(exitedObject).toBe(true);
@@ -51,7 +49,7 @@ describe('ResourceCrawler', () => {
     };
 
     const attachments: Attachment[] = [];
-    crawlResource(patient, {
+    crawlTypedValue(toTypedValue(patient), {
       visitProperty: (_parent, _key, _path, propertyValues) => {
         for (const propertyValue of propertyValues) {
           if (propertyValue) {
@@ -84,8 +82,8 @@ describe('ResourceCrawler', () => {
     };
 
     const paths: string[] = [];
-    await crawlResource(
-      patient,
+    await crawlTypedValueAsync(
+      toTypedValue(patient),
       {
         visitPropertyAsync: async (_parent, _key, path, _propertyValues) => {
           await sleep(5);
@@ -123,8 +121,8 @@ describe('ResourceCrawler', () => {
     };
 
     const resultCodes: Coding[] = [];
-    crawlResource(
-      obs,
+    crawlTypedValue(
+      toTypedValue(obs),
       {
         visitProperty: (_parent, _key, _path, propertyValues) => {
           for (const propertyValue of propertyValues) {
@@ -173,8 +171,8 @@ describe('ResourceCrawler', () => {
     };
 
     const resultCodes: Coding[] = [];
-    await crawlResourceAsync(
-      obs,
+    await crawlTypedValueAsync(
+      toTypedValue(obs),
       {
         visitPropertyAsync: async (_parent, _key, _path, propertyValue) => {
           if (propertyValue) {

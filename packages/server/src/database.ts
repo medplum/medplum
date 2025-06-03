@@ -1,62 +1,30 @@
-import { badRequest, created, OperationOutcomeError, parseSearchRequest, sleep } from '@medplum/core';
+import { badRequest, OperationOutcomeError, sleep, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
-import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Pool, PoolClient } from 'pg';
 import * as semver from 'semver';
-import { getConfig, MedplumDatabaseConfig, MedplumServerConfig } from './config';
+import { getConfig } from './config/loader';
+import { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
 import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
-import * as dataMigrations from './migrations/data';
-import * as migrations from './migrations/schema';
+import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
+import {
+  getPendingPostDeployMigration,
+  getPreDeployMigration,
+  queuePostDeployMigration,
+} from './migrations/migration-utils';
+import { getPreDeployMigrationVersions, MigrationVersion } from './migrations/migration-versions';
 import { getServerVersion } from './util/version';
 
-export enum DatabaseMode {
-  READER = 'reader',
-  WRITER = 'writer',
-}
-
-const DataVersion = {
-  UNKNOWN: -1,
-  NONE: 0,
+export const DatabaseMode = {
+  READER: 'reader',
+  WRITER: 'writer',
 } as const;
+export type DatabaseMode = (typeof DatabaseMode)[keyof typeof DatabaseMode];
 
 let pool: Pool | undefined;
 let readonlyPool: Pool | undefined;
-
-export async function getDataVersion(): Promise<number> {
-  const result = await getDatabasePool(DatabaseMode.WRITER).query<{ dataVersion?: number }>(
-    'SELECT "dataVersion" FROM "DatabaseMigration";'
-  );
-  return result.rows[0]?.dataVersion ?? DataVersion.UNKNOWN;
-}
-
-/**
- * Gets the next data migration version (if any) that should be run.s
- *
- * This function returns `DataVersion.NONE` if there are none, or `DataVersion.UNKNOWN` if the current data version (and therefore, the pending data migration) cannot be assessed.
- *
- * @returns The next data migration version (if any) that should be run.
- */
-export async function getPendingDataMigration(): Promise<number> {
-  const dataVersion = await getDataVersion();
-  if (dataVersion === DataVersion.UNKNOWN) {
-    return dataVersion;
-  }
-  const allDataVersions = getMigrationVersions(dataMigrations);
-  if (allDataVersions.includes(dataVersion + 1)) {
-    return dataVersion + 1;
-  }
-  return DataVersion.NONE;
-}
-
-export async function markPendingDataMigrationCompleted(job: AsyncJob): Promise<void> {
-  assert(job.dataVersion);
-  await getDatabasePool(DatabaseMode.WRITER).query('UPDATE "DatabaseMigration" SET "dataVersion" = $1', [
-    job.dataVersion,
-  ]);
-}
 
 export function getDatabasePool(mode: DatabaseMode): Pool {
   if (!pool) {
@@ -122,6 +90,13 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
   }
 
   return pool;
+}
+
+export function getDefaultStatementTimeout(config: MedplumDatabaseConfig): number | 'DEFAULT' {
+  if (config.disableConnectionConfiguration) {
+    return 'DEFAULT';
+  }
+  return config.queryTimeout ?? 60000;
 }
 
 export async function closeDatabase(): Promise<void> {
@@ -192,35 +167,33 @@ async function migrate(client: PoolClient): Promise<void> {
   await client.query(`CREATE TABLE IF NOT EXISTS "DatabaseMigration" (
     "id" INTEGER NOT NULL PRIMARY KEY,
     "version" INTEGER NOT NULL,
-    "dataVersion" INTEGER NOT NULL
+    "dataVersion" INTEGER NOT NULL,
+    "firstBoot" BOOLEAN NOT NULL DEFAULT false
   )`);
 
-  // This generic type is not technically correct, but leads to the desired forced checks for undefined `version` and `dataVersion`
-  // Technically pg should infer that rows could have zero length, but adding optionality to all fields forces handling the undefined case when the row is empty
-  const result = await client.query<{ version?: number; dataVersion?: number }>(
-    'SELECT "version" FROM "DatabaseMigration"'
-  );
-  let version = result.rows[0]?.version ?? DataVersion.UNKNOWN;
-  const allDataVersions = getMigrationVersions(dataMigrations);
+  let preDeployVersion = await getPreDeployVersion(client);
 
-  const pendingDataMigration = await getPendingDataMigration();
-  // If this is the first time the server has been started up (version < 0)
-  // We need to initialize our migrations table
-  // This also opts us into the fast path for data migrations, so we can skip all checks for server version and go straight to the latest data version
-  if (version < 0) {
-    const latestDataVersion = allDataVersions[allDataVersions.length - 1] ?? 0;
-    await client.query(`INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, $1)`, [
-      latestDataVersion,
-    ]);
-    version = 0;
-  } else if (pendingDataMigration > 0) {
+  // Initialize if this is the first time the server has been started up
+  if (preDeployVersion === MigrationVersion.UNKNOWN) {
+    await client.query(
+      `INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion", "firstBoot") VALUES (1, $1, $1, true)`,
+      [MigrationVersion.NONE]
+    );
+    preDeployVersion = MigrationVersion.NONE;
+  }
+
+  await runAllPendingPreDeployMigrations(client, preDeployVersion);
+
+  const postDeployVersion = await getPostDeployVersion(client);
+  const pendingPostDeployMigration = await getPendingPostDeployMigration(client);
+  if (postDeployVersion !== MigrationVersion.FIRST_BOOT && pendingPostDeployMigration !== MigrationVersion.NONE) {
     // Before migrating, check if we have pending data migrations to apply
     // We have to check these first since they depend on particular versions of the server code to be present in order
     // To ensure that the migration is applied before at a particular point in time before the version that requires it
     const manifest = JSON.parse(
       readFileSync(resolve(__dirname, 'migrations/data/data-version-manifest.json'), { encoding: 'utf-8' })
-    ) as Record<string, { serverVersion: string; requiredBefore: string }>;
-    const versionEntry = manifest['v' + pendingDataMigration];
+    ) as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
+    const versionEntry = manifest['v' + pendingPostDeployMigration];
 
     const serverVersion = getServerVersion();
 
@@ -233,110 +206,117 @@ async function migrate(client: PoolClient): Promise<void> {
     // 3. Greater than or equal to the requiredBefore version (version >= entry.requiredBefore) -- throw from this function and do not allow server to startup
     if (semver.gte(serverVersion, versionEntry.serverVersion)) {
       // We allow any version where the data migration is greater than or equal to the specified `serverVersion` and it less than the `requiredBefore` version
-      if (semver.gte(serverVersion, versionEntry.requiredBefore)) {
+      if (versionEntry.requiredBefore && semver.gte(serverVersion, versionEntry.requiredBefore)) {
         throw new Error(
-          `Unable to run data migration against the current server version. Migration requires server at version ${versionEntry.serverVersion} <= version < ${versionEntry.requiredBefore}, but current server version is ${serverVersion}`
+          `Unable to run this version of Medplum server. Pending post-deploy migration v${pendingPostDeployMigration} requires server at version ${versionEntry.serverVersion} <= version < ${versionEntry.requiredBefore}, but current server version is ${serverVersion}`
         );
       }
       // If we make it here, we have a pending migration, but we don't want to apply it until we make sure we apply all the schema migrations first
-      globalLogger.info('Data migration ready to run', { dataVersion: pendingDataMigration });
+      globalLogger.info('Pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
     }
   }
+}
 
-  const migrationKeys = Object.keys(migrations);
-  for (let i = version + 1; i <= migrationKeys.length; i++) {
-    const migration = (migrations as Record<string, migrations.Migration>)['v' + i];
+async function runAllPendingPreDeployMigrations(client: PoolClient, currentVersion: number): Promise<void> {
+  for (let i = currentVersion + 1; i <= getPreDeployMigrationVersions().length; i++) {
+    const migration = getPreDeployMigration(i);
     if (migration) {
       const start = Date.now();
       await migration.run(client);
-      globalLogger.info('Database schema migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
-      await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [i]);
+      globalLogger.info('Database pre-deploy migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
+      await client.query('UPDATE "DatabaseMigration" SET "version"=$1 WHERE "id" = 1', [i]);
     }
   }
 }
 
-/**
- * Gets a sorted array of all migration versions for the passed in migration module.
- *
- * Can be used for either the schema or data migrations modules.
- *
- * @param migrationModule - The migration module to read all migrations for. Either the schemaMigrations or dataMigrations module.
- * @returns All the numeric migration versions from a given migration module, either the schema or data migrations.
- */
-function getMigrationVersions(migrationModule: Record<string, any>): number[] {
-  const prefixedVersions = Object.keys(migrationModule).filter((key) => key.startsWith('v'));
-  const migrationVersions = prefixedVersions.map((key) => Number.parseInt(key.slice(1), 10)).sort((a, b) => a - b);
-  return migrationVersions;
-}
+export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<AsyncJob> | undefined> {
+  const config = getConfig();
+  const isDisabled = config.database.runMigrations === false || config.database.disableRunPostDeployMigrations;
+  const pendingPostDeployMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER));
 
-/**
- * Attempts to run current outstanding data migration.
- *
- * If pending data migrations were no assessed due to `config.runMigrations` being false,
- * this function will throw.
- *
- * @param assertedDataVersion - The asserted data version that we expect to run.
- * @returns An `AsyncJob` if migration is started or already running, otherwise returns `undefined` if no migration to run.
- */
-export async function maybeStartDataMigration(assertedDataVersion?: number): Promise<AsyncJob | undefined> {
-  // If schema migrations didn't run, we should not attempt to run data migrations
-  if (getConfig().database.runMigrations === false) {
-    throw new OperationOutcomeError(badRequest('Cannot run data migration; schema migrations did not run'));
+  if (!isDisabled && pendingPostDeployMigration === MigrationVersion.UNKNOWN) {
+    //throwing here seems extreme since it stops the server from starting
+    // if this somehow managed to trigger, but arriving here would mean something
+    // is pretty wrong, so throwing is probably the correct behavior?
+    throw new Error('Cannot run post-deploy migrations; next post-deploy migration version is unknown');
   }
 
-  const dataVersion = await getDataVersion();
-  const pendingDataMigration = await getPendingDataMigration();
-
-  // This should never happen unless there is something wrong with the state of the database but technically possible
-  if (pendingDataMigration === DataVersion.UNKNOWN) {
-    throw new OperationOutcomeError(badRequest('Cannot run data migration; data version is unknown'));
+  if (pendingPostDeployMigration === MigrationVersion.NONE) {
+    return undefined;
   }
 
-  // If a version has been asserted, check if we have that version pending
-  // Or if we have already applied it
-  if (assertedDataVersion) {
-    // We have already applied this data version, there is no migration to run
-    if (assertedDataVersion <= dataVersion) {
-      return undefined;
-    }
-    // The data version is higher than the version we expect to apply next, we cannot apply this migration
-    // This is also true when pending migration is NONE
-    if (assertedDataVersion > pendingDataMigration) {
-      throw new OperationOutcomeError(
-        badRequest(
-          `Data migration assertion failed. Expected pending migration to be migration ${assertedDataVersion}, server has ${pendingDataMigration > 0 ? `current pending data migration ${pendingDataMigration}` : 'no pending data migration'}`
-        )
-      );
-    }
-  } else if (pendingDataMigration === DataVersion.NONE) {
-    // If there is no asserted version, and no pending migration to run, then we can no-op
+  if (isDisabled) {
+    globalLogger.info('Not auto-queueing pending post-deploy migration because auto-run is disabled', {
+      version: `v${pendingPostDeployMigration}`,
+    });
     return undefined;
   }
 
   const systemRepo = getSystemRepo();
-  // Check if there is already a migration job in progress
-  // If there isn't, create a new one
-  const { resource: dataMigrationJob, outcome } = await systemRepo.conditionalCreate<AsyncJob>(
-    {
-      resourceType: 'AsyncJob',
-      type: 'data-migration',
-      status: 'accepted',
-      request: `data-migration-v${pendingDataMigration}`,
-      requestTime: new Date().toISOString(),
-      dataVersion: pendingDataMigration,
-      // We know that because we were able to start the migration on this server instance,
-      // That we must be on the right version to run this migration
-      minServerVersion: getServerVersion(),
-    },
-    parseSearchRequest('AsyncJob', { status: 'accepted', type: 'data-migration' })
-  );
-  // If the job was just created, then run the pending migration
-  if (outcome === created) {
-    const dataMigration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
-    // Don't await the migration, since it could be blocking
-    dataMigration
-      .run(systemRepo, dataMigrationJob)
-      .catch((err) => globalLogger.error('Error while running data migration', { err }));
+  globalLogger.info('Auto-queueing pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
+  return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
+}
+
+/**
+ * Attempts to queue the next pending post-deploy migration.
+ *
+ * If pending post-deploy migrations were not assessed due to `config.runMigrations` being false,
+ * this function throws
+ *
+ * @param requestedDataVersion - The data version requested to run.
+ * @returns An `AsyncJob` if migration is started or already running, otherwise returns `undefined` if no migration to run.
+ */
+export async function maybeStartPostDeployMigration(
+  requestedDataVersion?: number
+): Promise<WithId<AsyncJob> | undefined> {
+  // If schema migrations didn't run, we should not attempt to run data migrations
+  if (getConfig().database.runMigrations === false) {
+    throw new OperationOutcomeError(
+      badRequest('Cannot run post-deploy migration since pre-deploy migrations are disabled')
+    );
   }
-  return dataMigrationJob;
+
+  const pool = getDatabasePool(DatabaseMode.WRITER);
+  const pendingPostDeployMigration = await getPendingPostDeployMigration(pool);
+  // This should never happen unless there is something wrong with the state of the database but technically possible
+  if (pendingPostDeployMigration === MigrationVersion.UNKNOWN) {
+    throw new OperationOutcomeError(
+      badRequest('Cannot run post-deploy migration since post-deploy version is unknown')
+    );
+  }
+
+  // If a version has been asserted, check if we have that version pending
+  // Or if we have already applied it
+  if (requestedDataVersion) {
+    if (requestedDataVersion <= 0) {
+      throw new OperationOutcomeError(badRequest('post-deploy migration number must be greater than zero.'));
+    }
+
+    const postDeployVersion = await getPostDeployVersion(pool, { ignoreFirstBoot: true });
+    // We have already applied this data version, there is no migration to run
+    if (requestedDataVersion <= postDeployVersion) {
+      return undefined;
+    }
+
+    if (requestedDataVersion > pendingPostDeployMigration) {
+      // The post-deploy version is higher than the version we expect to apply next, we cannot apply this migration
+      // This is also true when pending migration is NONE
+      const endOfMessage =
+        pendingPostDeployMigration === MigrationVersion.NONE
+          ? 'there are no pending post-deploy migrations'
+          : `the pending post-deploy migration is v${pendingPostDeployMigration}`;
+      throw new OperationOutcomeError(
+        badRequest(
+          `Post-deploy migration assertion failed. Requested migration v${requestedDataVersion}, but ${endOfMessage}.`
+        )
+      );
+    }
+  }
+
+  if (pendingPostDeployMigration === MigrationVersion.NONE) {
+    return undefined;
+  }
+
+  const systemRepo = getSystemRepo();
+  return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }

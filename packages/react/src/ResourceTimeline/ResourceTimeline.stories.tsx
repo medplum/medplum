@@ -2,6 +2,7 @@ import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Bundle, Encounter, ResourceType } from '@medplum/fhirtypes';
 import { HomerEncounter } from '@medplum/mock';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { ResourceTimeline } from './ResourceTimeline';
 

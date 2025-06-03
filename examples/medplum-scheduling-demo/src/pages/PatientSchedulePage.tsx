@@ -4,10 +4,10 @@ import { getReferenceString } from '@medplum/core';
 import { Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { Document, Loading, useMedplum, useMedplumProfile, usePrevious } from '@medplum/react';
 import dayjs from 'dayjs';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { JSX, useCallback, useContext, useEffect, useState } from 'react';
 import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { CreateAppointment } from '../components/actions/CreateAppointment';
 import { ScheduleContext } from '../Schedule.context';
 

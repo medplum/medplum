@@ -1,15 +1,15 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
+import { BotEvent, isResource, MedplumClient } from '@medplum/core';
 import {
-  Resource,
-  ServiceRequest,
   Bundle,
-  Reference,
-  QuestionnaireResponse,
   Coverage,
+  Organization,
   Patient,
   Practitioner,
   ProjectSetting,
-  Organization,
+  QuestionnaireResponse,
+  Reference,
+  Resource,
+  ServiceRequest,
 } from '@medplum/fhirtypes';
 
 /**
@@ -20,9 +20,9 @@ import {
  *
  * @returns A Promise that resolves to the response data (if successful) or an error message.
  */
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+export async function handler(medplum: MedplumClient, event: BotEvent<Resource>): Promise<any> {
   // Check if event.input is of type Resource
-  if (typeof event.input !== 'object' || !('resourceType' in event.input)) {
+  if (!isResource(event.input)) {
     return false;
   }
 

@@ -2,10 +2,11 @@ import { Binary } from '@medplum/fhirtypes';
 import { createTransport } from 'nodemailer';
 import Mail from 'nodemailer/lib/mailer';
 import { sendEmailViaSes } from '../cloud/aws/email';
-import { getConfig, MedplumSmtpConfig } from '../config';
+import { getConfig } from '../config/loader';
+import { MedplumSmtpConfig } from '../config/types';
 import { Repository } from '../fhir/repo';
-import { getBinaryStorage } from '../fhir/storage';
 import { globalLogger } from '../logger';
+import { getBinaryStorage } from '../storage/loader';
 import { getFromAddress } from './utils';
 
 /**

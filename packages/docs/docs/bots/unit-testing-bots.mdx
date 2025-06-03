@@ -98,7 +98,7 @@ The below example is from the [find matching patients bot tests](https://github.
 
 In this example we create the `MockClient`, then the test data by calling `executeBatch` in the `beforeEach` function. The `beforeEach` function is an optimization that will run before each test, so you do not need to create the data as a part of every test.
 
-Once you have created your data, you can write your tests. The above example uses test contexts, a feature of the [Vitetest framework](https://vitest.dev/guide/test-context.html#test-context). It allows you to pass in the MockClient `medplum` as part of your test context. This test is checking that a `RiskAssessment` was created when looking for potential duplicate patients.
+Once you have created your data, you can write your tests. The above example uses test contexts, a feature of the [Vitest test framework](https://vitest.dev/guide/test-context.html#test-context). It allows you to pass in the MockClient `medplum` as part of your test context. This test is checking that a `RiskAssessment` was created when looking for potential duplicate patients.
 
 #### Using the Medplum CLI
 

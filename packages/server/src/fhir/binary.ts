@@ -7,10 +7,11 @@ import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
+import { getBinaryStorage } from '../storage/loader';
+import { BinarySource } from '../storage/types';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
 import { sendFhirResponse } from './response';
-import { BinarySource, getBinaryStorage } from './storage';
 
 const DEFAULT_CONTENT_TYPE = 'application/octet-stream';
 
@@ -60,7 +61,7 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
       getLogger().debug('Invalid JSON', { error: err });
     }
 
-    if (isResource(body) && body.resourceType === 'Binary' && (!id || body.id === id)) {
+    if (isResource(body, 'Binary') && (!id || body.id === id)) {
       // Special case where the content is actually a Binary resource.
       // From the spec: https://hl7.org/fhir/R4/binary.html#rest
       //

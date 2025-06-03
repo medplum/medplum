@@ -1,5 +1,6 @@
 import { DefaultResourceTimeline } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { JSX } from 'react';
+import { useParams } from 'react-router';
 
 /*
  * The Timeline component displays relevant events related to the resource

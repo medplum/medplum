@@ -2,10 +2,10 @@ import { Button, Stack, Title } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 import { IconEye } from '@tabler/icons-react';
+import { JSX, useContext } from 'react';
+import { useNavigate } from 'react-router';
+import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 
 interface PatientActionsProps {
   patient: Patient;
@@ -21,13 +21,13 @@ export function PatientActions(props: PatientActionsProps): JSX.Element {
     ? medplum
         .searchOne('QuestionnaireResponse', {
           subject: getReferenceString(props.patient),
-          questionnaire: getReferenceString(questionnaire),
+          questionnaire: questionnaire.url,
         })
         .read()
     : null;
 
   function handleViewIntakeForm(): void {
-    navigate(`/Patient/${props.patient.id}/intake/${questionnaireResponse?.id}`);
+    navigate(`/Patient/${props.patient.id}/intake/${questionnaireResponse?.id}`)?.catch(console.error);
   }
 
   return (

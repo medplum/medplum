@@ -14,6 +14,7 @@ import {
   Operator,
   resolveId,
   serverError,
+  WithId,
 } from '@medplum/core';
 import {
   Agent,
@@ -37,11 +38,12 @@ import { randomUUID } from 'node:crypto';
 import vm from 'node:vm';
 import { asyncWrap } from '../../async';
 import { runInLambda } from '../../cloud/aws/execute';
-import { getConfig } from '../../config';
+import { getConfig } from '../../config/loader';
 import { buildTracingExtension, getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
+import { getBinaryStorage } from '../../storage/loader';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { readStreamToString } from '../../util/streams';
@@ -49,7 +51,6 @@ import { createAuditEventEntities, findProjectMembership } from '../../workers/u
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo, Repository } from '../repo';
 import { sendFhirResponse } from '../response';
-import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
@@ -66,6 +67,9 @@ export interface BotExecutionRequest {
   readonly forwardedFor?: string;
   readonly requestTime?: string;
   readonly traceId?: string;
+  /** Headers from the original request, when invoked by HTTP request */
+  readonly headers?: Record<string, string | string[] | undefined>;
+  /** Default headers to add to MedplumClient, such as HTTP cookies */
   readonly defaultHeaders?: Record<string, string>;
 }
 
@@ -106,7 +110,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     const responseBody = getResponseBodyFromResult(result);
     const outcome = result.success ? allOk : badRequest(result.logResult);
 
-    if (isResource(responseBody) && responseBody.resourceType === 'Binary') {
+    if (isResource(responseBody, 'Binary')) {
       await sendFhirResponse(req, res, outcome, responseBody);
       return;
     }
@@ -127,7 +131,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
 
   // Then read the bot as system user to load extended metadata
   const systemRepo = getSystemRepo();
-  const bot = await systemRepo.readResource<Bot>('Bot', userBot.id as string);
+  const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
 
   // Find the project membership
   // If the bot is configured to run as the user, then use the current user's membership
@@ -152,6 +156,8 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
     runAs,
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
+    headers: req.headers,
+    traceId: ctx.traceId,
     defaultHeaders,
   });
 
@@ -166,7 +172,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
  * @param req - The HTTP request.
  * @returns The bot, or undefined if not found.
  */
-async function getBotForRequest(req: Request): Promise<Bot | undefined> {
+async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> {
   const ctx = getAuthenticatedContext();
   // Prefer to search by ID from path parameter
   const { id } = req.params;
@@ -235,7 +241,9 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
   return result;
 }
 
-function getResponseBodyFromResult(result: BotExecutionResult): string | { [key: string]: any } | any[] | boolean {
+export function getResponseBodyFromResult(
+  result: BotExecutionResult
+): string | { [key: string]: any } | any[] | boolean {
   let responseBody = result.returnValue;
   if (responseBody === undefined) {
     // If the bot did not return a value, then return an OperationOutcome
@@ -364,7 +372,7 @@ async function writeBotInputToStorage(request: BotExecutionRequest): Promise<voi
  * @returns The bot execution result.
  */
 async function runInVmContext(request: BotExecutionContext): Promise<BotExecutionResult> {
-  const { bot, input, contentType, traceId } = request;
+  const { bot, input, contentType, traceId, headers } = request;
 
   const config = getConfig();
   if (!config.vmContextBotsEnabled) {
@@ -403,6 +411,7 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
       contentType,
       secrets: request.secrets,
       traceId,
+      headers,
       defaultHeaders: request.defaultHeaders,
     },
   };
@@ -421,7 +430,7 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
   // End user code
 
   (async () => {
-    const { bot, baseUrl, accessToken, contentType, secrets, traceId, defaultHeaders } = event;
+    const { bot, baseUrl, accessToken, contentType, secrets, traceId, headers, defaultHeaders } = event;
     const medplum = new MedplumClient({
       baseUrl,
       defaultHeaders,
@@ -438,7 +447,7 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
       if (contentType === ContentType.HL7_V2 && input) {
         input = Hl7Message.parse(input);
       }
-      let result = await exports.handler(medplum, { bot, input, contentType, secrets, traceId });
+      let result = await exports.handler(medplum, { bot, input, contentType, secrets, traceId, headers });
       if (contentType === ContentType.HL7_V2 && result) {
         result = result.toString();
       }
@@ -489,7 +498,7 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
 
   // Create the access token
   const accessToken = await generateAccessToken({
-    login_id: login.id as string,
+    login_id: login.id,
     sub: resolveId(runAs.user?.reference as Reference) as string,
     username: resolveId(runAs.user?.reference as Reference) as string,
     profile: runAs.profile?.reference as string,
@@ -548,7 +557,7 @@ async function addBotSecrets(
 
 const MIRRORED_CONTENT_TYPES: string[] = [ContentType.TEXT, ContentType.HL7_V2];
 
-function getResponseContentType(req: Request): string {
+export function getResponseContentType(req: Request): string {
   const requestContentType = req.get('Content-Type');
   if (requestContentType && MIRRORED_CONTENT_TYPES.includes(requestContentType)) {
     return requestContentType;

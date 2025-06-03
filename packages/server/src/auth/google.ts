@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
@@ -100,13 +100,18 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('User not found'));
       return;
     }
+    if (getConfig().registerEnabled === false && (!projectId || projectId === 'new')) {
+      // Explicitly check for "false" because the config value may be undefined
+      sendOutcome(res, badRequest('Registration is disabled'));
+      return;
+    }
     const systemRepo = getSystemRepo();
     await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,
       lastName: claims.family_name,
       email: claims.email,
-      project: projectId ? { reference: 'Project/' + projectId } : undefined,
+      project: projectId && projectId !== 'new' ? { reference: 'Project/' + projectId } : undefined,
     });
   }
 
@@ -124,13 +129,13 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     codeChallengeMethod: req.body.codeChallengeMethod,
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
-    allowNoMembership: req.body.createUser,
+    allowNoMembership: req.body.createUser || projectId === 'new',
   });
   await sendLoginResult(res, login);
 }
 
 function validateProjectId(inputProjectId: unknown): string | undefined {
-  return isString(inputProjectId) && isUUID(inputProjectId) ? inputProjectId : undefined;
+  return isString(inputProjectId) && (isUUID(inputProjectId) || inputProjectId === 'new') ? inputProjectId : undefined;
 }
 
 function getProjectsByGoogleClientId(googleClientId: string, projectId: string | undefined): Promise<Project[]> {

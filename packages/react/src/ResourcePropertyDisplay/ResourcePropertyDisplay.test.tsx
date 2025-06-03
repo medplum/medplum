@@ -18,7 +18,7 @@ import {
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
@@ -433,10 +433,8 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Handles unknown property', async () => {
-    console.error = jest.fn();
     await expect(
       setup(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />)
     ).rejects.toThrow('Displaying property of type BackboneElement requires element schema');
-    expect(console.error).toHaveBeenCalled();
   });
 });

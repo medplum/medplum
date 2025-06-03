@@ -9,6 +9,7 @@ import {
   OperationOutcomeError,
   ProfileResource,
   SubscriptionEmitter,
+  WithId,
   allOk,
   badRequest,
   generateId,
@@ -178,9 +179,10 @@ export class MockClient extends MedplumClient {
     return this.profile;
   }
 
-  getUserConfiguration(): UserConfiguration | undefined {
+  getUserConfiguration(): WithId<UserConfiguration> | undefined {
     return {
       resourceType: 'UserConfiguration',
+      id: 'mock-user-config',
       menu: [
         {
           title: 'Favorites',
@@ -229,12 +231,12 @@ export class MockClient extends MedplumClient {
     arg2: string | undefined | MedplumRequestOptions,
     arg3?: string,
     arg4?: (e: ProgressEvent) => void
-  ): Promise<Binary> {
+  ): Promise<WithId<Binary>> {
     const createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
     const { filename, contentType, onProgress } = createBinaryOptions;
 
     if (filename?.endsWith('.exe')) {
-      return Promise.reject(badRequest('Invalid file type'));
+      throw new OperationOutcomeError(badRequest('Invalid file type'));
     }
 
     if (onProgress) {
@@ -243,10 +245,20 @@ export class MockClient extends MedplumClient {
       onProgress({ loaded: 100, total: 100, lengthComputable: true } as ProgressEvent);
     }
 
-    return {
+    let data: string | undefined;
+    if (typeof createBinaryOptions.data === 'string') {
+      data = base64Encode(createBinaryOptions.data);
+    }
+
+    const binary = await this.repo.createResource<Binary>({
       resourceType: 'Binary',
       contentType,
-      url: 'https://example.com/binary/123',
+      data,
+    });
+
+    return {
+      ...binary,
+      url: `https://example.com/binary/${binary.id}`,
     };
   }
 
@@ -320,15 +332,19 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
 }
 
 export class MockFetchClient {
+  readonly router: FhirRouter;
+  readonly repo: MemoryRepository;
+  readonly baseUrl: string;
+  readonly debug: boolean;
   initialized = false;
   initPromise?: Promise<void>;
 
-  constructor(
-    readonly router: FhirRouter,
-    readonly repo: MemoryRepository,
-    readonly baseUrl: string,
-    readonly debug = false
-  ) {}
+  constructor(router: FhirRouter, repo: MemoryRepository, baseUrl: string, debug = false) {
+    this.router = router;
+    this.repo = repo;
+    this.baseUrl = baseUrl;
+    this.debug = debug;
+  }
 
   async mockFetch(url: string, options: any): Promise<Partial<Response>> {
     if (!this.initialized) {
@@ -359,13 +375,9 @@ export class MockFetchClient {
     return Promise.resolve({
       ok: true,
       status: response?.resourceType === 'OperationOutcome' ? getStatus(response) : 200,
-      headers: {
-        get(name: string): string | undefined {
-          return {
-            'content-type': ContentType.FHIR_JSON,
-          }[name];
-        },
-      } as unknown as Headers,
+      headers: new Headers({
+        'content-type': ContentType.FHIR_JSON,
+      }),
       blob: () => Promise.resolve(response),
       json: () => Promise.resolve(response),
       text: () => Promise.resolve(response),

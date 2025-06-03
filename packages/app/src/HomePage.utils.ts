@@ -51,6 +51,9 @@ export function getDefaultFields(resourceType: string): string[] {
     case 'Patient':
       fields.push('name', 'birthDate', 'gender');
       break;
+    case 'AsyncJob':
+      fields.push('status', 'dataVersion');
+      break;
     case 'AccessPolicy':
     case 'Bot':
     case 'ClientApplication':
@@ -121,10 +124,9 @@ export function saveLastSearch(search: SearchRequest): void {
 
 export async function getTransactionBundle(search: SearchRequest, medplum: MedplumClient): Promise<Bundle> {
   const transactionBundleSearch: SearchRequest = {
-    resourceType: search.resourceType,
+    ...search,
     count: 1000,
     offset: 0,
-    filters: search.filters,
   };
   const transactionBundleSearchValues = addSearchValues(transactionBundleSearch, medplum.getUserConfiguration());
   const bundle = await medplum.search(

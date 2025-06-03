@@ -13,7 +13,7 @@ import {
   KeyLike,
   SignJWT,
 } from 'jose';
-import { MedplumServerConfig } from '../config';
+import { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 
@@ -230,7 +230,7 @@ async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
     throw new Error('Signing key not initialized');
   }
 
-  const regex = /^[0-9]+[smhdwy]$/;
+  const regex = /^\d+[smhdwy]$/;
   if (!regex.test(exp)) {
     throw new Error('Invalid token duration');
   }

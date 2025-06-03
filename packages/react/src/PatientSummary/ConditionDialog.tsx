@@ -1,11 +1,12 @@
-import { Button, Group, Stack } from '@mantine/core';
+import { Group, Stack } from '@mantine/core';
 import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
 import { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
-import { useCallback, useState } from 'react';
+import { JSX, useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 
 export interface ConditionDialogProps {
   readonly patient: Patient;
@@ -74,7 +75,7 @@ export function ConditionDialog(props: ConditionDialogProps): JSX.Element {
         />
         <DateTimeInput name="onsetDateTime" label="Dx Date" defaultValue={condition?.onsetDateTime} required />
         <Group justify="flex-end" gap={4} mt="md">
-          <Button type="submit">Save</Button>
+          <SubmitButton>Save</SubmitButton>
         </Group>
       </Stack>
     </Form>

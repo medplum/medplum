@@ -7,10 +7,11 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import * as awsDeploy from '../../cloud/aws/deploy';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
+import * as storage from '../../storage/loader';
+import { BinaryStorage } from '../../storage/types';
 import { initTestAuth, withTestContext } from '../../test.setup';
 import * as streamUtils from '../../util/streams';
-import * as storage from '../storage';
 
 const MOCK_PRESIGNED_URL = 'https://example.com/presigned';
 
@@ -61,9 +62,7 @@ describe('Deploy', () => {
     `;
 
     const mockBinaryStorage = new MockBinaryStorage();
-    jest
-      .spyOn(storage, 'getBinaryStorage')
-      .mockImplementation(() => mockBinaryStorage as unknown as storage.BinaryStorage);
+    jest.spyOn(storage, 'getBinaryStorage').mockImplementation(() => mockBinaryStorage as unknown as BinaryStorage);
     const binaryStorage = storage.getBinaryStorage();
     const readBinarySpy = jest.spyOn(binaryStorage, 'readBinary');
 

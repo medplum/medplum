@@ -1,19 +1,32 @@
-import { Button, Divider, Modal, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import {
+  Button,
+  Divider,
+  Grid,
+  Modal,
+  NativeSelect,
+  NumberInput,
+  PasswordInput,
+  Stack,
+  Text,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
 import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import { Parameters, Resource } from '@medplum/fhirtypes';
 import {
   DateTimeInput,
   Document,
   Form,
   FormSection,
+  MedplumLink,
   OperationOutcomeAlert,
   convertLocalToIso,
   useMedplum,
 } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
-import { ReactNode, useState } from 'react';
+import { JSX, ReactNode, useState } from 'react';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
@@ -89,6 +102,24 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
+  function getDatabaseInvalidIndexes(): void {
+    medplum
+      .post('fhir/R4/$db-invalid-indexes')
+      .then((params: Parameters) => {
+        setModalTitle('Database Invalid Indexes');
+        setModalContent(
+          <pre>
+            {params.parameter
+              ?.filter((p) => p.name === 'invalidIndex')
+              .map((p) => p.valueString)
+              .join('\n')}
+          </pre>
+        );
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
   function getSchemaDiff(): void {
     medplum
       .post('fhir/R4/$db-schema-diff')
@@ -98,6 +129,10 @@ export function SuperAdminPage(): JSX.Element {
         open();
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function reconcileSchemaDiff(): void {
+    startAsyncJob(medplum, 'Reconcile Schema Diff', 'admin/super/reconcile-db-schema-drift');
   }
 
   return (
@@ -157,6 +192,9 @@ export function SuperAdminPage(): JSX.Element {
           <FormSection title="Search Filter" htmlFor="filter">
             <TextInput id="filter" name="filter" placeholder="e.g. name=Sam&birthdate=lt2000-01-01" />
           </FormSection>
+          <FormSection title="Max Resource Version" htmlFor="maxResourceVersion">
+            <MaxResourceVersionInput />
+          </FormSection>
           <Button type="submit">Reindex</Button>
         </Stack>
       </Form>
@@ -211,13 +249,32 @@ export function SuperAdminPage(): JSX.Element {
         </Stack>
       </Form>
       <Divider my="lg" />
-      <Title order={2}>Database Schema Drift</Title>
-      <p>Show the schema migration needed to match the expected database schema.</p>
-      <Form onSubmit={getSchemaDiff}>
+      <Title order={2}>Database Invalid Indexes</Title>
+      <p>Query invalid indexes from the database.</p>
+      <Form onSubmit={getDatabaseInvalidIndexes}>
         <Stack>
-          <Button type="submit">Get Database Schema Drift</Button>
+          <Button type="submit">Get Database Invalid Indexes</Button>
         </Stack>
       </Form>
+      <Divider my="lg" />
+      <Title order={2}>Database Schema Drift</Title>
+      <p>Show the schema migration needed to match the expected database schema.</p>
+      <Grid>
+        <Grid.Col span={6}>
+          <Form onSubmit={getSchemaDiff}>
+            <Stack>
+              <Button type="submit">Get Schema Drift</Button>
+            </Stack>
+          </Form>
+        </Grid.Col>
+        <Grid.Col span={6}>
+          <Form onSubmit={reconcileSchemaDiff}>
+            <Stack>
+              <Button type="submit">Reconcile Schema Drift</Button>
+            </Stack>
+          </Form>
+        </Grid.Col>
+      </Grid>
       <Divider my="lg" />
       <Title order={2}>Reload Cron Resources</Title>
       <p>Obliterates the cron queue and rebuilds all the cron job schedulers for cron resources (eg. cron bots).</p>
@@ -234,9 +291,34 @@ export function SuperAdminPage(): JSX.Element {
   );
 }
 
+function MaxResourceVersionInput(): JSX.Element {
+  const [value, setValue] = useState<'outdated' | 'all' | 'specific'>('outdated');
+  return (
+    <>
+      <NativeSelect
+        id="reindexType"
+        name="reindexType"
+        value={value}
+        onChange={(e) => setValue(e.target.value as 'outdated' | 'all' | 'specific')}
+        data={[
+          { label: 'Outdated resources', value: 'outdated' },
+          { label: 'All resources', value: 'all' },
+          { label: 'Less than or equal to a specific version', value: 'specific' },
+        ]}
+      />
+      {value === 'specific' && (
+        <NumberInput required name="maxResourceVersion" placeholder="Max Resource Version" min={0} />
+      )}
+    </>
+  );
+}
+
 function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: Record<string, string>): void {
-  notifications.show({
-    id: url,
+  // Use a random ID rather than just `url` to facilitate multiple requests of the same type
+  const notificationId = Date.now().toString();
+
+  showNotification({
+    id: notificationId,
     loading: true,
     title,
     message: 'Running...',
@@ -250,13 +332,20 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
   }
 
   medplum
-    .startAsyncRequest(url, options)
-    .then(() => {
+    .startAsyncRequest<Resource>(url, options)
+    .then((resource) => {
+      let message: React.ReactNode = 'Done';
+      if (resource.resourceType === 'AsyncJob') {
+        message = <MedplumLink to={resource}>View AsyncJob</MedplumLink>;
+      } else if (resource.resourceType === 'OperationOutcome' && resource.issue?.[0]?.details?.text) {
+        message = <Text>{resource.issue[0].details.text}</Text>;
+      }
+
       notifications.update({
-        id: url,
+        id: notificationId,
         color: 'green',
         title,
-        message: 'Done',
+        message,
         icon: <IconCheck size="1rem" />,
         loading: false,
         autoClose: false,
@@ -265,7 +354,7 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
     })
     .catch((err) => {
       notifications.update({
-        id: url,
+        id: notificationId,
         color: 'red',
         title,
         message: normalizeErrorString(err),

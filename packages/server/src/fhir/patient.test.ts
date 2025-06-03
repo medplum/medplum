@@ -9,7 +9,7 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { withTestContext } from '../test.setup';
 import { getPatientCompartmentParams, getPatientResourceTypes, getPatients } from './patient';
 import { getSystemRepo } from './repo';

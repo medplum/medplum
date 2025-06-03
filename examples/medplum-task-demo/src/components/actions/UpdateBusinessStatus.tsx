@@ -5,6 +5,7 @@ import { getQuestionnaireAnswers, MedplumClient, normalizeErrorString, PatchOper
 import { CodeableConcept, Coding, Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 
 interface UpdateBusinessStatusProps {
   readonly task: Task;

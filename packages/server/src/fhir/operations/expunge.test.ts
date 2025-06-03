@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { getRedis } from '../../redis';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
@@ -149,7 +149,7 @@ describe('Expunge', () => {
     expect(await existsInCache('Observation', obs.id)).toBe(true);
 
     //execute
-    await new Expunger(systemRepo, project.id as string, 2).expunge();
+    await new Expunger(systemRepo, project.id, 2).expunge();
 
     //result
 

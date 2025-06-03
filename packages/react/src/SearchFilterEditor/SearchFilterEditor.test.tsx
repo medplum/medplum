@@ -274,9 +274,7 @@ describe('SearchFilterEditor', () => {
     );
 
     // Wait for the resource to load
-    await act(async () => {
-      await waitFor(() => screen.queryAllByText('Last Updated').length > 0);
-    });
+    await waitFor(() => screen.queryAllByText('Last Updated').length > 0);
 
     const input = screen.getByTestId('filter-0-row-filter-value') as HTMLInputElement;
     expect(input.value).toMatch(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);

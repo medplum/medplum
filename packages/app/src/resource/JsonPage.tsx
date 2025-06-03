@@ -3,8 +3,8 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString, stringify } from '@medplum/core';
 import { OperationOutcome, ResourceType } from '@medplum/fhirtypes';
 import { Document, Form, OperationOutcomeAlert, useMedplum, useResource } from '@medplum/react';
-import { useCallback, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { JSX, useCallback, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import { cleanResource } from './utils';
 
 export function JsonPage(): JSX.Element | null {
@@ -20,7 +20,7 @@ export function JsonPage(): JSX.Element | null {
         .updateResource(cleanResource(JSON.parse(formData.resource)))
         .then(() => {
           setOutcome(undefined);
-          navigate(`/${resourceType}/${id}/details`);
+          navigate(`/${resourceType}/${id}/details`)?.catch(console.error);
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {

@@ -1,8 +1,28 @@
-import { formatFamilyName, formatGivenName, formatHumanName } from '@medplum/core';
-import { HumanName, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { formatFamilyName, formatGivenName, formatHumanName, WithId } from '@medplum/core';
+import {
+  HumanName,
+  Patient,
+  Person,
+  Practitioner,
+  RelatedPerson,
+  Resource,
+  ResourceType,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
-import { LookupTable } from './lookuptable';
-import { DeleteQuery, Column } from '../sql';
+import { Column, DeleteQuery } from '../sql';
+import { LookupTable, LookupTableRow } from './lookuptable';
+
+const resourceTypes = ['Patient', 'Person', 'Practitioner', 'RelatedPerson'] as const;
+const resourceTypeSet = new Set(resourceTypes);
+type HumanNameResourceType = (typeof resourceTypes)[number];
+type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
+
+export interface HumanNameTableRow extends LookupTableRow {
+  name: string | undefined;
+  given: string | undefined;
+  family: string | undefined;
+}
 
 /**
  * The HumanNameTable class is used to index and search "name" properties on "Person" resources.
@@ -18,14 +38,8 @@ export class HumanNameTable extends LookupTable {
     'RelatedPerson-name',
   ]);
 
-  private static readonly resourceTypes = ['Patient', 'Person', 'Practitioner', 'RelatedPerson'] as const;
-
-  private static readonly resourceTypeSet = new Set(this.resourceTypes);
-
-  private static hasHumanName(
-    resourceType: ResourceType
-  ): resourceType is (typeof HumanNameTable.resourceTypes)[number] {
-    return HumanNameTable.resourceTypeSet.has(resourceType as any);
+  private static hasHumanName(resourceType: ResourceType): resourceType is HumanNameResourceType {
+    return resourceTypeSet.has(resourceType as any);
   }
 
   /**
@@ -54,43 +68,53 @@ export class HumanNameTable extends LookupTable {
     return HumanNameTable.knownParams.has(searchParam.id as string);
   }
 
-  /**
-   * Indexes a resource HumanName values.
-   * Attempts to reuse existing identifiers if they are correct.
-   * @param client - The database client.
-   * @param resource - The resource to index.
-   * @param create - True if the resource should be created (vs updated).
-   * @returns Promise on completion.
-   */
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (
-      resource.resourceType !== 'Patient' &&
-      resource.resourceType !== 'Person' &&
-      resource.resourceType !== 'Practitioner' &&
-      resource.resourceType !== 'RelatedPerson'
-    ) {
+  extractValues(result: HumanNameTableRow[], resource: WithId<Resource>): void {
+    if (!HumanNameTable.hasHumanName(resource.resourceType)) {
       return;
     }
 
-    if (!create) {
-      await this.deleteValuesForResource(client, resource);
+    const names: (HumanName | undefined | null)[] | undefined = (resource as HumanNameResource).name;
+    if (!Array.isArray(names)) {
+      return;
     }
+    for (const name of names) {
+      if (!name) {
+        continue;
+      }
 
-    const names: HumanName[] | undefined = resource.name;
-    if (!names || !Array.isArray(names)) {
+      const extracted = {
+        resourceId: resource.id,
+        // logical OR coalesce to ensure that empty strings are inserted as NULL
+        name: getNameString(name) || undefined,
+        given: formatGivenName(name) || undefined,
+        family: formatFamilyName(name) || undefined,
+      };
+
+      if (
+        (extracted.name || extracted.given || extracted.family) &&
+        !result.some(
+          (n) =>
+            n.resourceId === extracted.resourceId &&
+            n.name === extracted.name &&
+            n.given === extracted.given &&
+            n.family === extracted.family
+        )
+      ) {
+        result.push(extracted);
+      }
+    }
+  }
+
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    if (!resources[0] || !HumanNameTable.hasHumanName(resources[0].resourceType)) {
       return;
     }
 
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id as string;
-    const values = names.map((name) => ({
-      resourceId,
-      name: getNameString(name),
-      given: formatGivenName(name),
-      family: formatFamilyName(name),
-    }));
-
-    await this.insertValuesForResource(client, resourceType, values);
+    await super.batchIndexResources(client, resources, create);
   }
 
   /**
@@ -104,7 +128,7 @@ export class HumanNameTable extends LookupTable {
     }
 
     const tableName = this.getTableName();
-    const resourceId = resource.id as string;
+    const resourceId = resource.id;
     await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
   }
 

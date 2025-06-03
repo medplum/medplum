@@ -1,4 +1,4 @@
-import { BotEvent, MedplumClient, createReference } from '@medplum/core';
+import { BotEvent, MedplumClient, createReference, isResource } from '@medplum/core';
 import {
   Binary,
   Bundle,
@@ -8,6 +8,7 @@ import {
   Observation,
   Patient,
   ProjectSetting,
+  Resource,
 } from '@medplum/fhirtypes';
 
 type OrderEvent = {
@@ -22,9 +23,9 @@ type OrderEvent = {
  *
  * @returns A promise that resolves to true if the event was handled successfully
  */
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+export async function handler(medplum: MedplumClient, event: BotEvent<Resource>): Promise<any> {
   // Check if event.input is of type Resource
-  if (typeof event.input !== 'object' || !('id' in event.input)) {
+  if (!isResource(event.input)) {
     return false;
   }
 

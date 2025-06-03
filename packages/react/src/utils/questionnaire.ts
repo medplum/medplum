@@ -7,6 +7,7 @@ import {
   getExtension,
   getReferenceString,
   getTypedPropertyValueWithoutSchema,
+  normalizeErrorString,
   splitN,
   toJsBoolean,
   toTypedValue,
@@ -26,25 +27,26 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 
-export enum QuestionnaireItemType {
-  group = 'group',
-  display = 'display',
-  question = 'question',
-  boolean = 'boolean',
-  decimal = 'decimal',
-  integer = 'integer',
-  date = 'date',
-  dateTime = 'dateTime',
-  time = 'time',
-  string = 'string',
-  text = 'text',
-  url = 'url',
-  choice = 'choice',
-  openChoice = 'open-choice',
-  attachment = 'attachment',
-  reference = 'reference',
-  quantity = 'quantity',
-}
+export const QuestionnaireItemType = {
+  group: 'group',
+  display: 'display',
+  question: 'question',
+  boolean: 'boolean',
+  decimal: 'decimal',
+  integer: 'integer',
+  date: 'date',
+  dateTime: 'dateTime',
+  time: 'time',
+  string: 'string',
+  text: 'text',
+  url: 'url',
+  choice: 'choice',
+  openChoice: 'open-choice',
+  attachment: 'attachment',
+  reference: 'reference',
+  quantity: 'quantity',
+} as const;
+export type QuestionnaireItemType = (typeof QuestionnaireItemType)[keyof typeof QuestionnaireItemType];
 
 export function isChoiceQuestion(item: QuestionnaireItem): boolean {
   return item.type === 'choice' || item.type === 'open-choice';
@@ -107,23 +109,35 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
           item: evaluateCalculatedExpressionsInQuestionnaire(item.item, response),
         };
       } else {
-        const calculatedValue = evaluateCalculatedExpression(item, response);
-        if (!calculatedValue) {
-          return null;
+        try {
+          const calculatedValue = evaluateCalculatedExpression(item, response);
+          if (!calculatedValue) {
+            return null;
+          }
+          const answer = typedValueToResponseItem(item, calculatedValue);
+          if (!answer) {
+            return null;
+          }
+          return {
+            id: item?.id,
+            linkId: item?.linkId,
+            text: item.text,
+            answer: [answer],
+          };
+        } catch (error) {
+          return {
+            id: item?.id,
+            linkId: item?.linkId,
+            text: item.text,
+            answer: [],
+            extension: [
+              {
+                url: `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-validationError`,
+                valueString: `Expression evaluation failed: ${normalizeErrorString(error)}`,
+              },
+            ],
+          };
         }
-
-        const answer = typedValueToResponseItem(item, calculatedValue);
-
-        if (!answer) {
-          return null;
-        }
-
-        return {
-          id: item?.id,
-          linkId: item?.linkId,
-          text: item.text,
-          answer: [answer],
-        };
       }
     })
     .filter((item): item is QuestionnaireResponseItem => item !== null);
@@ -205,6 +219,7 @@ export function mergeUpdatedItems(
         ...mergedItem,
         item: updatedItem.item ? mergeUpdatedItems(mergedItem.item || [], updatedItem.item) : mergedItem.item,
         answer: updatedItem.answer || mergedItem.answer,
+        extension: updatedItem.extension || mergedItem.extension,
       };
     }
     return mergedItem;
@@ -389,28 +404,39 @@ export function getQuestionnaireItemReferenceFilter(
   return result;
 }
 
-export function buildInitialResponse(questionnaire: Questionnaire): QuestionnaireResponse {
+export function buildInitialResponse(
+  questionnaire: Questionnaire,
+  questionnaireResponse?: QuestionnaireResponse
+): QuestionnaireResponse {
   const response: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
-    questionnaire: getReferenceString(questionnaire),
-    item: buildInitialResponseItems(questionnaire.item),
+    questionnaire: questionnaire.url ?? getReferenceString(questionnaire),
+    item: buildInitialResponseItems(questionnaire.item, questionnaireResponse?.item),
     status: 'in-progress',
   };
 
   return response;
 }
 
-function buildInitialResponseItems(items: QuestionnaireItem[] | undefined): QuestionnaireResponseItem[] {
-  return items?.map(buildInitialResponseItem) ?? [];
+function buildInitialResponseItems(
+  items: QuestionnaireItem[] | undefined,
+  questionnaireResponseItems?: QuestionnaireResponseItem[]
+): QuestionnaireResponseItem[] {
+  return items?.map((item) => buildInitialResponseItem(item, questionnaireResponseItems)) ?? [];
 }
 
-export function buildInitialResponseItem(item: QuestionnaireItem): QuestionnaireResponseItem {
+export function buildInitialResponseItem(
+  item: QuestionnaireItem,
+  questionnaireResponseItem?: QuestionnaireResponseItem[]
+): QuestionnaireResponseItem {
+  const existingResponseItem = questionnaireResponseItem?.find((responseItem) => responseItem.linkId === item.linkId);
+
   return {
-    id: generateId(),
+    id: existingResponseItem ? existingResponseItem.id : generateId(),
     linkId: item.linkId,
     text: item.text,
-    item: buildInitialResponseItems(item.item),
-    answer: item.initial?.map(buildInitialResponseAnswer) ?? [],
+    item: buildInitialResponseItems(item.item, existingResponseItem?.item),
+    answer: existingResponseItem ? existingResponseItem.answer : (item.initial?.map(buildInitialResponseAnswer) ?? []),
   };
 }
 

@@ -1,4 +1,5 @@
 import { showNotification } from '@mantine/notifications';
+import { WithId } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -7,7 +8,7 @@ import { BookmarkDialog } from './BookmarkDialog';
 
 jest.mock('@mantine/notifications');
 
-function getTestUserConfiguration(id: string): UserConfiguration {
+function getTestUserConfiguration(id: string): WithId<UserConfiguration> {
   return {
     id,
     resourceType: 'UserConfiguration',

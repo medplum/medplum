@@ -71,7 +71,7 @@ By default, FHIR Subscriptions will execute on "create" and "update" operations.
 
 You can use extensions as follows for more fine-grained control over when Subscriptions execute. To confirm if your Subscriptions are executing, navigate to `https://app.medplum.com/Subscription/<id>/event` to view related [AuditEvents](/docs/api/fhir/resources/auditevent).
 
-### Subscriptions for "create"-only events
+### Subscriptions for "create"-only or "update"-only events
 
 To restrict the FHIR Subscription to only execute on "create", use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `create`:
 
@@ -89,6 +89,27 @@ To restrict the FHIR Subscription to only execute on "create", use the `https://
     {
       "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
       "valueCode": "create"
+    }
+  ]
+}
+```
+
+You can also restrict the FHIR Subscription to only execute on "update", using the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `update`:
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "Patient",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  },
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
+      "valueCode": "update"
     }
   ]
 }
@@ -251,14 +272,51 @@ If you use custom success codes, you will need to implement ALL of the HTTP stat
 
 ## Expression based criteria
 
-Medplum offers an extension (`fhir-path-criteria-expression`) for triggering subscriptions based on more complex conditional logic using a [fhirpath expression](http://hl7.org/fhirpath/N1/). This expression takes in two variables:
+Medplum offers an extension (`fhir-path-criteria-expression`) for triggering subscriptions based on more complex conditional logic using a [FHIRPath expression](http://hl7.org/fhirpath/N1/). This expression takes in two variables:
 
 - `%previous`: The state of the resource _before_ the triggering event
 - `%current`: The state of the resource _after_ the triggering event.
 
 The expression should return either `true` or `false`.
 
-Here is an example `subscription` resource with a `fhir-path-criteria-expression` expression that only fires if a [`Patient`](/docs/api/fhir/resources/patient) has changed their name:
+Here is an example `Subscription` resource with a `fhir-path-criteria-expression` expression that fires when a [`Task`](/docs/api/fhir/resources/task) changes its status:
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "Task Status Change",
+  "status": "active",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  },
+  "criteria": "Task",
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression",
+      "valueString": "%previous.status != %current.status"
+    }
+  ]
+}
+```
+
+:::caution Note
+Upon the creation of a resource, there won't be a previous version of the resource: `%previous` will be empty.
+
+FHIRPath generally [treats empty values as "null"](https://www.hl7.org/fhirpath/#null-and-empty) and most operators
+and functions — including `!=` — evaluate to be empty if any of their operands are empty. This means that when a
+resource is created, the above expression will always be falsy, and the subscription will not fire.
+:::
+
+If resource creations should also be included, the FHIRPath expression must account for that case
+specifically: `%previous.exists() implies %previous.status != %current.status`. With this expression,
+if `%previous` is empty, the overall expression will still evaluate to `true` and trigger the subscription.
+
+### Handling array fields
+
+Some resource fields, e.g. `Patient.name`, can contain multiple values: these are formatted in FHIR as JSON arrays.
+The normal FHIRPath operators like `=` and `!=` handle equality of these values recursively: they must have exactly
+the same members or fields to be considered equal. Consider the following subscription:
 
 ```json
 {
@@ -273,12 +331,16 @@ Here is an example `subscription` resource with a `fhir-path-criteria-expression
   "extension": [
     {
       "url": "https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression",
-      "valueString": "%previous.name!=%current.name"
+      "valueString": "%previous.name != %current.name"
     }
   ]
 }
 ```
 
-:::caution Note
-Upon the creation of a resource, there won't be a previous version of the resource. `previous` will be an empty object
-:::
+Adding a new `name` to the Patient and leaving the old one(s) unchanged would trigger this subscription, because the two
+`name` arrays are not exactly the same. If the subscription should only fire when an existing value is altered or
+removed, the individual values in the field must be compared instead of the field as a whole:
+
+```
+%previous.name.where( ($this in %current.name).not() ).exists()
+```

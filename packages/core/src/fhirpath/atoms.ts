@@ -1,3 +1,4 @@
+import { ResourceType } from '@medplum/fhirtypes';
 import { Atom, AtomContext, InfixOperatorAtom, PrefixOperatorAtom } from '../fhirlexer/parse';
 import { PropertyType, TypedValue, isResource } from '../types';
 import { functions } from './functions';
@@ -6,6 +7,7 @@ import {
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,
   fhirPathArrayNotEquals,
+  fhirPathEquals,
   fhirPathIs,
   fhirPathNot,
   getTypedPropertyValue,
@@ -16,10 +18,13 @@ import {
 } from './utils';
 
 export class FhirPathAtom implements Atom {
-  constructor(
-    public readonly original: string,
-    public readonly child: Atom
-  ) {}
+  readonly original: string;
+  readonly child: Atom;
+
+  constructor(original: string, child: Atom) {
+    this.original = original;
+    this.child = child;
+  }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     try {
@@ -43,7 +48,12 @@ export class FhirPathAtom implements Atom {
 }
 
 export class LiteralAtom implements Atom {
-  constructor(public readonly value: TypedValue) {}
+  public readonly value: TypedValue;
+
+  constructor(value: TypedValue) {
+    this.value = value;
+  }
+
   eval(): TypedValue[] {
     return [this.value];
   }
@@ -58,7 +68,12 @@ export class LiteralAtom implements Atom {
 }
 
 export class SymbolAtom implements Atom {
-  constructor(public readonly name: string) {}
+  readonly name: string;
+
+  constructor(name: string) {
+    this.name = name;
+  }
+
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     if (this.name === '$this') {
       return input;
@@ -92,7 +107,7 @@ export class SymbolAtom implements Atom {
       return undefined;
     }
 
-    if (isResource(input) && input.resourceType === this.name) {
+    if (isResource(input, this.name as ResourceType)) {
       return typedValue;
     }
 
@@ -115,12 +130,11 @@ export class EmptySetAtom implements Atom {
 }
 
 export class UnaryOperatorAtom extends PrefixOperatorAtom {
-  constructor(
-    operator: string,
-    child: Atom,
-    public readonly impl: (x: TypedValue[]) => TypedValue[]
-  ) {
+  readonly impl: (x: TypedValue[]) => TypedValue[];
+
+  constructor(operator: string, child: Atom, impl: (x: TypedValue[]) => TypedValue[]) {
     super(operator, child);
+    this.impl = impl;
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
@@ -147,13 +161,11 @@ export abstract class BooleanInfixOperatorAtom extends InfixOperatorAtom {
 }
 
 export class ArithemticOperatorAtom extends BooleanInfixOperatorAtom {
-  constructor(
-    operator: string,
-    left: Atom,
-    right: Atom,
-    public readonly impl: (x: number, y: number) => number | boolean
-  ) {
+  readonly impl: (x: number, y: number) => number | boolean;
+
+  constructor(operator: string, left: Atom, right: Atom, impl: (x: number, y: number) => number | boolean) {
     super(operator, left, right);
+    this.impl = impl;
   }
 
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
@@ -219,7 +231,7 @@ export class InAtom extends BooleanInfixOperatorAtom {
     if (!left) {
       return [];
     }
-    return booleanToTypedValue(right.some((e) => e.value === left.value));
+    return booleanToTypedValue(right.some((e) => fhirPathEquals(left, e)[0].value));
   }
 }
 
@@ -405,10 +417,14 @@ export class ImpliesAtom extends BooleanInfixOperatorAtom {
 }
 
 export class FunctionAtom implements Atom {
-  constructor(
-    public readonly name: string,
-    public readonly args: Atom[]
-  ) {}
+  readonly name: string;
+  readonly args: Atom[];
+
+  constructor(name: string, args: Atom[]) {
+    this.name = name;
+    this.args = args;
+  }
+
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     const impl = functions[this.name];
     if (!impl) {
@@ -423,10 +439,14 @@ export class FunctionAtom implements Atom {
 }
 
 export class IndexerAtom implements Atom {
-  constructor(
-    public readonly left: Atom,
-    public readonly expr: Atom
-  ) {}
+  readonly left: Atom;
+  readonly expr: Atom;
+
+  constructor(left: Atom, expr: Atom) {
+    this.left = left;
+    this.expr = expr;
+  }
+
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     const evalResult = this.expr.eval(context, input);
     if (evalResult.length !== 1) {

@@ -12,7 +12,8 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { Outlet } from 'react-router-dom';
+import { JSX } from 'react';
+import { Outlet } from 'react-router';
 import { NEUTRON_HEALTH_BOTS } from '../bots/constants';
 
 /**
@@ -46,8 +47,6 @@ export function HomePage(): JSX.Element {
         title: 'Success',
         message: 'Patients synced',
       });
-      close();
-      window.location.reload();
     } catch (err) {
       notifications.show({
         color: 'red',

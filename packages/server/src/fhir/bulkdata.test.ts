@@ -1,11 +1,11 @@
-import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
-import { createTestProject } from '../test.setup';
-import express from 'express';
-import { Repository } from './repo';
-import { BulkDataExport } from '@medplum/fhirtypes';
-import request from 'supertest';
 import { ContentType } from '@medplum/core';
+import { BulkDataExport } from '@medplum/fhirtypes';
+import express from 'express';
+import request from 'supertest';
+import { initApp, shutdownApp } from '../app';
+import { loadTestConfig } from '../config/loader';
+import { createTestProject } from '../test.setup';
+import { Repository } from './repo';
 
 const app = express();
 let accessToken: string;

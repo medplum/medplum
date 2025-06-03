@@ -1,19 +1,19 @@
 import { Button, LoadingOverlay } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import {
   MedplumClient,
+  WithId,
   capitalize,
   createReference,
   getReferenceString,
   isOk,
   normalizeErrorString,
 } from '@medplum/core';
-import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
-import { useNavigate, useParams } from 'react-router-dom';
-
-import { showNotification } from '@mantine/notifications';
 import { Bot, Bundle, BundleEntry, Coding, Practitioner, ValueSet } from '@medplum/fhirtypes';
+import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useCallback, useState } from 'react';
+import { JSX, useCallback, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 import businessStatusValueSet from '../../data/core/business-status-valueset.json';
 import practitionerRoleValueSet from '../../data/core/practitioner-role-valueset.json';
 import taskTypeValueSet from '../../data/core/task-type-valueset.json';
@@ -24,7 +24,7 @@ import exampleReportData from '../../data/example/example-reports.json';
 import exampleTaskData from '../../data/example/example-tasks.json';
 
 type UploadFunction =
-  | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
+  | ((medplum: MedplumClient, profile: WithId<Practitioner>) => Promise<void>)
   | ((medplum: MedplumClient) => Promise<void>);
 
 export function UploadDataPage(): JSX.Element {
@@ -65,7 +65,7 @@ export function UploadDataPage(): JSX.Element {
         throw new Error(`Invalid upload type '${dataType}'`);
     }
 
-    uploadFunction(medplum, profile as Practitioner)
+    uploadFunction(medplum, profile as WithId<Practitioner>)
       .then(() => navigate(-1))
       .catch((error) => {
         showNotification({
@@ -219,7 +219,7 @@ async function uploadExampleQualifications(medplum: MedplumClient, profile: Prac
   });
 }
 
-async function uploadExampleRoleData(medplum: MedplumClient, profile: Practitioner): Promise<void> {
+async function uploadExampleRoleData(medplum: MedplumClient, profile: WithId<Practitioner>): Promise<void> {
   // Update the suffix of the current user to highlight the change
   if (!profile?.name?.[0]?.suffix) {
     await medplum.patchResource(profile.resourceType, profile.id as string, [
@@ -262,7 +262,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
       const createBotUrl = new URL('admin/projects/' + (projectId as string) + '/bot', medplum.getBaseUrl());
       existingBot = (await medplum.post(createBotUrl, {
         name: botName,
-      })) as Bot;
+      })) as WithId<Bot>;
     }
 
     botIds[botName] = existingBot.id as string;

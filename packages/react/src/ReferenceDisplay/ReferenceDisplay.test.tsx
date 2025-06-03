@@ -2,7 +2,7 @@ import { Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ReactElement } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { render, screen } from '../test-utils/render';
 import { ReferenceDisplay } from './ReferenceDisplay';
 

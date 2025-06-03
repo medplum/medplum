@@ -55,6 +55,7 @@ const opDef: OperationDefinition = {
     { name: 'fractional', use: 'in', min: 0, max: '1', type: 'decimal' },
     { name: 'multiIn', use: 'in', min: 0, max: '*', type: 'string' },
     { name: 'complexIn', use: 'in', min: 0, max: '*', type: 'Reference' },
+    { name: 'resource', use: 'in', min: 0, max: '1', type: 'Resource' },
     {
       name: 'partsIn',
       use: 'in',
@@ -105,6 +106,20 @@ describe('Operation Input Parameters parsing', () => {
         complexIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
         multiIn: [],
         singleIn: undefined,
+        partsIn: [],
+      },
+    ],
+    [
+      [
+        { name: 'requiredIn', valueBoolean: true },
+        { name: 'resource', resource: { resourceType: 'Patient', id: 'test-patient', name: [{ family: 'Smith' }] } },
+      ],
+      {
+        requiredIn: true,
+        resource: { resourceType: 'Patient', id: 'test-patient', name: [{ family: 'Smith' }] },
+        singleIn: undefined,
+        multiIn: [],
+        complexIn: [],
         partsIn: [],
       },
     ],
@@ -259,9 +274,9 @@ describe('Operation Input Parameters parsing', () => {
       'requiredIn=true&complexIn={"reference":"Patient/foo"}',
       'Complex parameter complexIn (Reference) cannot be passed via query string',
     ],
-    ['requiredIn=false&numeric=wrong', `Invalid value 'wrong' provided for integer parameter`],
-    ['requiredIn=false&fractional=wrong', `Invalid value 'wrong' provided for decimal parameter`],
-    ['requiredIn=1', `Invalid value '1' provided for boolean parameter`],
+    ['requiredIn=false&numeric=wrong', `Invalid value 'wrong' provided for integer parameter 'numeric'`],
+    ['requiredIn=false&fractional=wrong', `Invalid value 'wrong' provided for decimal parameter 'fractional'`],
+    ['requiredIn=1', `Invalid value '1' provided for boolean parameter 'requiredIn'`],
   ])('Throws on invalid query string parameters: %s', (query, errorMsg) => {
     const req: Request = { method: 'GET', query: parse(query) } as unknown as Request;
     expect(() => parseInputParameters(opDef, req)).toThrow(new Error(errorMsg));

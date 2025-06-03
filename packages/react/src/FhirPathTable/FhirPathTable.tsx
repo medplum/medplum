@@ -2,7 +2,7 @@ import { Button, Loader, Table } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ChangeEvent, MouseEvent, memo, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, JSX, MouseEvent, memo, useEffect, useRef, useState } from 'react';
 import { FhirPathDisplay } from '../FhirPathDisplay/FhirPathDisplay';
 import { SearchClickEvent } from '../SearchControl/SearchControl';
 import { isCheckboxCell, killEvent } from '../utils/dom';
@@ -42,7 +42,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   const [response, setResponse] = useState<SmartSearchResponse | undefined>();
   const [selected, setSelected] = useState<{ [id: string]: boolean }>({});
 
-  const responseRef = useRef<SmartSearchResponse>();
+  const responseRef = useRef<SmartSearchResponse>(response);
   responseRef.current = response;
 
   const selectedRef = useRef<{ [id: string]: boolean }>({});

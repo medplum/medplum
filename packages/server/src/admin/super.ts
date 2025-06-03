@@ -3,6 +3,7 @@ import {
   allOk,
   badRequest,
   forbidden,
+  getQueryString,
   getResourceTypes,
   OperationOutcomeError,
   parseSearchRequest,
@@ -10,23 +11,27 @@ import {
   validateResourceType,
 } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
+import { assert } from 'console';
 import { Request, Response, Router } from 'express';
 import { body, checkExact, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
-import { DatabaseMode, getDatabasePool, maybeStartDataMigration } from '../database';
+import { DatabaseMode, getDatabasePool, maybeStartPostDeployMigration } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
+import { markPostDeployMigrationCompleted } from '../migration-sql';
+import { generateMigrationActions } from '../migrations/migrate';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
+import { addPostDeployMigrationJobData, prepareDynamicMigrationJobData } from '../workers/post-deploy-migration';
 import { addReindexJob } from '../workers/reindex';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
@@ -46,7 +51,7 @@ export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
 
 // POST to /admin/super/valuesets
-// to rebuild the "ValueSetElements" table.
+// to rebuild the terminology tables.
 // Run this after changes to how ValueSet elements are defined.
 superAdminRouter.post(
   '/valuesets',
@@ -54,7 +59,8 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, async () => rebuildR4ValueSets());
+    const systemRepo = getSystemRepo();
+    await sendAsyncResponse(req, res, async () => rebuildR4ValueSets(systemRepo));
   })
 );
 
@@ -67,7 +73,8 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => rebuildR4StructureDefinitions());
+    const systemRepo = getSystemRepo();
+    await sendAsyncResponse(req, res, async () => rebuildR4StructureDefinitions(systemRepo));
   })
 );
 
@@ -80,7 +87,8 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => rebuildR4SearchParameters());
+    const systemRepo = getSystemRepo();
+    await sendAsyncResponse(req, res, async () => rebuildR4SearchParameters(systemRepo));
   })
 );
 
@@ -89,9 +97,29 @@ superAdminRouter.post(
 // Run this after major changes to how search columns are constructed.
 superAdminRouter.post(
   '/reindex',
+
+  [
+    body('reindexType')
+      .isIn(['outdated', 'all', 'specific'])
+      .withMessage('reindexType must be "outdated", "all", or "specific"'),
+    body('maxResourceVersion')
+      .if(body('reindexType').equals('specific'))
+      .isInt({ min: 0, max: Repository.VERSION - 1 })
+      .withMessage(`maxResourceVersion must be an integer from 0 to ${Repository.VERSION - 1}`),
+    body('maxResourceVersion')
+      .if(body('reindexType').not().equals('specific'))
+      .isEmpty()
+      .withMessage('maxResourceVersion should only be specified when reindexType is "specific"'),
+  ],
   asyncWrap(async (req: Request, res: Response) => {
     requireSuperAdmin();
     requireAsync(req);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
 
     let resourceTypes: string[];
     if (req.body.resourceType === '*') {
@@ -110,10 +138,42 @@ superAdminRouter.post(
     }
 
     const systemRepo = getSystemRepo();
+
+    const reindexType = req.body.reindexType as 'outdated' | 'all' | 'specific';
+    let maxResourceVersion: number | undefined;
+    switch (reindexType) {
+      case 'all':
+        maxResourceVersion = undefined;
+        break;
+      case 'specific':
+        maxResourceVersion = Number(req.body.maxResourceVersion);
+        break;
+      case 'outdated':
+        maxResourceVersion = Repository.VERSION - 1;
+        break;
+      default:
+        reindexType satisfies never;
+        sendOutcome(res, badRequest(`Invalid reindex type: ${reindexType}`));
+        return;
+    }
+
+    // construct a representation of the inputs/parameters for the reindex job
+    // for human consumption in `AsyncJob.request`
+    const queryForUrl: Record<string, string> = {
+      resourceType: req.body.resourceType,
+      filter: req.body.filter,
+      reindexType,
+      maxResourceVersion: maxResourceVersion?.toString() ?? '',
+    };
+
+    const asyncJobUrl = new URL(`${req.protocol}://${req.get('host') + req.originalUrl}`);
+    // replace the search, if any, with queryForUrl
+    asyncJobUrl.search = getQueryString(queryForUrl);
+
     const exec = new AsyncJobExecutor(systemRepo);
-    await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
+    await exec.init(asyncJobUrl.toString());
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter);
+      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter, maxResourceVersion);
     });
 
     const { baseUrl } = getConfig();
@@ -228,7 +288,7 @@ superAdminRouter.post(
     }
 
     const { baseUrl } = getConfig();
-    const dataMigrationJob = await maybeStartDataMigration(req?.body?.dataVersion as number | undefined);
+    const dataMigrationJob = await maybeStartPostDeployMigration(req?.body?.dataVersion as number | undefined);
     // If there is no migration job to run, return allOk
     if (!dataMigrationJob) {
       sendOutcome(res, allOk);
@@ -236,6 +296,59 @@ superAdminRouter.post(
     }
     const exec = new AsyncJobExecutor(ctx.repo, dataMigrationJob);
     sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  })
+);
+
+superAdminRouter.post(
+  '/reconcile-db-schema-drift',
+  asyncWrap(async (req: Request, res: Response) => {
+    const ctx = requireSuperAdmin();
+    requireAsync(req);
+
+    const migrationActions = await generateMigrationActions({
+      dbClient: getDatabasePool(DatabaseMode.WRITER),
+      dropUnmatchedIndexes: true,
+      allowPostDeployActions: true,
+    });
+
+    if (migrationActions.length === 0) {
+      // Nothing to do
+      sendOutcome(res, allOk);
+      return;
+    }
+
+    const exec = new AsyncJobExecutor(ctx.repo);
+    await exec.init(req.originalUrl);
+    await exec.run(async (asyncJob) => {
+      const jobData = prepareDynamicMigrationJobData(asyncJob, migrationActions);
+      await addPostDeployMigrationJobData(jobData);
+    });
+
+    const { baseUrl } = getConfig();
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  })
+);
+
+// POST to /admin/super/setdataversion
+// to set the data version of the database.
+// This is intended to allow you to set the data version and skip over a data migration YOUR ARE SURE you do not need to apply.
+// WARNING: This is unsafe and may break everything if you are not careful.
+superAdminRouter.post(
+  '/setdataversion',
+  [body('dataVersion').isInt().withMessage('dataVersion must be an integer')],
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    assert(req.body.dataVersion !== undefined);
+    await markPostDeployMigrationCompleted(getDatabasePool(DatabaseMode.WRITER), req.body.dataVersion);
+
+    sendOutcome(res, allOk);
   })
 );
 
@@ -317,6 +430,7 @@ superAdminRouter.post(
       .withMessage('Table name(s) must be a snake_cased_string')
       .optional(),
     body('analyze').isBoolean().optional().default(false),
+    body('vacuum').isBoolean().optional().default(true),
     checkExact(),
   ],
   asyncWrap(async (req: Request, res: Response) => {
@@ -329,20 +443,33 @@ superAdminRouter.post(
       return;
     }
 
-    const query = `VACUUM${req.body.analyze ? ' ANALYZE' : ''}${req.body.tableNames?.length ? ` ${req.body.tableNames.map((name: string) => `"${name}"`).join(', ')}` : ''};`;
+    const vacuum = req.body.vacuum ?? true;
+
+    let action = vacuum ? 'VACUUM' : '';
+    action += req.body.analyze ? ' ANALYZE' : '';
+    if (!action) {
+      throw new OperationOutcomeError(badRequest('At least one of vacuum or analyze must be true'));
+    }
+
+    const query =
+      `${action}${req.body.tableNames?.length ? ` ${req.body.tableNames.map((name: string) => `"${name}"`).join(', ')}` : ''};`.trim();
 
     await sendAsyncResponse(req, res, async () => {
       const startTime = Date.now();
       await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
       globalLogger.info('[Super Admin]: Vacuum completed', {
         tableNames: req.body.tableNames,
+        vacuum,
         analyze: req.body.analyze,
         query,
         durationMs: Date.now() - startTime,
       });
       return {
         resourceType: 'Parameters',
-        parameter: [{ name: 'outcome', resource: allOk }],
+        parameter: [
+          { name: 'outcome', resource: allOk },
+          { name: 'query', valueString: query },
+        ],
       };
     });
   })

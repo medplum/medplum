@@ -1089,6 +1089,15 @@ describe('FHIR resource validation', () => {
 
     acct.name = 'test';
     expect(() => validateResource(acct)).not.toThrow();
+
+    acct.name = 'Invalid controls character \x00 \x01 \x0B \x1F are not allowed';
+    expect(() => validateResource(acct)).toThrow();
+
+    acct.name = 'Valid controls characters \x09 \x0A \x0D \x20 \x21 are allowed';
+    expect(() => validateResource(acct)).not.toThrow();
+
+    acct.name = 'High unicode characters \uFFFF \u1234 are allowed';
+    expect(() => validateResource(acct)).not.toThrow();
   });
 
   test('positiveInt', () => {
@@ -1508,6 +1517,56 @@ describe('FHIR resource validation', () => {
     expect(issues).toHaveLength(1);
     expect(issues[0].severity).toBe('warning');
     expect(issues[0].details?.text).toContain('Invalid reference');
+  });
+
+  test('Contained reference type check', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: { reference: '#patient' },
+      contained: [
+        {
+          resourceType: 'Patient',
+          id: 'patient',
+          birthDate: '1949-08-14',
+        },
+      ],
+    };
+
+    // Contained references should not generate validation warnings
+    const issues = validateResource(observation);
+    expect(issues).toHaveLength(0);
+  });
+
+  test('Conditional reference type check', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: { reference: 'Patient?identifier=http://example.com/mrn|12345' },
+    };
+
+    // Conditional references should still validate the resource type
+    const issues = validateResource(observation);
+    expect(issues).toHaveLength(0);
+  });
+
+  test('Invalid conditional reference type check', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      // subject should reference a Patient, not an Organization
+      subject: { reference: 'Organization?identifier=http://example.com/id|123' },
+    };
+
+    // Conditional references should still validate the resource type
+    const issues = validateResource(observation);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].details?.text).toContain('Invalid reference');
+    expect(issues[0].details?.text).toContain('Organization');
   });
 
   test('Nested recursive properties', () => {

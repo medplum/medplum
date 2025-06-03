@@ -4,8 +4,8 @@ import { Observation, ObservationComponent, Patient } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { ChartData, ChartDataset } from 'chart.js';
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { JSX, useEffect, useState } from 'react';
+import { useParams } from 'react-router';
 import { LineChart } from '../../components/LineChart';
 import { measurementsMeta } from './Measurement.data';
 

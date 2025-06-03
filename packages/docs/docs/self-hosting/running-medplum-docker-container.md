@@ -13,10 +13,17 @@ docker pull medplum/medplum-server
 Once you have pulled the container, you can run it.
 
 ```bash
-docker run medplum/medplum-server <CONFIG-PATH>
+docker run medplum/medplum-server:latest <CONFIG-PATH>
 ```
 
 The container takes only one argument, the path to the config settings. The prefix of this path determines the source of the config:
 
 - `file:/path/to/config.json`: Read from a config file.
 - `aws:/parameter/store/prefix/`: Read from the [AWS Parameter Store](https://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-parameter-store.html), using the entries that start with `prefix`.
+
+:::info Full-stack Docker setup
+
+If you are looking to get started fast or want to develop against a local copy of Medplum without downloading the repo,
+we also have a [full-stack Docker setup](/docs/self-hosting/running-full-medplum-stack-in-docker.md) that you can start up with just two commands!
+
+:::

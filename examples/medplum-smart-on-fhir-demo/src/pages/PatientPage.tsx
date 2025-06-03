@@ -3,8 +3,8 @@ import { calculateAgeString, formatDate, formatDateTime, formatHumanName } from 
 import { HumanName, Observation, Patient } from '@medplum/fhirtypes';
 import { ResourceAvatar, useMedplum } from '@medplum/react';
 import { ChartData } from 'chart.js';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { JSX, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { LineChart } from '../components/LineChart';
 
 export function PatientPage(): JSX.Element {

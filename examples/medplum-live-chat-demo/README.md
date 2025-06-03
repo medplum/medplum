@@ -20,6 +20,14 @@ If you haven't already done so, follow the instructions in [this tutorial](https
 
 [Fork](https://github.com/medplum/medplum-live-chat-demo/fork) and clone the repo.
 
+If you want to change any environment variables from the defaults, copy the `.env.defaults` file to `.env`
+
+```bash
+cp .env.defaults .env
+```
+
+And make the changes you need.
+
 Next, install the dependencies
 
 ```bash
@@ -33,7 +41,6 @@ npm run dev
 ```
 
 This app should run on `http://localhost:3000/`
-
 
 > [!NOTE]
 > Because `WebSocket Subscriptions` are currently experimental, the `websocket-subscriptions` feature flag needs to be enabled on your `Project` resource for this demo to work.

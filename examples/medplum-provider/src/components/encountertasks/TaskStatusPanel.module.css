@@ -1,0 +1,38 @@
+.completed {
+  background-color: var(--mantine-color-green-0) !important;
+}
+
+.ready {
+  background-color: var(--mantine-color-blue-0) !important;
+}
+
+.menu {
+  padding: 8px;
+  margin: -8px;
+  cursor: pointer;
+  display: flex;
+}
+
+.submenu {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  background: var(--mantine-color-white);
+  border: 1px solid var(--mantine-color-gray-3);
+  box-shadow: var(--mantine-shadow-md);
+  z-index: 1000;
+  min-width: 150px;
+}
+
+[data-mantine-color-scheme='dark'] .ready,
+[data-mantine-color-scheme='dark'] .completed {
+  color: var(--mantine-color-dark-8);
+}
+
+[data-mantine-color-scheme='dark'] .panel {
+  background-color: var(--mantine-color-dark-8);
+}
+
+[data-mantine-color-scheme='light'] .panel {
+  background-color: var(--mantine-color-gray-1);
+}

@@ -1,7 +1,7 @@
 import { accepted, allOk, concatUrls, forbidden, getResourceTypes, Operator } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
-import { getConfig } from '../../config';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { Repository } from '../repo';
 import { AsyncJobExecutor } from './utils/asyncjobexecutor';
@@ -38,11 +38,13 @@ export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
 }
 
 export class Expunger {
-  constructor(
-    readonly repo: Repository,
-    readonly compartment: string,
-    readonly maxResultsPerPage = 10000
-  ) {
+  readonly repo: Repository;
+  readonly compartment: string;
+  readonly maxResultsPerPage: number;
+
+  constructor(repo: Repository, compartment: string, maxResultsPerPage = 10000) {
+    this.repo = repo;
+    this.compartment = compartment;
     this.maxResultsPerPage = maxResultsPerPage;
   }
 

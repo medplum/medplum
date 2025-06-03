@@ -81,14 +81,14 @@ describe('Mock Repo', () => {
       resourceType: 'Patient',
     });
 
-    const resource2 = await client.readResource('Patient', resource1.id as string);
+    const resource2 = await client.readResource('Patient', resource1.id);
     expect(resource2).toBeDefined();
     expect(resource2.id).toStrictEqual(resource1.id);
 
-    await client.deleteResource('Patient', resource1.id as string);
+    await client.deleteResource('Patient', resource1.id);
 
     try {
-      await client.readResource('Patient', resource1.id as string);
+      await client.readResource('Patient', resource1.id);
       fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;

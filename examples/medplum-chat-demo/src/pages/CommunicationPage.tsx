@@ -1,7 +1,7 @@
 import { Communication } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { JSX, useEffect, useState } from 'react';
+import { useParams } from 'react-router';
 import { MessagePage } from './MessagePage';
 import { ThreadPage } from './ThreadPage';
 

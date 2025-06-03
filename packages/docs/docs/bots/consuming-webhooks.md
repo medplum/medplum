@@ -67,7 +67,7 @@ Create another (optional) one for the bot, that enables only the resources that 
 
 ## Configuring Webhooks in another Application
 
-The SaaS application that generates the webhooks will have a configuration for the endpoint url. Construct one, like below using the client id, secret from the previous section and id of the bot you created.
+The SaaS application that generates the webhooks will have a configuration for the endpoint url. In some cases they will support basic authentication in the URL itself. Construct one, like below using the client id, secret from the previous section and id of the bot you created.
 
 ```bash
 https://<client-application-id>:<client-secret>@api.medplum.com/fhir/R4/Bot/<bot-id>/$execute
@@ -76,6 +76,31 @@ https://<client-application-id>:<client-secret>@api.medplum.com/fhir/R4/Bot/<bot
 ## Authenticating Payloads
 
 Many SaaS applications support signature verification. Their webhook configuration portal will have a place to download a `secret` or `signing secret`. You can store that value in [bot secrets](/docs/bots/bot-secrets) and use it to verify the webhook signature.
+
+## Unauthenticated Webhooks
+
+Medplum supports unauthenticated webhooks for integrating with third-party services. This allows you to receive webhook notifications without requiring authentication credentials in the URL. The webhook endpoint format is:
+
+```
+GET/POST /webhook/{ProjectMembership.id}
+```
+
+When using unauthenticated webhooks, it's important to implement proper security measures:
+
+1. **Signature Verification**: Always verify the webhook signature using the secret provided by the third-party service. Store this secret in your bot's secrets and use it to validate incoming requests.
+
+2. **IP Whitelisting**: If supported by the third-party service, configure IP whitelisting to only accept requests from known IP addresses.
+
+3. **Rate Limiting**: Implement rate limiting to prevent abuse of your webhook endpoint.
+
+4. **Payload Validation**: Validate the structure and content of incoming webhook payloads before processing them.
+
+To set up an unauthenticated webhook:
+
+1. Create a Bot for the third party service and ensure that the ProjectMembership for the bot has the appropriate AccessPolicy
+2. Configure the webhook URL in the third-party service using the format above
+3. Implement signature verification in your bot
+4. Test the webhook integration using the third-party service's test tools
 
 ## Monitoring your integration
 

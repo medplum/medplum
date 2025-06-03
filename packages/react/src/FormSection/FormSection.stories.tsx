@@ -1,8 +1,10 @@
-import { Button, MultiSelect, NativeSelect, Stack } from '@mantine/core';
+import { MultiSelect, NativeSelect, Stack } from '@mantine/core';
 import { HumanName } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { HumanNameInput } from '../HumanNameInput/HumanNameInput';
 import { FormSection } from './FormSection';
 
@@ -34,9 +36,7 @@ export const Basic = (): JSX.Element => (
           <MultiSelect name="symptoms" data={['Sore Throat', 'Coughing', 'Fever', 'Rash']} />
         </FormSection>
       </Stack>
-      <Button type="submit" mt="sm">
-        Submit
-      </Button>
+      <SubmitButton mt="sm">Submit</SubmitButton>
     </Form>
   </Document>
 );

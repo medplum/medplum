@@ -10,14 +10,15 @@ import {
   Operator,
   ProfileResource,
   resolveId,
+  WithId,
 } from '@medplum/core';
-import { Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import Mail from 'nodemailer/lib/mailer';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -57,13 +58,13 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
 }
 
 export interface ServerInviteRequest extends InviteRequest {
-  project: Project;
+  project: WithId<Project>;
 }
 
 export interface ServerInviteResponse {
-  user: User;
-  profile: ProfileResource;
-  membership: ProjectMembership;
+  user: WithId<User>;
+  profile: WithId<ProfileResource>;
+  membership: WithId<ProjectMembership>;
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
@@ -74,15 +75,14 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     request.email = request.email.toLowerCase();
   }
 
-  const project = request.project;
-  const email = request.email;
+  const { project, email } = request;
   let user = undefined;
   let existingUser = true;
   let passwordResetUrl = undefined;
 
   if (email) {
     if (request.resourceType === 'Patient') {
-      user = await getUserByEmailInProject(email, project.id as string);
+      user = await getUserByEmailInProject(email, project.id);
     } else {
       user = await getUserByEmailWithoutProject(email);
     }
@@ -103,15 +103,9 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
       email,
       profileType: request.resourceType,
     });
-    profile = (await createProfile(
-      project,
-      request.resourceType,
-      request.firstName,
-      request.lastName,
-      email
-    )) as Practitioner;
+    profile = await createProfile(project, request.resourceType, request.firstName, request.lastName, email);
 
-    logger.info('Profile  created', { profile: getReferenceString(profile) });
+    logger.info('Profile  created', { reference: getReferenceString(profile) });
   }
 
   const membershipTemplate = request.membership ?? {};
@@ -144,14 +138,14 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   return { user, profile, membership };
 }
 
-async function createUser(request: ServerInviteRequest): Promise<User> {
-  const { firstName, lastName, externalId } = request;
+async function createUser(request: ServerInviteRequest): Promise<WithId<User>> {
+  const { firstName, lastName, externalId, scope } = request;
   const email = request.email?.toLowerCase();
   const password = request.password ?? generateSecret(16);
   const passwordHash = await bcryptHashPassword(password);
 
   let project: Reference<Project> | undefined = undefined;
-  if (request.resourceType === 'Patient' || externalId) {
+  if (request.resourceType === 'Patient' || externalId || scope === 'project') {
     // Users can optionally be scoped to a project.
     // We force users to be scoped to a project if:
     // 1) They are a patient
@@ -171,7 +165,7 @@ async function createUser(request: ServerInviteRequest): Promise<User> {
   });
 }
 
-async function searchForExistingProfile(request: ServerInviteRequest): Promise<ProfileResource | undefined> {
+async function searchForExistingProfile(request: ServerInviteRequest): Promise<WithId<ProfileResource> | undefined> {
   const { project, resourceType, membership, email } = request;
   const systemRepo = getSystemRepo();
 
@@ -183,7 +177,7 @@ async function searchForExistingProfile(request: ServerInviteRequest): Promise<P
     if (result.resourceType !== resourceType) {
       throw new OperationOutcomeError(badRequest('Profile resourceType does not match request'));
     }
-    return result as ProfileResource;
+    return result;
   }
 
   if (email) {
@@ -193,7 +187,7 @@ async function searchForExistingProfile(request: ServerInviteRequest): Promise<P
         {
           code: '_project',
           operator: Operator.EQUALS,
-          value: project.id as string,
+          value: project.id,
         },
         {
           code: 'email',
@@ -209,12 +203,12 @@ async function searchForExistingProfile(request: ServerInviteRequest): Promise<P
 
 async function createOrUpdateProjectMembership(
   systemRepo: Repository,
-  user: User,
-  project: Project,
+  user: WithId<User>,
+  project: WithId<Project>,
   profile: ProfileResource,
   membershipTemplate: Partial<ProjectMembership>,
   upsert: boolean
-): Promise<ProjectMembership> {
+): Promise<WithId<ProjectMembership>> {
   const existingMembership = await searchForExistingMembership(systemRepo, user, project);
   if (existingMembership) {
     if (!upsert) {
@@ -244,8 +238,8 @@ async function createOrUpdateProjectMembership(
 
 async function searchForExistingMembership(
   systemRepo: Repository,
-  user: User,
-  project: Project
+  user: WithId<User>,
+  project: WithId<Project>
 ): Promise<ProjectMembership | undefined> {
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',

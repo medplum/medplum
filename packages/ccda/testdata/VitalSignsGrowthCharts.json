@@ -1,0 +1,495 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "Vital Signs",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8716-3",
+                  "display": "Vital signs"
+                }
+              ],
+              "text": "Vital signs"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table><thead><tr><th>Vital Sign</th><th>Reading</th><th>Time Taken</th></tr></thead><tbody><tr ID=\"WfLPerc_1\"><td><content ID=\"WfLPerc_1Name\">Weight-for-length Percentile</content><content ID=\"WfLPerc_1GC\">WHO Males, 0-2 years Chart</content>()</td><td>50 %</td><td>05/20/2014 7:36 PM</td></tr><tr ID=\"headCircPerc_1\"><td><content ID=\"headCircPerc_1Name\">Head Circumference Percentile</content><content ID=\"headCircPerc_1GC\">WHO Males, 0-2 years Chart</content>()</td><td>45 %</td><td>05/20/2014 7:36 PM</td></tr><tr ID=\"bmiPerc_2\"><td><content ID=\"bmiPerc_2Name\">Body Mass Index Percentile</content><content ID=\"bmiPerc_2GC\">CDC Males, 2-20 years Chart</content>()</td><td>49 %</td><td>11/20/2015 7:36 PM</td></tr><tr ID=\"WfLPerc_2\"><td><content ID=\"WfLPerc_2Name\">Weight-for-length Percentile</content><content ID=\"WfLPerc_2GC\">CDC Males, 2-20 years Chart</content>()</td><td>48 %</td><td>11/20/2015 7:36 PM</td></tr><tr ID=\"headCircPerc_2\"><td><content ID=\"headCircPerc_2Name\">Head Circumference Percentile</content><content ID=\"headCircPerc_2GC\">CDC Males, 0-36 months Chart</content>()</td><td>50 %</td><td>11/20/2015 7:36 PM</td></tr></tbody></table></div>"
+            },
+            "entry": [
+              {
+                "reference": "Observation/1a70f2d9-d576-466e-ba5c-003da6fb2107",
+                "display": "Vital signs"
+              },
+              {
+                "reference": "Observation/1791f1e7-9642-4b51-be66-997de22370bb",
+                "display": "Vital signs"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": [
+              "Katherine"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "701c0a9a-d25c-4d74-9149-5659eb446557",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.840.114350.1.13.861.1.7.1.2109.1",
+            "value": "5610719400-WfLPerc-Z197199"
+          }
+        ],
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "77606-2",
+              "display": "Weight-for-length Per age and sex"
+            }
+          ],
+          "text": "Weight-for-length Per age and sex"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "referenceRange": [
+          {
+            "extension": [
+              {
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "valueString": "#WfLPerc_1GC"
+              }
+            ]
+          }
+        ],
+        "valueQuantity": {
+          "value": 50,
+          "unit": "%",
+          "system": "http://unitsofmeasure.org",
+          "code": "%"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0600",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#WfLPerc_1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "fb9c8da2-c2f3-46cc-85d1-c1098032f1f5",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.840.114350.1.13.861.1.7.1.2109.1",
+            "value": "5610719400-headCirPerc-Z197199"
+          }
+        ],
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8289-1",
+              "display": "Head Occipital-frontal circumference Percentile"
+            }
+          ],
+          "text": "Head Occipital-frontal circumference Percentile"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "referenceRange": [
+          {
+            "extension": [
+              {
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "valueString": "#headCircPerc_1GC"
+              }
+            ]
+          }
+        ],
+        "valueQuantity": {
+          "value": 45,
+          "unit": "%",
+          "system": "http://unitsofmeasure.org",
+          "code": "%"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0600",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#headCircPerc_1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "15c8bd35-b9dc-4da7-a13d-70b9618bc945",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.840.114350.1.13.861.1.7.1.2109.1",
+            "value": "5710719405-BMIPerc-Z197199"
+          }
+        ],
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "59576-9",
+              "display": "Body mass index (BMI) [Percentile] Per age and sex"
+            }
+          ],
+          "text": "Body mass index (BMI) [Percentile] Per age and sex"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "referenceRange": [
+          {
+            "extension": [
+              {
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "valueString": "#bmiPerc_2GC"
+              }
+            ]
+          }
+        ],
+        "valueQuantity": {
+          "value": 49,
+          "unit": "%",
+          "system": "http://unitsofmeasure.org",
+          "code": "%"
+        },
+        "effectiveDateTime": "2015-11-20T19:36:05-0600",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#bmiPerc_2"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "70ad5e83-58b8-453f-866a-afabd9e525fd",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.840.114350.1.13.861.1.7.1.2109.1",
+            "value": "5710719405-WfLPerc-Z197199"
+          }
+        ],
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "77606-2",
+              "display": "Weight-for-length Per age and sex"
+            }
+          ],
+          "text": "Weight-for-length Per age and sex"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "referenceRange": [
+          {
+            "extension": [
+              {
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "valueString": "#WfLPerc_2GC"
+              }
+            ]
+          }
+        ],
+        "valueQuantity": {
+          "value": 48,
+          "unit": "%",
+          "system": "http://unitsofmeasure.org",
+          "code": "%"
+        },
+        "effectiveDateTime": "2015-11-20T19:36:05-0600",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#WfLPerc_2"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "cf5ac9f4-e31d-4066-8458-6f42be3877ef",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.840.114350.1.13.861.1.7.1.2109.1",
+            "value": "5710719405-headCirPerc-Z197199"
+          }
+        ],
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8289-1",
+              "display": "Head Occipital-frontal circumference Percentile"
+            }
+          ],
+          "text": "Head Occipital-frontal circumference Percentile"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "referenceRange": [
+          {
+            "extension": [
+              {
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "valueString": "#headCircPerc_2GC"
+              }
+            ]
+          }
+        ],
+        "valueQuantity": {
+          "value": 50,
+          "unit": "%",
+          "system": "http://unitsofmeasure.org",
+          "code": "%"
+        },
+        "effectiveDateTime": "2015-11-20T19:36:05-0600",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#headCircPerc_2"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "1a70f2d9-d576-466e-ba5c-003da6fb2107",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.840.114350.1.13.861.1.7.1.2109",
+            "value": "5610719400-Z197199"
+          }
+        ],
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Organizer"
+              }
+            ],
+            "text": "Vital Signs Organizer"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "46680005",
+              "display": "Vital signs"
+            }
+          ],
+          "text": "Vital signs"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0600",
+        "hasMember": [
+          {
+            "reference": "Observation/701c0a9a-d25c-4d74-9149-5659eb446557",
+            "display": "Weight-for-length Per age and sex"
+          },
+          {
+            "reference": "Observation/fb9c8da2-c2f3-46cc-85d1-c1098032f1f5",
+            "display": "Head Occipital-frontal circumference Percentile"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "1791f1e7-9642-4b51-be66-997de22370bb",
+        "identifier": [
+          {
+            "system": "urn:oid:1.2.840.114350.1.13.861.1.7.1.2109",
+            "value": "5710719405-Z197199"
+          }
+        ],
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Organizer"
+              }
+            ],
+            "text": "Vital Signs Organizer"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "46680005",
+              "display": "Vital signs"
+            }
+          ],
+          "text": "Vital signs"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "effectiveDateTime": "2015-11-20T19:36:05-0600",
+        "hasMember": [
+          {
+            "reference": "Observation/15c8bd35-b9dc-4da7-a13d-70b9618bc945",
+            "display": "Body mass index (BMI) [Percentile] Per age and sex"
+          },
+          {
+            "reference": "Observation/70ad5e83-58b8-453f-866a-afabd9e525fd",
+            "display": "Weight-for-length Per age and sex"
+          },
+          {
+            "reference": "Observation/cf5ac9f4-e31d-4066-8458-6f42be3877ef",
+            "display": "Head Occipital-frontal circumference Percentile"
+          }
+        ]
+      }
+    }
+  ]
+}

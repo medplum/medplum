@@ -59508,9 +59508,7 @@
               "email",
               "google-auth-required",
               "graphql-introspection",
-              "terminology",
               "websocket-subscriptions",
-              "reference-lookups",
               "transaction-bundles"
             ]
           },
@@ -59808,6 +59806,10 @@
           "description": "Client secret string used to verify the identity of a client.",
           "$ref": "#/definitions/string"
         },
+        "retiringSecret": {
+          "description": "Old version of the client secret that is being rotated out.  Instances of the client using this value should update to use the value in ClientApplication.secret",
+          "$ref": "#/definitions/string"
+        },
         "jwksUri": {
           "description": "Optional JWKS URI for public key verification of JWTs issued by the authorization server (client_secret_jwt).",
           "$ref": "#/definitions/uri"
@@ -59835,6 +59837,13 @@
         "refreshTokenLifetime": {
           "description": "Optional configuration to set the refresh token duration",
           "$ref": "#/definitions/string"
+        },
+        "allowedOrigin": {
+          "description": "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,
@@ -60080,7 +60089,7 @@
       "required": ["resourceType", "user", "authMethod", "authTime"]
     },
     "PasswordChangeRequest": {
-      "description": "@deprecated Password change request for the \u0027forgot password\u0027 flow. Use UserSecurityCheck instead.",
+      "description": "@deprecated Password change request for the \u0027forgot password\u0027 flow. Use UserSecurityRequest instead.",
       "properties": {
         "resourceType": {
           "description": "This is a PasswordChangeRequest resource",

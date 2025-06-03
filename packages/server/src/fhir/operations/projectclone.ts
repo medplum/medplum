@@ -2,8 +2,8 @@ import { created, forbidden, getResourceTypes, isResourceType, Operator } from '
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { getBinaryStorage } from '../../storage/loader';
 import { Repository } from '../repo';
-import { getBinaryStorage } from '../storage';
 import { buildBinaryIds } from './utils/binary';
 
 /**
@@ -27,15 +27,31 @@ export async function projectCloneHandler(req: FhirRequest): Promise<FhirRespons
 }
 
 class ProjectCloner {
+  readonly repo: Repository;
+  readonly projectId: string;
+  readonly projectName: string;
+  readonly allowedResourceTypes: string[];
+  readonly includeIds: string[];
+  readonly excludeIds: string[];
+  readonly idMap: Map<string, string>;
+
   constructor(
-    readonly repo: Repository,
-    readonly projectId: string,
-    readonly projectName: string = '',
-    readonly allowedResourceTypes: string[] = [],
-    readonly includeIds: string[] = [],
-    readonly excludeIds: string[] = [],
-    readonly idMap: Map<string, string> = new Map()
-  ) {}
+    repo: Repository,
+    projectId: string,
+    projectName: string = '',
+    allowedResourceTypes: string[] = [],
+    includeIds: string[] = [],
+    excludeIds: string[] = [],
+    idMap = new Map<string, string>()
+  ) {
+    this.repo = repo;
+    this.projectId = projectId;
+    this.projectName = projectName;
+    this.allowedResourceTypes = allowedResourceTypes;
+    this.includeIds = includeIds;
+    this.excludeIds = excludeIds;
+    this.idMap = idMap;
+  }
 
   async cloneProject(): Promise<Project> {
     const repo = this.repo;
@@ -53,7 +69,7 @@ class ProjectCloner {
       const bundle = await repo.search({
         resourceType,
         count: maxResourcesPerResourceType,
-        filters: [{ code: '_project', operator: Operator.EQUALS, value: project.id as string }],
+        filters: [{ code: '_project', operator: Operator.EQUALS, value: project.id }],
       });
 
       if (!bundle.entry) {
@@ -61,10 +77,10 @@ class ProjectCloner {
       }
 
       for (const entry of bundle.entry) {
-        if (!entry.resource || !this.isAllowedResourceId(entry.resource.id as string)) {
+        if (!entry.resource || !this.isAllowedResourceId(entry.resource.id)) {
           continue;
         }
-        this.idMap.set(entry.resource.id as string, repo.generateId());
+        this.idMap.set(entry.resource.id, repo.generateId());
         buildBinaryIds(entry.resource, binaryIds);
         if (entry.resource.resourceType !== 'Project') {
           allResources.push(entry.resource);
@@ -76,7 +92,7 @@ class ProjectCloner {
     if (this.isAllowedResourceType('Binary')) {
       for (const binaryId of binaryIds) {
         const binary = await repo.readResource<Binary>('Binary', binaryId);
-        this.idMap.set(binary.id as string, repo.generateId());
+        this.idMap.set(binary.id, repo.generateId());
         allResources.push(binary);
       }
     }

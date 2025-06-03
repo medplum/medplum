@@ -2,7 +2,7 @@ import { showNotification } from '@mantine/notifications';
 import { BaseLoginRequest, LoginAuthenticationResponse, normalizeErrorString } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { JSX, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Document } from '../Document/Document';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';

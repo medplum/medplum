@@ -1,0 +1,563 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "Vital Signs (Last Filed)",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8716-3",
+                  "display": "Vital signs"
+                }
+              ],
+              "text": "Vital signs"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table><thead><tr><th>Date</th><th>Blood Pressure</th><th>Pulse</th><th>Temperature</th><th>Respiratory Rate</th><th>Height</th><th>Weight</th><th>BMI</th><th>SpO2</th></tr></thead><tbody><tr><td>05/20/2014 7:36pm</td><td><content ID=\"SystolicBP_1\">120</content><content ID=\"DiastolicBP_1\">80</content>/mm[Hg]</td><td ID=\"Pulse_1\">80 /min</td><td ID=\"Temp_1\">37.2 C</td><td ID=\"RespRate_1\">18 /min</td><td ID=\"Height_1\">170.2 cm</td><td ID=\"Weight_1\">108.8 kg</td><td ID=\"BMI_1\">37.58 kg/m2</td><td ID=\"SPO2_1\">98%</td></tr></tbody></table></div>"
+            },
+            "entry": [
+              {
+                "reference": "Observation/e6c800c4-4a71-41bf-80e2-e741dd1168e9",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": [
+              "Katherine"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "fdbd831b-5919-4f06-9467-76b07022f8e8",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8480-6",
+              "display": "Systolic blood pressure"
+            }
+          ],
+          "text": "Systolic blood pressure"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "valueQuantity": {
+          "value": 120,
+          "unit": "mm[Hg]",
+          "system": "http://unitsofmeasure.org",
+          "code": "mm[Hg]"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#SystolicBP_1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "553f3f45-9046-4659-b3e7-5de904003550",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8462-4",
+              "display": "Diastolic blood pressure"
+            }
+          ],
+          "text": "Diastolic blood pressure"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "valueQuantity": {
+          "value": 80,
+          "unit": "mm[Hg]",
+          "system": "http://unitsofmeasure.org",
+          "code": "mm[Hg]"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#DiastolicBP_1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "77bfe276-a1dd-4372-9072-e603905acc07",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8867-4",
+              "display": "Heart rate"
+            }
+          ],
+          "text": "Heart rate"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "valueQuantity": {
+          "value": 80,
+          "unit": "/min",
+          "system": "http://unitsofmeasure.org",
+          "code": "/min"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Pulse_1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "24faa204-db62-4610-864f-cb50b650d0fa",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8310-5",
+              "display": "Body temperature"
+            }
+          ],
+          "text": "Body temperature"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "valueQuantity": {
+          "value": 37.2,
+          "unit": "Cel",
+          "system": "http://unitsofmeasure.org",
+          "code": "Cel"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Temp_1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "79f25395-8ec6-488b-8c05-becc97f79995",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "9279-1",
+              "display": "Respiratory rate"
+            }
+          ],
+          "text": "Respiratory rate"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "valueQuantity": {
+          "value": 18,
+          "unit": "/min",
+          "system": "http://unitsofmeasure.org",
+          "code": "/min"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#RespRate_1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "6d3fa9f8-6049-41bd-b0c3-b0196bb6bd37",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8302-2",
+              "display": "Body height"
+            }
+          ],
+          "text": "Body height"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "valueQuantity": {
+          "value": 170.2,
+          "unit": "cm",
+          "system": "http://unitsofmeasure.org",
+          "code": "cm"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Height_1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "2594e631-2189-4e72-9dd1-d6769ee2a7be",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "29463-7",
+              "display": "Body weight"
+            }
+          ],
+          "text": "Body weight"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "valueQuantity": {
+          "value": 108.863,
+          "unit": "kg",
+          "system": "http://unitsofmeasure.org",
+          "code": "kg"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Weight_1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "5858e765-2ffe-413f-9197-260f2c6e7aa8",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "39156-5",
+              "display": "Body mass index (BMI) [Ratio]"
+            }
+          ],
+          "text": "Body mass index (BMI) [Ratio]"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "valueQuantity": {
+          "value": 37.58,
+          "unit": "kg/m2",
+          "system": "http://unitsofmeasure.org",
+          "code": "kg/m2"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#BMI_1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "4ce6046c-f6e3-41b0-91fc-2d5325f2bbc3",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Observation"
+              }
+            ],
+            "text": "Vital Signs Observation"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "2710-2",
+              "display": "OXYGEN SATURATION"
+            }
+          ],
+          "text": "OXYGEN SATURATION"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "valueQuantity": {
+          "value": 98,
+          "unit": "%",
+          "system": "http://unitsofmeasure.org",
+          "code": "%"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0500",
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#SPO2_1"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Observation",
+        "id": "e6c800c4-4a71-41bf-80e2-e741dd1168e9",
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs Organizer"
+              }
+            ],
+            "text": "Vital Signs Organizer"
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "46680005",
+              "display": "Vital Signs"
+            }
+          ],
+          "text": "Vital Signs"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "effectiveDateTime": "2014-05-20T19:36:05-0500",
+        "hasMember": [
+          {
+            "reference": "Observation/fdbd831b-5919-4f06-9467-76b07022f8e8",
+            "display": "Systolic blood pressure"
+          },
+          {
+            "reference": "Observation/553f3f45-9046-4659-b3e7-5de904003550",
+            "display": "Diastolic blood pressure"
+          },
+          {
+            "reference": "Observation/77bfe276-a1dd-4372-9072-e603905acc07",
+            "display": "Heart rate"
+          },
+          {
+            "reference": "Observation/24faa204-db62-4610-864f-cb50b650d0fa",
+            "display": "Body temperature"
+          },
+          {
+            "reference": "Observation/79f25395-8ec6-488b-8c05-becc97f79995",
+            "display": "Respiratory rate"
+          },
+          {
+            "reference": "Observation/6d3fa9f8-6049-41bd-b0c3-b0196bb6bd37",
+            "display": "Body height"
+          },
+          {
+            "reference": "Observation/2594e631-2189-4e72-9dd1-d6769ee2a7be",
+            "display": "Body weight"
+          },
+          {
+            "reference": "Observation/5858e765-2ffe-413f-9197-260f2c6e7aa8",
+            "display": "Body mass index (BMI) [Ratio]"
+          },
+          {
+            "reference": "Observation/4ce6046c-f6e3-41b0-91fc-2d5325f2bbc3",
+            "display": "OXYGEN SATURATION"
+          }
+        ]
+      }
+    }
+  ]
+}

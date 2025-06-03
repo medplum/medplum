@@ -841,6 +841,21 @@
             }
           },
           {
+            "id" : "ClientApplication.retiringSecret",
+            "path" : "ClientApplication.retiringSecret",
+            "definition" : "Old version of the client secret that is being rotated out.  Instances of the client using this value should update to use the value in ClientApplication.secret",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.retiringSecret",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "ClientApplication.jwksUri",
             "path" : "ClientApplication.jwksUri",
             "definition" : "Optional JWKS URI for public key verification of JWTs issued by the authorization server (client_secret_jwt).",
@@ -955,6 +970,21 @@
               "path" : "ClientApplication.refreshTokenLifetime",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.allowedOrigin",
+            "path" : "ClientApplication.allowedOrigin",
+            "definition" : "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.allowedOrigin",
+              "min" : 0,
+              "max" : "*"
             }
           }
         ]
@@ -2624,7 +2654,7 @@
       "abstract" : false,
       "type" : "PasswordChangeRequest",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "@deprecated Password change request for the 'forgot password' flow. Use UserSecurityCheck instead.",
+      "description" : "@deprecated Password change request for the 'forgot password' flow. Use UserSecurityRequest instead.",
       "snapshot" : {
         "element" : [
           {

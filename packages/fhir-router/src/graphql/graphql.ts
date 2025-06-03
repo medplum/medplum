@@ -463,10 +463,10 @@ const MaxDepthRule =
 type DepthRecord = { depth: number; node?: FieldNode };
 
 class MaxDepthVisitor {
-  private context: ValidationContext;
-  private maxDepth: number;
-  private fragmentDepths: Record<string, DepthRecord>;
-  private router: FhirRouter;
+  private readonly context: ValidationContext;
+  private readonly maxDepth: number;
+  private readonly fragmentDepths: Record<string, DepthRecord>;
+  private readonly router: FhirRouter;
 
   constructor(context: ValidationContext, router: FhirRouter, maxDepth: number) {
     this.context = context;
@@ -552,11 +552,11 @@ const QueryCostRule =
     new QueryCostVisitor(context, router, options) as ASTVisitor;
 
 class QueryCostVisitor {
-  private context: ValidationContext;
-  private maxCost: number;
-  private debug: boolean;
-  private router: FhirRouter;
-  private fragmentCosts: Record<string, number>;
+  private readonly context: ValidationContext;
+  private readonly maxCost: number;
+  private readonly debug: boolean;
+  private readonly router: FhirRouter;
+  private readonly fragmentCosts: Record<string, number>;
 
   constructor(context: ValidationContext, router: FhirRouter, options?: QueryCostRuleOptions) {
     this.context = context;

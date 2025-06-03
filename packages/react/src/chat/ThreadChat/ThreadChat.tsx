@@ -1,7 +1,7 @@
 import { ProfileResource, createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { JSX, useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseChat } from '../BaseChat/BaseChat';
 
 export interface ThreadChatProps {
@@ -63,7 +63,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
         ? (message: Communication): void => {
             if (!(message.received && message.status === 'completed')) {
               medplum
-                .updateResource<Communication>({
+                .updateResource({
                   ...message,
                   received: message.received ?? new Date().toISOString(), // Mark as received if needed
                   status: 'completed', // Mark as 'read'

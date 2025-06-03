@@ -11,6 +11,7 @@ import {
   parseSearchRequest,
   preconditionFailed,
   toTypedValue,
+  WithId,
 } from '@medplum/core';
 import {
   BundleEntry,
@@ -18,8 +19,8 @@ import {
   Login,
   Observation,
   OperationOutcome,
-  Organization,
   Patient,
+  PatientLink,
   Practitioner,
   Project,
   ProjectMembership,
@@ -29,22 +30,26 @@ import {
   ServiceRequest,
   StructureDefinition,
   User,
+  UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
+import { TokenTable } from './lookups/token';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
+import { lookupTables } from './searchparameter';
+import { SelectQuery } from './sql';
 
 jest.mock('hibp');
 
 describe('FHIR Repo', () => {
-  const testProject: Project = {
+  const testProject: WithId<Project> = {
     resourceType: 'Project',
     id: randomUUID(),
   };
@@ -68,8 +73,9 @@ describe('FHIR Repo', () => {
     await expect(() =>
       getRepoForLogin({
         login: { resourceType: 'Login' } as Login,
-        membership: { resourceType: 'ProjectMembership' } as ProjectMembership,
+        membership: { resourceType: 'ProjectMembership' } as WithId<ProjectMembership>,
         project: testProject,
+        userConfig: {} as UserConfiguration,
       })
     ).rejects.toThrow('Invalid author reference');
   });
@@ -163,7 +169,7 @@ describe('FHIR Repo', () => {
       expect(version2.id).toStrictEqual(version1.id);
       expect(version2.meta?.versionId).not.toStrictEqual(version1.meta?.versionId);
 
-      const history = await systemRepo.readHistory('Patient', version1.id as string);
+      const history = await systemRepo.readHistory('Patient', version1.id);
       expect(history).toBeDefined();
       expect(history.entry?.length).toBe(2);
       expect(history.entry?.[0]?.resource?.id).toBe(version2.id);
@@ -317,7 +323,7 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
 
       // empty identifier array should removed when read from cache
-      const readPatient = await repo.readResource<Patient>('Patient', patient.id as string, { checkCacheOnly: true });
+      const readPatient = await repo.readResource<Patient>('Patient', patient.id, { checkCacheOnly: true });
       expect(readPatient.identifier).toBeUndefined();
     }));
 
@@ -487,7 +493,7 @@ describe('FHIR Repo', () => {
 
       const patched = await systemRepo.patchResource<Patient>(
         patient.resourceType,
-        patient.id as string,
+        patient.id,
         [{ op: 'replace', path: '/name/0/family', value: 'TestUpdated' }],
         {
           ifMatch: patient.meta?.versionId,
@@ -506,7 +512,7 @@ describe('FHIR Repo', () => {
       await expect(
         systemRepo.patchResource<Patient>(
           patient.resourceType,
-          patient.id as string,
+          patient.id,
           [{ op: 'add', path: '/birthDate', value: '1993-09-14' }],
           { ifMatch: 'bad-id' }
         )
@@ -526,7 +532,12 @@ describe('FHIR Repo', () => {
       const result1 = await registerNew(registration1);
       expect(result1.profile).toBeDefined();
 
-      const repo1 = await getRepoForLogin(result1);
+      const repo1 = await getRepoForLogin({
+        project: result1.project,
+        membership: result1.membership,
+        login: result1.login,
+        userConfig: {} as UserConfiguration,
+      });
       const patient1 = await repo1.createResource<Patient>({
         resourceType: 'Patient',
       });
@@ -534,7 +545,7 @@ describe('FHIR Repo', () => {
       expect(patient1).toBeDefined();
       expect(patient1.id).toBeDefined();
 
-      const patient2 = await repo1.readResource('Patient', patient1.id as string);
+      const patient2 = await repo1.readResource('Patient', patient1.id);
       expect(patient2).toBeDefined();
       expect(patient2.id).toStrictEqual(patient1.id);
 
@@ -549,9 +560,14 @@ describe('FHIR Repo', () => {
       const result2 = await registerNew(registration2);
       expect(result2.profile).toBeDefined();
 
-      const repo2 = await getRepoForLogin(result2);
+      const repo2 = await getRepoForLogin({
+        project: result2.project,
+        membership: result2.membership,
+        login: result2.login,
+        userConfig: {} as UserConfiguration,
+      });
       try {
-        await repo2.readResource('Patient', patient1.id as string);
+        await repo2.readResource('Patient', patient1.id);
         fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
@@ -566,19 +582,19 @@ describe('FHIR Repo', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      const history1 = await systemRepo.readHistory('Patient', patient.id as string);
+      const history1 = await systemRepo.readHistory('Patient', patient.id);
       expect(history1.entry?.length).toBe(1);
 
       // Delete the patient
-      await systemRepo.deleteResource('Patient', patient.id as string);
+      await systemRepo.deleteResource('Patient', patient.id);
 
-      const history2 = await systemRepo.readHistory('Patient', patient.id as string);
+      const history2 = await systemRepo.readHistory('Patient', patient.id);
       expect(history2.entry?.length).toBe(2);
 
       // Restore the patient
       await systemRepo.updateResource({ ...patient, meta: undefined });
 
-      const history3 = await systemRepo.readHistory('Patient', patient.id as string);
+      const history3 = await systemRepo.readHistory('Patient', patient.id);
       expect(history3.entry?.length).toBe(3);
 
       const entries = history3.entry as BundleEntry[];
@@ -596,6 +612,20 @@ describe('FHIR Repo', () => {
 
     try {
       await repo.reindexResource('Practitioner', randomUUID());
+      fail('Expected error');
+    } catch (err) {
+      expect(isOk(err as OperationOutcome)).toBe(false);
+    }
+
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+
+    try {
+      await repo.withTransaction(async (conn) => {
+        await repo.reindexResources(conn, [patient]);
+      });
       fail('Expected error');
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
@@ -1017,8 +1047,8 @@ describe('FHIR Repo', () => {
   test('Double DELETE', async () =>
     withTestContext(async () => {
       const patient = await systemRepo.createResource<Patient>({ resourceType: 'Patient' });
-      await systemRepo.deleteResource(patient.resourceType, patient.id as string);
-      await expect(systemRepo.deleteResource(patient.resourceType, patient.id as string)).resolves.toBeUndefined();
+      await systemRepo.deleteResource(patient.resourceType, patient.id);
+      await expect(systemRepo.deleteResource(patient.resourceType, patient.id)).resolves.toBeUndefined();
     }));
 
   test('Conditional reference resolution', async () =>
@@ -1153,29 +1183,6 @@ describe('FHIR Repo', () => {
       });
     }));
 
-  test('Allows adding compartments for specific types', async () =>
-    withTestContext(async () => {
-      const { repo, project } = await createTestProject({ withRepo: true });
-      const org = await repo.createResource<Organization>({ resourceType: 'Organization' });
-      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
-
-      const orgReference = createReference(org);
-      const practitionerReference = createReference(practitioner);
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        meta: { compartment: [orgReference, practitionerReference] },
-      });
-      expect(patient.meta?.compartment).toContainEqual(orgReference);
-      expect(patient.meta?.compartment).not.toContainEqual(practitionerReference);
-      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
-      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
-
-      const results = await repo.searchResources(
-        parseSearchRequest('Patient?_compartment=' + getReferenceString(orgReference))
-      );
-      expect(results).toHaveLength(1);
-    }));
-
   test('Prevents setting Project compartments', async () =>
     withTestContext(async () => {
       const { repo, project } = await createTestProject({ withRepo: true });
@@ -1261,7 +1268,12 @@ describe('FHIR Repo', () => {
       });
       project.link = [{ project: createReference(project2) }];
 
-      const repo2 = await getRepoForLogin({ login: {} as Login, membership: membership2, project: project2 });
+      const repo2 = await getRepoForLogin({
+        login: {} as Login,
+        membership: membership2,
+        project: project2,
+        userConfig: {} as UserConfiguration,
+      });
       const profileJson = JSON.parse(
         readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
       ) as StructureDefinition;
@@ -1275,7 +1287,12 @@ describe('FHIR Repo', () => {
       };
 
       // Resource upload should fail with profile linked
-      let repo = await getRepoForLogin({ login: {} as Login, membership, project });
+      let repo = await getRepoForLogin({
+        login: {} as Login,
+        membership,
+        project,
+        userConfig: {} as UserConfiguration,
+      });
       await expect(repo.createResource(patientJson)).rejects.toThrow(/Missing required property/);
 
       // Unlink Project and verify that profile is not cached; resource upload should succeed without access to profile
@@ -1284,6 +1301,7 @@ describe('FHIR Repo', () => {
         login: {} as Login,
         membership,
         project,
+        userConfig: {} as UserConfiguration,
       });
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
     }));
@@ -1295,19 +1313,22 @@ describe('FHIR Repo', () => {
         withAccessToken: true,
         withClient: true,
       });
-      const extendedRepo = await getRepoForLogin({ login, project, membership }, true);
+      const extendedRepo = await getRepoForLogin(
+        { login, project, membership, userConfig: {} as UserConfiguration },
+        true
+      );
 
       const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
       expect(patient.meta?.project).toBeUndefined();
       expect(patient.gender).toBeUndefined();
 
-      const updatedPatient = await repo.patchResource<Patient>('Patient', patient.id as string, [
+      const updatedPatient = await repo.patchResource<Patient>('Patient', patient.id, [
         { op: 'add', path: '/gender', value: 'unknown' },
       ]);
       expect(updatedPatient.meta?.project).toBeUndefined();
       expect(updatedPatient.gender).toStrictEqual('unknown');
 
-      const cachedPatient = await extendedRepo.readResource<Patient>('Patient', patient.id as string);
+      const cachedPatient = await extendedRepo.readResource<Patient>('Patient', patient.id);
       expect(cachedPatient.meta?.project).toStrictEqual(project.id);
       expect(cachedPatient.gender).toStrictEqual('unknown');
     }));
@@ -1320,14 +1341,160 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         link: [],
       };
+
+      const link: PatientLink = { type: 'seealso', other: { reference: 'Patient/to-be-overwritten-in-loop' } };
+
       // Postgres uses a 16-bit counter for placeholder formats internally,
       // so 2^16 + 1 = 64k + 1 will definitely overflow it if not sent in smaller batches
       for (let i = 0; i < 64 * 1024 + 1; i++) {
-        patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
+        link.other.reference = 'Patient/' + randomUUID();
+        patient.link?.push(link);
       }
 
       await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
     }));
+
+  test('__version column', async () => {
+    const { repo } = await createTestProject({ withRepo: true, superAdmin: true });
+
+    await withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const versionQuery = new SelectQuery('Patient').column('__version').where('id', '=', patient.id);
+
+      const client = repo.getDatabaseClient(DatabaseMode.WRITER);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+
+      // Simulate the resource being at an older version
+      const OLDER_VERSION = Repository.VERSION - 1;
+      await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient.id]);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+
+      // noop update should not change the version
+      await repo.updateResource<Patient>(patient);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+
+      // meaningful update should change the version
+      await repo.updateResource<Patient>({
+        ...patient,
+        name: [{ given: ['Bob'], family: 'Smith' }],
+      });
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+
+      // Simulate the resource being at an older version
+      await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient.id]);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+
+      // reindex SHOULD change the version
+      await repo.reindexResource('Patient', patient.id);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+    });
+  });
+
+  test('Legacy UUID support -- non-conformant IDs that match UUID form are accepted', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+      // Random invalid UUID that is invalid based on RFC9562 for the following reasons:
+      // 1. The version field (the first digit in the third group) should be 4 to indicate UUID version 4, but here it's e
+      // 2. The variant field (the first digit in the fourth group) should be 8, 9, a, or b, but here it's c
+      // This is invalid in a similar way to some of the legacy UUIDs imported from other systems which we must continue to support
+      // This test fails using the version of the validator.js isUUID (13.15.0) that caused the regression this PR fixed: https://github.com/medplum/medplum/pull/6289
+      const nonconformantUuid = '03a8d57b-91c2-e45f-c312-a7fe09c2d8e4';
+      const patient = await repo.createResource<Patient>(
+        {
+          id: nonconformantUuid,
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+        },
+        { assignedId: true }
+      );
+      expect(patient.id).toStrictEqual(nonconformantUuid);
+    }));
+
+  test('Project.systemSetting without disableTokenTableWrites', async () => {
+    const { project, repo } = await createTestProject({ withRepo: true });
+
+    const tokenTable = lookupTables.find((t) => t instanceof TokenTable);
+    if (tokenTable === undefined) {
+      throw new Error('TokenTable not found');
+    }
+
+    const indexResourceSpy = jest.spyOn(tokenTable, 'indexResource');
+
+    await withTestContext(async () => {
+      expect(project.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')).toBeUndefined();
+      indexResourceSpy.mockClear();
+      await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com', value: '123' }],
+      });
+      expect(indexResourceSpy).toHaveBeenCalledTimes(1);
+    });
+    indexResourceSpy.mockRestore();
+  });
+
+  test.each([true, false])('Project.systemSetting with disableTokenTableWrites %s', async (disableTokenTableWrites) => {
+    const { project, repo } = await createTestProject({
+      withRepo: true,
+      project: { systemSetting: [{ name: 'disableTokenTableWrites', valueBoolean: disableTokenTableWrites }] },
+    });
+
+    const tokenTable = lookupTables.find((t) => t instanceof TokenTable);
+    if (tokenTable === undefined) {
+      throw new Error('TokenTable not found');
+    }
+
+    const indexResourceSpy = jest.spyOn(tokenTable, 'indexResource');
+
+    await withTestContext(async () => {
+      expect(project.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')?.valueBoolean).toStrictEqual(
+        disableTokenTableWrites
+      );
+      indexResourceSpy.mockClear();
+      await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ system: 'http://example.com', value: '123' }],
+      });
+      expect(indexResourceSpy).toHaveBeenCalledTimes(disableTokenTableWrites ? 0 : 1);
+    });
+    indexResourceSpy.mockRestore();
+  });
+
+  test.each([true, false])(
+    'Reindex resources with Project.systemSetting disableTokenTableWrites %s',
+    async (disableTokenTableWrites) => {
+      const { project, repo } = await createTestProject({
+        withRepo: true,
+        superAdmin: true,
+        project: { systemSetting: [{ name: 'disableTokenTableWrites', valueBoolean: disableTokenTableWrites }] },
+      });
+
+      const tokenTable = lookupTables.find((t) => t instanceof TokenTable);
+      if (tokenTable === undefined) {
+        throw new Error('TokenTable not found');
+      }
+
+      const batchIndexResourcesSpy = jest.spyOn(tokenTable, 'batchIndexResources');
+
+      await withTestContext(async () => {
+        expect(project.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')?.valueBoolean).toStrictEqual(
+          disableTokenTableWrites
+        );
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ system: 'http://example.com', value: '123' }],
+        });
+
+        batchIndexResourcesSpy.mockClear();
+        await repo.reindexResource('Patient', patient.id);
+        expect(batchIndexResourcesSpy).toHaveBeenCalledTimes(disableTokenTableWrites ? 0 : 1);
+      });
+      batchIndexResourcesSpy.mockRestore();
+    }
+  );
 });
 
 function shuffleString(s: string): string {

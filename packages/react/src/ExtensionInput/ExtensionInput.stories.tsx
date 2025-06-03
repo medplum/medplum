@@ -1,5 +1,6 @@
 import { Extension } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { ExtensionInput } from './ExtensionInput';
 

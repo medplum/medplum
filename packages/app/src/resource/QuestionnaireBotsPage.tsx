@@ -1,10 +1,10 @@
 import { Button, Divider, Group, InputLabel, NativeSelect, Stack, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Bot, Subscription } from '@medplum/fhirtypes';
-import { Document, ResourceInput, ResourceName, useMedplum } from '@medplum/react';
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { getReferenceString, normalizeErrorString, WithId } from '@medplum/core';
+import { Bot, Questionnaire, Subscription } from '@medplum/fhirtypes';
+import { Document, ResourceInput, ResourceName, useMedplum, useResource } from '@medplum/react';
+import { JSX, useState } from 'react';
+import { useParams } from 'react-router';
 
 const SUBSCRIPTION_INTERACTION_MAP = {
   'Create Only': 'create',
@@ -20,6 +20,7 @@ type SubscriptionInteractionKey = keyof typeof SUBSCRIPTION_INTERACTION_MAP;
 export function QuestionnaireBotsPage(): JSX.Element {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
+  const questionnaire = useResource<WithId<Questionnaire>>({ reference: `Questionnaire/${id}` });
   const [connectBot, setConnectBot] = useState<Bot | undefined>();
   const [supportedInteraction, setSupportedInteraction] = useState<'create' | 'update' | 'delete' | undefined>(
     'create'
@@ -28,16 +29,16 @@ export function QuestionnaireBotsPage(): JSX.Element {
   const subscriptions = medplum
     .searchResources('Subscription', 'status=active&_count=100')
     .read()
-    .filter((s) => isQuestionnaireBotSubscription(s, id));
+    .filter((s) => isQuestionnaireBotSubscription(s, questionnaire));
 
   function connectToBot(): void {
-    if (connectBot) {
+    if (connectBot && questionnaire) {
       medplum
         .createResource({
           resourceType: 'Subscription',
           status: 'active',
           reason: `Connect bot ${connectBot.name} to questionnaire responses`,
-          criteria: 'QuestionnaireResponse?questionnaire=Questionnaire/' + id,
+          criteria: `QuestionnaireResponse?questionnaire=${questionnaire.url ? `${questionnaire.url},${getReferenceString(questionnaire)}` : getReferenceString(questionnaire)}`,
           channel: {
             type: 'rest-hook',
             endpoint: getReferenceString(connectBot),
@@ -103,10 +104,18 @@ export function QuestionnaireBotsPage(): JSX.Element {
   );
 }
 
-function isQuestionnaireBotSubscription(subscription: Subscription, questionnaireId: string): boolean {
+function isQuestionnaireBotSubscription(subscription: Subscription, questionnaire?: WithId<Questionnaire>): boolean {
+  if (!questionnaire) {
+    return false;
+  }
   const criteria = subscription.criteria || '';
   const endpoint = subscription.channel?.endpoint || '';
   return (
-    criteria.startsWith('QuestionnaireResponse?') && criteria.includes(questionnaireId) && endpoint.startsWith('Bot/')
+    criteria.startsWith('QuestionnaireResponse?') &&
+    endpoint.startsWith('Bot/') &&
+    // Match criteria with either `Questionnaire?questionnaire=Questionnaire/123` or `QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire`
+    // For backwards compat after moving away from reference strings in the `QuestionnaireResponse.questionnaire` field to correct canonical references
+    (criteria.includes(getReferenceString(questionnaire)) ||
+      (questionnaire.url ? criteria.includes(questionnaire.url) : false))
   );
 }

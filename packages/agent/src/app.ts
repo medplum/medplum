@@ -27,6 +27,7 @@ import { platform } from 'node:os';
 import process from 'node:process';
 import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
+import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
@@ -44,11 +45,11 @@ async function execAsync(command: string, options: ExecOptions): Promise<{ stdou
   });
 }
 
-export const DEFAULT_PING_TIMEOUT = 3600;
-export const MAX_MISSED_HEARTBEATS = 1;
-
 export class App {
   static instance: App;
+  readonly medplum: MedplumClient;
+  readonly agentId: string;
+  readonly logLevel: LogLevel;
   readonly log: Logger;
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
@@ -64,12 +65,11 @@ export class App {
   private keepAlive = false;
   private config: Agent | undefined;
 
-  constructor(
-    readonly medplum: MedplumClient,
-    readonly agentId: string,
-    readonly logLevel: LogLevel
-  ) {
+  constructor(medplum: MedplumClient, agentId: string, logLevel: LogLevel) {
     App.instance = this;
+    this.medplum = medplum;
+    this.agentId = agentId;
+    this.logLevel = logLevel;
     this.log = new Logger((msg) => console.log(msg), undefined, logLevel);
   }
 
@@ -267,13 +267,10 @@ export class App {
       }
     });
 
-    return new Promise<void>((resolve, reject) => {
-      const connectTimeout = setTimeout(
-        () => reject(new Error('Timeout when attempting to connect to server WebSocket')),
-        10000
-      );
+    return new Promise<void>((resolve) => {
+      const connectInterval = setInterval(() => this.webSocket?.reconnect(), RETRY_WAIT_DURATION_MS);
       this.webSocket?.addEventListener('open', () => {
-        clearTimeout(connectTimeout);
+        clearInterval(connectInterval);
         resolve();
       });
     });
@@ -610,6 +607,26 @@ export class App {
       return;
     }
 
+    const targetVersion = message.version ?? (await fetchLatestVersionString('agent-upgrader'));
+
+    // MEDPLUM_VERSION contains major.minor.patch-commit_hash
+    if (MEDPLUM_VERSION.startsWith(targetVersion)) {
+      // If we are forcing an upgrade, we can still upgrade to a version that we're already on
+      // This is mostly if you somehow installed a version that was not released but installed manually
+      // This will get you on the official release version for the given semver
+      if (!message?.force) {
+        this.log.info(`Attempted to upgrade to version ${targetVersion}, but agent is already on that version`);
+        await this.sendToWebSocket({
+          type: 'agent:upgrade:response',
+          statusCode: 200,
+          callback: message.callback,
+        } satisfies AgentUpgradeResponse);
+        return;
+      }
+
+      this.log.info(`Forcing upgrade from ${MEDPLUM_VERSION} to ${targetVersion}`);
+    }
+
     try {
       const command = __filename;
       const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
@@ -653,8 +670,6 @@ export class App {
       this.log.info('Successfully stopped agent network services');
 
       // Write a manifest file
-      const targetVersion = message.version ?? (await fetchLatestVersionString('agent-upgrader'));
-
       this.log.info('Writing upgrade manifest...', { previousVersion: MEDPLUM_VERSION, targetVersion });
       writeFileSync(
         UPGRADE_MANIFEST_PATH,

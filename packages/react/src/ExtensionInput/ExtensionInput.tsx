@@ -1,7 +1,7 @@
 import { isPopulated, isProfileLoaded } from '@medplum/core';
 import { ElementDefinitionType, Extension } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useEffect, useMemo, useState } from 'react';
+import { JSX, useEffect, useMemo, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 

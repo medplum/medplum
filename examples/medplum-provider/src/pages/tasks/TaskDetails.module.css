@@ -5,12 +5,12 @@
   height: 70px;
 }
 
-[data-mantine-color-scheme="dark"] .taskDetails,
-[data-mantine-color-scheme="dark"] .footer  {
+[data-mantine-color-scheme='dark'] .taskDetails,
+[data-mantine-color-scheme='dark'] .footer {
   background-color: var(--mantine-color-dark-8);
 }
 
-[data-mantine-color-scheme="light"] .taskDetails,
-[data-mantine-color-scheme="light"] .footer {
+[data-mantine-color-scheme='light'] .taskDetails,
+[data-mantine-color-scheme='light'] .footer {
   background-color: var(--mantine-color-gray-1);
 }

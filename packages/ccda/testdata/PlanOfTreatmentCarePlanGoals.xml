@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="CDA.xsl"?>
+<ClinicalDocument
+    xmlns = "urn:hl7-org:v3"
+    xmlns:xsi = "http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:voc = "urn:hl7-org:v3/voc"
+    xmlns:sdtc = "urn:hl7-org:sdtc">
+    <realmCode code = "US"/>
+    <typeId extension = "POCD_HD000040" root = "2.16.840.1.113883.1.3"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1" extension = "2015-08-01"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.1"/>
+    <templateId root = "2.16.840.1.113883.10.20.22.1.2" extension = "2015-08-01"/>
+    <templateId root="2.16.840.1.113883.10.20.22.1.2" />
+    <id root="3db70aff-83f5-4caf-91dc-d23fcc5e03bb" />
+    <code code="34133-9" displayName="Summarization of Episode Note"
+        codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
+    <title>Medical Summary</title>
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
+    <recordTarget>
+        <patientRole>
+            <id root="ce862cfe-6559-411e-92e9-e8d005b1c226" />
+            <id extension="111223333" root="2.16.840.1.113883.4.1" />
+            <telecom nullFlavor="UNK" />
+            <addr nullFlavor="UNK" />
+            <patient>
+                <name use="L">
+                    <given>Katherine</given>
+                    <family>Madison</family>
+                </name>
+                <raceCode nullFlavor="UNK"/>
+                <ethnicGroupCode nullFlavor="UNK"/>
+            </patient>
+        </patientRole>
+    </recordTarget>
+    <component>
+        <structuredBody>
+            <component>
+                <section>
+                    <templateId root="2.16.840.1.113883.10.20.22.2.10" />
+                    <templateId root="2.16.840.1.113883.10.20.22.2.10" extension="2014-06-09" />
+                    <!-- Plan of Care Section -->
+                    <code code="18776-5" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"
+                        displayName="Plan of care note" />
+                    <title>PLAN OF CARE</title>
+                    <text>
+                        <table border="1" width="100%">
+                            <thead>
+                                <tr>
+                                    <th>Date/time</th>
+                                    <th>Goal</th>
+                                    <th>Instructions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr ID="Goal1">
+                                    <td>August 15, 2012 10:00am</td>
+                                    <td ID="Goal1_desc">Weight Loss</td>
+                                    <td ID="Action1">
+                                        <content ID="Action1_Type">Patient Education:</content>
+                                        <content ID="Action1_desc">Diet and exercise counseling provided during visit.</content>
+                                    </td>
+                                </tr>
+                                <tr ID="Goal2">
+                                    <td>August 15, 2012 10:00am</td>
+                                    <td ID="Goal2_desc">Asthma management</td>
+                                    <td ID="Action2">
+                                        <content ID="Action2_Type">Patient Education:</content>
+                                        <content ID="Action2_desc">Resources and instructions provided during visit.</content>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </text>
+                    <entry>
+                        <observation classCode="OBS" moodCode="GOL">
+                            <!-- Goal Observation C-CDA R2.1-->
+                            <!-- Plan of Care Activity Observation C-CDA R1.1-->
+                            <templateId root="2.16.840.1.113883.10.20.22.4.44" />
+                            <id root="2a620155-9d11-439e-92b3-5d9815ff4dd4" />
+                            <code code="289169006" displayName="Exercising to lose weight"
+                                codeSystem="2.16.840.1.113883.6.96"
+                                codeSystemName="SNOMED CT">
+                            </code>
+                            <text>
+                                <reference value="#Goal1" />
+                            </text>
+                            <value xsi:type="ST">Exercising to lose weight</value>
+                            <statusCode code="active" />
+                            <effectiveTime value="20120815" />
+                            <entryRelationship typeCode="RSON" inversionInd="true">
+                                <act classCode="ACT" moodCode="EVN">
+                                    <!-- Procedure Activity Act - selected over instructions
+                                    template
+									since it requries moodCode=INT. This act records education provided
+									during the visit.-->
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.12" />
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.12"
+                                        extension="2014-06-09" />
+                                    <code code="311401005" displayName="Patient education"
+                                        codeSystem="2.16.840.1.113883.6.96"
+                                        codeSystemName="SNOMED CT">
+                                    </code>
+                                    <statusCode code="completed" />
+                                    <!-- 
+					   <text>
+						  <reference value="#Action1" />
+					   </text>
+								-->
+                                    <!-- In this example, the instruction was given at the same time
+                                    that the goal was set.
+									effectiveTime is the same in this case. -->
+                                    <effectiveTime value="20120815" />
+                                </act>
+                            </entryRelationship>
+                        </observation>
+                    </entry>
+                    <entry>
+                        <observation classCode="OBS" moodCode="GOL">
+                            <!-- Plan of Care Activity Observation -->
+                            <templateId root="2.16.840.1.113883.10.20.22.4.44" />
+                            <id root="2a620155-9d11-439e-92b3-5d9815ff4dd3" />
+                            <code code="406162001" displayName="Asthma management"
+                                codeSystem="2.16.840.1.113883.6.96" codeSystemName="SNOMED CT">
+                            </code>
+                            <text>
+                                <reference value="#Goal2" />
+                            </text>
+                            <value xsi:type="ST">Asthma management</value>
+                            <statusCode code="active" />
+                            <effectiveTime value="20120815" />
+                            <entryRelationship typeCode="RSON" inversionInd="true">
+                                <act classCode="ACT" moodCode="EVN">
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.12" />
+                                    <templateId root="2.16.840.1.113883.10.20.22.4.12"
+                                        extension="2014-06-09" />
+                                    <code code="311401005" displayName="Patient education"
+                                        codeSystem="2.16.840.1.113883.6.96"
+                                        codeSystemName="SNOMED CT">
+                                    </code>
+                                    <statusCode code="completed" />
+                                    <!-- 
+                                        <text>
+                                        <reference value="#Action2" />
+                                        </text>
+                                    -->
+                                    <!-- In this example, the instruction was given at the same time
+                                    that the goal was set.
+									effectiveTime is the same in this case. -->
+                                    <effectiveTime value="20120815" />
+                                </act>
+                            </entryRelationship>
+                        </observation>
+                    </entry>
+                </section>
+            </component>
+        </structuredBody>
+    </component>
+</ClinicalDocument>

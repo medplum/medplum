@@ -8,8 +8,8 @@ import {
   fullResponse,
   fullResponseNoProblemList,
   noAssessment,
-  oneBloodPressureMeasurement,
   noCondition,
+  oneBloodPressureMeasurement,
   onlyCondition,
 } from './test-data/gynecology-encounter-data';
 

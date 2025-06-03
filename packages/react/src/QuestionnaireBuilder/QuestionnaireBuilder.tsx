@@ -1,4 +1,4 @@
-import { Anchor, Box, Button, Group, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
+import { Anchor, Box, Group, NativeSelect, Space, Textarea, TextInput, Title } from '@mantine/core';
 import { getElementDefinition, isResource as isResourceType } from '@medplum/core';
 import {
   Extension,
@@ -11,8 +11,9 @@ import {
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import cx from 'clsx';
-import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
+import { JSX, MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { QuestionnaireFormItem } from '../QuestionnaireForm/QuestionnaireFormItem/QuestionnaireFormItem';
 import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
@@ -87,7 +88,7 @@ export function QuestionnaireBuilder(props: QuestionnaireBuilderProps): JSX.Elem
           setHoverKey={setHoverKey}
           onChange={handleChange}
         />
-        <Button type="submit">Save</Button>
+        <SubmitButton>Save</SubmitButton>
       </Form>
     </div>
   );
@@ -117,7 +118,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   const editing = props.selectedKey === props.item.id;
   const hovering = props.hoverKey === props.item.id;
 
-  const itemRef = useRef<T>();
+  const itemRef = useRef<T>(props.item);
   itemRef.current = props.item;
 
   function onClick(e: SyntheticEvent): void {
@@ -221,6 +222,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               <QuestionnaireFormItem
                 item={item}
                 index={0}
+                required={false}
                 onChange={() => undefined}
                 response={{ linkId: item.linkId }}
               />

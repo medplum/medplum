@@ -1,9 +1,17 @@
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
-import { Encounter, OperationOutcome, Patient, Questionnaire, RequestGroup, Task } from '@medplum/fhirtypes';
+import {
+  Encounter,
+  OperationOutcome,
+  Patient,
+  PlanDefinition,
+  Questionnaire,
+  RequestGroup,
+  Task,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 
 const app = express();
@@ -230,6 +238,16 @@ describe('PlanDefinition apply', () => {
     expect(resultTask.input?.[0]?.valueReference?.reference).toStrictEqual(
       getReferenceString(res1.body as Questionnaire)
     );
+    expect(resultTask.basedOn).toHaveLength(1);
+    expect(resultTask.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
+
+    // 7. Verify the encounter was updated
+    const res7 = await request(app)
+      .get(`/fhir/R4/Encounter/${res4.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res7.status).toBe(200);
+    expect(res7.body.basedOn).toHaveLength(1);
+    expect(res7.body.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
   });
 
   test('Unsupported content type', async () => {
@@ -347,5 +365,116 @@ describe('PlanDefinition apply', () => {
         ],
       });
     expect(res4.status).toBe(200);
+  });
+
+  test('ActivityDefinition ServiceRequest', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/ActivityDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'ActivityDefinition',
+        status: 'active',
+        kind: 'ServiceRequest',
+        name: 'CompleteBloodCountOrder',
+        title: 'Complete Blood Count Order',
+        description: 'Order for a complete blood count',
+        code: {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '26604007',
+              display: 'Complete blood count',
+            },
+            {
+              system: 'http://www.ama-assn.org/go/cpt',
+              code: '85025',
+              display: 'Complete CBC with automated differential WBC',
+            },
+          ],
+        },
+        intent: 'order',
+        priority: 'routine',
+        participant: [
+          {
+            type: 'practitioner',
+            role: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/practitioner-role',
+                  code: 'doctor',
+                  display: 'Doctor',
+                },
+              ],
+            },
+          },
+        ],
+      });
+    expect(res1.status).toBe(201);
+    expect(res1.body.resourceType).toBe('ActivityDefinition');
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+        status: 'active',
+        action: [
+          {
+            title: 'Order a CBC',
+            definitionCanonical: getReferenceString(res1.body),
+          },
+        ],
+      });
+
+    expect(res2.status).toBe(201);
+    expect(res2.body.resourceType).toBe('PlanDefinition');
+    expect(res2.body.id).toBeDefined();
+
+    const res3 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Workflow'], family: 'Demo' }],
+      });
+    expect(res3.status).toBe(201);
+
+    const res4 = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'subject',
+            valueString: getReferenceString(res3.body as Patient),
+          },
+        ],
+      });
+
+    expect(res4.status).toBe(200);
+
+    const res5 = await request(app)
+      .get(`/fhir/R4/RequestGroup/${res4.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res5.status).toBe(200);
+    expect(res5.body.resourceType).toBe('RequestGroup');
+
+    const res6 = await request(app)
+      .get(`/fhir/R4/${(res5.body as RequestGroup).action?.[0]?.resource?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res6.status).toBe(200);
+
+    const resultTask = res6.body as Task;
+    const res7 = await request(app)
+      .get(`/fhir/R4/${resultTask.focus?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res7.status).toBe(200);
+    expect(res7.body.resourceType).toBe('ServiceRequest');
   });
 });

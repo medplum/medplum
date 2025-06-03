@@ -5,12 +5,13 @@ import {
   Operator,
   ProfileResource,
   resolveId,
+  WithId,
 } from '@medplum/core';
 import { ContactPoint, Login, OperationOutcome, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
 import { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
@@ -23,7 +24,7 @@ export async function createProfile(
   firstName: string,
   lastName: string,
   email: string | undefined
-): Promise<ProfileResource> {
+): Promise<WithId<ProfileResource>> {
   const logger = getLogger();
   logger.info('Creating profile', { resourceType, firstName, lastName });
   let telecom: ContactPoint[] | undefined = undefined;
@@ -54,7 +55,7 @@ export async function createProjectMembership(
   project: Project,
   profile: ProfileResource,
   details?: Partial<ProjectMembership>
-): Promise<ProjectMembership> {
+): Promise<WithId<ProjectMembership>> {
   const logger = getLogger();
   logger.info('Creating project membership', { name: project.name });
 

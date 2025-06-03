@@ -1,5 +1,6 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { badRequest, createReference } from '@medplum/core';
+import { UserSecurityRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import { pwnedPassword } from 'hibp';
@@ -7,12 +8,11 @@ import { simpleParser } from 'mailparser';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
-import { getSystemRepo } from '../fhir/repo';
-import { UserSecurityRequest } from '@medplum/fhirtypes';
 
 jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');

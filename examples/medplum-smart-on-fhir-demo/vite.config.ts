@@ -1,6 +1,6 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
 import dns from 'dns';
+import { defineConfig } from 'vite';
 
 dns.setDefaultResultOrder('verbatim');
 
