@@ -122,7 +122,15 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
       <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
         <div>
           {onRegister && (
-            <Anchor component="button" type="button" color="dimmed" onClick={onRegister} size="xs">
+            <Anchor
+              component="button"
+              type="button"
+              c="dimmed"
+              onClick={onRegister}
+              size="xs"
+              data-no-autofill="true"
+              data-form-type="navigation"
+            >
               Register
             </Anchor>
           )}
