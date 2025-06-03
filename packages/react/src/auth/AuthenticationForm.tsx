@@ -128,6 +128,8 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
               c="dimmed"
               onClick={onRegister}
               size="xs"
+              data-dashlane-ignore="true"
+              data-lp-ignore="true"
               data-no-autofill="true"
               data-form-type="navigation"
             >
