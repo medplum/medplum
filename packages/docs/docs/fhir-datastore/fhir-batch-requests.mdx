@@ -352,3 +352,76 @@ Instead you should create the queue of `Promise` requests and then use `Promise.
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
+
+## Example Resource Creation Bundle
+
+Below is an example script that creates transaction bundle that creates resources and maintains relationships between resources. 
+
+Please note that the below script creates/`POST`s resources, and that there is a limit of 50 update/`PUT` resources per transaction bundle. Also, filters may be used to ensure that the bundle only includes resources that are part of the relationships. 
+
+```ts
+import { MedplumClient } from '@medplum/core';
+import { Bundle, MedicationKnowledge, Organization, Substance } from '@medplum/fhirtypes';
+import { convertToTransactionBundle } from '@medplum/core';
+
+async function createMedicationKnowledgeBundle(medplum: MedplumClient): Promise<Bundle> {
+  // First, search for all the resources we need
+  const timestamp = '2025-01-01T00:00:00Z'
+  const [medicationKnowledge, substances, organizations] = await Promise.all([
+    medplum.search('MedicationKnowledge', {_count: 1000}), // filters may be used to keep the transaction bundle size reasonable, such as the _lastUpdated below
+    medplum.search('Substance', {_count: 1000}),
+    medplum.search('Organization', {'_lastUpdated': `ge${timestamp}`, _count: 1000}),
+  ]);
+
+  // Create a bundle with all resources
+  const bundle: Bundle = {
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry: [],
+  };
+
+  // Add all resources to the bundle
+  // We'll use the existing IDs to maintain references
+  for (const entry of medicationKnowledge.entry || []) {
+    if (entry.resource) {
+      bundle.entry?.push({
+        fullUrl: `urn:uuid:${entry.resource.id}`,
+          request: {
+          method: 'POST',
+          url: 'MedicationKnowledge',
+        },
+        resource: entry.resource,
+      });
+    }
+  }
+
+  for (const entry of substances.entry || []) {
+    if (entry.resource) {
+      bundle.entry?.push({
+        fullUrl: `urn:uuid:${entry.resource.id}`,
+        request: {
+          method: 'POST',
+          url: 'Substance',
+        },
+        resource: entry.resource,
+      });
+    }
+  }
+
+  for (const entry of organizations.entry || []) {
+    if (entry.resource) {
+      bundle.entry?.push({
+        fullUrl: `urn:uuid:${entry.resource.id}`,
+        request: {
+          method: 'POST',
+          url: 'Organization'
+        },
+        resource: entry.resource,
+      });
+    }
+  }
+
+  // Convert to a transaction bundle and reorder entries to handle dependencies
+  return convertToTransactionBundle(bundle);
+}
+```
