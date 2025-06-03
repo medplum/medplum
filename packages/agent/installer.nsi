@@ -241,7 +241,7 @@ Function UpgradeApp
     ${Loop}
 
     DetailPrint "Stopping and deleting old Medplum Agent services..."
-    ExecWait "$\"$INSTDIR\${SERVICE_FILE_NAME}$\" --stop-old-services" $1
+    ExecWait "$\"$INSTDIR\${SERVICE_FILE_NAME}$\" --remove-old-services" $1
     DetailPrint "Exit code $1"
 
     DetailPrint "Writing installer for upgraded version..."
@@ -335,7 +335,7 @@ FunctionEnd
 # Start the uninstaller
 Section Uninstall
     DetailPrint "Stopping and deleting all old Medplum Agent services..."
-    ExecWait "$\"$INSTDIR\${SERVICE_FILE_NAME}$\" --stop-old-services --all" $1
+    ExecWait "$\"$INSTDIR\${SERVICE_FILE_NAME}$\" --remove-old-services --all" $1
     DetailPrint "Exit code $1"
 
     # Get out of the service directory so we can delete it

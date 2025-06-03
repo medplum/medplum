@@ -17,7 +17,7 @@ export async function main(argv: string[]): Promise<void> {
   if (argv[2] === '--upgrade') {
     createPidFile('medplum-agent-upgrader');
     await upgraderMain(argv);
-  } else if (argv[2] === '--stop-old-services') {
+  } else if (argv[2] === '--remove-old-services') {
     const logFileFd = openSync(TEMP_LOG_FILE, 'a');
 
     let allAgentServices: string[] = [];
@@ -34,7 +34,7 @@ export async function main(argv: string[]): Promise<void> {
       appendFileSync(logFileFd, `All services: \r\n${allAgentServices.join('\r\n')}\r\n`, { encoding: 'utf-8' });
     }
 
-    const servicesToStop =
+    const servicesToRemove =
       argv[3] === '--all'
         ? allAgentServices
         : allAgentServices.filter((serviceName) => serviceName !== `MedplumAgent_${MEDPLUM_VERSION}`);
@@ -42,7 +42,7 @@ export async function main(argv: string[]): Promise<void> {
       encoding: 'utf-8',
     });
 
-    for (const serviceName of servicesToStop) {
+    for (const serviceName of servicesToRemove) {
       // We try to stop the service and continue even if it fails
       try {
         execSync(`net stop ${serviceName}`);
