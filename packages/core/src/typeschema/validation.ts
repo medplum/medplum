@@ -268,6 +268,8 @@ class ResourceValidator implements CrawlerVisitor {
   private checkPropertyValue(value: TypedValueWithPath): void {
     if (isPrimitiveType(value.type)) {
       this.validatePrimitiveType(value);
+    } else if (isEmpty(value.value)) {
+      this.issues.push(createStructureIssue(value.path, `Invalid empty non-primitive value`));
     }
   }
 
