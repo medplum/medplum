@@ -1,4 +1,4 @@
-import { Box, Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
+import { Divider, Flex, Group, Stack, Text, Tooltip } from '@mantine/core';
 import { calculateAgeString, formatAddress, formatHumanName, resolveId } from '@medplum/core';
 import {
   AllergyIntolerance,
@@ -20,20 +20,28 @@ import {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { IconBinaryTree, IconCake, IconEmpathize, IconMapPin, IconStethoscope } from '@tabler/icons-react';
+import {
+  IconBinaryTree,
+  IconCake,
+  IconEmpathize,
+  IconLanguage,
+  IconMapPin,
+  IconStethoscope,
+} from '@tabler/icons-react';
 import { JSX, useEffect, useState } from 'react';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Insurance } from './Insurance';
 import { Labs } from './Labs';
 import { Medications } from './Medications';
+import { PatientInfoItem } from './PatientInfoItem';
 import styles from './PatientSummary.module.css';
 import {
   formatPatientGenderDisplay,
   formatPatientRaceEthnicityDisplay,
   getEthnicity,
-  getGenderIdentity,
   getGeneralPractitioner,
+  getPreferredLanguage,
   getRace,
 } from './PatientSummary.utils';
 import { ProblemList } from './ProblemList';
@@ -155,12 +163,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     }
   }, [patient?.id, medplum]);
 
-  function getItemColor(value: string | undefined): string {
-    if (!value) {
-      return 'var(--mantine-color-gray-6)';
-    }
-    return 'inherit';
-  }
+  const languageDisplay = patient ? getPreferredLanguage(patient) : undefined;
 
   if (!patient) {
     return null;
@@ -202,129 +205,62 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         {medicalData && (
           <>
             <Stack gap="xs" py={8}>
-              <SummaryItem
-                onClick={() => {
-                  onClickResource?.(patient);
-                }}
-              >
-                <Box className={styles.patientSummaryListItem}>
-                  <Tooltip label="Birthdate & Age" position="top-start" openDelay={650}>
-                    <Group
-                      gap="sm"
-                      align="center"
-                      ml={6}
-                      mr={2}
-                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
-                    >
-                      <IconCake size={16} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text fz="sm" fw={400} truncate c={getItemColor(patient.birthDate)}>
-                        {patient.birthDate ? calculateAgeString(patient.birthDate) : 'Add Birthdate'}
-                      </Text>
-                    </Group>
-                  </Tooltip>
-                </Box>
-              </SummaryItem>
+              <PatientInfoItem
+                patient={patient}
+                value={
+                  patient.birthDate ? `${patient.birthDate} (${calculateAgeString(patient.birthDate)})` : undefined
+                }
+                icon={<IconCake size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                placeholder="Add Birthdate"
+                label="Birthdate & Age"
+                onClickResource={onClickResource}
+              />
+              <PatientInfoItem
+                patient={patient}
+                value={patient.gender ? formatPatientGenderDisplay(patient) : undefined}
+                icon={<IconEmpathize size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                placeholder="Add Gender & Identity"
+                label="Gender & Identity"
+                onClickResource={onClickResource}
+              />
 
-              <SummaryItem
-                onClick={() => {
-                  onClickResource?.(patient);
-                }}
-              >
-                <Box className={styles.patientSummaryListItem}>
-                  <Tooltip label="Gender & Identity" position="top-start" openDelay={650}>
-                    <Group
-                      gap="sm"
-                      align="center"
-                      ml={6}
-                      mr={2}
-                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
-                    >
-                      <IconEmpathize size={16} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text fz="sm" fw={400} truncate c={getItemColor(patient.gender || getGenderIdentity(patient))}>
-                        {patient.gender || getGenderIdentity(patient)
-                          ? formatPatientGenderDisplay(patient)
-                          : 'Add Gender & Identity'}
-                      </Text>
-                    </Group>
-                  </Tooltip>
-                </Box>
-              </SummaryItem>
+              <PatientInfoItem
+                patient={patient}
+                value={
+                  getRace(patient) || getEthnicity(patient) ? formatPatientRaceEthnicityDisplay(patient) : undefined
+                }
+                icon={<IconBinaryTree size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                placeholder="Add Race & Ethnicity"
+                label="Race & Ethnicity"
+                onClickResource={onClickResource}
+              />
 
-              <SummaryItem
-                onClick={() => {
-                  onClickResource?.(patient);
-                }}
-              >
-                <Box className={styles.patientSummaryListItem}>
-                  <Tooltip label="Race & Ethnicity" position="top-start" openDelay={650}>
-                    <Group
-                      gap="sm"
-                      align="center"
-                      ml={6}
-                      mr={2}
-                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
-                    >
-                      <IconBinaryTree size={16} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text fz="sm" fw={400} truncate c={getItemColor(getRace(patient) || getEthnicity(patient))}>
-                        {getRace(patient) || getEthnicity(patient)
-                          ? formatPatientRaceEthnicityDisplay(patient)
-                          : 'Add Race & Ethnicity'}
-                      </Text>
-                    </Group>
-                  </Tooltip>
-                </Box>
-              </SummaryItem>
+              <PatientInfoItem
+                patient={patient}
+                value={patient.address?.[0] ? formatAddress(patient.address[0]) : undefined}
+                icon={<IconMapPin size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                placeholder="Add Location"
+                label="Location"
+                onClickResource={onClickResource}
+              />
 
-              <SummaryItem
-                onClick={() => {
-                  onClickResource?.(patient);
-                }}
-              >
-                <Box className={styles.patientSummaryListItem}>
-                  <Tooltip label="Location" position="top-start" openDelay={650}>
-                    <Group
-                      gap="sm"
-                      align="center"
-                      ml={6}
-                      mr={2}
-                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
-                    >
-                      <IconMapPin size={16} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text
-                        fz="sm"
-                        fw={400}
-                        truncate
-                        c={getItemColor(patient.address?.[0]?.city || patient.address?.[0]?.state)}
-                      >
-                        {patient.address?.[0] ? formatAddress(patient.address[0]) : 'Add Location'}
-                      </Text>
-                    </Group>
-                  </Tooltip>
-                </Box>
-              </SummaryItem>
+              <PatientInfoItem
+                patient={patient}
+                value={languageDisplay}
+                icon={<IconLanguage size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                placeholder="Add Language"
+                label="Language"
+                onClickResource={onClickResource}
+              />
 
-              <SummaryItem
-                onClick={() => {
-                  onClickResource?.(patient);
-                }}
-              >
-                <Box className={styles.patientSummaryListItem}>
-                  <Tooltip label="General Practitioner" position="top-start" openDelay={650}>
-                    <Group
-                      gap="sm"
-                      align="center"
-                      ml={6}
-                      mr={2}
-                      style={{ cursor: 'pointer', flexWrap: 'nowrap', minWidth: 0 }}
-                    >
-                      <IconStethoscope size={16} stroke={2} color="var(--mantine-color-gray-6)" />
-                      <Text fz="sm" fw={400} truncate c={getItemColor(getGeneralPractitioner(patient))}>
-                        {getGeneralPractitioner(patient) ?? 'Add a General Practitioner'}
-                      </Text>
-                    </Group>
-                  </Tooltip>
-                </Box>
-              </SummaryItem>
+              <PatientInfoItem
+                patient={patient}
+                value={getGeneralPractitioner(patient)}
+                icon={<IconStethoscope size={16} stroke={2} color="var(--mantine-color-gray-6)" />}
+                placeholder="Add General Practitioner"
+                label="General Practitioner"
+                onClickResource={onClickResource}
+              />
             </Stack>
             <Divider />
             <Insurance coverages={medicalData.coverages || []} onClickResource={onClickResource} />

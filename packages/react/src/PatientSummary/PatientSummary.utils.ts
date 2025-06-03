@@ -52,9 +52,12 @@ export function formatPatientGenderDisplay(patient: Patient): string {
 }
 
 export function formatPatientRaceEthnicityDisplay(patient: Patient): string {
+  console.log('patient', patient);
   const race = getRace(patient);
   const ethnicity = getEthnicity(patient);
 
+  console.log('race', race);
+  console.log('ethnicity', ethnicity);
   const parts: string[] = [];
 
   if (race) {
@@ -66,3 +69,16 @@ export function formatPatientRaceEthnicityDisplay(patient: Patient): string {
 
   return parts.join(' · ');
 }
+
+export const getPreferredLanguage = (patient: Patient): string | undefined => {
+  if (!patient.communication?.length) {
+    return undefined;
+  }
+
+  const preferred = patient.communication?.find((comm) => comm.preferred === true);
+  if (preferred?.language?.coding?.[0]?.display) {
+    return preferred.language.coding[0].display;
+  }
+
+  return patient.communication[0]?.language?.coding?.[0]?.display;
+};
