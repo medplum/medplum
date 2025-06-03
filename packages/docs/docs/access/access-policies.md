@@ -91,6 +91,24 @@ The following access policy grants read-only access to the [`Patient`](/docs/api
 }
 ```
 
+Similarly, the following access policy grants read/write access to the Patient resource, and also grants _only_ read access to _all_ other resources: 
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Read Only Example",
+  "resource": [
+    {
+      "resourceType": "Patient"
+    },
+    {
+      "resourceType": "*",
+      "readonly": true
+    }
+  ]
+}
+```
+
 Attempting to modify a read-only resource will result in an HTTP result of [`403: Forbidden`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403).
 
 ### Read-only Elements
