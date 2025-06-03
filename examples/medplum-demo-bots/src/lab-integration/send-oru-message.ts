@@ -18,6 +18,7 @@ import {
   ServiceRequest,
   Specimen,
   Attachment,
+  HumanName,
 } from '@medplum/fhirtypes';
 
 // Constants
@@ -483,7 +484,7 @@ function generateMessageId(): string {
  * @param name - The FHIR HumanName
  * @returns The formatted HL7 name field
  */
-function formatHl7Name(name: any): string {
+function formatHl7Name(name: HumanName | undefined): string {
   if (!name) {
     return '';
   }
