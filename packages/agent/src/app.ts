@@ -31,7 +31,7 @@ import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from '.
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import { createPidFile, forceKillApp, getPidFilePath, isAppRunning, removePidFile, waitForPidFile } from './pid';
+import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -679,14 +679,14 @@ export class App {
     if (upgradeInProgress && message.force) {
       // If running, just cleanup the file since it could be that the cleanup failed for whatever reason
       if (isAppRunning('medplum-upgrading-agent')) {
-        removePidFile(getPidFilePath('medplum-upgrading-agent'));
+        removePidFile('medplum-upgrading-agent');
       }
       // If running, kill the upgrader and cleanup the file
       if (isAppRunning('medplum-agent-upgrader')) {
         // Attempt to kill the upgrader
         forceKillApp('medplum-agent-upgrader');
         // Remove PID file
-        removePidFile(getPidFilePath('medplum-agent-upgrader'));
+        removePidFile('medplum-agent-upgrader');
       }
       // Clean up upgrade.json
       unlinkSync(UPGRADE_MANIFEST_PATH);
