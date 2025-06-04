@@ -153,14 +153,14 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
               <ValueSetAutocomplete
                 label="Diagnoses"
                 binding="http://hl7.org/fhir/sid/icd-10-cm"
-              name="diagnoses"
-              maxValues={10}
-              onChange={(items) => {
-                const codeableConcepts = items.map((item) => ({ coding: [item] })) as DiagnosisCodeableConcept[];
-                setDiagnoses(codeableConcepts);
-              }}
-            />
-</div>
+                name="diagnoses"
+                maxValues={10}
+                onChange={(items) => {
+                  const codeableConcepts = items.map((item) => ({ coding: [item] })) as DiagnosisCodeableConcept[];
+                  setDiagnoses(codeableConcepts);
+                }}
+              />
+            </div>
             <Group align="flex-start" gap={48}>
               <div>
                 <Radio.Group
