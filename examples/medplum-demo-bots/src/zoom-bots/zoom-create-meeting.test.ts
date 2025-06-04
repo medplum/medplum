@@ -52,22 +52,22 @@ test('Create Zoom meeting from Appointment', async () => {
   });
 
   expect(result.extension?.[0]).toMatchObject({
-    url: 'https://medplum.com/zoom-meeting',
+    url: 'https://medplum.com/zoom',
     extension: [
       {
-        url: 'https://medplum.com/zoom-meeting-id',
+        url: 'meeting-id',
         valueString: mockMeeting.id,
       },
       {
-        url: 'https://medplum.com/zoom-meeting-password',
+        url: 'meeting-password',
         valueString: mockMeeting.password,
       },
       {
-        url: 'https://medplum.com/zoom-meeting-start-url',
+        url: 'meeting-start-url',
         valueString: mockMeeting.start_url,
       },
       {
-        url: 'https://medplum.com/zoom-meeting-join-url',
+        url: 'meeting-join-url',
         valueString: mockMeeting.join_url,
       },
     ],
@@ -76,22 +76,22 @@ test('Create Zoom meeting from Appointment', async () => {
   // Verify appointment was updated with Zoom details
   const updatedAppointment = await medplum.readResource('Appointment', appointment.id as string);
   expect(updatedAppointment.extension?.[0]).toMatchObject({
-    url: 'https://medplum.com/zoom-meeting',
+    url: 'https://medplum.com/zoom',
     extension: [
       {
-        url: 'https://medplum.com/zoom-meeting-id',
+        url: 'meeting-id',
         valueString: mockMeeting.id,
       },
       {
-        url: 'https://medplum.com/zoom-meeting-password',
+        url: 'meeting-password',
         valueString: mockMeeting.password,
       },
       {
-        url: 'https://medplum.com/zoom-meeting-start-url',
+        url: 'meeting-start-url',
         valueString: mockMeeting.start_url,
       },
       {
-        url: 'https://medplum.com/zoom-meeting-join-url',
+        url: 'meeting-join-url',
         valueString: mockMeeting.join_url,
       },
     ],

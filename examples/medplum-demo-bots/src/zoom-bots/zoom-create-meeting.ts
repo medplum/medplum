@@ -2,11 +2,11 @@ import { BotEvent, MedplumClient } from '@medplum/core';
 import { Appointment, Extension } from '@medplum/fhirtypes';
 
 // Zoom extension URLs
-const ZOOM_MEETING_EXTENSION_URL = 'https://medplum.com/zoom-meeting';
-const ZOOM_MEETING_ID_URL = 'https://medplum.com/zoom-meeting-id';
-const ZOOM_MEETING_PASSWORD_URL = 'https://medplum.com/zoom-meeting-password';
-const ZOOM_MEETING_START_URL = 'https://medplum.com/zoom-meeting-start-url';
-const ZOOM_MEETING_JOIN_URL = 'https://medplum.com/zoom-meeting-join-url';
+const ZOOM_MEETING_EXTENSION_URL = 'https://medplum.com/zoom';
+const ZOOM_MEETING_ID_URL = 'meeting-id';
+const ZOOM_MEETING_PASSWORD_URL = 'meeting-password';
+const ZOOM_MEETING_START_URL = 'meeting-start-url';
+const ZOOM_MEETING_JOIN_URL = 'meeting-join-url';
 
 interface ZoomMeetingInput {
   topic?: string;
