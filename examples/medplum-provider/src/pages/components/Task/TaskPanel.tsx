@@ -1,8 +1,8 @@
 import { Card, Stack } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Annotation, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile } from '@medplum/react';
+import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
 import { JSX, useRef } from 'react';
 import { useNavigate } from 'react-router';
@@ -20,17 +20,11 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const { task, onUpdateTask } = props;
   const navigate = useNavigate();
   const medplum = useMedplum();
-  const author = useMedplumProfile();
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const onActionButtonClicked = async (): Promise<void> => {
-    if (task.status === 'ready' || task.status === 'requested') {
-      // Task status is Ready or Requested. Action will mark as complete.
-      await updateTaskStatus({ ...task, status: 'completed' }, medplum, onUpdateTask);
-    } else {
-      // Fallback navigation to Task details.
-      navigate(`Task/${task.id}`)?.catch(console.error);
-    }
+    // Always navigate to Task details (edit) page, never change status
+    navigate(`Task/${task.id}`)?.catch(console.error);
   };
 
   const onChangeResponse = (response: QuestionnaireResponse): void => {
@@ -65,19 +59,6 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
     }
   };
 
-  const onAddNote = async (note: string): Promise<void> => {
-    const newNote: Annotation = {
-      text: note,
-      authorReference: author && createReference(author),
-      time: new Date().toISOString(),
-    };
-
-    const taskNotes = task?.note || [];
-    taskNotes.push(newNote);
-    const updatedTask: Task = { ...task, note: taskNotes };
-    await updateTaskStatus(updatedTask, medplum, onUpdateTask);
-  };
-
   const onChangeStatus = async (status: Task[`status`]): Promise<void> => {
     const updatedTask: Task = { ...task, status: status };
     await updateTaskStatus(updatedTask, medplum, onUpdateTask);
@@ -94,7 +75,6 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
         <TaskStatusPanel
           task={task}
           onActionButtonClicked={onActionButtonClicked}
-          onAddNote={onAddNote}
           onChangeStatus={onChangeStatus}
         />
       </Stack>
