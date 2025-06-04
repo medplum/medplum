@@ -1,4 +1,4 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
+import { BotEvent, getExtensionValue, MedplumClient } from '@medplum/core';
 import { Appointment, Extension } from '@medplum/fhirtypes';
 
 // Zoom extension URLs
@@ -347,9 +347,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Appointmen
   const isDeletion = appointment.status === 'cancelled' || appointment.status === 'noshow';
 
   // Get existing meeting ID if any
-  const existingMeetingId = appointment.extension
-    ?.find((ext) => ext.url === 'https://medplum.com/zoom-meeting')
-    ?.extension?.find((ext) => ext.url === 'https://medplum.com/zoom-meeting-id')?.valueString;
+  const existingMeetingId = getExtensionValue(appointment, 'https://medplum.com/zoom', 'meeting-id') as string;
 
   if (isDeletion && existingMeetingId) {
     // Delete the Zoom meeting
