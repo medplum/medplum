@@ -11,7 +11,6 @@ import {
 import {
   IconClipboardCheck,
   IconMail,
-  IconMicroscope,
   IconPencil,
   IconTimeDuration0,
   IconTransformPoint,
