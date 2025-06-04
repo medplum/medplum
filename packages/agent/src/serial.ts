@@ -6,18 +6,16 @@ import { App } from './app';
 import { BaseChannel } from './channel';
 
 export class AgentSerialChannel extends BaseChannel {
+  readonly app: App;
   readonly server: net.Server;
   private started = false;
   readonly connections = new Map<string, SerialChannelConnection>();
   readonly log: Logger;
 
-  constructor(
-    readonly app: App,
-    definition: AgentChannel,
-    endpoint: Endpoint
-  ) {
+  constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
 
+    this.app = app;
     this.server = net.createServer((socket) => this.handleNewConnection(socket));
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
@@ -72,12 +70,13 @@ export class AgentSerialChannel extends BaseChannel {
 }
 
 export class SerialChannelConnection {
+  readonly channel: AgentSerialChannel;
+  readonly socket: net.Socket;
   readonly remote: string;
 
-  constructor(
-    readonly channel: AgentSerialChannel,
-    readonly socket: net.Socket
-  ) {
+  constructor(channel: AgentSerialChannel, socket: net.Socket) {
+    this.channel = channel;
+    this.socket = socket;
     this.remote = `${socket.remoteAddress}:${socket.remotePort}`;
 
     // Add listener immediately to handle incoming messages
