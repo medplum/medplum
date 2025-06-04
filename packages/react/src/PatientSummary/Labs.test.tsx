@@ -58,7 +58,7 @@ describe('PatientSummary - Labs', () => {
         resourceType: 'DiagnosticReport',
         status: 'final',
         code: { text: 'Test Report' },
-        category: [{ coding: [{ code: 'laboratory' }] }],
+        category: [{ coding: [{ code: 'LAB' }] }],
       },
     ];
 
@@ -136,19 +136,19 @@ describe('PatientSummary - Labs', () => {
         resourceType: 'DiagnosticReport',
         status: 'final',
         code: { text: 'Test Report Final' },
-        category: [{ coding: [{ code: 'laboratory' }] }],
+        category: [{ coding: [{ code: 'LAB' }] }],
       },
       {
         resourceType: 'DiagnosticReport',
         status: 'cancelled',
         code: { text: 'Test Report Cancelled' },
-        category: [{ coding: [{ code: 'laboratory' }] }],
+        category: [{ coding: [{ code: 'LAB' }] }],
       },
       {
         resourceType: 'DiagnosticReport',
         status: 'preliminary',
         code: { text: 'Test Report Preliminary' },
-        category: [{ coding: [{ code: 'laboratory' }] }],
+        category: [{ coding: [{ code: 'LAB' }] }],
       },
     ];
     await setup(<Labs patient={HomerSimpson} serviceRequests={requests} diagnosticReports={reports} />);

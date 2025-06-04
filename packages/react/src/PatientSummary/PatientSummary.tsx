@@ -53,6 +53,7 @@ import { Vitals } from './Vitals';
 export interface PatientSummaryProps {
   readonly patient: Patient | Reference<Patient>;
   readonly onClickResource?: (resource: Resource) => void;
+  readonly onRequestLabs?: () => void;
 }
 
 interface PatientMedicalData {
@@ -75,7 +76,7 @@ interface PatientMedicalData {
 
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
-  const { patient: propsPatient, onClickResource } = props;
+  const { patient: propsPatient, onClickResource, onRequestLabs } = props;
   const patient = useResource(propsPatient);
   const [medicalData, setMedicalData] = useState<PatientMedicalData>();
   const [createdDate, setCreatedDate] = useState<string | undefined>();
@@ -280,6 +281,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
               serviceRequests={medicalData.serviceRequests}
               diagnosticReports={medicalData.diagnosticReports}
               onClickResource={onClickResource}
+              onRequestLabs={onRequestLabs}
             />
             <Divider />
             <SexualOrientation

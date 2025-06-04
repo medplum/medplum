@@ -11,6 +11,7 @@ import {
 import {
   IconClipboardCheck,
   IconMail,
+  IconMicroscope,
   IconPencil,
   IconTimeDuration0,
   IconTransformPoint,
@@ -43,6 +44,7 @@ import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { TaskDetails } from './pages/tasks/TaskDetails';
+import { OrderLabsPage } from './pages/OrderLabsPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -75,7 +77,7 @@ export function App(): JSX.Element | null {
         {
           title: 'Integrations',
           links: [{ icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' }],
-        },
+        }
       ]}
       resourceTypeSearchDisabled={true}
       notifications={
@@ -145,6 +147,7 @@ export function App(): JSX.Element | null {
               </Route>
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
+              <Route path='/labs' element={<OrderLabsPage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/dosespot" element={<DoseSpotTab />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
