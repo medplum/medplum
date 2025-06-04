@@ -43,7 +43,6 @@ import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { TaskDetails } from './pages/tasks/TaskDetails';
-import { OrderLabsPage } from './pages/OrderLabsPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
