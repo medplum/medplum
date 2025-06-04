@@ -1044,3 +1044,11 @@ export const TokenArrayToTextFn: SqlFunctionDefinition = {
     RETURNS text LANGUAGE sql IMMUTABLE
     AS $function$SELECT e'\x03'||array_to_string($1, e'\x03')||e'\x03'$function$`,
 };
+
+export function isValidTableName(tableName: string): boolean {
+  return /^[\w_]+$/.test(tableName);
+}
+
+export function isValidColumnName(columnName: string): boolean {
+  return /^[\w_]+$/.test(columnName);
+}
