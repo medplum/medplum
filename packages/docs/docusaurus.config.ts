@@ -103,11 +103,11 @@ const config: Config = {
           type: 'doc',
           docId: 'home',
           position: 'left',
-          label: 'Documentation',
+          label: 'Docs',
         },
         {
-          to: '/docs/api',
-          label: 'Reference',
+          to: '/pricing',
+          label: 'Pricing',
           position: 'left',
         },
         {
