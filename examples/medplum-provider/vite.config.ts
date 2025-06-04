@@ -19,7 +19,6 @@ const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
   }).filter(([, relPath]) => existsSync(relPath))
 );
 
-
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
