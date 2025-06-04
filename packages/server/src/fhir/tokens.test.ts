@@ -763,12 +763,12 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         const { project } = await createTestProject();
         nonStrictRepo = new Repository({
           strictMode: false,
-          projects: [project.id],
+          projects: await Repository.getAllowedProjects(project),
           author: { reference: 'User/' + randomUUID() },
         });
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: await Repository.getAllowedProjects(project),
           author: { reference: 'User/' + randomUUID() },
         });
         patient = await nonStrictRepo.createResource<Patient>({
@@ -868,7 +868,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         const { project } = await createTestProject();
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: await Repository.getAllowedProjects(project),
           author: { reference: 'User/' + randomUUID() },
         });
 
@@ -1328,7 +1328,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         const { project } = await createTestProject();
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: await Repository.getAllowedProjects(project),
           author: { reference: 'User/' + randomUUID() },
         });
 

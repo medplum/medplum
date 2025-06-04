@@ -26,16 +26,7 @@ export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResou
 export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
   const { project, login, membership, onBehalfOfMembership } = authState;
   const accessPolicy = await getAccessPolicyForLogin(authState);
-
-  let allowedProjects: string[] | undefined;
-  if (project.id) {
-    allowedProjects = [project.id];
-  }
-  if (project.link && allowedProjects?.length) {
-    for (const link of project.link) {
-      allowedProjects.push(resolveId(link.project) as string);
-    }
-  }
+  const allowedProjects = await Repository.getAllowedProjects(project);
 
   return new Repository({
     projects: allowedProjects,

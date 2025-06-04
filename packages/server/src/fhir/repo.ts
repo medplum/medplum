@@ -22,6 +22,7 @@ import {
   evalFhirPathTyped,
   forbidden,
   formatSearchQuery,
+  getExtension,
   getReferenceString,
   getStatus,
   gone,
@@ -153,7 +154,7 @@ export interface RepositoryContext {
    * The user's "primary" Project will be the first element in the array (i.e. projects[0])
    * This value will be included in every resource as meta.project.
    */
-  projects?: string[];
+  projects?: WithId<Project>[];
 
   /** Current Project of the authenticated user, or none for the system repository. */
   currentProject?: WithId<Project>;
@@ -232,6 +233,7 @@ export interface ProcessAllResourcesOptions {
  */
 export class Repository extends FhirRepository<PoolClient> implements Disposable {
   private readonly context: RepositoryContext;
+  private projects: WithId<Project>[] | undefined;
   private conn?: PoolClient;
   private readonly disposable: boolean = true;
   private transactionDepth = 0;
@@ -244,7 +246,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
     this.context = context;
-    this.context.projects?.push?.(r4ProjectId);
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
     }
@@ -258,6 +259,41 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     // In the future, as we do more testing and validation, we will explore defaulting to reader mode
     // However, for now, we default to writer and only use reader mode for requests guaranteed not to have consistency risks
     this.mode = RepositoryMode.WRITER;
+  }
+
+  static async getAllowedProjects(currentProject: WithId<Project>): Promise<WithId<Project>[]> {
+    // Always include current project
+    const allowedProjects: WithId<Project>[] = [currentProject];
+
+    const linkedProjectIds: string[] = [];
+
+    // Add linked projects first
+    if (currentProject.link) {
+      for (const link of currentProject.link) {
+        const resolvedId = resolveId(link.project);
+        if (resolvedId) {
+          linkedProjectIds.push(resolvedId);
+        }
+      }
+    }
+
+    // Add R4 project last
+    linkedProjectIds.push(r4ProjectId);
+
+    // Fetch linked projects
+    const systemRepo = getSystemRepo();
+    const linkedProjectsOrError = await systemRepo.readReferences<Project>(
+      linkedProjectIds.map((id) => ({ reference: 'Project/' + id }))
+    );
+    for (const linkedProjectOrError of linkedProjectsOrError) {
+      if (isResource(linkedProjectOrError)) {
+        allowedProjects.push(linkedProjectOrError);
+      } else {
+        //TODO{mattlong}: Log error? Do something? Fail? Ignore it?
+      }
+    }
+
+    return allowedProjects;
   }
 
   clone(): Repository {
@@ -389,7 +425,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
-    this.addSecurityFilters(builder, resourceType);
+    await this.addSecurityFilters(builder, resourceType);
 
     const rows = await builder.execute(this.getDatabaseClient(DatabaseMode.READER));
     if (rows.length === 0) {
@@ -406,7 +442,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private canReadCacheEntry(cacheEntry: CacheEntry): boolean {
-    if (!this.isSuperAdmin() && !this.context.projects?.includes(cacheEntry.projectId)) {
+    if (!this.isSuperAdmin() && !this.context.projects?.map((p) => p.id).includes(cacheEntry.projectId)) {
       return false;
     }
     if (!satisfiedAccessPolicy(cacheEntry.resource, AccessPolicyInteraction.READ, this.context.accessPolicy)) {
@@ -415,10 +451,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return true;
   }
 
-  async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(T | Error)[]> {
+  async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
     await this.rateLimiter()?.recordRead(references.length);
     const cacheEntries = await this.getCacheEntries(references);
-    const result: (T | Error)[] = new Array(references.length);
+    const result: (WithId<T> | Error)[] = new Array(references.length);
 
     for (let i = 0; i < result.length; i++) {
       const startTime = Date.now();
@@ -437,7 +473,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         entryResult = this.removeHiddenFields(entryResult);
         this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: entryResult, durationMs });
       }
-      result[i] = entryResult as T | Error;
+      result[i] = entryResult as WithId<T> | Error;
     }
 
     return result;
@@ -877,11 +913,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private async loadProfile(url: string): Promise<StructureDefinition | undefined> {
-    const projectIds = this.context.projects;
-
-    if (projectIds?.length) {
+    if (this.context.projects?.length) {
       // Try loading from cache, using all available Project IDs
-      const cacheKeys = projectIds.map((id) => getProfileCacheKey(id, url));
+      const cacheKeys = this.context.projects.map((p) => getProfileCacheKey(p.id, url));
       const results = await getRedis().mget(...cacheKeys);
       const cachedProfile = results.find(Boolean) as string | undefined;
       if (cachedProfile) {
@@ -911,7 +945,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       ],
     });
 
-    if (projectIds?.length && profile) {
+    if (this.context.projects?.length && profile) {
       // Store loaded profile in cache
       await cacheProfile(profile);
     }
@@ -1329,7 +1363,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   addSecurityFilters(builder: SelectQuery, resourceType: string): void {
     // No compartment restrictions for admins.
     if (!this.isSuperAdmin()) {
-      this.addProjectFilters(builder);
+      this.addProjectFilters(builder, resourceType);
     }
     this.addAccessPolicyFilters(builder, resourceType);
   }
@@ -1337,11 +1371,26 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   /**
    * Adds the "project" filter to the select query.
    * @param builder - The select query builder.
+   * @param resourceType - The resource type being searched.
    */
-  private addProjectFilters(builder: SelectQuery): void {
-    if (this.context.projects?.length) {
-      builder.where('projectId', 'IN', this.context.projects);
+  private addProjectFilters(builder: SelectQuery, resourceType: string): void {
+    if (!this.context.projects?.length) {
+      return;
     }
+
+    const projectIds = this.context.projects
+      .filter((p) => {
+        const extValue = getExtension(p, 'linkedResourceTypes');
+        // if extension is not present, include for all resourceType
+        if (!extValue?.valueString) {
+          return true;
+        }
+
+        // if extension is present, include only if resourceType is in the list
+        return extValue.valueString.split(',').includes(resourceType);
+      })
+      .map((p) => p.id);
+    builder.where('projectId', 'IN', projectIds);
   }
 
   /**
@@ -1933,7 +1982,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return submittedProjectId;
     }
 
-    return existing?.meta?.project ?? this.context.projects?.[0];
+    return existing?.meta?.project ?? this.context.projects?.[0]?.id;
   }
 
   /**
@@ -2303,7 +2352,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const auditEvent = createAuditEvent(
       RestfulOperationType,
       subtype,
-      this.context.projects?.[0] as string,
+      this.context.projects?.[0]?.id as string,
       this.context.author,
       this.context.remoteAddress,
       outcome,

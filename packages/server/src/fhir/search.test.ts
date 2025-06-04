@@ -81,7 +81,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         const { project } = await createTestProject();
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: await Repository.getAllowedProjects(project),
           currentProject: project,
           author: { reference: 'User/' + randomUUID() },
         });
@@ -107,7 +107,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         });
         const repoWithTrue = new Repository({
           strictMode: true,
-          projects: [projectWithTrue.id],
+          projects: await Repository.getAllowedProjects(projectWithTrue),
           currentProject: projectWithTrue,
           author: { reference: 'User/' + randomUUID() },
         });
@@ -118,7 +118,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         });
         const repoWithFalse = new Repository({
           strictMode: true,
-          projects: [projectWithFalse.id],
+          projects: await Repository.getAllowedProjects(projectWithFalse),
           currentProject: projectWithFalse,
           author: { reference: 'User/' + randomUUID() },
         });
