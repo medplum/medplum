@@ -146,7 +146,6 @@ export function App(): JSX.Element | null {
               </Route>
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
-              <Route path="/labs" element={<OrderLabsPage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/dosespot" element={<DoseSpotTab />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
