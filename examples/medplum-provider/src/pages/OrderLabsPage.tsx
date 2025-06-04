@@ -112,7 +112,12 @@ export function OrderLabsPage(): JSX.Element {
               />
             </Input.Wrapper>
             <Input.Wrapper label="Patient" required error={createError?.validation?.patient?.message}>
-              <ResourceInput<Patient> resourceType="Patient" name="patient" defaultValue={patient} onChange={setPatient} />
+              <ResourceInput<Patient>
+                resourceType="Patient"
+                name="patient"
+                defaultValue={patient}
+                onChange={setPatient}
+              />
             </Input.Wrapper>
             <PerformingLabInput patient={patient} error={createError?.validation?.performingLab} />
             <div>
