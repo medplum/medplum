@@ -63,15 +63,15 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
     <Card withBorder shadow="sm" p={0}>
       <Stack gap="xs">
         {task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
-          <TaskQuestionnaireForm key={task.id} task={task} onChangeResponse={(response) => saveQuestionnaireResponse(task, response)} />
+          <TaskQuestionnaireForm
+            key={task.id}
+            task={task}
+            onChangeResponse={(response) => saveQuestionnaireResponse(task, response)}
+          />
         ) : (
           <SimpleTask key={task.id} task={task} />
         )}
-        <TaskStatusPanel
-          task={task}
-          onActionButtonClicked={onActionButtonClicked}
-          onChangeStatus={onChangeStatus}
-        />
+        <TaskStatusPanel task={task} onActionButtonClicked={onActionButtonClicked} onChangeStatus={onChangeStatus} />
       </Stack>
     </Card>
   );

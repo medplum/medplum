@@ -9,13 +9,7 @@ interface TaskStatusPanelProps {
   onChangeStatus: (status: Task[`status`]) => void;
 }
 
-export const TaskStatusPanel = ({
-  task,
-  onActionButtonClicked,
-  onChangeStatus,
-}: TaskStatusPanelProps): JSX.Element => {
-  
-
+export const TaskStatusPanel = ({ task, onActionButtonClicked, onChangeStatus }: TaskStatusPanelProps): JSX.Element => {
   const badgeColor = getBadgeColor(task.status);
 
   return (
@@ -39,7 +33,13 @@ export const TaskStatusPanel = ({
               {statuses.map((status) => (
                 <Menu.Item
                   key={status.value}
-                  rightSection={task.status === status.value ? <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center' }}><IconCheck size={16} color='gray' /></div> : null}
+                  rightSection={
+                    task.status === status.value ? (
+                      <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center' }}>
+                        <IconCheck size={16} color="gray" />
+                      </div>
+                    ) : null
+                  }
                   onClick={() => onChangeStatus(status.value as Task['status'])}
                 >
                   {status.label}
@@ -49,13 +49,7 @@ export const TaskStatusPanel = ({
           </Menu>
         </Flex>
         <Tooltip label="Edit Task" openDelay={500}>
-          <ActionIcon
-            onClick={onActionButtonClicked}
-            color="gray"
-            variant="subtle"
-            aria-label="Edit Task"
-            size="lg"
-          >
+          <ActionIcon onClick={onActionButtonClicked} color="gray" variant="subtle" aria-label="Edit Task" size="lg">
             <IconPencil size={20} />
           </ActionIcon>
         </Tooltip>
