@@ -11,6 +11,7 @@ import { SimpleTask } from './SimpleTask';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { TaskStatusPanel } from './TaskStatusPanel';
 import { useDebouncedCallback } from '@mantine/hooks';
+import { showErrorNotification } from '../../utils/notifications';
 
 interface TaskPanelProps {
   task: Task;
@@ -24,10 +25,6 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
 
   const onActionButtonClicked = async (): Promise<void> => {
     navigate(`Task/${task.id}`)?.catch(console.error);
-  };
-
-  const onChangeResponse = (response: QuestionnaireResponse): void => {
-    saveQuestionnaireResponse(task, response);
   };
 
   const saveQuestionnaireResponse = useDebouncedCallback(
@@ -49,7 +46,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
           onUpdateTask(updatedTask);
         }
       } catch (err) {
-        console.error(err);
+        showErrorNotification(err);
       }
     },
     SAVE_TIMEOUT_MS
@@ -64,7 +61,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
     <Card withBorder shadow="sm" p={0}>
       <Stack gap="xs">
         {task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
-          <TaskQuestionnaireForm key={task.id} task={task} onChangeResponse={onChangeResponse} />
+          <TaskQuestionnaireForm key={task.id} task={task} onChangeResponse={(response) => saveQuestionnaireResponse(task, response)} />
         ) : (
           <SimpleTask key={task.id} task={task} />
         )}
