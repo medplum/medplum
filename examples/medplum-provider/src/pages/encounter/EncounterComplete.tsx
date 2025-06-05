@@ -7,7 +7,7 @@ import { IconCircleOff } from '@tabler/icons-react';
 import { JSX, useCallback, useEffect, useState } from 'react';
 import { Outlet } from 'react-router';
 import { useEncounter } from '../../hooks/useEncounter';
-import { EncounterHeader } from '../../components/Encounter/EncounterHeader';
+import { EncounterHeader } from '../../components/encounter/EncounterHeader';
 import { TaskQuestionnaireResponseSummaryPanel } from '../../components/encountertasks/TaskQuestionnaireResponseSummaryPanel';
 
 export const EncounterComplete = (): JSX.Element => {
