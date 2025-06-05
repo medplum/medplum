@@ -82,6 +82,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
   const submitOrder = async (): Promise<void> => {
     try {
       setIsSubmitting(true);
+      setCreateError(undefined);
       const { serviceRequest } = await createOrderBundle();
       await sendLabOrderToHealthGorilla(medplum, serviceRequest);
       
@@ -92,6 +93,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
       });
       onSubmitLabOrder();
     } catch (error) {
+      setCreateError({ generic: error });
       showErrorNotification(error);
     } finally {
       setIsSubmitting(false);
