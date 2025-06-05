@@ -1,5 +1,5 @@
 import { ContentType } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -29,7 +29,13 @@ describe('$explain', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'query', valueString: 'Patient?active=true' }],
       } satisfies Parameters);
-    console.log(res1.body, res1.body.issue?.[0]);
     expect(res1.status).toBe(200);
+
+    const output = res1.body.parameter as ParametersParameter[];
+    expect(output).toStrictEqual(
+      expect.arrayContaining<ParametersParameter>([
+        { name: 'explain', valueString: expect.stringContaining(`"Plan":`) },
+      ])
+    );
   });
 });

@@ -26,7 +26,7 @@ const operation: OperationDefinition = {
     },
     {
       use: 'out',
-      name: 'result',
+      name: 'explain',
       type: 'string',
       min: 1,
       max: '1',
@@ -41,11 +41,13 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
 
   const searchReq = parseSearchRequest(params.query);
   const sql = getSelectQueryForSearch(repo, searchReq);
-  sql.explain = true;
-  sql.analyzeBuffers = true;
+  sql.explain = ['analyze', 'buffers', 'settings', 'format json'];
 
   const result = await sql.execute(client);
+  const explain = result[0]['QUERY PLAN'][0];
 
-  const output = buildOutputParameters(operation, { result: result.map((r) => r['QUERY PLAN']).join('\n') });
+  const output = buildOutputParameters(operation, {
+    explain: JSON.stringify(explain, (key, value) => (key.endsWith('Blocks') && value === 0 ? undefined : value), 2),
+  });
   return [allOk, output];
 }
