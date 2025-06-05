@@ -178,7 +178,7 @@ describe('PatientSummary - Labs', () => {
         subject: {
           reference: 'Patient/123',
         },
-      },
+      }
     ];
 
     const reports: DiagnosticReport[] = [
