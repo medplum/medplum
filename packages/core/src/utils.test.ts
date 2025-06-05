@@ -28,8 +28,7 @@ import {
   findObservationInterval,
   findObservationReferenceRange,
   findResourceByCode,
-  findResourceById,
-  findResourceByLogicalId,
+  findResourceInBundle,
   flatMapFilter,
   getAllQuestionnaireAnswers,
   getCodeBySystem,
@@ -1264,50 +1263,7 @@ describe('Core Utils', () => {
     expect(result).toStrictEqual(observations[0]);
   });
 
-  describe('findResourceById', () => {
-    const bundle: Bundle = {
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [
-        {
-          resource: {
-            resourceType: 'Practitioner',
-            id: '1',
-            identifier: [{ system: 'http://example.com', value: '123' }],
-          },
-        },
-        {
-          resource: {
-            resourceType: 'Patient',
-            id: '1',
-            identifier: [{ system: 'http://example.com', value: '456' }],
-          },
-        },
-        {
-          resource: {
-            resourceType: 'Patient',
-            id: '2',
-            identifier: [{ system: 'http://example.com', value: '789' }],
-          },
-        },
-      ],
-    };
-    test('Should find an Patient by ID', () => {
-      const expectedResult = bundle.entry?.[1].resource;
-      const result = findResourceById(bundle, 'Patient/1');
-      expect(result).toStrictEqual(expectedResult);
-    });
-    test('Result is undefined for not finding any matching ID', () => {
-      const resultNoIdMatch = findResourceById(bundle, 'Patient/11');
-      const resultTypeMismatch = findResourceById(bundle, 'Practitioner/2');
-      const resultNoTypeMatch = findResourceById(bundle, 'Observation/1');
-      expect(resultNoIdMatch).toStrictEqual(undefined);
-      expect(resultTypeMismatch).toStrictEqual(undefined);
-      expect(resultNoTypeMatch).toStrictEqual(undefined);
-    });
-  });
-
-  describe('findResourceByLogicalId', () => {
+  describe('findResourceInBundle', () => {
     const bundle: Bundle = {
       resourceType: 'Bundle',
       type: 'searchset',
@@ -1337,13 +1293,13 @@ describe('Core Utils', () => {
     };
     test('Should find an Patient by ID', () => {
       const expectedResult = bundle.entry?.[2].resource;
-      const result = findResourceByLogicalId(bundle, 'Patient', '2');
+      const result = findResourceInBundle(bundle, 'Patient', '2');
       expect(result).toStrictEqual(expectedResult);
     });
     test('Result is undefined for not finding any matching ID', () => {
-      const resultNoIdMatch = findResourceByLogicalId(bundle, 'Patient', '3');
-      const resultTypeMismatch = findResourceByLogicalId(bundle, 'Practitioner', '2');
-      const resultNoTypeMatch = findResourceByLogicalId(bundle, 'Observation', '1');
+      const resultNoIdMatch = findResourceInBundle(bundle, 'Patient', '3');
+      const resultTypeMismatch = findResourceInBundle(bundle, 'Practitioner', '2');
+      const resultNoTypeMatch = findResourceInBundle(bundle, 'Observation', '1');
       expect(resultNoIdMatch).toStrictEqual(undefined);
       expect(resultTypeMismatch).toStrictEqual(undefined);
       expect(resultNoTypeMatch).toStrictEqual(undefined);
