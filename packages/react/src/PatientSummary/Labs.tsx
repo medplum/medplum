@@ -46,6 +46,20 @@ export function Labs(props: LabsProps): JSX.Element {
       return false;
     }
 
+    // If the ServiceRequest is also based on a parent ServiceRequest, skip it.
+    if (request.basedOn) {
+      const basedOn = request.basedOn.find((basedOn) => {
+        if (basedOn.reference?.startsWith('ServiceRequest/')) {
+          const [, id] = basedOn.reference.split('/');
+          return diagnosticReportsRequests.has(id);
+        }
+        return false;
+      });
+      if (basedOn) {
+        return false;
+      }
+    }
+
     const shouldFilter = shouldFilterRequest(request, completedRequisitionNumbers);
     if (!shouldFilter && request.requisition?.value) {
       completedRequisitionNumbers.add(request.requisition?.value);

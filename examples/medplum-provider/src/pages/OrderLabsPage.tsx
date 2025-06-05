@@ -63,7 +63,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     createOrderBundle,
   } = labOrderReturn;
 
-  const [labOrder, setLabOrder] = useState<ServiceRequest>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [createError, setCreateError] = useState<{ generic?: unknown; validation?: LabOrderInputErrors } | undefined>();
 
   useEffect(() => {
@@ -79,18 +79,12 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
     }
   }, [patientId, medplum]);
 
-  const handleCreateOrderBundle = async (): Promise<void> => {
-    const { serviceRequest } = await createOrderBundle();
-    setCreateError(undefined);
-    setLabOrder(serviceRequest);
-  };
-
   const submitOrder = async (): Promise<void> => {
     try {
-      await handleCreateOrderBundle();
-      if (labOrder) {
-        await sendLabOrderToHealthGorilla(medplum, labOrder);
-      }
+      setIsSubmitting(true);
+      const { serviceRequest } = await createOrderBundle();
+      await sendLabOrderToHealthGorilla(medplum, serviceRequest);
+      
       showNotification({
         title: 'Lab Order Submitted',
         message: 'The lab order has been successfully submitted.',
@@ -99,6 +93,8 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
       onSubmitLabOrder();
     } catch (error) {
       showErrorNotification(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -192,7 +188,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
               }}
             />
             <Group>
-              <Button onClick={submitOrder}>Submit Order to Health Gorilla</Button>
+              <Button onClick={submitOrder} loading={isSubmitting} disabled={isSubmitting}>Submit Order to Health Gorilla</Button>
             </Group>
           </Stack>
         </Panel>
