@@ -1,4 +1,4 @@
-import { Logger, OperationOutcomeError, tooManyRequests } from '@medplum/core';
+import { deepClone, Logger, OperationOutcomeError, tooManyRequests } from '@medplum/core';
 import { Response } from 'express';
 import Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
@@ -66,7 +66,9 @@ export class FhirRateLimiter {
   async consume(points: number): Promise<void> {
     // If user is already over the limit, just block
     if (this.current && this.current.remainingPoints <= 0 && this.enabled) {
-      throw new OperationOutcomeError(tooManyRequests);
+      const outcome = deepClone(tooManyRequests);
+      outcome.issue[0].diagnostics = JSON.stringify({ ...this.current, limit: this.limiter.points });
+      throw new OperationOutcomeError(outcome);
     }
 
     this.delta += points;
@@ -94,7 +96,9 @@ export class FhirRateLimiter {
         msToReset: result.msBeforeNext,
       });
       if (this.enabled) {
-        throw new OperationOutcomeError(tooManyRequests);
+        const outcome = deepClone(tooManyRequests);
+        outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: this.limiter.points });
+        throw new OperationOutcomeError(outcome);
       }
     }
   }
