@@ -1,9 +1,7 @@
 import { Card, Stack } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { IconCircleOff } from '@tabler/icons-react';
 import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
@@ -53,8 +51,12 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   );
 
   const onChangeStatus = async (status: Task[`status`]): Promise<void> => {
-    const updatedTask: Task = { ...task, status: status };
-    await updateTaskStatus(updatedTask, medplum, onUpdateTask);
+    try {
+      const response = await medplum.updateResource({ ...task, status: status });
+      onUpdateTask(response);
+    } catch (err) {
+      showErrorNotification(err);
+    }
   };
 
   return (
@@ -73,18 +75,4 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
       </Stack>
     </Card>
   );
-};
-
-const updateTaskStatus = async (task: Task, medplum: any, onUpdateTask: (task: Task) => void): Promise<void> => {
-  try {
-    const response = await medplum.updateResource(task);
-    onUpdateTask(response);
-  } catch (err) {
-    showNotification({
-      color: 'red',
-      icon: <IconCircleOff />,
-      title: 'Error',
-      message: normalizeErrorString(err),
-    });
-  }
 };
