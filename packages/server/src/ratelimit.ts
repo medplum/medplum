@@ -1,4 +1,5 @@
-import { tooManyRequests } from '@medplum/core';
+import { deepClone, tooManyRequests } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import { Handler, Request, Response } from 'express';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
 import { MedplumServerConfig } from './config/types';
@@ -20,8 +21,9 @@ export function rateLimitHandler(config: MedplumServerConfig): Handler {
       handler = (_req, _res, next) => next(); // Disable rate limiter
     } else {
       handler = async function rateLimiter(req, res, next) {
+        const limit = getRateLimiter(req, config);
         try {
-          const result = await getRateLimiter(req, config).consume(getRateLimitKey(req), 1);
+          const result = await limit.consume(getRateLimitKey(req), 1);
           addRateLimitHeader(result, res);
           next();
         } catch (err: unknown) {
@@ -32,7 +34,10 @@ export function rateLimitHandler(config: MedplumServerConfig): Handler {
 
           const result = err as RateLimiterRes;
           addRateLimitHeader(result, res);
-          res.status(429).json(tooManyRequests).end();
+
+          const outcome: OperationOutcome = deepClone(tooManyRequests);
+          outcome.issue[0].diagnostics = JSON.stringify({ ...result, limit: limit.points });
+          res.status(429).json(outcome).end();
         }
       };
     }
