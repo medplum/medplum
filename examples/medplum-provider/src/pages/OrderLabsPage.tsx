@@ -84,7 +84,7 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
       setIsSubmitting(true);
       const { serviceRequest } = await createOrderBundle();
       await sendLabOrderToHealthGorilla(medplum, serviceRequest);
-      
+
       showNotification({
         title: 'Lab Order Submitted',
         message: 'The lab order has been successfully submitted.',
@@ -188,7 +188,9 @@ export function OrderLabsPage(props: OrderLabsPageProps): JSX.Element {
               }}
             />
             <Group>
-              <Button onClick={submitOrder} loading={isSubmitting} disabled={isSubmitting}>Submit Order to Health Gorilla</Button>
+              <Button onClick={submitOrder} loading={isSubmitting} disabled={isSubmitting}>
+                Submit Order to Health Gorilla
+              </Button>
             </Group>
           </Stack>
         </Panel>
