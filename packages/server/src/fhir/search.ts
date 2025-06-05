@@ -47,6 +47,7 @@ import {
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
+import { clamp } from './operations/utils/parameters';
 import { Repository } from './repo';
 import { getFullUrl } from './response';
 import { ColumnSearchParameterImplementation, getSearchParameterImplementation } from './searchparameter';
@@ -147,7 +148,6 @@ export async function searchByReferenceImpl<T extends Resource>(
   referenceValues: string[]
 ): Promise<Record<string, WithId<T>[]>> {
   validateSearchResourceTypes(repo, searchRequest);
-  applyCountAndOffsetLimits(searchRequest);
 
   const referencesTableName = 'references';
   const referencesColumnName = 'ref';
@@ -258,11 +258,14 @@ interface GetSelectQueryForSearchOptions extends GetBaseSelectQueryOptions {
   /** Number added to `searchRequest.count` when specifying the query LIMIT. Default is 1 */
   limitModifier?: number;
 }
-function getSelectQueryForSearch<T extends Resource>(
+
+export function getSelectQueryForSearch<T extends Resource>(
   repo: Repository,
-  searchRequest: SearchRequestWithCountAndOffset<T>,
+  searchRequest: SearchRequest<T>,
   options?: GetSelectQueryForSearchOptions
 ): SelectQuery {
+  applyCountAndOffsetLimits(searchRequest);
+
   const builder = getBaseSelectQuery(repo, searchRequest, options);
   addSortRules(repo, builder, searchRequest);
   const count = searchRequest.count;
@@ -777,8 +780,9 @@ function getSearchUrl(searchRequest: SearchRequest): string {
  * @param rowCount - The number of matching results if found.
  * @returns The total number of matching results.
  */
-async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount: number | undefined): Promise<number> {
-  const estimateCount = await getEstimateCount(repo, searchRequest, rowCount);
+async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount?: number): Promise<number> {
+  let estimateCount = await getEstimateCount(repo, searchRequest);
+  estimateCount = clampEstimateCount(searchRequest, estimateCount, rowCount);
   if (estimateCount < getConfig().accurateCountThreshold) {
     return getAccurateCount(repo, searchRequest);
   }
@@ -811,45 +815,33 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
  * This uses the estimated row count technique as described here: https://wiki.postgresql.org/wiki/Count_estimate
  * @param repo - The repository.
  * @param searchRequest - The search request.
- * @param rowCount - The number of matching results if found.
  * @returns The total number of matching results.
  */
-async function getEstimateCount(
-  repo: Repository,
-  searchRequest: SearchRequest,
-  rowCount: number | undefined
-): Promise<number> {
+async function getEstimateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
   const builder = getBaseSelectQuery(repo, searchRequest);
   builder.explain = true;
 
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-  let result = 0;
   for (const row of rows) {
     const queryPlan = row['QUERY PLAN'];
     const match = /rows=(\d+)/.exec(queryPlan);
     if (match) {
-      result = parseInt(match[1], 10);
-      break;
+      return parseInt(match[1], 10);
     }
   }
-
-  return clampEstimateCount(searchRequest, rowCount, result);
+  return 0;
 }
 
 /**
  * Returns a "clamped" estimate count based on the actual row count.
  * @param searchRequest - The search request.
- * @param rowCount - The number of matching results if found. Value can be up to one more than the requested count.
  * @param estimateCount - The estimated number of matching results.
+ * @param rowCount - The number of matching results if found. Value can be up to one more than the requested count.
  * @returns The clamped estimate count.
  */
-export function clampEstimateCount(
-  searchRequest: SearchRequest,
-  rowCount: number | undefined,
-  estimateCount: number
-): number {
+export function clampEstimateCount(searchRequest: SearchRequest, estimateCount: number, rowCount?: number): number {
   if (searchRequest.count === 0 || rowCount === undefined) {
     // If "count only" or rowCount is undefined, then the estimate is the best we can do
     return estimateCount;
@@ -859,7 +851,7 @@ export function clampEstimateCount(
   const startIndex = searchRequest.offset ?? 0;
   const minCount = rowCount > 0 ? startIndex + rowCount : 0;
   const maxCount = rowCount <= pageSize ? startIndex + rowCount : Number.MAX_SAFE_INTEGER;
-  return Math.max(minCount, Math.min(maxCount, estimateCount));
+  return clamp(minCount, estimateCount, maxCount);
 }
 
 /**

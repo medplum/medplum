@@ -202,47 +202,28 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
           config.maxSearchOffset = prevMax;
         }));
 
-      test('clampEstimateCount', () => {
-        expect(clampEstimateCount({ resourceType: 'Patient' }, undefined, 0)).toStrictEqual(0);
-        expect(clampEstimateCount({ resourceType: 'Patient' }, 0, 0)).toStrictEqual(0);
-
-        // 0 actual rows, 10 estimated rows => we know count is 0
-        expect(clampEstimateCount({ resourceType: 'Patient' }, 0, 10)).toStrictEqual(0);
-
-        // 10 actual rows, 0 estimated rows => we know count is at least 10
-        expect(clampEstimateCount({ resourceType: 'Patient' }, 10, 0)).toStrictEqual(10);
-
-        // count = 20, offset = 0, rowCount = 10, estimate = 0 => 10 (estimate is too low)
-        expect(clampEstimateCount({ resourceType: 'Patient' }, 10, 0)).toStrictEqual(10);
-
-        // count = 20, offset = 0, rowCount = 20, estimate = 20 => 20 (estimate accurate)
-        expect(clampEstimateCount({ resourceType: 'Patient' }, 20, 20)).toStrictEqual(20);
-
-        // count = 20, offset = 0, rowCount = 21, estimate = 1000 => 1000 (estimate could be correct)
-        expect(clampEstimateCount({ resourceType: 'Patient' }, 21, 1000)).toStrictEqual(1000);
-
-        // On page 2
-        // count = 20, offset = 20, rowCount = 0, estimate = 20 => 20 (estimate is correct)
-        expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 0, 20)).toStrictEqual(20);
-
-        // count = 20, offset = 20, rowCount = 0, estimate = 0 => 20 (estimate is too low, but rowCount is 0)
-        expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 0, 0)).toStrictEqual(0);
-
-        // count = 20, offset = 20, rowCount = 1, estimate = 0 => 21 (estimate is too low)
-        expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 1, 0)).toStrictEqual(21);
-
-        // count = 20, offset = 20, rowCount = 0, estimate = 200 => 20 (estimate is too high)
-        expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 0, 200)).toStrictEqual(20);
-
-        // count = 20, offset = 20, rowCount = 1, estimate = 200 => 20 (estimate is too high)
-        expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 1, 200)).toStrictEqual(21);
-
-        // count = 20, offset = 20, rowCount = 1, estimate = 200 => 20 (estimate is too high)
-        expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 1, 200)).toStrictEqual(21);
-
-        // count = 20, offset = 20, rowCount = 21, estimate = 200 => 200 (estimate could be correct)
-        expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 21, 200)).toStrictEqual(200);
-      });
+      test.each<[number | undefined, number, number | undefined, number]>([
+        // offset, estimateCount, rowCount, expected
+        [undefined, 0, undefined, 0],
+        // First page (offset = 0, count = 20)
+        [0, 0, 0, 0],
+        [0, 10, 0, 0], // 10 estimated rows, 0 actual => we know count is 0
+        [0, 0, 10, 10], // 0 estimated, 10 actual => 10 (estimate is too low)
+        [0, 20, 20, 20], // 20 estimated, 20 actual => 20 (estimate accurate)
+        [0, 1000, 21, 1000], // 1000 estimated, full page (21) returned => 1000 (estimate could be correct)
+        // Second page (offset = 20, count = 20)
+        [20, 20, 0, 20], // 20 estimated, empty page returned => 20 (estimate is correct)
+        [20, 0, 0, 0], // 0 estimated, empty page returned => 20 (estimate is too low, but rowCount is 0)
+        [20, 0, 1, 21], // rowCount = 1, estimate = 0 => 21 (estimate is too low)
+        [20, 200, 0, 20], // rowCount = 0, estimate = 200 => 20 (estimate is too high)
+        [20, 200, 1, 21], // rowCount = 1, estimate = 200 => 20 (estimate is too high)
+        [20, 200, 21, 200], // rowCount = 21, estimate = 200 => 200 (estimate could be correct)
+      ])(
+        'clampEstimateCount: offset = %p, %p estimated, %p returned => %p',
+        (offset, estimateCount, rowCount, expected) => {
+          expect(clampEstimateCount({ resourceType: 'Patient', offset }, estimateCount, rowCount)).toBe(expected);
+        }
+      );
 
       test('Search _summary', () =>
         withTestContext(async () => {
