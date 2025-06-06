@@ -217,7 +217,7 @@ export abstract class FhirRepository<TClient = unknown> {
     resource: T,
     search: SearchRequest<T>,
     options?: CreateResourceOptions
-  ): Promise<{ resource: T; outcome: OperationOutcome }> {
+  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
     if (search.resourceType !== resource.resourceType) {
       throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
     }
@@ -252,7 +252,7 @@ export abstract class FhirRepository<TClient = unknown> {
     resource: T,
     search: SearchRequest,
     options?: CreateResourceOptions & UpdateResourceOptions
-  ): Promise<{ resource: T; outcome: OperationOutcome }> {
+  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
     if (search.resourceType !== resource.resourceType) {
       throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
     }
