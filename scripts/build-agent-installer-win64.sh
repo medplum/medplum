@@ -62,6 +62,8 @@ fi
 
 # Get the current version number
 export MEDPLUM_VERSION=$(node -p "require('./package.json').version")
+# Get full version, including the git shorthash, delimited by a '-'
+export MEDPLUM_FULL_VERSION="$MEDPLUM_VERSION-$MEDPLUM_GIT_SHORTHASH"
 
 # Move into packages/agent
 pushd packages/agent
@@ -88,7 +90,7 @@ if [ ! SKIP_SIGNING ]; then
     --storetype DIGICERTONE \
     --storepass "$SM_API_KEY|$SM_CLIENT_CERT_FILE|$SM_CLIENT_CERT_PASSWORD" \
     --alias "$SM_CERT_ALIAS" \
-    "dist/medplum-agent-$MEDPLUM_VERSION-win64.exe"
+    "dist/medplum-agent-$MEDPLUM_FULL_VERSION-win64.exe"
 fi
 
 # Download Shawl exe
@@ -120,16 +122,16 @@ else
 fi
 
 # Generate the installer checksum
-sha256sum "medplum-agent-installer-$MEDPLUM_VERSION.exe" > "medplum-agent-installer-$MEDPLUM_VERSION.exe.sha256"
+sha256sum "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe" > "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe.sha256"
 
 # Check the installer checksum
-sha256sum --check "medplum-agent-installer-$MEDPLUM_VERSION.exe.sha256"
+sha256sum --check "medplum-agent-installer-$MEDPLUM_FULL_VERSION.exe.sha256"
 
 # Check the build output
 ls -la
 
 # Make sure binary runs
-dist/medplum-agent-$MEDPLUM_VERSION-win64.exe --help
+dist/medplum-agent-$MEDPLUM_FULL_VERSION-win64.exe --help
 
 # Move back to root
 popd
