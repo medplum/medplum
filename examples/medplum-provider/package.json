@@ -30,6 +30,8 @@
     "@medplum/eslint-config": "4.1.6",
     "@medplum/fhirtypes": "4.1.6",
     "@medplum/react": "4.1.6",
+    "@medplum/health-gorilla-core": "4.1.6",
+    "@medplum/health-gorilla-react": "4.1.6",
     "@tabler/icons-react": "3.17.0",
     "@testing-library/dom": "10.4.0",
     "@testing-library/jest-dom": "6.6.3",

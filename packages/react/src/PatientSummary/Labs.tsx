@@ -14,19 +14,52 @@ export interface LabsProps {
   readonly serviceRequests: ServiceRequest[];
   readonly diagnosticReports: DiagnosticReport[];
   readonly onClickResource?: (resource: Resource) => void;
+  readonly onRequestLabs?: () => void;
 }
 
 export function Labs(props: LabsProps): JSX.Element {
-  const { serviceRequests, diagnosticReports, onClickResource } = props;
+  const { serviceRequests, diagnosticReports, onClickResource, onRequestLabs } = props;
   const [selectedReport, setSelectedReport] = useState<DiagnosticReport | undefined>();
   const [reportDialogOpened, { open: openReportDialog, close: closeReportDialog }] = useDisclosure(false);
 
+  // Get all Diagnostic Reports that are code LAB.
+  // Build a set of all Service Requests that are based on these Diagnostic Reports.
+  const diagnosticReportsRequests = new Set<string>();
   const filteredDiagnosticReports = diagnosticReports.filter((report) => {
-    return isLaboratoryReport(report);
+    const flag = isLaboratoryReport(report);
+    if (flag && report.basedOn) {
+      report.basedOn.forEach((basedOn) => {
+        if (basedOn.reference?.startsWith('ServiceRequest/')) {
+          const [, id] = basedOn.reference.split('/');
+          diagnosticReportsRequests.add(id);
+        }
+      });
+    }
+    return flag;
   });
 
+  // Filter out Service Requests that are based on Diagnostic Reports.
+  // Filter out multiple service requests with the same requisition number.
   const completedRequisitionNumbers = new Set<string>();
   const filteredServiceRequests = serviceRequests.filter((request) => {
+    if (request.id && diagnosticReportsRequests.has(request.id)) {
+      return false;
+    }
+
+    // If the ServiceRequest is also based on a parent ServiceRequest, skip it.
+    if (request.basedOn) {
+      const basedOn = request.basedOn.find((basedOn) => {
+        if (basedOn.reference?.startsWith('ServiceRequest/')) {
+          const [, id] = basedOn.reference.split('/');
+          return diagnosticReportsRequests.has(id);
+        }
+        return false;
+      });
+      if (basedOn) {
+        return false;
+      }
+    }
+
     const shouldFilter = shouldFilterRequest(request, completedRequisitionNumbers);
     if (!shouldFilter && request.requisition?.value) {
       completedRequisitionNumbers.add(request.requisition?.value);
@@ -41,7 +74,7 @@ export function Labs(props: LabsProps): JSX.Element {
 
   return (
     <>
-      <CollapsibleSection title="Labs">
+      <CollapsibleSection title="Labs" onAdd={() => onRequestLabs?.()}>
         <Flex direction="column" gap={8}>
           {filteredServiceRequests.map((serviceRequest) => (
             <SummaryItem key={serviceRequest.id} onClick={() => onClickResource?.(serviceRequest)}>
@@ -112,7 +145,7 @@ function hasLaboratoryCategory(category: CodeableConcept): boolean {
   }
 
   for (const coding of category.coding) {
-    if (coding.code === 'laboratory') {
+    if (coding.code === 'LAB') {
       return true;
     }
   }

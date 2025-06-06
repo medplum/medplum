@@ -1,4 +1,4 @@
-import { Loader, ScrollArea } from '@mantine/core';
+import { Loader, Modal, ScrollArea } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary } from '@medplum/react';
@@ -8,6 +8,7 @@ import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
 import { PatientPageTabInfo, PatientPageTabs, formatPatientPageTabUrl } from './PatientPage.utils';
 import { PatientTabsNavigation } from './PatientTabsNavigation';
+import { OrderLabsPage } from '../OrderLabsPage';
 
 function getTabFromLocation(location: Location): PatientPageTabInfo | undefined {
   const tabId = location.pathname.split('/')[3] ?? '';
@@ -22,6 +23,7 @@ export function PatientPage(): JSX.Element {
   const location = useLocation();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
+  const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState<string>(() => {
     return (getTabFromLocation(location) ?? PatientPageTabs[0]).id;
   });
@@ -54,6 +56,10 @@ export function PatientPage(): JSX.Element {
     }
   }, [currentTab, location]);
 
+  const handleCloseLabsModal = useCallback(() => {
+    setIsLabsModalOpen(false);
+  }, []);
+
   if (outcome && !isOk(outcome)) {
     return (
       <Document>
@@ -72,22 +78,30 @@ export function PatientPage(): JSX.Element {
   }
 
   return (
-    <div key={getReferenceString(patient)} className={classes.container}>
-      <div className={classes.sidebar}>
-        <ScrollArea className={classes.scrollArea}>
-          <PatientSummary
-            patient={patient}
-            onClickResource={(resource) =>
-              navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
-            }
-          />
-        </ScrollArea>
-      </div>
+    <>
+      <div key={getReferenceString(patient)} className={classes.container}>
+        <div className={classes.sidebar}>
+          <ScrollArea className={classes.scrollArea}>
+            <PatientSummary
+              patient={patient}
+              onClickResource={(resource) =>
+                navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
+              }
+              onRequestLabs={() => {
+                setIsLabsModalOpen(true);
+              }}
+            />
+          </ScrollArea>
+        </div>
 
-      <div className={classes.content}>
-        <PatientTabsNavigation currentTab={currentTab} onTabChange={onTabChange} />
-        <Outlet />
+        <div className={classes.content}>
+          <PatientTabsNavigation currentTab={currentTab} onTabChange={onTabChange} />
+          <Outlet />
+        </div>
       </div>
-    </div>
+      <Modal opened={isLabsModalOpen} onClose={handleCloseLabsModal} size="xl" centered>
+        <OrderLabsPage onSubmitLabOrder={handleCloseLabsModal} />
+      </Modal>
+    </>
   );
 }
