@@ -1,5 +1,6 @@
 import { AgentTransmitResponse, Logger, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
+import assert from 'node:assert';
 import { randomUUID } from 'node:crypto';
 import net from 'node:net';
 import { App } from './app';
@@ -11,6 +12,9 @@ export class AgentSerialChannel extends BaseChannel {
   private started = false;
   readonly connections = new Map<string, SerialChannelConnection>();
   readonly log: Logger;
+
+  startChar = -1;
+  endChar = -1;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
@@ -29,6 +33,19 @@ export class AgentSerialChannel extends BaseChannel {
     }
     this.started = true;
     const address = new URL(this.getEndpoint().address as string);
+
+    const startCharStr = address.searchParams.get('startChar');
+    const endCharStr = address.searchParams.get('endChar');
+    if (!(startCharStr && endCharStr)) {
+      throw new Error(`Failed to parse startChar and/or endChar query param(s) from ${address}`);
+    }
+
+    // These should never eval to -1, but just in case we assert
+    this.startChar = startCharStr.codePointAt(0) ?? -1;
+    this.endChar = startCharStr.codePointAt(0) ?? -1;
+
+    assert(this.startChar !== -1 && this.endChar !== -1);
+
     this.log.info(`Channel starting on ${address}...`);
     this.server.listen(Number.parseInt(address.port, 10));
     this.log.info('Channel started successfully');
@@ -70,6 +87,8 @@ export class AgentSerialChannel extends BaseChannel {
 }
 
 export class SerialChannelConnection {
+  private msgChunks: Buffer[] = [];
+  private msgTotalLength = -1; // -1 signals message start char has not yet been received
   readonly channel: AgentSerialChannel;
   readonly socket: net.Socket;
   readonly remote: string;
@@ -86,15 +105,55 @@ export class SerialChannelConnection {
   private async handler(data: Buffer): Promise<void> {
     try {
       this.channel.log.info(`Received: ${data.toString('hex').replaceAll('\r', '\n')}`);
-      this.channel.app.addToWebSocketQueue({
-        type: 'agent:transmit:request',
-        accessToken: 'placeholder',
-        channel: this.channel.getDefinition().name as string,
-        remote: this.remote,
-        contentType: 'application/octet-stream',
-        body: data.toString('hex'),
-        callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
-      });
+
+      let lastEndIndex = -1;
+
+      for (let i = 0; i < data.length; i++) {
+        const char = data[i];
+
+        if (char === this.channel.startChar) {
+          // Clear chunks when we hit a start character
+          this.msgChunks.length = 0;
+          this.msgTotalLength = 0;
+        } else if (char === this.channel.endChar) {
+          // If received end character but there's no start to the message, just continue
+          if (this.msgTotalLength === -1) {
+            continue;
+          }
+          // Slice from after the last end char (or beginning) to current position
+          const startSlice = lastEndIndex + 1;
+          const slice = data.subarray(startSlice, i + 1); // Include the end char
+
+          this.msgChunks.push(slice);
+          this.msgTotalLength += slice.length;
+
+          // Create final buffer and transmit
+          const messageBuffer = Buffer.concat(this.msgChunks, this.msgTotalLength);
+          this.channel.app.addToWebSocketQueue({
+            type: 'agent:transmit:request',
+            accessToken: 'placeholder',
+            channel: this.channel.getDefinition().name as string,
+            remote: this.remote,
+            contentType: 'application/octet-stream',
+            body: messageBuffer.toString('hex'),
+            callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
+          });
+
+          // Reset for next message
+          this.msgChunks.length = 0;
+          lastEndIndex = i;
+          this.msgTotalLength = -1;
+        }
+      }
+
+      // After processing all bytes, handle any remaining data after the last end char
+      if (lastEndIndex < data.length - 1) {
+        const remainingSlice = data.subarray(lastEndIndex + 1);
+        if (remainingSlice.length > 0) {
+          this.msgChunks.push(remainingSlice);
+          this.msgTotalLength += remainingSlice.length;
+        }
+      }
     } catch (err) {
       this.channel.log.error(`Serial error: ${normalizeErrorString(err)}`);
     }
