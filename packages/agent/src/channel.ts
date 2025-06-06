@@ -66,6 +66,7 @@ export function needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endp
 export const ChannelType = {
   HL7_V2: 'HL7_V2',
   DICOM: 'DICOM',
+  SERIAL: 'serial',
 } as const;
 export type ChannelType = (typeof ChannelType)[keyof typeof ChannelType];
 
@@ -76,6 +77,9 @@ export function getChannelType(endpoint: Endpoint): ChannelType {
   if (endpoint.address.startsWith('mllp')) {
     return ChannelType.HL7_V2;
   }
+  if (endpoint.address.startsWith('tcp')) {
+    return ChannelType.SERIAL;
+  }
   throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
 }
 
@@ -85,6 +89,8 @@ export function getChannelTypeShortName(endpoint: Endpoint): string {
       return 'HL7';
     case ChannelType.DICOM:
       return 'DICOM';
+    case ChannelType.SERIAL:
+      return 'Serial';
     default:
       throw new Error(`Invalid endpoint type with address '${endpoint.address}'`);
   }
