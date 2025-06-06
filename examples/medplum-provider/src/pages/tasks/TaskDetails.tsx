@@ -87,7 +87,7 @@ export const TaskDetails = (): JSX.Element => {
         message: 'Task updated',
       });
       setTask(updatedTask);
-      navigate(`/Patient/${patientId}/Encounter/${encounterId}/chart`)?.catch(console.error);
+      navigate(`/Patient/${patientId}/Encounter/${encounterId}`)?.catch(console.error);
     } catch {
       notifications.show({
         color: 'red',
