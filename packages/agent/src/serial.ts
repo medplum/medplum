@@ -42,7 +42,7 @@ export class AgentSerialChannel extends BaseChannel {
 
     // These should never eval to -1, but just in case we assert
     this.startChar = startCharStr.codePointAt(0) ?? -1;
-    this.endChar = startCharStr.codePointAt(0) ?? -1;
+    this.endChar = endCharStr.codePointAt(0) ?? -1;
 
     assert(this.startChar !== -1 && this.endChar !== -1);
 
