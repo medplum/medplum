@@ -535,8 +535,7 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
 export abstract class BaseQuery {
   readonly tableName: string;
   readonly predicate: Conjunction;
-  explain = false;
-  analyzeBuffers = false;
+  explain: boolean | string[] = false;
   readonly alias?: string;
 
   constructor(tableName: string, alias?: string) {
@@ -656,8 +655,10 @@ export class SelectQuery extends BaseQuery implements Expression {
   buildSql(sql: SqlBuilder): void {
     if (this.explain) {
       sql.append('EXPLAIN ');
-      if (this.analyzeBuffers) {
-        sql.append('(ANALYZE, BUFFERS) ');
+      if (Array.isArray(this.explain)) {
+        sql.append('(');
+        sql.append(this.explain.join(', '));
+        sql.append(')');
       }
     }
     if (this.with) {

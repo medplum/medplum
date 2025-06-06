@@ -10,7 +10,7 @@ const operation: OperationDefinition = {
   name: 'db-stats',
   status: 'active',
   kind: 'operation',
-  code: 'status',
+  code: 'db-stats',
   experimental: true,
   system: true,
   type: false,
