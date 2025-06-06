@@ -55,6 +55,12 @@ spec:
             httpGet:
               path: /healthcheck
               port: {{ .Values.service.targetPort | default 8103 }}
+          startupProbe:
+            httpGet:
+              path: /healthcheck
+              port: {{ .Values.service.targetPort | default 8103 }}
+            failureThreshold: 60
+            periodSeconds: 10
           env:
             {{- toYaml .Values.deployment.env | nindent 12 }}
           resources:
