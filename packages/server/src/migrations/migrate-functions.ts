@@ -57,7 +57,7 @@ export async function idempotentCreateIndex(
     const dropQuery = `DROP INDEX IF EXISTS ${escapeIdentifier(indexName)}`;
     await client.query(dropQuery);
     const durationMs = Date.now() - start;
-    globalLogger.info('Dropped invalid index', { indexName, durationMs });
+    globalLogger.debug('Dropped invalid index', { indexName, durationMs });
     results.push({ name: dropQuery, durationMs });
     exists = false;
   }
@@ -66,7 +66,7 @@ export async function idempotentCreateIndex(
     const start = Date.now();
     await client.query(createIndexSql);
     const durationMs = Date.now() - start;
-    globalLogger.info('Created index', { indexName, durationMs });
+    globalLogger.debug('Created index', { indexName, durationMs });
     results.push({ name: createIndexSql, durationMs });
   }
 }
@@ -80,6 +80,6 @@ export async function analyzeTable(
   const analyzeQuery = `ANALYZE ${escapeIdentifier(tableName)}`;
   await client.query(analyzeQuery);
   const durationMs = Date.now() - start;
-  globalLogger.info('Analyzed table', { tableName, durationMs });
+  globalLogger.debug('Analyzed table', { tableName, durationMs });
   actions.push({ name: analyzeQuery, durationMs });
 }

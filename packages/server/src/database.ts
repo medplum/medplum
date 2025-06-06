@@ -253,7 +253,7 @@ export async function maybeAutoRunPendingPostDeployMigration(): Promise<WithId<A
   }
 
   const systemRepo = getSystemRepo();
-  globalLogger.info('Auto-queueing pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
+  globalLogger.debug('Auto-queueing pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
   return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }
 
