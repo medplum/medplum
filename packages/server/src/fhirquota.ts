@@ -111,8 +111,8 @@ export class FhirRateLimiter {
     return this.consume(10);
   }
 
-  async recordSearch(): Promise<void> {
-    return this.consume(20);
+  async recordSearch(num = 1): Promise<void> {
+    return this.consume(20 * Math.max(num, 1));
   }
 
   async recordWrite(): Promise<void> {
