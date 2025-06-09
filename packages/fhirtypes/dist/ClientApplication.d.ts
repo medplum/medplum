@@ -170,6 +170,13 @@ export interface ClientApplication {
    * all origins are allowed.
    */
   allowedOrigin?: string[];
+
+  /**
+   * Optional default OAuth scope for the client application. This scope is
+   * used when the client application does not specify a scope in the
+   * authorization request.
+   */
+  defaultScope?: string[];
 }
 
 /**

@@ -60000,6 +60000,13 @@
             "$ref": "#/definitions/string"
           },
           "type": "array"
+        },
+        "defaultScope": {
+          "description": "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,

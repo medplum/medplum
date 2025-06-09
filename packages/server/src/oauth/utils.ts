@@ -8,7 +8,6 @@ import {
   getReferenceString,
   isJwt,
   isString,
-  MEDPLUM_CLI_CLIENT_ID,
   OperationOutcomeError,
   Operator,
   parseJWTPayload,
@@ -55,6 +54,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
+import { getStandardClientById } from './clients';
 import {
   generateAccessToken,
   generateIdToken,
@@ -134,13 +134,9 @@ export interface GoogleCredentialClaims extends JWTPayload {
  * @returns The client application.
  */
 export async function getClientApplication(clientId: string): Promise<ClientApplication> {
-  if (clientId === MEDPLUM_CLI_CLIENT_ID) {
-    return {
-      resourceType: 'ClientApplication',
-      id: MEDPLUM_CLI_CLIENT_ID,
-      redirectUri: 'http://localhost:9615',
-      pkceOptional: true,
-    };
+  const standardClient = getStandardClientById(clientId);
+  if (standardClient) {
+    return standardClient;
   }
   const systemRepo = getSystemRepo();
   return systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
@@ -908,7 +904,7 @@ export async function getLoginForAccessToken(
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  const authState = { login, project, membership, userConfig };
+  const authState = { login, project, membership, userConfig, accessToken };
   await tryAddOnBehalfOf(req, authState);
   return authState;
 }
