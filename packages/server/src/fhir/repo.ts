@@ -2,6 +2,7 @@ import {
   AccessPolicyInteraction,
   BackgroundJobInteraction,
   DEFAULT_MAX_SEARCH_COUNT,
+  Filter,
   OperationOutcomeError,
   Operator,
   PropertyType,
@@ -1305,7 +1306,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     try {
       const result = await searchByReferenceImpl(this, searchRequest, referenceField, references);
       const durationMs = Date.now() - startTime;
-      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
+      for (const ref of references) {
+        const refFilter: Filter = { code: referenceField, operator: 'eq', value: ref };
+        const refSearch: SearchRequest = {
+          ...searchRequest,
+          filters: searchRequest.filters ? [...searchRequest.filters, refFilter] : [refFilter],
+        };
+        this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, {
+          searchRequest: refSearch,
+          durationMs,
+        });
+      }
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
