@@ -274,6 +274,13 @@ function getParameterType(param: OperationDefinitionParameter): string[] | undef
   );
 }
 
-export function clamp(n: number, min: number, max: number): number {
+/**
+ * Clamps a value between minimum and maximum values.
+ * @param min - The minimum value.
+ * @param n - The value to be clamped.
+ * @param max - The maximum value.
+ * @returns - The value, constrained to be at least min and at most max.
+ */
+export function clamp(min: number, n: number, max: number): number {
   return Math.max(min, Math.min(max, n));
 }
