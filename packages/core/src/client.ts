@@ -31,6 +31,7 @@ import {
   Subscription,
   UserConfiguration,
   ValueSet,
+  DocumentReference,
 } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */
@@ -573,6 +574,13 @@ export interface CreateMediaOptions extends CreateBinaryOptions {
    * Optional additional fields for the Media resource.
    */
   readonly additionalFields?: Partial<Media>;
+}
+
+export interface CreateDocumentReferenceOptions extends CreateBinaryOptions {
+  /**
+   * Optional additional fields for the DocumentReference resource.
+   */
+  readonly additionalFields?: Partial<DocumentReference>;
 }
 
 /**
@@ -3111,6 +3119,49 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       },
       options
     );
+  }
+
+  /**
+   * Creates a FHIR DocumentReference resource with the provided data content.
+   *
+   * @category Create
+   * @param createDocumentReferenceOptions - The document reference creation options. See `CreateDocumentReferenceOptions` for full details.
+   * @param requestOptions - Optional fetch options.
+   * @returns The new document reference resource.
+   */
+  async createDocumentReference(
+    createDocumentReferenceOptions: CreateDocumentReferenceOptions,
+    requestOptions?: MedplumRequestOptions
+  ): Promise<DocumentReference> {
+    const { additionalFields, ...createBinaryOptions } = createDocumentReferenceOptions;
+
+    // First, create the document reference:
+    const documentReference = await this.createResource({
+      resourceType: 'DocumentReference',
+      status: 'current',
+      content: [
+        {
+          attachment: {
+            contentType: createDocumentReferenceOptions.contentType,
+          },
+        },
+      ],
+      ...additionalFields,
+    });
+
+    // If the caller did not specify a security context, use the document reference:
+    if (!createBinaryOptions.securityContext) {
+      createBinaryOptions.securityContext = createReference(documentReference);
+    }
+
+    // Then create the binary:
+    const attachment = await this.createAttachment(createBinaryOptions, requestOptions);
+
+    // Finally, update the document reference with the binary reference:
+    return this.updateResource({
+      ...documentReference,
+      content: [{ attachment: attachment }],
+    });
   }
 
   /**

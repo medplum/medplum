@@ -3390,6 +3390,44 @@ describe('Client', () => {
     });
   });
 
+  describe('DocumentReference', () => {
+    test('Create DocumentReference', async () => {
+      const fetch = mockFetch(200, {});
+      fetch.mockImplementationOnce(async () => mockFetchResponse(201, { resourceType: 'DocumentReference', id: '123' }));
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(201, { resourceType: 'Binary', id: '456', url: 'Binary/456' })
+      );
+      fetch.mockImplementationOnce(async () => mockFetchResponse(200, { resourceType: 'DocumentReference', id: '123' }));
+
+      const client = new MedplumClient({ fetch });
+      const documentReference = await client.createDocumentReference({
+        data: 'Hello world',
+        contentType: 'text/plain',
+        filename: 'hello.txt',
+      });
+      expect(documentReference).toBeDefined();
+      expect(fetch).toHaveBeenCalledTimes(3);
+
+      const calls = fetch.mock.calls;
+      expect(calls).toHaveLength(3);
+      expect(calls[0][0]).toStrictEqual('https://api.medplum.com/fhir/R4/DocumentReference');
+      expect(calls[1][0]).toStrictEqual('https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt');
+      expect(calls[2][0]).toStrictEqual('https://api.medplum.com/fhir/R4/DocumentReference/123');
+      expect(JSON.parse(calls[2][1].body)).toMatchObject({
+        resourceType: 'DocumentReference',
+        content: [
+          {
+            attachment: {
+              contentType: 'text/plain',
+              url: 'Binary/456',
+              title: 'hello.txt',
+            },
+          },
+        ],
+      });
+    });
+  });
+
   describe('Prefer async', () => {
     test('Follow Content-Location', async () => {
       const fetch = jest.fn();
