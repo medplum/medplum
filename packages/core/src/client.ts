@@ -13,6 +13,7 @@ import {
   BundleLink,
   Communication,
   Device,
+  DocumentReference,
   Encounter,
   ExtractResource,
   Identifier,
@@ -31,7 +32,6 @@ import {
   Subscription,
   UserConfiguration,
   ValueSet,
-  DocumentReference,
 } from '@medplum/fhirtypes';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /** @ts-ignore */

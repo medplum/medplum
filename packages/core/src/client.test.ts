@@ -3393,11 +3393,15 @@ describe('Client', () => {
   describe('DocumentReference', () => {
     test('Create DocumentReference', async () => {
       const fetch = mockFetch(200, {});
-      fetch.mockImplementationOnce(async () => mockFetchResponse(201, { resourceType: 'DocumentReference', id: '123' }));
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(201, { resourceType: 'DocumentReference', id: '123' })
+      );
       fetch.mockImplementationOnce(async () =>
         mockFetchResponse(201, { resourceType: 'Binary', id: '456', url: 'Binary/456' })
       );
-      fetch.mockImplementationOnce(async () => mockFetchResponse(200, { resourceType: 'DocumentReference', id: '123' }));
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(200, { resourceType: 'DocumentReference', id: '123' })
+      );
 
       const client = new MedplumClient({ fetch });
       const documentReference = await client.createDocumentReference({
