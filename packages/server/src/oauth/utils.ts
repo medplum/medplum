@@ -7,7 +7,6 @@ import {
   getDateProperty,
   getReferenceString,
   isString,
-  MEDPLUM_CLI_CLIENT_ID,
   OperationOutcomeError,
   Operator,
   ProfileResource,
@@ -46,6 +45,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
+import { getStandardClientById } from './clients';
 import {
   generateAccessToken,
   generateIdToken,
@@ -125,13 +125,9 @@ export interface GoogleCredentialClaims extends JWTPayload {
  * @returns The client application.
  */
 export async function getClientApplication(clientId: string): Promise<ClientApplication> {
-  if (clientId === MEDPLUM_CLI_CLIENT_ID) {
-    return {
-      resourceType: 'ClientApplication',
-      id: MEDPLUM_CLI_CLIENT_ID,
-      redirectUri: 'http://localhost:9615',
-      pkceOptional: true,
-    };
+  const standardClient = getStandardClientById(clientId);
+  if (standardClient) {
+    return standardClient;
   }
   const systemRepo = getSystemRepo();
   return systemRepo.readResource<ClientApplication>('ClientApplication', clientId);

@@ -9,7 +9,7 @@ wellKnownRouter.get('/jwks.json', (_req: Request, res: Response) => {
   res.status(200).json(getJwks());
 });
 
-wellKnownRouter.get('/openid-configuration', (_req: Request, res: Response) => {
+function handleOAuthConfig(_req: Request, res: Response): void {
   const config = getConfig();
   res.status(200).json({
     issuer: config.issuer,
@@ -17,6 +17,7 @@ wellKnownRouter.get('/openid-configuration', (_req: Request, res: Response) => {
     token_endpoint: config.tokenUrl,
     userinfo_endpoint: config.userInfoUrl,
     jwks_uri: config.jwksUrl,
+    registration_endpoint: config.authorizeUrl.replace('/authorize', '/register'),
     id_token_signing_alg_values_supported: ['RS256'],
     grant_types_supported: [
       OAuthGrantType.ClientCredentials,
@@ -34,4 +35,7 @@ wellKnownRouter.get('/openid-configuration', (_req: Request, res: Response) => {
     ],
     request_object_signing_alg_values_supported: ['none'],
   });
-});
+}
+
+wellKnownRouter.get('/oauth-authorization-server', handleOAuthConfig);
+wellKnownRouter.get('/openid-configuration', handleOAuthConfig);

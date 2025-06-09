@@ -1,6 +1,5 @@
 import { Title } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';
-import { CodeChallengeMethod, normalizeErrorString } from '@medplum/core';
+import { CodeChallengeMethod } from '@medplum/core';
 import { ClientApplicationSignInForm } from '@medplum/fhirtypes';
 import { Logo, SignInForm, useMedplum } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
@@ -26,13 +25,8 @@ export function OAuthPage(): JSX.Element | null {
         const info: ClientApplicationSignInForm = await medplum.get(`/auth/clientinfo/${clientId}`);
         setClientInfo(info);
       } catch (err) {
-        showNotification({
-          id: 'clientinfofail',
-          title: 'Failed to retrieve client information.',
-          color: 'red',
-          message: normalizeErrorString(err),
-          withCloseButton: true,
-        });
+        // Silently ignore the error if the clientId is not found
+        console.debug('Failed to fetch client info:', err);
       } finally {
         setLoading(false);
       }

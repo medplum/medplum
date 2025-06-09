@@ -77,10 +77,21 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
 
   // Then, validate all other parameters.
   // If these are invalid, redirect back to the redirect URI.
-  if (!params.scope) {
-    sendErrorRedirect(res, redirectUri, 'invalid_request', 'Missing scope', state);
-    return false;
-  }
+  // if (!params.scope) {
+  //   sendErrorRedirect(res, redirectUri, 'invalid_request', 'Missing scope', state);
+  //   return false;
+  // }
+
+  // New Recommended Logic:
+  // 1. Receive request at /authorize.
+  // 2. Check for scope parameter.
+  // 3. If scope is missing: a. Get the client_id from the request. b. Look up that client in your database (the one created via DCR). c. Find the default_scope that was configured for that client. d. Proceed with the flow as if that default_scope had been passed in the request. e. If the client has no default_scope configured, then it is safe to reject the request.
+  // 4. If scope is present, proceed as normal.
+  // Why This is the Right Approach
+  // 1. Spec Compliance: This makes your server compliant with both pure OAuth 2.0 clients (like ChatGPT's) and strict OIDC clients.
+  // 2. Security: It's still secure. The scopes are not coming out of thin air; they are coming from a configuration that you control and that was established when the client was registered.
+  // 3. Flexibility: It allows you to define different default access levels for different client applications.
+
   if (params.response_type !== 'code') {
     sendErrorRedirect(res, redirectUri, 'unsupported_response_type', 'Invalid response type', state);
     return false;
