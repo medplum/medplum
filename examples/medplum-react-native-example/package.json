@@ -25,16 +25,16 @@
     "@medplum/expo-polyfills": "4.1.6",
     "@medplum/fhirtypes": "4.1.6",
     "@medplum/react-hooks": "4.1.6",
-    "expo": "53.0.9",
+    "expo": "53.0.11",
     "expo-status-bar": "2.2.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-native": "0.79.2",
+    "react-native": "0.79.3",
     "react-native-web": "0.20.0"
   },
   "devDependencies": {
     "@babel/core": "7.27.4",
-    "babel-preset-expo": "13.1.11",
+    "babel-preset-expo": "13.2.0",
     "typescript": "5.8.3"
   },
   "packageManager": "npm@10.9.2",
