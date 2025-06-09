@@ -580,7 +580,7 @@ export interface CreateDocumentReferenceOptions extends CreateBinaryOptions {
   /**
    * Optional additional fields for the DocumentReference resource.
    */
-  readonly additionalFields?: Partial<DocumentReference>;
+  readonly additionalFields?: Omit<Partial<DocumentReference>, 'content'>;
 }
 
 /**
