@@ -433,9 +433,7 @@ export const EncounterChart = (): JSX.Element => {
         <Stack gap="md">
           {clinicalImpression && (
             <Card withBorder shadow="sm" mt="md">
-              <Title>
-                Fill chart note
-              </Title>
+              <Title>Fill chart note</Title>
               <Textarea
                 defaultValue={clinicalImpression.note?.[0]?.text}
                 value={chartNote}

@@ -163,7 +163,12 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
           )}
       </Stack>
 
-      <Modal opened={procedureModalOpen} onClose={() => setProcedureModalOpen(false)} title="Create New Procedure" size="lg">
+      <Modal
+        opened={procedureModalOpen}
+        onClose={() => setProcedureModalOpen(false)}
+        title="Create New Procedure"
+        size="lg"
+      >
         <ProcedureDialog serviceRequest={serviceRequest} />
       </Modal>
     </>

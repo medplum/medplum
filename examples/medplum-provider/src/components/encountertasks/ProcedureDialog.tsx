@@ -1,7 +1,7 @@
-import { JSX } from "react";
-import { CodeableConceptInput, ResourceInput } from "@medplum/react";
-import { Button, Group, Stack, TextInput } from "@mantine/core";
-import { ServiceRequest } from "@medplum/fhirtypes";
+import { JSX } from 'react';
+import { CodeableConceptInput, ResourceInput } from '@medplum/react';
+import { Button, Group, Stack, TextInput } from '@mantine/core';
+import { ServiceRequest } from '@medplum/fhirtypes';
 
 interface ProcedureModalProps {
   serviceRequest: ServiceRequest;
@@ -28,26 +28,14 @@ export default function ProcedureModal(props: ProcedureModalProps): JSX.Element 
         valuePath="code"
       />
 
-      <ResourceInput
-        name="performer"
-        label="Performer"
-        resourceType="Practitioner"
-      />
+      <ResourceInput name="performer" label="Performer" resourceType="Practitioner" />
 
-      <TextInput
-        label="Notes"
-        placeholder="Additional notes about the procedure"
-      />
+      <TextInput label="Notes" placeholder="Additional notes about the procedure" />
 
       <Group justify="flex-end" mt="md">
-        <Button variant="outline" >
-          Cancel
-        </Button>
-        <Button 
-        >
-          Create Procedure
-        </Button>
+        <Button variant="outline">Cancel</Button>
+        <Button>Create Procedure</Button>
       </Group>
     </Stack>
   );
-} 
+}
