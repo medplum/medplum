@@ -1,0 +1,29 @@
+name: Jira-Linked Deployments
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - qa
+      - staging
+
+jobs:
+  emit-deployment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Deployment
+        id: create_deployment
+        uses: chrnorm/deployment-action@releases/v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref:   ${{ github.sha }}
+          environment: ${{ github.ref_name == 'main' && 'production' || github.ref_name == 'dev' && 'development' || github.ref_name == 'qa' && 'testing' || github.ref_name == 'staging' && 'staging' || github.ref_name }}
+
+
+      - name: Mark Deployment Successful
+        uses: chrnorm/deployment-status@releases/v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          deployment_id: ${{ steps.create_deployment.outputs.deployment_id }}
+          state: success
