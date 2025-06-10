@@ -1003,7 +1003,9 @@ function generateColumnsActions(
   }
   for (const startColumn of startTable.columns) {
     if (!targetTable.columns.some((c) => c.name === startColumn.name)) {
-      actions.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
+      ctx.postDeployAction(() => {
+        actions.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
+      }, `Dropping column ${startColumn.name} from ${targetTable.name}`);
     }
   }
   return actions;
