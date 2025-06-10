@@ -543,9 +543,9 @@ export default function PricingPage(): JSX.Element {
                 identity provider.
               </li>
               <li id="note14">
-                <strong>HealthGorilla Pricing</strong>: Premium tier includes 1,000 transactions per month at no
+                <strong> Lab/Diagnostics Orders Pricing</strong>: Premium tier includes 1,000 transactions per month at no
                 additional cost. After that, it is $1 per transaction. An order and result are both considered a
-                transaction. See <a href="/docs/integration/health-gorilla">Health Gorilla</a> for more details.
+                transaction. See <a href="/docs/integration/health-gorilla">Lab Integration</a> for more details.
               </li>
             </ol>
           </div>
