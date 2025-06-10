@@ -168,9 +168,14 @@ export interface AccessPolicyResource {
   criteria?: string;
 
   /**
-   * Optional flag to indicate that the resource type is read-only.
+   * @deprecated Use AccessPolicy.resource.interaction = ['search', 'read']
    */
   readonly?: boolean;
+
+  /**
+   * Permitted FHIR interactions with this resource type
+   */
+  interaction?: ('read' | 'vread' | 'update' | 'patch' | 'delete' | 'history' | 'create' | 'search')[];
 
   /**
    * Optional list of hidden fields.  Hidden fields are not readable or

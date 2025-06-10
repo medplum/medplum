@@ -61899,8 +61899,15 @@
           "$ref": "#/definitions/string"
         },
         "readonly": {
-          "description": "Optional flag to indicate that the resource type is read-only.",
+          "description": "@deprecated Use AccessPolicy.resource.interaction \u003d [\u0027search\u0027, \u0027read\u0027]",
           "$ref": "#/definitions/boolean"
+        },
+        "interaction": {
+          "description": "Permitted FHIR interactions with this resource type",
+          "items": {
+            "enum": ["read", "vread", "update", "patch", "delete", "history", "create", "search"]
+          },
+          "type": "array"
         },
         "hiddenFields": {
           "description": "Optional list of hidden fields.  Hidden fields are not readable or writeable.",

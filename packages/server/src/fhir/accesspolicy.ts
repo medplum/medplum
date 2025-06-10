@@ -103,7 +103,12 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
       compartment = replaced.compartment;
     }
     if (replaced.resource) {
-      resourcePolicies = resourcePolicies.concat(replaced.resource);
+      for (const resourcePolicy of replaced.resource) {
+        if (!resourcePolicy.interaction && resourcePolicy.readonly) {
+          resourcePolicy.interaction = ['search', 'read'];
+        }
+        resourcePolicies = resourcePolicies.concat(replaced.resource);
+      }
     }
     if (replaced.ipAccessRule) {
       ipAccessRules = ipAccessRules.concat(replaced.ipAccessRule);
