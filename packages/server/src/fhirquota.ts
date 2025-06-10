@@ -94,6 +94,7 @@ export class FhirRateLimiter {
         limit: this.limiter.points,
         used: result.consumedPoints,
         msToReset: result.msBeforeNext,
+        enabled: this.enabled,
       });
       if (this.enabled) {
         const outcome = deepClone(tooManyRequests);
