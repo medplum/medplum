@@ -1,0 +1,17 @@
+name: medplum
+id: ari:cloud:compass:a361a450-70e3-4ceb-845c-329c2647e748:component/400d3cdf-5895-4210-bf33-39e4947aaa67/1584e512-6a06-4f8a-99bd-7ac185fa6da4
+description: Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications.
+configVersion: 1
+typeId: SERVICE
+ownerId: ari:cloud:identity::team/0a0747f0-b693-4200-b4ee-3809d48006e4
+fields:
+  tier: 4
+links:
+  - name: null
+    type: REPOSITORY
+    url: https://github.com/Ankit-Well/medplum
+relationships:
+  DEPENDS_ON: []
+labels:
+  - source:github
+customFields: null
