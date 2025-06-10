@@ -33,7 +33,6 @@ describe('Generator', () => {
       expect(table).toBeDefined();
 
       const tokenCodes = [
-        '_compartmentIdentifier',
         '_security',
         '_tag',
         'email',
@@ -45,6 +44,14 @@ describe('Generator', () => {
         'phone',
         'telecom',
       ];
+
+      const sharedTokenCodes = [
+        '_security',
+        'generalPractitionerIdentifier',
+        'linkIdentifier',
+        'organizationIdentifier',
+      ];
+
       const expectedColumns: ColumnDefinition[] = [
         {
           name: 'id',
@@ -157,21 +164,38 @@ describe('Generator', () => {
           name: '__tokensText',
           type: 'TEXT[]',
         },
+        {
+          name: '__sharedTokens',
+          type: 'UUID[]',
+        },
+        {
+          name: '__sharedTokensText',
+          type: 'TEXT[]',
+        },
         ...tokenCodes.flatMap((code) => {
-          return [
-            {
-              name: `__${code}`,
-              type: 'UUID[]',
-            },
+          // both dedicated and shared tokens have a sort column
+          const expectedCols = [
             {
               name: `__${code}Sort`,
               type: 'TEXT',
             },
-            {
-              name: `__${code}Text`,
-              type: 'TEXT[]',
-            },
           ];
+
+          // add dedicated columns
+          if (!sharedTokenCodes.includes(code)) {
+            expectedCols.push(
+              {
+                name: `__${code}`,
+                type: 'UUID[]',
+              },
+              {
+                name: `__${code}Text`,
+                type: 'TEXT[]',
+              }
+            );
+          }
+
+          return expectedCols;
         }),
       ];
 
