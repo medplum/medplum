@@ -21,7 +21,6 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
 
   const [procedureModalOpen, setProcedureModalOpen] = useState(false);
-  // const [newProcedure, setNewProcedure] = useState<Procedure | undefined>(undefined);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
