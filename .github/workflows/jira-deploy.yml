@@ -1,4 +1,5 @@
 name: Jira-Linked Deployments
+
 permissions:
   contents: read          
   deployments: write 
