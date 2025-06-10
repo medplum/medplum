@@ -917,63 +917,63 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
   b.append('// prettier-ignore'); // To prevent prettier from reformatting the SQL statements
   b.append('export async function run(client: PoolClient): Promise<void> {');
   b.indentCount++;
-  b.append('const actions: { name: string; durationMs: number }[] = []');
+  b.append('const results: { name: string; durationMs: number }[] = []');
 
   for (const action of actions) {
     switch (action.type) {
       case 'ANALYZE_TABLE':
-        b.appendNoWrap(`await fns.analyzeTable(client, actions, '${action.tableName}');`);
+        b.appendNoWrap(`await fns.analyzeTable(client, results, '${action.tableName}');`);
         break;
       case 'CREATE_FUNCTION': {
-        b.appendNoWrap(`await fns.query(client, actions, \`${escapeUnicode(action.createQuery)}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${escapeUnicode(action.createQuery)}\`);`);
         break;
       }
       case 'CREATE_TABLE': {
         const queries = getCreateTableQueries(action.definition);
         for (const query of queries) {
-          b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+          b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         }
         break;
       }
       case 'ADD_COLUMN': {
         const query = getAddColumnQuery(action.tableName, action.columnDefinition);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'DROP_COLUMN': {
         const query = getDropColumnQuery(action.tableName, action.columnName);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_SET_DEFAULT': {
         const query = getAlterColumnSetDefaultQuery(action.tableName, action.columnName, action.defaultValue);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_DROP_DEFAULT': {
         const query = getAlterColumnDropDefaultQuery(action.tableName, action.columnName);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
         const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_TYPE': {
         const query = getAlterColumnTypeQuery(action.tableName, action.columnName, action.columnType);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'CREATE_INDEX': {
         b.appendNoWrap(
-          `await fns.idempotentCreateIndex(client, actions, '${action.indexName}', \`${action.createIndexSql}\`);`
+          `await fns.idempotentCreateIndex(client, results, '${action.indexName}', \`${action.createIndexSql}\`);`
         );
         break;
       }
       case 'DROP_INDEX': {
         const query = getDropIndexQuery(action.indexName);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       default: {

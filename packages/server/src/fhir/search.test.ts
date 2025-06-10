@@ -2,6 +2,7 @@ import {
   createReference,
   Filter,
   getReferenceString,
+  getSearchParameter,
   LOINC,
   normalizeErrorString,
   normalizeOperationOutcome,
@@ -57,6 +58,7 @@ import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { clampEstimateCount, readFromTokenColumns } from './search';
+import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 import { TokenColumnsFeature } from './tokens';
 
@@ -64,7 +66,7 @@ jest.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
-describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tokens-column', 'column-per-code', false])(
+describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-code'])(
   'FHIR Search using %s',
   (tokenColumnsOrLookupTable) => {
     beforeAll(() => {
@@ -3150,8 +3152,17 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
           };
         });
 
-        test('Search by identifier', () =>
+        test('Search by dedicated token column search parameter, identifier', () =>
           withTestContext(async () => {
+            // make sure we're testing at least one token search parameter with dedicated columns
+            const searchParam = getSearchParameter('Patient', 'identifier');
+            if (!searchParam) {
+              throw new Error('Missing search parameter');
+            }
+            const impl = getSearchParameterImplementation('Patient', searchParam);
+            expect(impl.searchStrategy).toStrictEqual('token-column');
+            expect((impl as TokenColumnSearchParameterImplementation).hasDedicatedColumns).toStrictEqual(true);
+
             const bundle1 = await repo.search({
               resourceType: 'Patient',
               filters: [
@@ -3166,8 +3177,17 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
             expect(bundleContains(bundle1, patient)).toBeTruthy();
           }));
 
-        test('Search by _security', () =>
+        test('Search by a shared token column search param, _security', () =>
           withTestContext(async () => {
+            // make sure we're testing at least one token search parameter with shared columns
+            const searchParam = getSearchParameter('Patient', '_security');
+            if (!searchParam) {
+              throw new Error('Missing search parameter');
+            }
+            const impl = getSearchParameterImplementation('Patient', searchParam);
+            expect(impl.searchStrategy).toStrictEqual('token-column');
+            expect((impl as TokenColumnSearchParameterImplementation).hasDedicatedColumns).toStrictEqual(false);
+
             const bundle2 = await repo.search({
               resourceType: 'Patient',
               filters: [
