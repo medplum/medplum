@@ -1,4 +1,4 @@
-import { Box, Button, Card, Flex, Group, Menu, Modal, Stack, Text, Textarea } from '@mantine/core';
+import { Box, Button, Card, Flex, Group, Menu, Modal, Stack, Text, Textarea, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import {
@@ -20,7 +20,7 @@ import { Outlet, useParams } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { usePatient } from '../../hooks/usePatient';
-import { ChargeItemList } from '../../components/ChargeItem/ChargeItemList';
+import { ChargeItemList } from '../../components/chargeitem/ChargeItemList';
 import { createClaimFromEncounter, getCptChargeItems } from '../../utils/claims';
 import { createSelfPayCoverage } from '../../utils/coverage';
 import { showErrorNotification } from '../../utils/notifications';
@@ -433,9 +433,9 @@ export const EncounterChart = (): JSX.Element => {
         <Stack gap="md">
           {clinicalImpression && (
             <Card withBorder shadow="sm" mt="md">
-              <Text fw={600} size="lg" mb="md">
+              <Title>
                 Fill chart note
-              </Text>
+              </Title>
               <Textarea
                 defaultValue={clinicalImpression.note?.[0]?.text}
                 value={chartNote}

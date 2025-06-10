@@ -45,6 +45,8 @@ type ResourceTypeTargetType = BaseTargetType & {
 type TargetType = ResourceTypeTargetType | ProfileTargetType;
 
 export function ReferenceInput(props: ReferenceInputProps): JSX.Element {
+
+  console.log(props);
   const { onChange } = props;
   const medplum = useMedplum();
   const [value, setValue] = useState<Reference | undefined>(props.defaultValue);

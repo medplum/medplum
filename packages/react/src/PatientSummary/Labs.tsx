@@ -112,7 +112,7 @@ function hasLaboratoryCategory(category: CodeableConcept): boolean {
   }
 
   for (const coding of category.coding) {
-    if (coding.code === 'laboratory') {
+    if (coding.system === 'http://terminology.hl7.org/CodeSystem/v3-ObservationCategory' && coding.code === 'laboratory') {
       return true;
     }
   }
