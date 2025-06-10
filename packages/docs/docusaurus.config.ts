@@ -111,6 +111,11 @@ const config: Config = {
           position: 'left',
         },
         {
+          to: 'https://linen.medplum.com',
+          label: 'Community',
+          position: 'left',
+        },
+        {
           to: 'https://app.medplum.com/',
           label: 'Sign In',
           position: 'right',
