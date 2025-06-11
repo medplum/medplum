@@ -33,6 +33,7 @@ describe('Generator', () => {
       expect(table).toBeDefined();
 
       const tokenCodes = [
+        '_compartmentIdentifier',
         '_security',
         '_tag',
         'email',
@@ -46,6 +47,7 @@ describe('Generator', () => {
       ];
 
       const sharedTokenCodes = [
+        '_compartmentIdentifier',
         '_security',
         'generalPractitionerIdentifier',
         'linkIdentifier',
