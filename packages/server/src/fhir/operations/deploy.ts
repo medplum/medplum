@@ -3,6 +3,7 @@ import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Attachment, Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
+import { deployAzureFunction } from '../../cloud/azure/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
@@ -74,6 +75,14 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
         });
       }
       await deployLambda(latestBot, codeToDeploy as string);
+    }else if (latestBot.runtimeVersion === 'azurefunction') {
+      if (latestBot.timeout === undefined) {
+        latestBot = await ctx.repo.updateResource<Bot>({
+          ...latestBot,
+          timeout: 300,
+        });
+      }
+      await deployAzureFunction(latestBot, codeToDeploy as string);
     }
 
     return [allOk];
