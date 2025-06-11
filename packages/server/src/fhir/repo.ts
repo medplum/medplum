@@ -717,7 +717,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return existing;
     }
 
-    if (!this.isResourceWriteable(existing, result)) {
+    if (!this.isResourceWriteable(existing, result, interaction)) {
       // Check after the update
       throw new OperationOutcomeError(forbidden);
     }
@@ -2115,14 +2115,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Check that a resource can be written in its current form.
    * @param previous - The resource before updates were applied.
    * @param current - The resource as it will be written.
+   * @param interaction - The FHIR interaction being performed.
    * @returns True if the current user can write the specified resource type.
    */
-  private isResourceWriteable(previous: Resource | undefined, current: Resource): boolean {
+  private isResourceWriteable(
+    previous: Resource | undefined,
+    current: Resource,
+    interaction: AccessPolicyInteraction
+  ): boolean {
     if (!this.isSuperAdmin() && current.meta?.project !== this.context.projects?.[0]) {
       return false;
     }
 
-    const matchingPolicy = satisfiedAccessPolicy(current, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
+    const matchingPolicy = satisfiedAccessPolicy(current, interaction, this.context.accessPolicy);
     if (!matchingPolicy) {
       return false;
     }
