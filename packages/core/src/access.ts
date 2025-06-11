@@ -36,18 +36,18 @@ export const AccessPolicyInteraction = {
   PATCH: 'patch',
   DELETE: 'delete',
   HISTORY: 'history',
-  HISTORY_INSTANCE: 'history-instance',
-  HISTORY_TYPE: 'history-type',
-  HISTORY_SYSTEM: 'history-system',
+  // HISTORY_INSTANCE: 'history-instance',
+  // HISTORY_TYPE: 'history-type',
+  // HISTORY_SYSTEM: 'history-system',
   CREATE: 'create',
   SEARCH: 'search',
-  SEARCH_TYPE: 'search-type',
-  SEARCH_SYSTEM: 'search-system',
-  SEARCH_COMPARTMENT: 'search-compartment',
-  CAPABILITIES: 'capabilities',
-  TRANSACTION: 'transaction',
-  BATCH: 'batch',
-  OPERATION: 'operation',
+  // SEARCH_TYPE: 'search-type',
+  // SEARCH_SYSTEM: 'search-system',
+  // SEARCH_COMPARTMENT: 'search-compartment',
+  // CAPABILITIES: 'capabilities',
+  // TRANSACTION: 'transaction',
+  // BATCH: 'batch',
+  // OPERATION: 'operation',
 } as const;
 export type AccessPolicyInteraction = (typeof AccessPolicyInteraction)[keyof typeof AccessPolicyInteraction];
 
@@ -55,7 +55,6 @@ const resourceReadInteractions: AccessPolicyInteraction[] = [
   AccessPolicyInteraction.READ,
   AccessPolicyInteraction.VREAD,
   AccessPolicyInteraction.HISTORY,
-  AccessPolicyInteraction.HISTORY_INSTANCE,
 ];
 
 /**
@@ -127,14 +126,7 @@ export function satisfiedAccessPolicy(
   if (!accessPolicy) {
     return universalAccessPolicy;
   }
-  if (accessPolicy.resource) {
-    for (const resourcePolicy of accessPolicy.resource) {
-      if (matchesAccessPolicyResourcePolicy(resource, interaction, resourcePolicy)) {
-        return resourcePolicy;
-      }
-    }
-  }
-  return undefined;
+  return accessPolicy.resource?.find((policy) => matchesAccessPolicyResourcePolicy(resource, interaction, policy));
 }
 
 /**
@@ -153,14 +145,19 @@ function matchesAccessPolicyResourcePolicy(
   if (!matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
     return false;
   }
-  if (resourcePolicy.readonly && !resourceReadInteractions.includes(interaction)) {
+  if (resourcePolicy.interaction) {
+    // If resource.interaction is specified, ignore resource.readonly
+    if (!resourcePolicy.interaction.includes(interaction)) {
+      return false;
+    }
+  } else if (resourcePolicy.readonly && !resourceReadInteractions.includes(interaction)) {
     return false;
   }
   if (
     resourcePolicy.compartment &&
-    !resource.meta?.compartment?.find((c) => c.reference === resourcePolicy.compartment?.reference)
+    !resource.meta?.compartment?.some((c) => c.reference === resourcePolicy.compartment?.reference)
   ) {
-    // Deprecated - to be removed
+    // Deprecated - to be removed in v5
     return false;
   }
   if (resourcePolicy.criteria && !matchesSearchRequest(resource, parseSearchRequest(resourcePolicy.criteria))) {
