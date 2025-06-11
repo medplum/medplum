@@ -81,16 +81,8 @@ export async function run(client: PoolClient): Promise<void> {
   await fns.query(client, results, `ALTER TABLE IF EXISTS "AppointmentResponse" ADD COLUMN IF NOT EXISTS "__identifierText" TEXT[]`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__sharedTokens" UUID[]`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__sharedTokensText" TEXT[]`);
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "___tag" UUID[]`);
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "___tagText" TEXT[]`);
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__agentRole" UUID[]`);
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__agentRoleText" TEXT[]`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__entityRole" UUID[]`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__entityRoleText" TEXT[]`);
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__entityType" UUID[]`);
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__entityTypeText" TEXT[]`);
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__subtype" UUID[]`);
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__subtypeText" TEXT[]`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__type" UUID[]`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "AuditEvent" ADD COLUMN IF NOT EXISTS "__typeText" TEXT[]`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Basic" ADD COLUMN IF NOT EXISTS "__sharedTokens" UUID[]`);

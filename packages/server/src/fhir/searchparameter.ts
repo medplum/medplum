@@ -224,6 +224,10 @@ function getLookupTable(resourceType: string, searchParam: SearchParameter): Loo
 // since not all search parameters have IDs; namely Medplum's derived referenced identifier search parameters
 const DedicatedTokenColumnsOverridesByResourceTypeAndCode: Record<string, boolean> = {
   // rarely used search parameters on resource types with high token usage
+  'AuditEvent|entity-type': false,
+  'AuditEvent|agent-role': false,
+  'AuditEvent|subtype': false,
+  'AuditEvent|_tag': false,
   'Observation|component-data-absent-reason': false,
   'Encounter|special-arrangement': false,
   'ServiceRequest|body-site': false,
