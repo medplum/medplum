@@ -216,7 +216,7 @@ function getLookupTable(resourceType: string, searchParam: SearchParameter): Loo
 }
 
 // This list of exceptions was constructed by analyzing the 15 resource types with the most token usage
-// and looking for the search parameters that zero or near-zero usage.
+// and looking for the search parameters with zero or near-zero usage.
 //
 // The goal is to avoid creating dedicated token columns for search parameters that are rarely used
 // to keep the database schema smaller and have fewer indexes to be maintained
