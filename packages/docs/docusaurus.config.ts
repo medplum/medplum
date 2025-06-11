@@ -111,11 +111,6 @@ const config: Config = {
           position: 'left',
         },
         {
-          to: 'https://linen.medplum.com',
-          label: 'Community',
-          position: 'left',
-        },
-        {
           to: 'https://app.medplum.com/',
           label: 'Sign In',
           position: 'right',
@@ -175,6 +170,10 @@ const config: Config = {
             {
               label: 'GitHub',
               to: 'https://github.com/medplum/medplum',
+            },
+            {
+              label: 'Knowledge Base',
+              to: 'https://linen.medplum.com',
             },
             {
               label: 'Contributing',
