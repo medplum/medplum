@@ -3626,9 +3626,6 @@
                   "code": "update"
                 },
                 {
-                  "code": "patch"
-                },
-                {
                   "code": "delete"
                 },
                 {

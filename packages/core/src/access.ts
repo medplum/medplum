@@ -33,7 +33,7 @@ export const AccessPolicyInteraction = {
   READ: 'read',
   VREAD: 'vread',
   UPDATE: 'update',
-  PATCH: 'patch',
+  // PATCH: 'patch',
   DELETE: 'delete',
   HISTORY: 'history',
   // HISTORY_INSTANCE: 'history-instance',

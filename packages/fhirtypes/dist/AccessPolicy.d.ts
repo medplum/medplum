@@ -175,7 +175,7 @@ export interface AccessPolicyResource {
   /**
    * Permitted FHIR interactions with this resource type
    */
-  interaction?: ('read' | 'vread' | 'update' | 'patch' | 'delete' | 'history' | 'create' | 'search')[];
+  interaction?: ('read' | 'vread' | 'update' | 'delete' | 'history' | 'create' | 'search')[];
 
   /**
    * Optional list of hidden fields.  Hidden fields are not readable or

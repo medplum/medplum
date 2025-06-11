@@ -61905,7 +61905,7 @@
         "interaction": {
           "description": "Permitted FHIR interactions with this resource type",
           "items": {
-            "enum": ["read", "vread", "update", "patch", "delete", "history", "create", "search"]
+            "enum": ["read", "vread", "update", "delete", "history", "create", "search"]
           },
           "type": "array"
         },
