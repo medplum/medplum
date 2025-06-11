@@ -113,6 +113,12 @@
       "id": "",
       "source": "src/metriport-bots/metriport-consolidated-data-webhook.ts",
       "dist": "dist/metriport-bots/metriport-consolidated-data-webhook.js"
+    },
+    {
+      "name": "twilio-voice-webhook",
+      "id": "",
+      "source": "src/twilio/voice-webhook.ts",
+      "dist": "dist/twilio/voice-webhook.js"
     }
   ]
 }
