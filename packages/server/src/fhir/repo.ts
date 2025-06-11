@@ -11,11 +11,10 @@ import {
   SearchRequest,
   TypedValue,
   WithId,
+  accessPolicyAllowsInteraction,
   allOk,
   arrayify,
   badRequest,
-  canReadResourceType,
-  canWriteResourceType,
   createReference,
   deepClone,
   deepEquals,
@@ -41,6 +40,7 @@ import {
   parseSearchRequest,
   preconditionFailed,
   protectedResourceTypes,
+  readInteractions,
   resolveId,
   satisfiedAccessPolicy,
   serverError,
@@ -358,7 +358,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     validateResourceType(resourceType);
 
-    if (!this.canReadResourceType(resourceType)) {
+    if (!this.supportsInteraction(AccessPolicyInteraction.READ, resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
 
@@ -410,10 +410,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isSuperAdmin() && !this.context.projects?.includes(cacheEntry.projectId)) {
       return false;
     }
-    if (!satisfiedAccessPolicy(cacheEntry.resource, AccessPolicyInteraction.READ, this.context.accessPolicy)) {
-      return false;
-    }
-    return true;
+    return Boolean(this.canPerformInteraction(AccessPolicyInteraction.READ, cacheEntry.resource));
   }
 
   async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(T | Error)[]> {
@@ -457,7 +454,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       const [resourceType, id] = parseReference(reference);
       validateResourceType(resourceType);
 
-      if (!this.canReadResourceType(resourceType)) {
+      if (!this.supportsInteraction(AccessPolicyInteraction.READ, resourceType)) {
         return new OperationOutcomeError(forbidden);
       }
 
@@ -509,6 +506,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       let resource: T | undefined = undefined;
       try {
         resource = await this.readResourceImpl<T>(resourceType, id);
+        if (!this.canPerformInteraction(AccessPolicyInteraction.HISTORY, resource)) {
+          throw new OperationOutcomeError(forbidden);
+        }
       } catch (err) {
         if (!(err instanceof OperationOutcomeError) || !isGone(err.outcome)) {
           throw err;
@@ -585,7 +585,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
 
       try {
-        await this.readResourceImpl<T>(resourceType, id);
+        const resource = await this.readResourceImpl<T>(resourceType, id);
+        if (!this.canPerformInteraction(AccessPolicyInteraction.VREAD, resource)) {
+          throw new OperationOutcomeError(forbidden);
+        }
       } catch (err) {
         if (!isGone(normalizeOperationOutcome(err))) {
           throw err;
@@ -649,6 +652,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
+    const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
 
     // Add default profiles before validating resource
     if (!resource.meta?.profile && this.currentProject()?.defaultProfile) {
@@ -658,14 +662,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       resource.meta = { ...resource.meta, profile: defaultProfiles };
     }
 
-    if (!this.canWriteResourceType(resourceType)) {
+    if (!this.supportsInteraction(interaction, resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
-      if (!this.canWriteToResource(existing)) {
+      if (!this.canPerformInteraction(interaction, existing)) {
         // Check before the update
         throw new OperationOutcomeError(forbidden);
       }
@@ -721,10 +725,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.handleStorage(result, create);
     await this.postCommit(async () => {
       await this.handleBinaryUpdate(existing, result);
-      await addBackgroundJobs(result, existing, {
-        project: await this.getProjectById(result.meta?.project),
-        interaction: create ? 'create' : 'update',
-      });
+      const project = await this.getProjectById(result.meta?.project);
+      await addBackgroundJobs(result, existing, { project, interaction });
     });
 
     const output = deepClone(result);
@@ -1090,7 +1092,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     try {
-      if (!this.canWriteResourceType(resourceType) || !this.isResourceWriteable(undefined, resource)) {
+      if (!this.canPerformInteraction(AccessPolicyInteraction.DELETE, resource)) {
         throw new OperationOutcomeError(forbidden);
       }
 
@@ -2074,54 +2076,39 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   /**
-   * Determines if the current user can read the specified resource type.
-   * @param resourceType - The resource type.
-   * @returns True if the current user can read the specified resource type.
+   * Verifies that the current user would be allowed to perform the given interaction,
+   * without the full check on the specific resource being interacted with.
+   * @param interaction - The FHIR interaction being performed.
+   * @param resourceType - The type of resource the interaction is performed on.
+   * @returns True when the interaction is permitted by the access policy for the given resource type.
    */
-  canReadResourceType(resourceType: string): boolean {
+  supportsInteraction(interaction: AccessPolicyInteraction, resourceType: string): boolean {
     if (!this.isSuperAdmin() && protectedResourceTypes.includes(resourceType)) {
       return false;
     }
     if (!this.context.accessPolicy) {
       return true;
     }
-    return canReadResourceType(this.context.accessPolicy, resourceType as ResourceType);
+    return accessPolicyAllowsInteraction(this.context.accessPolicy, interaction, resourceType as ResourceType);
   }
 
   /**
-   * Determines if the current user can write the specified resource type.
-   * This is a preliminary check before evaluating a write operation in depth.
-   * If a user cannot write a resource type at all, then don't bother looking up previous versions.
-   * @param resourceType - The resource type.
-   * @returns True if the current user can write the specified resource type.
-   */
-  private canWriteResourceType(resourceType: string): boolean {
-    if (!this.isSuperAdmin() && protectedResourceTypes.includes(resourceType)) {
-      return false;
-    }
-    if (!this.context.accessPolicy) {
-      return true;
-    }
-    return canWriteResourceType(this.context.accessPolicy, resourceType as ResourceType);
-  }
-
-  /**
-   * Determines if the current user can write to the specified resource.
-   * This is a more in-depth check after building the candidate result of a write operation.
+   * Determines if the current user can actually perform some interaction on the specified resource.
+   * This is a more in-depth check, e.g. after building the candidate result of a write operation.
+   * @param interaction - The interaction to be performed.
    * @param resource - The resource.
    * @returns True if the current user can write the specified resource type.
    */
-  private canWriteToResource(resource: Resource): boolean {
-    const resourceType = resource.resourceType;
+  private canPerformInteraction(interaction: AccessPolicyInteraction, resource: Resource): boolean {
     if (!this.isSuperAdmin()) {
-      if (protectedResourceTypes.includes(resourceType)) {
+      if (protectedResourceTypes.includes(resource.resourceType)) {
         return false;
       }
-      if (resource.meta?.project !== this.context.projects?.[0]) {
+      if (!readInteractions.includes(interaction) && resource.meta?.project !== this.context.projects?.[0]) {
         return false;
       }
     }
-    return !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
+    return Boolean(satisfiedAccessPolicy(resource, interaction, this.context.accessPolicy));
   }
 
   /**

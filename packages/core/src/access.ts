@@ -51,7 +51,7 @@ export const AccessPolicyInteraction = {
 } as const;
 export type AccessPolicyInteraction = (typeof AccessPolicyInteraction)[keyof typeof AccessPolicyInteraction];
 
-const readInteractions: AccessPolicyInteraction[] = [
+export const readInteractions: AccessPolicyInteraction[] = [
   AccessPolicyInteraction.READ,
   AccessPolicyInteraction.VREAD,
   AccessPolicyInteraction.HISTORY,
