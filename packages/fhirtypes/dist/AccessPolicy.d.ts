@@ -168,7 +168,8 @@ export interface AccessPolicyResource {
   criteria?: string;
 
   /**
-   * @deprecated Use AccessPolicy.resource.interaction = ['search', 'read']
+   * @deprecated Use AccessPolicy.resource.interaction = ['search', 'read',
+   * 'vread', 'history']
    */
   readonly?: boolean;
 

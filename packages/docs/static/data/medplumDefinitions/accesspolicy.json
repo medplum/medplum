@@ -294,7 +294,7 @@
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "@deprecated Use AccessPolicy.resource.interaction = ['search', 'read']",
+      "definition": "@deprecated Use AccessPolicy.resource.interaction = ['search', 'read', 'vread', 'history']",
       "comment": "",
       "inherited": false
     },

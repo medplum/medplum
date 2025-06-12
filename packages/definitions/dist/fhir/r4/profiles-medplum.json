@@ -3816,7 +3816,7 @@
           {
             "id" : "AccessPolicy.resource.readonly",
             "path" : "AccessPolicy.resource.readonly",
-            "definition" : "@deprecated Use AccessPolicy.resource.interaction = ['search', 'read']",
+            "definition" : "@deprecated Use AccessPolicy.resource.interaction = ['search', 'read', 'vread', 'history']",
             "min" : 0,
             "max" : "1",
             "type" : [{

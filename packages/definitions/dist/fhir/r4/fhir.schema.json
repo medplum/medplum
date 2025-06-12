@@ -61899,7 +61899,7 @@
           "$ref": "#/definitions/string"
         },
         "readonly": {
-          "description": "@deprecated Use AccessPolicy.resource.interaction \u003d [\u0027search\u0027, \u0027read\u0027]",
+          "description": "@deprecated Use AccessPolicy.resource.interaction \u003d [\u0027search\u0027, \u0027read\u0027, \u0027vread\u0027, \u0027history\u0027]",
           "$ref": "#/definitions/boolean"
         },
         "interaction": {
