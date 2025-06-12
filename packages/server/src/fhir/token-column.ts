@@ -241,8 +241,7 @@ export function buildTokenColumnsSearchFilter(
         const cond = new TypedCondition(
           new Column(tableName, impl.tokenColumnName),
           'ARRAY_CONTAINS',
-          // hashTokenColumnValue(filter.code),
-          filter.code,
+          hashTokenColumnValue(filter.code),
           'UUID[]'
         );
         if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {

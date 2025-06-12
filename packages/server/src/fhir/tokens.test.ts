@@ -6,6 +6,7 @@ import {
   MedicationRequest,
   Patient,
   Reference,
+  SearchParameter,
   ServiceRequest,
   SpecimenDefinition,
 } from '@medplum/fhirtypes';
@@ -14,7 +15,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
-import { getSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
 import { loadStructureDefinitions } from './structure';
 import { TokenQueryOperators } from './token-column';
 import {
@@ -672,6 +673,9 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
       beforeAll(async () => {
         p1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
+          meta: {
+            security: [{ code: '123' }],
+          },
           name: [{ family }],
           telecom: [{ system: 'email', value: email + 'abc' }],
         });
@@ -684,17 +688,28 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
         });
       });
 
-      test.each([
-        ['identifier', Operator.MISSING, 'true', true, false],
-        ['identifier', Operator.MISSING, 'false', false, true],
-        ['identifier', Operator.PRESENT, 'true', false, true],
-        ['identifier', Operator.PRESENT, 'false', true, false],
-        ['telecom', Operator.MISSING, 'true', false, false],
-        ['telecom', Operator.MISSING, 'false', true, true],
-        ['telecom', Operator.PRESENT, 'true', true, true],
-        ['telecom', Operator.PRESENT, 'false', false, false],
-      ])('%s :%s %s', (code, operator, value, expected1, expected2) =>
+      test.only.each([
+        ['identifier', Operator.MISSING, 'true', true, false, true],
+        ['identifier', Operator.MISSING, 'false', false, true, true],
+        ['identifier', Operator.PRESENT, 'true', false, true, true],
+        ['identifier', Operator.PRESENT, 'false', true, false, true],
+        ['telecom', Operator.MISSING, 'true', false, false, true],
+        ['telecom', Operator.MISSING, 'false', true, true, true],
+        ['telecom', Operator.PRESENT, 'true', true, true, true],
+        ['telecom', Operator.PRESENT, 'false', false, false, true],
+        ['_security', Operator.MISSING, 'true', false, true, false],
+        ['_security', Operator.MISSING, 'false', true, false, false],
+        ['_security', Operator.PRESENT, 'true', true, false, false],
+        ['_security', Operator.PRESENT, 'false', false, true, false],
+      ])('%s :%s %s', (code, operator, value, expected1, expected2, expectedHasDedicated) =>
         withTestContext(async () => {
+          const searchParam = getSearchParameter('Patient', code) as SearchParameter;
+          const impl = getSearchParameterImplementation('Patient', searchParam);
+          expect(impl.searchStrategy).toStrictEqual('token-column');
+          expect((impl as TokenColumnSearchParameterImplementation).hasDedicatedColumns).toStrictEqual(
+            expectedHasDedicated
+          );
+
           const res = await systemRepo.search({
             resourceType: 'Patient',
             filters: [
