@@ -33,21 +33,10 @@ export const AccessPolicyInteraction = {
   READ: 'read',
   VREAD: 'vread',
   UPDATE: 'update',
-  // PATCH: 'patch',
   DELETE: 'delete',
   HISTORY: 'history',
-  // HISTORY_INSTANCE: 'history-instance',
-  // HISTORY_TYPE: 'history-type',
-  // HISTORY_SYSTEM: 'history-system',
   CREATE: 'create',
   SEARCH: 'search',
-  // SEARCH_TYPE: 'search-type',
-  // SEARCH_SYSTEM: 'search-system',
-  // SEARCH_COMPARTMENT: 'search-compartment',
-  // CAPABILITIES: 'capabilities',
-  // TRANSACTION: 'transaction',
-  // BATCH: 'batch',
-  // OPERATION: 'operation',
 } as const;
 export type AccessPolicyInteraction = (typeof AccessPolicyInteraction)[keyof typeof AccessPolicyInteraction];
 
