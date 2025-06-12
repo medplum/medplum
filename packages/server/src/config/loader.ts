@@ -110,6 +110,9 @@ function loadEnvConfig(): MedplumServerConfig {
     } else if (key.startsWith('REDIS_')) {
       key = key.substring('REDIS_'.length);
       currConfig = config.redis = config.redis ?? {};
+    } else if (key.startsWith('SMTP_')) {
+      key = key.substring('SMTP_'.length);
+      currConfig = config.smtp = config.smtp ?? {};
     }
 
     // Convert key from CAPITAL_CASE to camelCase
