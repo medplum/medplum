@@ -53,6 +53,7 @@ import {
 import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from '@medplum/fhir-router';
 import {
   AccessPolicy,
+  AccessPolicyResource,
   Binary,
   Bundle,
   BundleEntry,
@@ -2090,24 +2091,27 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * This is a more in-depth check, e.g. after building the candidate result of a write operation.
    * @param interaction - The interaction to be performed.
    * @param resource - The resource.
-   * @returns True if the current user can write the specified resource type.
+   * @returns The access policy permitting the interaction, or undefined if not permitted.
    */
-  private canPerformInteraction(interaction: AccessPolicyInteraction, resource: Resource): boolean {
+  private canPerformInteraction(
+    interaction: AccessPolicyInteraction,
+    resource: Resource
+  ): AccessPolicyResource | undefined {
     if (!this.isSuperAdmin()) {
       // Only Super Admins can access server-critical resource types
       if (protectedResourceTypes.includes(resource.resourceType)) {
-        return false;
+        return undefined;
       }
       // Non-Superusers can only access resources in their Project, with read-only access to linked Projects
       if (readInteractions.includes(interaction)) {
         if (!this.context.projects?.includes(resource.meta?.project as string)) {
-          return false;
+          return undefined;
         }
       } else if (resource.meta?.project !== this.context.projects?.[0]) {
-        return false;
+        return undefined;
       }
     }
-    return Boolean(satisfiedAccessPolicy(resource, interaction, this.context.accessPolicy));
+    return satisfiedAccessPolicy(resource, interaction, this.context.accessPolicy);
   }
 
   /**
@@ -2120,30 +2124,27 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private isResourceWriteable(
     previous: Resource | undefined,
     current: Resource,
-    interaction: AccessPolicyInteraction
+    interaction: 'create' | 'update'
   ): boolean {
-    if (!this.isSuperAdmin() && current.meta?.project !== this.context.projects?.[0]) {
-      return false;
-    }
-
-    const matchingPolicy = satisfiedAccessPolicy(current, interaction, this.context.accessPolicy);
+    const matchingPolicy = this.canPerformInteraction(interaction, current);
     if (!matchingPolicy) {
       return false;
     }
-    if (matchingPolicy?.writeConstraint) {
-      return matchingPolicy.writeConstraint.every((constraint) => {
-        const invariant = evalFhirPathTyped(
-          constraint.expression as string,
-          [{ type: current.resourceType, value: current }],
-          {
-            '%before': { type: previous?.resourceType ?? 'undefined', value: previous },
-            '%after': { type: current.resourceType, value: current },
-          }
-        );
-        return invariant.length === 1 && invariant[0].value === true;
-      });
+    if (!matchingPolicy.writeConstraint) {
+      return true;
     }
-    return true;
+
+    return matchingPolicy.writeConstraint.every((constraint) => {
+      const invariant = evalFhirPathTyped(
+        constraint.expression as string,
+        [{ type: current.resourceType, value: current }],
+        {
+          '%before': { type: previous?.resourceType ?? 'undefined', value: previous },
+          '%after': { type: current.resourceType, value: current },
+        }
+      );
+      return invariant.length === 1 && invariant[0].value === true;
+    });
   }
 
   /**
