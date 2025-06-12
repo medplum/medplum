@@ -1178,28 +1178,25 @@ describe('AccessPolicy', () => {
 
   test('Hidden fields on read', () =>
     withTestContext(async () => {
-      const patient = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        birthDate: '1970-01-01',
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        // AccessPolicy that hides Patient name
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+              hiddenFields: ['name'],
+            },
+          ],
+        },
       });
 
-      // AccessPolicy that hides Patient name
-      const accessPolicy: AccessPolicy = {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'Patient',
-            hiddenFields: ['name'],
-          },
-        ],
-      };
-
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
-        accessPolicy,
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        birthDate: '1970-01-01',
       });
 
       const readResource = await repo2.readResource<Patient>('Patient', patient.id);
@@ -1227,8 +1224,23 @@ describe('AccessPolicy', () => {
 
   test('Nested hidden fields on read', () =>
     withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        // AccessPolicy that hides ServiceRequest subject.display
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'ServiceRequest',
+              hiddenFields: ['subject.display'],
+            },
+          ],
+        },
+      });
+
       const serviceRequest = await systemRepo.createResource<ServiceRequest>({
         resourceType: 'ServiceRequest',
+        meta: { project: project.id },
         status: 'active',
         intent: 'order',
         code: {
@@ -1238,24 +1250,6 @@ describe('AccessPolicy', () => {
           reference: 'Patient/' + randomUUID(),
           display: 'Alice Smith',
         },
-      });
-
-      // AccessPolicy that hides ServiceRequest subject.display
-      const accessPolicy: AccessPolicy = {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'ServiceRequest',
-            hiddenFields: ['subject.display'],
-          },
-        ],
-      };
-
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
-        accessPolicy,
       });
 
       const readResource = await repo2.readResource<ServiceRequest>('ServiceRequest', serviceRequest.id);
@@ -1376,8 +1370,23 @@ describe('AccessPolicy', () => {
 
   test('Hide nonexistent field', () =>
     withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        // AccessPolicy that hides ServiceRequest subject.display
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'ServiceRequest',
+              hiddenFields: ['subject.display'],
+            },
+          ],
+        },
+      });
+
       const serviceRequest = await systemRepo.createResource<ServiceRequest>({
         resourceType: 'ServiceRequest',
+        meta: { project: project.id },
         status: 'active',
         intent: 'order',
         code: {
@@ -1386,24 +1395,6 @@ describe('AccessPolicy', () => {
         subject: {
           reference: 'Patient/' + randomUUID(),
         },
-      });
-
-      // AccessPolicy that hides ServiceRequest subject.display
-      const accessPolicy: AccessPolicy = {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'ServiceRequest',
-            hiddenFields: ['subject.display'],
-          },
-        ],
-      };
-
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
-        accessPolicy,
       });
 
       const readResource = await repo2.readResource<ServiceRequest>('ServiceRequest', serviceRequest.id);
@@ -1492,28 +1483,26 @@ describe('AccessPolicy', () => {
 
   test('Identifier criteria', () =>
     withTestContext(async () => {
-      const questionnaire = await systemRepo.createResource<Questionnaire>({
-        resourceType: 'Questionnaire',
-        status: 'active',
-        identifier: [{ system: 'https://example.com', value: randomUUID() }],
+      const identifier = randomUUID();
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        // AccessPolicy that only allows one specific Questionnaire
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Questionnaire',
+              criteria: 'Questionnaire?identifier=https://example.com|' + identifier,
+            },
+          ],
+        },
       });
 
-      // AccessPolicy that only allows one specific Questionnaire
-      const accessPolicy: AccessPolicy = {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'Questionnaire',
-            criteria: 'Questionnaire?identifier=' + questionnaire.identifier?.[0].value,
-          },
-        ],
-      };
-
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
-        accessPolicy,
+      const questionnaire = await systemRepo.createResource<Questionnaire>({
+        resourceType: 'Questionnaire',
+        meta: { project: project.id },
+        status: 'active',
+        identifier: [{ system: 'https://example.com', value: identifier }],
       });
 
       const readResource = await repo2.readResource<Questionnaire>('Questionnaire', questionnaire.id);

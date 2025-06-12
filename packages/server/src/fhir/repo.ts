@@ -371,7 +371,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // if (!this.canReadCacheEntry(cacheRecord)) {
       //   throw new OperationOutcomeError(notFound);
       // }
-      if (this.canReadCacheEntry(cacheRecord)) {
+      if (this.canPerformInteraction(AccessPolicyInteraction.READ, cacheRecord.resource)) {
         return cacheRecord.resource;
       }
     }
@@ -404,13 +404,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const resource = JSON.parse(rows[0].content as string) as WithId<T>;
     await this.setCacheEntry(resource);
     return resource;
-  }
-
-  private canReadCacheEntry(cacheEntry: CacheEntry): boolean {
-    if (!this.isSuperAdmin() && !this.context.projects?.includes(cacheEntry.projectId)) {
-      return false;
-    }
-    return Boolean(this.canPerformInteraction(AccessPolicyInteraction.READ, cacheEntry.resource));
   }
 
   async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(T | Error)[]> {
@@ -459,7 +452,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
 
       if (cacheEntry) {
-        if (!this.canReadCacheEntry(cacheEntry)) {
+        if (!this.canPerformInteraction(AccessPolicyInteraction.READ, cacheEntry.resource)) {
           return new OperationOutcomeError(notFound);
         }
         return cacheEntry.resource;
@@ -2101,10 +2094,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private canPerformInteraction(interaction: AccessPolicyInteraction, resource: Resource): boolean {
     if (!this.isSuperAdmin()) {
+      // Only Super Admins can access server-critical resource types
       if (protectedResourceTypes.includes(resource.resourceType)) {
         return false;
       }
-      if (!readInteractions.includes(interaction) && resource.meta?.project !== this.context.projects?.[0]) {
+      // Non-Superusers can only access resources in their Project, with read-only access to linked Projects
+      if (readInteractions.includes(interaction)) {
+        if (!this.context.projects?.includes(resource.meta?.project as string)) {
+          return false;
+        }
+      } else if (resource.meta?.project !== this.context.projects?.[0]) {
         return false;
       }
     }
