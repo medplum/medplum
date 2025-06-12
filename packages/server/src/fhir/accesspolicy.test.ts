@@ -2752,6 +2752,9 @@ describe('AccessPolicy', () => {
       await expect(repo.readResource('Condition', condition.id)).resolves.toBeDefined();
       await expect(repo.search(parseSearchRequest('Condition?_id=' + condition.id))).rejects.toThrow('Forbidden');
       await expect(repo.readHistory('Condition', condition.id)).rejects.toThrow('Forbidden');
+      await expect(repo.readVersion('Condition', condition.id, condition.meta?.versionId as string)).rejects.toThrow(
+        'Forbidden'
+      );
       await expect(repo.updateResource({ ...condition, onsetString: 'yesterday' })).rejects.toThrow('Forbidden');
       await expect(repo.deleteResource('Condition', condition.id)).rejects.toThrow('Forbidden');
     }));
