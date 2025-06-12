@@ -153,35 +153,28 @@ function matchesAccessPolicyResourcePolicy(
 }
 
 /**
- * Returns true if the resource type matches the access policy resource type.
- * @param policy - The AccessPolicy resource type policy.
- * @param resourceType - The candidate resource resource type.
- * @param interaction - Optional interaction type to check against the policy.
- * @returns True if the resource type matches the access policy resource type.
+ * Shallow check if the given interaction on a resource type matches the resource access policy.
+ * @param policy - The AccessPolicy resource policy.
+ * @param resourceType - The candidate resource type.
+ * @param interaction - Interaction type to check against the policy.
+ * @returns True when the resource type matches the resource policy.
  */
 function shallowMatchesResourcePolicy(
   policy: AccessPolicyResource,
   resourceType: ResourceType,
-  interaction?: AccessPolicyInteraction
+  interaction: AccessPolicyInteraction
 ): boolean {
   if (
     policy.resourceType !== resourceType &&
-    // Project admin resource types are not allowed to be wildcarded
-    // Project admin resource types must be explicitly included
+    // Project admin resource types are not allowed to be wildcarded; they must be explicitly included
     (policy.resourceType !== '*' || projectAdminResourceTypes.includes(resourceType))
   ) {
     return false;
   }
 
-  if (interaction) {
-    if (policy.interaction) {
-      // If resource.interaction is specified, ignore resource.readonly
-      if (!policy.interaction.includes(interaction)) {
-        return false;
-      }
-    } else if (policy.readonly && !readInteractions.includes(interaction)) {
-      return false;
-    }
+  // Only use `readonly` if `interaction` is not specified
+  if (!policy.interaction) {
+    return !policy.readonly || readInteractions.includes(interaction);
   }
-  return true;
+  return policy.interaction.includes(interaction);
 }
