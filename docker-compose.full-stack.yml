@@ -36,7 +36,7 @@ services:
 
   # Medplum server container
   medplum-server:
-    image: medplum/medplum-server:latest
+    image: medplum/medplum-server-staging:b3509c5def65f20521513349255e24ed58ae6df9
     restart: always
     depends_on:
       postgres:
