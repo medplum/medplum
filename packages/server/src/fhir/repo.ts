@@ -1428,7 +1428,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 3. 04/09/25 - Added __tokens column for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
    * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
    * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
-   * 6. 04/25/25 - Added columns per token search parameter (TODO)
+   * 6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
    *
    */
   static readonly VERSION: number = 6;

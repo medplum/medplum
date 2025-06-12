@@ -123,7 +123,7 @@ function addHashedToken(tokenSet: Set<string>, token: string): void {
 }
 
 export function hashTokenColumnValue(value: string): string {
-  return v5(value, NIL).replace(/-/g, '');
+  return v5(value, NIL);
 }
 
 /**
@@ -347,7 +347,8 @@ function buildTokenColumnsWhereCondition(
       let searchString: string;
       const parts = splitN(query, '|', 2);
       if (parts.length === 2) {
-        system = parts[0] || NULL_SYSTEM; // If query is "|foo", searching for "foo" values without a system, aka NULL_SYSTEM
+        // If query is "|foo", searching for "foo" values without a system, aka NULL_SYSTEM
+        system = parts[0] || NULL_SYSTEM; // Use || instead of ?? to handle empty strings
         value = parts[1];
         if (value) {
           value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
@@ -365,7 +366,6 @@ function buildTokenColumnsWhereCondition(
         searchString = code + DELIM + searchString;
       }
 
-      console.log('searchString', searchString);
       searchString = hashTokenColumnValue(searchString);
 
       return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_CONTAINS', searchString, 'UUID[]');
