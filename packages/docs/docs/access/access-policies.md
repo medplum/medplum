@@ -113,17 +113,7 @@ Attempting to modify a read-only resource will result in an HTTP [`403 Forbidden
 
 ### FHIR Interactions
 
-The above read-only access is special case of the more general ability to control which interactions are allowed for a set of resources. The `AccessPolicy.resource.interaction` field can specify a subset of [FHIR interactions](http://hl7.org/fhir/R4/codesystem-restful-interaction.html) that can be performed on resources of the given type.
-
-- `create`: Write new resources
-- `read`: Read a specific resource by ID
-- `update`: Update an existing resource, including patch operations
-- `delete`: Soft-delete resources
-- `search`: Search for resources of the given type
-- `history`: View the list of previous version of a resource
-- `vread`: View a specific previous version of a resource
-
-The following are equivalent:
+The above read-only access is special case of the more general ability to control which interactions are allowed for a set of resources. The `AccessPolicy.resource.interaction` field can specify a subset of [FHIR interactions](http://hl7.org/fhir/R4/codesystem-restful-interaction.html) that can be performed on resources of the given type. The following are equivalent:
 
 ```js
 {
@@ -138,11 +128,21 @@ The following are equivalent:
     // Explicit list of interactions
     {
       "resourceType": "*",
-      "interaction": ["search", "read", "history", "vread"]
+      "interaction": ["read", "search", "history", "vread"]
     }
   ]
 }
 ```
+
+The `interaction` array can contain any of the supported interaction types:
+
+- `create`: Write new resources
+- `read`: Read a specific resource by ID
+- `update`: Update an existing resource, including patch operations
+- `delete`: Soft-delete resources
+- `search`: Search for resources of the given type
+- `history`: View the list of previous versions of a resource
+- `vread`: View a specific previous version of a resource
 
 :::tip Related interactions
 
