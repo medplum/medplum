@@ -1,5 +1,26 @@
 import { isStringArray } from './utils';
 
+export const AckCode = {
+  /** AA - Application Accept */
+  AA: 'AA',
+  /** AE - Application Error */
+  AE: 'AE',
+  /** AR - Application Reject */
+  AR: 'AR',
+  /** CA - Commit Accept */
+  CA: 'CA',
+  /** CE - Commit Error */
+  CE: 'CE',
+  /** CR - Commit Reject */
+  CR: 'CR',
+} as const;
+export type AckCode = keyof typeof AckCode;
+
+export interface Hl7AckOptions {
+  ackCode: AckCode;
+  errSegment?: Hl7Segment | boolean;
+}
+
 /**
  * The Hl7Context class represents the parsing context for an HL7 message.
  *
@@ -130,9 +151,10 @@ export class Hl7Message {
 
   /**
    * Returns an HL7 "ACK" (acknowledgement) message for this message.
+   * @param options - The optional options to configure the "ACK" message.
    * @returns The HL7 "ACK" message.
    */
-  buildAck(): Hl7Message {
+  buildAck(options?: Hl7AckOptions): Hl7Message {
     const now = new Date();
     const msh = this.getSegment('MSH');
     const sendingApp = msh?.getField(3)?.toString() ?? '';
@@ -141,6 +163,7 @@ export class Hl7Message {
     const receivingFacility = msh?.getField(6)?.toString() ?? '';
     const controlId = msh?.getField(10)?.toString() ?? '';
     const versionId = msh?.getField(12)?.toString() ?? '2.5.1';
+    const ackCode = options?.ackCode ?? 'AA';
 
     return new Hl7Message([
       new Hl7Segment(
@@ -160,8 +183,122 @@ export class Hl7Message {
         ],
         this.context
       ),
-      new Hl7Segment(['MSA', 'AA', controlId, 'OK'], this.context),
+      new Hl7Segment(['MSA', ackCode, controlId, 'OK'], this.context),
+      ...(options?.errSegment
+        ? [options?.errSegment instanceof Hl7Segment ? options.errSegment : this.buildDefaultErrSegment(options)]
+        : []),
     ]);
+  }
+
+  private buildDefaultErrSegment(options?: Hl7AckOptions): Hl7Segment {
+    const ackCode = options?.ackCode ?? 'AA';
+
+    switch (ackCode) {
+      case 'AA':
+        // Application Accept - No error, but ERR segment can provide informational status
+        return new Hl7Segment([
+          'ERR',
+          '^^^200&Application Accept&HL70357', // Error Code and Location
+          'I', // Severity (I = Information)
+          '', // Application Error Code
+          '', // Application Error Parameter
+          '', // Diagnostic Information
+          '', // User Message
+          '', // Inform Person Indicator
+          '', // Override Type
+          '', // Override Reason Code
+          '', // Help Desk Contact Point
+          'Message processed successfully', // Application Error Text
+        ]);
+
+      case 'AE':
+        // Application Error - Processing error occurred
+        return new Hl7Segment([
+          'ERR',
+          '^^^207&Application Error&HL70357', // Error Code and Location
+          'E', // Severity (E = Error)
+          '100&Processing Error&HL70533', // Application Error Code
+          '', // Application Error Parameter
+          '', // Diagnostic Information
+          '', // User Message
+          '', // Inform Person Indicator
+          '', // Override Type
+          '', // Override Reason Code
+          '', // Help Desk Contact Point
+          'Message accepted but processing failed due to application error',
+        ]);
+
+      case 'AR':
+        // Application Reject - Message rejected due to business rules
+        return new Hl7Segment([
+          'ERR',
+          '^^^206&Application Reject&HL70357', // Error Code and Location
+          'E', // Severity (E = Error)
+          '101&Data Type Error&HL70533', // Application Error Code
+          '', // Application Error Parameter
+          '', // Diagnostic Information
+          '', // User Message
+          '', // Inform Person Indicator
+          '', // Override Type
+          '', // Override Reason Code
+          '', // Help Desk Contact Point
+          'Message rejected due to application rule violation',
+        ]);
+
+      case 'CA':
+        // Commit Accept - Message accepted and committed for processing
+        return new Hl7Segment([
+          'ERR',
+          '^^^200&Commit Accept&HL70357', // Error Code and Location
+          'I', // Severity (I = Information)
+          '', // Application Error Code
+          '', // Application Error Parameter
+          '', // Diagnostic Information
+          '', // User Message
+          '', // Inform Person Indicator
+          '', // Override Type
+          '', // Override Reason Code
+          '', // Help Desk Contact Point
+          'Message received and committed for asynchronous processing',
+        ]);
+
+      case 'CE':
+        // Commit Error - Message was committed but processing failed
+        return new Hl7Segment([
+          'ERR',
+          '^^^208&Commit Error&HL70357', // Error Code and Location
+          'E', // Severity (E = Error)
+          '102&Processing Failure&HL70533', // Application Error Code
+          '', // Application Error Parameter
+          '', // Diagnostic Information
+          '', // User Message
+          '', // Inform Person Indicator
+          '', // Override Type
+          '', // Override Reason Code
+          '', // Help Desk Contact Point
+          'Message was accepted and stored but processing failed during execution',
+        ]);
+
+      case 'CR':
+        // Commit Reject - Message rejected and not committed
+        return new Hl7Segment([
+          'ERR',
+          '^^^209&Commit Reject&HL70357', // Error Code and Location
+          'E', // Severity (E = Error)
+          '103&Validation Error&HL70533', // Application Error Code
+          '', // Application Error Parameter
+          '', // Diagnostic Information
+          '', // User Message
+          '', // Inform Person Indicator
+          '', // Override Type
+          '', // Override Reason Code
+          '', // Help Desk Contact Point
+          'Message rejected and not committed due to validation failure',
+        ]);
+
+      default:
+        throw new Error(`Unsupported ACK code: ${ackCode}`);
+    }
   }
 
   private buildAckMessageType(msh: Hl7Segment | undefined): string {
