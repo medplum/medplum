@@ -81,24 +81,18 @@ export function buildTokenColumns(
       addHashedToken(tokens, code);
     }
 
+    const prefix = impl.hasDedicatedColumns ? '' : code + DELIM;
+
     // The TEXT_SEARCH_SYSTEM is never searchable
     if (system && system !== TEXT_SEARCH_SYSTEM) {
       // [parameter]=[system]|
       legacyTokens.add(code + DELIM + system);
-      if (impl.hasDedicatedColumns) {
-        addHashedToken(tokens, system);
-      } else {
-        addHashedToken(tokens, code + DELIM + system);
-      }
+      addHashedToken(tokens, prefix + system);
 
       if (value) {
         // [parameter]=[system]|[code]
         legacyTokens.add(code + DELIM + system + DELIM + value);
-        if (impl.hasDedicatedColumns) {
-          addHashedToken(tokens, system + DELIM + value);
-        } else {
-          addHashedToken(tokens, code + DELIM + system + DELIM + value);
-        }
+        addHashedToken(tokens, prefix + system + DELIM + value);
       }
     }
 
@@ -107,20 +101,12 @@ export function buildTokenColumns(
 
       // [parameter]=[code]
       legacyTokens.add(code + DELIM + DELIM + value);
-      if (impl.hasDedicatedColumns) {
-        addHashedToken(tokens, DELIM + value);
-      } else {
-        addHashedToken(tokens, code + DELIM + DELIM + value);
-      }
+      addHashedToken(tokens, prefix + DELIM + value);
 
       if (!system) {
         // [parameter]=|[code]
         legacyTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
-        if (impl.hasDedicatedColumns) {
-          addHashedToken(tokens, NULL_SYSTEM + DELIM + value);
-        } else {
-          addHashedToken(tokens, code + DELIM + NULL_SYSTEM + DELIM + value);
-        }
+        addHashedToken(tokens, prefix + NULL_SYSTEM + DELIM + value);
       }
     }
   }
