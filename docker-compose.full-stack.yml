@@ -121,3 +121,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  # Hapi container
+  hapi-server:
+    image: hapiproject/hapi:latest
+    restart: always
+    ports:
+      - "8080:8080
