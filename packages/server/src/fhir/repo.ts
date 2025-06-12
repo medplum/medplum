@@ -11,7 +11,7 @@ import {
   SearchRequest,
   TypedValue,
   WithId,
-  accessPolicyAllowsInteraction,
+  accessPolicySupportsInteraction,
   allOk,
   arrayify,
   badRequest,
@@ -2082,7 +2082,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.context.accessPolicy) {
       return true;
     }
-    return accessPolicyAllowsInteraction(this.context.accessPolicy, interaction, resourceType as ResourceType);
+    return accessPolicySupportsInteraction(this.context.accessPolicy, interaction, resourceType as ResourceType);
   }
 
   /**

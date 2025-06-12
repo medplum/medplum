@@ -63,10 +63,10 @@ export const readInteractions: AccessPolicyInteraction[] = [
  * @param accessPolicy - The access policy.
  * @param resourceType - The resource type.
  * @returns True if the current user can read the specified resource type.
- * @deprecated Use accessPolicyAllowsInteraction() instead.
+ * @deprecated Use accessPolicySupportsInteraction() instead.
  */
 export function canReadResourceType(accessPolicy: AccessPolicy, resourceType: ResourceType): boolean {
-  return accessPolicyAllowsInteraction(accessPolicy, AccessPolicyInteraction.SEARCH, resourceType);
+  return accessPolicySupportsInteraction(accessPolicy, AccessPolicyInteraction.SEARCH, resourceType);
 }
 
 /**
@@ -76,13 +76,13 @@ export function canReadResourceType(accessPolicy: AccessPolicy, resourceType: Re
  * @param accessPolicy - The access policy.
  * @param resourceType - The resource type.
  * @returns True if the current user can write the specified resource type.
- * @deprecated Use accessPolicyAllowsInteraction() instead.
+ * @deprecated Use accessPolicySupportsInteraction() instead.
  */
 export function canWriteResourceType(accessPolicy: AccessPolicy, resourceType: ResourceType): boolean {
   if (protectedResourceTypes.includes(resourceType)) {
     return false;
   }
-  return accessPolicyAllowsInteraction(accessPolicy, AccessPolicyInteraction.UPDATE, resourceType);
+  return accessPolicySupportsInteraction(accessPolicy, AccessPolicyInteraction.UPDATE, resourceType);
 }
 
 /**
@@ -94,7 +94,7 @@ export function canWriteResourceType(accessPolicy: AccessPolicy, resourceType: R
  * @param resourceType - The type of resource being interacted with.
  * @returns True when the interaction is provisionally permitted by the AccessPolicy.
  */
-export function accessPolicyAllowsInteraction(
+export function accessPolicySupportsInteraction(
   accessPolicy: AccessPolicy,
   interaction: AccessPolicyInteraction,
   resourceType: ResourceType
