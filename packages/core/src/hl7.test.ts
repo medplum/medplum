@@ -81,7 +81,7 @@ describe('HL7', () => {
     expect(msg3.buildAck().getSegment('MSH')?.getField(9)?.toString()).toBe('ACK^A01^ACK');
   });
 
-  test.each(['CA', 'CR', 'CE', 'AE', 'AR'] as const)('Build ACK -- %s', (ackCode) => {
+  test.each(['CA', 'CR', 'CE', 'AE', 'AR'] as const)('Build ACK -- %s, no ERR segment', (ackCode) => {
     // 1 message type components
     const text1 =
       'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT|MSG00001|P|2.1\r' +
@@ -93,6 +93,7 @@ describe('HL7', () => {
     const ackMsg = msg1.buildAck({ ackCode });
     expect(ackMsg.getSegment('MSH')?.getField(9)?.toString()).toBe('ACK');
     expect(ackMsg.getSegment('MSA')?.getField(1)?.toString()).toBe(ackCode);
+    expect(ackMsg.getSegment('ERR')).toBeUndefined();
   });
 
   test('Build ACK -- ERR segment = true', () => {
