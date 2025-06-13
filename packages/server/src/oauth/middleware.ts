@@ -1,7 +1,6 @@
 import { OperationOutcomeError, ProfileResource, unauthorized, WithId } from '@medplum/core';
 import { Login, Project, ProjectMembership, UserConfiguration } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
-import { IncomingMessage } from 'http';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import { getLoginForAccessToken, getLoginForBasicAuth } from './utils';
@@ -31,7 +30,7 @@ export function authenticateRequest(req: Request, res: Response, next: NextFunct
   }
 }
 
-export async function authenticateTokenImpl(req: IncomingMessage): Promise<AuthState | undefined> {
+export async function authenticateTokenImpl(req: Request): Promise<AuthState | undefined> {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return undefined;
