@@ -408,10 +408,12 @@ export class GroupBy {
 export class OrderBy {
   readonly key: Column | Expression;
   readonly descending?: boolean;
+  readonly nulls?: 'first' | 'last';
 
-  constructor(key: Column | Expression, descending?: boolean) {
+  constructor(key: Column | Expression, descending?: boolean, nulls?: 'first' | 'last') {
     this.key = key;
     this.descending = descending;
+    this.nulls = nulls;
   }
 }
 
@@ -647,13 +649,13 @@ export class SelectQuery extends BaseQuery implements Expression {
     return this;
   }
 
-  orderBy(column: Column | string, descending?: boolean): this {
-    this.orderBys.push(new OrderBy(getColumn(column, this.tableName), descending));
+  orderBy(column: Column | string, descending?: boolean, nulls?: 'first' | 'last'): this {
+    this.orderBys.push(new OrderBy(getColumn(column, this.tableName), descending, nulls));
     return this;
   }
 
-  orderByExpr(expr: Expression, descending?: boolean): this {
-    this.orderBys.push(new OrderBy(expr, descending));
+  orderByExpr(expr: Expression, descending?: boolean, nulls?: 'first' | 'last'): this {
+    this.orderBys.push(new OrderBy(expr, descending, nulls));
     return this;
   }
 
@@ -797,6 +799,9 @@ export class SelectQuery extends BaseQuery implements Expression {
       sql.appendExpression(orderBy.key);
       if (orderBy.descending) {
         sql.append(' DESC');
+      }
+      if (orderBy.nulls) {
+        sql.append(' NULLS ' + orderBy.nulls.toUpperCase());
       }
       first = false;
     }

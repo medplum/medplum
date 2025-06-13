@@ -191,12 +191,12 @@ export abstract class LookupTable {
     const columnName = this.getColumnName(sortRule.code);
     const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
     selectQuery.join(
-      'INNER JOIN',
+      'LEFT JOIN',
       new SelectQuery(lookupTableName).distinctOn('resourceId').column('resourceId').column(columnName),
       joinName,
       joinOnExpression
     );
-    selectQuery.orderBy(new Column(joinName, columnName), sortRule.descending);
+    selectQuery.orderBy(new Column(joinName, columnName), sortRule.descending, 'last');
   }
 
   /**
