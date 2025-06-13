@@ -226,6 +226,53 @@ export class MockClient extends MedplumClient {
     return super.getLogins();
   }
 
+  /**
+   * Creates a FHIR `Binary` resource with the provided data content.
+   *
+   * The return value is the newly created resource, including the ID and meta.
+   *
+   * The `data` parameter can be a string or a `File` object.
+   *
+   * A `File` object often comes from a `<input type="file">` element.
+   *
+   * @example
+   * Example:
+   *
+   * ```typescript
+   * const result = await medplum.createBinary(myFile, 'test.jpg', 'image/jpeg');
+   * console.log(result.id);
+   * ```
+   *
+   * See the FHIR "create" operation for full details: https://www.hl7.org/fhir/http.html#create
+   *
+   * @category Create
+   * @param createBinaryOptions -The binary options. See `CreateBinaryOptions` for full details.
+   * @param requestOptions - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @returns The result of the create operation.
+   */
+  createBinary(
+    createBinaryOptions: CreateBinaryOptions,
+    requestOptions?: MedplumRequestOptions
+  ): Promise<WithId<Binary>>;
+
+  /**
+   * @category Create
+   * @param data - The binary data to upload.
+   * @param filename - Optional filename for the binary.
+   * @param contentType - Content type for the binary.
+   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
+   * @returns The result of the create operation.
+   * @deprecated Use `createBinary` with `CreateBinaryOptions` instead. To be removed in a future version.
+   */
+  createBinary(
+    data: BinarySource,
+    filename: string | undefined,
+    contentType: string,
+    onProgress?: (e: ProgressEvent) => void,
+    options?: MedplumRequestOptions
+  ): Promise<WithId<Binary>>;
+
   async createBinary(
     arg1: BinarySource | CreateBinaryOptions,
     arg2: string | undefined | MedplumRequestOptions,
@@ -233,7 +280,7 @@ export class MockClient extends MedplumClient {
     arg4?: (e: ProgressEvent) => void
   ): Promise<WithId<Binary>> {
     const createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
-    const { filename, contentType, onProgress } = createBinaryOptions;
+    const { filename, contentType, onProgress, securityContext } = createBinaryOptions;
 
     if (filename?.endsWith('.exe')) {
       throw new OperationOutcomeError(badRequest('Invalid file type'));
@@ -254,6 +301,7 @@ export class MockClient extends MedplumClient {
       resourceType: 'Binary',
       contentType,
       data,
+      securityContext,
     });
 
     return {
