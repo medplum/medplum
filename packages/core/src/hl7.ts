@@ -18,7 +18,7 @@ export type AckCode = keyof typeof AckCode;
 
 export interface Hl7AckOptions {
   ackCode: AckCode;
-  errSegment?: Hl7Segment | boolean;
+  errSegment?: Hl7Segment;
 }
 
 const TEXT_MSG_FOR_ACK_CODE = {
@@ -193,93 +193,8 @@ export class Hl7Message {
         this.context
       ),
       new Hl7Segment(['MSA', ackCode, controlId, TEXT_MSG_FOR_ACK_CODE[ackCode]], this.context),
-      ...(options?.errSegment
-        ? [options?.errSegment instanceof Hl7Segment ? options.errSegment : this.buildDefaultErrSegment(options)]
-        : []),
+      ...(options?.errSegment ? [options.errSegment] : []),
     ]);
-  }
-
-  private buildDefaultErrSegment(options?: Hl7AckOptions): Hl7Segment {
-    const ackCode = options?.ackCode ?? 'AA';
-    const versionId = this.getSegment('MSH')?.getField(12)?.toString() ?? '2.5.1';
-    const minorVersion = Number.parseInt(versionId.split('.')[1], 10);
-
-    let errorCodeAndLocation = ''; // 0 = message successful, 207 = internal application error (generic)
-    let appErrCode = '';
-    let severity = 'E'; // Error
-    let errorText = '';
-
-    switch (ackCode) {
-      case 'AA':
-        // Application Accept - No error, but ERR segment can provide informational status
-        errorCodeAndLocation = '^^^0&Application Accept&HL70357';
-        severity = 'I'; // Information
-        errorText = 'Message processed successfully';
-        break;
-
-      case 'AE':
-        // Application Error - Processing error occurred
-        errorCodeAndLocation = '^^^207&Application Error&HL70357';
-        appErrCode = '100&Processing Error&HL70533';
-        errorText = 'Message accepted but processing failed due to application error';
-        break;
-
-      case 'AR':
-        // Application Reject - Message rejected due to business rules
-        errorCodeAndLocation = '^^^207&Application Reject&HL70357';
-        appErrCode = '101&Data Type Error&HL70533';
-        errorText = 'Message rejected due to application rule violation';
-        break;
-
-      case 'CA':
-        // Commit Accept - Message accepted and committed for processing
-        errorCodeAndLocation = '^^^0&Commit Accept&HL70357';
-        severity = 'I';
-        errorText = 'Message received and committed for asynchronous processing';
-        break;
-
-      case 'CE':
-        // Commit Error - Message was committed but processing failed
-        errorCodeAndLocation = '^^^207&Commit Error&HL70357';
-        appErrCode = '102&Processing Failure&HL70533';
-        errorText = 'Message was accepted and stored but processing failed during execution';
-        break;
-
-      case 'CR':
-        // Commit Reject - Message rejected and not committed
-        errorCodeAndLocation = '^^^207&Commit Reject&HL70357';
-        appErrCode = '103&Validation Error&HL70533';
-        errorText = 'Message rejected and not committed due to validation failure';
-        break;
-
-      default:
-        throw new Error(`Unsupported ACK code: ${ackCode}`);
-    }
-
-    return new Hl7Segment(
-      [
-        'ERR',
-        errorCodeAndLocation, // Error Code and Location
-        // All fields other than ERR.1 are present only after HL7v2.5
-        // See: https://hl7-definition.caristix.com/v2/HL7v2.4/Segments/ERR
-        // See also: https://hl7-definition.caristix.com/v2/HL7v2.5/Segments/ERR
-        ...(minorVersion >= 5
-          ? [
-              severity, // Severity
-              appErrCode, // Application Error Code
-              '', // Application Error Parameter
-              '', // Diagnostic Information
-              '', // User Message
-              '', // Inform Person Indicator
-              '', // Override Type
-              '', // Override Reason Code
-              '', // Help Desk Contact Point
-              errorText, // Application Error Text
-            ]
-          : []),
-      ],
-      this.context
-    );
   }
 
   private buildAckMessageType(msh: Hl7Segment | undefined): string {
