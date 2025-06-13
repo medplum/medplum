@@ -256,27 +256,30 @@ export class Hl7Message {
         throw new Error(`Unsupported ACK code: ${ackCode}`);
     }
 
-    return new Hl7Segment([
-      'ERR',
-      errorCodeAndLocation, // Error Code and Location
-      // All fields other than ERR.1 are present only after HL7v2.5
-      // See: https://hl7-definition.caristix.com/v2/HL7v2.4/Segments/ERR
-      // See also: https://hl7-definition.caristix.com/v2/HL7v2.5/Segments/ERR
-      ...(minorVersion >= 5
-        ? [
-            severity, // Severity
-            appErrCode, // Application Error Code
-            '', // Application Error Parameter
-            '', // Diagnostic Information
-            '', // User Message
-            '', // Inform Person Indicator
-            '', // Override Type
-            '', // Override Reason Code
-            '', // Help Desk Contact Point
-            errorText, // Application Error Text
-          ]
-        : []),
-    ]);
+    return new Hl7Segment(
+      [
+        'ERR',
+        errorCodeAndLocation, // Error Code and Location
+        // All fields other than ERR.1 are present only after HL7v2.5
+        // See: https://hl7-definition.caristix.com/v2/HL7v2.4/Segments/ERR
+        // See also: https://hl7-definition.caristix.com/v2/HL7v2.5/Segments/ERR
+        ...(minorVersion >= 5
+          ? [
+              severity, // Severity
+              appErrCode, // Application Error Code
+              '', // Application Error Parameter
+              '', // Diagnostic Information
+              '', // User Message
+              '', // Inform Person Indicator
+              '', // Override Type
+              '', // Override Reason Code
+              '', // Help Desk Contact Point
+              errorText, // Application Error Text
+            ]
+          : []),
+      ],
+      this.context
+    );
   }
 
   private buildAckMessageType(msh: Hl7Segment | undefined): string {
