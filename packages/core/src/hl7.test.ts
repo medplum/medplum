@@ -130,7 +130,7 @@ describe('HL7', () => {
     expect(ackMsg.getSegment('ERR')?.getField(1)?.toString()).toBe('^^^207&Application Error&HL70357');
   });
 
-  test('Build ACK -- ERR segment passed in', () => {
+  test('Build ACK -- ERR segment passed in, version < 2.5', () => {
     // 1 message type components
     const text1 =
       'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT|MSG00001|P|2.1\r' +
@@ -146,7 +146,7 @@ describe('HL7', () => {
     expect(ackMsg.getSegment('ERR')?.getField(2)?.toString()).toBeUndefined();
   });
 
-  test('Build ACK -- ERR segment with version >= 2.5', () => {
+  test('Build ACK -- ERR segment passed in, version >= 2.5', () => {
     // 1 message type components
     const text1 =
       'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT|MSG00001|P|2.5\r' +
