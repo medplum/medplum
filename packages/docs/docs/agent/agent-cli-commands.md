@@ -15,7 +15,7 @@ medplum agent status [agentIds...] [options]
 ```
 
 ### Arguments
-- `[agentIds...]`: Optional list of agent IDs to get status for
+- `[agentIds...]`: List of agent IDs to get status for. Either this or `--criteria` must be provided.
 
 ### Options
 - `--criteria <criteria>`: FHIR search criteria to find agents (mutually exclusive with agentIds)
@@ -38,12 +38,12 @@ medplum agent status --criteria "Agent?name=Test Agent" --output json
 Ping a host from a specified agent.
 
 ```bash
-medplum agent ping <ipOrDomain> [agentId] [options]
+medplum agent ping <ipOrDomain> <agentId> [options]
 ```
 
 ### Arguments
 - `<ipOrDomain>`: The IPv4 address or domain name to ping
-- `[agentId]`: Optional ID of the agent to ping from
+- `<agentId>`: ID of the agent to ping from. Either this or `--criteria` must be provided.
 
 ### Options
 - `--count <count>`: Number of pings to issue (default: 1)
@@ -66,13 +66,13 @@ medplum agent ping example.com --criteria "Agent?name=Test Agent" --count 5
 Push a message to a target device via a specified agent.
 
 ```bash
-medplum agent push <deviceId> <message> [agentId] [options]
+medplum agent push <deviceId> <message> <agentId> [options]
 ```
 
 ### Arguments
 - `<deviceId>`: The ID of the device to push the message to
 - `<message>`: The message to send to the destination device
-- `[agentId]`: Optional ID of the agent to send the message from
+- `<agentId>`: ID of the agent to send the message from. Either this or `--criteria` must be provided.
 
 ### Options
 - `--content-type <contentType>`: The content type of the message (default: HL7_V2)
@@ -100,7 +100,7 @@ medplum agent reload-config [agentIds...] [options]
 ```
 
 ### Arguments
-- `[agentIds...]`: Optional list of agent IDs to reload config for
+- `[agentIds...]`: List of agent IDs to reload config for. Either this or `--criteria` must be provided.
 
 ### Options
 - `--criteria <criteria>`: FHIR search criteria to find agents (mutually exclusive with agentIds)
@@ -124,7 +124,7 @@ medplum agent upgrade [agentIds...] [options]
 ```
 
 ### Arguments
-- `[agentIds...]`: Optional list of agent IDs to upgrade
+- `[agentIds...]`: List of agent IDs to upgrade. Either this or `--criteria` must be provided.
 
 ### Options
 - `--criteria <criteria>`: FHIR search criteria to find agents (mutually exclusive with agentIds)
@@ -162,4 +162,4 @@ The CLI provides detailed error messages when operations fail. Common error scen
 - Agent not found
 - Operation timeouts
 
-When using the `--output json` option, errors are returned in a structured format that can be parsed programmatically. 
+When using the `--output json` option, errors are returned in a structured format that can be parsed programmatically.
