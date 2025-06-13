@@ -19,7 +19,7 @@ import {
   Resource,
   ServiceRequest,
 } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum } from '@medplum/react-hooks';
 import {
   IconBinaryTree,
   IconCake,
@@ -77,107 +77,102 @@ interface PatientMedicalData {
 export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   const medplum = useMedplum();
   const { patient: propsPatient, onClickResource, onRequestLabs } = props;
-  const patient = useResource(propsPatient);
+  const [patient, setPatient] = useState<Patient>();
   const [medicalData, setMedicalData] = useState<PatientMedicalData>();
   const [createdDate, setCreatedDate] = useState<string | undefined>();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const id = resolveId(propsPatient) as string;
     const ref = `Patient/${id}`;
-    const searchMeta = { _count: 100, _sort: '-_lastUpdated' };
+    
+    // Optimize search parameters
+    const searchMeta = { 
+      _count: 100, 
+      _sort: '-_lastUpdated'
+    };
 
+    // Combine related searches to reduce number of requests
     Promise.all([
+      // Basic patient data
+      medplum.readResource('Patient', id),
+      medplum.readHistory('Patient', id),
+      
+      // Observations (combines vitals, smoking status, sexual orientation)
+      medplum.searchResources('Observation', { 
+        subject: ref, 
+        ...searchMeta
+      }),
+      
+      // Allergies and Conditions (similar resource types)
       medplum.searchResources('AllergyIntolerance', { patient: ref, ...searchMeta }),
       medplum.searchResources('Condition', { patient: ref, ...searchMeta }),
+      
+      // Medications and Service Requests (related to care)
       medplum.searchResources('MedicationRequest', { subject: ref, ...searchMeta }),
-      medplum.searchResources('Observation', { subject: ref, ...searchMeta }),
-      medplum.searchResources('Appointment', {
-        patient: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Encounter', {
-        subject: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Coverage', {
-        beneficiary: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Immunization', {
-        patient: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Procedure', {
-        subject: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Device', {
-        patient: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('Goal', {
-        subject: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('ServiceRequest', {
-        subject: ref,
-        ...searchMeta,
-      }),
-      medplum.searchResources('DiagnosticReport', {
-        subject: ref,
-        ...searchMeta,
-      }),
+      medplum.searchResources('ServiceRequest', { subject: ref, ...searchMeta }),
+      
+      // Encounters and Appointments (related to visits)
+      medplum.searchResources('Encounter', { subject: ref, ...searchMeta }),
+      medplum.searchResources('Appointment', { patient: ref, ...searchMeta }),
+      
+      // Coverage and Insurance
+      medplum.searchResources('Coverage', { beneficiary: ref, ...searchMeta }),
+      
+      // Other resources
+      medplum.searchResources('Immunization', { patient: ref, ...searchMeta }),
+      medplum.searchResources('Procedure', { subject: ref, ...searchMeta }),
+      medplum.searchResources('Device', { patient: ref, ...searchMeta }),
+      medplum.searchResources('Goal', { subject: ref, ...searchMeta }),
+      medplum.searchResources('DiagnosticReport', { subject: ref, ...searchMeta }),
     ])
-      .then((results) => {
-        const observations = results[3];
+      .then(([patientData, history, observations, allergies, problems, medicationRequests, serviceRequests, encounters, appointments, coverages, immunizations, procedures, devices, goals, diagnosticReports]) => {
+        setPatient(patientData);
+        const firstEntry = history.entry?.[history.entry.length - 1];
+        const lastUpdated = firstEntry?.resource?.meta?.lastUpdated;
+        setCreatedDate(typeof lastUpdated === 'string' ? lastUpdated : '');
+
+        // Process observations into their respective categories
+        const vitals = observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs');
+        const smokingStatus = observations.find((obs) => obs.code?.coding?.[0].code === '72166-2');
+        const sexualOrientation = observations.find((obs) => obs.code?.coding?.[0].code === '76690-7');
+
         setMedicalData({
-          allergies: results[0],
-          problems: results[1],
-          medicationRequests: results[2],
-          sexualOrientation: observations.find((obs) => obs.code?.coding?.[0].code === '76690-7'),
-          smokingStatus: observations.find((obs) => obs.code?.coding?.[0].code === '72166-2'),
-          vitals: observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs'),
-          appointments: results[4],
-          encounters: results[5],
-          coverages: results[6],
-          immunizations: results[7],
-          procedures: results[8],
-          devices: results[9],
-          goals: results[10],
-          serviceRequests: results[11],
-          diagnosticReports: results[12],
+          allergies,
+          problems,
+          medicationRequests,
+          sexualOrientation,
+          smokingStatus,
+          vitals,
+          appointments,
+          encounters,
+          coverages,
+          immunizations,
+          procedures,
+          devices,
+          goals,
+          serviceRequests,
+          diagnosticReports,
         });
+        setIsLoading(false);
       })
       .catch(console.error);
   }, [medplum, propsPatient]);
 
-  useEffect(() => {
-    if (patient?.id) {
-      medplum
-        .readHistory('Patient', patient.id)
-        .then((history) => {
-          const firstEntry = history.entry?.[history.entry.length - 1];
-          const lastUpdated = firstEntry?.resource?.meta?.lastUpdated;
-          setCreatedDate(typeof lastUpdated === 'string' ? lastUpdated : '');
-        })
-        .catch(() => {});
-    }
-  }, [patient?.id, medplum]);
-
   const languageDisplay = patient ? getPreferredLanguage(patient) : undefined;
 
-  if (!patient) {
+  if (isLoading || !patient) {
     return null;
   }
 
   return (
-    <Flex direction="column" gap="xs" w="100%" h="100%" className={styles.panel}>
+    <Flex direction="column" w="100%" h="100%" className={styles.panel}>
       <SummaryItem
         onClick={() => {
           onClickResource?.(patient);
         }}
       >
-        <Group align="center" gap="sm" p={16}>
+        <Group align="center" gap="sm" p={16} style={{ marginBottom: 0 }}>
           <ResourceAvatar value={patient} size={48} radius={48} style={{ border: '2px solid white' }} />
           <Stack gap={0} style={{ flex: 1, minWidth: 0 }}>
             <Tooltip label={formatHumanName(patient.name?.[0] as HumanName)} position="top-start" openDelay={650}>
@@ -199,12 +194,12 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             })()}
           </Stack>
         </Group>
-        <Divider />
       </SummaryItem>
 
-      <Stack gap="xs" px={16} pt={12} pb={16} style={{ flex: 2, overflowY: 'auto', minHeight: 0 }}>
-        {medicalData && (
-          <>
+      {medicalData && (
+        <>
+          <Divider />
+          <Stack gap="xs" px={16} pt={12} pb={16} style={{ flex: 2, overflowY: 'auto', minHeight: 0 }}>
             <Stack gap="xs" py={8}>
               <PatientInfoItem
                 patient={patient}
@@ -224,7 +219,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                 label="Gender & Identity"
                 onClickResource={onClickResource}
               />
-
               <PatientInfoItem
                 patient={patient}
                 value={
@@ -235,7 +229,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                 label="Race & Ethnicity"
                 onClickResource={onClickResource}
               />
-
               <PatientInfoItem
                 patient={patient}
                 value={patient.address?.[0] ? formatAddress(patient.address[0]) : undefined}
@@ -244,7 +237,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                 label="Location"
                 onClickResource={onClickResource}
               />
-
               <PatientInfoItem
                 patient={patient}
                 value={languageDisplay}
@@ -253,7 +245,6 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
                 label="Language"
                 onClickResource={onClickResource}
               />
-
               <PatientInfoItem
                 patient={patient}
                 value={getGeneralPractitioner(patient)}
@@ -298,9 +289,9 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
             <Divider />
             <Vitals patient={patient} vitals={medicalData.vitals} onClickResource={onClickResource} />
             <Divider />
-          </>
-        )}
-      </Stack>
+          </Stack>
+        </>
+      )}
     </Flex>
   );
 }

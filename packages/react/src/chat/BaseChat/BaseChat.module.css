@@ -3,14 +3,13 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .chatTitle {
-  background-color: light-dark(var(--mantine-color-blue-7), var(--mantine-color-blue-8));
-  color: light-dark(var(--mantine-color-white), var(--mantine-color-gray-3));
-  font-size: var(--mantine-font-size-sm);
-  font-weight: 500;
-  padding: var(--mantine-spacing-sm);
+  font-size: var(--mantine-font-size-lg);
+  font-weight: 700;
+  padding: 0;
   user-select: none;
 }
 
@@ -21,17 +20,45 @@
 }
 
 .chatScrollArea {
-  padding: var(--mantine-spacing-xs);
+  padding: 0;
+}
+
+/* Custom scrollbar styles with fade transition */
+.chatScrollArea :global(.mantine-ScrollArea-thumb) {
+  transition: opacity 0.4s ease-in-out;
+  opacity: 0.6;
+}
+
+.chatScrollArea :global(.mantine-ScrollArea-thumb:hover) {
+  opacity: 1;
+}
+
+/* Hide scrollbar when not hovering */
+.chatScrollArea :global(.mantine-ScrollArea-scrollbar) {
+  transition: opacity 0.4s ease;
+  opacity: 0;
+}
+
+.chatScrollArea:hover :global(.mantine-ScrollArea-scrollbar) {
+  opacity: 1;
+} 
+
+/* Smooth scroll transition */
+.smoothScroll {
+  scroll-behavior: smooth;
+  transition: scrollTop 0.3s ease-out;
 }
 
 .chatInputContainer {
-  background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-4));
-  padding: 6px 8px;
+  background: #fff;
+  padding-top: 16px;
+  margin: 0px 16px 16px 16px;
+  border-top: 1px solid #EEE;
+  box-sizing: border-box;
 }
 
 .chatBubbleOuterWrap {
   max-width: 75%;
-  padding-bottom: 10px;
 }
 
 .chatBubbleRightAlignedInnerWrap {
@@ -69,4 +96,35 @@
 
 .chatBubbleNameRight {
   text-align: right;
+}
+
+.inputWrapper {
+  position: relative;
+  width: 100%;
+}
+
+.sendButtonInside {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 2;
+}
+
+.textareaInputPadding {
+  padding-right: 60px !important;
+}
+
+/* Add fade-in animation for chat messages */
+.chatMessagesContainer {
+  opacity: 0;
+  animation: fadeIn 0.3s ease-in forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
