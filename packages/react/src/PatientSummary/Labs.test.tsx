@@ -58,7 +58,7 @@ describe('PatientSummary - Labs', () => {
         resourceType: 'DiagnosticReport',
         status: 'final',
         code: { text: 'Test Report' },
-        category: [{ coding: [{ code: 'laboratory' }] }],
+        category: [{ coding: [{ code: 'LAB' }] }],
       },
     ];
 
@@ -118,6 +118,85 @@ describe('PatientSummary - Labs', () => {
     expect(screen.queryByText('Test Request Active 2')).not.toBeInTheDocument();
   });
 
+  test('Skips ServiceRequest when DiagnosticReport is present', async () => {
+    const requests: ServiceRequest[] = [
+      {
+        id: '1',
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        code: { text: 'Test Request Active' },
+        requisition: {
+          value: '123456',
+        },
+        intent: 'order',
+        subject: {
+          reference: 'Patient/123',
+        },
+      },
+    ];
+
+    const reports: DiagnosticReport[] = [
+      {
+        resourceType: 'DiagnosticReport',
+        status: 'final',
+        code: { text: 'Test Report Final' },
+        category: [{ coding: [{ code: 'LAB' }] }],
+        basedOn: [{ reference: 'ServiceRequest/1' }],
+      },
+    ];
+
+    await setup(<Labs patient={HomerSimpson} serviceRequests={requests} diagnosticReports={reports} />);
+    expect(screen.queryByText('Test Request Active')).not.toBeInTheDocument();
+    expect(screen.getByText('Test Report Final')).toBeInTheDocument();
+  });
+
+  test('HG skip child ServiceRequest when parent DiagnosticReport is present', async () => {
+    const requests: ServiceRequest[] = [
+      {
+        id: '1',
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        code: { text: 'Test Request Parent' },
+        requisition: {
+          value: '123456',
+        },
+        intent: 'order',
+        subject: {
+          reference: 'Patient/123',
+        },
+      },
+      {
+        id: '2',
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        code: { text: 'Test Request Child' },
+        requisition: {
+          value: '123456',
+        },
+        basedOn: [{ reference: 'ServiceRequest/1' }],
+        intent: 'order',
+        subject: {
+          reference: 'Patient/123',
+        },
+      },
+    ];
+
+    const reports: DiagnosticReport[] = [
+      {
+        resourceType: 'DiagnosticReport',
+        status: 'final',
+        code: { text: 'Test Report Final' },
+        category: [{ coding: [{ code: 'LAB' }] }],
+        basedOn: [{ reference: 'ServiceRequest/1' }],
+      },
+    ];
+
+    await setup(<Labs patient={HomerSimpson} serviceRequests={requests} diagnosticReports={reports} />);
+    expect(screen.queryByText('Test Request Parent')).not.toBeInTheDocument();
+    expect(screen.queryByText('Test Request Child')).not.toBeInTheDocument();
+    expect(screen.getByText('Test Report Final')).toBeInTheDocument();
+  });
+
   test('Status Badge colors', async () => {
     const requests: ServiceRequest[] = [
       {
@@ -136,19 +215,19 @@ describe('PatientSummary - Labs', () => {
         resourceType: 'DiagnosticReport',
         status: 'final',
         code: { text: 'Test Report Final' },
-        category: [{ coding: [{ code: 'laboratory' }] }],
+        category: [{ coding: [{ code: 'LAB' }] }],
       },
       {
         resourceType: 'DiagnosticReport',
         status: 'cancelled',
         code: { text: 'Test Report Cancelled' },
-        category: [{ coding: [{ code: 'laboratory' }] }],
+        category: [{ coding: [{ code: 'LAB' }] }],
       },
       {
         resourceType: 'DiagnosticReport',
         status: 'preliminary',
         code: { text: 'Test Report Preliminary' },
-        category: [{ coding: [{ code: 'laboratory' }] }],
+        category: [{ coding: [{ code: 'LAB' }] }],
       },
     ];
     await setup(<Labs patient={HomerSimpson} serviceRequests={requests} diagnosticReports={reports} />);

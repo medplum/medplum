@@ -172,6 +172,10 @@ const config: Config = {
               to: 'https://github.com/medplum/medplum',
             },
             {
+              label: 'Knowledge Base',
+              to: 'https://linen.medplum.com',
+            },
+            {
               label: 'Contributing',
               to: '/docs/contributing',
             },
