@@ -33,29 +33,18 @@ export const AccessPolicyInteraction = {
   READ: 'read',
   VREAD: 'vread',
   UPDATE: 'update',
-  PATCH: 'patch',
   DELETE: 'delete',
   HISTORY: 'history',
-  HISTORY_INSTANCE: 'history-instance',
-  HISTORY_TYPE: 'history-type',
-  HISTORY_SYSTEM: 'history-system',
   CREATE: 'create',
   SEARCH: 'search',
-  SEARCH_TYPE: 'search-type',
-  SEARCH_SYSTEM: 'search-system',
-  SEARCH_COMPARTMENT: 'search-compartment',
-  CAPABILITIES: 'capabilities',
-  TRANSACTION: 'transaction',
-  BATCH: 'batch',
-  OPERATION: 'operation',
 } as const;
 export type AccessPolicyInteraction = (typeof AccessPolicyInteraction)[keyof typeof AccessPolicyInteraction];
 
-const resourceReadInteractions: AccessPolicyInteraction[] = [
+export const readInteractions: AccessPolicyInteraction[] = [
   AccessPolicyInteraction.READ,
   AccessPolicyInteraction.VREAD,
   AccessPolicyInteraction.HISTORY,
-  AccessPolicyInteraction.HISTORY_INSTANCE,
+  AccessPolicyInteraction.SEARCH,
 ];
 
 /**
@@ -63,16 +52,10 @@ const resourceReadInteractions: AccessPolicyInteraction[] = [
  * @param accessPolicy - The access policy.
  * @param resourceType - The resource type.
  * @returns True if the current user can read the specified resource type.
+ * @deprecated Use accessPolicySupportsInteraction() instead.
  */
 export function canReadResourceType(accessPolicy: AccessPolicy, resourceType: ResourceType): boolean {
-  if (accessPolicy.resource) {
-    for (const resourcePolicy of accessPolicy.resource) {
-      if (matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return accessPolicySupportsInteraction(accessPolicy, AccessPolicyInteraction.SEARCH, resourceType);
 }
 
 /**
@@ -82,19 +65,32 @@ export function canReadResourceType(accessPolicy: AccessPolicy, resourceType: Re
  * @param accessPolicy - The access policy.
  * @param resourceType - The resource type.
  * @returns True if the current user can write the specified resource type.
+ * @deprecated Use accessPolicySupportsInteraction() instead.
  */
 export function canWriteResourceType(accessPolicy: AccessPolicy, resourceType: ResourceType): boolean {
   if (protectedResourceTypes.includes(resourceType)) {
     return false;
   }
-  if (accessPolicy.resource) {
-    for (const resourcePolicy of accessPolicy.resource) {
-      if (matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType) && !resourcePolicy.readonly) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return accessPolicySupportsInteraction(accessPolicy, AccessPolicyInteraction.UPDATE, resourceType);
+}
+
+/**
+ * Shallow check that an interaction is permitted by the AccessPolicy on a given resource type,
+ * at least for some resources.  A more in-depth check for the specific resource(s) being accessed
+ * is required in addition to this one.
+ * @param accessPolicy - The AccessPolicy to check against.
+ * @param interaction - The FHIR interaction being performed.
+ * @param resourceType - The type of resource being interacted with.
+ * @returns True when the interaction is provisionally permitted by the AccessPolicy.
+ */
+export function accessPolicySupportsInteraction(
+  accessPolicy: AccessPolicy,
+  interaction: AccessPolicyInteraction,
+  resourceType: ResourceType
+): boolean {
+  return Boolean(
+    accessPolicy.resource?.some((policy) => shallowMatchesResourcePolicy(policy, resourceType, interaction))
+  );
 }
 
 /**
@@ -103,12 +99,9 @@ export function canWriteResourceType(accessPolicy: AccessPolicy, resourceType: R
  * @param accessPolicy - The access policy.
  * @param resource - The resource.
  * @returns True if the current user can write the specified resource type.
+ * @deprecated Use satisfiedAccessPolicy() instead.
  */
 export function canWriteResource(accessPolicy: AccessPolicy, resource: Resource): boolean {
-  const resourceType = resource.resourceType;
-  if (!canWriteResourceType(accessPolicy, resourceType)) {
-    return false;
-  }
   return Boolean(satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, accessPolicy));
 }
 
@@ -127,14 +120,7 @@ export function satisfiedAccessPolicy(
   if (!accessPolicy) {
     return universalAccessPolicy;
   }
-  if (accessPolicy.resource) {
-    for (const resourcePolicy of accessPolicy.resource) {
-      if (matchesAccessPolicyResourcePolicy(resource, interaction, resourcePolicy)) {
-        return resourcePolicy;
-      }
-    }
-  }
-  return undefined;
+  return accessPolicy.resource?.find((policy) => matchesAccessPolicyResourcePolicy(resource, interaction, policy));
 }
 
 /**
@@ -150,17 +136,14 @@ function matchesAccessPolicyResourcePolicy(
   resourcePolicy: AccessPolicyResource
 ): boolean {
   const resourceType = resource.resourceType;
-  if (!matchesAccessPolicyResourceType(resourcePolicy.resourceType, resourceType)) {
-    return false;
-  }
-  if (resourcePolicy.readonly && !resourceReadInteractions.includes(interaction)) {
+  if (!shallowMatchesResourcePolicy(resourcePolicy, resourceType, interaction)) {
     return false;
   }
   if (
     resourcePolicy.compartment &&
-    !resource.meta?.compartment?.find((c) => c.reference === resourcePolicy.compartment?.reference)
+    !resource.meta?.compartment?.some((c) => c.reference === resourcePolicy.compartment?.reference)
   ) {
-    // Deprecated - to be removed
+    // Deprecated - to be removed in v5
     return false;
   }
   if (resourcePolicy.criteria && !matchesSearchRequest(resource, parseSearchRequest(resourcePolicy.criteria))) {
@@ -170,22 +153,28 @@ function matchesAccessPolicyResourcePolicy(
 }
 
 /**
- * Returns true if the resource type matches the access policy resource type.
- * @param accessPolicyResourceType - The resource type from the access policy.
- * @param resourceType - The candidate resource resource type.
- * @returns True if the resource type matches the access policy resource type.
+ * Shallow check if the given interaction on a resource type matches the resource access policy.
+ * @param policy - The AccessPolicy resource policy.
+ * @param resourceType - The candidate resource type.
+ * @param interaction - Interaction type to check against the policy.
+ * @returns True when the resource type matches the resource policy.
  */
-function matchesAccessPolicyResourceType(
-  accessPolicyResourceType: string | undefined,
-  resourceType: ResourceType
+function shallowMatchesResourcePolicy(
+  policy: AccessPolicyResource,
+  resourceType: ResourceType,
+  interaction: AccessPolicyInteraction
 ): boolean {
-  if (accessPolicyResourceType === resourceType) {
-    return true;
+  if (
+    policy.resourceType !== resourceType &&
+    // Project admin resource types are not allowed to be wildcarded; they must be explicitly included
+    (policy.resourceType !== '*' || projectAdminResourceTypes.includes(resourceType))
+  ) {
+    return false;
   }
-  if (accessPolicyResourceType === '*' && !projectAdminResourceTypes.includes(resourceType)) {
-    // Project admin resource types are not allowed to be wildcarded
-    // Project admin resource types must be explicitly included
-    return true;
+
+  // Only use `readonly` if `interaction` is not specified
+  if (!policy.interaction) {
+    return !policy.readonly || readInteractions.includes(interaction);
   }
-  return false;
+  return policy.interaction.includes(interaction);
 }
