@@ -327,7 +327,7 @@ describe('HL7', () => {
 
     const response = await client.sendAndWait(
       Hl7Message.parse(
-        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.5\r' +
           'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
           'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
           'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
@@ -338,7 +338,7 @@ describe('HL7', () => {
     // Should get a commit ACK
     expect(response.getSegment('MSA')?.getComponent(1, 1)).toStrictEqual('CA');
     // Should see info severity level
-    expect(response.getSegment('ERR')?.getComponent(2, 1)).toStrictEqual('I');
+    expect(response.getSegment('ERR')?.getComponent(1, 1)).toStrictEqual('I');
     expect(response.segments).toHaveLength(3);
     expect(response.segments[1].name).toBe('MSA');
 
