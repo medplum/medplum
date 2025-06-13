@@ -1,5 +1,11 @@
 .panel {
+  background-color: var(--mantine-color-body);
   height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  animation: fadeIn 0.3s ease-in forwards;
 }
 
 [data-mantine-color-scheme='dark'] .panel {
@@ -41,4 +47,17 @@
 
 .patientSummaryCollapseIcon.collapsed {
   transform: rotate(-90deg);
+}
+
+.fadeIn {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 } 
