@@ -124,6 +124,23 @@ describe('HL7', () => {
     expect(ackMsg.getSegment('MSH')?.getField(9)?.toString()).toBe('ACK');
     expect(ackMsg.getSegment('MSA')?.getField(1)?.toString()).toBe('AE');
     expect(ackMsg.getSegment('ERR')?.getField(1)?.toString()).toBe('TEST');
+    expect(ackMsg.getSegment('ERR')?.getField(2)?.toString()).toBeUndefined();
+  });
+
+  test('Build ACK -- ERR segment with version >= 2.5', () => {
+    // 1 message type components
+    const text1 =
+      'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT|MSG00001|P|2.5\r' +
+      'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-||C|1200 N ELM STREET^^GREENSBORO^NC^27401-1020|GL|(919)379-1212|(919)271-3434||S||PATID12345001^2^M10|123456789|987654^NC\r' +
+      'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+      'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-';
+    const msg1 = Hl7Message.parse(text1);
+    expect(msg1).toBeDefined();
+    const ackMsg = msg1.buildAck({ ackCode: 'AE', errSegment: true });
+    expect(ackMsg.getSegment('MSH')?.getField(9)?.toString()).toBe('ACK');
+    expect(ackMsg.getSegment('MSA')?.getField(1)?.toString()).toBe('AE');
+    expect(ackMsg.getSegment('ERR')?.getField(1)?.toString()).toBe('^^^207&Application Error&HL70357');
+    expect(ackMsg.getSegment('ERR')?.getField(2)?.toString()).toBeDefined();
   });
 
   test('ADT', () => {
