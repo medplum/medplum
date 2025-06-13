@@ -338,7 +338,7 @@ describe('HL7', () => {
     // Should get a commit ACK
     expect(response.getSegment('MSA')?.getComponent(1, 1)).toStrictEqual('CA');
     // Should see info severity level
-    expect(response.getSegment('ERR')?.getComponent(1, 1)).toStrictEqual('I');
+    expect(response.getSegment('ERR')?.getComponent(2, 1)).toStrictEqual('I');
     expect(response.segments).toHaveLength(3);
     expect(response.segments[1].name).toBe('MSA');
 
