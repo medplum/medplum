@@ -79,7 +79,7 @@ IN1|1|BCBS|67890|Blue Cross Blue Shield||||||||||||||||||||||||||||||||XYZ789`);
     const decodedStr = iconv.decode(writeBuffer.subarray(1, writeBuffer.byteLength - 2), 'utf-8');
 
     const receivedMsg = Hl7Message.parse(decodedStr);
-    const ackToCompare = msg.buildAck({ ackCode: 'CA', errSegment: true });
+    const ackToCompare = msg.buildAck({ ackCode: 'CA' });
 
     // Timestamp is based on when ACK is created so these will always be different
     receivedMsg.getSegment('MSH')?.setField(7, 'TIMESTAMP');
