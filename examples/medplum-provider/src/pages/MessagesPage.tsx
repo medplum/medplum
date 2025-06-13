@@ -17,26 +17,38 @@ const messageListItemStyle = `
 }
 `;
 
-function groupCommunicationsByPatient(comms: Communication[]): { patientRef: string, comm: Communication, thread: Communication[] }[] {
+function groupCommunicationsByPatient(
+  comms: Communication[]
+): { patientRef: string; comm: Communication; thread: Communication[] }[] {
   const map = new Map<string, Communication[]>();
   for (const comm of comms) {
     const patientRef = comm.subject?.reference;
-    if (!patientRef) { continue; }
-    if (!map.has(patientRef)) { map.set(patientRef, []); }
+    if (!patientRef) {
+      continue;
+    }
+    if (!map.has(patientRef)) {
+      map.set(patientRef, []);
+    }
     (map.get(patientRef) || []).push(comm);
   }
   // Helper to safely get sent as a string
-  const getSentString = (comm: Communication): string => typeof comm.sent === 'string' ? comm.sent : '';
+  const getSentString = (comm: Communication): string => (typeof comm.sent === 'string' ? comm.sent : '');
   // For each patient, sort their communications by sent date descending and filter out messages with missing sender
   const result = Array.from(map.entries()).map(([patientRef, thread]) => {
     // Optionally filter out messages with missing sender
-    const filteredThread = thread.filter(msg => !!msg.sender?.reference);
+    const filteredThread = thread.filter((msg) => !!msg.sender?.reference);
     const sorted = [...filteredThread].sort((a, b) => {
       const aSent = getSentString(a);
       const bSent = getSentString(b);
-      if (!aSent && !bSent) { return 0; }
-      if (!aSent) { return 1; }
-      if (!bSent) { return -1; }
+      if (!aSent && !bSent) {
+        return 0;
+      }
+      if (!aSent) {
+        return 1;
+      }
+      if (!bSent) {
+        return -1;
+      }
       return bSent.localeCompare(aSent);
     });
     return { patientRef, comm: sorted[0], thread: sorted };
@@ -45,9 +57,15 @@ function groupCommunicationsByPatient(comms: Communication[]): { patientRef: str
   return result.sort((a, b) => {
     const aSent = getSentString(a.comm);
     const bSent = getSentString(b.comm);
-    if (!aSent && !bSent) { return 0; }
-    if (!aSent) { return 1; }
-    if (!bSent) { return -1; }
+    if (!aSent && !bSent) {
+      return 0;
+    }
+    if (!aSent) {
+      return 1;
+    }
+    if (!bSent) {
+      return -1;
+    }
     return bSent.localeCompare(aSent);
   });
 }
@@ -61,7 +79,7 @@ const MessageThreadListItem = React.memo(function MessageThreadListItem({
   isAboveSelected,
   participantNames,
   onClick,
-  onHover
+  onHover,
 }: {
   patientRef: string;
   comm: Communication;
@@ -77,7 +95,20 @@ const MessageThreadListItem = React.memo(function MessageThreadListItem({
   let timeStr = '';
   if (lastTime) {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    const months = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
     const dayOfWeek = days[lastTime.getDay()];
     const month = months[lastTime.getMonth()];
     const day = lastTime.getDate();
@@ -85,7 +116,9 @@ const MessageThreadListItem = React.memo(function MessageThreadListItem({
     const minutes = lastTime.getMinutes();
     const ampm = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12;
-    if (hours === 0) { hours = 12; }
+    if (hours === 0) {
+      hours = 12;
+    }
     const minutesStr = minutes < 10 ? `0${minutes}` : `${minutes}`;
     timeStr = `${hours}:${minutesStr} ${ampm} on ${dayOfWeek}, ${month} ${day}`;
   }
@@ -107,25 +140,31 @@ const MessageThreadListItem = React.memo(function MessageThreadListItem({
       >
         <ResourceAvatar value={{ reference: patientRef }} radius="xl" size={36} />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <Text size="sm" fw={700} truncate="end">{displayName}</Text>
+          <Text size="sm" fw={700} truncate="end">
+            {displayName}
+          </Text>
           <Text size="sm" fw={400} c="gray.7" truncate="end" lineClamp={1}>
             {comm.sender?.reference && participantNames[comm.sender.reference]?.split(' ')[0] ? (
               <>{participantNames[comm.sender.reference].split(' ')[0]}: </>
             ) : null}
             {lastMsg}
           </Text>
-          <Text size="xs" c="gray.6" style={{ marginTop: 2 }}>{timeStr}</Text>
+          <Text size="xs" c="gray.6" style={{ marginTop: 2 }}>
+            {timeStr}
+          </Text>
         </div>
       </Group>
-      <div style={{
-        position: 'absolute',
-        left: 8,
-        right: 8,
-        bottom: 0,
-        height: 0,
-        borderBottom: isSelected || isAboveSelected ? 'none' : '1px solid #EEE',
-        pointerEvents: 'none',
-      }} />
+      <div
+        style={{
+          position: 'absolute',
+          left: 8,
+          right: 8,
+          bottom: 0,
+          height: 0,
+          borderBottom: isSelected || isAboveSelected ? 'none' : '1px solid #EEE',
+          pointerEvents: 'none',
+        }}
+      />
     </div>
   );
 });
@@ -158,20 +197,24 @@ export function MessagesPage(): JSX.Element {
   }
 
   // Add prefetching function
-  const prefetchPatient = useCallback((patientRef: string) => {
-    if (prefetchedPatients[patientRef] || patientRef === selectedPatientRef) {
-      return;
-    }
-    const patientId = patientRef.replace('Patient/', '');
-    medplum.readResource('Patient', patientId)
-      .then(patient => {
-        setPrefetchedPatients(prev => ({
-          ...prev,
-          [patientRef]: patient
-        }));
-      })
-      .catch(console.error);
-  }, [medplum, prefetchedPatients, selectedPatientRef]);
+  const prefetchPatient = useCallback(
+    (patientRef: string) => {
+      if (prefetchedPatients[patientRef] || patientRef === selectedPatientRef) {
+        return;
+      }
+      const patientId = patientRef.replace('Patient/', '');
+      medplum
+        .readResource('Patient', patientId)
+        .then((patient) => {
+          setPrefetchedPatients((prev) => ({
+            ...prev,
+            [patientRef]: patient,
+          }));
+        })
+        .catch(console.error);
+    },
+    [medplum, prefetchedPatients, selectedPatientRef]
+  );
 
   // Keep track of thread changes to handle scroll position
   useEffect(() => {
@@ -207,7 +250,9 @@ export function MessagesPage(): JSX.Element {
       }
     }
     fetchAllCommunications().catch(() => setLoading(false));
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   }, [medplum]);
 
   // Only show the most recent Communication per patient
@@ -215,13 +260,15 @@ export function MessagesPage(): JSX.Element {
 
   // When a patient is selected, show all messages for that patient
   const selectedThread = useMemo(() => {
-    if (!selectedPatientRef) { return undefined; }
-    return patientThreads.find(t => t.patientRef === selectedPatientRef);
+    if (!selectedPatientRef) {
+      return undefined;
+    }
+    return patientThreads.find((t) => t.patientRef === selectedPatientRef);
   }, [patientThreads, selectedPatientRef]);
 
   // After participantNames is set, filter patientThreads for only those with a valid patient name
   const validPatientThreads = useMemo(() => {
-    return patientThreads.filter(t => !!participantNames[t.patientRef]);
+    return patientThreads.filter((t) => !!participantNames[t.patientRef]);
   }, [patientThreads, participantNames]);
 
   // Prefetch all patient data in batches
@@ -240,7 +287,7 @@ export function MessagesPage(): JSX.Element {
     // Process each batch with a small delay
     batches.forEach((batch, index) => {
       setTimeout(() => {
-        batch.forEach(thread => {
+        batch.forEach((thread) => {
           if (!prefetchedPatients[thread.patientRef] && thread.patientRef !== selectedPatientRef) {
             prefetchPatient(thread.patientRef);
           }
@@ -257,47 +304,64 @@ export function MessagesPage(): JSX.Element {
     // Get all unique participant references from patientThreads
     const allRefs = new Set<string>();
     patientThreads.forEach(({ thread }) => {
-      thread.forEach(comm => {
-        if (comm.subject?.reference) { allRefs.add(comm.subject.reference); }
-        if (comm.sender?.reference) { allRefs.add(comm.sender.reference); }
-        if (comm.recipient) { comm.recipient.forEach(r => { if (r.reference) { allRefs.add(r.reference); } }); }
+      thread.forEach((comm) => {
+        if (comm.subject?.reference) {
+          allRefs.add(comm.subject.reference);
+        }
+        if (comm.sender?.reference) {
+          allRefs.add(comm.sender.reference);
+        }
+        if (comm.recipient) {
+          comm.recipient.forEach((r) => {
+            if (r.reference) {
+              allRefs.add(r.reference);
+            }
+          });
+        }
       });
     });
     // Only fetch names for participants not already in the map
-    const missingRefs = Array.from(allRefs).filter(ref => !participantNames[ref]);
+    const missingRefs = Array.from(allRefs).filter((ref) => !participantNames[ref]);
     if (missingRefs.length === 0) {
       // No new participants to fetch, do not set loading
       return;
     }
-    const patientRefs = missingRefs.filter(ref => ref.startsWith('Patient/'));
-    const practitionerRefs = missingRefs.filter(ref => ref.startsWith('Practitioner/'));
-    const patientIds = patientRefs.map(ref => ref.replace('Patient/', ''));
-    const practitionerIds = practitionerRefs.map(ref => ref.replace('Practitioner/', ''));
+    const patientRefs = missingRefs.filter((ref) => ref.startsWith('Patient/'));
+    const practitionerRefs = missingRefs.filter((ref) => ref.startsWith('Practitioner/'));
+    const patientIds = patientRefs.map((ref) => ref.replace('Patient/', ''));
+    const practitionerIds = practitionerRefs.map((ref) => ref.replace('Practitioner/', ''));
     setLoading(true);
     Promise.all([
       patientIds.length > 0 ? medplum.searchResources('Patient', { _id: patientIds.join(',') }) : Promise.resolve([]),
-      practitionerIds.length > 0 ? medplum.searchResources('Practitioner', { _id: practitionerIds.join(',') }) : Promise.resolve([]),
-    ]).then(([patients, practitioners]) => {
-      setParticipantNames(prev => {
-        const map = { ...prev };
-        (patients as Patient[]).forEach((p) => {
-          map[`Patient/${p.id}`] = formatHumanName(p.name?.[0]);
+      practitionerIds.length > 0
+        ? medplum.searchResources('Practitioner', { _id: practitionerIds.join(',') })
+        : Promise.resolve([]),
+    ])
+      .then(([patients, practitioners]) => {
+        setParticipantNames((prev) => {
+          const map = { ...prev };
+          (patients as Patient[]).forEach((p) => {
+            map[`Patient/${p.id}`] = formatHumanName(p.name?.[0]);
+          });
+          (practitioners as FhirPractitioner[]).forEach((pr) => {
+            map[`Practitioner/${pr.id}`] = formatHumanName(pr.name?.[0]);
+          });
+          return map;
         });
-        (practitioners as FhirPractitioner[]).forEach((pr) => {
-          map[`Practitioner/${pr.id}`] = formatHumanName(pr.name?.[0]);
-        });
-        return map;
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
       });
-      setLoading(false);
-    }).catch(() => {
-      setLoading(false);
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally omitting participantNames to prevent infinite loop
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally omitting participantNames to prevent infinite loop
   }, [patientThreads, medplum, communications.length]);
 
-  const getThreadLabel = useCallback((patientRef: string) => {
-    return participantNames[patientRef] || patientRef;
-  }, [participantNames]);
+  const getThreadLabel = useCallback(
+    (patientRef: string) => {
+      return participantNames[patientRef] || patientRef;
+    },
+    [participantNames]
+  );
 
   // Use validPatientThreads instead of patientThreads for pagination and rendering
   const paginatedThreads = useMemo(() => {
@@ -327,13 +391,13 @@ export function MessagesPage(): JSX.Element {
   useEffect(() => {
     if (selectedThread) {
       // Find all messages for the selected thread in the latest communications
-      const latestThreadMessages = communications.filter(
-        c => c.subject?.reference === selectedThread.patientRef
-      );
+      const latestThreadMessages = communications.filter((c) => c.subject?.reference === selectedThread.patientRef);
       // Deduplicate by id
-      const uniqueMessages: Record<string, typeof latestThreadMessages[0]> = {};
+      const uniqueMessages: Record<string, (typeof latestThreadMessages)[0]> = {};
       for (const msg of latestThreadMessages) {
-        if (msg.id) { uniqueMessages[msg.id] = msg; }
+        if (msg.id) {
+          uniqueMessages[msg.id] = msg;
+        }
       }
       setThreadMessages(Object.values(uniqueMessages));
 
@@ -342,15 +406,16 @@ export function MessagesPage(): JSX.Element {
       if (prefetchedPatient) {
         setSelectedPatient(prefetchedPatient);
         // Remove from prefetched cache to save memory
-        setPrefetchedPatients(prev => {
+        setPrefetchedPatients((prev) => {
           const { [selectedThread.patientRef]: _, ...rest } = prev;
           return rest;
         });
       } else {
         // Fetch patient data if not prefetched
         const patientId = selectedThread.patientRef.replace('Patient/', '');
-        medplum.readResource('Patient', patientId)
-          .then(patient => {
+        medplum
+          .readResource('Patient', patientId)
+          .then((patient) => {
             setSelectedPatient(patient);
           })
           .catch(console.error);
@@ -362,20 +427,24 @@ export function MessagesPage(): JSX.Element {
 
   // Keep the sidebar preview up-to-date when new messages are added in the chat area
   useEffect(() => {
-    if (!selectedThread) { return; }
+    if (!selectedThread) {
+      return;
+    }
     // Find all messages for the selected thread in the global communications
     const globalThreadIds = new Set(
-      communications.filter(c => c.subject?.reference === selectedThread.patientRef).map(c => c.id)
+      communications.filter((c) => c.subject?.reference === selectedThread.patientRef).map((c) => c.id)
     );
     // Find new messages in threadMessages that are not in global communications
-    const newMessages = threadMessages.filter(c => c.id && !globalThreadIds.has(c.id));
+    const newMessages = threadMessages.filter((c) => c.id && !globalThreadIds.has(c.id));
     if (newMessages.length > 0) {
-      setCommunications(prev => {
+      setCommunications((prev) => {
         // Deduplicate by id
         const all = [...prev, ...newMessages];
-        const unique: Record<string, typeof all[0]> = {};
+        const unique: Record<string, (typeof all)[0]> = {};
         for (const msg of all) {
-          if (msg.id) { unique[msg.id] = msg; }
+          if (msg.id) {
+            unique[msg.id] = msg;
+          }
         }
         return Object.values(unique);
       });
@@ -402,9 +471,7 @@ export function MessagesPage(): JSX.Element {
   useEffect(() => {
     if (selectedPatientRef) {
       const patientId = selectedPatientRef.replace('Patient/', '');
-      medplum.readResource('Patient', patientId)
-        .then(setSelectedPatient)
-        .catch(console.error);
+      medplum.readResource('Patient', patientId).then(setSelectedPatient).catch(console.error);
     } else {
       setSelectedPatient(undefined);
     }
@@ -414,7 +481,11 @@ export function MessagesPage(): JSX.Element {
   useEffect(() => {
     // Debug: log the number of unique patients and their references
     // eslint-disable-next-line no-console
-    console.log('Unique patients in Communications:', validPatientThreads.length, validPatientThreads.map(t => t.patientRef));
+    console.log(
+      'Unique patients in Communications:',
+      validPatientThreads.length,
+      validPatientThreads.map((t) => t.patientRef)
+    );
   }, [validPatientThreads]);
 
   // Prefetch next few threads
@@ -422,8 +493,8 @@ export function MessagesPage(): JSX.Element {
     if (!validPatientThreads.length) {
       return;
     }
-    
-    const currentIndex = validPatientThreads.findIndex(t => t.patientRef === selectedPatientRef);
+
+    const currentIndex = validPatientThreads.findIndex((t) => t.patientRef === selectedPatientRef);
     if (currentIndex === -1) {
       return;
     }
@@ -439,10 +510,18 @@ export function MessagesPage(): JSX.Element {
 
   // Sidebar header
   const sidebarHeader = (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px', borderBottom: '1px solid var(--app-shell-border-color)' }}>
-    <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }}>
-      Messages
-    </Text>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '16px 16px',
+        borderBottom: '1px solid var(--app-shell-border-color)',
+      }}
+    >
+      <Text fz="h4" fw={800} truncate style={{ minWidth: 0 }}>
+        Messages
+      </Text>
     </div>
   );
 
@@ -451,7 +530,16 @@ export function MessagesPage(): JSX.Element {
     // Only show loader if truly loading (initial load or fetching new participants)
     if (loading && communications.length === 0) {
       return (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', minHeight: 0, flex: 1 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100vh',
+            minHeight: 0,
+            flex: 1,
+          }}
+        >
           <Loader />
         </div>
       );
@@ -463,13 +551,14 @@ export function MessagesPage(): JSX.Element {
           {paginatedThreads.map(({ patientRef, comm }, i) => {
             const displayName = getThreadLabel(patientRef);
             const isSelected = selectedPatientRef === patientRef;
-            const isAboveSelected = paginatedThreads[i + 1] && paginatedThreads[i + 1].patientRef === selectedPatientRef;
-            
+            const isAboveSelected =
+              paginatedThreads[i + 1] && paginatedThreads[i + 1].patientRef === selectedPatientRef;
+
             // Prefetch on render for visible threads
             if (!isSelected && !prefetchedPatients[patientRef]) {
               prefetchPatient(patientRef);
             }
-            
+
             return (
               <MessageThreadListItem
                 key={patientRef}
@@ -487,7 +576,17 @@ export function MessagesPage(): JSX.Element {
         </Stack>
       );
     }
-  }, [loading, validPatientThreads, paginatedThreads, participantNames, selectedPatientRef, getThreadLabel, communications.length, prefetchPatient, prefetchedPatients]);
+  }, [
+    loading,
+    validPatientThreads,
+    paginatedThreads,
+    participantNames,
+    selectedPatientRef,
+    getThreadLabel,
+    communications.length,
+    prefetchPatient,
+    prefetchedPatients,
+  ]);
 
   let chatArea: JSX.Element;
   if (selectedThread && selectedPatient) {
@@ -499,10 +598,16 @@ export function MessagesPage(): JSX.Element {
         query={`subject=${selectedThread.patientRef}`}
         sendMessage={(formData: Record<string, string>) => {
           const message = formData.message;
-          if (!message) { return; }
-          if (!selectedPatient) { return; }
+          if (!message) {
+            return;
+          }
+          if (!selectedPatient) {
+            return;
+          }
           const profile = medplum.getProfile();
-          if (!profile) { return; }
+          if (!profile) {
+            return;
+          }
           const patientRef = createReference(selectedPatient);
           // Optimistically create the new Communication object
           const optimisticComm: Communication = {
@@ -518,28 +623,31 @@ export function MessagesPage(): JSX.Element {
           };
           setCommunications((prev) => [...prev, optimisticComm]);
           setThreadMessages((prev) => [...prev, optimisticComm]);
-          medplum.createResource<Communication>({
-            resourceType: 'Communication',
-            status: 'in-progress',
-            sender: { reference: `Practitioner/${profile.id}` },
-            subject: patientRef,
-            recipient: [patientRef],
-            sent: optimisticComm.sent,
-            payload: [{ contentString: message }],
-          }).then((newComm) => {
-            setCommunications((prev) => {
-              // Replace the optimistic message with the real one (by id)
-              return prev.map((c) => c.id === optimisticComm.id ? newComm : c);
+          medplum
+            .createResource<Communication>({
+              resourceType: 'Communication',
+              status: 'in-progress',
+              sender: { reference: `Practitioner/${profile.id}` },
+              subject: patientRef,
+              recipient: [patientRef],
+              sent: optimisticComm.sent,
+              payload: [{ contentString: message }],
+            })
+            .then((newComm) => {
+              setCommunications((prev) => {
+                // Replace the optimistic message with the real one (by id)
+                return prev.map((c) => (c.id === optimisticComm.id ? newComm : c));
+              });
+              setThreadMessages((prev) => {
+                return prev.map((c) => (c.id === optimisticComm.id ? newComm : c));
+              });
+            })
+            .catch((err) => {
+              showNotification({ color: 'red', message: normalizeErrorString(err) });
+              // Optionally remove the optimistic message on error
+              setCommunications((prev) => prev.filter((c) => c.id !== optimisticComm.id));
+              setThreadMessages((prev) => prev.filter((c) => c.id !== optimisticComm.id));
             });
-            setThreadMessages((prev) => {
-              return prev.map((c) => c.id === optimisticComm.id ? newComm : c);
-            });
-          }).catch((err) => {
-            showNotification({ color: 'red', message: normalizeErrorString(err) });
-            // Optionally remove the optimistic message on error
-            setCommunications((prev) => prev.filter((c) => c.id !== optimisticComm.id));
-            setThreadMessages((prev) => prev.filter((c) => c.id !== optimisticComm.id));
-          });
         }}
         h="100%"
         radius="0"
@@ -555,43 +663,60 @@ export function MessagesPage(): JSX.Element {
   return (
     <div style={{ display: 'flex', height: 'calc(100vh - 60px)' }}>
       {/* Left sidebar - Messages list */}
-      <div ref={parentRef} style={{ width: 320, minWidth: 220, maxWidth: 400, height: '100%', borderRight: '1px solid var(--app-shell-border-color)', background: '#fff', display: 'flex', flexDirection: 'column' }}>
+      <div
+        ref={parentRef}
+        style={{
+          width: 320,
+          minWidth: 220,
+          maxWidth: 400,
+          height: '100%',
+          borderRight: '1px solid var(--app-shell-border-color)',
+          background: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
         {sidebarHeader}
-        <ScrollArea 
-         viewportRef={scrollAreaRef} 
-         className={classes.chatScrollArea} 
-         h={parentRect.height}
-         scrollbarSize={10}
-         type="hover"
-         scrollHideDelay={250}
+        <ScrollArea
+          viewportRef={scrollAreaRef}
+          className={classes.chatScrollArea}
+          h={parentRect.height}
+          scrollbarSize={10}
+          type="hover"
+          scrollHideDelay={250}
         >
           {sidebarContent}
         </ScrollArea>
       </div>
 
       {/* Main chat area */}
-      <div style={{ flex: 1, minWidth: 0, height: '100%', borderRadius: 0 }}>
-        {chatArea}
-      </div>
+      <div style={{ flex: 1, minWidth: 0, height: '100%', borderRadius: 0 }}>{chatArea}</div>
 
       {/* Right sidebar - Patient summary */}
       {selectedPatient && (
-        <div style={{ width: 350, height: '100%', borderLeft: '1px solid var(--app-shell-border-color)', background: '#fff', display: 'flex', flexDirection: 'column' }}>
-          <ScrollArea 
-            viewportRef={scrollAreaRef} 
-            className={classes.chatScrollArea} 
+        <div
+          style={{
+            width: 350,
+            height: '100%',
+            borderLeft: '1px solid var(--app-shell-border-color)',
+            background: '#fff',
+            display: 'flex',
+            flexDirection: 'column',
+          }}
+        >
+          <ScrollArea
+            viewportRef={scrollAreaRef}
+            className={classes.chatScrollArea}
             h={parentRect.height}
             scrollbarSize={10}
             type="hover"
             scrollHideDelay={250}
-            style={{ flex: 1 }}>
-            <PatientSummary 
-              key={selectedPatient.id} 
-              patient={selectedPatient} 
-            />
+            style={{ flex: 1 }}
+          >
+            <PatientSummary key={selectedPatient.id} patient={selectedPatient} />
           </ScrollArea>
         </div>
       )}
     </div>
   );
-} 
+}

@@ -1,15 +1,14 @@
-import {
-  ActionIcon,
-  Group,
-  Paper,
-  PaperProps,
-  ScrollArea,
-  Stack,
-  Textarea,
-} from '@mantine/core';
+import { ActionIcon, Group, Paper, PaperProps, ScrollArea, Stack, Textarea } from '@mantine/core';
 import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { ProfileResource, WithId, createReference, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
+import {
+  ProfileResource,
+  WithId,
+  createReference,
+  getDisplayString,
+  getReferenceString,
+  normalizeErrorString,
+} from '@medplum/core';
 import { Bundle, Communication, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight } from '@tabler/icons-react';
@@ -33,7 +32,20 @@ function showError(message: string): void {
 function formatCenteredTimestamp(dateString: string): string {
   const date = new Date(dateString);
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ];
   const dayOfWeek = days[date.getDay()];
   const month = months[date.getMonth()];
   const day = date.getDate();
@@ -46,7 +58,9 @@ function formatBubbleTime(dateString: string): string {
   const minutes = date.getMinutes();
   const ampm = hours >= 12 ? 'PM' : 'AM';
   hours = hours % 12;
-  if (hours === 0) { hours = 12; }
+  if (hours === 0) {
+    hours = 12;
+  }
   const minutesStr = minutes < 10 ? `0${minutes}` : `${minutes}`;
   return `${hours}:${minutesStr} ${ampm}`;
 }
@@ -69,13 +83,19 @@ function upsertCommunications(
   }
 
   if (foundNew) {
-    const getSentString = (comm: any): string => typeof comm.sent === 'string' ? comm.sent : '';
+    const getSentString = (comm: any): string => (typeof comm.sent === 'string' ? comm.sent : '');
     newCommunications.sort((a, b) => {
       const aSent = getSentString(a);
       const bSent = getSentString(b);
-      if (!aSent && !bSent) { return 0; }
-      if (!aSent) { return 1; }
-      if (!bSent) { return -1; }
+      if (!aSent && !bSent) {
+        return 0;
+      }
+      if (!aSent) {
+        return 1;
+      }
+      if (!bSent) {
+        return -1;
+      }
       return aSent.localeCompare(bSent);
     });
   }
@@ -186,7 +206,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 
       // Add smooth scroll class
       scrollAreaRef.current.classList.add(classes.smoothScroll);
-      
+
       // Scroll to bottom
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
 
@@ -301,8 +321,10 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const sendMessageInternal = useCallback(
     async (formData: Record<string, string>) => {
       console.log('sendMessageInternal called', { subject, inputDisabled, medplumProfile: medplum.getProfile() });
-      if (inputDisabled) { return; }
-      if (inputRef.current) { 
+      if (inputDisabled) {
+        return;
+      }
+      if (inputRef.current) {
         inputRef.current.value = '';
         // Clear draft text when message is sent
         if (query) {
@@ -310,12 +332,14 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         }
       }
       const message = formData.message;
-      if (!message) { return; }
+      if (!message) {
+        return;
+      }
 
       const profile = medplum.getProfile() as Practitioner;
-      if (!profile) { 
+      if (!profile) {
         console.log('No profile returned from medplum.getProfile()');
-        return; 
+        return;
       }
       if (!subject) {
         console.log('No subject provided to BaseChat');
@@ -335,26 +359,27 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         sender: senderRef,
         subject: patientReferenceWithDisplay,
         recipient: [patientReferenceWithDisplay],
-        message
+        message,
       });
 
-      medplum.createResource<Communication>({
-        resourceType: 'Communication',
-        status: 'in-progress',
-        sender: senderRef,
-        subject: patientReferenceWithDisplay,
-        recipient: [patientReferenceWithDisplay],
-        sent: new Date().toISOString(),
-        payload: [{ contentString: message }],
-      }).catch((err) => {
-        if (onError) { 
-          onError(err); 
-        }
-        else { 
-          showError(normalizeErrorString(err)); 
-        }
-        console.log('Error creating Communication', err);
-      });
+      medplum
+        .createResource<Communication>({
+          resourceType: 'Communication',
+          status: 'in-progress',
+          sender: senderRef,
+          subject: patientReferenceWithDisplay,
+          recipient: [patientReferenceWithDisplay],
+          sent: new Date().toISOString(),
+          payload: [{ contentString: message }],
+        })
+        .catch((err) => {
+          if (onError) {
+            onError(err);
+          } else {
+            showError(normalizeErrorString(err));
+          }
+          console.log('Error creating Communication', err);
+        });
     },
     [inputDisabled, medplum, onError, subject, query]
   );
@@ -402,9 +427,13 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   // Group communications by date
   const groupedByDate: Record<string, Communication[]> = {};
   communications.forEach((c) => {
-    if (!c.sent) { return; }
+    if (!c.sent) {
+      return;
+    }
     const key = getDateKey(c.sent);
-    if (!groupedByDate[key]) { groupedByDate[key] = []; }
+    if (!groupedByDate[key]) {
+      groupedByDate[key] = [];
+    }
     groupedByDate[key].push(c);
   });
   // Get sorted date keys
@@ -416,9 +445,9 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   return (
     <Paper className={classes.chatPaper} p={0} radius="md" {...paperProps}>
       <div className={classes.chatBody} ref={parentRef as LegacyRef<HTMLDivElement>}>
-        <ScrollArea 
-          viewportRef={scrollAreaRef} 
-          className={classes.chatScrollArea} 
+        <ScrollArea
+          viewportRef={scrollAreaRef}
+          className={classes.chatScrollArea}
           h={parentRect.height}
           scrollbarSize={10}
           type="hover"
@@ -430,7 +459,9 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
               const centeredTimestamp = formatCenteredTimestamp(dateGroup[0].sent as string);
               return (
                 <Stack key={dateKey} align="stretch" style={{ marginBottom: 24, marginTop: 24 }}>
-                  <div style={{ textAlign: 'center', fontSize: 12, margin: '8px 0', color: 'gray' }}>{centeredTimestamp}</div>
+                  <div style={{ textAlign: 'center', fontSize: 12, margin: '8px 0', color: 'gray' }}>
+                    {centeredTimestamp}
+                  </div>
                   {dateGroup.map((c) => {
                     // Determine alignment
                     let alignment: 'left' | 'right' = 'left';
@@ -470,9 +501,11 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
           <div className={classes.inputWrapper}>
             <Textarea
               ref={inputRef}
-              size='md'
+              size="md"
               name="message"
-              placeholder={!inputDisabled ? `Write a message to ${recipientName ?? 'recipient'}…` : 'Replies are disabled'}
+              placeholder={
+                !inputDisabled ? `Write a message to ${recipientName ?? 'recipient'}…` : 'Replies are disabled'
+              }
               radius="md"
               minRows={4}
               maxRows={4}
@@ -538,10 +571,10 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            style={{ 
+            style={{
               // Patient messages (right-aligned) use lighter blue for better contrast on dark background
               color: alignment === 'right' ? 'var(--mantine-color-blue-3)' : 'var(--mantine-color-blue-6)',
-              textDecoration: 'underline' 
+              textDecoration: 'underline',
             }}
           >
             {part}
@@ -576,17 +609,13 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
           alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
         }
       >
-        <div 
+        <div
           className={classes.chatBubble}
           style={{
             // Patient messages (right-aligned) have dark background with white text
             // Practitioner messages (left-aligned) have light background with dark text
-            backgroundColor: alignment === 'right' 
-              ? 'var(--mantine-color-gray-8)' 
-              : 'var(--mantine-color-gray-0)',
-            color: alignment === 'right'
-              ? 'var(--mantine-color-white)'
-              : 'var(--mantine-color-dark)'
+            backgroundColor: alignment === 'right' ? 'var(--mantine-color-gray-8)' : 'var(--mantine-color-gray-0)',
+            color: alignment === 'right' ? 'var(--mantine-color-white)' : 'var(--mantine-color-dark)',
           }}
         >
           {convertUrlsToLinks(content)}

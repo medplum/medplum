@@ -85,11 +85,11 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
   useEffect(() => {
     const id = resolveId(propsPatient) as string;
     const ref = `Patient/${id}`;
-    
+
     // Optimize search parameters
-    const searchMeta = { 
-      _count: 100, 
-      _sort: '-_lastUpdated'
+    const searchMeta = {
+      _count: 100,
+      _sort: '-_lastUpdated',
     };
 
     // Combine related searches to reduce number of requests
@@ -97,28 +97,28 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
       // Basic patient data
       medplum.readResource('Patient', id),
       medplum.readHistory('Patient', id),
-      
+
       // Observations (combines vitals, smoking status, sexual orientation)
-      medplum.searchResources('Observation', { 
-        subject: ref, 
-        ...searchMeta
+      medplum.searchResources('Observation', {
+        subject: ref,
+        ...searchMeta,
       }),
-      
+
       // Allergies and Conditions (similar resource types)
       medplum.searchResources('AllergyIntolerance', { patient: ref, ...searchMeta }),
       medplum.searchResources('Condition', { patient: ref, ...searchMeta }),
-      
+
       // Medications and Service Requests (related to care)
       medplum.searchResources('MedicationRequest', { subject: ref, ...searchMeta }),
       medplum.searchResources('ServiceRequest', { subject: ref, ...searchMeta }),
-      
+
       // Encounters and Appointments (related to visits)
       medplum.searchResources('Encounter', { subject: ref, ...searchMeta }),
       medplum.searchResources('Appointment', { patient: ref, ...searchMeta }),
-      
+
       // Coverage and Insurance
       medplum.searchResources('Coverage', { beneficiary: ref, ...searchMeta }),
-      
+
       // Other resources
       medplum.searchResources('Immunization', { patient: ref, ...searchMeta }),
       medplum.searchResources('Procedure', { subject: ref, ...searchMeta }),
@@ -126,36 +126,54 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
       medplum.searchResources('Goal', { subject: ref, ...searchMeta }),
       medplum.searchResources('DiagnosticReport', { subject: ref, ...searchMeta }),
     ])
-      .then(([patientData, history, observations, allergies, problems, medicationRequests, serviceRequests, encounters, appointments, coverages, immunizations, procedures, devices, goals, diagnosticReports]) => {
-        setPatient(patientData);
-        const firstEntry = history.entry?.[history.entry.length - 1];
-        const lastUpdated = firstEntry?.resource?.meta?.lastUpdated;
-        setCreatedDate(typeof lastUpdated === 'string' ? lastUpdated : '');
-
-        // Process observations into their respective categories
-        const vitals = observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs');
-        const smokingStatus = observations.find((obs) => obs.code?.coding?.[0].code === '72166-2');
-        const sexualOrientation = observations.find((obs) => obs.code?.coding?.[0].code === '76690-7');
-
-        setMedicalData({
+      .then(
+        ([
+          patientData,
+          history,
+          observations,
           allergies,
           problems,
           medicationRequests,
-          sexualOrientation,
-          smokingStatus,
-          vitals,
-          appointments,
+          serviceRequests,
           encounters,
+          appointments,
           coverages,
           immunizations,
           procedures,
           devices,
           goals,
-          serviceRequests,
           diagnosticReports,
-        });
-        setIsLoading(false);
-      })
+        ]) => {
+          setPatient(patientData);
+          const firstEntry = history.entry?.[history.entry.length - 1];
+          const lastUpdated = firstEntry?.resource?.meta?.lastUpdated;
+          setCreatedDate(typeof lastUpdated === 'string' ? lastUpdated : '');
+
+          // Process observations into their respective categories
+          const vitals = observations.filter((obs) => obs.category?.[0]?.coding?.[0].code === 'vital-signs');
+          const smokingStatus = observations.find((obs) => obs.code?.coding?.[0].code === '72166-2');
+          const sexualOrientation = observations.find((obs) => obs.code?.coding?.[0].code === '76690-7');
+
+          setMedicalData({
+            allergies,
+            problems,
+            medicationRequests,
+            sexualOrientation,
+            smokingStatus,
+            vitals,
+            appointments,
+            encounters,
+            coverages,
+            immunizations,
+            procedures,
+            devices,
+            goals,
+            serviceRequests,
+            diagnosticReports,
+          });
+          setIsLoading(false);
+        }
+      )
       .catch(console.error);
   }, [medplum, propsPatient]);
 
