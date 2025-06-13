@@ -45,7 +45,7 @@ describe('HL7 Connection', () => {
     connection.close();
   });
 
-  test.only('enhancedMode', () => {
+  test('enhancedMode', () => {
     const handlers: Record<string, (event: any) => void> = {};
 
     // Create a mock net.Socket
