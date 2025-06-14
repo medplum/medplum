@@ -13,7 +13,7 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
-import { buildWafConfig } from './waf';
+import { buildWaf } from './waf';
 
 /**
  * Static app infrastructure, which deploys app content to an S3 bucket.
@@ -111,10 +111,14 @@ export class FrontEnd extends Construct {
       });
 
       // WAF
-      this.waf = new wafv2.CfnWebACL(
+      this.waf = buildWaf(
         this,
         'FrontEndWAF',
-        buildWafConfig(`${config.stackName}-FrontEndWAF`, 'CLOUDFRONT', config.appWafIpSetArn)
+        `${config.stackName}-FrontEndWAF`,
+        'CLOUDFRONT',
+        config.appWafIpSetArn,
+        config.wafLogGroupName,
+        config.wafLogGroupCreate
       );
 
       // API Origin Cache Policy
