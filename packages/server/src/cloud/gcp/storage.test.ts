@@ -37,6 +37,19 @@ describe('Integration Tests for GoogleCloudStorage', () => {
     expect(data).toEqual(content);
   });
 
+  test('should write a string', async () => {
+    const content = 'Hello, world!';
+
+    await storage.writeBinary(testBinary, 'test.txt', 'text/plain', content);
+
+    const readStream = await storage.readBinary(testBinary);
+    let data = '';
+    for await (const chunk of readStream) {
+      data += chunk;
+    }
+    expect(data).toEqual(content);
+  });
+
   test('should generate a valid signed URL', async () => {
     const url = await storage.getPresignedUrl(testBinary);
     expect(url).toContain('https://');
