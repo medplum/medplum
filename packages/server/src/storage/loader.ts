@@ -1,7 +1,10 @@
+import { Binary } from '@medplum/fhirtypes';
 import { S3Storage } from '../cloud/aws/storage';
 import { AzureBlobStorage } from '../cloud/azure/storage';
 import { GoogleCloudStorage } from '../cloud/gcp/storage';
+import { getConfig } from '../config/loader';
 import { FileSystemStorage } from './filesystem';
+import { generatePresignedUrl } from './presign';
 import { BinaryStorage } from './types';
 
 let binaryStorage: BinaryStorage | undefined = undefined;
@@ -25,4 +28,19 @@ export function getBinaryStorage(): BinaryStorage {
     throw new Error('Binary storage not initialized');
   }
   return binaryStorage;
+}
+
+export async function getPresignedUrl(binary: Binary): Promise<string> {
+  const config = getConfig();
+
+  if (config.storageBaseUrl.startsWith(config.baseUrl)) {
+    // If the storage base URL is the same as the FHIR base URL, generate a presigned URL
+    // This URL will be handled by the built-in storage handler
+    // See packages/server/src/storage/routes.ts
+    return generatePresignedUrl(binary);
+  } else {
+    // Otherwise, return the presigned URL from the storage backend
+    // This URL will be handled by the storage backend (e.g., S3, Azure Blob Storage, etc.)
+    return getBinaryStorage().getPresignedUrl(binary);
+  }
 }

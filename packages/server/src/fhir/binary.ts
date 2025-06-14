@@ -7,7 +7,7 @@ import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
-import { getBinaryStorage } from '../storage/loader';
+import { getBinaryStorage, getPresignedUrl } from '../storage/loader';
 import { BinarySource } from '../storage/types';
 import { sendOutcome } from './outcomes';
 import { Repository } from './repo';
@@ -157,6 +157,6 @@ export async function uploadBinaryData(
   const contentType = options?.contentType ?? DEFAULT_CONTENT_TYPE;
   await getBinaryStorage().writeBinary(binary, options?.filename, contentType, source);
 
-  binary.url = await getBinaryStorage().getPresignedUrl(binary);
+  binary.url = await getPresignedUrl(binary);
   return binary;
 }
