@@ -29,6 +29,15 @@ export function summarizeObservations(
   return sampler.summarize(summaryCode, summarizeFn);
 }
 
+export interface DataSampleOptions {
+  /** Code for the data points. */
+  code?: CodeableConcept;
+  /** Unit for the data points. */
+  unit?: QuantityUnit;
+  /** Sampling information for high-frequency Observations. */
+  sampling?: Omit<SampledData, 'data'>;
+}
+
 export class DataSampler {
   private code?: CodeableConcept;
   private unit?: QuantityUnit;
@@ -37,11 +46,8 @@ export class DataSampler {
 
   /**
    * @param opts - Optional parameters.
-   * @param opts.code - Code for data points.
-   * @param opts.unit - Unit for data points.
-   * @param opts.sampling - Sampling information for high-frequency Observations.
    */
-  constructor(opts?: { code?: CodeableConcept; unit?: QuantityUnit; sampling?: SamplingInfo }) {
+  constructor(opts?: DataSampleOptions) {
     this.dataPoints = [];
     this.code = opts?.code;
     this.unit = opts?.unit;

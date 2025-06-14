@@ -1436,7 +1436,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
-    const compartments = meta.compartment?.map((ref) => resolveId(ref));
     const content = stringify(resource);
 
     const row: Record<string, any> = {
@@ -1444,7 +1443,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       lastUpdated: meta.lastUpdated,
       deleted: false,
       projectId: meta.project,
-      compartments,
       content,
       __version: Repository.VERSION,
     };
@@ -1463,6 +1461,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       );
     }
+
+    // compartments is a non-null column on all resource types since it used to be required for access control,
+    // it is in the process of being removed from the Binary resource type, so make sure it meets the NOT NULL
+    // constraint
+    if (resourceType === 'Binary') {
+      row.compartments = [];
+    }
+
     return row;
   }
 
@@ -1572,10 +1578,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
-      searchParam.code === '_compartment' ||
       searchParam.code === '_compartment:identifier' ||
       searchParam.type === 'composite'
     ) {
+      return;
+    }
+
+    if (searchParam.code === '_compartment') {
+      columns['compartments'] = resource.meta?.compartment?.map((ref) => resolveId(ref)) ?? [];
       return;
     }
 
