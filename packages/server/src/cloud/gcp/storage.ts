@@ -40,7 +40,7 @@ export class GoogleCloudStorage extends BaseBinaryStorage {
       // We wrap this callback-based stream logic in a Promise to work seamlessly with async/await.
       await new Promise<void>((resolve, reject) => {
         const writeStream = file.createWriteStream(options);
-        (data as Readable)
+        data
           .pipe(writeStream)
           .on('finish', () => resolve())
           .on('error', (err) => reject(err));
