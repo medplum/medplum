@@ -688,7 +688,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
         });
       });
 
-      test.only.each([
+      test.each([
         ['identifier', Operator.MISSING, 'true', true, false, true],
         ['identifier', Operator.MISSING, 'false', false, true, true],
         ['identifier', Operator.PRESENT, 'true', false, true, true],
