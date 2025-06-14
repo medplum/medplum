@@ -58,9 +58,7 @@ storageRouter.get(
 );
 
 function getPublicKey(): KeyObject {
-  if (!cachedPublicKey) {
-    cachedPublicKey = buildPublicKey();
-  }
+  cachedPublicKey ??= buildPublicKey();
   return cachedPublicKey;
 }
 

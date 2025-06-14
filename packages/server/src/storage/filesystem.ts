@@ -3,6 +3,7 @@ import { createReadStream, createWriteStream, readFileSync } from 'fs';
 import { access, copyFile, mkdir } from 'fs/promises';
 import { resolve, sep } from 'path';
 import { pipeline, Readable } from 'stream';
+import { getLogger } from '../logger';
 import { BaseBinaryStorage } from './base';
 import { generatePresignedUrl } from './presign';
 import { BinarySource } from './types';
@@ -51,7 +52,8 @@ export class FileSystemStorage extends BaseBinaryStorage {
     try {
       await access(filePath);
       return createReadStream(filePath);
-    } catch (_err) {
+    } catch (err: any) {
+      getLogger().debug('File not found', err);
       throw new Error('File not found');
     }
   }
