@@ -1,12 +1,10 @@
-import { concatUrls } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
-import { createSign } from 'crypto';
 import { createReadStream, createWriteStream, readFileSync } from 'fs';
 import { access, copyFile, mkdir } from 'fs/promises';
 import { resolve, sep } from 'path';
 import { pipeline, Readable } from 'stream';
-import { getConfig } from '../config/loader';
 import { BaseBinaryStorage } from './base';
+import { generatePresignedUrl } from './presign';
 import { BinarySource } from './types';
 import { checkFileMetadata } from './utils';
 
@@ -77,21 +75,7 @@ export class FileSystemStorage extends BaseBinaryStorage {
   }
 
   async getPresignedUrl(binary: Binary): Promise<string> {
-    const config = getConfig();
-    const storageBaseUrl = config.storageBaseUrl;
-    const result = new URL(concatUrls(storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`));
-
-    const dateLessThan = new Date();
-    dateLessThan.setHours(dateLessThan.getHours() + 1);
-    result.searchParams.set('Expires', dateLessThan.getTime().toString());
-
-    if (config.signingKey) {
-      const privateKey = { key: config.signingKey, passphrase: config.signingKeyPassphrase };
-      const signature = createSign('sha256').update(result.toString()).sign(privateKey, 'base64');
-      result.searchParams.set('Signature', signature);
-    }
-
-    return result.toString();
+    return generatePresignedUrl(binary);
   }
 
   private async ensureDirForFileExists(filePath: string): Promise<void> {
