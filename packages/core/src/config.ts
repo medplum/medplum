@@ -64,6 +64,8 @@ export interface MedplumSourceInfraConfig {
   clamscanLoggingPrefix: ValueOrExternalSecret<string>;
   skipDns?: ValueOrExternalSecret<boolean>;
   hostedZoneName?: ValueOrExternalSecret<string>;
+  wafLogGroupName?: ValueOrExternalSecret<string>;
+  wafLogGroupCreate?: ValueOrExternalSecret<boolean>;
   additionalContainers?: {
     name: ValueOrExternalSecret<string>;
     image: ValueOrExternalSecret<string>;
@@ -144,6 +146,8 @@ export interface MedplumInfraConfig {
   clamscanLoggingPrefix: string;
   skipDns?: boolean;
   hostedZoneName?: string;
+  wafLogGroupName?: string;
+  wafLogGroupCreate?: boolean;
   additionalContainers?: {
     name: string;
     image: string;
