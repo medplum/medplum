@@ -6,10 +6,13 @@ import {
   forbidden,
   getDateProperty,
   getReferenceString,
+  isJwt,
   isString,
   MEDPLUM_CLI_CLIENT_ID,
   OperationOutcomeError,
   Operator,
+  parseJWTPayload,
+  parseSearchRequest,
   ProfileResource,
   resolveId,
   tooManyRequests,
@@ -28,6 +31,7 @@ import {
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
+import { Request } from 'express';
 import { IncomingMessage } from 'http';
 import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
 import fetch from 'node-fetch';
@@ -39,6 +43,7 @@ import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { parseSmartScopes, SmartScope } from '../fhir/smart';
 import { getLogger } from '../logger';
+import { getRedis } from '../redis';
 import {
   AuditEventOutcome,
   createAuditEvent,
@@ -55,6 +60,7 @@ import {
   verifyJwt,
 } from './keys';
 import { AuthState } from './middleware';
+import { hashCode } from './token';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 
@@ -865,9 +871,14 @@ export async function verifyMultipleMatchingException(
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
 export async function getLoginForAccessToken(
-  req: IncomingMessage | undefined,
+  req: Request | undefined,
   accessToken: string
 ): Promise<AuthState | undefined> {
+  const externalAuthState = await tryExternalAuth(req, accessToken);
+  if (externalAuthState) {
+    return externalAuthState;
+  }
+
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
   try {
     verifyResult = await verifyJwt(accessToken);
@@ -979,4 +990,140 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
   const onBehalfOf = await adminRepo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
   authState.onBehalfOf = onBehalfOf;
   authState.onBehalfOfMembership = onBehalfOfMembership;
+}
+
+/**
+ * Tries to authenticate the user using an external authentication provider.
+ * This function checks if the access token is a valid JWT and corresponds to an external authentication provider.
+ * If the token is valid, it retrieves the user's profile and project membership.
+ * If successful, it returns the auth state containing the login, project, membership, and user configuration.
+ * If the token is invalid or does not correspond to an external provider, it returns undefined.
+ *
+ * @param req - The incoming HTTP request.
+ * @param accessToken - The access token as provided by the client.
+ * @returns The auth state if the access token is valid and corresponds to an external authentication provider; otherwise, undefined.
+ */
+async function tryExternalAuth(req: Request | undefined, accessToken: string): Promise<AuthState | undefined> {
+  if (!isJwt(accessToken)) {
+    // Not a JWT, so we cannot verify it
+    return undefined;
+  }
+
+  const claims = parseJWTPayload(accessToken);
+  const issuer = claims.iss as string;
+  if (issuer !== 'http://127.0.0.1:4444') {
+    // Currently hardcoded for Ory Hydra test server
+    // TODO: Load these values from server config settings
+    return undefined;
+  }
+
+  const systemRepo = getSystemRepo();
+  const redis = getRedis();
+  const redisKey = `medplum:ext-auth:${issuer}:${hashCode(accessToken)}`;
+  const cachedValue = await redis.get(redisKey);
+  let login: Login | undefined;
+  let project: WithId<Project> | undefined;
+  let membership: WithId<ProjectMembership> | undefined;
+
+  if (cachedValue) {
+    // Use cached login if available
+    login = JSON.parse(cachedValue) as Login;
+    membership = await systemRepo.readReference<ProjectMembership>(login.membership as Reference<ProjectMembership>);
+    project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  } else {
+    // If not cached, try to authenticate the user with the external auth provider
+    const externalAuthState = await tryExternalAuthLogin(req, claims);
+    if (!externalAuthState) {
+      return undefined;
+    }
+    ({ login, project, membership } = externalAuthState);
+    if (login) {
+      await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
+    }
+  }
+
+  if (!login) {
+    return undefined;
+  }
+
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  return { login, project, membership, userConfig };
+}
+
+async function tryExternalAuthLogin(
+  req: Request | undefined,
+  claims: JWTPayload
+): Promise<Pick<AuthState, 'login' | 'project' | 'membership'> | undefined> {
+  // TODO: Call out to the identity provider to verify the token
+
+  // Extract more claims from the JWT that we will store on the Login
+  // TODO: Determine which claims to use, and if there are more to extract
+  const scope = isString(claims.scope) ? claims.scope : undefined;
+  const nonce = isString(claims.nonce) ? claims.nonce : undefined;
+
+  // TODO: Decide which JWT claims to use for profile
+  // At present, we support:
+  // - profile
+  // - fhirUser
+  // - ext.profile
+  // - ext.fhirUser
+  const extensions = claims.ext as Record<string, unknown>;
+  const profileString = claims.profile ?? claims.fhirUser ?? extensions?.profile ?? extensions?.fhirUser;
+  if (!isString(profileString)) {
+    return undefined;
+  }
+
+  // Profile string can be either a reference or a search string
+  const systemRepo = getSystemRepo();
+  let profile: WithId<ProfileResource> | undefined;
+  if (profileString.includes('?')) {
+    profile = await systemRepo.searchOne<ProfileResource>(parseSearchRequest(profileString));
+  } else {
+    const [resourceType, id] = profileString.split('/');
+    if (!resourceType || !id) {
+      return undefined;
+    }
+    profile = await systemRepo.readResource<ProfileResource>(resourceType as ProfileResource['resourceType'], id);
+  }
+
+  if (!profile) {
+    return undefined;
+  }
+
+  // Search for a ProjectMembership for the profile
+  const membership = await systemRepo.searchOne<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(profile) }],
+  });
+  if (!membership || membership.active === false) {
+    return undefined;
+  }
+
+  const login = await systemRepo.createResource<Login>({
+    resourceType: 'Login',
+    authMethod: 'external',
+    project: membership.project,
+    user: membership.user,
+    profileType: profile.resourceType,
+    authTime: new Date().toISOString(),
+    scope,
+    nonce,
+    remoteAddress: req?.ip,
+    userAgent: req?.get('User-Agent'),
+  });
+
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+
+  logAuditEvent(
+    createAuditEvent(
+      UserAuthenticationEvent,
+      LoginEvent,
+      project.id,
+      membership.profile,
+      login.remoteAddress,
+      AuditEventOutcome.Success
+    )
+  );
+
+  return { login, project, membership };
 }
