@@ -407,7 +407,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private canReadCacheEntry(cacheEntry: CacheEntry): boolean {
-    if (!this.isSuperAdmin() && !this.context.projects?.map((p) => p.id).includes(cacheEntry.projectId)) {
+    if (!this.isSuperAdmin() && !this.context.projects?.some((p) => p.id === cacheEntry.projectId)) {
       return false;
     }
     if (!satisfiedAccessPolicy(cacheEntry.resource, AccessPolicyInteraction.READ, this.context.accessPolicy)) {
@@ -1351,20 +1351,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private addProjectFilters(builder: SelectQuery, resourceType: string): void {
     if (this.context.projects?.length) {
-      const projectIds = this.context.projects
-        .filter((p, idx) => {
-          // Always include the first project and the current project (which are usually the same)
-          if (idx === 0 || p.id === this.context.currentProject?.id) {
-            return true;
-          }
-
-          if (!p.exportedResourceType?.length) {
-            return true;
-          }
-
-          return p.exportedResourceType.includes(resourceType as ResourceType);
-        })
-        .map((p) => p.id);
+      const projectIds = [this.context.projects[0].id]; // Always include the first project
+      for (let i = 1; i < this.context.projects.length; i++) {
+        const project = this.context.projects[i];
+        if (
+          project.id === this.context.currentProject?.id || // Always include the current project (usually the same as the first project)
+          !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
+          project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
+        ) {
+          projectIds.push(project.id);
+        }
+      }
       builder.where('projectId', 'IN', projectIds);
     }
   }

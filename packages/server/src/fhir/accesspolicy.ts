@@ -15,6 +15,7 @@ import {
   ProjectMembershipAccess,
   Reference,
 } from '@medplum/fhirtypes';
+import { getLogger } from '../logger';
 import { AuthState } from '../oauth/middleware';
 import { Repository, getSystemRepo } from './repo';
 import { applySmartScopes } from './smart';
@@ -45,12 +46,14 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
     }
 
     const linkedProjectsOrError = await getSystemRepo().readReferences<Project>(linkedProjectRefs);
-    for (const linkedProjectOrError of linkedProjectsOrError) {
+    for (let i = 0; i < linkedProjectsOrError.length; i++) {
+      const linkedProjectOrError = linkedProjectsOrError[i];
       if (isResource(linkedProjectOrError)) {
         allowedProjects.push(linkedProjectOrError);
       } else {
-        //TODO{mattlong}: Log error? Do something? Fail? Ignore it?
-        // Ignore non-existent linked projects
+        // Ignore missing; if a super admin creates a project link to a non-existent project,
+        // searching it would be a no-op.
+        getLogger().debug('Linked project not found', { project: linkedProjectRefs[i] });
       }
     }
   }
