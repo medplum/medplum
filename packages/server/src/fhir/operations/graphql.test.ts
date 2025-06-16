@@ -40,7 +40,7 @@ describe('GraphQL', () => {
 
       const aliceRepo = new Repository({
         author: createReference(aliceRegistration.profile),
-        projects: [aliceRegistration.project.id],
+        projects: [aliceRegistration.project],
       });
 
       // Create a profile picture

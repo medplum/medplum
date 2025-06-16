@@ -1,4 +1,11 @@
-import { ProfileResource, createReference, projectAdminResourceTypes, resolveId } from '@medplum/core';
+import {
+  ProfileResource,
+  WithId,
+  createReference,
+  isResource,
+  projectAdminResourceTypes,
+  resolveId,
+} from '@medplum/core';
 import {
   AccessPolicy,
   AccessPolicyIpAccessRule,
@@ -8,6 +15,7 @@ import {
   ProjectMembershipAccess,
   Reference,
 } from '@medplum/fhirtypes';
+import { getLogger } from '../logger';
 import { AuthState } from '../oauth/middleware';
 import { Repository, getSystemRepo } from './repo';
 import { applySmartScopes } from './smart';
@@ -27,13 +35,26 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   const { project, login, membership, onBehalfOfMembership } = authState;
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  let allowedProjects: string[] | undefined;
-  if (project.id) {
-    allowedProjects = [project.id];
-  }
-  if (project.link && allowedProjects?.length) {
+  const allowedProjects: WithId<Project>[] = [project];
+
+  if (project.link) {
+    const linkedProjectRefs: Reference<Project>[] = [];
     for (const link of project.link) {
-      allowedProjects.push(resolveId(link.project) as string);
+      if (link.project) {
+        linkedProjectRefs.push(link.project);
+      }
+    }
+
+    const linkedProjectsOrError = await getSystemRepo().readReferences<Project>(linkedProjectRefs);
+    for (let i = 0; i < linkedProjectsOrError.length; i++) {
+      const linkedProjectOrError = linkedProjectsOrError[i];
+      if (isResource(linkedProjectOrError)) {
+        allowedProjects.push(linkedProjectOrError);
+      } else {
+        // Ignore missing; if a super admin creates a project link to a non-existent project,
+        // searching it would be a no-op.
+        getLogger().debug('Linked project not found', { project: linkedProjectRefs[i] });
+      }
     }
   }
 
