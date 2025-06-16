@@ -91,6 +91,9 @@ export interface MedplumServerConfig {
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
 
+  /** Optional list of external authentication providers. */
+  externalAuthProviders?: MedplumExternalAuthConfig[];
+
   /** @deprecated */
   auditEventLogGroup?: string;
 
@@ -155,4 +158,9 @@ export interface MedplumBullmqConfig {
   concurrency?: number;
   removeOnComplete: KeepJobs;
   removeOnFail: KeepJobs;
+}
+
+export interface MedplumExternalAuthConfig {
+  readonly issuer: string;
+  readonly userInfoUrl: string;
 }

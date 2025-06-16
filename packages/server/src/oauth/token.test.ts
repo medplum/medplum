@@ -24,7 +24,7 @@ import { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret, verifyJwt } from './keys';
-import { hashCode } from './token';
+import { hashCode } from './utils';
 
 jest.mock('jose', () => {
   const core = jest.requireActual('@medplum/core');
