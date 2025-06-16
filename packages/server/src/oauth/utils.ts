@@ -15,6 +15,7 @@ import {
   parseSearchRequest,
   ProfileResource,
   resolveId,
+  SearchRequest,
   tooManyRequests,
   WithId,
 } from '@medplum/core';
@@ -39,6 +40,7 @@ import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
+import { getConfig } from '../config/loader';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { parseSmartScopes, SmartScope } from '../fhir/smart';
@@ -1004,6 +1006,12 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
  * @returns The auth state if the access token is valid and corresponds to an external authentication provider; otherwise, undefined.
  */
 async function tryExternalAuth(req: Request | undefined, accessToken: string): Promise<AuthState | undefined> {
+  const externalAuthProviders = getConfig().externalAuthProviders;
+  if (!externalAuthProviders) {
+    // No external auth providers configured
+    return undefined;
+  }
+
   if (!isJwt(accessToken)) {
     // Not a JWT, so we cannot verify it
     return undefined;
@@ -1011,9 +1019,9 @@ async function tryExternalAuth(req: Request | undefined, accessToken: string): P
 
   const claims = parseJWTPayload(accessToken);
   const issuer = claims.iss as string;
-  if (issuer !== 'http://127.0.0.1:4444') {
-    // Currently hardcoded for Ory Hydra test server
-    // TODO: Load these values from server config settings
+  const externalAuthConfig = externalAuthProviders.find((provider) => provider.issuer === issuer);
+  if (!externalAuthConfig) {
+    // Not a configured external auth provider
     return undefined;
   }
 
@@ -1021,7 +1029,7 @@ async function tryExternalAuth(req: Request | undefined, accessToken: string): P
   const redis = getRedis();
   const redisKey = `medplum:ext-auth:${issuer}:${hashCode(accessToken)}`;
   const cachedValue = await redis.get(redisKey);
-  let login: Login | undefined;
+  let login: Login;
   let project: WithId<Project> | undefined;
   let membership: WithId<ProjectMembership> | undefined;
 
@@ -1042,10 +1050,6 @@ async function tryExternalAuth(req: Request | undefined, accessToken: string): P
     }
   }
 
-  if (!login) {
-    return undefined;
-  }
-
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
   return { login, project, membership, userConfig };
 }
@@ -1057,35 +1061,33 @@ async function tryExternalAuthLogin(
   // TODO: Call out to the identity provider to verify the token
 
   // Extract more claims from the JWT that we will store on the Login
-  // TODO: Determine which claims to use, and if there are more to extract
   const scope = isString(claims.scope) ? claims.scope : undefined;
   const nonce = isString(claims.nonce) ? claims.nonce : undefined;
 
-  // TODO: Decide which JWT claims to use for profile
-  // At present, we support:
-  // - profile
-  // - fhirUser
-  // - ext.profile
-  // - ext.fhirUser
-  const extensions = claims.ext as Record<string, unknown>;
-  const profileString = claims.profile ?? claims.fhirUser ?? extensions?.profile ?? extensions?.fhirUser;
+  // To ensure broad compatibility, we check for the FHIR user profile in two places:
+  // the standard `fhirUser` claim and `ext.fhirUser` for identity providers
+  // that automatically place custom claims in an `ext` block.
+  const extensions = claims.ext as Record<string, unknown> | undefined;
+  const profileString = claims.fhirUser ?? extensions?.fhirUser;
   if (!isString(profileString)) {
     return undefined;
   }
 
   // Profile string can be either a reference or a search string
-  const systemRepo = getSystemRepo();
-  let profile: WithId<ProfileResource> | undefined;
+  let searchRequest: SearchRequest<ProfileResource>;
   if (profileString.includes('?')) {
-    profile = await systemRepo.searchOne<ProfileResource>(parseSearchRequest(profileString));
+    searchRequest = parseSearchRequest(profileString);
   } else {
     const [resourceType, id] = profileString.split('/');
-    if (!resourceType || !id) {
-      return undefined;
-    }
-    profile = await systemRepo.readResource<ProfileResource>(resourceType as ProfileResource['resourceType'], id);
+    searchRequest = {
+      resourceType: resourceType as ProfileResource['resourceType'],
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: id }],
+    };
   }
 
+  // Search for the profile
+  const systemRepo = getSystemRepo();
+  const profile = await systemRepo.searchOne<ProfileResource>(searchRequest);
   if (!profile) {
     return undefined;
   }
@@ -1103,6 +1105,7 @@ async function tryExternalAuthLogin(
     resourceType: 'Login',
     authMethod: 'external',
     project: membership.project,
+    membership: createReference(membership),
     user: membership.user,
     profileType: profile.resourceType,
     authTime: new Date().toISOString(),
