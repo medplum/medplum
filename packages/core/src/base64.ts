@@ -47,7 +47,7 @@ export function encodeBase64Url(data: string): string {
   return encodeBase64(data)
     .replace(/\+/g, '-') // Replace + with -
     .replace(/\//g, '_') // Replace / with _
-    .replace(/=+$/, ''); // Remove trailing =
+    .replace(/={1,2}$/, ''); // Remove trailing =
 }
 
 /**
