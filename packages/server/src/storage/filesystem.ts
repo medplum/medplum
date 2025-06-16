@@ -1,11 +1,11 @@
-import { concatUrls } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
-import { createSign } from 'crypto';
-import { copyFileSync, createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
+import { createReadStream, createWriteStream, readFileSync } from 'fs';
+import { access, copyFile, mkdir } from 'fs/promises';
 import { resolve, sep } from 'path';
 import { pipeline, Readable } from 'stream';
-import { getConfig } from '../config/loader';
+import { getLogger } from '../logger';
 import { BaseBinaryStorage } from './base';
+import { generatePresignedUrl } from './presign';
 import { BinarySource } from './types';
 import { checkFileMetadata } from './utils';
 
@@ -19,7 +19,6 @@ export class FileSystemStorage extends BaseBinaryStorage {
   constructor(baseDir: string) {
     super();
     this.baseDir = baseDir;
-    this.ensureDirExists(resolve(baseDir));
   }
 
   writeBinary(
@@ -34,7 +33,7 @@ export class FileSystemStorage extends BaseBinaryStorage {
 
   async writeFile(key: string, _contentType: string | undefined, input: BinarySource): Promise<void> {
     const fullPath = this.getPath(key);
-    this.ensureDirForFileExists(fullPath);
+    await this.ensureDirForFileExists(fullPath);
 
     const writeStream = createWriteStream(fullPath, { flags: 'w' });
     return new Promise((resolve, reject) => {
@@ -50,46 +49,44 @@ export class FileSystemStorage extends BaseBinaryStorage {
 
   async readFile(key: string): Promise<Readable> {
     const filePath = this.getPath(key);
-    if (!existsSync(filePath)) {
+    try {
+      await access(filePath);
+      return createReadStream(filePath);
+    } catch (err: any) {
+      getLogger().debug('File not found', err);
       throw new Error('File not found');
     }
-    return createReadStream(filePath);
+  }
+
+  readFileByUrlForTests(url: URL): string {
+    const [_empty, _storage, binaryId, versionId] = url.pathname.split('/');
+    const binary: Binary = {
+      resourceType: 'Binary',
+      id: binaryId,
+      meta: { versionId: versionId },
+      contentType: 'test',
+    };
+    return readFileSync(this.getPath(this.getKey(binary)), 'utf8');
   }
 
   async copyFile(sourceKey: string, destinationKey: string): Promise<void> {
     const sourcePath = this.getPath(sourceKey);
     const destinationPath = this.getPath(destinationKey);
-    this.ensureDirForFileExists(destinationPath);
-    copyFileSync(sourcePath, destinationPath);
+    await this.ensureDirForFileExists(destinationPath);
+    await copyFile(sourcePath, destinationPath);
   }
 
   async getPresignedUrl(binary: Binary): Promise<string> {
-    const config = getConfig();
-    const storageBaseUrl = config.storageBaseUrl;
-    const result = new URL(concatUrls(storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`));
-
-    const dateLessThan = new Date();
-    dateLessThan.setHours(dateLessThan.getHours() + 1);
-    result.searchParams.set('Expires', dateLessThan.getTime().toString());
-
-    if (config.signingKey) {
-      const privateKey = { key: config.signingKey, passphrase: config.signingKeyPassphrase };
-      const signature = createSign('sha256').update(result.toString()).sign(privateKey, 'base64');
-      result.searchParams.set('Signature', signature);
-    }
-
-    return result.toString();
+    return generatePresignedUrl(binary);
   }
 
-  private ensureDirForFileExists(filePath: string): void {
+  private async ensureDirForFileExists(filePath: string): Promise<void> {
     const dir = filePath.substring(0, filePath.lastIndexOf(sep));
-    this.ensureDirExists(dir);
+    await this.ensureDirExists(dir);
   }
 
-  private ensureDirExists(dirPath: string): void {
-    if (!existsSync(dirPath)) {
-      mkdirSync(dirPath, { recursive: true });
-    }
+  private async ensureDirExists(dirPath: string): Promise<void> {
+    await mkdir(dirPath, { recursive: true });
   }
 
   private getPath(key: string): string {

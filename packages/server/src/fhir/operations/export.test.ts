@@ -4,6 +4,8 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { FileSystemStorage } from '../../storage/filesystem';
+import { getBinaryStorage } from '../../storage/loader';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { exportResourceType } from './export';
@@ -83,14 +85,11 @@ describe('Export', () => {
 
     // Get the export content
     const outputLocation = new URL(output.find((o) => o.type === 'Observation')?.url as string);
-    const dataRes = await request(app)
-      .get(outputLocation.pathname + outputLocation.search)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(dataRes.status).toBe(200);
+    const outputContent = (getBinaryStorage() as FileSystemStorage).readFileByUrlForTests(outputLocation);
 
     // Output format is "ndjson", new line delimited JSON
     // However, we only expect one Observation, so we can parse it as JSON
-    const resourceJSON = dataRes.text.trim().split('\n');
+    const resourceJSON = outputContent.trim().split('\n');
     expect(resourceJSON).toHaveLength(1);
     expect(JSON.parse(resourceJSON[0])?.subject?.reference).toStrictEqual(`Patient/${res1.body.id}`);
   });
