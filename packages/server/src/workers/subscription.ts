@@ -245,6 +245,11 @@ export async function addSubscriptionJobs(
 
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
   for (const subscription of subscriptions) {
+    if (getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot')?.valueBoolean) {
+      // Ignore pre-commit subscriptions
+      continue;
+    }
+
     if (options?.subscription && options.subscription !== getReferenceString(subscription)) {
       logFn('Subscription does not match options.subscription');
       continue;
