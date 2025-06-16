@@ -1,4 +1,11 @@
-import { ProfileResource, createReference, projectAdminResourceTypes, resolveId } from '@medplum/core';
+import {
+  ProfileResource,
+  WithId,
+  createReference,
+  isResource,
+  projectAdminResourceTypes,
+  resolveId,
+} from '@medplum/core';
 import {
   AccessPolicy,
   AccessPolicyIpAccessRule,
@@ -27,13 +34,24 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
   const { project, login, membership, onBehalfOfMembership } = authState;
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  let allowedProjects: string[] | undefined;
-  if (project.id) {
-    allowedProjects = [project.id];
-  }
-  if (project.link && allowedProjects?.length) {
+  const allowedProjects: WithId<Project>[] = [project];
+
+  if (project.link) {
+    const linkedProjectRefs: Reference<Project>[] = [];
     for (const link of project.link) {
-      allowedProjects.push(resolveId(link.project) as string);
+      if (link.project) {
+        linkedProjectRefs.push(link.project);
+      }
+    }
+
+    const linkedProjectsOrError = await getSystemRepo().readReferences<Project>(linkedProjectRefs);
+    for (const linkedProjectOrError of linkedProjectsOrError) {
+      if (isResource(linkedProjectOrError)) {
+        allowedProjects.push(linkedProjectOrError);
+      } else {
+        //TODO{mattlong}: Log error? Do something? Fail? Ignore it?
+        // Ignore non-existent linked projects
+      }
     }
   }
 

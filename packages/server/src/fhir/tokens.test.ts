@@ -778,12 +778,12 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
         const { project } = await createTestProject();
         nonStrictRepo = new Repository({
           strictMode: false,
-          projects: [project.id],
+          projects: [project],
           author: { reference: 'User/' + randomUUID() },
         });
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: [project],
           author: { reference: 'User/' + randomUUID() },
         });
         patient = await nonStrictRepo.createResource<Patient>({
@@ -883,7 +883,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
         const { project } = await createTestProject();
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: [project],
           author: { reference: 'User/' + randomUUID() },
         });
 
@@ -1343,7 +1343,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
         const { project } = await createTestProject();
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: [project],
           author: { reference: 'User/' + randomUUID() },
         });
 

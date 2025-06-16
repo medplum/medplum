@@ -54,11 +54,19 @@ describe('FHIR Repo', () => {
     id: randomUUID(),
   };
 
+  let testProjectRepo: Repository;
   let systemRepo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
+    testProjectRepo = new Repository({
+      projects: [testProject],
+      extendedMode: true,
+      author: {
+        reference: 'Practitioner/' + randomUUID(),
+      },
+    });
   });
 
   afterAll(async () => {
@@ -754,48 +762,18 @@ describe('FHIR Repo', () => {
     }));
 
   test('expungeResource forbidden', async () => {
-    const author = 'Practitioner/' + randomUUID();
-
-    const repo = new Repository({
-      projects: [randomUUID()],
-      extendedMode: true,
-      author: {
-        reference: author,
-      },
-    });
-
     // Try to expunge as a regular user
-    await expect(repo.expungeResource('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
+    await expect(testProjectRepo.expungeResource('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
   });
 
   test('expungeResources forbidden', async () => {
-    const author = 'Practitioner/' + randomUUID();
-
-    const repo = new Repository({
-      projects: [randomUUID()],
-      extendedMode: true,
-      author: {
-        reference: author,
-      },
-    });
-
     // Try to expunge as a regular user
-    await expect(repo.expungeResources('Patient', [new Date().toISOString()])).rejects.toThrow('Forbidden');
+    await expect(testProjectRepo.expungeResources('Patient', [new Date().toISOString()])).rejects.toThrow('Forbidden');
   });
 
   test('Purge forbidden', async () => {
-    const author = 'Practitioner/' + randomUUID();
-
-    const repo = new Repository({
-      projects: [randomUUID()],
-      extendedMode: true,
-      author: {
-        reference: author,
-      },
-    });
-
     // Try to purge as a regular user
-    await expect(repo.purgeResources('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
+    await expect(testProjectRepo.purgeResources('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
   });
 
   test('Purge Login', () =>
