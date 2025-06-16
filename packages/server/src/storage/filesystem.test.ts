@@ -62,11 +62,6 @@ describe('FileSystemStorage', () => {
       },
     } as Binary;
 
-    try {
-      await storage.readBinary(binary);
-      throw new Error('Expected an error to be thrown');
-    } catch (err) {
-      expect((err as Error).message).toStrictEqual('File not found');
-    }
+    await expect(storage.readBinary(binary)).rejects.toThrow('File not found');
   });
 });
