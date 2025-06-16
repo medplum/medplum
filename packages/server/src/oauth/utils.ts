@@ -31,6 +31,7 @@ import {
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
+import { createHash } from 'crypto';
 import { Request } from 'express';
 import { IncomingMessage } from 'http';
 import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
@@ -62,7 +63,6 @@ import {
   verifyJwt,
 } from './keys';
 import { AuthState } from './middleware';
-import { hashCode } from './token';
 
 export type CodeChallengeMethod = 'plain' | 'S256';
 
@@ -796,7 +796,7 @@ export async function getExternalUserInfo(
   const log = getLogger();
   let response;
   try {
-    response = await fetch(userInfoUrl as string, {
+    response = await fetch(userInfoUrl, {
       method: 'GET',
       headers: {
         Accept: ContentType.JSON,
@@ -1102,10 +1102,6 @@ async function tryExternalAuthLogin(
     return undefined;
   }
 
-  // Extract more claims from the JWT that we will store on the Login
-  const scope = isString(claims.scope) ? claims.scope : undefined;
-  const nonce = isString(claims.nonce) ? claims.nonce : undefined;
-
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
     authMethod: 'external',
@@ -1114,8 +1110,8 @@ async function tryExternalAuthLogin(
     user: membership.user,
     profileType: profile.resourceType,
     authTime: new Date().toISOString(),
-    scope,
-    nonce,
+    scope: isString(claims.scope) ? claims.scope : undefined,
+    nonce: isString(claims.nonce) ? claims.nonce : undefined,
     remoteAddress: req?.ip,
     userAgent: req?.get('User-Agent'),
   });
@@ -1134,4 +1130,22 @@ async function tryExternalAuthLogin(
   );
 
   return { login, project, membership };
+}
+
+/**
+ * Returns the base64-url-encoded SHA256 hash of the code.
+ * The details around '+', '/', and '=' are important for compatibility.
+ * See: https://auth0.com/docs/flows/call-your-api-using-the-authorization-code-flow-with-pkce
+ * See: packages/client/src/crypto.ts
+ * @param code - The input code.
+ * @returns The base64-url-encoded SHA256 hash.
+ */
+export function hashCode(code: string): string {
+  return createHash('sha256')
+    .update(code)
+    .digest()
+    .toString('base64')
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
 }
