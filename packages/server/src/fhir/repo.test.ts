@@ -883,13 +883,7 @@ describe('FHIR Repo', () => {
     }));
 
   test('Malformed client assigned ID', async () => {
-    try {
-      await systemRepo.updateResource({ resourceType: 'Patient', id: '123' });
-      throw new Error('expected error');
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid id');
-    }
+    await expect(systemRepo.updateResource({ resourceType: 'Patient', id: '123' })).rejects.toThrow('Invalid id');
   });
 
   test('Profile validation', async () =>

@@ -1310,19 +1310,12 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
 
-    try {
-      await client.readResource('Patient', '');
-      throw new Error('Test failed: Expected an error when calling readResource with an empty string id.');
-    } catch (err) {
-      expect((err as Error).message).toBe('The "id" parameter cannot be null, undefined, or an empty string.');
-    }
-
-    try {
-      await client.readResource('Patient', undefined as unknown as string);
-      throw new Error('Test failed: Expected an error when calling readResource with an undefined id.');
-    } catch (err) {
-      expect((err as Error).message).toBe('The "id" parameter cannot be null, undefined, or an empty string.');
-    }
+    await expect(client.readResource('Patient', '')).rejects.toThrow(
+      'The "id" parameter cannot be null, undefined, or an empty string.'
+    );
+    await expect(client.readResource('Patient', undefined as unknown as string)).rejects.toThrow(
+      'The "id" parameter cannot be null, undefined, or an empty string.'
+    );
   });
 
   test('Read reference', async () => {

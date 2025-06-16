@@ -1,4 +1,4 @@
-import { createReference, normalizeErrorString, WithId } from '@medplum/core';
+import { createReference, WithId } from '@medplum/core';
 import { Login, Patient, Project, ServiceRequest, UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
@@ -69,18 +69,15 @@ describe('Reference checks', () => {
 
       // Create a ServiceRequest with a bad reference
       // This should fail
-      try {
-        await repo.createResource<ServiceRequest>({
+      await expect(
+        repo.createResource<ServiceRequest>({
           resourceType: 'ServiceRequest',
           status: 'active',
           intent: 'order',
           code: { text: 'test' },
           subject: { reference: 'Patient/' + randomUUID() },
-        });
-        throw new Error('Expected error');
-      } catch (err) {
-        expect(normalizeErrorString(err)).toContain('Invalid reference');
-      }
+        })
+      ).rejects.toThrow('Invalid reference');
     }));
 
   test('References to resources in linked Project', () =>

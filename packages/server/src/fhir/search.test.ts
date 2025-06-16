@@ -5,7 +5,6 @@ import {
   getSearchParameter,
   LOINC,
   normalizeErrorString,
-  normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
   parseSearchRequest,
@@ -4038,13 +4037,9 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-
 
       test('Binary search not allowed', async () =>
         withTestContext(async () => {
-          try {
-            await repo.search<Binary>({ resourceType: 'Binary' });
-            throw new Error('Expected error');
-          } catch (err) {
-            const outcome = normalizeOperationOutcome(err);
-            expect(outcome.issue?.[0]?.details?.text).toBe('Cannot search on Binary resource type');
-          }
+          await expect(repo.search<Binary>({ resourceType: 'Binary' })).rejects.toThrow(
+            'Cannot search on Binary resource type'
+          );
         }));
 
       describe('US Core Search Parameters', () => {
