@@ -1310,10 +1310,10 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
 
-    await expect(client.readResource('Patient', '')).rejects.toThrow(
+    expect(() => client.readResource('Patient', '')).toThrow(
       'The "id" parameter cannot be null, undefined, or an empty string.'
     );
-    await expect(client.readResource('Patient', undefined as unknown as string)).rejects.toThrow(
+    expect(() => client.readResource('Patient', undefined as unknown as string)).toThrow(
       'The "id" parameter cannot be null, undefined, or an empty string.'
     );
   });
