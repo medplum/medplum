@@ -391,7 +391,7 @@ export async function exchangeExternalAuthToken(
 
   let userInfo;
   try {
-    userInfo = await getExternalUserInfo(idp, subjectToken);
+    userInfo = await getExternalUserInfo(idp.userInfoUrl, subjectToken);
   } catch (err: any) {
     const outcome = normalizeOperationOutcome(err);
     sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(outcome));

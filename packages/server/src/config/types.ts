@@ -162,4 +162,5 @@ export interface MedplumBullmqConfig {
 
 export interface MedplumExternalAuthConfig {
   readonly issuer: string;
+  readonly userInfoUrl: string;
 }

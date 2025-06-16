@@ -22,7 +22,6 @@ import {
 import {
   AccessPolicy,
   ClientApplication,
-  IdentityProvider,
   Login,
   Project,
   ProjectMembership,
@@ -41,6 +40,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
 import { getConfig } from '../config/loader';
+import { MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { parseSmartScopes, SmartScope } from '../fhir/smart';
@@ -785,18 +785,18 @@ function includeRefreshToken(request: LoginRequest): boolean {
 /**
  * Returns the external identity provider user info for an access token.
  * This can be used to verify the access token and get the user's email address.
- * @param idp - The identity provider configuration.
+ * @param userInfoUrl - The user info URL from the identity provider configuration.
  * @param externalAccessToken - The external identity provider access token.
  * @returns The user info claims.
  */
 export async function getExternalUserInfo(
-  idp: IdentityProvider,
+  userInfoUrl: string,
   externalAccessToken: string
 ): Promise<Record<string, unknown>> {
   const log = getLogger();
   let response;
   try {
-    response = await fetch(idp.userInfoUrl as string, {
+    response = await fetch(userInfoUrl as string, {
       method: 'GET',
       headers: {
         Accept: ContentType.JSON,
@@ -809,7 +809,7 @@ export async function getExternalUserInfo(
   }
 
   if (response.status === 429) {
-    log.warn('Auth rate limit exceeded', { url: idp.userInfoUrl, clientId: idp.clientId });
+    log.warn('Auth rate limit exceeded', { url: userInfoUrl });
     throw new OperationOutcomeError(tooManyRequests);
   }
 
@@ -1040,14 +1040,12 @@ async function tryExternalAuth(req: Request | undefined, accessToken: string): P
     project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
   } else {
     // If not cached, try to authenticate the user with the external auth provider
-    const externalAuthState = await tryExternalAuthLogin(req, claims);
+    const externalAuthState = await tryExternalAuthLogin(req, accessToken, claims, externalAuthConfig);
     if (!externalAuthState) {
       return undefined;
     }
     ({ login, project, membership } = externalAuthState);
-    if (login) {
-      await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
-    }
+    await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
   }
 
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
@@ -1056,20 +1054,23 @@ async function tryExternalAuth(req: Request | undefined, accessToken: string): P
 
 async function tryExternalAuthLogin(
   req: Request | undefined,
-  claims: JWTPayload
+  accessToken: string,
+  claims: JWTPayload,
+  externalAuthConfig: MedplumExternalAuthConfig
 ): Promise<Pick<AuthState, 'login' | 'project' | 'membership'> | undefined> {
-  // TODO: Call out to the identity provider to verify the token
-
-  // Extract more claims from the JWT that we will store on the Login
-  const scope = isString(claims.scope) ? claims.scope : undefined;
-  const nonce = isString(claims.nonce) ? claims.nonce : undefined;
-
   // To ensure broad compatibility, we check for the FHIR user profile in two places:
   // the standard `fhirUser` claim and `ext.fhirUser` for identity providers
   // that automatically place custom claims in an `ext` block.
   const extensions = claims.ext as Record<string, unknown> | undefined;
   const profileString = claims.fhirUser ?? extensions?.fhirUser;
   if (!isString(profileString)) {
+    return undefined;
+  }
+
+  try {
+    await getExternalUserInfo(externalAuthConfig.userInfoUrl, accessToken);
+  } catch (err: any) {
+    getLogger().warn('Failed to get external user info', err);
     return undefined;
   }
 
@@ -1100,6 +1101,10 @@ async function tryExternalAuthLogin(
   if (!membership || membership.active === false) {
     return undefined;
   }
+
+  // Extract more claims from the JWT that we will store on the Login
+  const scope = isString(claims.scope) ? claims.scope : undefined;
+  const nonce = isString(claims.nonce) ? claims.nonce : undefined;
 
   const login = await systemRepo.createResource<Login>({
     resourceType: 'Login',
