@@ -22,6 +22,7 @@ import {
 import {
   AccessPolicy,
   ClientApplication,
+  IdentityProvider,
   Login,
   Project,
   ProjectMembership,
@@ -787,11 +788,13 @@ function includeRefreshToken(request: LoginRequest): boolean {
  * This can be used to verify the access token and get the user's email address.
  * @param userInfoUrl - The user info URL from the identity provider configuration.
  * @param externalAccessToken - The external identity provider access token.
+ * @param idp - Optional identity provider configuration.
  * @returns The user info claims.
  */
 export async function getExternalUserInfo(
   userInfoUrl: string,
-  externalAccessToken: string
+  externalAccessToken: string,
+  idp?: IdentityProvider
 ): Promise<Record<string, unknown>> {
   const log = getLogger();
   let response;
@@ -809,7 +812,7 @@ export async function getExternalUserInfo(
   }
 
   if (response.status === 429) {
-    log.warn('Auth rate limit exceeded', { url: userInfoUrl });
+    log.warn('Auth rate limit exceeded', { url: userInfoUrl, clientId: idp?.clientId });
     throw new OperationOutcomeError(tooManyRequests);
   }
 

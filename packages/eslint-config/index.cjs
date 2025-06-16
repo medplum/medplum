@@ -32,6 +32,7 @@ module.exports = {
     'default-param-last': 'error',
     'guard-for-in': 'error',
     'no-array-constructor': 'error',
+    'no-div-regex': 'error',
     'no-eq-null': 'error',
     'no-eval': 'error',
     'no-extend-native': 'error',
