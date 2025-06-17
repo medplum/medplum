@@ -82,7 +82,6 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     sendErrorRedirect(res, redirectUri, 'invalid_request', 'Missing scope', state);
     return false;
   }
-
   if (params.response_type !== 'code') {
     sendErrorRedirect(res, redirectUri, 'unsupported_response_type', 'Invalid response type', state);
     return false;

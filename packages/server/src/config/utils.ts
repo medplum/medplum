@@ -102,5 +102,5 @@ export function isBooleanConfig(key: string): boolean {
 }
 
 export function isObjectConfig(key: string): boolean {
-  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting';
+  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting' || key === 'defaultOAuthClients';
 }
