@@ -1,4 +1,4 @@
-import { Box, Stack } from '@mantine/core';
+import { Box } from '@mantine/core';
 import { deepEquals } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
@@ -61,15 +61,13 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
   }
 
   return (
-    <Stack gap="xs">
-      <Box p="md">
-        <QuestionnaireForm
-          questionnaire={questionnaire}
-          questionnaireResponse={questionnaireResponse}
-          excludeButtons={true}
-          onChange={onChange}
-        />
-      </Box>
-    </Stack>
+    <Box p="md">
+      <QuestionnaireForm
+        questionnaire={questionnaire}
+        questionnaireResponse={questionnaireResponse}
+        excludeButtons={true}
+        onChange={onChange}
+      />
+    </Box>
   );
 };

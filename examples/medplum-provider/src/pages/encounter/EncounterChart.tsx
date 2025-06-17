@@ -1,4 +1,4 @@
-import { Box, Button, Card, Flex, Group, Menu, Modal, Stack, Text, Textarea } from '@mantine/core';
+import { Box, Button, Card, Flex, Group, Menu, Modal, Stack, Text, Textarea, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import {
@@ -433,9 +433,7 @@ export const EncounterChart = (): JSX.Element => {
         <Stack gap="md">
           {clinicalImpression && (
             <Card withBorder shadow="sm" mt="md">
-              <Text fw={600} size="lg" mb="md">
-                Fill chart note
-              </Text>
+              <Title>Fill chart note</Title>
               <Textarea
                 defaultValue={clinicalImpression.note?.[0]?.text}
                 value={chartNote}
