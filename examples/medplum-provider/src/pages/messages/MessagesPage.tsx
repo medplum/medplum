@@ -1,10 +1,11 @@
-import { ScrollArea, Text, Group } from '@mantine/core';
+import { ScrollArea, Text, Group, Loader } from '@mantine/core';
 import { Practitioner as FhirPractitioner, Communication, Patient } from '@medplum/fhirtypes';
 import { useMedplum, BaseChat, ResourceAvatar, PatientSummary } from '@medplum/react';
 import React, { JSX, useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { createReference, formatHumanName, normalizeErrorString } from '@medplum/core';
 import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
+import { ChatList } from '../../components/messages/ChatList';
 
 // Add hover style for message list items
 const messageListItemStyle = `
@@ -65,105 +66,6 @@ function groupCommunicationsByPatient(
     return bSent.localeCompare(aSent);
   });
 }
-
-// Sidebar thread item component, memoized to prevent unnecessary re-renders
-const MessageThreadListItem = React.memo(function MessageThreadListItem({
-  patientRef,
-  comm,
-  displayName,
-  isSelected,
-  isAboveSelected,
-  participantNames,
-  onClick,
-  onHover,
-}: {
-  patientRef: string;
-  comm: Communication;
-  displayName: string;
-  isSelected: boolean;
-  isAboveSelected: boolean;
-  participantNames: Record<string, string>;
-  onClick: () => void;
-  onHover: () => void;
-}) {
-  const lastMsg = comm.payload?.[0]?.contentString || 'No preview';
-  const lastTime = comm.sent ? new Date(comm.sent) : undefined;
-  let timeStr = '';
-  if (lastTime) {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const months = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-    const dayOfWeek = days[lastTime.getDay()];
-    const month = months[lastTime.getMonth()];
-    const day = lastTime.getDate();
-    let hours = lastTime.getHours();
-    const minutes = lastTime.getMinutes();
-    const ampm = hours >= 12 ? 'PM' : 'AM';
-    hours = hours % 12;
-    if (hours === 0) {
-      hours = 12;
-    }
-    const minutesStr = minutes < 10 ? `0${minutes}` : `${minutes}`;
-    timeStr = `${hours}:${minutesStr} ${ampm} on ${dayOfWeek}, ${month} ${day}`;
-  }
-  return (
-    <div key={patientRef} style={{ position: 'relative' }}>
-      <Group
-        align="center"
-        wrap="nowrap"
-        className={!isSelected ? 'message-list-item' : undefined}
-        style={{
-          cursor: 'pointer',
-          background: isSelected ? 'var(--mantine-color-gray-2)' : undefined,
-          borderRadius: 8,
-          padding: '12px 8px',
-          transition: 'background 0.2s',
-        }}
-        onClick={onClick}
-        onMouseEnter={onHover}
-      >
-        <ResourceAvatar value={{ reference: patientRef }} radius="xl" size={36} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <Text size="sm" fw={700} truncate="end">
-            {displayName}
-          </Text>
-          <Text size="sm" fw={400} c="gray.7" truncate="end" lineClamp={1}>
-            {comm.sender?.reference && participantNames[comm.sender.reference]?.split(' ')[0] ? (
-              <>{participantNames[comm.sender.reference].split(' ')[0]}: </>
-            ) : null}
-            {lastMsg}
-          </Text>
-          <Text size="xs" c="gray.6" style={{ marginTop: 2 }}>
-            {timeStr}
-          </Text>
-        </div>
-      </Group>
-      <div
-        style={{
-          position: 'absolute',
-          left: 8,
-          right: 8,
-          bottom: 0,
-          height: 0,
-          borderBottom: isSelected || isAboveSelected ? 'none' : '1px solid #EEE',
-          pointerEvents: 'none',
-        }}
-      />
-    </div>
-  );
-});
 
 /**
  * Messages page that matches the Home page layout but without the patient list.
@@ -239,6 +141,7 @@ export function MessagesPage(): JSX.Element {
         all = all.concat((bundle.entry || []).map((e: any) => e.resource as Communication));
         nextUrl = bundle.link?.find((l: any) => l.relation === 'next')?.url;
       }
+      console.log('all', all);
       setCommunications(all);
     }
     fetchAllCommunications().catch(() => setLoading(false));
@@ -252,6 +155,8 @@ export function MessagesPage(): JSX.Element {
     if (!selectedPatientRef) {
       return undefined;
     }
+    console.log('selectedPatientRef', selectedPatientRef);
+    console.log('patientThreads', patientThreads);
     return patientThreads.find((t) => t.patientRef === selectedPatientRef);
   }, [patientThreads, selectedPatientRef]);
 
@@ -344,19 +249,6 @@ export function MessagesPage(): JSX.Element {
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally omitting participantNames to prevent infinite loop
   }, [patientThreads, medplum, communications.length]);
-
-  const getThreadLabel = useCallback(
-    (patientRef: string) => {
-      return participantNames[patientRef] || patientRef;
-    },
-    [participantNames]
-  );
-
-  // Use validPatientThreads instead of patientThreads for pagination and rendering
-  const paginatedThreads = useMemo(() => {
-    const start = currentPage * pageSize;
-    return validPatientThreads.slice(start, start + pageSize);
-  }, [validPatientThreads, currentPage]);
 
   // Add after validPatientThreads is defined
   useEffect(() => {
@@ -466,16 +358,6 @@ export function MessagesPage(): JSX.Element {
     }
   }, [selectedPatientRef, medplum]);
 
-  // After validPatientThreads is defined
-  useEffect(() => {
-    // Debug: log the number of unique patients and their references
-    // eslint-disable-next-line no-console
-    console.log(
-      'Unique patients in Communications:',
-      validPatientThreads.length,
-      validPatientThreads.map((t) => t.patientRef)
-    );
-  }, [validPatientThreads]);
 
   // Prefetch next few threads
   useEffect(() => {
@@ -513,22 +395,6 @@ export function MessagesPage(): JSX.Element {
       </Text>
     </div>
   );
-
-  // Sidebar content
-  const sidebarContent = React.useMemo(() => {
-    // Only show loader if truly loading (initial load or fetching new participants)
-    
-  }, [
-    loading,
-    validPatientThreads,
-    paginatedThreads,
-    participantNames,
-    selectedPatientRef,
-    getThreadLabel,
-    communications.length,
-    prefetchPatient,
-    prefetchedPatients,
-  ]);
 
   let chatArea: JSX.Element;
   if (selectedThread && selectedPatient) {
@@ -623,7 +489,24 @@ export function MessagesPage(): JSX.Element {
           type="hover"
           scrollHideDelay={250}
         >
-          {sidebarContent}
+          {/* <ChatList communications={communications} /> */}
+
+          {loading ? (
+            <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              height: '100vh',
+              minHeight: 0,
+              flex: 1,
+            }}
+          >
+            <Loader />
+          </div>
+          ) : (
+            <ChatList communications={communications} onClick={setSelectedPatientRef} />
+          )}
         </ScrollArea>
       </div>
 

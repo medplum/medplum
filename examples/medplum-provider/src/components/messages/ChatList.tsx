@@ -1,69 +1,57 @@
 import { Group, Loader, Stack, Text } from '@mantine/core';
 import { Communication } from '@medplum/fhirtypes';
-import { JSX, useState } from 'react';
-import { MessageThreadListItem } from './MessageThreadListItem';
+import { JSX, useCallback, useState } from 'react';
+import { ChatListItem } from './ChatListItem';
 
 interface ChatListProps {
   communications: Communication[];
+  onClick: (patientRef: string) => void;
 }
 
 export const ChatList = (props: ChatListProps): JSX.Element => {
   const { communications } = props;
-  const [validPatientThreads, setValidPatientThreads] = useState<string[]>([]);
   const [paginatedThreads, setPaginatedThreads] = useState<{ patientRef: string; comm: Communication }[]>([]);
   const [selectedPatientRef, setSelectedPatientRef] = useState<string | null>(null);
   const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
 
-  if (communications.length === 0) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          minHeight: 0,
-          flex: 1,
-        }}
-      >
-        <Loader />
-      </div>
-    );
-  } else if (validPatientThreads.length === 0) {
-    return (
-      <Group mt={16} ml={16}>
-        <Text>No messages found.</Text>
-      </Group>
-    );
-  } else {
-    return (
-      <Stack gap={0} style={{ padding: '8px' }}>
-        {paginatedThreads.map(({ patientRef, comm }: { patientRef: string; comm: Communication }, i: number) => {
-          const displayName = getThreadLabel(patientRef);
-          const isSelected = selectedPatientRef === patientRef;
-          const isAboveSelected =
-            paginatedThreads[i + 1] && paginatedThreads[i + 1].patientRef === selectedPatientRef;
+  const getThreadLabel = useCallback(
+    (patientRef: string) => {
+      return participantNames[patientRef] || patientRef;
+    },
+    [participantNames]
+  );
 
-          // Prefetch on render for visible threads
-          // if (!isSelected && !prefetchedPatients[patientRef]) {
-          //   prefetchPatient(patientRef);
-          // }
+  return (
+    <Stack gap={0} style={{ padding: '8px' }}>
+      {communications.map((communication: Communication, i: number) => {
+        const patientRef = communication.sender?.reference || communication.recipient?.[0]?.reference || '';
+        const _displayName = getThreadLabel(patientRef);
+        const _isSelected = selectedPatientRef === patientRef;
+        const _isAboveSelected = paginatedThreads[i + 1] && paginatedThreads[i + 1].patientRef === selectedPatientRef;
 
-          return (
-            <MessageThreadListItem
-              key={patientRef}
-              patientRef={patientRef}
-              communication={comm}
-              displayName={displayName}
-              isSelected={isSelected}
-              isAboveSelected={isAboveSelected}
-              participantNames={participantNames}
-              onClick={() => setSelectedPatientRef(patientRef)}
-              onHover={() => prefetchPatient(patientRef)}
-            />
-          );
-        })}
-      </Stack>
-    );
-  }
+        // Prefetch on render for visible threads
+        // if (!isSelected && !prefetchedPatients[patientRef]) {
+        //   prefetchPatient(patientRef);
+        // }
+
+        return (
+          <ChatListItem
+            key={patientRef}
+            patientRef={patientRef}
+            communication={communication}
+            displayName={_displayName}
+            isSelected={_isSelected}
+            isAboveSelected={_isAboveSelected}
+            // participantNames={participantNames}
+            onClick={() => {
+              setSelectedPatientRef(patientRef);
+              props.onClick(patientRef);
+            }}
+            // onHover={() => prefetchPatient(patientRef)}
+          />
+
+        );
+      })}
+    </Stack>
+  );
 };
