@@ -212,7 +212,7 @@ export class App {
           case 'transmit':
           case 'agent:transmit:response': {
             if (!command.callback) {
-              throw new Error('Transmit response missing callback');
+              this.log.warn('Transmit response missing callback');
             }
             if (this.config?.status !== 'active') {
               this.sendAgentDisabledError(command);
