@@ -1153,7 +1153,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const startTime = Date.now();
     try {
-      return await this.withTransaction(async () => {
+      return await this.ensureInTransaction(async () => {
         const resource = await this.readResourceFromDatabase<T>(resourceType, id);
 
         if (resource.resourceType !== resourceType) {
