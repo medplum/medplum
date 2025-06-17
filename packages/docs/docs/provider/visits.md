@@ -166,6 +166,7 @@ For this guide, we will take the first approach: creating a Care Template, then 
       }
       ]
       ```
+
    * Also in your JSON, add the CPT code for associated ChargeItemDefinition like this:
 
       ```json
@@ -179,6 +180,7 @@ For this guide, we will take the first approach: creating a Care Template, then 
       ]
       }
       ```
+
   * Scroll to the bottom of the text box and click "OK" to update the JSON for your ActivityDefinition
 4. **Test & Verify**
    * Navigate to a Patient Profile in the Provider App and create a new Visit, selecting the Care Teamplate (aka PlanDefinition) associated with your ActivityDefinition and ChargeItemDefinition.
