@@ -793,6 +793,11 @@ export async function getExternalUserInfo(
   idp?: IdentityProvider
 ): Promise<Record<string, unknown>> {
   const log = getLogger();
+  if (!userInfoUrl.startsWith('http:') && !userInfoUrl.startsWith('https:')) {
+    log.warn('Invalid user info URL', { userInfoUrl, clientId: idp?.clientId });
+    throw new OperationOutcomeError(badRequest('Invalid user info URL - check your identity provider configuration'));
+  }
+
   let response;
   try {
     response = await fetch(userInfoUrl, {

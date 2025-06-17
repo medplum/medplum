@@ -71,6 +71,7 @@ describe('OAuth2 Token', () => {
   let client: WithId<ClientApplication>;
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
+  let invalidAuthClient: ClientApplication;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -128,6 +129,20 @@ describe('OAuth2 Token', () => {
         authorizeUrl: 'https://example.com/oauth2/authorize',
         tokenUrl: 'https://example.com/oauth2/token',
         userInfoUrl: 'https://example.com/oauth2/userinfo',
+        clientId: '123',
+        clientSecret: '456',
+      },
+    });
+
+    // Create an invalid external auth client with invalid URLs
+    invalidAuthClient = await createClient(systemRepo, {
+      project,
+      name: 'Invalid Auth Client',
+      redirectUri,
+      identityProvider: {
+        authorizeUrl: 'file://example.com/oauth2/authorize',
+        tokenUrl: 'file://example.com/oauth2/token',
+        userInfoUrl: 'file://example.com/oauth2/userinfo',
         clientId: '123',
         clientSecret: '456',
       },
@@ -1816,6 +1831,21 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid subject_token_type');
+  });
+
+  test('Token exchange invalid external URL', async () => {
+    (fetch as unknown as jest.Mock).mockClear();
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: invalidAuthClient.id,
+      subject_token: 'xyz',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid user info URL - check your identity provider configuration');
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   test('FHIRcast scopes added to client credentials flow', async () => {
