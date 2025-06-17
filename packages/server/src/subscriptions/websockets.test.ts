@@ -857,7 +857,7 @@ describe('Subscription Heartbeat', () => {
 
     repo = new Repository({
       extendedMode: true,
-      projects: [project.id],
+      projects: [project],
       author: {
         reference: 'ClientApplication/' + randomUUID(),
       },

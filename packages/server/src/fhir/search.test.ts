@@ -83,7 +83,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-
         const { project } = await createTestProject();
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: [project],
           currentProject: project,
           author: { reference: 'User/' + randomUUID() },
         });
@@ -105,7 +105,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-
         });
         const repoWithTrue = new Repository({
           strictMode: true,
-          projects: [projectWithTrue.id],
+          projects: [projectWithTrue],
           currentProject: projectWithTrue,
           author: { reference: 'User/' + randomUUID() },
         });
@@ -116,7 +116,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-
         });
         const repoWithFalse = new Repository({
           strictMode: true,
-          projects: [projectWithFalse.id],
+          projects: [projectWithFalse],
           currentProject: projectWithFalse,
           author: { reference: 'User/' + randomUUID() },
         });
@@ -129,7 +129,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-
         });
         const repoWithTrue = new Repository({
           strictMode: true,
-          projects: [projectWithTrue.id],
+          projects: [projectWithTrue],
           currentProject: projectWithTrue,
           author: { reference: 'User/' + randomUUID() },
         });
@@ -140,7 +140,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-
         });
         const repoWithFalse = new Repository({
           strictMode: true,
-          projects: [projectWithFalse.id],
+          projects: [projectWithFalse],
           currentProject: projectWithFalse,
           author: { reference: 'User/' + randomUUID() },
         });
@@ -153,7 +153,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-
         });
         const repoWithTrue = new Repository({
           strictMode: true,
-          projects: [projectWithTrue.id],
+          projects: [projectWithTrue],
           currentProject: projectWithTrue,
           author: { reference: 'User/' + randomUUID() },
         });

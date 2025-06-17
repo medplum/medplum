@@ -338,4 +338,30 @@ describe('Infra', () => {
     expect(() => main({ config: filename })).not.toThrow();
     unlinkSync(filename);
   });
+
+  test('Create WAF logging group', () => {
+    const filename = writeConfig('./medplum.createWafLogGroup.config.json', {
+      ...baseConfig,
+      name: 'createWafLogGroup',
+      stackName: 'MedplumCreateWafLogGroupStack',
+      wafLogGroupName: 'waf-logs',
+      wafLogGroupCreate: true,
+    });
+
+    expect(() => main({ config: filename })).not.toThrow();
+    unlinkSync(filename);
+  });
+
+  test('Use existing WAF logging group', () => {
+    const filename = writeConfig('./medplum.existingWafLogGroup.config.json', {
+      ...baseConfig,
+      name: 'existingWafLogGroup',
+      stackName: 'MedplumExistingWafLogGroupStack',
+      wafLogGroupName: 'waf-logs',
+      wafLogGroupCreate: true,
+    });
+
+    expect(() => main({ config: filename })).not.toThrow();
+    unlinkSync(filename);
+  });
 });

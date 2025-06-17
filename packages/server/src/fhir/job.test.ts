@@ -29,7 +29,7 @@ describe('Job status', () => {
     accessToken = testProject.accessToken;
     asyncJobManager = new AsyncJobExecutor(
       new Repository({
-        projects: [testProject.project.id],
+        projects: [testProject.project],
         author: { reference: 'User/' + randomUUID() },
       })
     );
