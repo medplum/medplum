@@ -112,9 +112,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
         )}
 
         {!task.focus?.reference?.startsWith('ServiceRequest/') &&
-          !task.focus?.reference?.startsWith('Questionnaire/') && (
-            <SimpleTask key={task.id} task={task} />
-          )}
+          !task.focus?.reference?.startsWith('Questionnaire/') && <SimpleTask key={task.id} task={task} />}
 
         <TaskStatusPanel
           task={task}
