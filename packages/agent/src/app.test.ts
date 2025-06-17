@@ -1315,6 +1315,124 @@ describe('App', () => {
     console.log = originalConsoleLog;
   });
 
+  test('Agent transmit response without callback still gets processed', async () => {
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
+
+    const state = {
+      mySocket: undefined as Client | undefined,
+      hl7MessageReceived: false,
+    };
+
+    medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
+      return [allOk, {} as Resource];
+    });
+
+    const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+
+    mockServer.on('connection', (socket) => {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        } else if (command.type === 'agent:transmit:request') {
+          // Simulate that we received an HL7 message from external system
+          // Agent should process this and generate a callback
+          const hl7Message = Hl7Message.parse(command.body);
+          const ackMessage = hl7Message.buildAck();
+          expect(command.callback).toBeDefined();
+          expect(command.channel).toBe('test');
+          expect(command.remote).toBeDefined();
+
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:transmit:response',
+                channel: command.channel,
+                remote: command.remote,
+                body: ackMessage.toString(),
+              })
+            )
+          );
+        }
+      });
+    });
+
+    const endpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: 'mllp://0.0.0.0:9020',
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      status: 'active',
+      name: 'Test Agent',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(endpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // Wait for the WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Verify channel was created
+    expect(app.channels.size).toBe(1);
+    expect(app.channels.has('test')).toBe(true);
+
+    // Create an HL7 client to establish a connection to the agent
+    const hl7Client = new Hl7Client({
+      host: 'localhost',
+      port: 9020,
+    });
+
+    // Send a message to establish the connection in the agent's channel
+    await hl7Client.sendAndWait(
+      Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
+          'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+          'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
+      )
+    );
+
+    // Get the established connection remote address
+    const testChannel = app.channels.get('test') as AgentHl7Channel;
+    expect(testChannel.connections.size).toBe(1);
+
+    hl7Client.close();
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+
+    // Verify that a warning was logged about missing callback, but processing continued
+    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Transmit response missing callback'));
+
+    console.log = originalConsoleLog;
+  });
+
   describe('Upgrade', () => {
     beforeEach(() => {
       const upgradeFilePath = resolve(__dirname, 'upgrade.json');
