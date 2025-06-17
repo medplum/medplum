@@ -410,6 +410,7 @@ export function buildCreateTables(
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
       { columns: ['lastUpdated'], indexType: 'btree' },
+      { columns: ['projectId', 'lastUpdated'], indexType: 'btree' },
       { columns: ['compartments'], indexType: 'gin' },
       { columns: ['projectId'], indexType: 'btree' },
       { columns: ['_source'], indexType: 'btree' },
@@ -513,7 +514,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       tableDefinition.columns.push(column);
     }
 
-    for (const index of getSearchParameterIndexes(impl, legacyColumnImpl)) {
+    for (const index of getSearchParameterIndexes(searchParam, impl, legacyColumnImpl)) {
       const existing = tableDefinition.indexes.find((i) => indexDefinitionsEqual(i, index));
       if (existing) {
         continue;
@@ -561,12 +562,13 @@ function getSearchParameterColumns(
 }
 
 function getSearchParameterIndexes(
+  searchParam: SearchParameter,
   impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation,
   legacyColumnImpl?: ColumnSearchParameterImplementation
 ): IndexDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
-      const columns: IndexDefinition[] = [
+      const indexes: IndexDefinition[] = [
         { columns: [impl.tokenColumnName], indexType: 'gin' },
         {
           columns: [
@@ -590,12 +592,17 @@ function getSearchParameterIndexes(
       ];
 
       if (legacyColumnImpl) {
-        columns.push({ columns: [legacyColumnImpl.columnName], indexType: legacyColumnImpl.array ? 'gin' : 'btree' });
+        indexes.push({ columns: [legacyColumnImpl.columnName], indexType: legacyColumnImpl.array ? 'gin' : 'btree' });
       }
-      return columns;
+      return indexes;
     }
-    case 'column':
-      return [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
+    case 'column': {
+      const indexes: IndexDefinition[] = [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
+      if (!impl.array && (searchParam.code === 'date' || searchParam.code === 'sent')) {
+        indexes.push({ columns: ['projectId', impl.columnName], indexType: 'btree' });
+      }
+      return indexes;
+    }
     default:
       throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
   }

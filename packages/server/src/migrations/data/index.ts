@@ -7,3 +7,5 @@ export * as v6 from './v6';
 export * as v7 from './v7';
 export * as v8 from './v8';
 export * as v9 from './v9';
+/* This comment prevents auto-organization of imports in VSCode which would break the numeric ordering of the migrations. */
+export * as v10 from './v10';
