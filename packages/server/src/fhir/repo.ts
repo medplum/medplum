@@ -671,7 +671,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     // START PRE-COMMIT BOT CHECK
 
-    const projectId = this.context.projects?.[0];
+    const projectId = this.context.projects?.[0]?.id;
     if (projectId) {
       const systemRepo = getSystemRepo();
       const logger = getLogger();
