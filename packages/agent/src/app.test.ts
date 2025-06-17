@@ -1316,9 +1316,6 @@ describe('App', () => {
   });
 
   test('Agent transmit response without callback still gets processed', async () => {
-    const originalConsoleLog = console.log;
-    console.log = jest.fn();
-
     const state = {
       mySocket: undefined as Client | undefined,
       hl7MessageReceived: false,
@@ -1336,17 +1333,10 @@ describe('App', () => {
       state.mySocket = socket;
       socket.on('message', (data) => {
         const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+
         if (command.type === 'agent:connect:request') {
-          socket.send(
-            Buffer.from(
-              JSON.stringify({
-                type: 'agent:connect:response',
-              })
-            )
-          );
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
         } else if (command.type === 'agent:transmit:request') {
-          // Simulate that we received an HL7 message from external system
-          // Agent should process this and generate a callback
           const hl7Message = Hl7Message.parse(command.body);
           const ackMessage = hl7Message.buildAck();
           expect(command.callback).toBeDefined();
@@ -1391,22 +1381,21 @@ describe('App', () => {
     const app = new App(medplum, agent.id, LogLevel.INFO);
     await app.start();
 
-    // Wait for the WebSocket to connect
+    // Spy on the app.log.warn method
+    const warnSpy = jest.spyOn(app.log, 'warn');
+
     while (!state.mySocket) {
       await sleep(100);
     }
 
-    // Verify channel was created
     expect(app.channels.size).toBe(1);
     expect(app.channels.has('test')).toBe(true);
 
-    // Create an HL7 client to establish a connection to the agent
     const hl7Client = new Hl7Client({
       host: 'localhost',
       port: 9020,
     });
 
-    // Send a message to establish the connection in the agent's channel
     await hl7Client.sendAndWait(
       Hl7Message.parse(
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
@@ -1416,22 +1405,19 @@ describe('App', () => {
       )
     );
 
-    // Get the established connection remote address
     const testChannel = app.channels.get('test') as AgentHl7Channel;
     expect(testChannel.connections.size).toBe(1);
 
     hl7Client.close();
 
     await app.stop();
+
     await new Promise<void>((resolve) => {
       mockServer.stop(resolve);
     });
 
-    // Verify that a warning was logged about missing callback, but processing continued
-    expect(console.warn).toHaveBeenCalledWith(expect.stringContaining('Transmit response missing callback'));
-
-    console.log = originalConsoleLog;
-  });
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Transmit response missing callback'));
+  }, 5000);
 
   describe('Upgrade', () => {
     beforeEach(() => {
