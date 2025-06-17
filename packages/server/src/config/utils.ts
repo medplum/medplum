@@ -18,6 +18,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.tokenUrl ||= concatUrls(config.baseUrl, '/oauth2/token');
   config.userInfoUrl ||= concatUrls(config.baseUrl, '/oauth2/userinfo');
   config.introspectUrl ||= concatUrls(config.baseUrl, '/oauth2/introspect');
+  config.registerUrl ||= concatUrls(config.baseUrl, '/oauth2/register');
   config.storageBaseUrl ||= concatUrls(config.baseUrl, '/storage');
   config.maxJsonSize ||= '1mb';
   config.maxBatchSize ||= '50mb';

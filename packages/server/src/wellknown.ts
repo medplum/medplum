@@ -17,8 +17,8 @@ function handleOAuthConfig(_req: Request, res: Response): void {
     token_endpoint: config.tokenUrl,
     userinfo_endpoint: config.userInfoUrl,
     jwks_uri: config.jwksUrl,
-    introspection_endpoint: config.tokenUrl.replace('/token', '/introspect'),
-    registration_endpoint: config.authorizeUrl.replace('/authorize', '/register'),
+    introspection_endpoint: config.introspectUrl,
+    registration_endpoint: config.registerUrl,
     id_token_signing_alg_values_supported: ['RS256'],
     grant_types_supported: [
       OAuthGrantType.ClientCredentials,
@@ -45,7 +45,7 @@ function handleOauthProtectedResource(_req: Request, res: Response): void {
     authorization_servers: [config.issuer],
     scopes_supported: ['openid', 'profile', 'email', 'phone', 'address'],
     bearer_methods_supported: ['header'],
-    introspection_endpoint: config.tokenUrl.replace('/token', '/introspect'),
+    introspection_endpoint: config.introspectUrl,
   });
 }
 
