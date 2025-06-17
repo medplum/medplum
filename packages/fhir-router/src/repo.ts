@@ -307,6 +307,24 @@ export abstract class FhirRepository<TClient = unknown> {
       await this.deleteResource(resource.resourceType, resource.id);
     });
   }
+
+  async conditionalPatch(search: SearchRequest, patch: Operation[]): Promise<WithId<Resource>> {
+    // Limit search to optimize DB query
+    search.count = 2;
+    search.sortRules = undefined;
+
+    return this.withTransaction(async () => {
+      const matches = await this.searchResources(search);
+      if (matches.length > 1) {
+        throw new OperationOutcomeError(multipleMatches);
+      } else if (!matches.length) {
+        throw new OperationOutcomeError(notFound);
+      }
+
+      const resource = matches[0];
+      return this.patchResource(resource.resourceType, resource.id, patch);
+    });
+  }
 }
 
 export class MemoryRepository extends FhirRepository<undefined> {
