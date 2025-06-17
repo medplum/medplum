@@ -12324,6 +12324,17 @@
               "targetProfile": ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
             }
           ]
+        },
+        {
+          "id": "Project.exportedResourceType",
+          "path": "Project.exportedResourceType",
+          "min": 0,
+          "max": "*",
+          "type": [
+            {
+              "code": "code"
+            }
+          ]
         }
       ]
     }

@@ -15,7 +15,7 @@ import {
   resolveId,
 } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
-import { createHash, randomUUID } from 'crypto';
+import { randomUUID } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
 import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
 import { asyncWrap } from '../async';
@@ -32,6 +32,7 @@ import {
   getClientApplication,
   getClientApplicationMembership,
   getExternalUserInfo,
+  hashCode,
   revokeLogin,
   timingSafeEqualStr,
   tryLogin,
@@ -391,7 +392,7 @@ export async function exchangeExternalAuthToken(
 
   let userInfo;
   try {
-    userInfo = await getExternalUserInfo(idp, subjectToken);
+    userInfo = await getExternalUserInfo(idp.userInfoUrl, subjectToken, idp);
   } catch (err: any) {
     const outcome = normalizeOperationOutcome(err);
     sendTokenError(res, 'invalid_request', normalizeErrorString(err), getStatus(outcome));
@@ -672,22 +673,4 @@ function verifyCode(challenge: string, method: string, verifier: string): boolea
   }
 
   return false;
-}
-
-/**
- * Returns the base64-url-encoded SHA256 hash of the code.
- * The details around '+', '/', and '=' are important for compatibility.
- * See: https://auth0.com/docs/flows/call-your-api-using-the-authorization-code-flow-with-pkce
- * See: packages/client/src/crypto.ts
- * @param code - The input code.
- * @returns The base64-url-encoded SHA256 hash.
- */
-export function hashCode(code: string): string {
-  return createHash('sha256')
-    .update(code)
-    .digest()
-    .toString('base64')
-    .replaceAll('+', '-')
-    .replaceAll('/', '_')
-    .replaceAll('=', '');
 }

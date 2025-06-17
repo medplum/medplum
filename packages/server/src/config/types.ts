@@ -80,7 +80,7 @@ export interface MedplumServerConfig {
   maxBotLogLengthForLogs?: number;
 
   /** Search strategy system repositories use when using token search parameters. */
-  systemRepositoryTokenReadStrategy?: 'unified-tokens-column' | 'token-tables';
+  systemRepositoryTokenReadStrategy?: 'unified-tokens-column' | 'column-per-code' | 'token-tables';
 
   /** Number of attempts for transactions that fail due to retry-able transaction errors */
   transactionAttempts?: number;
@@ -90,6 +90,9 @@ export interface MedplumServerConfig {
 
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
+
+  /** Optional list of external authentication providers. */
+  externalAuthProviders?: MedplumExternalAuthConfig[];
 
   /** @deprecated */
   auditEventLogGroup?: string;
@@ -155,4 +158,9 @@ export interface MedplumBullmqConfig {
   concurrency?: number;
   removeOnComplete: KeepJobs;
   removeOnFail: KeepJobs;
+}
+
+export interface MedplumExternalAuthConfig {
+  readonly issuer: string;
+  readonly userInfoUrl: string;
 }

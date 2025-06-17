@@ -541,9 +541,11 @@ function getSearchParameterColumns(
         throw new Error('Expected SearchParameterDetails.type to be TEXT but got ' + impl.type);
       }
       const columns = [
-        { name: impl.columnName, type: 'TEXT[]' },
+        { name: impl.tokenColumnName, type: 'UUID[]' },
         { name: impl.textSearchColumnName, type: 'TEXT[]' },
         { name: impl.sortColumnName, type: 'TEXT' },
+        { name: impl.legacyColumnName, type: 'TEXT[]' },
+        { name: impl.legacyTextSearchColumnName, type: 'TEXT[]' },
       ];
 
       if (legacyColumnImpl) {
@@ -565,12 +567,22 @@ function getSearchParameterIndexes(
   switch (impl.searchStrategy) {
     case 'token-column': {
       const columns: IndexDefinition[] = [
-        { columns: [impl.columnName], indexType: 'gin' },
+        { columns: [impl.tokenColumnName], indexType: 'gin' },
         {
           columns: [
             {
               expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.textSearchColumnName)}) gin_trgm_ops`,
-              name: impl.columnName + 'Trgm',
+              name: impl.textSearchColumnName + 'Trgm',
+            },
+          ],
+          indexType: 'gin',
+        },
+        { columns: [impl.legacyColumnName], indexType: 'gin' },
+        {
+          columns: [
+            {
+              expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.legacyTextSearchColumnName)}) gin_trgm_ops`,
+              name: impl.legacyColumnName + 'Trgm',
             },
           ],
           indexType: 'gin',
@@ -905,63 +917,63 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
   b.append('// prettier-ignore'); // To prevent prettier from reformatting the SQL statements
   b.append('export async function run(client: PoolClient): Promise<void> {');
   b.indentCount++;
-  b.append('const actions: { name: string; durationMs: number }[] = []');
+  b.append('const results: { name: string; durationMs: number }[] = []');
 
   for (const action of actions) {
     switch (action.type) {
       case 'ANALYZE_TABLE':
-        b.appendNoWrap(`await fns.analyzeTable(client, actions, '${action.tableName}');`);
+        b.appendNoWrap(`await fns.analyzeTable(client, results, '${action.tableName}');`);
         break;
       case 'CREATE_FUNCTION': {
-        b.appendNoWrap(`await fns.query(client, actions, \`${escapeUnicode(action.createQuery)}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${escapeUnicode(action.createQuery)}\`);`);
         break;
       }
       case 'CREATE_TABLE': {
         const queries = getCreateTableQueries(action.definition);
         for (const query of queries) {
-          b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+          b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         }
         break;
       }
       case 'ADD_COLUMN': {
         const query = getAddColumnQuery(action.tableName, action.columnDefinition);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'DROP_COLUMN': {
         const query = getDropColumnQuery(action.tableName, action.columnName);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_SET_DEFAULT': {
         const query = getAlterColumnSetDefaultQuery(action.tableName, action.columnName, action.defaultValue);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_DROP_DEFAULT': {
         const query = getAlterColumnDropDefaultQuery(action.tableName, action.columnName);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
         const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ALTER_COLUMN_TYPE': {
         const query = getAlterColumnTypeQuery(action.tableName, action.columnName, action.columnType);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'CREATE_INDEX': {
         b.appendNoWrap(
-          `await fns.idempotentCreateIndex(client, actions, '${action.indexName}', \`${action.createIndexSql}\`);`
+          `await fns.idempotentCreateIndex(client, results, '${action.indexName}', \`${action.createIndexSql}\`);`
         );
         break;
       }
       case 'DROP_INDEX': {
         const query = getDropIndexQuery(action.indexName);
-        b.appendNoWrap(`await fns.query(client, actions, \`${query}\`);`);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       default: {
@@ -991,7 +1003,9 @@ function generateColumnsActions(
   }
   for (const startColumn of startTable.columns) {
     if (!targetTable.columns.some((c) => c.name === startColumn.name)) {
-      actions.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
+      ctx.postDeployAction(() => {
+        actions.push({ type: 'DROP_COLUMN', tableName: targetTable.name, columnName: startColumn.name });
+      }, `Dropping column ${startColumn.name} from ${targetTable.name}`);
     }
   }
   return actions;
@@ -1166,7 +1180,7 @@ function generateIndexesActions(
 function getIndexName(tableName: string, index: IndexDefinition): string {
   let indexName = tableName;
 
-  indexName = applyAbbreviations(indexName, TableAbbrieviations) + '_';
+  indexName = applyAbbreviations(indexName, TableNameAbbreviations) + '_';
 
   indexName += index.columns
     .map((c) => (typeof c === 'string' ? c : c.name))
@@ -1278,7 +1292,7 @@ export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition)
   return deepEquals(a, b);
 }
 
-const TableAbbrieviations: Record<string, string | undefined> = {
+const TableNameAbbreviations: Record<string, string | undefined> = {
   MedicinalProductAuthorization: 'MPA',
   MedicinalProductContraindication: 'MPC',
   MedicinalProductPharmaceutical: 'MPP',
@@ -1288,6 +1302,9 @@ const TableAbbrieviations: Record<string, string | undefined> = {
 const ColumnNameAbbreviations: Record<string, string | undefined> = {
   participatingOrganization: 'partOrg',
   primaryOrganization: 'primOrg',
+  immunizationEvent: 'immEvent',
+  identifier: 'idnt',
+  Identifier: 'Idnt',
 };
 
 function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {

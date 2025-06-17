@@ -20,7 +20,7 @@ describe('Medplum Custom Search Parameters', () => {
     const { project } = await createTestProject();
     repo = new Repository({
       strictMode: true,
-      projects: [project.id],
+      projects: [project],
       author: { reference: 'User/' + randomUUID() },
     });
   });

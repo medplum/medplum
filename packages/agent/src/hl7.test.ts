@@ -265,6 +265,87 @@ describe('HL7', () => {
     console.log = originalConsoleLog;
   });
 
+  test('Send and receive -- enhanced mode', async () => {
+    const mockServer = new Server('wss://example.com/ws/agent');
+
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        }
+
+        if (command.type === 'agent:transmit:request') {
+          const hl7Message = Hl7Message.parse(command.body);
+          const ackMessage = hl7Message.buildAck();
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:transmit:response',
+                channel: command.channel,
+                callback: command.callback,
+                remote: command.remote,
+                body: ackMessage.toString(),
+              })
+            )
+          );
+        }
+      });
+    });
+
+    const enhancedEndpoint = await medplum.createResource<Endpoint>({
+      ...endpoint,
+      address: endpoint.address + '?enhanced=true',
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(enhancedEndpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    const client = new Hl7Client({
+      host: 'localhost',
+      port: 57000,
+    });
+
+    const response = await client.sendAndWait(
+      Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.5\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
+          'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+          'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
+      )
+    );
+    expect(response).toBeDefined();
+    expect(response.header.getComponent(9, 1)).toBe('ACK');
+    // Should get a commit ACK
+    expect(response.getSegment('MSA')?.getComponent(1, 1)).toStrictEqual('CA');
+    // Should see info severity level
+    expect(response.segments).toHaveLength(2);
+    expect(response.segments[1].name).toBe('MSA');
+
+    client.close();
+    await app.stop();
+    mockServer.stop();
+  });
+
   test('Push', async () => {
     const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;

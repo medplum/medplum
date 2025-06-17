@@ -2,6 +2,7 @@ import {
   createReference,
   Filter,
   getReferenceString,
+  getSearchParameter,
   LOINC,
   normalizeErrorString,
   normalizeOperationOutcome,
@@ -57,6 +58,7 @@ import { DatabaseMode } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { clampEstimateCount, readFromTokenColumns } from './search';
+import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
 import { SelectQuery } from './sql';
 import { TokenColumnsFeature } from './tokens';
 
@@ -64,11 +66,11 @@ jest.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
-describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'])(
+describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-code'])(
   'FHIR Search using %s',
   (tokenColumnsOrLookupTable) => {
     beforeAll(() => {
-      TokenColumnsFeature.read = tokenColumnsOrLookupTable === 'token columns';
+      TokenColumnsFeature.read = tokenColumnsOrLookupTable;
     });
 
     describe('project-scoped Repository', () => {
@@ -81,7 +83,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         const { project } = await createTestProject();
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: [project],
           currentProject: project,
           author: { reference: 'User/' + randomUUID() },
         });
@@ -94,35 +96,69 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
       test('readFromTokenColumns without systemSetting', () => {
         expect(repo.currentProject()).toBeDefined();
         expect(repo.currentProject()?.systemSetting).toBeUndefined();
-        if (tokenColumnsOrLookupTable === 'token columns') {
-          expect(readFromTokenColumns(repo)).toBe(true);
-        } else {
-          expect(readFromTokenColumns(repo)).toBe(false);
-        }
+        expect(readFromTokenColumns(repo)).toBe(tokenColumnsOrLookupTable);
       });
 
-      test('readFromTokenColumns with systemSetting', async () => {
+      test('readFromTokenColumns with systemSetting.valueBoolean', async () => {
         const { project: projectWithTrue } = await createTestProject({
           project: { systemSetting: [{ name: 'searchTokenColumns', valueBoolean: true }] },
         });
         const repoWithTrue = new Repository({
           strictMode: true,
-          projects: [projectWithTrue.id],
+          projects: [projectWithTrue],
           currentProject: projectWithTrue,
           author: { reference: 'User/' + randomUUID() },
         });
-        expect(readFromTokenColumns(repoWithTrue)).toBe(true);
+        expect(readFromTokenColumns(repoWithTrue)).toBe('unified-tokens-column');
 
         const { project: projectWithFalse } = await createTestProject({
           project: { systemSetting: [{ name: 'searchTokenColumns', valueBoolean: false }] },
         });
         const repoWithFalse = new Repository({
           strictMode: true,
-          projects: [projectWithFalse.id],
+          projects: [projectWithFalse],
           currentProject: projectWithFalse,
           author: { reference: 'User/' + randomUUID() },
         });
         expect(readFromTokenColumns(repoWithFalse)).toBe(false);
+      });
+
+      test('readFromTokenColumns with systemSetting.valueString', async () => {
+        const { project: projectWithTrue } = await createTestProject({
+          project: { systemSetting: [{ name: 'searchTokenColumns', valueString: 'unified-tokens-column' }] },
+        });
+        const repoWithTrue = new Repository({
+          strictMode: true,
+          projects: [projectWithTrue],
+          currentProject: projectWithTrue,
+          author: { reference: 'User/' + randomUUID() },
+        });
+        expect(readFromTokenColumns(repoWithTrue)).toBe('unified-tokens-column');
+
+        const { project: projectWithFalse } = await createTestProject({
+          project: { systemSetting: [{ name: 'searchTokenColumns', valueString: 'column-per-code' }] },
+        });
+        const repoWithFalse = new Repository({
+          strictMode: true,
+          projects: [projectWithFalse],
+          currentProject: projectWithFalse,
+          author: { reference: 'User/' + randomUUID() },
+        });
+        expect(readFromTokenColumns(repoWithFalse)).toBe('column-per-code');
+      });
+
+      test('readFromTokenColumns with invalid systemSetting.valueString', async () => {
+        const { project: projectWithTrue } = await createTestProject({
+          project: { systemSetting: [{ name: 'searchTokenColumns', valueString: 'invalid' }] },
+        });
+        const repoWithTrue = new Repository({
+          strictMode: true,
+          projects: [projectWithTrue],
+          currentProject: projectWithTrue,
+          author: { reference: 'User/' + randomUUID() },
+        });
+        // should fallback to the default value
+        expect(readFromTokenColumns(repoWithTrue)).toBe(tokenColumnsOrLookupTable);
       });
 
       test('Search total', async () =>
@@ -3116,8 +3152,17 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
           };
         });
 
-        test('Search by identifier', () =>
+        test('Search by dedicated token column search parameter, identifier', () =>
           withTestContext(async () => {
+            // make sure we're testing at least one token search parameter with dedicated columns
+            const searchParam = getSearchParameter('Patient', 'identifier');
+            if (!searchParam) {
+              throw new Error('Missing search parameter');
+            }
+            const impl = getSearchParameterImplementation('Patient', searchParam);
+            expect(impl.searchStrategy).toStrictEqual('token-column');
+            expect((impl as TokenColumnSearchParameterImplementation).hasDedicatedColumns).toStrictEqual(true);
+
             const bundle1 = await repo.search({
               resourceType: 'Patient',
               filters: [
@@ -3132,8 +3177,17 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             expect(bundleContains(bundle1, patient)).toBeTruthy();
           }));
 
-        test('Search by _security', () =>
+        test('Search by a shared token column search param, _security', () =>
           withTestContext(async () => {
+            // make sure we're testing at least one token search parameter with shared columns
+            const searchParam = getSearchParameter('Patient', '_security');
+            if (!searchParam) {
+              throw new Error('Missing search parameter');
+            }
+            const impl = getSearchParameterImplementation('Patient', searchParam);
+            expect(impl.searchStrategy).toStrictEqual('token-column');
+            expect((impl as TokenColumnSearchParameterImplementation).hasDedicatedColumns).toStrictEqual(false);
+
             const bundle2 = await repo.search({
               resourceType: 'Patient',
               filters: [
@@ -4769,20 +4823,19 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
 
       test('readFromTokenColumns', () => {
         expect(getConfig().systemRepositoryTokenReadStrategy).toBeUndefined();
-
-        if (tokenColumnsOrLookupTable === 'token columns') {
-          expect(readFromTokenColumns(systemRepo)).toBe(true);
-        } else {
-          expect(readFromTokenColumns(systemRepo)).toBe(false);
-        }
+        // without systemRepositoryTokenReadStrategy, it should use the default
+        expect(readFromTokenColumns(systemRepo)).toBe(tokenColumnsOrLookupTable);
       });
 
       test('readFromTokenColumns with systemRepositoryTokenReadStrategy', () => {
         const config = getConfig();
         const originalValue = config.systemRepositoryTokenReadStrategy;
 
+        config.systemRepositoryTokenReadStrategy = 'column-per-code';
+        expect(readFromTokenColumns(systemRepo)).toBe('column-per-code');
+
         config.systemRepositoryTokenReadStrategy = 'unified-tokens-column';
-        expect(readFromTokenColumns(systemRepo)).toBe(true);
+        expect(readFromTokenColumns(systemRepo)).toBe('unified-tokens-column');
 
         config.systemRepositoryTokenReadStrategy = 'token-tables';
         expect(readFromTokenColumns(systemRepo)).toBe(false);

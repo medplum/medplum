@@ -1,7 +1,6 @@
 import { ContentType } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { Request } from 'express';
-import fs from 'fs';
 import { Readable } from 'stream';
 import { loadTestConfig } from '../config/loader';
 import { streamToString } from '../test.setup';
@@ -54,22 +53,15 @@ describe('FileSystemStorage', () => {
     const storage = getBinaryStorage();
     expect(storage).toBeDefined();
 
-    // Write a file
+    // Create a binary resource that does not exist on the filesystem
     const binary = {
       resourceType: 'Binary',
-      id: '123',
+      id: 'does-not-exist',
       meta: {
-        versionId: '456',
+        versionId: 'does-not-exist',
       },
     } as Binary;
 
-    jest.spyOn(fs, 'existsSync').mockReturnValue(false);
-
-    try {
-      const stream = await storage.readBinary(binary);
-      expect(stream).not.toBeDefined();
-    } catch (err) {
-      expect((err as Error).message).toStrictEqual('File not found');
-    }
+    await expect(storage.readBinary(binary)).rejects.toThrow('File not found');
   });
 });

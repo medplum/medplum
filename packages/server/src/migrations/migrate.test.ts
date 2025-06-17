@@ -32,6 +32,28 @@ describe('Generator', () => {
       const table = result.tables.find((t) => t.name === 'Patient') as TableDefinition;
       expect(table).toBeDefined();
 
+      const tokenCodes = [
+        '_compartmentIdentifier',
+        '_security',
+        '_tag',
+        'email',
+        'generalPractitionerIdentifier',
+        'identifier',
+        'language',
+        'linkIdentifier',
+        'organizationIdentifier',
+        'phone',
+        'telecom',
+      ];
+
+      const sharedTokenCodes = [
+        '_compartmentIdentifier',
+        '_security',
+        'generalPractitionerIdentifier',
+        'linkIdentifier',
+        'organizationIdentifier',
+      ];
+
       const expectedColumns: ColumnDefinition[] = [
         {
           name: 'id',
@@ -145,49 +167,38 @@ describe('Generator', () => {
           type: 'TEXT[]',
         },
         {
-          name: '___securitySort',
-          type: 'TEXT',
+          name: '__sharedTokens',
+          type: 'UUID[]',
         },
         {
-          name: '___tagSort',
-          type: 'TEXT',
+          name: '__sharedTokensText',
+          type: 'TEXT[]',
         },
-        {
-          name: '__emailSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__identifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__languageSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__phoneSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__telecomSort',
-          type: 'TEXT',
-        },
-        {
-          name: '___compartmentIdentifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__generalPractitionerIdentifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__linkIdentifierSort',
-          type: 'TEXT',
-        },
-        {
-          name: '__organizationIdentifierSort',
-          type: 'TEXT',
-        },
+        ...tokenCodes.flatMap((code) => {
+          // both dedicated and shared tokens have a sort column
+          const expectedCols = [
+            {
+              name: `__${code}Sort`,
+              type: 'TEXT',
+            },
+          ];
+
+          // add dedicated columns
+          if (!sharedTokenCodes.includes(code)) {
+            expectedCols.push(
+              {
+                name: `__${code}`,
+                type: 'UUID[]',
+              },
+              {
+                name: `__${code}Text`,
+                type: 'TEXT[]',
+              }
+            );
+          }
+
+          return expectedCols;
+        }),
       ];
 
       const sortFn = (a: { name: string }, b: { name: string }): number => a.name.localeCompare(b.name);

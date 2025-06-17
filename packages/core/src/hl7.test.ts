@@ -81,6 +81,40 @@ describe('HL7', () => {
     expect(msg3.buildAck().getSegment('MSH')?.getField(9)?.toString()).toBe('ACK^A01^ACK');
   });
 
+  test.each(['CA', 'CR', 'CE', 'AE', 'AR'] as const)('Build ACK -- %s, no ERR segment', (ackCode) => {
+    // 1 message type components
+    const text1 =
+      'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT|MSG00001|P|2.1\r' +
+      'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-||C|1200 N ELM STREET^^GREENSBORO^NC^27401-1020|GL|(919)379-1212|(919)271-3434||S||PATID12345001^2^M10|123456789|987654^NC\r' +
+      'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+      'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-';
+    const msg1 = Hl7Message.parse(text1);
+    expect(msg1).toBeDefined();
+    const ackMsg = msg1.buildAck({ ackCode });
+    expect(ackMsg.getSegment('MSH')?.getField(9)?.toString()).toBe('ACK');
+    expect(ackMsg.getSegment('MSA')?.getField(1)?.toString()).toBe(ackCode);
+    expect(ackMsg.getSegment('ERR')).toBeUndefined();
+  });
+
+  test('Build ACK -- ERR segment defined', () => {
+    // 1 message type components
+    const text1 =
+      'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT|MSG00001|P|2.1\r' +
+      'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-||C|1200 N ELM STREET^^GREENSBORO^NC^27401-1020|GL|(919)379-1212|(919)271-3434||S||PATID12345001^2^M10|123456789|987654^NC\r' +
+      'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
+      'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-';
+    const msg1 = Hl7Message.parse(text1);
+    expect(msg1).toBeDefined();
+    const ackMsg = msg1.buildAck({
+      ackCode: 'AE',
+      errSegment: new Hl7Segment(['ERR', '^^^207&Application Error&HL70357']),
+    });
+    expect(ackMsg.getSegment('MSH')?.getField(9)?.toString()).toBe('ACK');
+    expect(ackMsg.getSegment('MSA')?.getField(1)?.toString()).toBe('AE');
+    expect(ackMsg.getSegment('MSA')?.getField(3)?.toString()).toBe('Application Error');
+    expect(ackMsg.getSegment('ERR')?.getField(1)?.toString()).toBe('^^^207&Application Error&HL70357');
+  });
+
   test('ADT', () => {
     const text = `MSH|^~\\&|EPIC|EPICADT|SMS|SMSADT|199912271408|CHARRIS|ADT^A04|1817457|D|2.5|
 PID||0493575^^^2^ID 1|454721||DOE^JOHN^^^^|DOE^JOHN^^^^|19480203|M||B|254 MYSTREET AVE^^MYTOWN^OH^44123^USA||(216)123-4567|||M|NON|400003403~1129086|

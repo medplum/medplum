@@ -1617,7 +1617,7 @@ describe('AccessPolicy', () => {
     withTestContext(async () => {
       const adminRepo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        projects: [testProject.id],
+        projects: [testProject],
         strictMode: true,
         extendedMode: true,
       });
@@ -1672,7 +1672,7 @@ describe('AccessPolicy', () => {
     withTestContext(async () => {
       const adminRepo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        projects: [testProject.id],
+        projects: [testProject],
         strictMode: true,
         extendedMode: true,
       });
@@ -1721,7 +1721,7 @@ describe('AccessPolicy', () => {
 
       const adminRepo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        projects: [project.id],
+        projects: [project],
         strictMode: true,
         extendedMode: true,
       });
@@ -2145,7 +2145,7 @@ describe('AccessPolicy', () => {
 
       const adminRepo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        projects: [project.id],
+        projects: [project],
         strictMode: true,
         extendedMode: true,
         superAdmin: true,
@@ -2246,7 +2246,7 @@ describe('AccessPolicy', () => {
       });
       const repo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        projects: [project.id],
+        projects: [project],
         projectAdmin: true,
         strictMode: true,
         extendedMode: true,
@@ -2312,7 +2312,7 @@ describe('AccessPolicy', () => {
       const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
       const repo1 = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        projects: [project1.id],
+        projects: [project1],
         projectAdmin: true,
         strictMode: true,
         extendedMode: true,
@@ -2322,7 +2322,7 @@ describe('AccessPolicy', () => {
       const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test2' });
       const repo2 = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        projects: [project2.id],
+        projects: [project2],
         projectAdmin: true,
         strictMode: true,
         extendedMode: true,
@@ -2384,7 +2384,7 @@ describe('AccessPolicy', () => {
     withTestContext(async () => {
       const repo = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        projects: [testProject.id],
+        projects: [testProject],
         projectAdmin: true,
         strictMode: true,
         extendedMode: true,
@@ -2409,7 +2409,7 @@ describe('AccessPolicy', () => {
       const project1 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test1' });
       const repo1 = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        projects: [project1.id],
+        projects: [project1],
         projectAdmin: true,
         strictMode: true,
         extendedMode: true,
@@ -2419,7 +2419,7 @@ describe('AccessPolicy', () => {
       const project2 = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test2' });
       const repo2 = new Repository({
         author: { reference: 'Practitioner/' + randomUUID() },
-        projects: [project2.id, project1.id],
+        projects: [project2, project1],
         projectAdmin: true,
         strictMode: true,
         extendedMode: true,
@@ -2506,7 +2506,7 @@ describe('AccessPolicy', () => {
 
       const repoWithoutAccessPolicy = new Repository({
         author: createReference(profile),
-        projects: [project.id],
+        projects: [project],
         projectAdmin: false,
         strictMode: true,
         extendedMode: true,
@@ -2514,7 +2514,7 @@ describe('AccessPolicy', () => {
 
       const repoWithAccessPolicy = new Repository({
         author: createReference(profile),
-        projects: [project.id],
+        projects: [project],
         projectAdmin: false,
         strictMode: true,
         extendedMode: true,

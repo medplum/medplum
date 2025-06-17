@@ -19,7 +19,7 @@ import {
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ClusterInstance, DBClusterStorageType, ParameterGroup } from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
-import { buildWafConfig } from './waf';
+import { buildWaf } from './waf';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -576,10 +576,14 @@ export class BackEnd extends Construct {
     });
 
     // WAF
-    this.waf = new wafv2.CfnWebACL(
+    this.waf = buildWaf(
       this,
       'BackEndWAF',
-      buildWafConfig(`${config.stackName}-BackEndWAF`, 'REGIONAL', config.apiWafIpSetArn)
+      `${config.stackName}-BackEndWAF`,
+      'REGIONAL',
+      config.apiWafIpSetArn,
+      config.wafLogGroupName,
+      config.wafLogGroupCreate
     );
 
     // Create an association between the load balancer and the WAF

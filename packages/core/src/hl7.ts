@@ -1,5 +1,35 @@
 import { isStringArray } from './utils';
 
+export const AckCode = {
+  /** AA - Application Accept */
+  AA: 'AA',
+  /** AE - Application Error */
+  AE: 'AE',
+  /** AR - Application Reject */
+  AR: 'AR',
+  /** CA - Commit Accept */
+  CA: 'CA',
+  /** CE - Commit Error */
+  CE: 'CE',
+  /** CR - Commit Reject */
+  CR: 'CR',
+} as const;
+export type AckCode = keyof typeof AckCode;
+
+export interface Hl7AckOptions {
+  ackCode: AckCode;
+  errSegment?: Hl7Segment;
+}
+
+const TEXT_MSG_FOR_ACK_CODE = {
+  AA: 'OK',
+  AE: 'Application Error',
+  AR: 'Application Reject',
+  CA: 'Commit Accept',
+  CE: 'Commit Error',
+  CR: 'Commit Reject',
+} as Record<AckCode, string>;
+
 /**
  * The Hl7Context class represents the parsing context for an HL7 message.
  *
@@ -130,9 +160,10 @@ export class Hl7Message {
 
   /**
    * Returns an HL7 "ACK" (acknowledgement) message for this message.
+   * @param options - The optional options to configure the "ACK" message.
    * @returns The HL7 "ACK" message.
    */
-  buildAck(): Hl7Message {
+  buildAck(options?: Hl7AckOptions): Hl7Message {
     const now = new Date();
     const msh = this.getSegment('MSH');
     const sendingApp = msh?.getField(3)?.toString() ?? '';
@@ -141,6 +172,7 @@ export class Hl7Message {
     const receivingFacility = msh?.getField(6)?.toString() ?? '';
     const controlId = msh?.getField(10)?.toString() ?? '';
     const versionId = msh?.getField(12)?.toString() ?? '2.5.1';
+    const ackCode = options?.ackCode ?? 'AA';
 
     return new Hl7Message([
       new Hl7Segment(
@@ -160,7 +192,8 @@ export class Hl7Message {
         ],
         this.context
       ),
-      new Hl7Segment(['MSA', 'AA', controlId, 'OK'], this.context),
+      new Hl7Segment(['MSA', ackCode, controlId, TEXT_MSG_FOR_ACK_CODE[ackCode]], this.context),
+      ...(options?.errSegment ? [options.errSegment] : []),
     ]);
   }
 

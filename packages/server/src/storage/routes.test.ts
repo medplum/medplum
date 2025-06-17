@@ -2,8 +2,6 @@ import { ContentType } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express, { Request } from 'express';
-import { unlinkSync } from 'fs';
-import { resolve } from 'path';
 import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
@@ -43,21 +41,55 @@ describe('Storage Routes', () => {
   });
 
   test('Missing signature', async () => {
-    const res = await request(app).get(`/storage/${binary.id}`);
+    const res = await request(app).get(`/storage/${binary.id}?Expires=123`);
+    expect(res.status).toBe(401);
+  });
+
+  test('Missing expires', async () => {
+    const res = await request(app).get(`/storage/${binary.id}?Signature=xyz`);
+    expect(res.status).toBe(410);
+  });
+
+  test('Invalid signature', async () => {
+    const dateLessThan = new Date();
+    dateLessThan.setHours(dateLessThan.getHours() + 1);
+    const res = await request(app).get(`/storage/${binary.id}?Signature=xyz&Expires=${dateLessThan.getTime()}`);
     expect(res.status).toBe(401);
   });
 
   test('Success', async () => {
-    const res = await request(app).get(`/storage/${binary.id}?Signature=xyz&Expires=123`);
+    // For signature verification, we need to use the same URL as the client would use
+    // So we need to start the request without executing it yet
+    const req = request(app).get('/');
+
+    // Get the base URL from the request (i.e., "http://127.0.0.1:57516/")
+    const baseUrl = req.url;
+
+    // Now we need to update our server config to use that as the storage base URL
+    config.storageBaseUrl = baseUrl + 'storage/';
+
+    // Now we can generate the presigned URL with a proper signature
+    req.url = await getBinaryStorage().getPresignedUrl(binary);
+
+    // And finally, we can execute the request
+    const res = await req;
     expect(res.status).toBe(200);
   });
 
   test('Binary not found', async () => {
-    const res = await request(app).get(`/storage/${randomUUID()}?Signature=xyz&Expires=123`);
+    const req = request(app).get('/');
+    config.storageBaseUrl = req.url + 'storage/';
+    req.url = await getBinaryStorage().getPresignedUrl({
+      resourceType: 'Binary',
+      id: randomUUID(),
+      contentType: ContentType.TEXT,
+    });
+    const res = await req;
     expect(res.status).toBe(404);
   });
 
   test('File not found', async () => {
+    // Create a Binary resource without writing a file to disk
     const resource = await withTestContext(async () => {
       const systemRepo = getSystemRepo();
       const result = await systemRepo.createResource<Binary>({
@@ -67,17 +99,10 @@ describe('Storage Routes', () => {
       return result;
     });
 
-    const req = new Readable();
-    req.push('hello world');
-    req.push(null);
-    (req as any).headers = {};
-    await getBinaryStorage().writeBinary(resource, 'hello.txt', ContentType.TEXT, req as Request);
-
-    // Delete the file on disk
-    const binaryDir = (config.binaryStorage as string).replaceAll('file:', '');
-    unlinkSync(resolve(binaryDir, `${resource.id}/${resource.meta?.versionId}`));
-
-    const res = await request(app).get(`/storage/${resource.id}?Signature=xyz&Expires=123`);
+    const req = request(app).get('/');
+    config.storageBaseUrl = req.url + 'storage/';
+    req.url = await getBinaryStorage().getPresignedUrl(resource);
+    const res = await req;
     expect(res.status).toBe(404);
   });
 });

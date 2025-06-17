@@ -392,6 +392,21 @@ describe('MockClient', () => {
     });
   });
 
+  test('Create binary with security context', async () => {
+    const client = new MockClient();
+    const result = await client.createBinary({
+      data: 'test',
+      filename: 'test.txt',
+      contentType: ContentType.TEXT,
+      securityContext: { reference: 'Patient/123' },
+    });
+    expect(result).toMatchObject({
+      resourceType: 'Binary',
+      contentType: ContentType.TEXT,
+      securityContext: { reference: 'Patient/123' },
+    });
+  });
+
   test('Create binary with progress listener', async () => {
     const client = new MockClient();
     const onProgress = jest.fn();

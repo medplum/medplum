@@ -572,6 +572,23 @@
               "min": 1,
               "max": "*"
             }
+          },
+          {
+            "id": "Project.exportedResourceType",
+            "path": "Project.exportedResourceType",
+            "definition": "The resource types exported by the project when linked",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "code"}],
+            "base": {
+              "path": "Project.exportedResourceType",
+              "min": 0,
+              "max": "*"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "http://hl7.org/fhir/ValueSet/resource-types"
+            }
           }
         ]
       }
