@@ -1,7 +1,13 @@
 import { BotEvent, MedplumClient, OperationOutcomeError } from '@medplum/core';
 import { Patient, OperationOutcome, Identifier } from '@medplum/fhirtypes';
 
-async function createOrUpdateHapiResource(patient: Patient) {
+const HAPI_SERVER = 'http://hapi-server:8080';
+enum HTTP_VERBS {
+  'PUT',
+  'DELETE',
+}
+
+async function syncHapiResource(patient: Patient, verb: HTTP_VERBS) {
   try {
     const patientForHapi = {
       ...patient,
@@ -16,9 +22,9 @@ async function createOrUpdateHapiResource(patient: Patient) {
 
     // Send patient record to HAPI FHIR server
     const response = await fetch(
-      `http://hapi-server:8080/fhir/Patient?identifier=https://medplum.com/patient-id|${patient.id}`,
+      `${HAPI_SERVER}/fhir/Patient?identifier=https://medplum.com/patient-id|${patient.id}`,
       {
-        method: 'PUT',
+        method: HTTP_VERBS[verb],
         headers: {
           accept: 'application/fhir+json',
           'Content-Type': 'application/fhir+json',
@@ -97,6 +103,10 @@ export async function handler(_medplum: MedplumClient, event: BotEvent): Promise
   const lastName = patient.name?.[0]?.family;
   console.log(`Hello ${firstName} ${lastName}!`);
 
-  // Create or update a copy of the patient record
-  await createOrUpdateHapiResource(patient);
+  if (event.headers && event.headers['X-Medplum-Deleted-Resource']) {
+    await syncHapiResource(patient, HTTP_VERBS['DELETE']);
+  } else {
+    // Create or update a copy of the patient record
+    await syncHapiResource(patient, HTTP_VERBS['PUT']);
+  }
 }
