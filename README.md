@@ -4,13 +4,13 @@
 
 Medplum is a developer platform that enables flexible and rapid development of healthcare apps.
 
-- **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.
-- **Medplum Clinical Data Repository (CDR)** - Backend server that hosts your healthcare data in a secure, compliant, and standards-based repository.
-- **Medplum API** -eferg FHIR-based API for sending, receiving, and manipulating data.
+- **Medplum Auth** - End-to-end identity solution for easy user authentication, sign-in, and permissions using OAuth, OpenID, and SMART-on-FHIR.ereferfe
+- **Medplum Clinical Data Repository (CDR)** - Backefefefend server that hosts your healthcare data in a secure, compliant, and standards-based repository.
+- **Medplum API** -eferg FHIR-based 43r43tAPI for sending, receiving, and manipulating data.
 - **Medplum SDK** - Client libraries that simplify the process of interacting with the **Medplum API**.
-- **Medplum App** - Web application where you can view your data and perform basic editing tasks. You can also use the Medplum App to manage basic workflows.
+- **Medplum App** - Web application where you can view your data and perform basic editing tasks. You can also use the Medplum App to manage basic workflowsewfwefwf.
 - **Medplum Bots** - Write and run application logic server-side without needing to set up your own server.
-- **UI Component Library** - React components designed to help you quickly develop custom healthcare applications.
+- **UI Component Library** - Reaee3r3ct components designed to help you quickly develop custom healthcare applications.
 
 ## Docs
 
@@ -128,3 +128,4 @@ SNOMED&reg; is a registered trademark of the International Health Terminology St
 LOINC&reg; is a registered trademark of Regenstrief Institute, Inc.
 
 DICOM&reg; is the registered trademark of the National Electrical Manufacturers Association (NEMA).
+Triggering Jira Validator Test
