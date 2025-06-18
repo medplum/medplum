@@ -85,7 +85,7 @@ describe('PID File Manager', () => {
     );
 
     // Remove PID file
-    removePidFile(pidFilePath);
+    removePidFile(APP_NAME);
 
     // Verify unlink was called
     expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -203,7 +203,7 @@ describe('PID File Manager', () => {
 
   test('safely handles non-existent PID file during removal', () => {
     // Should not throw
-    removePidFile(TEST_PID_PATH);
+    removePidFile(APP_NAME);
 
     // Verify unlink was not called
     expect(mockedFs.unlinkSync).not.toHaveBeenCalled();
@@ -227,7 +227,7 @@ describe('PID File Manager', () => {
     });
 
     // Should not throw
-    expect(() => removePidFile(TEST_PID_PATH)).not.toThrow('Permission denied');
+    expect(() => removePidFile(APP_NAME)).not.toThrow('Permission denied');
 
     // Verify unlink was attempted
     expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
