@@ -1671,6 +1671,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     while (url) {
       const searchParams: URLSearchParams = new URL(url).searchParams;
+      if (!searchParams.has('_count')) {
+        searchParams.set('_count', '1000'); // Force maximum page size to reduce server load
+      }
+
       const bundle = await this.search(resourceType, searchParams, options);
       const nextLink: BundleLink | undefined = bundle.link?.find((link) => link.relation === 'next');
       if (!bundle.entry?.length && !nextLink) {
