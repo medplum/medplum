@@ -294,23 +294,7 @@
       "min": 0,
       "max": "1",
       "short": "",
-      "definition": "@deprecated Use AccessPolicy.resource.interaction = ['search', 'read', 'vread', 'history']",
-      "comment": "",
-      "inherited": false
-    },
-    {
-      "name": "interaction",
-      "depth": 2,
-      "types": [
-        {
-          "datatype": "code"
-        }
-      ],
-      "path": "AccessPolicy.resource.interaction",
-      "min": 0,
-      "max": "*",
-      "short": "",
-      "definition": "Permitted FHIR interactions with this resource type",
+      "definition": "Optional flag to indicate that the resource type is read-only.",
       "comment": "",
       "inherited": false
     },

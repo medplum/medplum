@@ -1,6 +1,5 @@
 import {
   accepted,
-  AccessPolicyInteraction,
   concatUrls,
   getResourceTypes,
   Operator,
@@ -75,7 +74,7 @@ export async function exportResources(
     if (
       !canBeExported(resourceType) ||
       (types && !types.includes(resourceType)) ||
-      !exporter.repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType)
+      !exporter.repo.canReadResourceType(resourceType)
     ) {
       continue;
     }

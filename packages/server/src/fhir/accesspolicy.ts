@@ -104,36 +104,34 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
  * @returns The parameterized compound access policy.
  */
 export async function buildAccessPolicy(membership: ProjectMembership): Promise<PopulatedAccessPolicy> {
-  const access: ProjectMembershipAccess[] = [];
+  let access: ProjectMembershipAccess[] = [];
+
   if (membership.accessPolicy) {
     access.push({ policy: membership.accessPolicy });
   }
+
   if (membership.access) {
-    access.push(...membership.access);
+    access = access.concat(membership.access);
   }
 
+  const profile = membership.profile as Reference<ProfileResource>;
   let compartment: Reference | undefined = undefined;
-  const resourcePolicies: AccessPolicyResource[] = [];
-  const ipAccessRules: AccessPolicyIpAccessRule[] = [];
+  let resourcePolicies: AccessPolicyResource[] = [];
+  let ipAccessRules: AccessPolicyIpAccessRule[] = [];
   for (const entry of access) {
-    const replaced = await buildAccessPolicyResources(entry, membership.profile as Reference<ProfileResource>);
+    const replaced = await buildAccessPolicyResources(entry, profile);
     if (replaced.compartment) {
       compartment = replaced.compartment;
     }
     if (replaced.resource) {
-      for (const resourcePolicy of replaced.resource) {
-        if (!resourcePolicy.interaction && resourcePolicy.readonly) {
-          resourcePolicy.interaction = ['search', 'read', 'history', 'vread'];
-        }
-        resourcePolicies.push(resourcePolicy);
-      }
+      resourcePolicies = resourcePolicies.concat(replaced.resource);
     }
     if (replaced.ipAccessRule) {
-      ipAccessRules.push(...replaced.ipAccessRule);
+      ipAccessRules = ipAccessRules.concat(replaced.ipAccessRule);
     }
   }
 
-  if (!membership?.access?.length && !membership.accessPolicy) {
+  if ((!membership.access || membership.access.length === 0) && !membership.accessPolicy) {
     // Preserve legacy behavior of null access policy
     // TODO: This should be removed in future release when access policies are required
     resourcePolicies.push({ resourceType: '*' });
@@ -146,7 +144,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     basedOn: access.map((a) => a.policy),
     compartment,
     resource: resourcePolicies,
-    ipAccessRule: ipAccessRules.length ? ipAccessRules : undefined,
+    ipAccessRule: ipAccessRules,
   };
 }
 

@@ -1,5 +1,4 @@
 import {
-  AccessPolicyInteraction,
   badRequest,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
@@ -250,7 +249,7 @@ function validateSearchResourceType(repo: Repository, resourceType: ResourceType
     throw new OperationOutcomeError(badRequest('Cannot search on Binary resource type'));
   }
 
-  if (!repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType)) {
+  if (!repo.canReadResourceType(resourceType)) {
     throw new OperationOutcomeError(forbidden);
   }
 }
