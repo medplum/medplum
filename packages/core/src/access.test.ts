@@ -43,6 +43,10 @@ const restrictedPolicy: AccessPolicy = {
       readonly: true,
       criteria: 'Communication?status=completed',
     },
+    {
+      resourceType: 'List',
+      interaction: ['read', 'search', 'create'],
+    },
   ],
 };
 
@@ -123,6 +127,20 @@ describe('Access', () => {
     expect(
       satisfiedAccessPolicy(
         { resourceType: 'Communication', status: 'completed' },
+        AccessPolicyInteraction.UPDATE,
+        restrictedPolicy
+      )
+    ).toBeUndefined();
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'List', status: 'current', mode: 'working' },
+        AccessPolicyInteraction.CREATE,
+        restrictedPolicy
+      )
+    ).toStrictEqual(expect.objectContaining({ resourceType: 'List' }));
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'List', status: 'current', mode: 'working' },
         AccessPolicyInteraction.UPDATE,
         restrictedPolicy
       )

@@ -3,7 +3,6 @@ import {
   getReferenceString,
   LOINC,
   normalizeErrorString,
-  OperationOutcomeError,
   Operator,
   parseSearchRequest,
   WithId,
@@ -12,6 +11,7 @@ import {
   AccessPolicy,
   AccessPolicyResource,
   ClientApplication,
+  Condition,
   Login,
   Observation,
   Organization,
@@ -76,12 +76,7 @@ describe('AccessPolicy', () => {
         accessPolicy,
       });
 
-      try {
-        await repo2.readResource('Patient', patient.id);
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
-      }
+      await expect(repo2.readResource('Patient', patient.id)).rejects.toThrow('Forbidden');
     }));
 
   test('Access policy restricting search', () =>
@@ -98,12 +93,7 @@ describe('AccessPolicy', () => {
         accessPolicy,
       });
 
-      try {
-        await repo2.search({ resourceType: 'Patient' });
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
-      }
+      await expect(repo2.search({ resourceType: 'Patient' })).rejects.toThrow('Forbidden');
     }));
 
   test('Access policy restricting write', () =>
@@ -132,15 +122,8 @@ describe('AccessPolicy', () => {
         accessPolicy,
       });
 
-      const patient2 = await repo2.readResource('Patient', patient.id);
-      expect(patient2).toBeDefined();
-
-      try {
-        await repo2.updateResource(patient);
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
-      }
+      await expect(repo2.readResource('Patient', patient.id)).resolves.toBeDefined();
+      await expect(repo2.updateResource(patient)).rejects.toThrow('Forbidden');
     }));
 
   test('Access policy restricting write before update', () =>
@@ -176,15 +159,8 @@ describe('AccessPolicy', () => {
         accessPolicy,
       });
 
-      const serviceRequest = await repo2.readResource('ServiceRequest', resource.id);
-      expect(serviceRequest).toBeDefined();
-
-      try {
-        await repo2.updateResource(resource);
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
-      }
+      await expect(repo2.readResource('ServiceRequest', resource.id)).resolves.toBeDefined();
+      await expect(repo2.updateResource(resource)).rejects.toThrow('Forbidden');
     }));
 
   test('Access policy restricting write after update', () =>
@@ -220,15 +196,8 @@ describe('AccessPolicy', () => {
         accessPolicy,
       });
 
-      const serviceRequest = await repo2.readResource('ServiceRequest', resource.id);
-      expect(serviceRequest).toBeDefined();
-
-      try {
-        await repo2.updateResource({ ...resource, status: 'completed' });
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
-      }
+      await expect(repo2.readResource('ServiceRequest', resource.id)).resolves.toBeDefined();
+      await expect(repo2.updateResource({ ...resource, status: 'completed' })).rejects.toThrow('Forbidden');
     }));
 
   test('Access policy restricting delete', () =>
@@ -257,15 +226,8 @@ describe('AccessPolicy', () => {
         accessPolicy,
       });
 
-      const patient2 = await repo2.readResource('Patient', patient.id);
-      expect(patient2).toBeDefined();
-
-      try {
-        await repo2.deleteResource('Patient', patient.id);
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
-      }
+      await expect(repo2.readResource('Patient', patient.id)).resolves.toBeDefined();
+      await expect(repo2.deleteResource('Patient', patient.id)).rejects.toThrow('Forbidden');
     }));
 
   test('Access policy set compartment', () =>
@@ -528,23 +490,8 @@ describe('AccessPolicy', () => {
       expect(readPatient2.meta?.accounts).toHaveLength(1);
       expect(readPatient2.meta?.accounts).toContainEqual({ reference: 'Organization/' + org2 });
 
-      // Try to read patient1 with repo2
-      // This should fail
-      try {
-        await repo2.readResource('Patient', patient1.id);
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
-      }
-
-      // Try to read patient2 with repo1
-      // This should fail
-      try {
-        await repo1.readResource('Patient', patient2.id);
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
-      }
+      await expect(repo2.readResource('Patient', patient1.id)).rejects.toThrow('Not found');
+      await expect(repo1.readResource('Patient', patient2.id)).rejects.toThrow('Not found');
     }));
 
   test("Access policy won't override existing account", () =>
@@ -604,8 +551,6 @@ describe('AccessPolicy', () => {
       patient.gender = 'female';
 
       patient = await repo2.updateResource(patient);
-
-      expect(patient).toBeDefined();
       expect(patient.meta?.account?.reference).toStrictEqual('Organization/' + org1);
       expect(patient.meta?.accounts).toHaveLength(1);
       expect(patient.meta?.accounts).toContainEqual({ reference: 'Organization/' + org1 });
@@ -686,23 +631,8 @@ describe('AccessPolicy', () => {
       expect(readPatient2.meta?.accounts).toHaveLength(1);
       expect(readPatient2.meta?.accounts).toContainEqual({ reference: 'Organization/' + org2 });
 
-      // Try to read patient1 with repo2
-      // This should fail
-      try {
-        await repo2.readResource('Patient', patient1.id);
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
-      }
-
-      // Try to read patient2 with repo1
-      // This should fail
-      try {
-        await repo1.readResource('Patient', patient2.id);
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
-      }
+      await expect(repo2.readResource('Patient', patient1.id)).rejects.toThrow('Not found');
+      await expect(repo1.readResource('Patient', patient2.id)).rejects.toThrow('Not found');
     }));
 
   test('Multiple entries per resource type', () =>
@@ -742,17 +672,11 @@ describe('AccessPolicy', () => {
       });
       expect(serviceRequest2).toBeDefined();
 
-      // Try to update the ServiceRequest with status=completed
+      // Try to update the ServiceRequest to status=completed
       // This should fail
-      try {
-        await repo.updateResource<ServiceRequest>({
-          ...serviceRequest2,
-          status: 'completed',
-        });
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
-      }
+      await expect(repo.updateResource<ServiceRequest>({ ...serviceRequest2, status: 'completed' })).rejects.toThrow(
+        'Forbidden'
+      );
     }));
 
   test('ClientApplication with account restriction', () =>
@@ -858,12 +782,7 @@ describe('AccessPolicy', () => {
       expect(patient2).toBeDefined();
 
       // The ClientApplication should not be able to access it
-      try {
-        await clientRepo.readResource<Patient>('Patient', patient2.id);
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
-      }
+      await expect(clientRepo.readResource<Patient>('Patient', patient2.id)).rejects.toThrow('Not found');
 
       // Create an Observation outside of the account
       const observation2 = await systemRepo.createResource<Observation>({
@@ -878,12 +797,7 @@ describe('AccessPolicy', () => {
       expect(observation2).toBeDefined();
 
       // The ClientApplication should not be able to access it
-      try {
-        await clientRepo.readResource<Observation>('Observation', observation2.id);
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
-      }
+      await expect(clientRepo.readResource<Observation>('Observation', observation2.id)).rejects.toThrow('Not found');
     }));
 
   test('ClientApplication with access policy', () =>
@@ -939,8 +853,8 @@ describe('AccessPolicy', () => {
       // Create an Observation using the ClientApplication
       // Observation is not in the AccessPolicy
       // So this should fail
-      try {
-        await clientRepo.createResource<Observation>({
+      await expect(
+        clientRepo.createResource<Observation>({
           resourceType: 'Observation',
           status: 'final',
           subject: createReference(patient as Patient),
@@ -948,11 +862,8 @@ describe('AccessPolicy', () => {
             text: 'test',
           },
           valueString: 'positive',
-        });
-        fail('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
-      }
+        })
+      ).rejects.toThrow('Forbidden');
     }));
 
   test('Readonly fields on write', () =>
@@ -1267,28 +1178,25 @@ describe('AccessPolicy', () => {
 
   test('Hidden fields on read', () =>
     withTestContext(async () => {
-      const patient = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        birthDate: '1970-01-01',
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        // AccessPolicy that hides Patient name
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+              hiddenFields: ['name'],
+            },
+          ],
+        },
       });
 
-      // AccessPolicy that hides Patient name
-      const accessPolicy: AccessPolicy = {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'Patient',
-            hiddenFields: ['name'],
-          },
-        ],
-      };
-
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
-        accessPolicy,
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        birthDate: '1970-01-01',
       });
 
       const readResource = await repo2.readResource<Patient>('Patient', patient.id);
@@ -1316,8 +1224,23 @@ describe('AccessPolicy', () => {
 
   test('Nested hidden fields on read', () =>
     withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        // AccessPolicy that hides ServiceRequest subject.display
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'ServiceRequest',
+              hiddenFields: ['subject.display'],
+            },
+          ],
+        },
+      });
+
       const serviceRequest = await systemRepo.createResource<ServiceRequest>({
         resourceType: 'ServiceRequest',
+        meta: { project: project.id },
         status: 'active',
         intent: 'order',
         code: {
@@ -1327,24 +1250,6 @@ describe('AccessPolicy', () => {
           reference: 'Patient/' + randomUUID(),
           display: 'Alice Smith',
         },
-      });
-
-      // AccessPolicy that hides ServiceRequest subject.display
-      const accessPolicy: AccessPolicy = {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'ServiceRequest',
-            hiddenFields: ['subject.display'],
-          },
-        ],
-      };
-
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
-        accessPolicy,
       });
 
       const readResource = await repo2.readResource<ServiceRequest>('ServiceRequest', serviceRequest.id);
@@ -1465,8 +1370,23 @@ describe('AccessPolicy', () => {
 
   test('Hide nonexistent field', () =>
     withTestContext(async () => {
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        // AccessPolicy that hides ServiceRequest subject.display
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'ServiceRequest',
+              hiddenFields: ['subject.display'],
+            },
+          ],
+        },
+      });
+
       const serviceRequest = await systemRepo.createResource<ServiceRequest>({
         resourceType: 'ServiceRequest',
+        meta: { project: project.id },
         status: 'active',
         intent: 'order',
         code: {
@@ -1475,24 +1395,6 @@ describe('AccessPolicy', () => {
         subject: {
           reference: 'Patient/' + randomUUID(),
         },
-      });
-
-      // AccessPolicy that hides ServiceRequest subject.display
-      const accessPolicy: AccessPolicy = {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'ServiceRequest',
-            hiddenFields: ['subject.display'],
-          },
-        ],
-      };
-
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
-        accessPolicy,
       });
 
       const readResource = await repo2.readResource<ServiceRequest>('ServiceRequest', serviceRequest.id);
@@ -1581,28 +1483,26 @@ describe('AccessPolicy', () => {
 
   test('Identifier criteria', () =>
     withTestContext(async () => {
-      const questionnaire = await systemRepo.createResource<Questionnaire>({
-        resourceType: 'Questionnaire',
-        status: 'active',
-        identifier: [{ system: 'https://example.com', value: randomUUID() }],
+      const identifier = randomUUID();
+      const { repo: repo2, project } = await createTestProject({
+        withRepo: true,
+        // AccessPolicy that only allows one specific Questionnaire
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Questionnaire',
+              criteria: 'Questionnaire?identifier=https://example.com|' + identifier,
+            },
+          ],
+        },
       });
 
-      // AccessPolicy that only allows one specific Questionnaire
-      const accessPolicy: AccessPolicy = {
-        resourceType: 'AccessPolicy',
-        resource: [
-          {
-            resourceType: 'Questionnaire',
-            criteria: 'Questionnaire?identifier=' + questionnaire.identifier?.[0].value,
-          },
-        ],
-      };
-
-      const repo2 = new Repository({
-        author: {
-          reference: 'Practitioner/123',
-        },
-        accessPolicy,
+      const questionnaire = await systemRepo.createResource<Questionnaire>({
+        resourceType: 'Questionnaire',
+        meta: { project: project.id },
+        status: 'active',
+        identifier: [{ system: 'https://example.com', value: identifier }],
       });
 
       const readResource = await repo2.readResource<Questionnaire>('Questionnaire', questionnaire.id);
@@ -1658,11 +1558,11 @@ describe('AccessPolicy', () => {
       expect(resource.status).toStrictEqual('preliminary');
 
       resource.status = 'final';
-      await expect(repo.updateResource(resource)).rejects.toThrow(new Error('Forbidden'));
+      await expect(repo.updateResource(resource)).rejects.toThrow('Forbidden');
       resource.subject = { reference: 'Patient/test' };
       await expect(repo.updateResource(resource)).resolves.toBeDefined();
       resource.status = 'cancelled';
-      await expect(repo.updateResource(resource)).rejects.toThrow(new Error('Forbidden'));
+      await expect(repo.updateResource(resource)).rejects.toThrow('Forbidden');
     }));
 
   test('Overlapping resource policies', () =>
@@ -1702,41 +1602,15 @@ describe('AccessPolicy', () => {
       expect(sr.id).toBeDefined();
 
       // Can update in "active" status
-      sr = await repo2.updateResource<ServiceRequest>({
-        ...sr,
-        priority: 'stat',
-      });
-
+      sr = await repo2.updateResource<ServiceRequest>({ ...sr, priority: 'stat' });
       // Cannot put into "completed" status
-      try {
-        await repo2.updateResource<ServiceRequest>({
-          ...sr,
-          status: 'completed',
-        });
-        throw new Error('Should not be able to update resource');
-      } catch (err) {
-        expect(normalizeErrorString(err)).toStrictEqual('Forbidden');
-      }
-
+      await expect(repo2.updateResource<ServiceRequest>({ ...sr, status: 'completed' })).rejects.toThrow('Forbidden');
       // As admin, set the status
-      sr = await systemRepo.updateResource<ServiceRequest>({
-        ...sr,
-        status: 'completed',
-      });
-
+      sr = await systemRepo.updateResource<ServiceRequest>({ ...sr, status: 'completed' });
       // Can still read
       sr = await repo2.readResource<ServiceRequest>('ServiceRequest', sr.id);
-
       // Cannot update
-      try {
-        await repo2.updateResource<ServiceRequest>({
-          ...sr,
-          priority: 'routine',
-        });
-        throw new Error('Should not be able to update resource');
-      } catch (err) {
-        expect(normalizeErrorString(err)).toStrictEqual('Forbidden');
-      }
+      await expect(repo2.updateResource<ServiceRequest>({ ...sr, priority: 'routine' })).rejects.toThrow('Forbidden');
     }));
 
   test('Compound parameterized access policy', () =>
@@ -1789,12 +1663,8 @@ describe('AccessPolicy', () => {
         userConfig: {} as UserConfiguration,
       });
 
-      const check1 = await repo2.readResource<Patient>('Patient', p1.id);
-      expect(check1.id).toBe(p1.id);
-
-      const check2 = await repo2.readResource<Patient>('Patient', p2.id);
-      expect(check2.id).toBe(p2.id);
-
+      await expect(repo2.readResource<Patient>('Patient', p1.id)).resolves.toBeDefined();
+      await expect(repo2.readResource<Patient>('Patient', p2.id)).resolves.toBeDefined();
       await expect(repo2.readResource<Patient>('Patient', p3.id)).rejects.toThrow('Not found');
     }));
 
@@ -1841,10 +1711,8 @@ describe('AccessPolicy', () => {
         userConfig: {} as UserConfiguration,
       });
 
-      const check1 = await repo2.readResource<Task>('Task', t1.id);
-      expect(check1.id).toBe(t1.id);
-
-      await expect(repo2.readResource<Task>('Task', t2.id)).rejects.toThrow('Not found');
+      await expect(repo2.readResource('Task', t1.id)).resolves.toBeDefined();
+      await expect(repo2.readResource('Task', t2.id)).rejects.toThrow('Not found');
     }));
 
   test('Project admin with access policy', () =>
@@ -2461,18 +2329,9 @@ describe('AccessPolicy', () => {
         checkReferencesOnWrite: true,
       });
 
-      const check1 = await repo1.readResource('Project', project1.id);
-      expect(check1).toBeDefined();
-
-      const check2 = await repo2.readResource('Project', project2.id);
-      expect(check2).toBeDefined();
-
-      try {
-        await repo1.readResource('Project', project2.id);
-        throw new Error('Should not be able to read resource');
-      } catch (err) {
-        expect(normalizeErrorString(err)).toStrictEqual('Not found');
-      }
+      await expect(repo1.readResource('Project', project1.id)).resolves.toBeDefined();
+      await expect(repo2.readResource('Project', project2.id)).resolves.toBeDefined();
+      await expect(repo1.readResource('Project', project2.id)).rejects.toThrow('Not found');
 
       // Try to create a Patient in Project2 that references a Practitioner in Project1
       const practitioner = await repo1.createResource<Practitioner>({ resourceType: 'Practitioner' });
@@ -2517,10 +2376,7 @@ describe('AccessPolicy', () => {
       const sd = bundle1.entry?.[0]?.resource as WithId<StructureDefinition>;
       expect(sd.resourceType).toStrictEqual('StructureDefinition');
 
-      // Try to update StructureDefinition, should fail
       await expect(repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() })).rejects.toThrow('Forbidden');
-
-      // Try to delete StructureDefinition, should fail
       await expect(repo.deleteResource('StructureDefinition', sd.id)).rejects.toThrow('Forbidden');
     }));
 
@@ -2537,15 +2393,10 @@ describe('AccessPolicy', () => {
 
       // Try to search for StructureDefinitions, should succeed
       const bundle1 = await repo.search<StructureDefinition>({ resourceType: 'StructureDefinition' });
-      expect(bundle1).toBeDefined();
-
       const sd = bundle1.entry?.[0]?.resource as WithId<StructureDefinition>;
       expect(sd.resourceType).toStrictEqual('StructureDefinition');
 
-      // Try to update StructureDefinition, should fail
       await expect(repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() })).rejects.toThrow('Forbidden');
-
-      // Try to delete StructureDefinition, should fail
       await expect(repo.deleteResource('StructureDefinition', sd.id)).rejects.toThrow('Forbidden');
     }));
 
@@ -2841,10 +2692,7 @@ describe('AccessPolicy', () => {
   ])('Server rejects invalid criteria %p', (policy, expectedError) =>
     withTestContext(async () => {
       await expect(
-        systemRepo.createResource<AccessPolicy>({
-          resourceType: 'AccessPolicy',
-          resource: [policy],
-        })
+        systemRepo.createResource<AccessPolicy>({ resourceType: 'AccessPolicy', resource: [policy] })
       ).rejects.toThrow(expectedError);
     })
   );
@@ -2879,5 +2727,35 @@ describe('AccessPolicy', () => {
         // Not in the compartment; should not be accessible per the access policy
       });
       await expect(repo.readResource('Patient', patient2.id)).rejects.toThrow('Not found');
+    }));
+
+  test('Limit specific FHIR interactions', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Condition',
+              interaction: ['create', 'read'],
+            },
+          ],
+        },
+      });
+
+      const condition = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject: { reference: 'Patient/foo' },
+      });
+
+      await expect(repo.readResource('Condition', condition.id)).resolves.toBeDefined();
+      await expect(repo.search(parseSearchRequest('Condition?_id=' + condition.id))).rejects.toThrow('Forbidden');
+      await expect(repo.readHistory('Condition', condition.id)).rejects.toThrow('Forbidden');
+      await expect(repo.readVersion('Condition', condition.id, condition.meta?.versionId as string)).rejects.toThrow(
+        'Forbidden'
+      );
+      await expect(repo.updateResource({ ...condition, onsetString: 'yesterday' })).rejects.toThrow('Forbidden');
+      await expect(repo.deleteResource('Condition', condition.id)).rejects.toThrow('Forbidden');
     }));
 });

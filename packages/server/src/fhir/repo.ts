@@ -11,11 +11,10 @@ import {
   SearchRequest,
   TypedValue,
   WithId,
+  accessPolicySupportsInteraction,
   allOk,
   arrayify,
   badRequest,
-  canReadResourceType,
-  canWriteResourceType,
   createReference,
   deepClone,
   deepEquals,
@@ -41,6 +40,7 @@ import {
   parseSearchRequest,
   preconditionFailed,
   protectedResourceTypes,
+  readInteractions,
   resolveId,
   satisfiedAccessPolicy,
   serverError,
@@ -53,6 +53,7 @@ import {
 import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from '@medplum/fhir-router';
 import {
   AccessPolicy,
+  AccessPolicyResource,
   Binary,
   Bundle,
   BundleEntry,
@@ -358,7 +359,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     validateResourceType(resourceType);
 
-    if (!this.canReadResourceType(resourceType)) {
+    if (!this.supportsInteraction(AccessPolicyInteraction.READ, resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
 
@@ -371,7 +372,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // if (!this.canReadCacheEntry(cacheRecord)) {
       //   throw new OperationOutcomeError(notFound);
       // }
-      if (this.canReadCacheEntry(cacheRecord)) {
+      if (this.canPerformInteraction(AccessPolicyInteraction.READ, cacheRecord.resource)) {
         return cacheRecord.resource;
       }
     }
@@ -404,16 +405,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const resource = JSON.parse(rows[0].content as string) as WithId<T>;
     await this.setCacheEntry(resource);
     return resource;
-  }
-
-  private canReadCacheEntry(cacheEntry: CacheEntry): boolean {
-    if (!this.isSuperAdmin() && !this.context.projects?.some((p) => p.id === cacheEntry.projectId)) {
-      return false;
-    }
-    if (!satisfiedAccessPolicy(cacheEntry.resource, AccessPolicyInteraction.READ, this.context.accessPolicy)) {
-      return false;
-    }
-    return true;
   }
 
   async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(WithId<T> | Error)[]> {
@@ -457,12 +448,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       const [resourceType, id] = parseReference(reference);
       validateResourceType(resourceType);
 
-      if (!this.canReadResourceType(resourceType)) {
+      if (!this.supportsInteraction(AccessPolicyInteraction.READ, resourceType)) {
         return new OperationOutcomeError(forbidden);
       }
 
       if (cacheEntry) {
-        if (!this.canReadCacheEntry(cacheEntry)) {
+        if (!this.canPerformInteraction(AccessPolicyInteraction.READ, cacheEntry.resource)) {
           return new OperationOutcomeError(notFound);
         }
         return cacheEntry.resource;
@@ -509,6 +500,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       let resource: T | undefined = undefined;
       try {
         resource = await this.readResourceImpl<T>(resourceType, id);
+        if (!this.canPerformInteraction(AccessPolicyInteraction.HISTORY, resource)) {
+          throw new OperationOutcomeError(forbidden);
+        }
       } catch (err) {
         if (!(err instanceof OperationOutcomeError) || !isGone(err.outcome)) {
           throw err;
@@ -585,7 +579,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
 
       try {
-        await this.readResourceImpl<T>(resourceType, id);
+        const resource = await this.readResourceImpl<T>(resourceType, id);
+        if (!this.canPerformInteraction(AccessPolicyInteraction.VREAD, resource)) {
+          throw new OperationOutcomeError(forbidden);
+        }
       } catch (err) {
         if (!isGone(normalizeOperationOutcome(err))) {
           throw err;
@@ -649,6 +646,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
+    const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
 
     // Add default profiles before validating resource
     if (!resource.meta?.profile && this.currentProject()?.defaultProfile) {
@@ -658,14 +656,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       resource.meta = { ...resource.meta, profile: defaultProfiles };
     }
 
-    if (!this.canWriteResourceType(resourceType)) {
+    if (!this.supportsInteraction(interaction, resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
-      if (!this.canWriteToResource(existing)) {
+      if (!this.canPerformInteraction(interaction, existing)) {
         // Check before the update
         throw new OperationOutcomeError(forbidden);
       }
@@ -713,7 +711,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return existing;
     }
 
-    if (!this.isResourceWriteable(existing, result)) {
+    if (!this.isResourceWriteable(existing, result, interaction)) {
       // Check after the update
       throw new OperationOutcomeError(forbidden);
     }
@@ -721,10 +719,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.handleStorage(result, create);
     await this.postCommit(async () => {
       await this.handleBinaryUpdate(existing, result);
-      await addBackgroundJobs(result, existing, {
-        project: await this.getProjectById(result.meta?.project),
-        interaction: create ? 'create' : 'update',
-      });
+      const project = await this.getProjectById(result.meta?.project);
+      await addBackgroundJobs(result, existing, { project, interaction });
     });
 
     const output = deepClone(result);
@@ -1088,7 +1084,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     try {
-      if (!this.canWriteResourceType(resourceType) || !this.isResourceWriteable(undefined, resource)) {
+      if (!this.canPerformInteraction(AccessPolicyInteraction.DELETE, resource)) {
         throw new OperationOutcomeError(forbidden);
       }
 
@@ -2096,85 +2092,81 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   /**
-   * Determines if the current user can read the specified resource type.
-   * @param resourceType - The resource type.
-   * @returns True if the current user can read the specified resource type.
+   * Verifies that the current user would be allowed to perform the given interaction,
+   * without the full check on the specific resource being interacted with.
+   * @param interaction - The FHIR interaction being performed.
+   * @param resourceType - The type of resource the interaction is performed on.
+   * @returns True when the interaction is permitted by the access policy for the given resource type.
    */
-  canReadResourceType(resourceType: string): boolean {
+  supportsInteraction(interaction: AccessPolicyInteraction, resourceType: string): boolean {
     if (!this.isSuperAdmin() && protectedResourceTypes.includes(resourceType)) {
       return false;
     }
     if (!this.context.accessPolicy) {
       return true;
     }
-    return canReadResourceType(this.context.accessPolicy, resourceType as ResourceType);
+    return accessPolicySupportsInteraction(this.context.accessPolicy, interaction, resourceType as ResourceType);
   }
 
   /**
-   * Determines if the current user can write the specified resource type.
-   * This is a preliminary check before evaluating a write operation in depth.
-   * If a user cannot write a resource type at all, then don't bother looking up previous versions.
-   * @param resourceType - The resource type.
-   * @returns True if the current user can write the specified resource type.
-   */
-  private canWriteResourceType(resourceType: string): boolean {
-    if (!this.isSuperAdmin() && protectedResourceTypes.includes(resourceType)) {
-      return false;
-    }
-    if (!this.context.accessPolicy) {
-      return true;
-    }
-    return canWriteResourceType(this.context.accessPolicy, resourceType as ResourceType);
-  }
-
-  /**
-   * Determines if the current user can write to the specified resource.
-   * This is a more in-depth check after building the candidate result of a write operation.
+   * Determines if the current user can actually perform some interaction on the specified resource.
+   * This is a more in-depth check, e.g. after building the candidate result of a write operation.
+   * @param interaction - The interaction to be performed.
    * @param resource - The resource.
-   * @returns True if the current user can write the specified resource type.
+   * @returns The access policy permitting the interaction, or undefined if not permitted.
    */
-  private canWriteToResource(resource: Resource): boolean {
-    const resourceType = resource.resourceType;
+  private canPerformInteraction(
+    interaction: AccessPolicyInteraction,
+    resource: Resource
+  ): AccessPolicyResource | undefined {
     if (!this.isSuperAdmin()) {
-      if (protectedResourceTypes.includes(resourceType)) {
-        return false;
+      // Only Super Admins can access server-critical resource types
+      if (protectedResourceTypes.includes(resource.resourceType)) {
+        return undefined;
       }
-      if (resource.meta?.project !== this.context.projects?.[0]?.id) {
-        return false;
+      // Non-Superusers can only access resources in their Project, with read-only access to linked Projects
+      if (readInteractions.includes(interaction)) {
+        if (!this.context.projects?.some((p) => p.id === resource.meta?.project)) {
+          return undefined;
+        }
+      } else if (resource.meta?.project !== this.context.projects?.[0]?.id) {
+        return undefined;
       }
     }
-    return !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
+    return satisfiedAccessPolicy(resource, interaction, this.context.accessPolicy);
   }
 
   /**
    * Check that a resource can be written in its current form.
    * @param previous - The resource before updates were applied.
    * @param current - The resource as it will be written.
+   * @param interaction - The FHIR interaction being performed.
    * @returns True if the current user can write the specified resource type.
    */
-  private isResourceWriteable(previous: Resource | undefined, current: Resource): boolean {
-    if (!this.isSuperAdmin() && current.meta?.project !== this.context.projects?.[0]?.id) {
-      return false;
-    }
-
-    const matchingPolicy = satisfiedAccessPolicy(current, AccessPolicyInteraction.UPDATE, this.context.accessPolicy);
+  private isResourceWriteable(
+    previous: Resource | undefined,
+    current: Resource,
+    interaction: 'create' | 'update'
+  ): boolean {
+    const matchingPolicy = this.canPerformInteraction(interaction, current);
     if (!matchingPolicy) {
       return false;
     }
-    if (matchingPolicy?.writeConstraint) {
-      return matchingPolicy.writeConstraint.every((constraint) => {
-        const invariant = evalFhirPathTyped(
-          constraint.expression as string,
-          [{ type: current.resourceType, value: current }],
-          {
-            '%before': { type: previous?.resourceType ?? 'undefined', value: previous },
-            '%after': { type: current.resourceType, value: current },
-          }
-        );
-        return invariant.length === 1 && invariant[0].value === true;
-      });
+    if (!matchingPolicy.writeConstraint) {
+      return true;
     }
-    return true;
+
+    return matchingPolicy.writeConstraint.every((constraint) => {
+      const invariant = evalFhirPathTyped(
+        constraint.expression as string,
+        [{ type: current.resourceType, value: current }],
+        {
+          '%before': { type: previous?.resourceType ?? 'undefined', value: previous },
+          '%after': { type: current.resourceType, value: current },
+        }
+      );
+      return invariant.length === 1 && invariant[0].value === true;
+    });
   }
 
   /**
