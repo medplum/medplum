@@ -1474,7 +1474,6 @@ describe('FHIR Repo', () => {
     withTestContext(async () => {
       const { project: linkedProject, repo: linkedRepo } = await createTestProject({
         project: { exportedResourceType: ['Organization'] },
-        withClient: true,
         withRepo: true,
       });
 
