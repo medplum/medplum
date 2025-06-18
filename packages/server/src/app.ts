@@ -15,7 +15,7 @@ import { getConfig } from './config/loader';
 import { MedplumServerConfig } from './config/types';
 import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
 import { corsOptions } from './cors';
-import { closeDatabase, initDatabase, maybeAutoRunPendingPostDeployMigration } from './database';
+import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
@@ -38,6 +38,7 @@ import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
+import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { webhookRouter } from './webhook/routes';
@@ -216,7 +217,8 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     initWorkers(config);
     initHeartbeat(config);
     initOtelHeartbeat();
-    await maybeAutoRunPendingPostDeployMigration();
+    await initServerRegistryHeartbeatListener();
+    // await maybeAutoRunPendingPostDeployMigration();
   });
 }
 
