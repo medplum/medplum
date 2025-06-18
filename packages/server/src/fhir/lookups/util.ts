@@ -24,14 +24,11 @@ export function deriveIdentifierSearchParameter(inputParam: SearchParameter): Se
   } as SearchParameter;
 }
 
-function getDerivedSearchParameters(resourceType: string): SearchParameter[] {
+function getDerivedSearchParameters(searchParams: SearchParameter[]): SearchParameter[] {
   const result: SearchParameter[] = [];
-  const searchParameters = getSearchParameters(resourceType);
-  if (searchParameters) {
-    for (const searchParameter of Object.values(searchParameters)) {
-      if (searchParameter.type === 'reference') {
-        result.push(deriveIdentifierSearchParameter(searchParameter));
-      }
+  for (const searchParameter of searchParams) {
+    if (searchParameter.type === 'reference') {
+      result.push(deriveIdentifierSearchParameter(searchParameter));
     }
   }
   return result;
@@ -44,6 +41,6 @@ function getDerivedSearchParameters(resourceType: string): SearchParameter[] {
  */
 export function getStandardAndDerivedSearchParameters(resourceType: string): SearchParameter[] {
   const standardParams = Object.values(getSearchParameters(resourceType) ?? {});
-  const derivedParams = getDerivedSearchParameters(resourceType);
+  const derivedParams = getDerivedSearchParameters(standardParams);
   return [...standardParams, ...derivedParams];
 }
