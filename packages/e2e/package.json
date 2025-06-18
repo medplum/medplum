@@ -1,6 +1,6 @@
 {
   "name": "@medplum/e2e",
-  "version": "4.1.8",
+  "version": "4.1.9",
   "description": "End-to-end tests for Medplum",
   "keywords": [
     "e2e",
