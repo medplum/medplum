@@ -30,4 +30,4 @@ jobs:
               core.setFailed(`❌ The following commits are missing a valid Jira ticket ID (e.g., WAD-123):\n${errorList}`);
             } else {
               console.log("✅ All commit messages include valid Jira ticket IDs.");
-            }
+            }# dummy change to trigger commit
