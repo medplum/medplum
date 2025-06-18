@@ -74,17 +74,16 @@ function groupCommunicationsByPatient(
 export function MessagesPage(): JSX.Element {
   const medplum = useMedplum();
   const [communications, setCommunications] = useState<Communication[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 50;
   const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
   const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(undefined);
   const [selectedPatientRef, setSelectedPatientRef] = useState<string | undefined>(undefined);
   const [threadMessages, setThreadMessages] = useState<Communication[]>([]);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [parentRef, parentRect] = useResizeObserver<HTMLDivElement>();
   const prevThreadRef = useRef<string | undefined>(undefined);
-  const [prefetchedPatients, setPrefetchedPatients] = useState<Record<string, Patient>>({});
+  const [selectedThread, setSelectedThread] = useState<Communication | undefined>(undefined);
 
   // Add this at the top of the component to inject the style
   if (typeof document !== 'undefined' && !document.getElementById('message-list-item-style')) {
@@ -94,290 +93,267 @@ export function MessagesPage(): JSX.Element {
     document.head.appendChild(style);
   }
 
-  // Add prefetching function
-  const prefetchPatient = useCallback(
-    (patientRef: string) => {
-      if (prefetchedPatients[patientRef] || patientRef === selectedPatientRef) {
-        return;
-      }
-      const patientId = patientRef.replace('Patient/', '');
-      medplum
-        .readResource('Patient', patientId)
-        .then((patient) => {
-          setPrefetchedPatients((prev) => ({
-            ...prev,
-            [patientRef]: patient,
-          }));
-        })
-        .catch(console.error);
-    },
-    [medplum, prefetchedPatients, selectedPatientRef]
-  );
-
-  // Keep track of thread changes to handle scroll position
   useEffect(() => {
     if (selectedPatientRef !== prevThreadRef.current) {
       prevThreadRef.current = selectedPatientRef;
     }
   }, [selectedPatientRef]);
 
-  // Fetch all Communication resources (all pages)
   useEffect(() => {
     async function fetchAllCommunications(): Promise<void> {
 
-      let all: Communication[] = [];
-      let bundle = await medplum.search('Communication');
-      all = all.concat((bundle.entry || []).map((e: any) => e.resource as Communication));
-      let nextUrl = bundle.link?.find((l: any) => l.relation === 'next')?.url;
-      while (nextUrl) {
-        // Parse nextUrl to get search params
-        const urlObj = new URL(nextUrl);
-        const params: Record<string, string> = {};
-        urlObj.searchParams.forEach((value, key) => {
-          params[key] = value;
-        });
-        // eslint-disable-next-line no-await-in-loop
-        bundle = await medplum.search('Communication', params);
-        all = all.concat((bundle.entry || []).map((e: any) => e.resource as Communication));
-        nextUrl = bundle.link?.find((l: any) => l.relation === 'next')?.url;
+      const searchResult = await medplum.searchResources('Communication', {
+        // _sort: '-sent',
+      }, { cache: 'no-cache' });
+      setCommunications(searchResult);
+
+      const threads: Communication[] = [];
+      const threadMap: Set<string> = new Set<string>();
+      searchResult.forEach((c) => {
+        if (c.subject?.reference && !threadMap.has(c.subject.reference)) {
+          threadMap.add(c.subject.reference);
+          threads.push(c);
+        }
+      });
+
+        setThreadMessages(threads);
       }
-      console.log('all', all);
-      setCommunications(all);
-    }
-    fetchAllCommunications().catch(() => setLoading(false));
+      fetchAllCommunications().catch(() => setLoading(false));
+    
   }, [medplum]);
 
   // Only show the most recent Communication per patient
-  const patientThreads = useMemo(() => groupCommunicationsByPatient(communications), [communications]);
+  // const patientThreads = useMemo(() => groupCommunicationsByPatient(communications), [communications]);
 
-  // When a patient is selected, show all messages for that patient
-  const selectedThread = useMemo(() => {
-    if (!selectedPatientRef) {
-      return undefined;
-    }
-    console.log('selectedPatientRef', selectedPatientRef);
-    console.log('patientThreads', patientThreads);
-    return patientThreads.find((t) => t.patientRef === selectedPatientRef);
-  }, [patientThreads, selectedPatientRef]);
+  // // When a patient is selected, show all messages for that patient
+  // const selectedThread = useMemo(() => {
+  //   if (!selectedPatientRef) {
+  //     return undefined;
+  //   }
+  //   console.log('selectedPatientRef', selectedPatientRef);
+  //   console.log('patientThreads', patientThreads);
+  //   return patientThreads.find((t) => t.patientRef === selectedPatientRef);
+  // }, [patientThreads, selectedPatientRef]);
 
-  // After participantNames is set, filter patientThreads for only those with a valid patient name
-  const validPatientThreads = useMemo(() => {
-    return patientThreads.filter((t) => !!participantNames[t.patientRef]);
-  }, [patientThreads, participantNames]);
+  // // After participantNames is set, filter patientThreads for only those with a valid patient name
+  // const validPatientThreads = useMemo(() => {
+  //   return patientThreads.filter((t) => !!participantNames[t.patientRef]);
+  // }, [patientThreads, participantNames]);
 
-  // Prefetch all patient data in batches
-  useEffect(() => {
-    if (!validPatientThreads.length) {
-      return;
-    }
+  // // Prefetch all patient data in batches
+  // useEffect(() => {
+  //   if (!validPatientThreads.length) {
+  //     return;
+  //   }
 
-    // Process in batches of 5
-    const batchSize = 5;
-    const batches = [];
-    for (let i = 0; i < validPatientThreads.length; i += batchSize) {
-      batches.push(validPatientThreads.slice(i, i + batchSize));
-    }
+  //   // Process in batches of 5
+  //   const batchSize = 5;
+  //   const batches = [];
+  //   for (let i = 0; i < validPatientThreads.length; i += batchSize) {
+  //     batches.push(validPatientThreads.slice(i, i + batchSize));
+  //   }
 
-    // Process each batch with a small delay
-    batches.forEach((batch, index) => {
-      setTimeout(() => {
-        batch.forEach((thread) => {
-          if (!prefetchedPatients[thread.patientRef] && thread.patientRef !== selectedPatientRef) {
-            prefetchPatient(thread.patientRef);
-          }
-        });
-      }, index * 100); // 100ms delay between batches
-    });
-  }, [validPatientThreads, prefetchedPatients, selectedPatientRef, prefetchPatient]);
+  //   // Process each batch with a small delay
+  //   batches.forEach((batch, index) => {
+  //     setTimeout(() => {
+  //       batch.forEach((thread) => {
+  //         if (!prefetchedPatients[thread.patientRef] && thread.patientRef !== selectedPatientRef) {
+  //           prefetchPatient(thread.patientRef);
+  //         }
+  //       });
+  //     }, index * 100); // 100ms delay between batches
+  //   });
+  // }, [validPatientThreads, prefetchedPatients, selectedPatientRef, prefetchPatient]);
 
-  // Fetch participant names (patients and practitioners) after communications are loaded
-  useEffect(() => {
-    if (communications.length === 0) {
-      return;
-    }
-    // Get all unique participant references from patientThreads
-    const allRefs = new Set<string>();
-    patientThreads.forEach(({ thread }) => {
-      thread.forEach((comm) => {
-        if (comm.subject?.reference) {
-          allRefs.add(comm.subject.reference);
-        }
-        if (comm.sender?.reference) {
-          allRefs.add(comm.sender.reference);
-        }
-        if (comm.recipient) {
-          comm.recipient.forEach((r) => {
-            if (r.reference) {
-              allRefs.add(r.reference);
-            }
-          });
-        }
-      });
-    });
-    // Only fetch names for participants not already in the map
-    const missingRefs = Array.from(allRefs).filter((ref) => !participantNames[ref]);
-    if (missingRefs.length === 0) {
-      // No new participants to fetch, do not set loading
-      return;
-    }
-    const patientRefs = missingRefs.filter((ref) => ref.startsWith('Patient/'));
-    const practitionerRefs = missingRefs.filter((ref) => ref.startsWith('Practitioner/'));
-    const patientIds = patientRefs.map((ref) => ref.replace('Patient/', ''));
-    const practitionerIds = practitionerRefs.map((ref) => ref.replace('Practitioner/', ''));
-    setLoading(true);
-    Promise.all([
-      patientIds.length > 0 ? medplum.searchResources('Patient', { _id: patientIds.join(',') }) : Promise.resolve([]),
-      practitionerIds.length > 0
-        ? medplum.searchResources('Practitioner', { _id: practitionerIds.join(',') })
-        : Promise.resolve([]),
-    ])
-      .then(([patients, practitioners]) => {
-        setParticipantNames((prev) => {
-          const map = { ...prev };
-          (patients as Patient[]).forEach((p) => {
-            map[`Patient/${p.id}`] = formatHumanName(p.name?.[0]);
-          });
-          (practitioners as FhirPractitioner[]).forEach((pr) => {
-            map[`Practitioner/${pr.id}`] = formatHumanName(pr.name?.[0]);
-          });
-          return map;
-        });
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally omitting participantNames to prevent infinite loop
-  }, [patientThreads, medplum, communications.length]);
+  // // Fetch participant names (patients and practitioners) after communications are loaded
+  // useEffect(() => {
+  //   if (communications.length === 0) {
+  //     return;
+  //   }
+  //   // Get all unique participant references from patientThreads
+  //   const allRefs = new Set<string>();
+  //   patientThreads.forEach(({ thread }) => {
+  //     thread.forEach((comm) => {
+  //       if (comm.subject?.reference) {
+  //         allRefs.add(comm.subject.reference);
+  //       }
+  //       if (comm.sender?.reference) {
+  //         allRefs.add(comm.sender.reference);
+  //       }
+  //       if (comm.recipient) {
+  //         comm.recipient.forEach((r) => {
+  //           if (r.reference) {
+  //             allRefs.add(r.reference);
+  //           }
+  //         });
+  //       }
+  //     });
+  //   });
+  //   // Only fetch names for participants not already in the map
+  //   const missingRefs = Array.from(allRefs).filter((ref) => !participantNames[ref]);
+  //   if (missingRefs.length === 0) {
+  //     // No new participants to fetch, do not set loading
+  //     return;
+  //   }
+  //   const patientRefs = missingRefs.filter((ref) => ref.startsWith('Patient/'));
+  //   const practitionerRefs = missingRefs.filter((ref) => ref.startsWith('Practitioner/'));
+  //   const patientIds = patientRefs.map((ref) => ref.replace('Patient/', ''));
+  //   const practitionerIds = practitionerRefs.map((ref) => ref.replace('Practitioner/', ''));
+  //   setLoading(true);
+  //   Promise.all([
+  //     patientIds.length > 0 ? medplum.searchResources('Patient', { _id: patientIds.join(',') }) : Promise.resolve([]),
+  //     practitionerIds.length > 0
+  //       ? medplum.searchResources('Practitioner', { _id: practitionerIds.join(',') })
+  //       : Promise.resolve([]),
+  //   ])
+  //     .then(([patients, practitioners]) => {
+  //       setParticipantNames((prev) => {
+  //         const map = { ...prev };
+  //         (patients as Patient[]).forEach((p) => {
+  //           map[`Patient/${p.id}`] = formatHumanName(p.name?.[0]);
+  //         });
+  //         (practitioners as FhirPractitioner[]).forEach((pr) => {
+  //           map[`Practitioner/${pr.id}`] = formatHumanName(pr.name?.[0]);
+  //         });
+  //         return map;
+  //       });
+  //       setLoading(false);
+  //     })
+  //     .catch(() => {
+  //       setLoading(false);
+  //     });
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentionally omitting participantNames to prevent infinite loop
+  // }, [patientThreads, medplum, communications.length]);
 
-  // Add after validPatientThreads is defined
-  useEffect(() => {
-    // If currentPage is out of range, reset to last valid page
-    if (currentPage > 0 && currentPage * pageSize >= validPatientThreads.length) {
-      setCurrentPage(Math.max(0, Math.ceil(validPatientThreads.length / pageSize) - 1));
-    } else if (currentPage !== 0 && validPatientThreads.length > 0) {
-      setCurrentPage(0);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [validPatientThreads.length]);
+  // // Add after validPatientThreads is defined
+  // useEffect(() => {
+  //   // If currentPage is out of range, reset to last valid page
+  //   if (currentPage > 0 && currentPage * pageSize >= validPatientThreads.length) {
+  //     setCurrentPage(Math.max(0, Math.ceil(validPatientThreads.length / pageSize) - 1));
+  //   } else if (currentPage !== 0 && validPatientThreads.length > 0) {
+  //     setCurrentPage(0);
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [validPatientThreads.length]);
 
-  // Auto-select the first message thread when available
-  useEffect(() => {
-    if (!selectedPatientRef && validPatientThreads.length > 0 && !loading) {
-      setSelectedPatientRef(validPatientThreads[0].patientRef);
-    }
-  }, [selectedPatientRef, validPatientThreads, loading]);
+  // // Auto-select the first message thread when available
+  // useEffect(() => {
+  //   if (!selectedPatientRef && validPatientThreads.length > 0 && !loading) {
+  //     setSelectedPatientRef(validPatientThreads[0].patientRef);
+  //   }
+  // }, [selectedPatientRef, validPatientThreads, loading]);
 
   // Keep threadMessages in sync with communications for the selected thread
-  useEffect(() => {
-    if (selectedThread) {
-      // Find all messages for the selected thread in the latest communications
-      const latestThreadMessages = communications.filter((c) => c.subject?.reference === selectedThread.patientRef);
-      // Deduplicate by id
-      const uniqueMessages: Record<string, (typeof latestThreadMessages)[0]> = {};
-      for (const msg of latestThreadMessages) {
-        if (msg.id) {
-          uniqueMessages[msg.id] = msg;
-        }
-      }
-      setThreadMessages(Object.values(uniqueMessages));
+  // useEffect(() => {
+  //   console.log('selectedThread', selectedThread);
+  //   if (selectedThread) {
+  //     // Find all messages for the selected thread in the latest communications
+  //     const latestThreadMessages = communications.filter((c) => c.subject?.reference === selectedThread.patientRef);
+  //     // Deduplicate by id
+  //     const uniqueMessages: Record<string, (typeof latestThreadMessages)[0]> = {};
+  //     for (const msg of latestThreadMessages) {
+  //       if (msg.id) {
+  //         uniqueMessages[msg.id] = msg;
+  //       }
+  //     }
+  //     setThreadMessages(Object.values(uniqueMessages));
 
-      // Use prefetched patient data if available
-      const prefetchedPatient = prefetchedPatients[selectedThread.patientRef];
-      if (prefetchedPatient) {
-        setSelectedPatient(prefetchedPatient);
-        // Remove from prefetched cache to save memory
-        setPrefetchedPatients((prev) => {
-          const { [selectedThread.patientRef]: _, ...rest } = prev;
-          return rest;
-        });
-      } else {
-        // Fetch patient data if not prefetched
-        const patientId = selectedThread.patientRef.replace('Patient/', '');
-        medplum
-          .readResource('Patient', patientId)
-          .then((patient) => {
-            setSelectedPatient(patient);
-          })
-          .catch(console.error);
-      }
-    } else {
-      setThreadMessages([]);
-    }
-  }, [selectedThread, communications, medplum, prefetchedPatients]);
+  //     // Use prefetched patient data if available
+  //     const prefetchedPatient = prefetchedPatients[selectedThread.patientRef];
+  //     if (prefetchedPatient) {
+  //       setSelectedPatient(prefetchedPatient);
+  //       // Remove from prefetched cache to save memory
+  //       setPrefetchedPatients((prev) => {
+  //         const { [selectedThread.patientRef]: _, ...rest } = prev;
+  //         return rest;
+  //       });
+  //     } else {
+  //       // Fetch patient data if not prefetched
+  //       const patientId = selectedThread.patientRef.replace('Patient/', '');
+  //       medplum
+  //         .readResource('Patient', patientId)
+  //         .then((patient) => {
+  //           setSelectedPatient(patient);
+  //         })
+  //         .catch(console.error);
+  //     }
+  //   } else {
+  //     setThreadMessages([]);
+  //   }
+  // }, [selectedThread, communications, medplum, prefetchedPatients]);
 
-  // Keep the sidebar preview up-to-date when new messages are added in the chat area
-  useEffect(() => {
-    if (!selectedThread) {
-      return;
-    }
-    // Find all messages for the selected thread in the global communications
-    const globalThreadIds = new Set(
-      communications.filter((c) => c.subject?.reference === selectedThread.patientRef).map((c) => c.id)
-    );
-    // Find new messages in threadMessages that are not in global communications
-    const newMessages = threadMessages.filter((c) => c.id && !globalThreadIds.has(c.id));
-    if (newMessages.length > 0) {
-      setCommunications((prev) => {
-        // Deduplicate by id
-        const all = [...prev, ...newMessages];
-        const unique: Record<string, (typeof all)[0]> = {};
-        for (const msg of all) {
-          if (msg.id) {
-            unique[msg.id] = msg;
-          }
-        }
-        return Object.values(unique);
-      });
-    }
-  }, [threadMessages, selectedThread, communications]);
+  // // Keep the sidebar preview up-to-date when new messages are added in the chat area
+  // useEffect(() => {
+  //   if (!selectedThread) {
+  //     return;
+  //   }
+  //   // Find all messages for the selected thread in the global communications
+  //   const globalThreadIds = new Set(
+  //     communications.filter((c) => c.subject?.reference === selectedThread.patientRef).map((c) => c.id)
+  //   );
+  //   // Find new messages in threadMessages that are not in global communications
+  //   const newMessages = threadMessages.filter((c) => c.id && !globalThreadIds.has(c.id));
+  //   if (newMessages.length > 0) {
+  //     setCommunications((prev) => {
+  //       // Deduplicate by id
+  //       const all = [...prev, ...newMessages];
+  //       const unique: Record<string, (typeof all)[0]> = {};
+  //       for (const msg of all) {
+  //         if (msg.id) {
+  //           unique[msg.id] = msg;
+  //         }
+  //       }
+  //       return Object.values(unique);
+  //     });
+  //   }
+  // }, [threadMessages, selectedThread, communications]);
 
-  // Focus the input when a thread is selected
-  useEffect(() => {
-    if (selectedThread) {
-      // Small delay to ensure the input is rendered
-      const timer = setTimeout(() => {
-        const input = document.querySelector('input[name="message"]') as HTMLInputElement;
-        if (input) {
-          input.focus();
-        }
-        return undefined;
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-    return undefined;
-  }, [selectedThread]);
+  // // Focus the input when a thread is selected
+  // useEffect(() => {
+  //   if (selectedThread) {
+  //     // Small delay to ensure the input is rendered
+  //     const timer = setTimeout(() => {
+  //       const input = document.querySelector('input[name="message"]') as HTMLInputElement;
+  //       if (input) {
+  //         input.focus();
+  //       }
+  //       return undefined;
+  //     }, 100);
+  //     return () => clearTimeout(timer);
+  //   }
+  //   return undefined;
+  // }, [selectedThread]);
 
-  // Fetch the selected patient when selectedPatientRef changes
-  useEffect(() => {
-    if (selectedPatientRef) {
-      const patientId = selectedPatientRef.replace('Patient/', '');
-      medplum.readResource('Patient', patientId).then(setSelectedPatient).catch(console.error);
-    } else {
-      setSelectedPatient(undefined);
-    }
-  }, [selectedPatientRef, medplum]);
+  // // Fetch the selected patient when selectedPatientRef changes
+  // useEffect(() => {
+  //   if (selectedPatientRef) {
+  //     const patientId = selectedPatientRef.replace('Patient/', '');
+  //     medplum.readResource('Patient', patientId).then(setSelectedPatient).catch(console.error);
+  //   } else {
+  //     setSelectedPatient(undefined);
+  //   }
+  // }, [selectedPatientRef, medplum]);
 
 
-  // Prefetch next few threads
-  useEffect(() => {
-    if (!validPatientThreads.length) {
-      return;
-    }
+  // // Prefetch next few threads
+  // useEffect(() => {
+  //   if (!validPatientThreads.length) {
+  //     return;
+  //   }
 
-    const currentIndex = validPatientThreads.findIndex((t) => t.patientRef === selectedPatientRef);
-    if (currentIndex === -1) {
-      return;
-    }
+  //   const currentIndex = validPatientThreads.findIndex((t) => t.patientRef === selectedPatientRef);
+  //   if (currentIndex === -1) {
+  //     return;
+  //   }
 
-    // Prefetch next 3 threads
-    for (let i = 1; i <= 3; i++) {
-      const nextThread = validPatientThreads[currentIndex + i];
-      if (nextThread) {
-        prefetchPatient(nextThread.patientRef);
-      }
-    }
-  }, [validPatientThreads, selectedPatientRef, prefetchPatient]);
+  //   // Prefetch next 3 threads
+  //   for (let i = 1; i <= 3; i++) {
+  //     const nextThread = validPatientThreads[currentIndex + i];
+  //     if (nextThread) {
+  //       prefetchPatient(nextThread.patientRef);
+  //     }
+  //   }
+  // }, [validPatientThreads, selectedPatientRef, prefetchPatient]);
 
   // Sidebar header
   const sidebarHeader = (
@@ -400,11 +376,10 @@ export function MessagesPage(): JSX.Element {
   if (selectedThread && selectedPatient) {
     chatArea = (
       <BaseChat
-        key={selectedThread.patientRef}
         title={selectedPatient ? formatHumanName(selectedPatient.name?.[0]) : ''}
         communications={threadMessages}
         setCommunications={setThreadMessages}
-        query={`subject=${selectedThread.patientRef}`}
+        query={`subject=${selectedThread.subject?.reference}`}
         sendMessage={(content: string) => {
           if (!content) {
             return;
@@ -483,7 +458,6 @@ export function MessagesPage(): JSX.Element {
       >
         {sidebarHeader}
         <ScrollArea
-          viewportRef={scrollAreaRef}
           h={parentRect.height}
           scrollbarSize={10}
           type="hover"
@@ -505,7 +479,7 @@ export function MessagesPage(): JSX.Element {
             <Loader />
           </div>
           ) : (
-            <ChatList communications={communications} onClick={setSelectedPatientRef} />
+            <ChatList communications={threadMessages} onClick={setSelectedPatientRef} />
           )}
         </ScrollArea>
       </div>
@@ -526,7 +500,6 @@ export function MessagesPage(): JSX.Element {
           }}
         >
           <ScrollArea
-            viewportRef={scrollAreaRef}
             h={parentRect.height}
             scrollbarSize={10}
             type="hover"
