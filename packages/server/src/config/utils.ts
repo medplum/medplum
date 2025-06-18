@@ -6,6 +6,7 @@ import { getLogger } from '../logger';
 import type { MedplumServerConfig } from './types';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
+const DEFAULT_AWS_ENDPOINT = process.env.AWS_ENDPOINT || 'https://nyc3.digitaloceanspaces.com';
 
 export type ServerConfig = MedplumServerConfig & Required<Pick<MedplumServerConfig, DefaultConfigKeys>>;
 
@@ -27,6 +28,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.maxJsonSize ||= '1mb';
   config.maxBatchSize ||= '50mb';
   config.awsRegion ||= DEFAULT_AWS_REGION;
+  config.awsEndpoint ||= DEFAULT_AWS_ENDPOINT;
   config.botLambdaLayerName ||= 'medplum-bot-layer';
   config.bcryptHashSalt ||= 10;
   config.bullmq = { concurrency: 20, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };

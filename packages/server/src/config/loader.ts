@@ -103,7 +103,7 @@ function loadEnvConfig(): MedplumServerConfig {
   const config: Record<string, any> = {};
   // Iterate over all environment variables
   for (const [name, value] of Object.entries(process.env)) {
-    if (!name.startsWith('MEDPLUM_')) {
+    if (!name.startsWith('MEDPLUM_') && !name.startsWith('AWS_')) {
       continue;
     }
 

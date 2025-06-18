@@ -72,6 +72,11 @@ Indicate that the app and the database are related to enable connections.
 
 [How to add my DigitalOcean App as a trusted resource for my Managed Database](https://docs.digitalocean.com/products/app-platform/how-to/manage-databases/)
 
+**Binary Storage**
+
+Digital Ocean Object storage is compatible with the S3 API. Using `AWS_` env vars to indicate the bucket name, key id, secret and endpoint.
+
+
 ```
 NODE_ENV=development
 MEDPLUM_PORT=8103
@@ -83,8 +88,12 @@ MEDPLUM_TOKEN_URL=https://medplum.yourdomain.com/oauth2/token
 MEDPLUM_USER_INFO_URL=https://medplum.yourdomain.com/oauth2/userinfo
 MEDPLUM_APP_BASE_URL=https://ehr.yourdomain.com/
 MEDPLUM_STORAGE_BASE_URL=https://your-storage-url
-MEDPLUM_MAX_JSON_SIZE=1mb
-MEDPLUM_MAX_BATCH_SIZE=50mb
+MEDPLUM_BINARY_STORAGE=s3:calima-medplum-1
+AWS_ACCESS_KEY_ID=DO00Q9C4AQJKVJAKANNN
+AWS_SECRET_ACCESS_KEY=QSIt+eaB2ICBT6uR6UJRI7eeDK3kIjK+i+8gaW6eRf4
+AWS_REGION=us-east-1
+AWS_ENDPOINT=https://nyc3.digitaloceanspaces.com
+
 MEDPLUM_BCRYPT_HASH_SALT=10
 MEDPLUM_SHUTDOWN_TIMEOUT_MILLISECONDS=30000
 MEDPLUM_ACCURATE_COUNT_THRESHOLD=1000000
