@@ -1351,6 +1351,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       for (let i = 1; i < this.context.projects.length; i++) {
         const project = this.context.projects[i];
         if (
+          resourceType === 'Project' || // When searching for projects, include all projects
           project.id === this.context.currentProject?.id || // Always include the current project (usually the same as the first project)
           !project.exportedResourceType?.length || // Include projects that do not specify exported resource types
           project.exportedResourceType?.includes(resourceType as ResourceType) // Include projects that export resourceType
