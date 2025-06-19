@@ -3,6 +3,7 @@ import { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { JSX } from 'react';
 import { ChatListItem } from './ChatListItem';
 
+
 interface ChatListProps {
   communications: Communication[];
   selectedPatient: Reference<Patient>;

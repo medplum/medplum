@@ -1310,19 +1310,12 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
 
-    try {
-      await client.readResource('Patient', '');
-      throw new Error('Test failed: Expected an error when calling readResource with an empty string id.');
-    } catch (err) {
-      expect((err as Error).message).toBe('The "id" parameter cannot be null, undefined, or an empty string.');
-    }
-
-    try {
-      await client.readResource('Patient', undefined as unknown as string);
-      throw new Error('Test failed: Expected an error when calling readResource with an undefined id.');
-    } catch (err) {
-      expect((err as Error).message).toBe('The "id" parameter cannot be null, undefined, or an empty string.');
-    }
+    expect(() => client.readResource('Patient', '')).toThrow(
+      'The "id" parameter cannot be null, undefined, or an empty string.'
+    );
+    expect(() => client.readResource('Patient', undefined as unknown as string)).toThrow(
+      'The "id" parameter cannot be null, undefined, or an empty string.'
+    );
   });
 
   test('Read reference', async () => {
@@ -2937,15 +2930,13 @@ describe('Client', () => {
       }),
       autoBatchTime: 100,
     });
-    try {
+
+    await expect(async () => {
       // Start multiple requests to force a batch
       const patientPromise = medplum.readResource('Patient', '123');
       await medplum.readResource('Patient', '9999999-does-not-exist');
       await patientPromise;
-      throw new Error('Expected error');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
-    }
+    }).rejects.toThrow('Not found');
   });
 
   test('Retry on 500', async () => {

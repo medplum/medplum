@@ -59,4 +59,27 @@ describe('Well Known', () => {
     expect(res.body.response_types_supported).toBeDefined();
     expect(res.body.subject_types_supported).toBeDefined();
   });
+
+  test('Get /.well-known/oauth-authorization-server', async () => {
+    const res = await request(app).get('/.well-known/oauth-authorization-server');
+    expect(res.status).toBe(200);
+    expect(res.body.issuer).toBeDefined();
+    expect(res.body.authorization_endpoint).toBeDefined();
+    expect(res.body.token_endpoint).toBeDefined();
+    expect(res.body.userinfo_endpoint).toBeDefined();
+    expect(res.body.jwks_uri).toBeDefined();
+    expect(res.body.id_token_signing_alg_values_supported).toBeDefined();
+    expect(res.body.response_types_supported).toBeDefined();
+    expect(res.body.subject_types_supported).toBeDefined();
+  });
+
+  test('Get /.well-known/oauth-protected-resource', async () => {
+    const res = await request(app).get('/.well-known/oauth-protected-resource');
+    expect(res.status).toBe(200);
+    expect(res.body.issuer).toBeDefined();
+    expect(res.body.authorization_servers).toBeDefined();
+    expect(res.body.scopes_supported).toBeDefined();
+    expect(res.body.bearer_methods_supported).toBeDefined();
+    expect(res.body.introspection_endpoint).toBeDefined();
+  });
 });

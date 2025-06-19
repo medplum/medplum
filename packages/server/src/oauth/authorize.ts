@@ -77,6 +77,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
 
   // Then, validate all other parameters.
   // If these are invalid, redirect back to the redirect URI.
+  params.scope ??= client.defaultScope;
   if (!params.scope) {
     sendErrorRedirect(res, redirectUri, 'invalid_request', 'Missing scope', state);
     return false;

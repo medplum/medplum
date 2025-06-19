@@ -74,9 +74,9 @@ While Medplum `AccessPolicies` use the [FHIR search syntax](/docs/search), it do
 
 :::
 
-### Read-only Resource Type
+### Read-only Access
 
-The following access policy grants read-only access to the [`Patient`](/docs/api/fhir/resources/patient)resource type:
+The following access policy grants read-only access to the [`Patient`](/docs/api/fhir/resources/patient) resource type:
 
 ```json
 {
@@ -91,7 +91,7 @@ The following access policy grants read-only access to the [`Patient`](/docs/api
 }
 ```
 
-Similarly, the following access policy grants read/write access to the Patient resource, and also grants _only_ read access to _all_ other resources: 
+Similarly, the following access policy grants read/write access to the Patient resource, and also grants _only_ read access to all other resources:
 
 ```json
 {
@@ -109,7 +109,67 @@ Similarly, the following access policy grants read/write access to the Patient r
 }
 ```
 
-Attempting to modify a read-only resource will result in an HTTP result of [`403: Forbidden`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403).
+Attempting to modify a read-only resource will result in an HTTP [`403 Forbidden`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403) response.
+
+### FHIR Interactions
+
+The above read-only access is special case of the more general ability to control which interactions are allowed for a set of resources. The `AccessPolicy.resource.interaction` field can specify a subset of [FHIR interactions](http://hl7.org/fhir/R4/codesystem-restful-interaction.html) that can be performed on resources of the given type. The following are equivalent:
+
+```js
+{
+  "resourceType": "AccessPolicy",
+  "name": "Read-only modes",
+  "resource": [
+    // Legacy shorthand
+    {
+      "resourceType": "*",
+      "readonly": true,
+    },
+    // Explicit list of interactions
+    {
+      "resourceType": "*",
+      "interaction": ["read", "search", "history", "vread"]
+    }
+  ]
+}
+```
+
+The `interaction` array can contain any of the supported interaction types:
+
+- `create`: Write new resources
+- `read`: Read a specific resource by ID
+- `update`: Update an existing resource, including patch operations
+- `delete`: Soft-delete resources
+- `search`: Search for resources of the given type
+- `history`: View the list of previous versions of a resource
+- `vread`: View a specific previous version of a resource
+
+:::tip Related interactions
+
+Some FHIR interactions are used in concert by the server, and so should be considered together:
+
+- [Upserts](/docs/fhir-datastore/working-with-fhir#upsert) require `search` to identify existing resources, in addition to both `create` and `update`
+- `search` access may be required as part of a `create` or `update` if the resource contains any [Conditional references](/docs/migration/convert-to-fhir#linking-data-using-conditional-references), in order to resolve references to individual resources
+- `read` access to referenced resource types is required in `create` and `update` interactions, if [`Project.checkReferencesOnWrite`](/docs/api/fhir/medplum/project) is set
+- `history` and `vread` are often specified together, to grant access to the entire [version history](/docs/fhir-datastore/resource-history) of resources
+
+:::
+
+For example, this policy allows creating new resources and viewing any resources for which the ID is known, but will
+prevent searching for or modifying existing resources:
+
+```json
+{
+  "resourceType": "AccessPolicy",
+  "name": "Write-only Sandbox",
+  "resource": [
+    {
+      "resourceType": "*",
+      "interaction": ["create", "read"]
+    }
+  ]
+}
+```
 
 ### Read-only Elements
 
@@ -151,7 +211,7 @@ Constraints on writes to a resource can also be specified using [FHIRPath expres
 
 :::tip
 
-In resource constraints, `%before` will be undefined, so any expressions that refer to `%before` must account for this case. To select only updates or only creates, prefix the criteria with `%before.exists() implies` or `%before.exists().not() implies` respectively.
+In case of a resource being created, `%before` will be undefined, so any expressions that refer to `%before` must account for this case. To select only updates or only creates, prefix the criteria with `%before.exists() implies` or `%before.exists().not() implies` respectively.
 
 :::
 

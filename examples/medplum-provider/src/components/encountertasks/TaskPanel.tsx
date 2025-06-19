@@ -1,9 +1,9 @@
 import { Card, Stack } from '@mantine/core';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Annotation, DiagnosticReport, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
-import { useMedplum, useMedplumProfile } from '@medplum/react';
+import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { DiagnosticReport, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
 import { IconCircleOff } from '@tabler/icons-react';
 import { JSX } from 'react';
 import { useNavigate } from 'react-router';
@@ -22,7 +22,6 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const { task, onUpdateTask } = props;
   const navigate = useNavigate();
   const medplum = useMedplum();
-  const author = useMedplumProfile();
 
   const onActionButtonClicked = async (): Promise<void> => {
     if (task.status === 'ready' || task.status === 'requested') {
@@ -83,19 +82,6 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
     SAVE_TIMEOUT_MS
   );
 
-  const onAddNote = async (note: string): Promise<void> => {
-    const newNote: Annotation = {
-      text: note,
-      authorReference: author && createReference(author),
-      time: new Date().toISOString(),
-    };
-
-    const taskNotes = task?.note || [];
-    taskNotes.push(newNote);
-    const updatedTask: Task = { ...task, note: taskNotes };
-    await updateTaskStatus(updatedTask, medplum, onUpdateTask);
-  };
-
   const onChangeStatus = async (status: Task[`status`]): Promise<void> => {
     const updatedTask: Task = { ...task, status: status };
     await updateTaskStatus(updatedTask, medplum, onUpdateTask);
@@ -112,16 +98,9 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
         )}
 
         {!task.focus?.reference?.startsWith('ServiceRequest/') &&
-          !task.focus?.reference?.startsWith('Questionnaire/') && (
-            <SimpleTask key={task.id} task={task} />
-          )}
+          !task.focus?.reference?.startsWith('Questionnaire/') && <SimpleTask key={task.id} task={task} />}
 
-        <TaskStatusPanel
-          task={task}
-          onActionButtonClicked={onActionButtonClicked}
-          onAddNote={onAddNote}
-          onChangeStatus={onChangeStatus}
-        />
+        <TaskStatusPanel task={task} onActionButtonClicked={onActionButtonClicked} onChangeStatus={onChangeStatus} />
       </Stack>
     </Card>
   );

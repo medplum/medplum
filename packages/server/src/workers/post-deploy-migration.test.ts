@@ -366,19 +366,7 @@ describe('Post-Deploy Migration Worker', () => {
       job.token = 'some-token';
     });
 
-    // DelayedError is part of the mocked bullmq module. Something about that causes
-    // the usual `expect(...).rejects.toThrow(...)`; it seems to be becuase DelayedError
-    // is no longer an `Error`. So instead, we manually check that it threw
-    let threw = undefined;
-    try {
-      await jobProcessor(job);
-      throw new Error('Expected jobProcessor to throw DelayedError');
-    } catch (err) {
-      threw = err;
-    }
-    expect(threw).toBeDefined();
-    expect(threw).toBeInstanceOf(DelayedError);
-
+    await expect(jobProcessor(job)).rejects.toBeInstanceOf(DelayedError);
     expect(mockCustomMigration.run).not.toHaveBeenCalled();
     expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
     expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), 'some-token');

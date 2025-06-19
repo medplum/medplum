@@ -106,12 +106,7 @@ describe('FHIR Mapper transform', () => {
     `;
 
     const input1 = [{ type: 'TLeft', value: { a2: 'abcdef' } }];
-    try {
-      structureMapTransform(parseMappingLanguage(map), input1);
-      throw new Error('Expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('Check failed: (a2.length() <= 3)');
-    }
+    expect(() => structureMapTransform(parseMappingLanguage(map), input1)).toThrow('Check failed: (a2.length() <= 3)');
 
     const input2 = [{ type: 'TLeft', value: { a2: 'abc' } }];
     const expected2 = [{ type: 'TRight', value: { a2: 'abc' } }];
