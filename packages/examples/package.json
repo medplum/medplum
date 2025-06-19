@@ -23,7 +23,7 @@
     "@medplum/core": "4.1.9",
     "@medplum/fhirtypes": "4.1.9",
     "@medplum/mock": "4.1.9",
-    "jest": "30.0.0"
+    "jest": "29.7.0"
   },
   "engines": {
     "node": ">=20.0.0"
