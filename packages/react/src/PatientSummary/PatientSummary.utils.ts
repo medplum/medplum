@@ -52,12 +52,8 @@ export function formatPatientGenderDisplay(patient: Patient): string {
 }
 
 export function formatPatientRaceEthnicityDisplay(patient: Patient): string {
-  console.log('patient', patient);
   const race = getRace(patient);
   const ethnicity = getEthnicity(patient);
-
-  console.log('race', race);
-  console.log('ethnicity', ethnicity);
   const parts: string[] = [];
 
   if (race) {

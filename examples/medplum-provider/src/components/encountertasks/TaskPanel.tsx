@@ -1,15 +1,17 @@
 import { Card, Stack } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
-import { QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { useDebouncedCallback } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
+import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { DiagnosticReport, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
+import { IconCircleOff } from '@tabler/icons-react';
 import { JSX } from 'react';
 import { useNavigate } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { SimpleTask } from './SimpleTask';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { TaskStatusPanel } from './TaskStatusPanel';
-import { useDebouncedCallback } from '@mantine/hooks';
-import { showErrorNotification } from '../../utils/notifications';
+import { TaskServiceRequest } from './TaskServiceRequest';
 
 interface TaskPanelProps {
   task: Task;
@@ -22,7 +24,21 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const medplum = useMedplum();
 
   const onActionButtonClicked = async (): Promise<void> => {
-    navigate(`Task/${task.id}`)?.catch(console.error);
+    if (task.status === 'ready' || task.status === 'requested') {
+      // Task status is Ready or Requested. Action will mark as complete.
+      await updateTaskStatus({ ...task, status: 'completed' }, medplum, onUpdateTask);
+    } else {
+      // Fallback navigation to Task details.
+      navigate(`Task/${task.id}`)?.catch(console.error);
+    }
+  };
+
+  const onChangeResponse = (response: QuestionnaireResponse): void => {
+    saveQuestionnaireResponse(task, response);
+  };
+
+  const onSaveDiagnosticReport = (diagnosticReport: DiagnosticReport): void => {
+    saveDiagnosticReport(task, diagnosticReport);
   };
 
   const saveQuestionnaireResponse = useDebouncedCallback(
@@ -44,35 +60,62 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
           onUpdateTask(updatedTask);
         }
       } catch (err) {
-        showErrorNotification(err);
+        console.error(err);
       }
     },
     SAVE_TIMEOUT_MS
   );
 
+  const saveDiagnosticReport = useDebouncedCallback(
+    async (task: Task, diagnosticReport: DiagnosticReport): Promise<void> => {
+      const updatedTask = await medplum.updateResource<Task>({
+        ...task,
+        output: [
+          {
+            type: { text: 'DiagnosticReport' },
+            valueReference: { reference: getReferenceString(diagnosticReport) },
+          },
+        ],
+      });
+      onUpdateTask(updatedTask);
+    },
+    SAVE_TIMEOUT_MS
+  );
+
   const onChangeStatus = async (status: Task[`status`]): Promise<void> => {
-    try {
-      const response = await medplum.updateResource({ ...task, status: status });
-      onUpdateTask(response);
-    } catch (err) {
-      showErrorNotification(err);
-    }
+    const updatedTask: Task = { ...task, status: status };
+    await updateTaskStatus(updatedTask, medplum, onUpdateTask);
   };
 
   return (
     <Card withBorder shadow="sm" p={0}>
       <Stack gap="xs">
-        {task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
-          <TaskQuestionnaireForm
-            key={task.id}
-            task={task}
-            onChangeResponse={(response) => saveQuestionnaireResponse(task, response)}
-          />
-        ) : (
-          <SimpleTask key={task.id} task={task} />
+        {task.focus?.reference?.startsWith('Questionnaire/') && (
+          <TaskQuestionnaireForm key={task.id} task={task} onChangeResponse={onChangeResponse} />
         )}
+        {task.focus?.reference?.startsWith('ServiceRequest/') && (
+          <TaskServiceRequest key={task.id} task={task} saveDiagnosticReport={onSaveDiagnosticReport} />
+        )}
+
+        {!task.focus?.reference?.startsWith('ServiceRequest/') &&
+          !task.focus?.reference?.startsWith('Questionnaire/') && <SimpleTask key={task.id} task={task} />}
+
         <TaskStatusPanel task={task} onActionButtonClicked={onActionButtonClicked} onChangeStatus={onChangeStatus} />
       </Stack>
     </Card>
   );
+};
+
+const updateTaskStatus = async (task: Task, medplum: any, onUpdateTask: (task: Task) => void): Promise<void> => {
+  try {
+    const response = await medplum.updateResource(task);
+    onUpdateTask(response);
+  } catch (err) {
+    showNotification({
+      color: 'red',
+      icon: <IconCircleOff />,
+      title: 'Error',
+      message: normalizeErrorString(err),
+    });
+  }
 };
