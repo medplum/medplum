@@ -9,11 +9,12 @@ import {
   badRequest,
   generateId,
   getWebSocketUrl,
+  isResource,
   normalizeErrorString,
   resolveId,
   serverError,
 } from '@medplum/core';
-import { Bundle, BundleEntry, DiagnosticReport, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
 import assert from 'node:assert';
@@ -258,7 +259,11 @@ async function handleOpenContextChangeRequest(req: Request, res: Response): Prom
   const currentContext = await getCurrentContext(projectId, event['hub.topic']);
   // If the current context is a DiagnosticReport anchor context, then store it for later
   if (currentContext && currentContext['context.type'] === 'DiagnosticReport') {
-    const report = currentContext.context.find((ctx) => ctx.key === 'report')?.resource as DiagnosticReport;
+    const report = currentContext.context.find((ctx) => ctx.key === 'report')?.resource;
+    if (!isResource(report, 'DiagnosticReport')) {
+      sendOutcome(res, badRequest('No DiagnosticReport currently open for this topic'));
+      return;
+    }
     await storeContext(projectId, event['hub.topic'], report, currentContext);
   }
 
