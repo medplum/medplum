@@ -68,7 +68,6 @@
     "@aws-sdk/types": "3.821.0",
     "@medplum/core": "4.1.10",
     "@medplum/hl7": "4.1.10",
-    "aws-sdk-client-mock": "4.1.0",
     "commander": "12.1.0",
     "dotenv": "16.5.0",
     "fast-glob": "3.3.3",
@@ -81,7 +80,8 @@
     "@medplum/fhirtypes": "4.1.10",
     "@medplum/mock": "4.1.10",
     "@types/node-fetch": "2.6.12",
-    "@types/semver": "7.7.0"
+    "@types/semver": "7.7.0",
+    "aws-sdk-client-mock": "4.1.0"
   },
   "engines": {
     "node": ">=20.0.0"
