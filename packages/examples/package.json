@@ -19,7 +19,7 @@
     "lint": "eslint ."
   },
   "devDependencies": {
-    "@jest/globals": "30.0.0",
+    "@jest/globals": "29.7.0",
     "@medplum/core": "4.1.9",
     "@medplum/fhirtypes": "4.1.9",
     "@medplum/mock": "4.1.9",
