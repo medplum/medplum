@@ -1,18 +1,10 @@
-import { ScrollArea, Text, Group, Loader } from '@mantine/core';
-import { Practitioner as FhirPractitioner, Communication, Patient } from '@medplum/fhirtypes';
-import { useMedplum, BaseChat, ResourceAvatar, PatientSummary } from '@medplum/react';
-import React, { JSX, useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { createReference, formatHumanName, normalizeErrorString } from '@medplum/core';
-import { useResizeObserver } from '@mantine/hooks';
-import { showNotification } from '@mantine/notifications';
+import { ScrollArea, Text, Loader } from '@mantine/core';
+import { Communication, Patient, Reference } from '@medplum/fhirtypes';
+import { useMedplum, BaseChat, PatientSummary, useMedplumProfile } from '@medplum/react';
+import React, { JSX, useEffect, useState, useMemo, useCallback } from 'react';
+import { createReference } from '@medplum/core';
 import { ChatList } from '../../components/messages/ChatList';
-
-// Add hover style for message list items
-const messageListItemStyle = `
-.message-list-item:hover {
-  background: var(--mantine-color-gray-0) !important;
-}
-`;
+import { showErrorNotification } from '../../utils/notifications';
 
 function groupCommunicationsByPatient(
   comms: Communication[]
@@ -73,39 +65,25 @@ function groupCommunicationsByPatient(
  */
 export function MessagesPage(): JSX.Element {
   const medplum = useMedplum();
-  const [communications, setCommunications] = useState<Communication[]>([]);
+  // const [communications, setCommunications] = useState<Communication[]>([]);
   const [loading, setLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-  const pageSize = 50;
-  const [participantNames, setParticipantNames] = useState<Record<string, string>>({});
-  const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(undefined);
-  const [selectedPatientRef, setSelectedPatientRef] = useState<string | undefined>(undefined);
+  const [selectedPatient, setSelectedPatient] = useState<Reference<Patient> | undefined>(undefined);
   const [threadMessages, setThreadMessages] = useState<Communication[]>([]);
-  const [parentRef, parentRect] = useResizeObserver<HTMLDivElement>();
-  const prevThreadRef = useRef<string | undefined>(undefined);
-  const [selectedThread, setSelectedThread] = useState<Communication | undefined>(undefined);
-
-  // Add this at the top of the component to inject the style
-  if (typeof document !== 'undefined' && !document.getElementById('message-list-item-style')) {
-    const style = document.createElement('style');
-    style.id = 'message-list-item-style';
-    style.innerHTML = messageListItemStyle;
-    document.head.appendChild(style);
-  }
-
-  useEffect(() => {
-    if (selectedPatientRef !== prevThreadRef.current) {
-      prevThreadRef.current = selectedPatientRef;
-    }
-  }, [selectedPatientRef]);
+  const profile = useMedplumProfile();
+  const profileRef = useMemo(() => (profile ? createReference(profile) : undefined), [profile]);
+  
 
   useEffect(() => {
     async function fetchAllCommunications(): Promise<void> {
+      if (selectedPatient) {
+        return;
+      }
 
-      const searchResult = await medplum.searchResources('Communication', {
-        // _sort: '-sent',
-      }, { cache: 'no-cache' });
-      setCommunications(searchResult);
+      const searchParams = new URLSearchParams();
+      searchParams.append('_sort', '-sent');
+      searchParams.append('received:missing', 'true');
+      const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
+      // setCommunications(searchResult);
 
       const threads: Communication[] = [];
       const threadMap: Set<string> = new Set<string>();
@@ -116,11 +94,55 @@ export function MessagesPage(): JSX.Element {
         }
       });
 
-        setThreadMessages(threads);
+      setThreadMessages(threads);
+
+      if (threads.length > 0) {
+        setSelectedPatient(threads[0].subject as Reference<Patient>);
       }
-      fetchAllCommunications().catch(() => setLoading(false));
-    
-  }, [medplum]);
+    }
+    fetchAllCommunications().catch(() => setLoading(false));
+  }, [medplum, selectedPatient]);
+
+  useEffect(() => {
+    async function fetchThreadMessages(): Promise<void> {
+      if (!selectedPatient) {
+        return;
+      }
+
+      const searchParams = new URLSearchParams();
+      searchParams.append('subject', selectedPatient.id as string);
+      const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
+      setThreadMessages(searchResult);
+    }
+    fetchThreadMessages().catch((err) => showErrorNotification(err));
+  }, [selectedPatient, medplum]);
+
+
+  const sendMessage = useCallback(
+    (message: string) => {
+      if (!selectedPatient) {
+        return;
+      }
+
+      if (!profileRef) {
+        return;
+      }
+
+
+      medplum
+        .createResource<Communication>({
+          resourceType: 'Communication',
+          status: 'in-progress',
+          sender: profileRef,
+          subject: selectedPatient,
+          recipient: [selectedPatient],
+          sent: new Date().toISOString(),
+          payload: [{ contentString: message }],
+        })
+        .catch(console.error);
+    },
+    [medplum, selectedPatient, profileRef]
+  );
 
   // Only show the most recent Communication per patient
   // const patientThreads = useMemo(() => groupCommunicationsByPatient(communications), [communications]);
@@ -334,7 +356,6 @@ export function MessagesPage(): JSX.Element {
   //   }
   // }, [selectedPatientRef, medplum]);
 
-
   // // Prefetch next few threads
   // useEffect(() => {
   //   if (!validPatientThreads.length) {
@@ -373,65 +394,14 @@ export function MessagesPage(): JSX.Element {
   );
 
   let chatArea: JSX.Element;
-  if (selectedThread && selectedPatient) {
+  if (selectedPatient) {
     chatArea = (
       <BaseChat
-        title={selectedPatient ? formatHumanName(selectedPatient.name?.[0]) : ''}
+        title={'Messages'}
         communications={threadMessages}
         setCommunications={setThreadMessages}
-        query={`subject=${selectedThread.subject?.reference}`}
-        sendMessage={(content: string) => {
-          if (!content) {
-            return;
-          }
-          if (!selectedPatient) {
-            return;
-          }
-          const profile = medplum.getProfile();
-          if (!profile) {
-            return;
-          }
-          const patientRef = createReference(selectedPatient);
-          // Optimistically create the new Communication object
-          const optimisticComm: Communication = {
-            resourceType: 'Communication',
-            status: 'in-progress',
-            sender: { reference: `Practitioner/${profile.id}` },
-            subject: patientRef,
-            recipient: [patientRef],
-            sent: new Date().toISOString(),
-            payload: [{ contentString: content }],
-            // Optionally add a temporary id to help with deduplication
-            id: `temp-${Date.now()}`,
-          };
-          setCommunications((prev) => [...prev, optimisticComm]);
-          setThreadMessages((prev) => [...prev, optimisticComm]);
-          medplum
-            .createResource<Communication>({
-              resourceType: 'Communication',
-              status: 'in-progress',
-              sender: { reference: `Practitioner/${profile.id}` },
-              subject: patientRef,
-              recipient: [patientRef],
-              sent: optimisticComm.sent,
-              payload: [{ contentString: content }],
-            })
-            .then((newComm) => {
-              setCommunications((prev) => {
-                // Replace the optimistic message with the real one (by id)
-                return prev.map((c) => (c.id === optimisticComm.id ? newComm : c));
-              });
-              setThreadMessages((prev) => {
-                return prev.map((c) => (c.id === optimisticComm.id ? newComm : c));
-              });
-            })
-            .catch((err) => {
-              showNotification({ color: 'red', message: normalizeErrorString(err) });
-              // Optionally remove the optimistic message on error
-              setCommunications((prev) => prev.filter((c) => c.id !== optimisticComm.id));
-              setThreadMessages((prev) => prev.filter((c) => c.id !== optimisticComm.id));
-            });
-        }}
+        query={`subject=${selectedPatient.id}`}
+        sendMessage={sendMessage}
         h="100%"
         radius="0"
       />
@@ -444,7 +414,6 @@ export function MessagesPage(): JSX.Element {
     <div style={{ display: 'flex', height: 'calc(100vh - 60px)' }}>
       {/* Left sidebar - Messages list */}
       <div
-        ref={parentRef}
         style={{
           width: 320,
           minWidth: 220,
@@ -457,29 +426,26 @@ export function MessagesPage(): JSX.Element {
         }}
       >
         {sidebarHeader}
-        <ScrollArea
-          h={parentRect.height}
-          scrollbarSize={10}
-          type="hover"
-          scrollHideDelay={250}
-        >
+        <ScrollArea h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
           {/* <ChatList communications={communications} /> */}
 
           {loading ? (
             <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              height: '100vh',
-              minHeight: 0,
-              flex: 1,
-            }}
-          >
-            <Loader />
-          </div>
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                height: '100vh',
+                minHeight: 0,
+                flex: 1,
+              }}
+            >
+              <Loader />
+            </div>
           ) : (
-            <ChatList communications={threadMessages} onClick={setSelectedPatientRef} />
+            selectedPatient && (
+              <ChatList communications={threadMessages} selectedPatient={selectedPatient} onClick={(patient) => setSelectedPatient(patient)} />
+            )
           )}
         </ScrollArea>
       </div>
@@ -499,13 +465,7 @@ export function MessagesPage(): JSX.Element {
             flexDirection: 'column',
           }}
         >
-          <ScrollArea
-            h={parentRect.height}
-            scrollbarSize={10}
-            type="hover"
-            scrollHideDelay={250}
-            style={{ flex: 1 }}
-          >
+          <ScrollArea h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250} style={{ flex: 1 }}>
             <PatientSummary key={selectedPatient.id} patient={selectedPatient} />
           </ScrollArea>
         </div>
