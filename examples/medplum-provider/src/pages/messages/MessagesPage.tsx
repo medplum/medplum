@@ -94,6 +94,7 @@ export function MessagesPage(): JSX.Element {
         }
       });
 
+      console.log('threads', threads);
       setThreadMessages(threads);
 
       if (threads.length > 0) {
@@ -401,6 +402,9 @@ export function MessagesPage(): JSX.Element {
         communications={threadMessages}
         setCommunications={setThreadMessages}
         query={`subject=${selectedPatient.id}`}
+        onMessageReceived={(message) => {
+          console.log('message', message);
+        }}
         sendMessage={sendMessage}
         h="100%"
         radius="0"
