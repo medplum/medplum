@@ -1024,7 +1024,7 @@ describe('Super Admin routes', () => {
       expect(setSpy).toHaveBeenCalledWith('column-per-code');
     });
 
-    test('POST /setreadfromtokencolumns - set to false', async () => {
+    test('POST /setreadfromtokencolumns - set to token-tables', async () => {
       setSpy.mockResolvedValue(undefined);
 
       const res = await request(app)
@@ -1050,12 +1050,12 @@ describe('Super Admin routes', () => {
       expect(setSpy).not.toHaveBeenCalled();
     });
 
-    test('POST /setreadfromtokencolumns - invalid body (not boolean)', async () => {
+    test('POST /setreadfromtokencolumns - invalid value', async () => {
       const res = await request(app)
         .post('/admin/super/setreadfromtokencolumns')
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
-        .send({ newValue: 'false' }); // not a boolean
+        .send({ newValue: 'false' });
 
       expect(res.status).toBe(400);
       expect(res.body.issue[0].details.text).toContain('newValue must be "token-table" or "column-per-code"');
