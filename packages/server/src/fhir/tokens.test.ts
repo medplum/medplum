@@ -25,7 +25,7 @@ import {
   TokenColumnsFeature,
 } from './tokens';
 
-describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tokens-column', 'column-per-code', false])(
+describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'column-per-code', 'token-tables'])(
   'Token searching using %s',
   (tokenColumnsOrLookupTable) => {
     const systemRepo = getSystemRepo();
@@ -330,7 +330,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
             ],
           });
 
-          if (TokenColumnsFeature.read) {
+          if (TokenColumnsFeature.read !== 'token-tables') {
             // The token column implementation does not support :contains on identifier
             expect(identifierResult.entry?.length).toStrictEqual(0);
           } else {
@@ -377,7 +377,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
             ],
           });
 
-          if (TokenColumnsFeature.read) {
+          if (TokenColumnsFeature.read !== 'token-tables') {
             expect(result.entry?.length).toStrictEqual(1);
             expect(bundleContains(result, patient1)).toBeDefined();
           } else {
@@ -401,7 +401,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
             ],
           });
 
-          if (TokenColumnsFeature.read) {
+          if (TokenColumnsFeature.read !== 'token-tables') {
             expect(result.entry?.length).toStrictEqual(1);
             expect(bundleContains(result, patient1)).toBeDefined();
           } else {
@@ -424,7 +424,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
             ],
           });
 
-          if (TokenColumnsFeature.read) {
+          if (TokenColumnsFeature.read !== 'token-tables') {
             expect(result.entry?.length).toStrictEqual(1);
             expect(bundleContains(result, patient1)).toBeDefined();
           } else {
@@ -1077,7 +1077,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
             },
           ],
         });
-        if (TokenColumnsFeature.read) {
+        if (TokenColumnsFeature.read !== 'token-tables') {
           // Token columns don't support :contains on `code`
           expect(toSortedIdentifierValues(resContains)).toStrictEqual([]);
         } else {
@@ -1161,7 +1161,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
             },
           ],
         });
-        if (TokenColumnsFeature.read) {
+        if (TokenColumnsFeature.read !== 'token-tables') {
           // Token columns don't support :contains on `code`
           expect(toSortedIdentifierValues(resContains)).toStrictEqual([]);
         } else {
@@ -1317,8 +1317,8 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
               ],
             });
             if (
-              (tokenColumnsOrLookupTable && shouldBeFoundForTokenColumns) ||
-              (tokenColumnsOrLookupTable === false && shouldBeFoundForLookupTables)
+              (tokenColumnsOrLookupTable !== 'token-tables' && shouldBeFoundForTokenColumns) ||
+              (tokenColumnsOrLookupTable === 'token-tables' && shouldBeFoundForLookupTables)
             ) {
               expect(res.entry?.length).toBe(1);
               expect(res.entry?.[0].resource?.id).toBe(condWithSpecialChars.id);
@@ -1386,7 +1386,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
             },
           ],
         });
-        if (tokenColumnsOrLookupTable) {
+        if (tokenColumnsOrLookupTable !== 'token-tables') {
           expect(searchResult.entry?.length).toStrictEqual(2);
           expect(searchResult.entry?.map((e) => e.resource?.id)).toContain(mr1.id);
           expect(searchResult.entry?.map((e) => e.resource?.id)).toContain(mr2.id);
@@ -1421,7 +1421,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['unified-tok
             },
           ],
         });
-        if (tokenColumnsOrLookupTable) {
+        if (tokenColumnsOrLookupTable !== 'token-tables') {
           expect(searchResult.entry?.length).toStrictEqual(1);
           expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(mr1.id);
         } else {
