@@ -271,7 +271,7 @@ describe('SuperAdminPage', () => {
   });
 
   test('Get/Set Read from Token Columns', async () => {
-    let redisValue = false;
+    let redisValue = 'token-tables';
 
     const mockFetch = (url: string, options: any): Promise<any> => {
       let status = 404;
@@ -281,14 +281,14 @@ describe('SuperAdminPage', () => {
         result = {
           resourceType: 'Parameters',
           parameter: [
-            { name: 'defaultValue', valueBoolean: false },
-            { name: 'redisValue', valueBoolean: redisValue },
+            { name: 'defaultValue', valueString: 'token-tables' },
+            { name: 'redisValue', valueString: redisValue },
           ],
         } satisfies Parameters;
         status = 200;
       } else if (options.method === 'POST' && url.endsWith('admin/super/setreadfromtokencolumns')) {
         const { newValue } = JSON.parse(options.body);
-        expect(typeof newValue).toBe('boolean');
+        expect(['token-tables', 'column-per-code']).toContain(newValue);
         redisValue = newValue;
         status = 200;
       }
@@ -306,30 +306,30 @@ describe('SuperAdminPage', () => {
     setup(client);
 
     // Wait for initial values to be displayed
-    expect(await screen.findByText('Default Value: false')).toBeInTheDocument();
-    expect(await screen.findByText('Value in Redis: false')).toBeInTheDocument();
+    expect(await screen.findByText('Default Value: token-tables')).toBeInTheDocument();
+    expect(await screen.findByText('Value in Redis: token-tables')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('New Value'), { target: { value: 'true' } });
+      fireEvent.change(screen.getByLabelText('New Value'), { target: { value: 'column-per-code' } });
     });
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Set Read From Token Columns' }));
     });
 
-    expect(await screen.findByText('Default Value: false')).toBeInTheDocument();
-    expect(await screen.findByText('Value in Redis: true')).toBeInTheDocument();
+    expect(await screen.findByText('Default Value: token-tables')).toBeInTheDocument();
+    expect(await screen.findByText('Value in Redis: column-per-code')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('New Value'), { target: { value: 'false' } });
+      fireEvent.change(screen.getByLabelText('New Value'), { target: { value: 'token-tables' } });
     });
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Set Read From Token Columns' }));
     });
 
-    expect(await screen.findByText('Default Value: false')).toBeInTheDocument();
-    expect(await screen.findByText('Value in Redis: false')).toBeInTheDocument();
+    expect(await screen.findByText('Default Value: token-tables')).toBeInTheDocument();
+    expect(await screen.findByText('Value in Redis: token-tables')).toBeInTheDocument();
   });
 
   test('Access denied', async () => {

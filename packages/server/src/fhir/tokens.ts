@@ -13,8 +13,11 @@ import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 
-export const DefaultReadFromTokenColumns = false;
-export const TokenColumnsFeature: { write: boolean; read: false | 'unified-tokens-column' | 'column-per-code' } = {
+export const DefaultReadFromTokenColumns = 'token-tables';
+export const TokenColumnsFeature: {
+  write: boolean;
+  read: 'token-tables' | 'unified-tokens-column' | 'column-per-code';
+} = {
   write: true,
   read: DefaultReadFromTokenColumns,
 };
@@ -23,22 +26,16 @@ let readFromTokenColumnsHeartbeatListener: (() => Promise<void>) | undefined;
 
 const READ_FROM_TOKEN_COLUMNS_FEATURE_KEY = 'medplum:features:readFromTokenColumns';
 
-export async function getReadFromTokenColumnsFeature(): Promise<
-  false | 'unified-tokens-column' | 'column-per-code' | undefined
-> {
-  const enabled = (await getRedis().get(READ_FROM_TOKEN_COLUMNS_FEATURE_KEY)) ?? undefined;
-  if (enabled === 'false') {
-    return false;
-  } else if (enabled === 'unified-tokens-column' || enabled === 'column-per-code') {
-    return enabled;
+export async function getReadFromTokenColumnsFeature(): Promise<(typeof TokenColumnsFeature)['read'] | undefined> {
+  const enabled = await getRedis().get(READ_FROM_TOKEN_COLUMNS_FEATURE_KEY);
+  if (enabled && ['token-tables', 'unified-tokens-column', 'column-per-code'].includes(enabled)) {
+    return enabled as (typeof TokenColumnsFeature)['read'];
   }
   return undefined;
 }
 
-export async function setReadFromTokenColumnsFeature(
-  value: false | 'unified-tokens-column' | 'column-per-code'
-): Promise<void> {
-  await getRedis().set(READ_FROM_TOKEN_COLUMNS_FEATURE_KEY, value.toString());
+export async function setReadFromTokenColumnsFeature(value: (typeof TokenColumnsFeature)['read']): Promise<void> {
+  await getRedis().set(READ_FROM_TOKEN_COLUMNS_FEATURE_KEY, value);
 }
 
 export function initReadFromTokenColumnsHeartbeat(): void {

@@ -10,6 +10,7 @@ import { loadTestConfig } from '../config/loader';
 import { AuthenticatedRequestContext } from '../context';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import * as tokensModule from '../fhir/tokens';
+import { DefaultReadFromTokenColumns } from '../fhir/tokens';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { requestContextStore } from '../request-context-store';
@@ -967,7 +968,7 @@ describe('Super Admin routes', () => {
     });
   });
 
-  describe.only('Get/Set ReadFromTokenColumns Feature Flag', () => {
+  describe('Get/Set ReadFromTokenColumns Feature Flag', () => {
     let getSpy: jest.SpyInstance;
     let setSpy: jest.SpyInstance;
 
@@ -982,7 +983,7 @@ describe('Super Admin routes', () => {
     });
 
     test('GET /getreadfromtokencolumns - success', async () => {
-      getSpy.mockResolvedValue(true);
+      getSpy.mockResolvedValue('column-per-code');
 
       const res = await request(app)
         .get('/admin/super/getreadfromtokencolumns')
@@ -992,8 +993,8 @@ describe('Super Admin routes', () => {
       expect(res.body.resourceType).toBe('Parameters');
       expect(res.body.parameter).toEqual(
         expect.arrayContaining([
-          expect.objectContaining({ name: 'defaultValue', valueBoolean: expect.any(Boolean) }), // Default value might change, just check type
-          expect.objectContaining({ name: 'redisValue', valueBoolean: true }),
+          expect.objectContaining({ name: 'defaultValue', valueString: DefaultReadFromTokenColumns.toString() }), // Default value might change, just check type
+          expect.objectContaining({ name: 'redisValue', valueString: 'column-per-code' }),
         ])
       );
       expect(getSpy).toHaveBeenCalledTimes(1);
@@ -1008,19 +1009,19 @@ describe('Super Admin routes', () => {
       expect(getSpy).not.toHaveBeenCalled();
     });
 
-    test('POST /setreadfromtokencolumns - set to true', async () => {
+    test('POST /setreadfromtokencolumns - set to column-per-code', async () => {
       setSpy.mockResolvedValue(undefined);
 
       const res = await request(app)
         .post('/admin/super/setreadfromtokencolumns')
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
-        .send({ newValue: true });
+        .send({ newValue: 'column-per-code' });
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject(allOk);
       expect(setSpy).toHaveBeenCalledTimes(1);
-      expect(setSpy).toHaveBeenCalledWith(true);
+      expect(setSpy).toHaveBeenCalledWith('column-per-code');
     });
 
     test('POST /setreadfromtokencolumns - set to false', async () => {
@@ -1030,12 +1031,12 @@ describe('Super Admin routes', () => {
         .post('/admin/super/setreadfromtokencolumns')
         .set('Authorization', 'Bearer ' + adminAccessToken)
         .type('json')
-        .send({ newValue: false });
+        .send({ newValue: 'token-tables' });
 
       expect(res.status).toBe(200);
       expect(res.body).toMatchObject(allOk);
       expect(setSpy).toHaveBeenCalledTimes(1);
-      expect(setSpy).toHaveBeenCalledWith(false);
+      expect(setSpy).toHaveBeenCalledWith('token-tables');
     });
 
     test('POST /setreadfromtokencolumns - access denied', async () => {
@@ -1057,7 +1058,7 @@ describe('Super Admin routes', () => {
         .send({ newValue: 'false' }); // not a boolean
 
       expect(res.status).toBe(400);
-      expect(res.body.issue[0].details.text).toContain('newValue must be true or false');
+      expect(res.body.issue[0].details.text).toContain('newValue must be "token-table" or "column-per-code"');
       expect(setSpy).not.toHaveBeenCalled();
     });
 
@@ -1069,7 +1070,7 @@ describe('Super Admin routes', () => {
         .send({});
 
       expect(res.status).toBe(400);
-      expect(res.body.issue[0].details.text).toContain('newValue must be true or false');
+      expect(res.body.issue[0].details.text).toContain('newValue must be "token-table" or "column-per-code"');
       expect(setSpy).not.toHaveBeenCalled();
     });
   });

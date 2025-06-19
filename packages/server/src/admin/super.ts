@@ -510,8 +510,8 @@ superAdminRouter.get(
     const params = {
       resourceType: 'Parameters',
       parameter: [
-        { name: 'defaultValue', valueBoolean: DefaultReadFromTokenColumns },
-        { name: 'redisValue', valueBoolean: await getReadFromTokenColumnsFeature() },
+        { name: 'defaultValue', valueString: DefaultReadFromTokenColumns },
+        { name: 'redisValue', valueString: await getReadFromTokenColumnsFeature() },
       ],
     };
     res.json(params);
@@ -523,7 +523,7 @@ superAdminRouter.post(
 
   [
     body('newValue')
-      .isIn(['token-table', 'column-per-code'])
+      .isIn(['token-tables', 'column-per-code'])
       .withMessage('newValue must be "token-table" or "column-per-code"'),
   ],
   asyncWrap(async (req: Request, res: Response) => {
@@ -535,13 +535,7 @@ superAdminRouter.post(
       return;
     }
 
-    let newValue: false | 'column-per-code';
-    if (req.body.newValue === 'token-table') {
-      newValue = false;
-    } else {
-      newValue = req.body.newValue;
-    }
-    await setReadFromTokenColumnsFeature(newValue);
+    await setReadFromTokenColumnsFeature(req.body.newValue);
     sendOutcome(res, allOk);
   })
 );

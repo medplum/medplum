@@ -138,12 +138,12 @@ export function SuperAdminPage(): JSX.Element {
   }
 
   function setReadFromTokenColumns(formData: Record<string, string>): Promise<void> {
-    if (!['true', 'false'].includes(formData.newValue)) {
+    if (!['token-tables', 'column-per-code'].includes(formData.newValue)) {
       showNotification({ color: 'red', message: 'Missing new value', autoClose: false });
       return Promise.reject(new Error('Missing new value'));
     }
     return medplum
-      .post('admin/super/setreadfromtokencolumns', { newValue: formData.newValue === 'true' })
+      .post('admin/super/setreadfromtokencolumns', { newValue: formData.newValue })
       .then(() => {
         setRefresh((prev) => prev + 1);
         showNotification({ color: 'green', message: 'Done' });
@@ -309,7 +309,7 @@ export function SuperAdminPage(): JSX.Element {
       <Form onSubmit={setReadFromTokenColumns}>
         <Stack>
           <FormSection title="New Value" htmlFor="newValue">
-            <NativeSelect id="newValue" name="newValue" data={['token-table', 'column-per-code']} />
+            <NativeSelect id="newValue" name="newValue" data={['token-tables', 'column-per-code']} />
           </FormSection>
           <SubmitButton>Set Read From Token Columns</SubmitButton>
         </Stack>
@@ -323,14 +323,14 @@ export function SuperAdminPage(): JSX.Element {
 }
 
 function CurrentReadFromTokenColumns({ medplum }: { medplum: MedplumClient }): JSX.Element {
-  const [defaultValue, setDefaultValue] = useState<boolean | undefined>(undefined);
-  const [redisValue, setRedisValue] = useState<boolean | undefined>(undefined);
+  const [defaultValue, setDefaultValue] = useState<string | undefined>(undefined);
+  const [redisValue, setRedisValue] = useState<string | undefined>(undefined);
   useEffect(() => {
     medplum
       .get('admin/super/getreadfromtokencolumns', { cache: 'no-cache' })
       .then((params: Parameters) => {
-        setDefaultValue(params.parameter?.find((p) => p.name === 'defaultValue')?.valueBoolean);
-        setRedisValue(params.parameter?.find((p) => p.name === 'redisValue')?.valueBoolean);
+        setDefaultValue(params.parameter?.find((p) => p.name === 'defaultValue')?.valueString);
+        setRedisValue(params.parameter?.find((p) => p.name === 'redisValue')?.valueString);
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum]);
