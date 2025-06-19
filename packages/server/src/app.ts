@@ -22,6 +22,7 @@ import { binaryRouter } from './fhir/binary';
 import { sendOutcome } from './fhir/outcomes';
 import { fhirRouter } from './fhir/routes';
 import { loadStructureDefinitions } from './fhir/structure';
+import { cleanupReadFromTokenColumnsHeartbeat, initReadFromTokenColumnsHeartbeat } from './fhir/tokens';
 import { fhircastSTU2Router, fhircastSTU3Router } from './fhircast/routes';
 import { healthcheckHandler } from './healthcheck';
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
@@ -44,7 +45,6 @@ import { webhookRouter } from './webhook/routes';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
-import { cleanupReadFromTokenColumnsHeartbeat, initReadFromTokenColumnsHeartbeat } from './fhir/tokens';
 
 let server: http.Server | undefined = undefined;
 
