@@ -44,9 +44,6 @@ export function encodeBase64(data: string): string {
  * @returns The Base64URL encoded string.
  */
 export function encodeBase64Url(data: string): string {
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(data, 'utf8').toString('base64url');
-  }
   return encodeBase64(data)
     .replace(/\+/g, '-') // Replace + with -
     .replace(/\//g, '_') // Replace / with _
@@ -59,9 +56,6 @@ export function encodeBase64Url(data: string): string {
  * @returns The decoded string.
  */
 export function decodeBase64Url(data: string): string {
-  if (typeof Buffer !== 'undefined') {
-    return Buffer.from(data, 'base64url').toString('utf-8');
-  }
   data = data.padEnd(data.length + ((4 - (data.length % 4)) % 4), '=');
   const base64 = data.replace(/-/g, '+').replace(/_/g, '/');
   return decodeBase64(base64);
