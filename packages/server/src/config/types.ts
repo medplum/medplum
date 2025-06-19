@@ -1,4 +1,4 @@
-import { ProjectSetting } from '@medplum/fhirtypes';
+import { ClientApplication, ProjectSetting } from '@medplum/fhirtypes';
 import { KeepJobs } from 'bullmq';
 
 export interface MedplumServerConfig {
@@ -10,6 +10,7 @@ export interface MedplumServerConfig {
   tokenUrl: string;
   userInfoUrl: string;
   introspectUrl: string;
+  registerUrl: string;
   appBaseUrl: string;
   logLevel?: string;
   binaryStorage?: string;
@@ -93,6 +94,9 @@ export interface MedplumServerConfig {
 
   /** Optional list of external authentication providers. */
   externalAuthProviders?: MedplumExternalAuthConfig[];
+
+  /** Optional list of default OAuth2 clients */
+  defaultOAuthClients?: ClientApplication[];
 
   /** @deprecated */
   auditEventLogGroup?: string;
