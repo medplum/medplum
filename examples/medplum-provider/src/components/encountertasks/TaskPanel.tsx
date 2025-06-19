@@ -82,7 +82,6 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
     SAVE_TIMEOUT_MS
   );
 
-
   const onChangeStatus = async (status: Task[`status`]): Promise<void> => {
     const updatedTask: Task = { ...task, status: status };
     await updateTaskStatus(updatedTask, medplum, onUpdateTask);
@@ -101,11 +100,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
         {!task.focus?.reference?.startsWith('ServiceRequest/') &&
           !task.focus?.reference?.startsWith('Questionnaire/') && <SimpleTask key={task.id} task={task} />}
 
-        <TaskStatusPanel
-          task={task}
-          onActionButtonClicked={onActionButtonClicked}
-          onChangeStatus={onChangeStatus}
-        />
+        <TaskStatusPanel task={task} onActionButtonClicked={onActionButtonClicked} onChangeStatus={onChangeStatus} />
       </Stack>
     </Card>
   );
