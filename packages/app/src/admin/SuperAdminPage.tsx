@@ -309,7 +309,12 @@ export function SuperAdminPage(): JSX.Element {
       <Form onSubmit={setReadFromTokenColumns}>
         <Stack>
           <FormSection title="New Value" htmlFor="newValue">
-            <NativeSelect id="newValue" name="newValue" data={['token-tables', 'column-per-code']} />
+            <NativeSelect
+              id="newValue"
+              name="newValue"
+              data={['', 'token-tables', 'column-per-code']}
+              defaultValue=""
+            />
           </FormSection>
           <SubmitButton>Set Read From Token Columns</SubmitButton>
         </Stack>
