@@ -17,10 +17,16 @@ const SERVER_REGISTRY_TTL_SECONDS = 60;
 type ServerRegistryInfo = {
   /* Unique identifier for a server instance */
   id: string;
+  /* Timestamp of the last heartbeat */
+  lastSeen: string;
   /* Semver version of Medplum the server is running */
   version: string;
   /* Full version (semver + build commit hash) of Medplum the server is running */
   fullVersion: string;
+};
+
+type ServerRegistryInfoWithComputed = ServerRegistryInfo & {
+  lastSeenAgeMs: number;
 };
 
 export type ClusterStatus = {
@@ -30,10 +36,10 @@ export type ClusterStatus = {
   oldestVersion: string | undefined;
   newestVersion: string | undefined;
   isHomogeneous: boolean;
-  servers: ServerRegistryInfo[];
+  servers: ServerRegistryInfoWithComputed[];
 };
 
-export async function getRegisteredServers(): Promise<ServerRegistryInfo[]> {
+export async function getRegisteredServers(): Promise<ServerRegistryInfoWithComputed[]> {
   const redis = getRedis();
   const servers: ServerRegistryInfo[] = [];
   const keys = await redis.keys(SERVER_REGISTRY_KEY_PREFIX + ':*');
@@ -43,7 +49,8 @@ export async function getRegisteredServers(): Promise<ServerRegistryInfo[]> {
       servers.push(JSON.parse(payload));
     }
   }
-  return servers;
+  const now = Date.now();
+  return servers.map((server) => ({ ...server, lastSeenAgeMs: now - new Date(server.lastSeen).getTime() }));
 }
 
 function getServersByVersion(servers: ServerRegistryInfo[]): Record<string, ServerRegistryInfo[]> {
@@ -81,6 +88,7 @@ export async function getClusterStatus(): Promise<ClusterStatus> {
 
 export async function setServerRegistryPayload(value: ServerRegistryInfo): Promise<void> {
   const redis = getRedis();
+  value.lastSeen = new Date().toISOString();
   await redis.setex(SERVER_REGISTRY_KEY_PREFIX + ':' + value.id, SERVER_REGISTRY_TTL_SECONDS, JSON.stringify(value));
 }
 
@@ -103,6 +111,7 @@ export async function initServerRegistryHeartbeatListener(): Promise<void> {
     if (!registryPayload) {
       registryPayload = {
         id: randomUUID(),
+        lastSeen: new Date().toISOString(),
         version: getServerVersion(),
         fullVersion: MEDPLUM_VERSION,
       };
