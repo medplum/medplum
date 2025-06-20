@@ -14,17 +14,10 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
   const { communications, selectedPatient, onClick } = props;
 
   return (
-    <Stack gap={0} style={{ padding: '8px' }}>
+    <Stack gap={0} p="xs">
       {communications.map((communication: Communication) => {
-        const patient = (communication.sender || communication.recipient?.[0]) as Reference<Patient>;
+        const patient = communication.subject as Reference<Patient>;
         const _isSelected = selectedPatient === patient;
-        // const _isAboveSelected = paginatedThreads[i + 1] && paginatedThreads[i + 1].patientRef === selectedPatientRef;
-
-        // Prefetch on render for visible threads
-        // if (!isSelected && !prefetchedPatients[patientRef]) {
-        //   prefetchPatient(patientRef);
-        // }
-
         return (
           <ChatListItem
             key={communication.id}
@@ -35,7 +28,6 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
               onClick(patient);
             }}
           />
-
         );
       })}
     </Stack>
