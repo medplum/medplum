@@ -80,8 +80,11 @@ export interface MedplumServerConfig {
   /** Max length of Bot AuditEvent.outcomeDesc when logging to logger */
   maxBotLogLengthForLogs?: number;
 
-  /** Search strategy system repositories use when using token search parameters. */
+  /** Search strategy system repositories use when using token search parameters. If not set, uses `defaultTokenReadStrategy`. */
   systemRepositoryTokenReadStrategy?: 'unified-tokens-column' | 'column-per-code' | 'token-tables';
+
+  /** Default search strategy when using token search parameters. Defaults to `'token-tables'`. */
+  defaultTokenReadStrategy?: 'unified-tokens-column' | 'column-per-code' | 'token-tables';
 
   /** Number of attempts for transactions that fail due to retry-able transaction errors */
   transactionAttempts?: number;

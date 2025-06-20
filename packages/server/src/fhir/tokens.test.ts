@@ -31,8 +31,8 @@ describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'c
     const systemRepo = getSystemRepo();
 
     beforeAll(async () => {
-      TokenColumnsFeature.read = tokenColumnsOrLookupTable;
       const config = await loadTestConfig();
+      config.defaultTokenReadStrategy = tokenColumnsOrLookupTable;
       await initAppServices(config);
     });
 
@@ -330,7 +330,7 @@ describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'c
             ],
           });
 
-          if (TokenColumnsFeature.read !== 'token-tables') {
+          if (tokenColumnsOrLookupTable !== 'token-tables') {
             // The token column implementation does not support :contains on identifier
             expect(identifierResult.entry?.length).toStrictEqual(0);
           } else {
@@ -354,7 +354,7 @@ describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'c
             ],
           });
 
-          if (TokenColumnsFeature.read) {
+          if (tokenColumnsOrLookupTable !== 'token-tables') {
             // The token column implementation does not support :contains on identifier
             expect(identifierResult.entry?.length).toStrictEqual(0);
           } else {
@@ -377,7 +377,7 @@ describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'c
             ],
           });
 
-          if (TokenColumnsFeature.read !== 'token-tables') {
+          if (tokenColumnsOrLookupTable !== 'token-tables') {
             expect(result.entry?.length).toStrictEqual(1);
             expect(bundleContains(result, patient1)).toBeDefined();
           } else {
@@ -401,7 +401,7 @@ describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'c
             ],
           });
 
-          if (TokenColumnsFeature.read !== 'token-tables') {
+          if (tokenColumnsOrLookupTable !== 'token-tables') {
             expect(result.entry?.length).toStrictEqual(1);
             expect(bundleContains(result, patient1)).toBeDefined();
           } else {
@@ -424,7 +424,7 @@ describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'c
             ],
           });
 
-          if (TokenColumnsFeature.read !== 'token-tables') {
+          if (tokenColumnsOrLookupTable !== 'token-tables') {
             expect(result.entry?.length).toStrictEqual(1);
             expect(bundleContains(result, patient1)).toBeDefined();
           } else {
@@ -1077,7 +1077,7 @@ describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'c
             },
           ],
         });
-        if (TokenColumnsFeature.read !== 'token-tables') {
+        if (tokenColumnsOrLookupTable !== 'token-tables') {
           // Token columns don't support :contains on `code`
           expect(toSortedIdentifierValues(resContains)).toStrictEqual([]);
         } else {
@@ -1161,7 +1161,7 @@ describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'c
             },
           ],
         });
-        if (TokenColumnsFeature.read !== 'token-tables') {
+        if (tokenColumnsOrLookupTable !== 'token-tables') {
           // Token columns don't support :contains on `code`
           expect(toSortedIdentifierValues(resContains)).toStrictEqual([]);
         } else {

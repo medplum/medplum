@@ -68,16 +68,13 @@ const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', 
 describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'column-per-code', 'token-tables'])(
   'FHIR Search using %s',
   (tokenColumnsOrLookupTable) => {
-    beforeAll(() => {
-      TokenColumnsFeature.read = tokenColumnsOrLookupTable;
-    });
-
     describe('project-scoped Repository', () => {
       let config: MedplumServerConfig;
       let repo: Repository;
 
       beforeAll(async () => {
         config = await loadTestConfig();
+        config.defaultTokenReadStrategy = tokenColumnsOrLookupTable;
         await initAppServices(config);
         const { project } = await createTestProject();
         repo = new Repository({
@@ -4809,6 +4806,7 @@ describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'c
 
       beforeAll(async () => {
         const config = await loadTestConfig();
+        config.defaultTokenReadStrategy = tokenColumnsOrLookupTable;
         await initAppServices(config);
       });
 

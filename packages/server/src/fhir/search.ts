@@ -1791,5 +1791,5 @@ export function readFromTokenColumns(repo: Repository): typeof TokenColumnsFeatu
   }
 
   // otherwise, fallback to the global default
-  return TokenColumnsFeature.read;
+  return getConfig().defaultTokenReadStrategy ?? TokenColumnsFeature.read;
 }
