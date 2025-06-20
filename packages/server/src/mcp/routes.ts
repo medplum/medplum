@@ -1,6 +1,7 @@
-import { getStatus, normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { isInitializeRequest } from '@modelcontextprotocol/sdk/types.js';
+import { randomUUID } from 'crypto';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { authenticateRequest } from '../oauth/middleware';
@@ -19,35 +20,43 @@ const transports = {
 };
 
 async function handleStreamableHttpRequest(req: Request, res: Response): Promise<void> {
-  try {
+  const sessionId = req.headers['mcp-session-id'] as string | undefined;
+  let transport: StreamableHTTPServerTransport;
+
+  if (sessionId && transports.streamable[sessionId]) {
+    transport = transports.streamable[sessionId];
+  } else if (!sessionId && isInitializeRequest(req.body)) {
+    transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (sessionId) => {
+        transports.streamable[sessionId] = transport;
+      },
+    });
+    transport.onclose = () => {
+      if (transport.sessionId) {
+        delete transports.streamable[transport.sessionId];
+      }
+    };
+
     const server = getMcpServer();
-    const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined,
-    });
-    res.on('close', async () => {
-      await transport.close();
-      await server.close();
-    });
     await server.connect(transport);
-    await transport.handleRequest(req, res, req.body);
-  } catch (err) {
-    if (!res.headersSent) {
-      const outcome = normalizeOperationOutcome(err);
-      res.status(getStatus(outcome)).json({
-        jsonrpc: '2.0',
-        error: {
-          code: -32603,
-          message: normalizeErrorString(err),
-        },
-        id: null,
-      });
-    }
+  } else {
+    res.status(400).json({
+      jsonrpc: '2.0',
+      error: {
+        code: -32000,
+        message: 'Bad Request: No valid session ID provided',
+      },
+      id: null,
+    });
+    return;
   }
+  await transport.handleRequest(req, res, req.body);
 }
 
-mcpRouter.get('/', asyncWrap(handleStreamableHttpRequest));
-mcpRouter.post('/', asyncWrap(handleStreamableHttpRequest));
-mcpRouter.delete('/', asyncWrap(handleStreamableHttpRequest));
+mcpRouter.get('/stream', asyncWrap(handleStreamableHttpRequest));
+mcpRouter.post('/stream', asyncWrap(handleStreamableHttpRequest));
+mcpRouter.delete('/stream', asyncWrap(handleStreamableHttpRequest));
 
 // Legacy SSE endpoint for older clients
 mcpRouter.get('/sse', async (req, res) => {
