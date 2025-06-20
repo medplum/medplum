@@ -36,7 +36,7 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
         <Text size="sm" fw={700} truncate="end">
           {patientName}
         </Text>
-        <Text size="sm" fw={400} c="gray.7" lineClamp={2} className={classes.content} >
+        <Text size="sm" fw={400} c="gray.7" lineClamp={2} className={classes.content}>
           {content}
         </Text>
         <Text size="xs" c="gray.6" style={{ marginTop: 2 }}>
