@@ -158,12 +158,7 @@ Refer to the [Medplum search documentation](/docs/search/basic-search) for a mor
 
 The healthcare system commonly uses standardized coding systems to describe healthcare share information between organizations about **diagnoses**, **procedures**, **clinical outcomes**, **billing**.
 
-Some of the most commonly used code systems in the U.S. are:
-
-- [ICD-10](https://www.cms.gov/Medicare/Coding/ICD10) - Diagnoses.
-- [LOINC](/docs/careplans/loinc) - Clinical measurements and lab results.
-- [RXNorm](/docs/medications/medication-codes#rxnorm) or [NDC](/docs/medications/medication-codes#ndc) - [Medication](/docs/medications/medication-codes#ndc).
-- [SNOMED](https://www.snomed.org/) - [Workforce administration](/docs/careplans/tasks#task-assignment), clinical findings.
+See our summary on [Common Terminologies](/docs/terminology/common-terminologies) for an overview of the most frequently used codes in healthcare.
 
 Because there are multiple code systems for many domains, the same _concept_ can be defined in _multiple code systems_. To handle this mapping from concept to system, the FHIR defines the [`CodeableConcept`][codeableconcept] element type.
 
