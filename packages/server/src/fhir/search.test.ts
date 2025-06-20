@@ -65,19 +65,16 @@ jest.mock('hibp');
 
 const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
 
-describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-code'])(
+describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'column-per-code', 'token-tables'])(
   'FHIR Search using %s',
   (tokenColumnsOrLookupTable) => {
-    beforeAll(() => {
-      TokenColumnsFeature.read = tokenColumnsOrLookupTable;
-    });
-
     describe('project-scoped Repository', () => {
       let config: MedplumServerConfig;
       let repo: Repository;
 
       beforeAll(async () => {
         config = await loadTestConfig();
+        config.defaultTokenReadStrategy = tokenColumnsOrLookupTable;
         await initAppServices(config);
         const { project } = await createTestProject();
         repo = new Repository({
@@ -119,7 +116,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-
           currentProject: projectWithFalse,
           author: { reference: 'User/' + randomUUID() },
         });
-        expect(readFromTokenColumns(repoWithFalse)).toBe(false);
+        expect(readFromTokenColumns(repoWithFalse)).toBe('token-tables');
       });
 
       test('readFromTokenColumns with systemSetting.valueString', async () => {
@@ -4809,6 +4806,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-
 
       beforeAll(async () => {
         const config = await loadTestConfig();
+        config.defaultTokenReadStrategy = tokenColumnsOrLookupTable;
         await initAppServices(config);
       });
 
@@ -4833,7 +4831,7 @@ describe.each<'unified-tokens-column' | 'column-per-code' | false>(['column-per-
         expect(readFromTokenColumns(systemRepo)).toBe('unified-tokens-column');
 
         config.systemRepositoryTokenReadStrategy = 'token-tables';
-        expect(readFromTokenColumns(systemRepo)).toBe(false);
+        expect(readFromTokenColumns(systemRepo)).toBe('token-tables');
 
         config.systemRepositoryTokenReadStrategy = originalValue;
       });
