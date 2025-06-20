@@ -23,6 +23,7 @@ import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
 import { HomePage } from './pages/HomePage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
+import { MessagesPage } from './pages/MessagesPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
@@ -67,6 +68,10 @@ export function App(): JSX.Element | null {
         {
           title: 'Scheduling',
           links: [{ icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' }],
+        },
+        {
+          title: 'Communication',
+          links: [{ icon: <IconMail />, label: 'Messages', href: '/messages' }],
         },
         {
           title: 'Onboarding',
@@ -115,6 +120,7 @@ export function App(): JSX.Element | null {
           {profile ? (
             <>
               <Route path="/" element={<HomePage />} />
+              <Route path="/messages" element={<MessagesPage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
                 <Route path="Encounter/:encounterId" element={<EncounterChart />}>

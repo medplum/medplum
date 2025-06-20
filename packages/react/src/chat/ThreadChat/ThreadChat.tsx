@@ -1,19 +1,18 @@
-import { ProfileResource, createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
-import { Communication } from '@medplum/fhirtypes';
+import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
+import { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
 import { JSX, useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseChat } from '../BaseChat/BaseChat';
 
 export interface ThreadChatProps {
   readonly thread: Communication;
-  readonly title?: string;
   readonly onMessageSent?: (message: Communication) => void;
   readonly inputDisabled?: boolean;
   readonly onError?: (err: Error) => void;
 }
 
 export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
-  const { thread, title, onMessageSent, inputDisabled, onError } = props;
+  const { thread, onMessageSent, inputDisabled, onError } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const prevThreadId = usePrevious<string | undefined>(thread?.id);
@@ -29,7 +28,11 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
   }, [thread?.id, prevThreadId]);
 
   const sendMessage = useCallback(
-    (message: string) => {
+    (formData: Record<string, string>) => {
+      const message = formData.message;
+      if (!message) {
+        return;
+      }
       const profileRefStr = profileRef ? getReferenceString(profileRef) : undefined;
       if (!profileRefStr) {
         return;
@@ -83,7 +86,6 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
 
   return (
     <BaseChat
-      title={title ?? (thread?.topic ? formatCodeableConcept(thread.topic) : '[No thread title]')}
       communications={communications}
       setCommunications={setCommunications}
       query={`part-of=Communication/${thread.id as string}`}
@@ -91,6 +93,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
       onMessageReceived={onMessageReceived}
       inputDisabled={inputDisabled}
       onError={onError}
+      subject={thread.recipient?.[0] as Reference<Patient>}
     />
   );
 }
