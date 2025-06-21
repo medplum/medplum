@@ -1,13 +1,6 @@
-import { MEDPLUM_VERSION, WithId } from '@medplum/core';
-import { AsyncJob } from '@medplum/fhirtypes';
+import { MEDPLUM_VERSION } from '@medplum/core';
 import { randomUUID } from 'crypto';
-import { getConfig } from './config/loader';
-import { DatabaseMode, getDatabasePool } from './database';
-import { getSystemRepo } from './fhir/repo';
 import { heartbeat } from './heartbeat';
-import { globalLogger } from './logger';
-import { getPendingPostDeployMigration, queuePostDeployMigration } from './migrations/migration-utils';
-import { MigrationVersion } from './migrations/migration-versions';
 import { getRedis } from './redis';
 import { getServerVersion } from './util/version';
 
@@ -17,6 +10,8 @@ const SERVER_REGISTRY_TTL_SECONDS = 60;
 type ServerRegistryInfo = {
   /* Unique identifier for a server instance */
   id: string;
+  /* Timestamp of the first heartbeat */
+  firstSeen: string;
   /* Timestamp of the last heartbeat */
   lastSeen: string;
   /* Semver version of Medplum the server is running */
@@ -25,7 +20,45 @@ type ServerRegistryInfo = {
   fullVersion: string;
 };
 
-type ServerRegistryInfoWithComputed = ServerRegistryInfo & {
+export async function setServerRegistryPayload(value: ServerRegistryInfo): Promise<void> {
+  const redis = getRedis();
+  await redis.setex(SERVER_REGISTRY_KEY_PREFIX + ':' + value.id, SERVER_REGISTRY_TTL_SECONDS, JSON.stringify(value));
+}
+
+let serverRegistryHeartbeatListener: (() => Promise<void>) | undefined;
+
+let registryPayload: ServerRegistryInfo | undefined;
+
+export async function initServerRegistryHeartbeatListener(): Promise<void> {
+  if (serverRegistryHeartbeatListener) {
+    return;
+  }
+
+  serverRegistryHeartbeatListener = async () => {
+    const now = new Date().toISOString();
+    registryPayload ??= {
+      id: randomUUID(),
+      firstSeen: now,
+      lastSeen: now,
+      version: getServerVersion(),
+      fullVersion: MEDPLUM_VERSION,
+    };
+
+    registryPayload.lastSeen = now;
+    await setServerRegistryPayload(registryPayload);
+  };
+  heartbeat.addEventListener('heartbeat', serverRegistryHeartbeatListener);
+}
+
+export function cleanupServerRegistryHeartbeatListener(): void {
+  if (serverRegistryHeartbeatListener) {
+    heartbeat.removeEventListener('heartbeat', serverRegistryHeartbeatListener);
+    serverRegistryHeartbeatListener = undefined;
+  }
+}
+
+export type ServerRegistryInfoWithComputed = ServerRegistryInfo & {
+  firstSeenAgeMs: number;
   lastSeenAgeMs: number;
 };
 
@@ -39,36 +72,40 @@ export type ClusterStatus = {
   servers: ServerRegistryInfoWithComputed[];
 };
 
-export async function getRegisteredServers(): Promise<ServerRegistryInfoWithComputed[]> {
+async function getRegisteredServers(): Promise<ServerRegistryInfoWithComputed[]> {
   const redis = getRedis();
-  const servers: ServerRegistryInfo[] = [];
+  const servers: ServerRegistryInfoWithComputed[] = [];
   const keys = await redis.keys(SERVER_REGISTRY_KEY_PREFIX + ':*');
   const payloads = await redis.mget(keys);
+  const now = Date.now();
   for (const payload of payloads) {
     if (payload) {
-      servers.push(JSON.parse(payload));
+      servers.push(addComputedFields(now, JSON.parse(payload)));
     }
   }
-  const now = Date.now();
-  return servers.map((server) => ({ ...server, lastSeenAgeMs: now - new Date(server.lastSeen).getTime() }));
+  return servers;
+}
+
+function addComputedFields(now: number, server: ServerRegistryInfo): ServerRegistryInfoWithComputed {
+  return {
+    ...server,
+    lastSeenAgeMs: now - new Date(server.lastSeen).getTime(),
+    firstSeenAgeMs: now - new Date(server.firstSeen).getTime(),
+  };
 }
 
 function getServersByVersion(servers: ServerRegistryInfo[]): Record<string, ServerRegistryInfo[]> {
   const versionMap: Record<string, ServerRegistryInfo[]> = {};
-
-  servers.forEach((server) => {
-    if (!versionMap[server.fullVersion]) {
-      versionMap[server.fullVersion] = [];
-    }
+  for (const server of servers) {
+    versionMap[server.fullVersion] ??= [];
     versionMap[server.fullVersion].push(server);
-  });
-
+  }
   return versionMap;
 }
 
 export async function getClusterStatus(): Promise<ClusterStatus> {
   const servers = await getRegisteredServers();
-  const versionMap = await getServersByVersion(servers);
+  const versionMap = getServersByVersion(servers);
   const versions = Object.keys(versionMap).sort();
   const versionCounts = versions.reduce((versionCounts: Record<string, number>, version) => {
     versionCounts[version] = versionMap[version].length;
@@ -84,85 +121,4 @@ export async function getClusterStatus(): Promise<ClusterStatus> {
     isHomogeneous: versions.length === 1,
     servers: servers.sort((a, b) => a.fullVersion.localeCompare(b.fullVersion)),
   };
-}
-
-export async function setServerRegistryPayload(value: ServerRegistryInfo): Promise<void> {
-  const redis = getRedis();
-  value.lastSeen = new Date().toISOString();
-  await redis.setex(SERVER_REGISTRY_KEY_PREFIX + ':' + value.id, SERVER_REGISTRY_TTL_SECONDS, JSON.stringify(value));
-}
-
-let serverRegistryHeartbeatListener: (() => Promise<void>) | undefined;
-
-let registryPayload: ServerRegistryInfo | undefined;
-
-let shouldCheckForPendingPostDeployMigration = false;
-
-export async function initServerRegistryHeartbeatListener(): Promise<void> {
-  if (serverRegistryHeartbeatListener) {
-    return;
-  }
-
-  const config = getConfig();
-  const isDisabled = config.database.runMigrations === false || config.database.disableRunPostDeployMigrations;
-  shouldCheckForPendingPostDeployMigration = !isDisabled;
-
-  serverRegistryHeartbeatListener = async () => {
-    if (!registryPayload) {
-      registryPayload = {
-        id: randomUUID(),
-        lastSeen: new Date().toISOString(),
-        version: getServerVersion(),
-        fullVersion: MEDPLUM_VERSION,
-      };
-    }
-    await setServerRegistryPayload(registryPayload);
-
-    if (shouldCheckForPendingPostDeployMigration) {
-      const result = await maybeRunPendingPostDeployMigration();
-      shouldCheckForPendingPostDeployMigration = Boolean(result);
-    }
-  };
-  heartbeat.addEventListener('heartbeat', serverRegistryHeartbeatListener);
-}
-
-export function cleanupServerRegistryHeartbeatListener(): void {
-  if (serverRegistryHeartbeatListener) {
-    heartbeat.removeEventListener('heartbeat', serverRegistryHeartbeatListener);
-    serverRegistryHeartbeatListener = undefined;
-    registryPayload = undefined;
-  }
-}
-
-/**
- * @returns The AsyncJob if the post-deploy migration was started, `true` if the cluster is not yet homogeneous, `false` if there are no pending post-deploy migrations
- */
-async function maybeRunPendingPostDeployMigration(): Promise<WithId<AsyncJob> | boolean> {
-  const pendingPostDeployMigration = await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER));
-  if (pendingPostDeployMigration === MigrationVersion.UNKNOWN) {
-    //throwing here seems extreme since it stops the server from starting
-    // if this somehow managed to trigger, but arriving here would mean something
-    // is pretty wrong, so throwing is probably the correct behavior?
-    throw new Error('Cannot run post-deploy migrations; next post-deploy migration version is unknown');
-  }
-
-  if (pendingPostDeployMigration === MigrationVersion.NONE) {
-    globalLogger.debug('No pending post-deploy migrations');
-    return false;
-  }
-
-  const clusterStatus = await getClusterStatus();
-  console.log(clusterStatus);
-
-  if (!clusterStatus.isHomogeneous) {
-    globalLogger.info('Not auto-queueing pending post-deploy migration because cluster is not homogeneous', {
-      version: `v${pendingPostDeployMigration}`,
-      clusterStatus,
-    });
-    return true;
-  }
-
-  const systemRepo = getSystemRepo();
-  globalLogger.debug('Auto-queueing pending post-deploy migration', { version: `v${pendingPostDeployMigration}` });
-  return queuePostDeployMigration(systemRepo, pendingPostDeployMigration);
 }
