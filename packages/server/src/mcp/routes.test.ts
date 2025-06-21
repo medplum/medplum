@@ -1,3 +1,4 @@
+import { Bundle, OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -28,6 +29,8 @@ describe('MCP Routes', () => {
       throw new Error('Could not determine server address');
     }
     port = address.port;
+
+    config.baseUrl = `http://localhost:${port}/`;
   });
 
   afterAll(async () => {
@@ -70,18 +73,18 @@ describe('MCP Routes', () => {
     expect(res.text).toBe('No transport found for sessionId');
   });
 
-  test('Use SSEClientTransport', async () => {
-    const sseBaseUrl = `http://localhost:${port}/mcp/sse`;
-    const receivedMessages: any[] = [];
+  test.each<string>(['stream', 'sse'])('MCP with %s transport', async (transportType: string) => {
+    const TransportClass = transportType === 'stream' ? StreamableHTTPClientTransport : SSEClientTransport;
 
-    const transport = new SSEClientTransport(new URL(sseBaseUrl), {
+    const baseUrl = `http://localhost:${port}/mcp/${transportType}`;
+
+    const transport = new TransportClass(new URL(baseUrl), {
       requestInit: {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       },
     });
-    transport.onmessage = (msg) => receivedMessages.push(msg);
 
     const client = new Client({
       name: 'example-client',
@@ -91,83 +94,61 @@ describe('MCP Routes', () => {
     await client.connect(transport);
 
     const tools = await client.listTools();
-    expect(tools).toBeDefined();
-
-    const searchResult = await client.callTool({
-      name: 'search',
-      arguments: {
-        query: 'example',
-      },
-    });
-    expect(searchResult).toBeDefined();
-
-    const fetchResult = await client.callTool({
-      name: 'fetch',
-      arguments: {
-        id: 'example-id',
-      },
-    });
-    expect(fetchResult).toBeDefined();
-
-    const fhirRequestResult = await client.callTool({
-      name: 'fhir-request',
-      arguments: {
-        method: 'GET',
-        path: 'Patient',
-      },
-    });
-    expect(fhirRequestResult).toBeDefined();
-
-    await client.close();
-  });
-
-  test('Use StreamableHTTPClientTransport', async () => {
-    const streamableBaseUrl = `http://localhost:${port}/mcp/stream`;
-    const receivedMessages: any[] = [];
-
-    const transport = new StreamableHTTPClientTransport(new URL(streamableBaseUrl), {
-      requestInit: {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      },
-    });
-    transport.onmessage = (msg) => receivedMessages.push(msg);
-
-    const client = new Client({
-      name: 'example-client',
-      version: '1.0.0',
+    expect(tools).toMatchObject({
+      tools: [{ name: 'search' }, { name: 'fetch' }, { name: 'fhir-request' }],
     });
 
-    await client.connect(transport);
+    const searchToolResult = await client.callTool({ name: 'search', arguments: { query: 'example' } });
+    expect(searchToolResult).toBeDefined();
 
-    const tools = await client.listTools();
-    expect(tools).toBeDefined();
+    const fetchToolResult = await client.callTool({ name: 'fetch', arguments: { id: 'example-id' } });
+    expect(fetchToolResult).toBeDefined();
 
-    const searchResult = await client.callTool({
-      name: 'search',
-      arguments: {
-        query: 'example',
-      },
+    // Convenience method to make FHIR requests
+    async function fhirRequest<T>(method: string, path: string, body?: any): Promise<T> {
+      const mcpResult = (await client.callTool({
+        name: 'fhir-request',
+        arguments: { method, path, body },
+      })) as any;
+      const json = mcpResult.content?.[0]?.text;
+      return JSON.parse(json);
+    }
+
+    // 1. create
+    const createResult = await fhirRequest<Patient>('POST', 'Patient', {
+      resourceType: 'Patient',
+      name: [{ family: 'Doe', given: ['John'] }],
     });
-    expect(searchResult).toBeDefined();
+    expect(createResult.resourceType).toBe('Patient');
 
-    const fetchResult = await client.callTool({
-      name: 'fetch',
-      arguments: {
-        id: 'example-id',
-      },
-    });
-    expect(fetchResult).toBeDefined();
+    // 2. read
+    const readResult = await fhirRequest<Patient>('GET', `Patient/${createResult.id}`);
+    expect(readResult.id).toBe(createResult.id);
 
-    const fhirRequestResult = await client.callTool({
-      name: 'fhir-request',
-      arguments: {
-        method: 'GET',
-        path: 'Patient',
-      },
+    // 3. update
+    const updateResult = await fhirRequest<Patient>('PUT', `Patient/${createResult.id}`, {
+      ...createResult,
+      address: [{ line: ['123 Main St'], city: 'Springfield', state: 'IL', postalCode: '62701' }],
     });
-    expect(fhirRequestResult).toBeDefined();
+    expect(updateResult.address).toBeDefined();
+    expect(updateResult.address?.[0].line).toEqual(['123 Main St']);
+
+    // 4. patch
+    const patchedResult = await fhirRequest<Patient>('PATCH', `Patient/${updateResult.id}`, [
+      { op: 'test', path: '/meta/versionId', value: updateResult.meta?.versionId },
+      { op: 'add', path: '/telecom', value: [{ system: 'phone', value: '555-1234' }] },
+    ]);
+    expect(patchedResult.telecom).toBeDefined();
+    expect(patchedResult.telecom?.[0].value).toBe('555-1234');
+
+    // 5. search
+    const searchResult = await fhirRequest<Bundle<Patient>>('GET', 'Patient');
+    expect(searchResult.resourceType);
+    expect(searchResult.entry?.some((e) => e.resource?.id === createResult.id)).toBeTruthy();
+
+    // 6. delete
+    const deleteResult = await fhirRequest<OperationOutcome>('DELETE', `Patient/${createResult.id}`);
+    expect(deleteResult.id).toBe('ok');
 
     await client.close();
   });
