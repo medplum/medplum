@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "dist",
     "noEmit": false,
-    "sourceMap": true
+    "sourceMap": true,
+    "rootDir": "src"
   },
-  "exclude": ["**/*.test.ts", "src/__mocks__/**/*.ts"]
+  "exclude": ["src/**/*.test.ts", "src/__mocks__/**/*.ts"]
 }
