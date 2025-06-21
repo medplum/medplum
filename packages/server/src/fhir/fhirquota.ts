@@ -2,7 +2,7 @@ import { deepClone, Logger, OperationOutcomeError, tooManyRequests } from '@medp
 import { Response } from 'express';
 import Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
-import { AuthState } from './oauth/middleware';
+import { AuthState } from '../oauth/middleware';
 
 export class FhirRateLimiter {
   private readonly limiter: RateLimiterRedis;
