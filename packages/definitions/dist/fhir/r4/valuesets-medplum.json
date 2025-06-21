@@ -212,6 +212,11 @@
             "code": "vmcontext",
             "display": "VM Context",
             "definition": "VM Context"
+          },
+          {
+            "code": "fission",
+            "display": "Fission",
+            "definition": "Fission"
           }
         ]
       }
