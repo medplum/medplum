@@ -29,7 +29,7 @@ let serverRegistryHeartbeatListener: (() => Promise<void>) | undefined;
 
 let registryPayload: ServerRegistryInfo | undefined;
 
-export async function initServerRegistryHeartbeatListener(): Promise<void> {
+export function initServerRegistryHeartbeatListener(): void {
   if (serverRegistryHeartbeatListener) {
     return;
   }

@@ -15,7 +15,7 @@ import { getConfig } from './config/loader';
 import { MedplumServerConfig } from './config/types';
 import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
 import { corsOptions } from './cors';
-import { closeDatabase, initDatabase } from './database';
+import { closeDatabase, initDatabase, maybeAutoRunPendingPostDeployMigration } from './database';
 import { dicomRouter } from './dicom/routes';
 import { emailRouter } from './email/routes';
 import { binaryRouter } from './fhir/binary';
@@ -217,8 +217,8 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     initWorkers(config);
     initHeartbeat(config);
     initOtelHeartbeat();
-    await initServerRegistryHeartbeatListener();
-    // await maybeAutoRunPendingPostDeployMigration();
+    initServerRegistryHeartbeatListener();
+    await maybeAutoRunPendingPostDeployMigration();
   });
 }
 
