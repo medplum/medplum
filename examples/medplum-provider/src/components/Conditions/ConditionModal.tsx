@@ -58,7 +58,7 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
         />
 
         <CodeableConceptInput
-          binding="http://hl7.org/fhir/ValueSet/icd-10"
+          binding="http://medplum.com/fhir/ValueSet/icd-codes"
           label="ICD-10 Code"
           name="diagnosis"
           path="Condition.code"
