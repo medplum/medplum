@@ -105,7 +105,6 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
   };
 
   const handleRemoveDiagnosis = async (condition: Condition): Promise<void> => {
-
     if (!conditions) {
       return;
     }

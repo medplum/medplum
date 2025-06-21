@@ -1,6 +1,16 @@
 import { Button, Card, Flex, Group, Menu, Stack } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ChargeItem, Claim, ClaimDiagnosis, Condition, Coverage, Encounter, EncounterDiagnosis, Patient, Practitioner } from '@medplum/fhirtypes';
+import {
+  ChargeItem,
+  Claim,
+  ClaimDiagnosis,
+  Condition,
+  Coverage,
+  Encounter,
+  EncounterDiagnosis,
+  Patient,
+  Practitioner,
+} from '@medplum/fhirtypes';
 import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import { JSX, useCallback, useEffect, useState } from 'react';
 import { VisitDetailsPanel } from '../../components/Encounter/VisitDetailsPanel';
@@ -29,7 +39,17 @@ interface BillingTabProps {
 }
 
 export const BillingTab = (props: BillingTabProps): JSX.Element => {
-  const { encounter, setEncounter, claim, patient, practitioner, setPractitioner, chargeItems, setChargeItems, setClaim } = props;
+  const {
+    encounter,
+    setEncounter,
+    claim,
+    patient,
+    practitioner,
+    setPractitioner,
+    chargeItems,
+    setChargeItems,
+    setClaim,
+  } = props;
   const medplum = useMedplum();
   const [conditions, setConditions] = useState<Condition[]>([]);
   const [coverage, setCoverage] = useState<Coverage | undefined>();
@@ -159,7 +179,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     },
     [setChargeItems, claim, encounter, setClaim, debouncedUpdateResource]
   );
-  
+
   return (
     <Stack gap="md">
       {claim && (
@@ -228,7 +248,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       </Group>
 
       {encounter && (
-        <ConditionList  
+        <ConditionList
           patient={patient}
           encounter={encounter}
           conditions={conditions}
@@ -237,9 +257,7 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
         />
       )}
 
-      {chargeItems && (
-        <ChargeItemList chargeItems={chargeItems} updateChargeItems={updateChargeItems} />
-      )}
+      {chargeItems && <ChargeItemList chargeItems={chargeItems} updateChargeItems={updateChargeItems} />}
     </Stack>
   );
 };
