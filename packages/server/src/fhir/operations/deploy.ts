@@ -5,11 +5,13 @@ import {
   getReferenceString,
   normalizeOperationOutcome,
   OperationOutcomeError,
+  WithId,
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Attachment, Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
+import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
@@ -47,7 +49,7 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
  * @param code - The code to deploy. If not provided, the existing code will be used.
  * @param filename - The filename to use for the code. If not provided, 'index.js' will be used.
  */
-export async function deployBot(repo: Repository, bot: Bot, code?: string, filename?: string): Promise<void> {
+export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: string, filename?: string): Promise<void> {
   if (!code && !bot.executableCode?.url) {
     throw new OperationOutcomeError(badRequest('Bot missing executable code'));
   }
@@ -56,7 +58,7 @@ export async function deployBot(repo: Repository, bot: Bot, code?: string, filen
     throw new OperationOutcomeError(badRequest('Bots not enabled'));
   }
 
-  let updatedBot: Bot | undefined;
+  let updatedBot: WithId<Bot> | undefined;
 
   let codeToDeploy = code;
   if (code) {
@@ -97,5 +99,7 @@ export async function deployBot(repo: Repository, bot: Bot, code?: string, filen
       });
     }
     await deployLambda(latestBot, codeToDeploy as string);
+  } else if (latestBot.runtimeVersion === 'fission') {
+    await deployFissionBot(latestBot, codeToDeploy as string);
   }
 }

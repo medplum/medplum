@@ -93,7 +93,7 @@ export async function addCronJobs(
 
   const oldCronStr = getCronStringForBot(previousVersion as Bot);
   const newCronStr = getCronStringForBot(bot);
-  logger.info('Cron job for bot', { botId: bot.id, oldCronStr, newCronStr });
+  logger.debug('Cron job for bot', { botId: bot.id, oldCronStr, newCronStr });
 
   if (oldCronStr === newCronStr) {
     // No change in cron job

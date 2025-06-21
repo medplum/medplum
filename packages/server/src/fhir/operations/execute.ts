@@ -40,6 +40,7 @@ import { randomUUID } from 'node:crypto';
 import vm from 'node:vm';
 import { asyncWrap } from '../../async';
 import { runInLambda } from '../../cloud/aws/execute';
+import { executeFissionBot } from '../../cloud/fission/execute';
 import { getConfig } from '../../config/loader';
 import { AuthenticatedRequestContext, buildTracingExtension, getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
@@ -58,7 +59,7 @@ import { sendAsyncResponse } from './utils/asyncjobexecutor';
 export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 
 export interface BotExecutionRequest {
-  readonly bot: Bot;
+  readonly bot: WithId<Bot>;
   readonly runAs: ProjectMembership;
   readonly input: any;
   readonly contentType: string;
@@ -248,6 +249,8 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
       result = await runInLambda(context);
     } else if (bot.runtimeVersion === 'vmcontext') {
       result = await runInVmContext(context);
+    } else if (bot.runtimeVersion === 'fission') {
+      result = await executeFissionBot(context);
     } else {
       result = { success: false, logResult: 'Unsupported bot runtime' };
     }
