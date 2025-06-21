@@ -1,0 +1,16 @@
+.content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  word-break: break-word;
+} 
+
+.contentContainer {
+  border-radius: 8;
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.contentContainer.selected {
+  background: var(--mantine-color-gray-2);
+}
