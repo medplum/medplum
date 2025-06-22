@@ -1,6 +1,5 @@
 import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { Constraint } from './typeschema/types';
-import { isError } from './utils';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
@@ -298,6 +297,33 @@ export function redirect(url: URL): OperationOutcome {
       },
     ],
   };
+}
+
+/**
+ * Returns true if the input is an Error object.
+ * This should be replaced with `Error.isError` when it is more widely supported.
+ * See: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/isError
+ * @param value - The candidate value.
+ * @returns True if the input is an Error object.
+ */
+export function isError(value: unknown): value is Error {
+  // Quick type check
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  // Fast path for same-realm errors using instanceof
+  if (value instanceof Error) {
+    return true;
+  }
+
+  // Handle DOMException case
+  if (typeof DOMException !== 'undefined' && value instanceof DOMException) {
+    return true;
+  }
+
+  // Cross-realm check using toString (most reliable method)
+  return Object.prototype.toString.call(value) === '[object Error]';
 }
 
 export function isOperationOutcome(value: unknown): value is OperationOutcome {
