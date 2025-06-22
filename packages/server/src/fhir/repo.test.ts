@@ -33,14 +33,12 @@ import {
   ResourceType,
   ServiceRequest,
   StructureDefinition,
-  Subscription,
   User,
   UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { createBot } from '../admin/bot';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
@@ -66,7 +64,6 @@ describe('FHIR Repo', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
-    config.vmContextBotsEnabled = true;
     await initAppServices(config);
     testProjectRepo = new Repository({
       projects: [testProject],
