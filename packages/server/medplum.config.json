@@ -21,6 +21,7 @@
   "defaultBotRuntimeVersion": "vmcontext",
   "allowedOrigins": "*",
   "introspectionEnabled": true,
+  "mcpEnabled": true,
   "database": {
     "host": "localhost",
     "port": 5432,

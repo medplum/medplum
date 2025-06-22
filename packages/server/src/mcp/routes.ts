@@ -4,6 +4,7 @@ import { Request, Response, Router } from 'express';
 import { body, query, validationResult } from 'express-validator';
 import { IncomingMessage } from 'http';
 import { asyncWrap } from '../async';
+import { heartbeat } from '../heartbeat';
 import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { getRedis, getRedisSubscriber } from '../redis';
@@ -32,9 +33,8 @@ mcpRouter.all(
 // MCP SSE is technically deprecated, but most major LLM clients still use it
 mcpRouter.get('/sse', async (req, res) => {
   const transport = new SSEServerTransport('/mcp/sse', res);
-  const channel = getRedisChannelForSessionId(transport.sessionId);
-  const redisSubscriber = getRedisSubscriber();
 
+  const redisSubscriber = getRedisSubscriber();
   redisSubscriber.on('message', async (_channel: string, data: string) => {
     try {
       const dummyReq = { headers: { 'content-type': 'application/json' } } as IncomingMessage;
@@ -47,12 +47,16 @@ mcpRouter.get('/sse', async (req, res) => {
       getLogger().error('Error handling MCP SSE message', err);
     }
   });
+  await redisSubscriber.subscribe(getRedisChannelForSessionId(transport.sessionId));
 
-  await redisSubscriber.subscribe(channel);
   const server = getMcpServer();
   await server.connect(transport);
 
+  const heartbeatHandler = async (): Promise<unknown> => server.server.ping();
+  heartbeat.addEventListener('heartbeat', heartbeatHandler);
+
   res.on('close', async () => {
+    heartbeat.removeEventListener('heartbeat', heartbeatHandler);
     redisSubscriber.disconnect();
     await transport.close();
     await server.close();
