@@ -18,9 +18,9 @@ mcpRouter.all(
   asyncWrap(async (req: Request, res: Response) => {
     const server = getMcpServer();
     const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-    res.on('close', () => {
-      transport.close();
-      server.close();
+    res.on('close', async () => {
+      await transport.close();
+      await server.close();
     });
     await server.connect(transport);
     await transport.handleRequest(req, res, req.body);
@@ -52,10 +52,10 @@ mcpRouter.get('/sse', async (req, res) => {
   const server = getMcpServer();
   await server.connect(transport);
 
-  res.on('close', () => {
+  res.on('close', async () => {
     redisSubscriber.disconnect();
-    transport.close();
-    server.close();
+    await transport.close();
+    await server.close();
   });
 });
 
