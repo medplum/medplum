@@ -2,6 +2,7 @@ import {
   ContentType,
   createReference,
   encodeBase64,
+  encodeBase64Url,
   OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
@@ -1730,11 +1731,28 @@ describe('OAuth2 Token', () => {
     expect(res.body.issue[0].details.text).toStrictEqual('IP address not allowed');
   });
 
-  test('Token exchange success', async () => {
+  test('Token exchange JSON success', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
       json: () => ({ email }),
       headers: { get: () => ContentType.JSON },
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthClient.id,
+      subject_token: 'xyz',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Token exchange JWT success', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
+      text: () => `header.${encodeBase64Url(JSON.stringify({ email }))}.signature`,
+      headers: { get: () => ContentType.JWT },
     }));
 
     const res = await request(app).post('/oauth2/token').type('form').send({
