@@ -106,7 +106,7 @@ function getServersByVersion(servers: ServerRegistryInfo[]): Record<string, Serv
 export async function getClusterStatus(): Promise<ClusterStatus> {
   const servers = await getRegisteredServers();
   const versionMap = getServersByVersion(servers);
-  const versions = Object.keys(versionMap).sort();
+  const versions = Object.keys(versionMap).sort((a, b) => a.localeCompare(b));
   const versionCounts = versions.reduce((versionCounts: Record<string, number>, version) => {
     versionCounts[version] = versionMap[version].length;
     return versionCounts;
