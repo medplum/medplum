@@ -287,85 +287,84 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.context.currentProject;
   }
 
-  private async preCommitHook(resource: WithId<Resource>, interaction: BackgroundJobInteraction) {
-    // START PRE-COMMIT BOT CHECK
-
-    const projectId = this.context.projects?.[0];
-    if (projectId) {
-      const systemRepo = getSystemRepo();
-      const logger = getLogger();
-      const subscriptions = await systemRepo.searchResources<Subscription>({
-        resourceType: 'Subscription',
-        count: 1000,
-        filters: [
-          {
-            code: '_project',
-            operator: Operator.EQUALS,
-            value: projectId,
-          },
-          {
-            code: 'status',
-            operator: Operator.EQUALS,
-            value: 'active',
-          },
-        ],
-      });
-
-      for (const subscription of subscriptions) {
-        // Only consider pre-commit subscriptions
-        if (!getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot')?.valueBoolean) {
-          continue;
-        }
-
-        // Check subscription criteria
-        if (
-          !(await resourceMatchesSubscriptionCriteria({
-            resource,
-            subscription,
-            logger,
-            context: { interaction: interaction },
-            getPreviousResource: async () => undefined,
-          }))
-        ) {
-          continue;
-        }
-
-        // URL should be a Bot reference string
-        const url = subscription.channel?.endpoint;
-        if (!url?.startsWith('Bot/')) {
-          // Skip if the URL is not a Bot reference
-          continue;
-        }
-
-        const bot = await systemRepo.readReference<Bot>({ reference: url });
-        const runAs = await findProjectMembership(projectId, createReference(bot));
-        if (!runAs) {
-          // Skip if the Bot is not in the project
-          continue;
-        }
-        const headers: Record<string, string> = {};
-
-        if (interaction === 'delete') {
-          headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
-        }
-
-        const botResult = await executeBot({
-          subscription,
-          bot,
-          runAs,
-          input: resource,
-          contentType: ContentType.FHIR_JSON,
-          requestTime: new Date().toISOString(),
-          headers: headers,
-        });
-
-        if (!botResult.success) {
-          throw new OperationOutcomeError(normalizeOperationOutcome(botResult.returnValue));
-        }
-      }
+  private async preCommitHook(resource: WithId<Resource>, interaction: BackgroundJobInteraction): Promise<void> {
+    const projectId = this.context.projects?.[0]?.id;
+    if (!projectId) {
+      // No project, no subscriptions
+      return;
     }
 
-    // END PRE-COMMIT BOT CHECK
+    const systemRepo = getSystemRepo();
+    const logger = getLogger();
+    const subscriptions = await systemRepo.searchResources<Subscription>({
+      resourceType: 'Subscription',
+      count: 1000,
+      filters: [
+        {
+          code: '_project',
+          operator: Operator.EQUALS,
+          value: projectId,
+        },
+        {
+          code: 'status',
+          operator: Operator.EQUALS,
+          value: 'active',
+        },
+      ],
+    });
+
+    for (const subscription of subscriptions) {
+      // Only consider pre-commit subscriptions
+      if (!getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot')?.valueBoolean) {
+        continue;
+      }
+
+      // Check subscription criteria
+      if (
+        !(await resourceMatchesSubscriptionCriteria({
+          resource,
+          subscription,
+          logger,
+          context: { interaction: interaction },
+          getPreviousResource: async () => undefined,
+        }))
+      ) {
+        continue;
+      }
+
+      // URL should be a Bot reference string
+      const url = subscription.channel?.endpoint;
+      if (!url?.startsWith('Bot/')) {
+        // Skip if the URL is not a Bot reference
+        continue;
+      }
+
+      const bot = await systemRepo.readReference<Bot>({ reference: url });
+      const runAs = await findProjectMembership(projectId, createReference(bot));
+      if (!runAs) {
+        // Skip if the Bot is not in the project
+        continue;
+      }
+      const headers: Record<string, string> = {};
+
+      if (interaction === 'delete') {
+        headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
+      }
+
+      const botResult = await executeBot({
+        subscription,
+        bot,
+        runAs,
+        input: resource,
+        contentType: ContentType.FHIR_JSON,
+        requestTime: new Date().toISOString(),
+        headers: headers,
+      });
+
+      if (!botResult.success) {
+        throw new OperationOutcomeError(normalizeOperationOutcome(botResult.returnValue));
+      }
+    }
   }
 
   /**
