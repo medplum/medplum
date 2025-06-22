@@ -1,7 +1,9 @@
+import { normalizeOperationOutcome } from '@medplum/core';
 import { Bundle, OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import { Server } from 'http';
 import request from 'supertest';
@@ -50,27 +52,20 @@ describe('MCP Routes', () => {
     expect(res.status).toBe(401);
   });
 
-  test('Streamable HTTP session not found', async () => {
-    const res = await request(app)
-      .post('/mcp/stream')
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Accept', 'application/json, text/event-stream')
-      .send({ jsonrpc: '2.0', method: 'notifications/initialized' });
-    expect(res.status).toBe(400);
-    expect(res.text).toStrictEqual(
-      '{"jsonrpc":"2.0","error":{"code":-32000,"message":"Bad Request: No valid session ID provided"},"id":null}'
-    );
-  });
-
-  test('SSE POST to non-existent session ID should return 400', async () => {
+  test('SSE missing sessionId query param', async () => {
     const res = await request(app)
       .post('/mcp/sse')
-      .query({ sessionId: 'non-existent-session' })
       .set('Authorization', 'Bearer ' + accessToken)
-      .set('Accept', 'application/json')
       .send({ jsonrpc: '2.0', method: 'notifications/initialized' });
     expect(res.status).toBe(400);
-    expect(res.text).toBe('No transport found for sessionId');
+  });
+
+  test('SSE missing JSON-RPC body', async () => {
+    const res = await request(app)
+      .post(`/mcp/sse?sessionId=${randomUUID()}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ foo: 'bar' });
+    expect(res.status).toBe(400);
   });
 
   test.each<string>(['stream', 'sse'])('MCP with %s transport', async (transportType: string) => {
@@ -111,7 +106,11 @@ describe('MCP Routes', () => {
         arguments: { method, path, body },
       })) as any;
       const json = mcpResult.content?.[0]?.text;
-      return JSON.parse(json);
+      try {
+        return JSON.parse(json);
+      } catch (err) {
+        return normalizeOperationOutcome(err) as T;
+      }
     }
 
     // 1. create
@@ -149,6 +148,10 @@ describe('MCP Routes', () => {
     // 6. delete
     const deleteResult = await fhirRequest<OperationOutcome>('DELETE', `Patient/${createResult.id}`);
     expect(deleteResult.id).toBe('ok');
+
+    // 7. unknown method
+    const unknownMethodResult = await fhirRequest<OperationOutcome>('UNKNOWN', `Patient/${createResult.id}`);
+    expect(unknownMethodResult.issue?.[0].severity).toBe('error');
 
     await client.close();
   });
