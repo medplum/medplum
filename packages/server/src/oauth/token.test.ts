@@ -1765,13 +1765,9 @@ describe('OAuth2 Token', () => {
     expect(res.body.access_token).toBeTruthy();
   });
 
-  test('Token exchange non-JSON response', async () => {
+  test('Token exchange unsupported content type', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
-      json: () => {
-        throw new Error('Invalid JSON');
-      },
-      text: () => 'Unexpected error',
       headers: { get: () => ContentType.TEXT },
     }));
 
@@ -1783,7 +1779,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
-    expect(res.body.error_description).toBe('Failed to verify code - check your identity provider configuration');
+    expect(res.body.error_description).toBe('Failed to verify code - unsupported content type: text/plain');
   });
 
   test('Too many requests', async () => {

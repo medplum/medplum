@@ -828,13 +828,13 @@ export async function getExternalUserInfo(
       return await response.json();
     } else if (contentType?.includes(ContentType.JWT)) {
       return parseJWTPayload(await response.text());
-    } else {
-      throw new OperationOutcomeError(badRequest(`Failed to verify code - unsupported content type: ${contentType}`));
     }
   } catch (err: any) {
     log.warn('Failed to verify external authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
+
+  throw new OperationOutcomeError(badRequest(`Failed to verify code - unsupported content type: ${contentType}`));
 }
 
 interface ValidationAssertion {
