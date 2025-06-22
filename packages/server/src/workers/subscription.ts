@@ -27,6 +27,7 @@ import { createHmac } from 'node:crypto';
 import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
+import { isPreCommitSubscription } from '../fhir/precommit';
 import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
 import { RewriteMode, rewriteAttachments } from '../fhir/rewrite';
 import { getLogger, globalLogger } from '../logger';
@@ -245,7 +246,7 @@ export async function addSubscriptionJobs(
 
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
   for (const subscription of subscriptions) {
-    if (getExtension(subscription, 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot')?.valueBoolean) {
+    if (isPreCommitSubscription(subscription)) {
       // Ignore pre-commit subscriptions
       continue;
     }

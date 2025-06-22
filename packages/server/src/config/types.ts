@@ -95,6 +95,9 @@ export interface MedplumServerConfig {
   /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
   autoDownloadEnabled?: boolean;
 
+  /** Flag to enable pre-commit subscriptions for the interceptor pattern (default: false) */
+  preCommitSubscriptionsEnabled?: boolean;
+
   /** Optional list of external authentication providers. */
   externalAuthProviders?: MedplumExternalAuthConfig[];
 

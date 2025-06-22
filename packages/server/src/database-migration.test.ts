@@ -56,7 +56,6 @@ const mockMarkPostDeployMigrationCompleted = jest
   });
 
 jest.mock('./migrations/data/v1', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { prepareCustomMigrationJobData, runCustomMigration } = jest.requireActual('./workers/post-deploy-migration');
   const migration: CustomPostDeployMigration = {
     type: 'custom',

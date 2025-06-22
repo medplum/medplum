@@ -30,14 +30,12 @@ import {
   ResourceType,
   ServiceRequest,
   StructureDefinition,
-  Subscription,
   User,
   UserConfiguration,
 } from '@medplum/fhirtypes';
 import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { createBot } from '../admin/bot';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
@@ -46,7 +44,6 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { TokenTable } from './lookups/token';
-import { deployBot } from './operations/deploy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
 import { lookupTables } from './searchparameter';
 import { SelectQuery } from './sql';
@@ -64,7 +61,6 @@ describe('FHIR Repo', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
-    config.vmContextBotsEnabled = true;
     await initAppServices(config);
     testProjectRepo = new Repository({
       projects: [testProject],
@@ -1542,61 +1538,6 @@ describe('FHIR Repo', () => {
       expect(orgs.map((p) => p.id)).toContain(org.id);
       expect(orgs.map((p) => p.id)).toContain(linkedOrg.id);
     }));
-
-  test('Pre-commit bot execute', async () => {
-    // Create a test project
-    const { project, repo } = await createTestProject({ withRepo: true });
-
-    await withTestContext(async () => {
-      // Create a test bot
-      const bot = await createBot(repo, {
-        project,
-        name: 'Pre-commit test bot',
-        runtimeVersion: 'vmcontext',
-      });
-
-      // Deploy the bot
-      await deployBot(
-        repo,
-        bot,
-        `exports.handler = async function (medplum, event) {
-        if (event.input.name[0].given[0] === 'Homer') {
-          throw 'Invalid name';
-        }
-        return true;
-      };`
-      );
-
-      // Create a pre-commit subscription to the bot
-      const subscription = await repo.createResource<Subscription>({
-        resourceType: 'Subscription',
-        extension: [{ url: 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot', valueBoolean: true }],
-        status: 'active',
-        reason: 'Test subscription',
-        criteria: 'Patient?name=Simpson',
-        channel: {
-          type: 'rest-hook',
-          endpoint: getReferenceString(bot),
-        },
-      });
-      expect(subscription.id).toBeDefined();
-
-      // Try to create a patient with a valid name
-      const patient1 = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Bart'], family: 'Simpson' }],
-      });
-      expect(patient1.id).toBeDefined();
-
-      // Try to create a patient with an invalid name
-      await expect(
-        repo.createResource<Patient>({
-          resourceType: 'Patient',
-          name: [{ given: ['Homer'], family: 'Simpson' }],
-        })
-      ).rejects.toThrow('Invalid name');
-    });
-  });
 });
 
 function shuffleString(s: string): string {

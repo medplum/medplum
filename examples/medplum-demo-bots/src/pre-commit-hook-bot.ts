@@ -7,7 +7,7 @@ enum HTTP_VERBS {
   'DELETE',
 }
 
-async function syncHapiResource(patient: Patient, verb: HTTP_VERBS) {
+async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<boolean> {
   try {
     const patientForHapi = {
       ...patient,
@@ -103,7 +103,7 @@ export async function handler(_medplum: MedplumClient, event: BotEvent): Promise
   const lastName = patient.name?.[0]?.family;
   console.log(`Hello ${firstName} ${lastName}!`);
 
-  if (event.headers && event.headers['X-Medplum-Deleted-Resource']) {
+  if (event.headers?.['X-Medplum-Deleted-Resource']) {
     await syncHapiResource(patient, HTTP_VERBS['DELETE']);
   } else {
     // Create or update a copy of the patient record
