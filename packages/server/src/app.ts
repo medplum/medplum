@@ -198,7 +198,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/storage/', storageRouter);
   apiRouter.use('/webhook/', webhookRouter);
-  apiRouter.use('/mcp', mcpRouter);
+
+  if (config.mcpEnabled) {
+    apiRouter.use('/mcp', mcpRouter);
+  }
 
   app.use('/api/', apiRouter);
   app.use('/', apiRouter);

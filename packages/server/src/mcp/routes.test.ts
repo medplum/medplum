@@ -19,6 +19,8 @@ describe('MCP Routes', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
+    config.mcpEnabled = true;
+
     await initApp(app, config);
     accessToken = await initTestAuth();
 
