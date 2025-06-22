@@ -134,6 +134,8 @@ publicRoutes.get('/([$]|%24)versions', (_req: Request, res: Response) => {
 });
 
 // SMART-on-FHIR configuration
+// Medplum hosts the SMART well-known both at the root and at the /fhir/R4 paths.
+// See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#sample-request
 publicRoutes.get('/.well-known/smart-configuration', smartConfigurationHandler);
 publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
 

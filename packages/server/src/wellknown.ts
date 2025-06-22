@@ -1,6 +1,7 @@
 import { OAuthGrantType, OAuthTokenAuthMethod } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { getConfig } from './config/loader';
+import { smartConfigurationHandler, smartStylingHandler } from './fhir/smart';
 import { getJwks } from './oauth/keys';
 
 export const wellKnownRouter = Router();
@@ -52,3 +53,9 @@ function handleOauthProtectedResource(_req: Request, res: Response): void {
 wellKnownRouter.get('/oauth-authorization-server', handleOAuthConfig);
 wellKnownRouter.get('/openid-configuration', handleOAuthConfig);
 wellKnownRouter.get('/oauth-protected-resource', handleOauthProtectedResource);
+
+// SMART-on-FHIR configuration
+// Medplum hosts the SMART well-known both at the root and at the /fhir/R4 paths.
+// See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#sample-request
+wellKnownRouter.get('/smart-configuration', smartConfigurationHandler);
+wellKnownRouter.get('/smart-styles.json', smartStylingHandler);
