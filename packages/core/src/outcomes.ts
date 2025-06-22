@@ -1,6 +1,5 @@
 import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { Constraint } from './typeschema/types';
-import { isError } from './utils';
 
 const OK_ID = 'ok';
 const CREATED_ID = 'created';
@@ -447,7 +446,7 @@ export function normalizeErrorString(error: unknown): string {
   if (typeof error === 'string') {
     return error;
   }
-  if (isError(error)) {
+  if (error instanceof Error) {
     return error.message;
   }
   if (isOperationOutcome(error)) {
