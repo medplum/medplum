@@ -6,16 +6,8 @@ import turbosnap from 'vite-plugin-turbosnap';
 const config: StorybookConfig = {
   stories: ['../src/stories/Introduction.mdx', '../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
   addons: [
+    '@storybook/addon-docs',
     '@storybook/addon-links',
-    '@storybook/addon-essentials',
-    {
-      name: '@storybook/addon-storysource',
-      options: {
-        loaderOptions: {
-          injectStoryParameters: false,
-        },
-      },
-    },
     'storybook-addon-mantine',
   ],
   staticDirs: ['../public'],
