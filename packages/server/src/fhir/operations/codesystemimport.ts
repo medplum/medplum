@@ -98,6 +98,7 @@ export async function importCodeSystem(
       system: codeSystem.id,
       code: c.code,
       display: c.display,
+      isSynonym: false,
     }));
     const query = new InsertQuery('Coding', rows).mergeOnConflict(['system', 'code']);
     await query.execute(db);
