@@ -31,20 +31,20 @@ Occasionally, you may also need to use the Medplum App for administrative and ot
 
 The following sections outline the primary functionality of the Medplum Provider app.
 
-#### Set Up
+#### [Set Up](./provider/set-up)
   * [Adding Practitioners (via Medplum App)](./provider/set-up#adding-practitioners-via-medplum-app)
   * [Importing Data (via Medplum App)](./provider/set-up#importing-data-via-medplum-app)  
 
-#### Patient Profile
+#### [Patient Profile](./provider/patient-profile)
   * [Registering Patients](./provider/patient-profile#registering-patients)
   * [Editing Patient Demographics](./provider/patient-profile#editing-patient-demographics)
   * [Updating the Patient Summary Sidebar](./provider/patient-profile#updating-the-patient-summary-sidebar)
 
-#### Schedule
+#### [Schedule] (./provider/schedule#scheduling-a-visit)
   * [Scheduling a Visit](./provider/schedule#scheduling-a-visit)  
   * [Setting Provider Availability](./provider/schedule#setting-provider-availability)  
 
-#### Visits
+#### [Visits](./provider/visits)
   * [Understanding Visits](./provider/visits#understanding-visits)
   * [Documenting Visits](./provider/visits#documenting-visits)
   * [Setting Up Care Templates (via Medplum App)](./provider/visits#setting-up-care-templates-via-medplum-app)  
