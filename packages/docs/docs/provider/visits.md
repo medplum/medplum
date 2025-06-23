@@ -71,7 +71,7 @@ Before setting up your Care Templates, it’s important to understand the separa
 
 ### **How to Set up a Care Template**
 
-There are two main approaches for setting up Care Templates. The first is by creating an initial Care Template (as a **PlanDefinition**) to create an outline of the Visit requirements, which can then be linked to other resources as they are created subsequently. The second approach is to create the linked resources first and then create the PlanDefinition, linking the other resources where appropriate (**Questionnaire**s**, ActivityDefinition**s, **ServiceRequest**s, etc.).
+There are two main approaches for setting up Care Templates. The first is by creating an initial Care Template (as a **PlanDefinition**) to create an outline of the Visit requirements, which can then be linked to other resources as they are created subsequently. The second approach is to create the linked resources first and then create the PlanDefinition, linking the other resources where appropriate (**Questionnaire**s, **ActivityDefinition**s, **ServiceRequest**s, etc.).
 
 For this guide, we will take the first approach: creating a Care Template, then creating our Resources, and finally linking the related resources within our Care Template.
 
