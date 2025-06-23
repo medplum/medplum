@@ -19,7 +19,7 @@ Each feature that the Agent supports, such as the `Agent/$push` operation, `Agen
 | Server Version | Agent Version | Description                                                                                               | Related PR                                           |
 | -------------- | ------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | 3.2.10         | N/A           | Fixes HL7 ACK messages from bots not making it back to the sending device.                                | [5212](https://github.com/medplum/medplum/pull/5212) |
-| N/A            | 4.1.9         | Reverted backwards-incompatible change requiring `callback` field for `agent:transmit:response` messages. | [6793](https://github.com/medplum/medplum/pull/6793) |
+| < 3.2.10       | 4.1.9         | Reverted backwards-incompatible change requiring `callback` field for `agent:transmit:response` messages. | [6793](https://github.com/medplum/medplum/pull/6793) |
 
 ## Compatibility Between Versions
 
