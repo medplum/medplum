@@ -39,6 +39,7 @@ import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
+import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { webhookRouter } from './webhook/routes';
@@ -221,6 +222,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     initWorkers(config);
     initHeartbeat(config);
     initOtelHeartbeat();
+    initServerRegistryHeartbeatListener();
     await maybeAutoRunPendingPostDeployMigration();
   });
 }
