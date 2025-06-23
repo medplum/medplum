@@ -1,3 +1,4 @@
+import { sleep } from '@medplum/core';
 import fs, { PathOrFileDescriptor } from 'node:fs';
 import os from 'node:os';
 import { dirname } from 'node:path';
@@ -9,6 +10,7 @@ import {
   pidLogger,
   registerAgentCleanup,
   removePidFile,
+  waitForPidFile,
 } from './pid';
 
 jest.mock('node:fs');
@@ -231,6 +233,26 @@ describe('PID File Manager', () => {
 
     // Verify unlink was attempted
     expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
+  });
+
+  test('waitForPidFile waits until PID file available', async () => {
+    mockedFs.existsSync.mockReturnValue(false);
+    const waitForPromise = waitForPidFile(APP_NAME);
+    let resolved = false;
+    waitForPromise.then(() => {
+      resolved = true;
+    });
+
+    // Wait and check twice that the promise has not resolved
+    await sleep(100);
+    expect(resolved).toStrictEqual(false);
+    await sleep(100);
+    expect(resolved).toStrictEqual(false);
+
+    mockedFs.existsSync.mockReturnValue(true);
+    // Await next tick so that promise can resolve
+    await sleep(0);
+    expect(resolved).toStrictEqual(true);
   });
 
   describe('registerAgentCleanup', () => {
