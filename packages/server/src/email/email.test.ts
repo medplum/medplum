@@ -295,7 +295,9 @@ describe('Email', () => {
           },
         ],
       })
-    ).rejects.toThrow('Invalid email options: ERR_INVALID_ARG_TYPE');
+    ).rejects.toThrow(
+      'Invalid email options: The "chunk" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received an instance of Object'
+    );
 
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
