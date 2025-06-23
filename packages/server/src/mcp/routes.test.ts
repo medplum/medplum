@@ -1,5 +1,5 @@
-import { normalizeOperationOutcome } from '@medplum/core';
-import { Bundle, OperationOutcome, Patient } from '@medplum/fhirtypes';
+import { ContentType, normalizeOperationOutcome } from '@medplum/core';
+import { Binary, Bundle, OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { SSEClientTransport } from '@modelcontextprotocol/sdk/client/sse.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -102,16 +102,25 @@ describe('MCP Routes', () => {
     expect(fetchToolResult).toBeDefined();
 
     // Convenience method to make FHIR requests
-    async function fhirRequest<T>(method: string, path: string, body?: any): Promise<T> {
-      const mcpResult = (await client.callTool({
+    async function fhirRequest<T>(
+      method: string,
+      path: string,
+      body?: unknown,
+      headers?: Record<string, unknown>
+    ): Promise<T> {
+      const mcpResult = await client.callTool({
         name: 'fhir-request',
-        arguments: { method, path, body },
-      })) as any;
-      const json = mcpResult.content?.[0]?.text;
+        arguments: { method, path, body, headers },
+      });
+      const content = mcpResult.content as { text: string }[] | undefined;
+      const text = content?.[0]?.text ?? '';
+      if (mcpResult.isError) {
+        return normalizeOperationOutcome(text) as T;
+      }
       try {
-        return JSON.parse(json);
-      } catch (err) {
-        return normalizeOperationOutcome(err) as T;
+        return JSON.parse(text);
+      } catch (_err) {
+        return text as T;
       }
     }
 
@@ -154,6 +163,18 @@ describe('MCP Routes', () => {
     // 7. unknown method
     const unknownMethodResult = await fhirRequest<OperationOutcome>('UNKNOWN', `Patient/${createResult.id}`);
     expect(unknownMethodResult.issue?.[0].severity).toBe('error');
+
+    // 8. Create a binary
+    const createBinaryResult = await fhirRequest<Binary>('POST', 'Binary', 'Hello world!', {
+      'Content-Type': ContentType.TEXT,
+    });
+    expect(createBinaryResult.resourceType).toBe('Binary');
+
+    // 9. Read the binary
+    const readBinaryResult = await fhirRequest<string>('GET', `Binary/${createBinaryResult.id}`, undefined, {
+      Accept: '*/*',
+    });
+    expect(readBinaryResult).toStrictEqual('Hello world!');
 
     await client.close();
   });
