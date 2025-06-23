@@ -124,6 +124,8 @@ export function ResponseDisplay(props: TaskCellProps): JSX.Element | null {
 }
 
 function ItemRow(props: { item: QuestionnaireResponseItem }): JSX.Element | null {
+  console.log(props.item);
+  
   const item = props.item;
   const itemValue = getTypedPropertyValue(
     { type: 'QuestionnaireResponseItemAnswer', value: item?.answer?.[0] },

@@ -7,6 +7,8 @@ import { assignValuesIntoSlices, prepareSlices } from '../ResourceArrayInput/Res
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { SliceDisplay } from '../SliceDisplay/SliceDisplay';
 
+const MAX_ARRAY_SIZE = 100;
+
 export interface ResourceArrayDisplayProps {
   /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
   readonly path?: string;
@@ -33,8 +35,9 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
       property,
     })
       .then((slices) => {
-        setSlices(slices);
-        const slicedValues = assignValuesIntoSlices(values, slices, property.slicing, ctx.profileUrl);
+        const limitedSlices = slices.slice(0, MAX_ARRAY_SIZE);
+        setSlices(limitedSlices);
+        const slicedValues = assignValuesIntoSlices(values, limitedSlices, property.slicing, ctx.profileUrl);
         setSlicedValues(slicedValues);
         setLoading(false);
       })

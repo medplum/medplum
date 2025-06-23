@@ -26,18 +26,18 @@ if ('serviceWorker' in navigator) {
 }
 
 export async function initApp(): Promise<void> {
-  const config = getConfig();
+  // const config = getConfig();
 
   const medplum = new MedplumClient({
-    baseUrl: config.baseUrl,
-    clientId: config.clientId,
-    cacheTime: 60000,
-    autoBatchTime: 100,
-    onUnauthenticated: () => {
-      if (window.location.pathname !== '/signin' && window.location.pathname !== '/oauth') {
-        window.location.href = '/signin?next=' + encodeURIComponent(window.location.pathname + window.location.search);
-      }
-    },
+    // baseUrl: config.baseUrl,
+    // clientId: config.clientId,
+    // cacheTime: 60000,
+    // autoBatchTime: 100,
+    // onUnauthenticated: () => {
+    //   if (window.location.pathname !== '/signin' && window.location.pathname !== '/oauth') {
+    //     window.location.href = '/signin?next=' + encodeURIComponent(window.location.pathname + window.location.search);
+    //   }
+    // },
   });
 
   const theme = createTheme({
