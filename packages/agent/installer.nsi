@@ -244,7 +244,7 @@ Function UpgradeApp
     ExecWait "$\"$INSTDIR\${SERVICE_FILE_NAME}$\" --remove-old-services" $1
     DetailPrint "Exit code $1"
 
-    DetailPrint "Writing installer for upgraded version..."
+    DetailPrint "Writing uninstaller for upgraded version..."
     WriteUninstaller "$INSTDIR\uninstall.exe"
 FunctionEnd
 
