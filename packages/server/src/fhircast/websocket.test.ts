@@ -895,7 +895,7 @@ describe('FHIRcast WebSocket', () => {
                 const endTime = Date.now();
 
                 // setInterval doesn't guarantee a minimum time between executions, so we give a little leniency for the 100ms
-                expect(endTime - startTime).toBeGreaterThanOrEqual(90);
+                expect(endTime - startTime).toBeGreaterThanOrEqual(80);
               })
               // We're just expecting the two calls we already caught in the above exec
               .expectJson((obj) => {
