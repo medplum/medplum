@@ -5,11 +5,7 @@ import turbosnap from 'vite-plugin-turbosnap';
 
 const config: StorybookConfig = {
   stories: ['../src/stories/Introduction.mdx', '../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
-  addons: [
-    '@storybook/addon-docs',
-    '@storybook/addon-links',
-    'storybook-addon-mantine',
-  ],
+  addons: ['@storybook/addon-docs', '@storybook/addon-links', 'storybook-addon-mantine'],
   staticDirs: ['../public'],
   framework: {
     name: '@storybook/react-vite',
