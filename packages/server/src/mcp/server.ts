@@ -4,6 +4,7 @@ import fetch from 'node-fetch';
 import { z } from 'zod';
 import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
+import { getLogger } from '../logger';
 
 const server = new McpServer({
   name: 'medplum',
@@ -25,7 +26,7 @@ const dummyDocument = {
 } as const;
 
 server.tool('search', { query: z.string() }, async ({ query }) => {
-  console.log(`Performing search for: "${query}"`);
+  getLogger().debug(`Performing search for: "${query}"`);
   return { content: [dummyDocument] };
 });
 
@@ -35,7 +36,7 @@ server.tool(
     id: z.string().describe('The ID of the resource to fetch, obtained from a search result.'),
   },
   async ({ id }) => {
-    console.log(`Performing fetch for ID: "${id}"`);
+    getLogger().debug(`Performing fetch for ID: "${id}"`);
     return { content: [dummyDocument] };
   }
 );
@@ -64,7 +65,7 @@ server.tool(
       body = JSON.parse(body);
     }
 
-    let response: any;
+    let response: unknown;
     switch (method.toLowerCase()) {
       case 'get':
         response = await proxy.get(fhirUrl);
