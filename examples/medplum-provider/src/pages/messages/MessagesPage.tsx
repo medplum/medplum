@@ -4,6 +4,8 @@ import { useMedplum, BaseChat, PatientSummary, useMedplumProfile } from '@medplu
 import { JSX, useEffect, useState, useMemo, useCallback } from 'react';
 import { createReference, getReferenceString } from '@medplum/core';
 import { ChatList } from '../../components/messages/ChatList';
+import { showNotification } from '@mantine/notifications';
+import { showErrorNotification } from '../../utils/notifications';
 
 /**
  * Messages page that matches the Home page layout but without the patient list.
@@ -50,6 +52,11 @@ export function MessagesPage(): JSX.Element {
   const sendMessage = useCallback(
     (message: string) => {
       if (!selectedPatient) {
+        showNotification({
+          title: 'No patient selected',
+          message: 'Please select a patient to send a message',
+          color: 'red',
+        });
         return;
       }
 
@@ -67,7 +74,7 @@ export function MessagesPage(): JSX.Element {
           sent: new Date().toISOString(),
           payload: [{ contentString: message }],
         })
-        .catch(console.error);
+        .catch(showErrorNotification);
     },
     [medplum, selectedPatient, profileRef]
   );
@@ -107,7 +114,7 @@ export function MessagesPage(): JSX.Element {
       <Grid.Col span={6} h="100%">
         {selectedPatient ? (
           <BaseChat
-            key={`${getReferenceString(selectedPatient)}-${threadMessages.length}`}
+            key={`${getReferenceString(selectedPatient)}`}
             title={'Messages'}
             communications={threadMessages}
             setCommunications={setThreadMessages}

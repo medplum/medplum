@@ -16,7 +16,7 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
     <Stack gap={0} p="xs">
       {communications.map((communication: Communication) => {
         const patient = communication.subject as Reference<Patient>;
-        const _isSelected = selectedPatient === patient;
+        const _isSelected = selectedPatient.reference === patient.reference;
         return (
           <ChatListItem
             key={communication.id}
