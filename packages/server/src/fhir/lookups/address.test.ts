@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { PoolClient } from 'pg';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
+import { getLogger } from '../../logger';
 import { withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { AddressTable, AddressTableRow } from './address';
@@ -401,5 +402,39 @@ describe('Address Lookup Table', () => {
         use: undefined,
       },
     ]);
+  });
+
+  test('Errors logged and rethrown', async () => {
+    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+    const table = new AddressTable();
+    const r1: WithId<Patient> = {
+      resourceType: 'Patient',
+      id: '1',
+      name: [{ given: ['Alice'], family: 'Smith' }],
+      address: [
+        {
+          line: ['500 Jefferson Street'],
+          city: 'San Francisco',
+          state: 'CA',
+          postalCode: '94109',
+        },
+      ] as unknown as Address[],
+    };
+
+    const extractValuesSpy = jest.spyOn(table, 'extractValues').mockImplementation(() => {
+      throw new Error('test error');
+    });
+
+    const logger = getLogger();
+    const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+
+    await expect(async () => table.batchIndexResources(db, [r1], false)).rejects.toThrow('test error');
+    expect(extractValuesSpy).toHaveBeenCalledTimes(1);
+    expect(errorSpy).toHaveBeenCalledWith('Error extracting values for resource', {
+      resource: 'Patient/1',
+      err: expect.any(Error),
+    });
+
+    errorSpy.mockClear();
   });
 });

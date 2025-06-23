@@ -1457,8 +1457,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const searchParams = getStandardAndDerivedSearchParameters(resourceType);
     if (searchParams.length > 0) {
       const startTime = process.hrtime.bigint();
-      for (const searchParam of searchParams) {
-        this.buildColumn(resource, row, searchParam);
+      try {
+        for (const searchParam of searchParams) {
+          this.buildColumn(resource, row, searchParam);
+        }
+      } catch (err) {
+        getLogger().error('Error building row for resource', {
+          resource: `${resourceType}/${resource.id}`,
+          err,
+        });
+        throw err;
       }
       recordHistogramValue(
         'medplum.server.indexingDurationMs',
