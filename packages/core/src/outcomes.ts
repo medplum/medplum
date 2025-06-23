@@ -446,7 +446,7 @@ export function normalizeErrorString(error: unknown): string {
   if (typeof error === 'string') {
     return error;
   }
-  if (error instanceof Error) {
+  if (isError(error)) {
     return error.message;
   }
   if (isOperationOutcome(error)) {
