@@ -822,24 +822,19 @@ export async function getExternalUserInfo(
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
-  // Make sure content type is json
-  if (!response.headers.get('content-type')?.includes(ContentType.JSON)) {
-    let text = '';
-    try {
-      text = await response.text();
-    } catch (err: any) {
-      log.debug('Failed to get response text', err);
-    }
-    log.warn('Failed to verify external authorization code, non-JSON response', { text });
-    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
-  }
-
+  const contentType = response.headers.get('content-type');
   try {
-    return await response.json();
+    if (contentType?.includes(ContentType.JSON)) {
+      return await response.json();
+    } else if (contentType?.includes(ContentType.JWT)) {
+      return parseJWTPayload(await response.text());
+    }
   } catch (err: any) {
     log.warn('Failed to verify external authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
+
+  throw new OperationOutcomeError(badRequest(`Failed to verify code - unsupported content type: ${contentType}`));
 }
 
 interface ValidationAssertion {

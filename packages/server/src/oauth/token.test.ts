@@ -2,6 +2,7 @@ import {
   ContentType,
   createReference,
   encodeBase64,
+  encodeBase64Url,
   OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
@@ -1730,7 +1731,7 @@ describe('OAuth2 Token', () => {
     expect(res.body.issue[0].details.text).toStrictEqual('IP address not allowed');
   });
 
-  test('Token exchange success', async () => {
+  test('Token exchange JSON success', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
       json: () => ({ email }),
@@ -1747,13 +1748,26 @@ describe('OAuth2 Token', () => {
     expect(res.body.access_token).toBeTruthy();
   });
 
-  test('Token exchange non-JSON response', async () => {
+  test('Token exchange JWT success', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
-      json: () => {
-        throw new Error('Invalid JSON');
-      },
-      text: () => 'Unexpected error',
+      text: () => `header.${encodeBase64Url(JSON.stringify({ email }))}.signature`,
+      headers: { get: () => ContentType.JWT },
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthClient.id,
+      subject_token: 'xyz',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Token exchange unsupported content type', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
       headers: { get: () => ContentType.TEXT },
     }));
 
@@ -1765,7 +1779,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
-    expect(res.body.error_description).toBe('Failed to verify code - check your identity provider configuration');
+    expect(res.body.error_description).toBe('Failed to verify code - unsupported content type: text/plain');
   });
 
   test('Too many requests', async () => {
