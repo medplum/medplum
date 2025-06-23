@@ -101,6 +101,9 @@ export interface MedplumServerConfig {
   /** Optional list of default OAuth2 clients */
   defaultOAuthClients?: ClientApplication[];
 
+  /** Optional flag to enable the MCP server beta */
+  mcpEnabled?: boolean;
+
   /** @deprecated */
   auditEventLogGroup?: string;
 

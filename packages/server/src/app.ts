@@ -28,6 +28,7 @@ import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
 import { getLogger, globalLogger } from './logger';
+import { mcpRouter } from './mcp/routes';
 import { initKeys } from './oauth/keys';
 import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
@@ -197,6 +198,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/scim/v2/', scimRouter);
   apiRouter.use('/storage/', storageRouter);
   apiRouter.use('/webhook/', webhookRouter);
+
+  if (config.mcpEnabled) {
+    apiRouter.use('/mcp', mcpRouter);
+  }
 
   app.use('/api/', apiRouter);
   app.use('/', apiRouter);

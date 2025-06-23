@@ -93,6 +93,7 @@ const booleanKeys = [
   'readonlyDatabase.disableConnectionConfiguration',
   'logRequests',
   'logAuditEvents',
+  'mcpEnabled',
   'registerEnabled',
   'require',
   'rejectUnauthorized',
