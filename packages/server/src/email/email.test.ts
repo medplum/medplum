@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { ContentType, getReferenceString, normalizeOperationOutcome, notFound } from '@medplum/core';
+import { ContentType, getReferenceString } from '@medplum/core';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
@@ -220,8 +220,8 @@ describe('Email', () => {
   });
 
   test('Block invalid binary', async () => {
-    try {
-      await sendEmail(systemRepo, {
+    await expect(
+      sendEmail(systemRepo, {
         to: 'alice@example.com',
         subject: 'Hello',
         text: 'Hello Alice',
@@ -231,21 +231,16 @@ describe('Email', () => {
             path: `Binary/${randomUUID()}`,
           },
         ],
-      });
-
-      throw new Error('Expected to throw');
-    } catch (err) {
-      const outcome = normalizeOperationOutcome(err);
-      expect(outcome).toMatchObject(notFound);
-    }
+      })
+    ).rejects.toThrow('Not found');
 
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
   });
 
   test('Block file path', async () => {
-    try {
-      await sendEmail(systemRepo, {
+    await expect(
+      sendEmail(systemRepo, {
         to: 'alice@example.com',
         subject: 'Hello',
         text: 'Hello Alice',
@@ -255,24 +250,16 @@ describe('Email', () => {
             path: './package.json',
           },
         ],
-      });
-
-      throw new Error('Expected to throw');
-    } catch (err) {
-      const outcome = normalizeOperationOutcome(err);
-      expect(outcome.issue?.[0]?.code).toStrictEqual('invalid');
-      expect(outcome.issue?.[0]?.details?.text).toStrictEqual(
-        'Invalid email options: File access rejected for ./package.json'
-      );
-    }
+      })
+    ).rejects.toThrow('Invalid email options: File access rejected for ./package.json');
 
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);
   });
 
   test('Catch invalid options', async () => {
-    try {
-      await sendEmail(systemRepo, {
+    await expect(
+      sendEmail(systemRepo, {
         to: 'alice@example.com',
         subject: 'Hello',
         text: 'Hello Alice',
@@ -282,14 +269,10 @@ describe('Email', () => {
             content: { foo: 'bar' } as unknown as Readable, // Invalid content
           },
         ],
-      });
-
-      throw new Error('Expected to throw');
-    } catch (err) {
-      const outcome = normalizeOperationOutcome(err);
-      expect(outcome.issue?.[0]?.code).toStrictEqual('invalid');
-      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid email options: ERR_INVALID_ARG_TYPE');
-    }
+      })
+    ).rejects.toThrow(
+      'Invalid email options: The "chunk" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received an instance of Object'
+    );
 
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);

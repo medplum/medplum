@@ -18,6 +18,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.tokenUrl ||= concatUrls(config.baseUrl, '/oauth2/token');
   config.userInfoUrl ||= concatUrls(config.baseUrl, '/oauth2/userinfo');
   config.introspectUrl ||= concatUrls(config.baseUrl, '/oauth2/introspect');
+  config.registerUrl ||= concatUrls(config.baseUrl, '/oauth2/register');
   config.storageBaseUrl ||= concatUrls(config.baseUrl, '/storage');
   config.maxJsonSize ||= '1mb';
   config.maxBatchSize ||= '50mb';
@@ -31,6 +32,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultProjectFeatures ??= [];
   config.defaultProjectSystemSetting ??= [];
   config.emailProvider ||= config.smtp ? 'smtp' : 'awsses';
+  config.autoDownloadEnabled ??= true;
 
   // History:
   // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"
@@ -91,6 +93,7 @@ const booleanKeys = [
   'readonlyDatabase.disableConnectionConfiguration',
   'logRequests',
   'logAuditEvents',
+  'mcpEnabled',
   'registerEnabled',
   'require',
   'rejectUnauthorized',
@@ -101,5 +104,5 @@ export function isBooleanConfig(key: string): boolean {
 }
 
 export function isObjectConfig(key: string): boolean {
-  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting';
+  return key === 'tls' || key === 'ssl' || key === 'defaultProjectSystemSetting' || key === 'defaultOAuthClients';
 }

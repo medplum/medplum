@@ -5,6 +5,8 @@ import { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 import { JSX, useCallback, useEffect, useRef, useState } from 'react';
 import { Calendar, dayjsLocalizer, Event, SlotInfo, ToolbarProps, View } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -14,6 +16,7 @@ import { CreateUpdateSlot } from '../components/schedule/CreateUpdateSlot';
 import { SetAvailability } from '../components/schedule/SetAvailability';
 import { SlotDetails } from '../components/schedule/SlotDetails';
 import { CreateVisit } from '../components/schedule/CreateVisit';
+import { showErrorNotification } from '../utils/notifications';
 
 type AppointmentEvent = Event & { type: 'appointment'; appointment: Appointment; start: Date; end: Date };
 type SlotEvent = Event & { type: 'slot'; status: string; start: Date; end: Date };
@@ -159,8 +162,8 @@ export function SchedulePage(): JSX.Element | null {
    * - If the event is an appointment, navigate to the appointment page.
    */
   const handleSelectEvent = useCallback(
-    (event: ScheduleEvent) => {
-      const { resourceType, status, id } = event.resource;
+    async (event: ScheduleEvent) => {
+      const { resourceType, status } = event.resource;
 
       function handleSlot(): void {
         setSelectedEvent(event);
@@ -171,8 +174,15 @@ export function SchedulePage(): JSX.Element | null {
         }
       }
 
-      function handleAppointment(): void {
-        navigate(`/Appointment/${id}`)?.catch(console.error);
+      async function handleAppointment(): Promise<void> {
+        const encounters = await medplum.searchResources('Encounter', [
+          ['appointment', getReferenceString(event.resource)],
+          ['_count', '1'],
+        ]);
+        const patient = encounters?.[0]?.subject;
+        if (patient?.reference) {
+          navigate(`/${patient.reference}/Encounter/${encounters?.[0]?.id}`)?.catch(console.error);
+        }
       }
 
       if (resourceType === 'Slot') {
@@ -181,10 +191,10 @@ export function SchedulePage(): JSX.Element | null {
       }
 
       if (resourceType === 'Appointment') {
-        handleAppointment();
+        handleAppointment().catch((err) => showErrorNotification(err));
       }
     },
-    [slotDetailsHandlers, createAppointmentHandlers, navigate]
+    [slotDetailsHandlers, createAppointmentHandlers, navigate, medplum]
   );
 
   if (!schedule) {
@@ -271,6 +281,10 @@ export function SchedulePage(): JSX.Element | null {
 
     return result;
   }
+
+  dayjs.extend(utc);
+  dayjs.extend(timezone);
+  dayjs.tz.setDefault(dayjs.tz.guess());
 
   return (
     <Box pos="relative" bg="white" p="md" style={{ height }}>

@@ -32,6 +32,7 @@ import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
 import { executeHandler } from './operations/execute';
 import { expandOperator } from './operations/expand';
+import { dbExplainHandler } from './operations/explain';
 import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
@@ -133,6 +134,8 @@ publicRoutes.get('/([$]|%24)versions', (_req: Request, res: Response) => {
 });
 
 // SMART-on-FHIR configuration
+// Medplum hosts the SMART well-known both at the root and at the /fhir/R4 paths.
+// See: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#sample-request
 publicRoutes.get('/.well-known/smart-configuration', smartConfigurationHandler);
 publicRoutes.get('/.well-known/smart-styles.json', smartStylingHandler);
 
@@ -335,6 +338,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/$db-stats', dbStatsHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
   router.add('POST', '/$db-invalid-indexes', dbInvalidIndexesHandler);
+  router.add('POST', '/$explain', dbExplainHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();

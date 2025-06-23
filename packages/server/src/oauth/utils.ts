@@ -6,12 +6,15 @@ import {
   forbidden,
   getDateProperty,
   getReferenceString,
+  isJwt,
   isString,
-  MEDPLUM_CLI_CLIENT_ID,
   OperationOutcomeError,
   Operator,
+  parseJWTPayload,
+  parseSearchRequest,
   ProfileResource,
   resolveId,
+  SearchRequest,
   tooManyRequests,
   WithId,
 } from '@medplum/core';
@@ -28,6 +31,8 @@ import {
   User,
 } from '@medplum/fhirtypes';
 import bcrypt from 'bcryptjs';
+import { createHash } from 'crypto';
+import { Request } from 'express';
 import { IncomingMessage } from 'http';
 import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
 import fetch from 'node-fetch';
@@ -35,10 +40,13 @@ import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getUserConfiguration } from '../auth/me';
+import { getConfig } from '../config/loader';
+import { MedplumExternalAuthConfig } from '../config/types';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { parseSmartScopes, SmartScope } from '../fhir/smart';
 import { getLogger } from '../logger';
+import { getRedis } from '../redis';
 import {
   AuditEventOutcome,
   createAuditEvent,
@@ -46,6 +54,7 @@ import {
   LoginEvent,
   UserAuthenticationEvent,
 } from '../util/auditevent';
+import { getStandardClientById } from './clients';
 import {
   generateAccessToken,
   generateIdToken,
@@ -125,13 +134,9 @@ export interface GoogleCredentialClaims extends JWTPayload {
  * @returns The client application.
  */
 export async function getClientApplication(clientId: string): Promise<ClientApplication> {
-  if (clientId === MEDPLUM_CLI_CLIENT_ID) {
-    return {
-      resourceType: 'ClientApplication',
-      id: MEDPLUM_CLI_CLIENT_ID,
-      redirectUri: 'http://localhost:9615',
-      pkceOptional: true,
-    };
+  const standardClient = getStandardClientById(clientId);
+  if (standardClient) {
+    return standardClient;
   }
   const systemRepo = getSystemRepo();
   return systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
@@ -777,18 +782,25 @@ function includeRefreshToken(request: LoginRequest): boolean {
 /**
  * Returns the external identity provider user info for an access token.
  * This can be used to verify the access token and get the user's email address.
- * @param idp - The identity provider configuration.
+ * @param userInfoUrl - The user info URL from the identity provider configuration.
  * @param externalAccessToken - The external identity provider access token.
+ * @param idp - Optional identity provider configuration.
  * @returns The user info claims.
  */
 export async function getExternalUserInfo(
-  idp: IdentityProvider,
-  externalAccessToken: string
+  userInfoUrl: string,
+  externalAccessToken: string,
+  idp?: IdentityProvider
 ): Promise<Record<string, unknown>> {
   const log = getLogger();
+  if (!userInfoUrl.startsWith('http:') && !userInfoUrl.startsWith('https:')) {
+    log.warn('Invalid user info URL', { userInfoUrl, clientId: idp?.clientId });
+    throw new OperationOutcomeError(badRequest('Invalid user info URL - check your identity provider configuration'));
+  }
+
   let response;
   try {
-    response = await fetch(idp.userInfoUrl as string, {
+    response = await fetch(userInfoUrl, {
       method: 'GET',
       headers: {
         Accept: ContentType.JSON,
@@ -801,7 +813,7 @@ export async function getExternalUserInfo(
   }
 
   if (response.status === 429) {
-    log.warn('Auth rate limit exceeded', { url: idp.userInfoUrl, clientId: idp.clientId });
+    log.warn('Auth rate limit exceeded', { url: userInfoUrl, clientId: idp?.clientId });
     throw new OperationOutcomeError(tooManyRequests);
   }
 
@@ -810,24 +822,19 @@ export async function getExternalUserInfo(
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
-  // Make sure content type is json
-  if (!response.headers.get('content-type')?.includes(ContentType.JSON)) {
-    let text = '';
-    try {
-      text = await response.text();
-    } catch (err: any) {
-      log.debug('Failed to get response text', err);
-    }
-    log.warn('Failed to verify external authorization code, non-JSON response', { text });
-    throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
-  }
-
+  const contentType = response.headers.get('content-type');
   try {
-    return await response.json();
+    if (contentType?.includes(ContentType.JSON)) {
+      return await response.json();
+    } else if (contentType?.includes(ContentType.JWT)) {
+      return parseJWTPayload(await response.text());
+    }
   } catch (err: any) {
     log.warn('Failed to verify external authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
+
+  throw new OperationOutcomeError(badRequest(`Failed to verify code - unsupported content type: ${contentType}`));
 }
 
 interface ValidationAssertion {
@@ -865,9 +872,14 @@ export async function verifyMultipleMatchingException(
  * @returns On success, returns the login, membership, and project. On failure, throws an error.
  */
 export async function getLoginForAccessToken(
-  req: IncomingMessage | undefined,
+  req: Request | undefined,
   accessToken: string
 ): Promise<AuthState | undefined> {
+  const externalAuthState = await tryExternalAuth(req, accessToken);
+  if (externalAuthState) {
+    return externalAuthState;
+  }
+
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
   try {
     verifyResult = await verifyJwt(accessToken);
@@ -892,7 +904,7 @@ export async function getLoginForAccessToken(
   const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
   const userConfig = await getUserConfiguration(systemRepo, project, membership);
-  const authState = { login, project, membership, userConfig };
+  const authState = { login, project, membership, userConfig, accessToken };
   await tryAddOnBehalfOf(req, authState);
   return authState;
 }
@@ -979,4 +991,160 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
   const onBehalfOf = await adminRepo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
   authState.onBehalfOf = onBehalfOf;
   authState.onBehalfOfMembership = onBehalfOfMembership;
+}
+
+/**
+ * Tries to authenticate the user using an external authentication provider.
+ * This function checks if the access token is a valid JWT and corresponds to an external authentication provider.
+ * If the token is valid, it retrieves the user's profile and project membership.
+ * If successful, it returns the auth state containing the login, project, membership, and user configuration.
+ * If the token is invalid or does not correspond to an external provider, it returns undefined.
+ *
+ * @param req - The incoming HTTP request.
+ * @param accessToken - The access token as provided by the client.
+ * @returns The auth state if the access token is valid and corresponds to an external authentication provider; otherwise, undefined.
+ */
+async function tryExternalAuth(req: Request | undefined, accessToken: string): Promise<AuthState | undefined> {
+  const externalAuthProviders = getConfig().externalAuthProviders;
+  if (!externalAuthProviders) {
+    // No external auth providers configured
+    return undefined;
+  }
+
+  if (!isJwt(accessToken)) {
+    // Not a JWT, so we cannot verify it
+    return undefined;
+  }
+
+  const claims = parseJWTPayload(accessToken);
+  const issuer = claims.iss as string;
+  const externalAuthConfig = externalAuthProviders.find((provider) => provider.issuer === issuer);
+  if (!externalAuthConfig) {
+    // Not a configured external auth provider
+    return undefined;
+  }
+
+  const systemRepo = getSystemRepo();
+  const redis = getRedis();
+  const redisKey = `medplum:ext-auth:${issuer}:${hashCode(accessToken)}`;
+  const cachedValue = await redis.get(redisKey);
+  let login: Login;
+  let project: WithId<Project> | undefined;
+  let membership: WithId<ProjectMembership> | undefined;
+
+  if (cachedValue) {
+    // Use cached login if available
+    login = JSON.parse(cachedValue) as Login;
+    membership = await systemRepo.readReference<ProjectMembership>(login.membership as Reference<ProjectMembership>);
+    project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+  } else {
+    // If not cached, try to authenticate the user with the external auth provider
+    const externalAuthState = await tryExternalAuthLogin(req, accessToken, claims, externalAuthConfig);
+    if (!externalAuthState) {
+      return undefined;
+    }
+    ({ login, project, membership } = externalAuthState);
+    await redis.set(redisKey, JSON.stringify(login), 'EX', 3600);
+  }
+
+  const userConfig = await getUserConfiguration(systemRepo, project, membership);
+  return { login, project, membership, userConfig };
+}
+
+async function tryExternalAuthLogin(
+  req: Request | undefined,
+  accessToken: string,
+  claims: JWTPayload,
+  externalAuthConfig: MedplumExternalAuthConfig
+): Promise<Pick<AuthState, 'login' | 'project' | 'membership'> | undefined> {
+  // To ensure broad compatibility, we check for the FHIR user profile in two places:
+  // the standard `fhirUser` claim and `ext.fhirUser` for identity providers
+  // that automatically place custom claims in an `ext` block.
+  const extensions = claims.ext as Record<string, unknown> | undefined;
+  const profileString = claims.fhirUser ?? extensions?.fhirUser;
+  if (!isString(profileString)) {
+    return undefined;
+  }
+
+  try {
+    await getExternalUserInfo(externalAuthConfig.userInfoUrl, accessToken);
+  } catch (err: any) {
+    getLogger().warn('Failed to get external user info', err);
+    return undefined;
+  }
+
+  // Profile string can be either a reference or a search string
+  let searchRequest: SearchRequest<ProfileResource>;
+  if (profileString.includes('?')) {
+    searchRequest = parseSearchRequest(profileString);
+  } else {
+    const [resourceType, id] = profileString.split('/');
+    searchRequest = {
+      resourceType: resourceType as ProfileResource['resourceType'],
+      filters: [{ code: '_id', operator: Operator.EQUALS, value: id }],
+    };
+  }
+
+  // Search for the profile
+  const systemRepo = getSystemRepo();
+  const profile = await systemRepo.searchOne<ProfileResource>(searchRequest);
+  if (!profile) {
+    return undefined;
+  }
+
+  // Search for a ProjectMembership for the profile
+  const membership = await systemRepo.searchOne<ProjectMembership>({
+    resourceType: 'ProjectMembership',
+    filters: [{ code: 'profile', operator: Operator.EQUALS, value: getReferenceString(profile) }],
+  });
+  if (!membership || membership.active === false) {
+    return undefined;
+  }
+
+  const login = await systemRepo.createResource<Login>({
+    resourceType: 'Login',
+    authMethod: 'external',
+    project: membership.project,
+    membership: createReference(membership),
+    user: membership.user,
+    profileType: profile.resourceType,
+    authTime: new Date().toISOString(),
+    scope: isString(claims.scope) ? claims.scope : undefined,
+    nonce: isString(claims.nonce) ? claims.nonce : undefined,
+    remoteAddress: req?.ip,
+    userAgent: req?.get('User-Agent'),
+  });
+
+  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
+
+  logAuditEvent(
+    createAuditEvent(
+      UserAuthenticationEvent,
+      LoginEvent,
+      project.id,
+      membership.profile,
+      login.remoteAddress,
+      AuditEventOutcome.Success
+    )
+  );
+
+  return { login, project, membership };
+}
+
+/**
+ * Returns the base64-url-encoded SHA256 hash of the code.
+ * The details around '+', '/', and '=' are important for compatibility.
+ * See: https://auth0.com/docs/flows/call-your-api-using-the-authorization-code-flow-with-pkce
+ * See: packages/client/src/crypto.ts
+ * @param code - The input code.
+ * @returns The base64-url-encoded SHA256 hash.
+ */
+export function hashCode(code: string): string {
+  return createHash('sha256')
+    .update(code)
+    .digest()
+    .toString('base64')
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
 }

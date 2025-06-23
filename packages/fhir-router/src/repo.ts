@@ -217,7 +217,7 @@ export abstract class FhirRepository<TClient = unknown> {
     resource: T,
     search: SearchRequest<T>,
     options?: CreateResourceOptions
-  ): Promise<{ resource: T; outcome: OperationOutcome }> {
+  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
     if (search.resourceType !== resource.resourceType) {
       throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
     }
@@ -252,7 +252,7 @@ export abstract class FhirRepository<TClient = unknown> {
     resource: T,
     search: SearchRequest,
     options?: CreateResourceOptions & UpdateResourceOptions
-  ): Promise<{ resource: T; outcome: OperationOutcome }> {
+  ): Promise<{ resource: WithId<T>; outcome: OperationOutcome }> {
     if (search.resourceType !== resource.resourceType) {
       throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
     }
@@ -295,17 +295,41 @@ export abstract class FhirRepository<TClient = unknown> {
     search.count = 2;
     search.sortRules = undefined;
 
-    await this.withTransaction(async () => {
-      const matches = await this.searchResources(search);
-      if (matches.length > 1) {
-        throw new OperationOutcomeError(multipleMatches);
-      } else if (!matches.length) {
-        return;
-      }
+    await this.withTransaction(
+      async () => {
+        const matches = await this.searchResources(search);
+        if (matches.length > 1) {
+          throw new OperationOutcomeError(multipleMatches);
+        } else if (!matches.length) {
+          return;
+        }
 
-      const resource = matches[0];
-      await this.deleteResource(resource.resourceType, resource.id);
-    });
+        const resource = matches[0];
+        await this.deleteResource(resource.resourceType, resource.id);
+      },
+      { serializable: true }
+    );
+  }
+
+  async conditionalPatch(search: SearchRequest, patch: Operation[]): Promise<WithId<Resource>> {
+    // Limit search to optimize DB query
+    search.count = 2;
+    search.sortRules = undefined;
+
+    return this.withTransaction(
+      async () => {
+        const matches = await this.searchResources(search);
+        if (matches.length > 1) {
+          throw new OperationOutcomeError(multipleMatches);
+        } else if (!matches.length) {
+          throw new OperationOutcomeError(notFound);
+        }
+
+        const resource = matches[0];
+        return this.patchResource(resource.resourceType, resource.id, patch);
+      },
+      { serializable: true }
+    );
   }
 }
 

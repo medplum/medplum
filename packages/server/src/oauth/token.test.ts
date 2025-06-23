@@ -2,6 +2,7 @@ import {
   ContentType,
   createReference,
   encodeBase64,
+  encodeBase64Url,
   OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
@@ -24,7 +25,7 @@ import { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { generateSecret, verifyJwt } from './keys';
-import { hashCode } from './token';
+import { hashCode } from './utils';
 
 jest.mock('jose', () => {
   const core = jest.requireActual('@medplum/core');
@@ -71,6 +72,7 @@ describe('OAuth2 Token', () => {
   let client: WithId<ClientApplication>;
   let pkceOptionalClient: ClientApplication;
   let externalAuthClient: ClientApplication;
+  let invalidAuthClient: ClientApplication;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -128,6 +130,20 @@ describe('OAuth2 Token', () => {
         authorizeUrl: 'https://example.com/oauth2/authorize',
         tokenUrl: 'https://example.com/oauth2/token',
         userInfoUrl: 'https://example.com/oauth2/userinfo',
+        clientId: '123',
+        clientSecret: '456',
+      },
+    });
+
+    // Create an invalid external auth client with invalid URLs
+    invalidAuthClient = await createClient(systemRepo, {
+      project,
+      name: 'Invalid Auth Client',
+      redirectUri,
+      identityProvider: {
+        authorizeUrl: 'file://example.com/oauth2/authorize',
+        tokenUrl: 'file://example.com/oauth2/token',
+        userInfoUrl: 'file://example.com/oauth2/userinfo',
         clientId: '123',
         clientSecret: '456',
       },
@@ -1715,7 +1731,7 @@ describe('OAuth2 Token', () => {
     expect(res.body.issue[0].details.text).toStrictEqual('IP address not allowed');
   });
 
-  test('Token exchange success', async () => {
+  test('Token exchange JSON success', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
       json: () => ({ email }),
@@ -1732,13 +1748,26 @@ describe('OAuth2 Token', () => {
     expect(res.body.access_token).toBeTruthy();
   });
 
-  test('Token exchange non-JSON response', async () => {
+  test('Token exchange JWT success', async () => {
     (fetch as unknown as jest.Mock).mockImplementation(() => ({
       status: 200,
-      json: () => {
-        throw new Error('Invalid JSON');
-      },
-      text: () => 'Unexpected error',
+      text: () => `header.${encodeBase64Url(JSON.stringify({ email }))}.signature`,
+      headers: { get: () => ContentType.JWT },
+    }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: externalAuthClient.id,
+      subject_token: 'xyz',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.access_token).toBeTruthy();
+  });
+
+  test('Token exchange unsupported content type', async () => {
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      status: 200,
       headers: { get: () => ContentType.TEXT },
     }));
 
@@ -1750,7 +1779,7 @@ describe('OAuth2 Token', () => {
     });
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
-    expect(res.body.error_description).toBe('Failed to verify code - check your identity provider configuration');
+    expect(res.body.error_description).toBe('Failed to verify code - unsupported content type: text/plain');
   });
 
   test('Too many requests', async () => {
@@ -1816,6 +1845,21 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid subject_token_type');
+  });
+
+  test('Token exchange invalid external URL', async () => {
+    (fetch as unknown as jest.Mock).mockClear();
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: invalidAuthClient.id,
+      subject_token: 'xyz',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid user info URL - check your identity provider configuration');
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   test('FHIRcast scopes added to client credentials flow', async () => {

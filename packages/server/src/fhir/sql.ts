@@ -101,6 +101,18 @@ export const Operator = {
     sql.append(' ~* ');
     sql.appendParameters(parameter, false);
   },
+  ARRAY_EMPTY: (sql: SqlBuilder, column: Column, _parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' = ARRAY[]');
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  ARRAY_NOT_EMPTY: (sql: SqlBuilder, column: Column, _parameter: any, _paramType?: string) => {
+    sql.append('array_length(');
+    sql.appendColumn(column);
+    sql.append(', 1) > 0');
+  },
   TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     const query = formatTsquery(parameter);
     if (!query) {
@@ -245,7 +257,10 @@ export class Condition implements Expression {
   readonly parameterType?: string;
 
   constructor(column: Column | string, operator: keyof typeof Operator, parameter: any, parameterType?: string) {
-    if ((operator === 'ARRAY_CONTAINS_AND_IS_NOT_NULL' || operator === 'ARRAY_CONTAINS') && !parameterType) {
+    if (
+      (operator === 'ARRAY_CONTAINS_AND_IS_NOT_NULL' || operator === 'ARRAY_CONTAINS' || operator === 'ARRAY_EMPTY') &&
+      !parameterType
+    ) {
       throw new Error(`${operator} requires paramType`);
     }
 
@@ -535,8 +550,7 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
 export abstract class BaseQuery {
   readonly tableName: string;
   readonly predicate: Conjunction;
-  explain = false;
-  analyzeBuffers = false;
+  explain: boolean | string[] = false;
   readonly alias?: string;
 
   constructor(tableName: string, alias?: string) {
@@ -656,8 +670,10 @@ export class SelectQuery extends BaseQuery implements Expression {
   buildSql(sql: SqlBuilder): void {
     if (this.explain) {
       sql.append('EXPLAIN ');
-      if (this.analyzeBuffers) {
-        sql.append('(ANALYZE, BUFFERS) ');
+      if (Array.isArray(this.explain)) {
+        sql.append('(');
+        sql.append(this.explain.join(', '));
+        sql.append(')');
       }
     }
     if (this.with) {

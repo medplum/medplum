@@ -297,6 +297,69 @@ describe('FHIR Router', () => {
     expect(patient4).toBeUndefined();
   });
 
+  test('Conditional PATCH', async () => {
+    const mrn = randomUUID();
+    const patient: Patient = {
+      resourceType: 'Patient',
+      gender: 'unknown',
+      identifier: [{ system: 'http://example.com/mrn', value: mrn }],
+    };
+
+    await repo.createResource(patient);
+    await repo.createResource({ ...patient, identifier: undefined });
+
+    // Multiple matching resources, expected error response
+    const [res3, resource3] = await router.handleRequest(
+      {
+        method: 'PATCH',
+        url: '/Patient',
+        pathname: '',
+        body: [{ op: 'test', path: '/identifier/0/value', value: mrn }],
+        params: {},
+        query: {
+          gender: 'unknown',
+        },
+      },
+      repo
+    );
+    expect(res3).toMatchObject(multipleMatches);
+    expect(resource3).toBeUndefined();
+
+    // Matching resource to be patched
+    const [res, resource] = await router.handleRequest(
+      {
+        method: 'PATCH',
+        url: '/Patient',
+        pathname: '',
+        body: [{ op: 'test', path: '/gender', value: 'unknown' }],
+        params: {},
+        query: {
+          identifier: 'http://example.com/mrn|' + mrn,
+        },
+      },
+      repo
+    );
+    expect(res).toMatchObject(allOk);
+    expect(resource).toMatchObject(patient);
+
+    // No matching resource, 404 error
+    const [res2, resource2] = await router.handleRequest(
+      {
+        method: 'PATCH',
+        url: '/Patient',
+        pathname: '',
+        body: [{ op: 'test', path: '/gender', value: 'unknown' }],
+        params: {},
+        query: {
+          identifier: 'http://example.com/mrn|' + randomUUID(),
+        },
+      },
+      repo
+    );
+    expect(res2).toMatchObject(notFound);
+    expect(resource2).toBeUndefined();
+  });
+
   test('Conditional delete', async () => {
     const mrn = randomUUID();
     const patient: Patient = {

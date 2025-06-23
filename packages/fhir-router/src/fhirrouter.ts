@@ -267,6 +267,22 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   return [allOk, resource];
 }
 
+// Conditional PATCH
+async function conditionalPatch(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+  const { resourceType } = req.params;
+  const patch = req.body as Operation[];
+  if (!patch) {
+    return [badRequest('Empty patch body')];
+  }
+  if (!Array.isArray(patch)) {
+    return [badRequest('Patch body must be an array')];
+  }
+
+  const search = parseSearchRequest(resourceType as ResourceType, req.query);
+  const resource = await repo.conditionalPatch(search, patch);
+  return [allOk, resource];
+}
+
 /** @see http://hl7.org/fhir/R4/codesystem-restful-interaction.html */
 export type RestInteraction =
   | CapabilityStatementRestInteraction['code']
@@ -298,6 +314,7 @@ export class FhirRouter extends EventTarget {
     this.router.add('DELETE', ':resourceType/:id', deleteResource, { interaction: 'delete' });
     this.router.add('DELETE', ':resourceType', conditionalDelete, { interaction: 'delete' });
     this.router.add('PATCH', ':resourceType/:id', patchResource, { interaction: 'patch' });
+    this.router.add('PATCH', ':resourceType', conditionalPatch, { interaction: 'patch' });
     this.router.add('POST', '$graphql', graphqlHandler, { interaction: 'operation' });
   }
 

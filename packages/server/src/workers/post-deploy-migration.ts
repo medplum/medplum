@@ -212,17 +212,12 @@ export async function addPostDeployMigrationJobData<T extends PostDeployJobData>
     throw new Error(`Job queue ${PostDeployMigrationQueueName} not available`);
   }
 
-  globalLogger.debug('Adding post-deploy migration job', {
-    version: `v${asyncJob.dataVersion}`,
-    asyncJobId: asyncJob.id,
-  });
-
   const job = await queue.add('PostDeployMigrationJobData', jobData, {
     ...options,
     deduplication: { id: deduplicationId },
   });
 
-  globalLogger.info('Added post-deploy migration job', {
+  globalLogger.debug('Added post-deploy migration job', {
     jobId: job.id,
     ...getJobDataLoggingFields(job),
   });

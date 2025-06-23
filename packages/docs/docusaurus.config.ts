@@ -103,11 +103,11 @@ const config: Config = {
           type: 'doc',
           docId: 'home',
           position: 'left',
-          label: 'Documentation',
+          label: 'Docs',
         },
         {
-          to: '/docs/api',
-          label: 'Reference',
+          to: '/pricing',
+          label: 'Pricing',
           position: 'left',
         },
         {
@@ -170,6 +170,10 @@ const config: Config = {
             {
               label: 'GitHub',
               to: 'https://github.com/medplum/medplum',
+            },
+            {
+              label: 'Knowledge Base',
+              to: 'https://linen.medplum.com',
             },
             {
               label: 'Contributing',

@@ -19,6 +19,7 @@ import {
   Login,
   Observation,
   OperationOutcome,
+  Organization,
   Patient,
   PatientLink,
   Practitioner,
@@ -38,6 +39,7 @@ import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
+import { r4ProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
@@ -54,11 +56,19 @@ describe('FHIR Repo', () => {
     id: randomUUID(),
   };
 
+  let testProjectRepo: Repository;
   let systemRepo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
+    testProjectRepo = new Repository({
+      projects: [testProject],
+      extendedMode: true,
+      author: {
+        reference: 'Practitioner/' + randomUUID(),
+      },
+    });
   });
 
   afterAll(async () => {
@@ -754,48 +764,18 @@ describe('FHIR Repo', () => {
     }));
 
   test('expungeResource forbidden', async () => {
-    const author = 'Practitioner/' + randomUUID();
-
-    const repo = new Repository({
-      projects: [randomUUID()],
-      extendedMode: true,
-      author: {
-        reference: author,
-      },
-    });
-
     // Try to expunge as a regular user
-    await expect(repo.expungeResource('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
+    await expect(testProjectRepo.expungeResource('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
   });
 
   test('expungeResources forbidden', async () => {
-    const author = 'Practitioner/' + randomUUID();
-
-    const repo = new Repository({
-      projects: [randomUUID()],
-      extendedMode: true,
-      author: {
-        reference: author,
-      },
-    });
-
     // Try to expunge as a regular user
-    await expect(repo.expungeResources('Patient', [new Date().toISOString()])).rejects.toThrow('Forbidden');
+    await expect(testProjectRepo.expungeResources('Patient', [new Date().toISOString()])).rejects.toThrow('Forbidden');
   });
 
   test('Purge forbidden', async () => {
-    const author = 'Practitioner/' + randomUUID();
-
-    const repo = new Repository({
-      projects: [randomUUID()],
-      extendedMode: true,
-      author: {
-        reference: author,
-      },
-    });
-
     // Try to purge as a regular user
-    await expect(repo.purgeResources('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
+    await expect(testProjectRepo.purgeResources('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
   });
 
   test('Purge Login', () =>
@@ -883,13 +863,7 @@ describe('FHIR Repo', () => {
     }));
 
   test('Malformed client assigned ID', async () => {
-    try {
-      await systemRepo.updateResource({ resourceType: 'Patient', id: '123' });
-      throw new Error('expected error');
-    } catch (err) {
-      const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid id');
-    }
+    await expect(systemRepo.updateResource({ resourceType: 'Patient', id: '123' })).rejects.toThrow('Invalid id');
   });
 
   test('Profile validation', async () =>
@@ -1495,6 +1469,75 @@ describe('FHIR Repo', () => {
       batchIndexResourcesSpy.mockRestore();
     }
   );
+
+  test('Project.exportedResourceType', () =>
+    withTestContext(async () => {
+      const { project: linkedProject, repo: linkedRepo } = await createTestProject({
+        project: { exportedResourceType: ['Organization'] },
+        withRepo: true,
+      });
+
+      const regRequest: RegisterRequest = {
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      };
+
+      const regResult = await registerNew(regRequest);
+      let project = regResult.project;
+
+      // add linkedProject to `Project.link`
+      project = await getSystemRepo().updateResource({
+        ...project,
+        link: [{ project: createReference(linkedProject) }],
+      });
+
+      const repo = await getRepoForLogin({
+        project,
+        membership: regResult.membership,
+        login: regResult.login,
+        userConfig: {} as UserConfiguration,
+      });
+
+      const linkedOrg = await linkedRepo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'Linked Organization',
+      });
+      const linkedPatient = await linkedRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Linked'], family: 'Patient' }],
+        managingOrganization: createReference(linkedOrg),
+      });
+
+      const org = await repo.createResource<Organization>({
+        resourceType: 'Organization',
+        name: 'Non-linked Organization',
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Non-linked'], family: 'Patient' }],
+        managingOrganization: createReference(org),
+      });
+
+      const projects = await repo.searchResources({ resourceType: 'Project' });
+      expect(projects.length).toStrictEqual(3);
+      expect(projects.map((p) => p.id)).toContain(project.id);
+      expect(projects.map((p) => p.id)).toContain(linkedProject.id);
+      expect(projects.map((p) => p.id)).toContain(r4ProjectId);
+
+      const patients = await repo.searchResources({ resourceType: 'Patient' });
+      expect(patients.length).toStrictEqual(1);
+      expect(patients.map((p) => p.id)).toContain(patient.id);
+      expect(patients.map((p) => p.id)).not.toContain(linkedPatient.id);
+
+      const orgs = await repo.searchResources({ resourceType: 'Organization' });
+      expect(orgs.length).toStrictEqual(2);
+      expect(orgs.map((p) => p.id)).toContain(org.id);
+      expect(orgs.map((p) => p.id)).toContain(linkedOrg.id);
+    }));
 });
 
 function shuffleString(s: string): string {

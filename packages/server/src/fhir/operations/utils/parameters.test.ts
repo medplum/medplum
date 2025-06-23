@@ -338,12 +338,9 @@ describe('Send Operation output Parameters', () => {
     };
     const ref = { reference: 'Observation/bmi' } as Reference;
 
-    try {
-      buildOutputParameters(resourceReturnOp, ref);
-      throw new Error('expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('Expected Observation output, but got unexpected object');
-    }
+    expect(() => buildOutputParameters(resourceReturnOp, ref)).toThrow(
+      'Expected Observation output, but got unexpected object'
+    );
   });
 
   test('Returns error on incorrect resource type', () => {
@@ -353,21 +350,15 @@ describe('Send Operation output Parameters', () => {
     };
     const patient = { resourceType: 'Patient' } as Patient;
 
-    try {
-      buildOutputParameters(resourceReturnOp, patient);
-      throw new Error('expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('Expected Observation output, but got unexpected object');
-    }
+    expect(() => buildOutputParameters(resourceReturnOp, patient)).toThrow(
+      'Expected Observation output, but got unexpected object'
+    );
   });
 
   test('Missing required parameter', () => {
-    try {
-      buildOutputParameters(opDef, { incorrectOut: { value: 20.2, unit: 'kg/m^2' } });
-      throw new Error('expected error');
-    } catch (err: any) {
-      expect(err.message).toBe("Expected 1 or more values for output parameter 'singleOut', got 0");
-    }
+    expect(() => buildOutputParameters(opDef, { incorrectOut: { value: 20.2, unit: 'kg/m^2' } })).toThrow(
+      `Expected 1 or more values for output parameter 'singleOut', got 0`
+    );
   });
 
   test('Omits extraneous parameters', async () => {
@@ -379,11 +370,8 @@ describe('Send Operation output Parameters', () => {
   });
 
   test('Returns error on invalid output', () => {
-    try {
-      buildOutputParameters(opDef, { singleOut: { reference: 'Observation/foo' } });
-      throw new Error('expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('Invalid additional property "reference" (Parameters.parameter[0].value[x].reference)');
-    }
+    expect(() => buildOutputParameters(opDef, { singleOut: { reference: 'Observation/foo' } })).toThrow(
+      'Invalid additional property "reference" (Parameters.parameter[0].value[x].reference)'
+    );
   });
 });

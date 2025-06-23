@@ -13,7 +13,7 @@ import {
 import { ServerlessClamscan } from 'cdk-serverless-clamscan';
 import { Construct } from 'constructs';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
-import { buildWafConfig } from './waf';
+import { buildWaf } from './waf';
 
 /**
  * Binary storage bucket and CloudFront distribution.
@@ -126,10 +126,14 @@ export class Storage extends Construct {
       });
 
       // WAF
-      this.waf = new wafv2.CfnWebACL(
+      this.waf = buildWaf(
         this,
         'StorageWAF',
-        buildWafConfig(`${config.stackName}-StorageWAF`, 'CLOUDFRONT', config.storageWafIpSetArn)
+        `${config.stackName}-StorageWAF`,
+        'CLOUDFRONT',
+        config.storageWafIpSetArn,
+        config.wafLogGroupName,
+        config.wafLogGroupCreate
       );
 
       // Origin access identity

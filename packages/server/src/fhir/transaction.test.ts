@@ -47,8 +47,8 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       let patient: WithId<Patient> | undefined;
 
-      try {
-        await repo.withTransaction(async () => {
+      await expect(
+        repo.withTransaction(async () => {
           // Create one patient
           // This will initially succeed, but should then be rolled back
           patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
@@ -70,11 +70,9 @@ describe('FHIR Repo Transactions', () => {
           // Now try to create a malformed patient
           // This will fail, and should rollback the entire transaction
           await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
-        });
-
-        throw new Error('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome).toMatchObject({
+        })
+      ).rejects.toMatchObject(
+        new OperationOutcomeError({
           resourceType: 'OperationOutcome',
           issue: [
             {
@@ -86,17 +84,12 @@ describe('FHIR Repo Transactions', () => {
               expression: ['Patient.foo'],
             },
           ],
-        });
-      }
+        })
+      );
 
       // Read the patient by ID
       // This should fail, because the transaction was rolled back
-      try {
-        await repo.readResource('Patient', patient?.id as string);
-        throw new Error('Expected error');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
-      }
+      await expect(repo.readResource('Patient', patient?.id as string)).rejects.toThrow('Not found');
 
       // Search for patient by ID
       // This should return zero results because the transaction was rolled back
@@ -163,9 +156,9 @@ describe('FHIR Repo Transactions', () => {
         patient1 = await repo.createResource<Patient>({ resourceType: 'Patient' });
         expect(patient1).toBeDefined();
 
-        try {
-          // Start an inner transaction - this will be rolled back
-          await repo.withTransaction(async () => {
+        // Start an inner transaction - this will be rolled back
+        await expect(
+          repo.withTransaction(async () => {
             patient2 = await repo.createResource<Patient>({ resourceType: 'Patient' });
             expect(patient2).toBeDefined();
 
@@ -200,11 +193,9 @@ describe('FHIR Repo Transactions', () => {
             // Now try to create a malformed patient
             // This will fail, and should rollback the entire transaction
             await repo.createResource<Patient>({ resourceType: 'Patient', foo: 'bar' } as unknown as Patient);
-          });
-
-          throw new Error('Expected error');
-        } catch (err) {
-          expect((err as OperationOutcomeError).outcome).toMatchObject({
+          })
+        ).rejects.toMatchObject(
+          new OperationOutcomeError({
             resourceType: 'OperationOutcome',
             issue: [
               {
@@ -216,8 +207,8 @@ describe('FHIR Repo Transactions', () => {
                 expression: ['Patient.foo'],
               },
             ],
-          });
-        }
+          })
+        );
 
         // Read the patient by ID
         // This should succeed within the transaction
@@ -235,12 +226,7 @@ describe('FHIR Repo Transactions', () => {
 
         // Read the patient by ID
         // This should fail, because the transaction was rolled back
-        try {
-          await repo.readResource('Patient', patient2?.id as string);
-          throw new Error('Expected error');
-        } catch (err) {
-          expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
-        }
+        await expect(repo.readResource('Patient', patient2?.id as string)).rejects.toThrow('Not found');
 
         // Search for patient by ID
         // This should succeed within the transaction

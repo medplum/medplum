@@ -56,7 +56,6 @@ const mockMarkPostDeployMigrationCompleted = jest
   });
 
 jest.mock('./migrations/data/v1', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { prepareCustomMigrationJobData, runCustomMigration } = jest.requireActual('./workers/post-deploy-migration');
   const migration: CustomPostDeployMigration = {
     type: 'custom',
@@ -297,11 +296,13 @@ describe('Database migrations', () => {
 
     test('Existing data migration job in a project is ignored', () =>
       withTestContext(async () => {
+        const project = await getSystemRepo().createResource<Project>({ resourceType: 'Project' });
+
         // Not using system repo to create the job so that AsyncJob is in a project
         const projectAsyncJob = await getSystemRepo().createResource<AsyncJob>({
           resourceType: 'AsyncJob',
           meta: {
-            project: randomUUID(),
+            project: project.id,
           },
           type: 'data-migration',
           status: 'accepted',

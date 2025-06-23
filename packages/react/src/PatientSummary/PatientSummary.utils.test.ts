@@ -7,6 +7,7 @@ import {
   getEthnicity,
   getGenderIdentity,
   getGeneralPractitioner,
+  getPreferredLanguage,
   getRace,
 } from './PatientSummary.utils';
 
@@ -542,6 +543,59 @@ describe('Patient Utilities', () => {
       };
 
       expect(formatPatientRaceEthnicityDisplay(patient)).toBe('');
+    });
+  });
+
+  describe('Preferred Language', () => {
+    it('should return preferred language display when preferred communication exists', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        communication: [
+          {
+            preferred: true,
+            language: {
+              coding: [
+                {
+                  display: 'English',
+                  code: 'en',
+                  system: 'urn:ietf:bcp:47',
+                },
+              ],
+            },
+          },
+        ],
+      };
+
+      expect(getPreferredLanguage(patient)).toBe('English');
+    });
+
+    it('should return first language display when no preferred communication exists', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        communication: [
+          {
+            language: {
+              coding: [
+                {
+                  display: 'Spanish',
+                  code: 'es',
+                  system: 'urn:ietf:bcp:47',
+                },
+              ],
+            },
+          },
+        ],
+      };
+
+      expect(getPreferredLanguage(patient)).toBe('Spanish');
+    });
+
+    it('should return undefined when no communication exists', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+      };
+
+      expect(getPreferredLanguage(patient)).toBeUndefined();
     });
   });
 });

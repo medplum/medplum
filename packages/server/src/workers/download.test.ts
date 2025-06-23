@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config/loader';
+import { getConfig, loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { execDownloadJob, getDownloadQueue } from './download';
@@ -28,6 +28,7 @@ describe('Download Worker', () => {
 
   beforeEach(async () => {
     (fetch as unknown as jest.Mock).mockClear();
+    getConfig().autoDownloadEnabled = true;
   });
 
   test('Download external URL', () =>
@@ -208,5 +209,25 @@ describe('Download Worker', () => {
 
       // Fetch should not have been called
       expect(fetch).not.toHaveBeenCalled();
+    }));
+
+  test('Ignore if disabled', () =>
+    withTestContext(async () => {
+      const config = getConfig();
+      config.autoDownloadEnabled = false;
+
+      const queue = getDownloadQueue() as any;
+      queue.add.mockClear();
+
+      const media = await repo.createResource<Media>({
+        resourceType: 'Media',
+        status: 'completed',
+        content: {
+          contentType: ContentType.TEXT,
+          url: 'https://example.com/download',
+        },
+      });
+      expect(media).toBeDefined();
+      expect(queue.add).not.toHaveBeenCalled();
     }));
 });

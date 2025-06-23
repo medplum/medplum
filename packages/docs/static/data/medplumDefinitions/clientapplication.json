@@ -400,6 +400,38 @@
       "definition": "Optional configuration to set the refresh token duration",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "allowedOrigin",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.allowedOrigin",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "defaultScope",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.defaultScope",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [

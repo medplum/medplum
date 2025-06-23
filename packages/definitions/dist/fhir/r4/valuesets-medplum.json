@@ -3603,6 +3603,45 @@
         "content": "not-present",
         "description": "Stub CodeSystem for ISO 3166-2"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/access-poliicy-interactions",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "access-policy-interactions",
+        "url": "https://medplum.com/fhir/ValueSet/access-poliicy-interactions",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "http://hl7.org/fhir/restful-interaction",
+              "concept": [
+                {
+                  "code": "read"
+                },
+                {
+                  "code": "vread"
+                },
+                {
+                  "code": "update"
+                },
+                {
+                  "code": "delete"
+                },
+                {
+                  "code": "history"
+                },
+                {
+                  "code": "create"
+                },
+                {
+                  "code": "search"
+                }
+              ]
+            }
+          ]
+        }
+      }
     }
   ]
 }

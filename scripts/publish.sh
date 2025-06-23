@@ -7,6 +7,7 @@ PACKAGES=(
   "ccda"
   "cdk"
   "cli"
+  "cli-wrapper"
   "core"
   "create-medplum"
   "definitions"

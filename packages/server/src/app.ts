@@ -28,6 +28,7 @@ import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
 import { getLogger, globalLogger } from './logger';
+import { mcpRouter } from './mcp/routes';
 import { initKeys } from './oauth/keys';
 import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
@@ -38,6 +39,7 @@ import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
+import { initServerRegistryHeartbeatListener } from './server-registry';
 import { initBinaryStorage } from './storage/loader';
 import { storageRouter } from './storage/routes';
 import { webhookRouter } from './webhook/routes';
@@ -198,6 +200,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   apiRouter.use('/storage/', storageRouter);
   apiRouter.use('/webhook/', webhookRouter);
 
+  if (config.mcpEnabled) {
+    apiRouter.use('/mcp', mcpRouter);
+  }
+
   app.use('/api/', apiRouter);
   app.use('/', apiRouter);
   app.use(errorHandler);
@@ -216,6 +222,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     initWorkers(config);
     initHeartbeat(config);
     initOtelHeartbeat();
+    initServerRegistryHeartbeatListener();
     await maybeAutoRunPendingPostDeployMigration();
   });
 }

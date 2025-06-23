@@ -1,6 +1,6 @@
 {
   "name": "@medplum/cli",
-  "version": "4.1.5",
+  "version": "4.1.10",
   "description": "Medplum Command Line Interface",
   "keywords": [
     "medplum",
@@ -31,28 +31,43 @@
   "bin": {
     "medplum": "./dist/cjs/index.cjs"
   },
+  "sideEffects": false,
+  "exports": {
+    "import": {
+      "types": "./dist/esm/index.d.ts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.cjs"
+    }
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/cjs/index.d.ts",
   "files": [
-    "dist"
+    "dist/cjs",
+    "dist/esm"
   ],
   "scripts": {
-    "build": "npm run clean && tsc && node esbuild.mjs",
+    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint .",
     "medplum": "ts-node src/index.ts",
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.817.0",
-    "@aws-sdk/client-cloudformation": "3.817.0",
-    "@aws-sdk/client-cloudfront": "3.817.0",
-    "@aws-sdk/client-ecs": "3.817.0",
-    "@aws-sdk/client-s3": "3.817.0",
-    "@aws-sdk/client-ssm": "3.817.0",
-    "@aws-sdk/client-sts": "3.817.0",
-    "@aws-sdk/types": "3.804.0",
-    "@medplum/core": "4.1.5",
-    "@medplum/hl7": "4.1.5",
-    "aws-sdk-client-mock": "4.1.0",
+    "@aws-sdk/client-acm": "3.831.0",
+    "@aws-sdk/client-cloudformation": "3.830.0",
+    "@aws-sdk/client-cloudfront": "3.830.0",
+    "@aws-sdk/client-ecs": "3.834.0",
+    "@aws-sdk/client-s3": "3.832.0",
+    "@aws-sdk/client-ssm": "3.830.0",
+    "@aws-sdk/client-sts": "3.830.0",
+    "@aws-sdk/types": "3.821.0",
+    "@medplum/core": "4.1.10",
+    "@medplum/hl7": "4.1.10",
     "commander": "12.1.0",
     "dotenv": "16.5.0",
     "fast-glob": "3.3.3",
@@ -62,10 +77,11 @@
     "tar": "7.4.3"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "4.1.5",
-    "@medplum/mock": "4.1.5",
+    "@medplum/fhirtypes": "4.1.10",
+    "@medplum/mock": "4.1.10",
     "@types/node-fetch": "2.6.12",
-    "@types/semver": "7.7.0"
+    "@types/semver": "7.7.0",
+    "aws-sdk-client-mock": "4.1.0"
   },
   "engines": {
     "node": ">=20.0.0"

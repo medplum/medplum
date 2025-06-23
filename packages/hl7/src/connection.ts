@@ -17,14 +17,16 @@ export type Hl7MessageQueueItem = {
 export class Hl7Connection extends Hl7Base {
   readonly socket: net.Socket;
   readonly encoding: string;
+  readonly enhancedMode: boolean;
   private chunks: Buffer[] = [];
   private readonly messageQueue: Hl7MessageQueueItem[] = [];
 
-  constructor(socket: net.Socket, encoding: string = 'utf-8') {
+  constructor(socket: net.Socket, encoding: string = 'utf-8', enhancedMode = false) {
     super();
 
     this.socket = socket;
     this.encoding = encoding;
+    this.enhancedMode = enhancedMode;
 
     socket.on('data', (data: Buffer) => {
       try {
@@ -52,6 +54,9 @@ export class Hl7Connection extends Hl7Base {
     });
 
     this.addEventListener('message', (event) => {
+      if (enhancedMode) {
+        this.send(event.message.buildAck({ ackCode: 'CA' }));
+      }
       // Get the queue item at the head of the queue
       const next = this.messageQueue.shift();
       // If there isn't an item, then throw an error

@@ -1,4 +1,5 @@
 import {
+  AccessPolicyInteraction,
   badRequest,
   DEFAULT_MAX_SEARCH_COUNT,
   DEFAULT_SEARCH_COUNT,
@@ -47,6 +48,7 @@ import {
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
+import { clamp } from './operations/utils/parameters';
 import { Repository } from './repo';
 import { getFullUrl } from './response';
 import { ColumnSearchParameterImplementation, getSearchParameterImplementation } from './searchparameter';
@@ -147,7 +149,6 @@ export async function searchByReferenceImpl<T extends Resource>(
   referenceValues: string[]
 ): Promise<Record<string, WithId<T>[]>> {
   validateSearchResourceTypes(repo, searchRequest);
-  applyCountAndOffsetLimits(searchRequest);
 
   const referencesTableName = 'references';
   const referencesColumnName = 'ref';
@@ -249,7 +250,7 @@ function validateSearchResourceType(repo: Repository, resourceType: ResourceType
     throw new OperationOutcomeError(badRequest('Cannot search on Binary resource type'));
   }
 
-  if (!repo.canReadResourceType(resourceType)) {
+  if (!repo.supportsInteraction(AccessPolicyInteraction.SEARCH, resourceType)) {
     throw new OperationOutcomeError(forbidden);
   }
 }
@@ -258,11 +259,14 @@ interface GetSelectQueryForSearchOptions extends GetBaseSelectQueryOptions {
   /** Number added to `searchRequest.count` when specifying the query LIMIT. Default is 1 */
   limitModifier?: number;
 }
-function getSelectQueryForSearch<T extends Resource>(
+
+export function getSelectQueryForSearch<T extends Resource>(
   repo: Repository,
-  searchRequest: SearchRequestWithCountAndOffset<T>,
+  searchRequest: SearchRequest<T>,
   options?: GetSelectQueryForSearchOptions
 ): SelectQuery {
+  applyCountAndOffsetLimits(searchRequest);
+
   const builder = getBaseSelectQuery(repo, searchRequest, options);
   addSortRules(repo, builder, searchRequest);
   const count = searchRequest.count;
@@ -777,8 +781,9 @@ function getSearchUrl(searchRequest: SearchRequest): string {
  * @param rowCount - The number of matching results if found.
  * @returns The total number of matching results.
  */
-async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount: number | undefined): Promise<number> {
-  const estimateCount = await getEstimateCount(repo, searchRequest, rowCount);
+async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount?: number): Promise<number> {
+  let estimateCount = await getEstimateCount(repo, searchRequest);
+  estimateCount = clampEstimateCount(searchRequest, estimateCount, rowCount);
   if (estimateCount < getConfig().accurateCountThreshold) {
     return getAccurateCount(repo, searchRequest);
   }
@@ -811,45 +816,33 @@ async function getAccurateCount(repo: Repository, searchRequest: SearchRequest):
  * This uses the estimated row count technique as described here: https://wiki.postgresql.org/wiki/Count_estimate
  * @param repo - The repository.
  * @param searchRequest - The search request.
- * @param rowCount - The number of matching results if found.
  * @returns The total number of matching results.
  */
-async function getEstimateCount(
-  repo: Repository,
-  searchRequest: SearchRequest,
-  rowCount: number | undefined
-): Promise<number> {
+async function getEstimateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
   const builder = getBaseSelectQuery(repo, searchRequest);
   builder.explain = true;
 
   // See: https://wiki.postgresql.org/wiki/Count_estimate
   // This parses the query plan to find the estimated number of rows.
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-  let result = 0;
   for (const row of rows) {
     const queryPlan = row['QUERY PLAN'];
     const match = /rows=(\d+)/.exec(queryPlan);
     if (match) {
-      result = parseInt(match[1], 10);
-      break;
+      return parseInt(match[1], 10);
     }
   }
-
-  return clampEstimateCount(searchRequest, rowCount, result);
+  return 0;
 }
 
 /**
  * Returns a "clamped" estimate count based on the actual row count.
  * @param searchRequest - The search request.
- * @param rowCount - The number of matching results if found. Value can be up to one more than the requested count.
  * @param estimateCount - The estimated number of matching results.
+ * @param rowCount - The number of matching results if found. Value can be up to one more than the requested count.
  * @returns The clamped estimate count.
  */
-export function clampEstimateCount(
-  searchRequest: SearchRequest,
-  rowCount: number | undefined,
-  estimateCount: number
-): number {
+export function clampEstimateCount(searchRequest: SearchRequest, estimateCount: number, rowCount?: number): number {
   if (searchRequest.count === 0 || rowCount === undefined) {
     // If "count only" or rowCount is undefined, then the estimate is the best we can do
     return estimateCount;
@@ -859,7 +852,7 @@ export function clampEstimateCount(
   const startIndex = searchRequest.offset ?? 0;
   const minCount = rowCount > 0 ? startIndex + rowCount : 0;
   const maxCount = rowCount <= pageSize ? startIndex + rowCount : Number.MAX_SAFE_INTEGER;
-  return Math.max(minCount, Math.min(maxCount, estimateCount));
+  return clamp(minCount, estimateCount, maxCount);
 }
 
 /**
@@ -966,9 +959,10 @@ function buildSearchFilterExpression(
 
   const impl = getSearchParameterImplementation(resourceType, param);
 
-  if (readFromTokenColumns(repo) && impl.searchStrategy === 'token-column') {
+  const readFromTokenColumnsVal = readFromTokenColumns(repo);
+  if (readFromTokenColumnsVal !== 'token-tables' && impl.searchStrategy === 'token-column') {
     // Use the token-column strategy only if the read feature flag is enabled
-    return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
+    return buildTokenColumnsSearchFilter(resourceType, table, param, filter, readFromTokenColumnsVal);
   } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
     // otherwise, if it's a token-column but the read flag is not enabled, use the search param's
     // previous lookup-table implementation
@@ -1424,7 +1418,8 @@ function addOrderByClause(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (readFromTokenColumns(repo) && impl.searchStrategy === 'token-column') {
+  const readFromTokenColumnsVal = readFromTokenColumns(repo);
+  if (readFromTokenColumnsVal !== 'token-tables' && impl.searchStrategy === 'token-column') {
     addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
   } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
     if (isLegacyTokenColumnSearchParameter(param, resourceType)) {
@@ -1765,26 +1760,36 @@ function getCanonicalUrl(resource: Resource): string | undefined {
   return (resource as Resource & { url?: string }).url;
 }
 
-export function readFromTokenColumns(repo: Repository): boolean {
+export function readFromTokenColumns(repo: Repository): typeof TokenColumnsFeature.read {
+  let configValue: string | undefined;
+
   const project = repo.currentProject();
-  const maybeSystemSettingBoolean = project?.systemSetting?.find((s) => s.name === 'searchTokenColumns')?.valueBoolean;
 
-  // If the Project.systemSetting exists, return its value
-  if (maybeSystemSettingBoolean !== undefined) {
-    return maybeSystemSettingBoolean;
-  }
-
-  // If the project is undefined, it is a system repository
   if (project === undefined) {
+    // If the project is undefined, it is a system repository
     const systemRepositoryTokenReadStrategy = getConfig().systemRepositoryTokenReadStrategy;
-    // If specified, translate the config value to a boolean
-    if (systemRepositoryTokenReadStrategy === 'unified-tokens-column') {
-      return true;
-    } else if (systemRepositoryTokenReadStrategy === 'token-tables') {
-      return false;
+    configValue = systemRepositoryTokenReadStrategy;
+  } else {
+    const maybeSystemSetting = project.systemSetting?.find((s) => s.name === 'searchTokenColumns');
+    if (maybeSystemSetting) {
+      // `searchTokenColumns` is a string setting
+      if (maybeSystemSetting.valueString !== undefined) {
+        configValue = maybeSystemSetting.valueString;
+      }
+
+      // Previously, `searchTokenColumns` was a boolean setting where true was equivalent to 'unified-tokens-column'
+      // and false was equivalent to 'token-tables'
+      else if (maybeSystemSetting.valueBoolean !== undefined) {
+        configValue = maybeSystemSetting.valueBoolean ? 'unified-tokens-column' : 'token-tables';
+      }
     }
   }
 
-  // fallback to the global default
-  return TokenColumnsFeature.read;
+  // If the config value is valid, return it
+  if (configValue === 'token-tables' || configValue === 'unified-tokens-column' || configValue === 'column-per-code') {
+    return configValue;
+  }
+
+  // otherwise, fallback to the global default
+  return getConfig().defaultTokenReadStrategy ?? TokenColumnsFeature.read;
 }

@@ -1,4 +1,4 @@
-import { ProjectSetting } from '@medplum/fhirtypes';
+import { ClientApplication, ProjectSetting } from '@medplum/fhirtypes';
 import { KeepJobs } from 'bullmq';
 
 export interface MedplumServerConfig {
@@ -10,6 +10,7 @@ export interface MedplumServerConfig {
   tokenUrl: string;
   userInfoUrl: string;
   introspectUrl: string;
+  registerUrl: string;
   appBaseUrl: string;
   logLevel?: string;
   binaryStorage?: string;
@@ -79,14 +80,29 @@ export interface MedplumServerConfig {
   /** Max length of Bot AuditEvent.outcomeDesc when logging to logger */
   maxBotLogLengthForLogs?: number;
 
-  /** Search strategy system repositories use when using token search parameters. */
-  systemRepositoryTokenReadStrategy?: 'unified-tokens-column' | 'token-tables';
+  /** Search strategy system repositories use when using token search parameters. If not set, uses `defaultTokenReadStrategy`. */
+  systemRepositoryTokenReadStrategy?: 'unified-tokens-column' | 'column-per-code' | 'token-tables';
+
+  /** Default search strategy when using token search parameters. Defaults to `'token-tables'`. */
+  defaultTokenReadStrategy?: 'unified-tokens-column' | 'column-per-code' | 'token-tables';
 
   /** Number of attempts for transactions that fail due to retry-able transaction errors */
   transactionAttempts?: number;
 
   /** Number of milliseconds to use as a base for exponential backoff in transaction retries */
   transactionExpBackoffBaseDelayMs?: number;
+
+  /** Flag to enable/disable the binary storage auto-downloader service (default 'true' for enabled) */
+  autoDownloadEnabled?: boolean;
+
+  /** Optional list of external authentication providers. */
+  externalAuthProviders?: MedplumExternalAuthConfig[];
+
+  /** Optional list of default OAuth2 clients */
+  defaultOAuthClients?: ClientApplication[];
+
+  /** Optional flag to enable the MCP server beta */
+  mcpEnabled?: boolean;
 
   /** @deprecated */
   auditEventLogGroup?: string;
@@ -152,4 +168,9 @@ export interface MedplumBullmqConfig {
   concurrency?: number;
   removeOnComplete: KeepJobs;
   removeOnFail: KeepJobs;
+}
+
+export interface MedplumExternalAuthConfig {
+  readonly issuer: string;
+  readonly userInfoUrl: string;
 }

@@ -6,6 +6,7 @@ import {
   MedicationRequest,
   Patient,
   Reference,
+  SearchParameter,
   ServiceRequest,
   SpecimenDefinition,
 } from '@medplum/fhirtypes';
@@ -14,7 +15,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
-import { getSearchParameterImplementation } from './searchparameter';
+import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
 import { loadStructureDefinitions } from './structure';
 import { TokenQueryOperators } from './token-column';
 import {
@@ -24,14 +25,14 @@ import {
   TokenColumnsFeature,
 } from './tokens';
 
-describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'])(
+describe.each<(typeof TokenColumnsFeature)['read']>(['unified-tokens-column', 'column-per-code', 'token-tables'])(
   'Token searching using %s',
   (tokenColumnsOrLookupTable) => {
     const systemRepo = getSystemRepo();
 
     beforeAll(async () => {
-      TokenColumnsFeature.read = tokenColumnsOrLookupTable === 'token columns';
       const config = await loadTestConfig();
+      config.defaultTokenReadStrategy = tokenColumnsOrLookupTable;
       await initAppServices(config);
     });
 
@@ -329,7 +330,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             ],
           });
 
-          if (TokenColumnsFeature.read) {
+          if (tokenColumnsOrLookupTable !== 'token-tables') {
             // The token column implementation does not support :contains on identifier
             expect(identifierResult.entry?.length).toStrictEqual(0);
           } else {
@@ -353,7 +354,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             ],
           });
 
-          if (TokenColumnsFeature.read) {
+          if (tokenColumnsOrLookupTable !== 'token-tables') {
             // The token column implementation does not support :contains on identifier
             expect(identifierResult.entry?.length).toStrictEqual(0);
           } else {
@@ -376,7 +377,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             ],
           });
 
-          if (TokenColumnsFeature.read) {
+          if (tokenColumnsOrLookupTable !== 'token-tables') {
             expect(result.entry?.length).toStrictEqual(1);
             expect(bundleContains(result, patient1)).toBeDefined();
           } else {
@@ -400,7 +401,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             ],
           });
 
-          if (TokenColumnsFeature.read) {
+          if (tokenColumnsOrLookupTable !== 'token-tables') {
             expect(result.entry?.length).toStrictEqual(1);
             expect(bundleContains(result, patient1)).toBeDefined();
           } else {
@@ -423,7 +424,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             ],
           });
 
-          if (TokenColumnsFeature.read) {
+          if (tokenColumnsOrLookupTable !== 'token-tables') {
             expect(result.entry?.length).toStrictEqual(1);
             expect(bundleContains(result, patient1)).toBeDefined();
           } else {
@@ -672,6 +673,9 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
       beforeAll(async () => {
         p1 = await systemRepo.createResource<Patient>({
           resourceType: 'Patient',
+          meta: {
+            security: [{ code: '123' }],
+          },
           name: [{ family }],
           telecom: [{ system: 'email', value: email + 'abc' }],
         });
@@ -685,16 +689,27 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
       });
 
       test.each([
-        ['identifier', Operator.MISSING, 'true', true, false],
-        ['identifier', Operator.MISSING, 'false', false, true],
-        ['identifier', Operator.PRESENT, 'true', false, true],
-        ['identifier', Operator.PRESENT, 'false', true, false],
-        ['telecom', Operator.MISSING, 'true', false, false],
-        ['telecom', Operator.MISSING, 'false', true, true],
-        ['telecom', Operator.PRESENT, 'true', true, true],
-        ['telecom', Operator.PRESENT, 'false', false, false],
-      ])('%s :%s %s', (code, operator, value, expected1, expected2) =>
+        ['identifier', Operator.MISSING, 'true', true, false, true],
+        ['identifier', Operator.MISSING, 'false', false, true, true],
+        ['identifier', Operator.PRESENT, 'true', false, true, true],
+        ['identifier', Operator.PRESENT, 'false', true, false, true],
+        ['telecom', Operator.MISSING, 'true', false, false, true],
+        ['telecom', Operator.MISSING, 'false', true, true, true],
+        ['telecom', Operator.PRESENT, 'true', true, true, true],
+        ['telecom', Operator.PRESENT, 'false', false, false, true],
+        ['_security', Operator.MISSING, 'true', false, true, false],
+        ['_security', Operator.MISSING, 'false', true, false, false],
+        ['_security', Operator.PRESENT, 'true', true, false, false],
+        ['_security', Operator.PRESENT, 'false', false, true, false],
+      ])('%s :%s %s', (code, operator, value, expected1, expected2, expectedHasDedicated) =>
         withTestContext(async () => {
+          const searchParam = getSearchParameter('Patient', code) as SearchParameter;
+          const impl = getSearchParameterImplementation('Patient', searchParam);
+          expect(impl.searchStrategy).toStrictEqual('token-column');
+          expect((impl as TokenColumnSearchParameterImplementation).hasDedicatedColumns).toStrictEqual(
+            expectedHasDedicated
+          );
+
           const res = await systemRepo.search({
             resourceType: 'Patient',
             filters: [
@@ -763,12 +778,12 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         const { project } = await createTestProject();
         nonStrictRepo = new Repository({
           strictMode: false,
-          projects: [project.id],
+          projects: [project],
           author: { reference: 'User/' + randomUUID() },
         });
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: [project],
           author: { reference: 'User/' + randomUUID() },
         });
         patient = await nonStrictRepo.createResource<Patient>({
@@ -868,7 +883,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         const { project } = await createTestProject();
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: [project],
           author: { reference: 'User/' + randomUUID() },
         });
 
@@ -996,7 +1011,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             sortRules: [{ code: 'identifier', descending: true }],
           });
 
-          if (tokenColumnsOrLookupTable === 'token columns') {
+          if (tokenColumnsOrLookupTable) {
             // Ideally ASC and DESC would have the same sort order since
             // ascending should use "AAA" and descending should use "ZZZ",
             // but a simpler sort implementation is used
@@ -1062,7 +1077,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             },
           ],
         });
-        if (TokenColumnsFeature.read) {
+        if (tokenColumnsOrLookupTable !== 'token-tables') {
           // Token columns don't support :contains on `code`
           expect(toSortedIdentifierValues(resContains)).toStrictEqual([]);
         } else {
@@ -1146,7 +1161,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             },
           ],
         });
-        if (TokenColumnsFeature.read) {
+        if (tokenColumnsOrLookupTable !== 'token-tables') {
           // Token columns don't support :contains on `code`
           expect(toSortedIdentifierValues(resContains)).toStrictEqual([]);
         } else {
@@ -1302,8 +1317,8 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
               ],
             });
             if (
-              (tokenColumnsOrLookupTable === 'token columns' && shouldBeFoundForTokenColumns) ||
-              (tokenColumnsOrLookupTable === 'lookup table' && shouldBeFoundForLookupTables)
+              (tokenColumnsOrLookupTable !== 'token-tables' && shouldBeFoundForTokenColumns) ||
+              (tokenColumnsOrLookupTable === 'token-tables' && shouldBeFoundForLookupTables)
             ) {
               expect(res.entry?.length).toBe(1);
               expect(res.entry?.[0].resource?.id).toBe(condWithSpecialChars.id);
@@ -1328,7 +1343,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
         const { project } = await createTestProject();
         repo = new Repository({
           strictMode: true,
-          projects: [project.id],
+          projects: [project],
           author: { reference: 'User/' + randomUUID() },
         });
 
@@ -1371,7 +1386,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             },
           ],
         });
-        if (tokenColumnsOrLookupTable === 'token columns') {
+        if (tokenColumnsOrLookupTable !== 'token-tables') {
           expect(searchResult.entry?.length).toStrictEqual(2);
           expect(searchResult.entry?.map((e) => e.resource?.id)).toContain(mr1.id);
           expect(searchResult.entry?.map((e) => e.resource?.id)).toContain(mr2.id);
@@ -1406,7 +1421,7 @@ describe.each<'token columns' | 'lookup table'>(['token columns', 'lookup table'
             },
           ],
         });
-        if (tokenColumnsOrLookupTable === 'token columns') {
+        if (tokenColumnsOrLookupTable !== 'token-tables') {
           expect(searchResult.entry?.length).toStrictEqual(1);
           expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(mr1.id);
         } else {

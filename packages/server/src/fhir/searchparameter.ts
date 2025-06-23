@@ -27,7 +27,10 @@ export interface LookupTableSearchParameterImplementation extends SearchParamete
 
 export interface TokenColumnSearchParameterImplementation extends SearchParameterDetails {
   readonly searchStrategy: typeof SearchStrategies.TOKEN_COLUMN;
-  readonly columnName: string;
+  readonly hasDedicatedColumns: boolean;
+  readonly legacyColumnName: string;
+  readonly legacyTextSearchColumnName: string;
+  readonly tokenColumnName: string;
   readonly sortColumnName: string;
   readonly textSearchColumnName: string;
   readonly lookupTable: LookupTable;
@@ -146,9 +149,22 @@ function buildSearchParameterImplementation(
     writeable.searchStrategy = 'token-column';
     writeable.lookupTable = lookupTable;
 
-    writeable.columnName = '__tokens';
-    writeable.sortColumnName = '__' + convertCodeToColumnName(code) + 'Sort';
-    writeable.textSearchColumnName = '__tokensText';
+    const baseName = convertCodeToColumnName(code);
+    if (hasDedicatedTokenColumns(searchParam, resourceType)) {
+      writeable.hasDedicatedColumns = true;
+      writeable.tokenColumnName = '__' + baseName;
+      writeable.textSearchColumnName = '__' + baseName + 'Text';
+    } else {
+      writeable.hasDedicatedColumns = false;
+      writeable.tokenColumnName = '__sharedTokens';
+      writeable.textSearchColumnName = '__sharedTokensText';
+    }
+
+    writeable.sortColumnName = '__' + baseName + 'Sort';
+
+    writeable.legacyColumnName = '__tokens';
+    writeable.legacyTextSearchColumnName = '__tokensText';
+
     writeable.caseInsensitive = tokenTable.isCaseInsensitive(searchParam, resourceType);
     writeable.textSearch = ContainsSupportSearchParameterIds.includes(searchParam.id as string);
     return impl;
@@ -197,4 +213,69 @@ function getLookupTable(resourceType: string, searchParam: SearchParameter): Loo
     }
   }
   return undefined;
+}
+
+// This list of exceptions was constructed by analyzing the 15 resource types with the most token usage
+// and looking for the search parameters with zero or near-zero usage.
+//
+// The goal is to avoid creating dedicated token columns for search parameters that are rarely used
+// to keep the database schema smaller and have fewer indexes to be maintained
+// Specified as <ResourceType>|<SearchParameterCode> as the key instead of <SearchParameterId>
+// since not all search parameters have IDs; namely Medplum's derived referenced identifier search parameters
+const DedicatedTokenColumnsOverridesByResourceTypeAndCode: Record<string, boolean> = {
+  // rarely used search parameters on resource types with high token usage
+  'AuditEvent|entity-type': false,
+  'AuditEvent|agent-role': false,
+  'AuditEvent|subtype': false,
+  'AuditEvent|_tag': false,
+  'Observation|component-data-absent-reason': false,
+  'Encounter|special-arrangement': false,
+  'ServiceRequest|body-site': false,
+  'Condition|body-site': false,
+  'Condition|evidence': false,
+  'DiagnosticReport|conclusion': false,
+  'DocumentReference|setting': false,
+  'DocumentReference|event': false,
+  'EvidenceVariable|context': false,
+  'EvidenceVariable|context-type': false,
+  'EvidenceVariable|jurisdiction': false,
+  'EvidenceVariable|topic': false,
+  'MedicationRequest|intended-performertype': false,
+  'ResearchStudy|category': false,
+  'ResearchStudy|classifier': false,
+  'ResearchStudy|focus': false,
+  'ResearchStudy|location': false,
+  'ResearchStudy|objective-type': false,
+  'ResearchStudy|region': false,
+  'Appointment|reason-code': false,
+
+  // Overrides for more frequently used search parameters that would otherwise default to `false`
+  'Observation|patient:identifier': true,
+  'Observation|performer:identifier': true,
+  'Observation|subject:identifier': true,
+  'ServiceRequest|subject:identifier': true,
+  'ResearchStudy|eligibility:identifier': true,
+  'DiagnosticReport|result:identifier': true,
+};
+
+function hasDedicatedTokenColumns(searchParam: SearchParameter, resourceType: string): boolean {
+  if (searchParam.type !== 'token') {
+    throw new Error(
+      `hasDedicatedTokenColumns only supports token search parameters, but ${searchParam.id ?? searchParam.code} is ${searchParam.type}`
+    );
+  }
+
+  if (DedicatedTokenColumnsOverridesByResourceTypeAndCode[`${resourceType}|${searchParam.code}`] !== undefined) {
+    return DedicatedTokenColumnsOverridesByResourceTypeAndCode[`${resourceType}|${searchParam.code}`];
+  }
+
+  if (searchParam.code.endsWith(':identifier')) {
+    return false;
+  }
+
+  if (searchParam.code === '_security') {
+    return false;
+  }
+
+  return true;
 }

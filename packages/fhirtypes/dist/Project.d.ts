@@ -183,6 +183,11 @@ export interface Project {
    * individually specify profiles
    */
   defaultProfile?: ProjectDefaultProfile[];
+
+  /**
+   * The resource types exported by the project when linked
+   */
+  exportedResourceType?: ResourceType[];
 }
 
 /**

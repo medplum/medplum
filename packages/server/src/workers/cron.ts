@@ -1,4 +1,4 @@
-import { ContentType, createReference, WithId } from '@medplum/core';
+import { BackgroundJobContext, ContentType, createReference, WithId } from '@medplum/core';
 import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
@@ -63,8 +63,13 @@ export function getCronQueue(): Queue<CronJobData> | undefined {
  * Only applies changes if the effective cron string has changed.
  * @param resource - The resource that was created or updated.
  * @param previousVersion - The previous version of the resource, if available.
+ * @param context - The background job context.
  */
-export async function addCronJobs(resource: WithId<Resource>, previousVersion: Resource | undefined): Promise<void> {
+export async function addCronJobs(
+  resource: WithId<Resource>,
+  previousVersion: Resource | undefined,
+  context: BackgroundJobContext
+): Promise<void> {
   const queue = queueRegistry.get(queueName);
   if (!queue) {
     // The queue is not available
@@ -80,9 +85,8 @@ export async function addCronJobs(resource: WithId<Resource>, previousVersion: R
   const bot = resource;
 
   // Adding a new feature for project that allows users to add a cron
-  const systemRepo = getSystemRepo();
-  const project = await systemRepo.readResource<Project>('Project', resource.meta?.project as string);
-  if (!project.features?.includes('cron')) {
+  const project = context?.project;
+  if (!project?.features?.includes('cron')) {
     logger.debug('Cron not enabled. Cron needs to be enabled in project to create cron job for bot');
     return;
   }
@@ -201,13 +205,16 @@ export async function reloadCronBots(): Promise<void> {
     // Clears all jobs from the cron queue, including active ones
     await queue.obliterate({ force: true });
 
-    await getSystemRepo().processAllResources<Bot>(
+    const systemRepo = getSystemRepo();
+
+    await systemRepo.processAllResources<Bot>(
       { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },
       async (bot) => {
         // If the bot has a cron, then add a scheduler for it
         if (bot.cronString || bot.cronTiming) {
           // We pass `undefined` as previous version to make sure that the latest cron string is used
-          await addCronJobs(bot, undefined);
+          const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
+          await addCronJobs(bot, undefined, { project, interaction: 'update' });
         }
       },
       { delayBetweenPagesMs: 1000 }

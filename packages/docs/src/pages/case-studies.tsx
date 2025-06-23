@@ -146,18 +146,16 @@ export default function CaseStudiesPage(): JSX.Element {
         <Section>
           <CardContainer>
             <ProfileCard
-              name="Ensage Health"
-              title="Geriatrics, Value based care"
-              imgUrl="/img/blog/ensage.jpeg"
-              webUrl="/blog/ensage-case-study"
-              youtubeUrl="https://youtu.be/GIlmd7OMZ5g"
+              name="Tia"
+              title="Women's health"
+              imgUrl="/img/blog/tia-logo.png"
+              webUrl="https://concepttocare.substack.com/p/episode-13-ari-saft"
             />
             <ProfileCard
-              name="Codex"
-              title="Interop, Compliance"
-              imgUrl="/img/blog/codex-logo.jpeg"
-              webUrl="/blog/codex-and-the-power-of-g10"
-              youtubeUrl="https://youtu.be/ZCmGlio07GY"
+              name="Rewind"
+              title="Metabolic health"
+              imgUrl="/img/blog/rewind-logo.png"
+              webUrl="https://www.vintasoftware.com/work/rewind"
             />
             <ProfileCard
               name="Titan Intake"

@@ -29,7 +29,7 @@ export const FACILITY_ORDER_CODE_SYSTEM = new URL('orderCode', FACILITY_URL).toS
 export const FACILITY_TIME_ZONE_OFFSET = '-0500';
 
 /**
- * This Bot demonstrates how to send a lab order to an SFTP server in the form of HL7v2 ORM messages
+ * This Bot demonstrates how to receive a lab order from an SFTP server in the form of HL7v2 ORM messages, and convert them into ServiceRequests and associated resources.
  *
  * See: https://hl7-definition.caristix.com/v2/HL7v2.3/TriggerEvents/ORM_O01
  *

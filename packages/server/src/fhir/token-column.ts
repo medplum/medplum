@@ -8,13 +8,15 @@ import {
   splitSearchOnComma,
 } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { NIL, v5 } from 'uuid';
 import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
-import { Column, Conjunction, Disjunction, Expression, Negation, SelectQuery, TypedCondition } from './sql';
+import { Column, Disjunction, Expression, Negation, SelectQuery, TypedCondition } from './sql';
 import { buildTokensForSearchParameter, shouldTokenExistForMissingOrPresent, Token } from './tokens';
 
 const DELIM = '\x01';
 const NULL_SYSTEM = '\x02';
 const ARRAY_DELIM = '\x03'; // If `ARRAY_DELIM` changes, the `token_array_to_text` function will be outdated.
+const TEXT_SEARCH_SYSTEM = '\x04';
 
 export function buildTokenColumns(
   searchParam: SearchParameter,
@@ -23,11 +25,14 @@ export function buildTokenColumns(
   resource: Resource
 ): void {
   const allTokens: Token[] = [];
-  buildTokensForSearchParameter(allTokens, resource, searchParam);
+  buildTokensForSearchParameter(allTokens, resource, searchParam, TEXT_SEARCH_SYSTEM);
 
   // search parameters may share columns, so add any existing tokens to the set
-  const tokens = new Set<string>(columns[impl.columnName]);
+  const tokens = new Set<string>(columns[impl.tokenColumnName]);
   const textSearchTokens = new Set<string>(columns[impl.textSearchColumnName]);
+
+  const legacyTokens = new Set<string>(columns[impl.legacyColumnName]);
+  const legacyTextSearchTokens = new Set<string>(columns[impl.legacyTextSearchColumnName]);
 
   let sortColumnValue: string | null = null;
   for (const t of allTokens) {
@@ -47,16 +52,47 @@ export function buildTokenColumns(
       throw new Error(`Invalid token code ${code} for search parameter with code ${searchParam.code}`);
     }
 
-    // :missing/:present
-    tokens.add(code);
+    // text search
+    if (value && (system === TEXT_SEARCH_SYSTEM || impl.textSearch)) {
+      legacyTextSearchTokens.add(code + DELIM + DELIM + value);
+      if (impl.hasDedicatedColumns) {
+        textSearchTokens.add(value);
+      } else {
+        textSearchTokens.add(code + DELIM + value);
+      }
 
-    if (system) {
+      /*
+      Ideally we could continue here when system === TEXT_SEARCH_SYSTEM, but right now Medplum supports exact searches on the text content
+      as if it were a normal token value, e.g. the following resource should match the search `Task?code=cursor_test` 
+
+      {
+        resourceType: 'Task',
+        status: 'accepted',
+        intent: 'order',
+        code: { text: 'cursor_test' },
+      }
+      */
+    }
+
+    // :missing/:present - in a token column per search parameter, the presence of any elements
+    // in the main token column, `impl.tokenColumnName`, is sufficient.
+    legacyTokens.add(code);
+    if (!impl.hasDedicatedColumns) {
+      addHashedToken(tokens, code);
+    }
+
+    const prefix = impl.hasDedicatedColumns ? '' : code + DELIM;
+
+    // The TEXT_SEARCH_SYSTEM is never searchable
+    if (system && system !== TEXT_SEARCH_SYSTEM) {
       // [parameter]=[system]|
-      tokens.add(code + DELIM + system);
+      legacyTokens.add(code + DELIM + system);
+      addHashedToken(tokens, prefix + system);
 
       if (value) {
         // [parameter]=[system]|[code]
-        tokens.add(code + DELIM + system + DELIM + value);
+        legacyTokens.add(code + DELIM + system + DELIM + value);
+        addHashedToken(tokens, prefix + system + DELIM + value);
       }
     }
 
@@ -64,22 +100,30 @@ export function buildTokenColumns(
       sortColumnValue = sortColumnValue && sortColumnValue.localeCompare(value) <= 0 ? sortColumnValue : value;
 
       // [parameter]=[code]
-      tokens.add(code + DELIM + DELIM + value);
+      legacyTokens.add(code + DELIM + DELIM + value);
+      addHashedToken(tokens, prefix + DELIM + value);
 
       if (!system) {
         // [parameter]=|[code]
-        tokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
-      }
-
-      // text search
-      if (system === 'text' || impl.textSearch) {
-        textSearchTokens.add(code + DELIM + DELIM + value);
+        legacyTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
+        addHashedToken(tokens, prefix + NULL_SYSTEM + DELIM + value);
       }
     }
   }
-  columns[impl.columnName] = Array.from(tokens);
+
+  columns[impl.tokenColumnName] = Array.from(tokens);
   columns[impl.textSearchColumnName] = Array.from(textSearchTokens);
   columns[impl.sortColumnName] = sortColumnValue;
+  columns[impl.legacyColumnName] = Array.from(legacyTokens);
+  columns[impl.legacyTextSearchColumnName] = Array.from(legacyTextSearchTokens);
+}
+
+function addHashedToken(tokenSet: Set<string>, token: string): void {
+  tokenSet.add(hashTokenColumnValue(token));
+}
+
+export function hashTokenColumnValue(value: string): string {
+  return v5(value, NIL);
 }
 
 /**
@@ -110,12 +154,12 @@ export function addTokenColumnsOrderBy(
     in the instance.
 
     Current behavior:
-    Sorts by the first value found in the token array for the given sort code which can result
-    in incorrect result ordering when a resource has multiple token values for the same code.
+    Sorts by the alphabetically first value found in the token array. This can result
+    in possibly unexpected/surprising result ordering when a resource has multiple token
+    values for the same code.
 
-    To achieve the correct behavior, it would be "best" to precompute and store in additional columns,
-    e.g. "codeAsc" and "codeDesc" for each token column in the token table. Writes are a little slower,
-    but searching would be quick.
+    To avoid the surprising behavior, we could store both the alphabetically first and last
+    values for each search parameter.
   */
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy !== 'token-column') {
@@ -129,7 +173,8 @@ export function buildTokenColumnsSearchFilter(
   resourceType: ResourceType,
   tableName: string,
   param: SearchParameter,
-  filter: Filter
+  filter: Filter,
+  strategy: 'unified-tokens-column' | 'column-per-code'
 ): Expression {
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy !== 'token-column') {
@@ -148,7 +193,13 @@ export function buildTokenColumnsSearchFilter(
       // https://www.hl7.org/fhir/r4/search.html#combining
       const expressions: Expression[] = [];
       for (const searchValue of splitSearchOnComma(filter.value)) {
-        expressions.push(buildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue));
+        if (strategy === 'unified-tokens-column') {
+          expressions.push(
+            legacyBuildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue)
+          );
+        } else {
+          expressions.push(buildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue));
+        }
       }
 
       const expression = new Disjunction(expressions);
@@ -159,11 +210,37 @@ export function buildTokenColumnsSearchFilter(
     }
     case FhirOperator.MISSING:
     case FhirOperator.PRESENT: {
-      const cond = new TypedCondition(new Column(tableName, impl.columnName), 'ARRAY_CONTAINS', filter.code, 'TEXT[]');
-      if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
-        return new Negation(cond);
+      if (strategy === 'unified-tokens-column') {
+        const cond = new TypedCondition(
+          new Column(tableName, impl.legacyColumnName),
+          'ARRAY_CONTAINS',
+          filter.code,
+          'TEXT[]'
+        );
+        if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+          return new Negation(cond);
+        }
+        return cond;
       }
-      return cond;
+
+      if (!impl.hasDedicatedColumns) {
+        const cond = new TypedCondition(
+          new Column(tableName, impl.tokenColumnName),
+          'ARRAY_CONTAINS',
+          hashTokenColumnValue(filter.code),
+          'UUID[]'
+        );
+        if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+          return new Negation(cond);
+        }
+        return cond;
+      }
+
+      if (shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
+        return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_NOT_EMPTY', undefined, 'UUID[]');
+      } else {
+        return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_EMPTY', undefined, 'UUID[]');
+      }
     }
     case FhirOperator.IN:
     case FhirOperator.NOT_IN:
@@ -222,8 +299,105 @@ function buildTokenColumnsWhereCondition(
   query: string
 ): Expression {
   query = query.trim();
-  const tokenCol = new Column(tableName, impl.columnName);
-  const textSearchCol = new Column(tableName, impl.textSearchColumnName);
+
+  switch (operator) {
+    case FhirOperator.TEXT:
+    case FhirOperator.CONTAINS: {
+      /*
+      perform a regex search on the string generated by the token_array_to_text function
+      the array entries are of the form `value` and are joined by ARRAY_DELIM
+      as well as having an ARRAY_DELIM prefix and suffix on the entire string:
+
+      For dedicated-column search parameters, the string being searched by regex is of the form:
+      ARRAY_DELIM + <value1> + ARRAY_DELIM + <value2> + ... + ARRAY_DELIM
+
+      For non-dedicated-column search parameters, the regex also matches, the format is:
+      ARRAY_DELIM + <code1> + DELIM + <value1> + ARRAY_DELIM + <code2> + DELIM + <value2> + ... + ARRAY_DELIM
+
+      this regex looks for an entry from the format described above:
+       - `ARRAY_DELIM`
+       - If the search parameter does NOT have dedicated columns, `code + DELIM`
+       - any number of characters that are not `ARRAY_DELIM` (to support infix search)
+       - the query string
+      */
+      let regexStr: string = '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
+      if (impl.hasDedicatedColumns) {
+        regexStr = ARRAY_DELIM + regexStr;
+      } else {
+        regexStr = ARRAY_DELIM + code + DELIM + regexStr;
+      }
+      const textSearchCol = new Column(tableName, impl.textSearchColumnName);
+      const regexCond = new TypedCondition(textSearchCol, 'TOKEN_ARRAY_IREGEX', regexStr, 'TEXT[]');
+      return regexCond;
+    }
+    case FhirOperator.EQUALS:
+    case FhirOperator.EXACT:
+    case FhirOperator.NOT:
+    case FhirOperator.NOT_EQUALS: {
+      /*
+      exact matches on the formats:
+        <system>|
+        <system>|<value>
+        |<value>
+        <value>
+      */
+
+      let system: string;
+      let value: string;
+      let searchString: string;
+      const parts = splitN(query, '|', 2);
+      if (parts.length === 2) {
+        // If query is "|foo", searching for "foo" values without a system, aka NULL_SYSTEM
+        system = parts[0] || NULL_SYSTEM; // Use || instead of ?? to handle empty strings
+        value = parts[1];
+        if (value) {
+          value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
+          searchString = system + DELIM + value;
+        } else {
+          searchString = system;
+        }
+      } else {
+        value = query;
+        value = impl.caseInsensitive ? value.toLocaleLowerCase() : value;
+        searchString = DELIM + value;
+      }
+
+      if (!impl.hasDedicatedColumns) {
+        searchString = code + DELIM + searchString;
+      }
+
+      searchString = hashTokenColumnValue(searchString);
+
+      return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_CONTAINS', searchString, 'UUID[]');
+    }
+    default: {
+      operator satisfies never;
+      throw new OperationOutcomeError(badRequest(`Unexpected search operator '${operator}'`));
+    }
+  }
+}
+
+/**
+ * Build a filter for each comma-separated query value. Negation should NOT be handled here;
+ * the calling function is responsible for negating the disjunction of the expressions returned
+ * by this function.
+ * @param impl - The search parameter implementation.
+ * @param tableName - The table name.
+ * @param code - The search parameter code.
+ * @param operator - The search operator.
+ * @param query - The query value.
+ * @returns The filter expression for the search parameter without negation.
+ */
+function legacyBuildTokenColumnsWhereCondition(
+  impl: TokenColumnSearchParameterImplementation,
+  tableName: string,
+  code: string,
+  operator: TokenQueryOperator,
+  query: string
+): Expression {
+  query = query.trim();
+  const tokenCol = new Column(tableName, impl.legacyColumnName);
+  const textSearchCol = new Column(tableName, impl.legacyTextSearchColumnName);
 
   switch (operator) {
     case FhirOperator.TEXT:
@@ -239,16 +413,6 @@ function buildTokenColumnsWhereCondition(
       // and then the query string
       const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
       const regexCond = new TypedCondition(textSearchCol, 'TOKEN_ARRAY_IREGEX', regexStr, 'TEXT[]');
-
-      // For :text (but not :contains), also check that the token column contains `<code> + DELIM + 'text'`,
-      // where 'text' is the system value specified for token values that should be text-searchable
-      if (operator === FhirOperator.TEXT) {
-        return new Conjunction([
-          regexCond,
-          new TypedCondition(tokenCol, 'ARRAY_CONTAINS', code + DELIM + 'text', 'TEXT[]'),
-        ]);
-      }
-
       return regexCond;
     }
     case FhirOperator.EQUALS:

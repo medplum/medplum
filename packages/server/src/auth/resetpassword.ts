@@ -1,4 +1,4 @@
-import { allOk, badRequest, createReference, Filter, Operator, resolveId } from '@medplum/core';
+import { allOk, badRequest, concatUrls, createReference, Filter, Operator, resolveId } from '@medplum/core';
 import { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -97,14 +97,16 @@ export async function resetPasswordHandler(req: Request, res: Response): Promise
  * @param redirectUri - Optional URI for redirection to the client application.
  * @returns The URL to reset the password.
  */
-export async function resetPassword(user: User, type: 'invite' | 'reset', redirectUri?: string): Promise<string> {
+export async function resetPassword(
+  user: User,
+  type: UserSecurityRequest['type'],
+  redirectUri?: string
+): Promise<string> {
   // Create the password change request
   const systemRepo = getSystemRepo();
-  const pcr = await systemRepo.createResource<UserSecurityRequest>({
+  const { id, secret } = await systemRepo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
-    meta: {
-      project: resolveId(user.project),
-    },
+    meta: { project: resolveId(user.project) },
     type,
     user: createReference(user),
     secret: generateSecret(16),
@@ -112,5 +114,5 @@ export async function resetPassword(user: User, type: 'invite' | 'reset', redire
   });
 
   // Build the reset URL
-  return `${getConfig().appBaseUrl}setpassword/${pcr.id}/${pcr.secret}`;
+  return concatUrls(getConfig().appBaseUrl, `setpassword/${id}/${secret}`);
 }
