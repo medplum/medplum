@@ -11,11 +11,11 @@ Visit management is at the heart of clinical documentation and patient care deli
 While "Visit" isn't a defined FHIR resource, we've combined the Appointment and Encounter resources into this single, simplified concept to improve the provider experience. Each Visit also automatically generates related FHIR resources:
 
 1. **Clinical Documentation**  
-   * A ClinicalImpression resource represents the Visit's (i.e. Encounter's) chart note  
+   * A [ClinicalImpression](./api/fhir/resources/clinicalimpression) resource represents the Visit's (i.e. Encounter's) chart note  
 2. **Care Management**  
-   * Care Templates (PlanDefinition resources) generate Tasks containing Questionnaires or ActivityDefinitions (which in turn can generate ServiceRequests, etc.)
+   * Care Templates ([PlanDefinition](./api/fhir/resources/plandefinition) resources) generate Tasks containing Questionnaires or ActivityDefinitions (which in turn can generate ServiceRequests, etc.)
 3. **Billing Integration**  
-   * To simplify and automate billing, ChargeItems are created automatically based on the Encounter, ActivityDefinitions, and ChargeItemDefinitions
+   * To simplify and automate billing, [ChargeItems](./api/fhir/resources/chargeitem) and [Claims](./api/fhir/resources/claims) are created automatically based on the Encounter, ActivityDefinitions, and ChargeItemDefinitions
 
 <br />
 
