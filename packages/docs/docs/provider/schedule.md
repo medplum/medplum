@@ -13,7 +13,7 @@ The appointment scheduling system allows you to book patient visits, manage appo
 ### **How to Schedule a Visit**
 
 1. **Navigate to Schedule**  
-   * In the Medplum Provider app, navigate to the Schedule page by clicking the “Schedule” section in the left navigation menu  
+   * In the Medplum Provider app, navigate to the Schedule page by clicking the “[Schedule](https://provider.medplum.com/schedule)” section in the left navigation menu  
 2. **Select a Timeslot**  
    * In the Day or Week view, click and drag within the calendar grid to select a timeslot  
      * In Month view, click the day without dragging to select a timeslot  
