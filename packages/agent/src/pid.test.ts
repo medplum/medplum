@@ -239,9 +239,11 @@ describe('PID File Manager', () => {
     mockedFs.existsSync.mockReturnValue(false);
     const waitForPromise = waitForPidFile(APP_NAME);
     let resolved = false;
-    waitForPromise.then(() => {
-      resolved = true;
-    });
+    waitForPromise
+      .then(() => {
+        resolved = true;
+      })
+      .catch(console.error);
 
     // Wait and check twice that the promise has not resolved
     await sleep(100);
@@ -253,6 +255,28 @@ describe('PID File Manager', () => {
     // Await next tick so that promise can resolve
     await sleep(0);
     expect(resolved).toStrictEqual(true);
+  });
+
+  test('waitForPidFile times out if PID file does not exist before `timeoutMs` milliseconds', async () => {
+    mockedFs.existsSync.mockReturnValue(false);
+    const waitForPromise = waitForPidFile(APP_NAME, 200);
+    let resolved = false;
+    let err: Error | undefined = undefined;
+    waitForPromise
+      .then(() => {
+        resolved = true;
+      })
+      .catch((_err) => {
+        err = _err;
+      });
+
+    // Wait and check twice that the promise has not resolved
+    await sleep(100);
+    expect(resolved).toStrictEqual(false);
+    expect(err).toBeUndefined();
+    await sleep(200);
+    expect(resolved).toStrictEqual(false);
+    expect(err).toStrictEqual(new Error('Timeout while waiting for PID file'));
   });
 
   describe('registerAgentCleanup', () => {

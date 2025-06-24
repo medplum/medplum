@@ -196,10 +196,15 @@ export function ensureDirectoryExists(directoryPath: string): void {
 /**
  * Waits for a given app's PID file to be present in the filesystem.
  * @param appName - The name of the app associated with the PID file you want to wait for.
+ * @param timeoutMs - The amount of milliseconds to wait before timing out. Default is 3000.
  */
-export async function waitForPidFile(appName: string): Promise<void> {
+export async function waitForPidFile(appName: string, timeoutMs = 3000): Promise<void> {
+  const startTime = Date.now();
   // Wait for agent PID file to exist
   while (!existsSync(getPidFilePath(appName))) {
+    if (Date.now() - startTime > timeoutMs) {
+      throw new Error('Timeout while waiting for PID file');
+    }
     await sleep(0);
   }
 }
