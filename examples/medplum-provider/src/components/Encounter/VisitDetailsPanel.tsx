@@ -90,7 +90,6 @@ export const VisitDetailsPanel = (props: VisitDetailsPanelProps): JSX.Element =>
             defaultValue={encounter.period?.end}
             onChange={handleCheckoutChange}
           />
-
         </Stack>
       </Card>
     </Stack>
