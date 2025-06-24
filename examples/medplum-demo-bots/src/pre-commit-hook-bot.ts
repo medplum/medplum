@@ -7,7 +7,7 @@ enum HTTP_VERBS {
   'DELETE',
 }
 
-async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<boolean> {
+async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<Patient> {
   try {
     const patientForHapi = {
       ...patient,
@@ -56,14 +56,40 @@ async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<boo
           },
         ],
       };
-
       throw new OperationOutcomeError(operationOutcome);
     }
 
-    // Log successful response
+    // Parse the response to get the HAPI server's patient ID
     const responseData = await response.json();
-    console.log('Successfully updated patient to HAPI FHIR server:', responseData.id);
-    return true;
+    const hapiPatientId = responseData.id;
+
+    // Update the patient object with the HAPI server ID as an identifier
+    if (hapiPatientId && verb === HTTP_VERBS['PUT']) {
+      const updatedIdentifiers = [...(patient.identifier || [])];
+
+      // Check if HAPI identifier already exists to avoid duplicates
+      const existingHapiIdentifier = updatedIdentifiers.find(
+        (id) => id.system === 'https://hapi-server.com/patient-id'
+      );
+
+      if (!existingHapiIdentifier) {
+        updatedIdentifiers.push({
+          system: 'https://hapi-server.com/patient-id',
+          value: hapiPatientId,
+        } as Identifier);
+      } else {
+        // Update existing identifier value
+        existingHapiIdentifier.value = hapiPatientId;
+      }
+
+      // Return updated patient object
+      return {
+        ...patient,
+        identifier: updatedIdentifiers,
+      };
+    }
+
+    return patient;
   } catch (error) {
     // If it's already an OperationOutcomeError, re-throw it
     if (error instanceof OperationOutcomeError) {
@@ -84,29 +110,17 @@ async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<boo
         },
       ],
     };
-
     throw new OperationOutcomeError(operationOutcome);
   }
 }
 
 export async function handler(_medplum: MedplumClient, event: BotEvent): Promise<any> {
-  console.log('Bot Event Details:');
-  console.log('Bot Reference:', JSON.stringify(event.bot, null, 2));
-  console.log('Content Type:', event.contentType);
-  console.log('Input:', JSON.stringify(event.input, null, 2));
-  console.log('Secrets:', event.secrets ? 'Secrets present' : 'No secrets');
-  console.log('Trace ID:', event.traceId || 'No trace ID');
-  console.log('Headers:', event.headers ? JSON.stringify(event.headers, null, 2) : 'No headers');
-
   const patient = event.input as Patient;
-  const firstName = patient.name?.[0]?.given?.[0];
-  const lastName = patient.name?.[0]?.family;
-  console.log(`Hello ${firstName} ${lastName}!`);
 
   if (event.headers?.['X-Medplum-Deleted-Resource']) {
-    await syncHapiResource(patient, HTTP_VERBS['DELETE']);
+    return await syncHapiResource(patient, HTTP_VERBS['DELETE']);
   } else {
     // Create or update a copy of the patient record
-    await syncHapiResource(patient, HTTP_VERBS['PUT']);
+    return await syncHapiResource(patient, HTTP_VERBS['PUT']);
   }
 }
