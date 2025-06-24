@@ -27,7 +27,7 @@ import { ProjectDetailsPage } from './admin/ProjectDetailsPage';
 import { ProjectPage } from './admin/ProjectPage';
 import { SecretsPage } from './admin/SecretsPage';
 import { SitesPage } from './admin/SitesPage';
-import { SuperAdminAsyncDashboardPage } from './admin/SuperAdminAsyncDashboardPage';
+import { SuperAdminAsyncDashboardPage } from './admin/SuperAdminAsyncJobPage';
 import { SuperAdminPage } from './admin/SuperAdminPage';
 import { UsersPage } from './admin/UsersPage';
 import { AssaysPage } from './lab/AssaysPage';
