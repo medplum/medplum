@@ -661,7 +661,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    await preCommitValidation(this.context.projects?.[0], resource, 'update');
+    resource = ((await preCommitValidation(this.context.projects?.[0], resource, 'update')) as T) ?? resource;
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
