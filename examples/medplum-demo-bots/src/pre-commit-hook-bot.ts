@@ -118,9 +118,9 @@ export async function handler(_medplum: MedplumClient, event: BotEvent): Promise
   const patient = event.input as Patient;
 
   if (event.headers?.['X-Medplum-Deleted-Resource']) {
-    return await syncHapiResource(patient, HTTP_VERBS['DELETE']);
+    return syncHapiResource(patient, HTTP_VERBS['DELETE']);
   } else {
     // Create or update a copy of the patient record
-    return await syncHapiResource(patient, HTTP_VERBS['PUT']);
+    return syncHapiResource(patient, HTTP_VERBS['PUT']);
   }
 }
