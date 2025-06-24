@@ -43,7 +43,7 @@ describe('FHIR Repo', () => {
         if (event.input.name[0].given[0] === 'Homer') {
           throw 'Invalid name';
         }
-        return true;
+        return event.input;
       };`
       );
 
