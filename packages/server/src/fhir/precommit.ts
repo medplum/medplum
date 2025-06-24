@@ -28,17 +28,18 @@ export function isPreCommitSubscription(subscription: WithId<Subscription>): boo
  * @param project  - The project to which the resource belongs. Must be passed separately because this is called before the resource meta is assigned.
  * @param resource  - The resource to validate.
  * @param interaction - The interaction type (e.g., 'create', 'update', 'delete').
+ * @returns The validated resource if a pre-commit bot returns one, otherwise undefined.
  */
 export async function preCommitValidation(
   project: WithId<Project> | undefined,
   resource: WithId<Resource>,
   interaction: BackgroundJobInteraction
-): Promise<Resource | void> {
+): Promise<Resource | undefined> {
   if (
     !getConfig().preCommitSubscriptionsEnabled ||
     !project?.setting?.find((s) => s.name === 'preCommitSubscriptionsEnabled')?.valueBoolean
   ) {
-    return;
+    return undefined;
   }
 
   const systemRepo = getSystemRepo();
@@ -114,4 +115,6 @@ export async function preCommitValidation(
 
     return botResult.returnValue;
   }
+
+  return undefined;
 }
