@@ -662,7 +662,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    resource = ((await preCommitValidation(this.context.projects?.[0], resource, 'update')) as T) ?? resource;
+    resource = ((await preCommitValidation(this.context.projects?.[0], resource, 'update')) as WithId<T>) ?? resource;
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
@@ -676,9 +676,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
-    let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, {
+    let updated = (await rewriteAttachments(RewriteMode.REFERENCE, this, {
       ...this.restoreReadonlyFields(resource, existing),
-    });
+    })) as WithId<T>;
     updated = await replaceConditionalReferences(this, updated);
 
     const resultMeta: Meta = {
