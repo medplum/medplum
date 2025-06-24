@@ -806,6 +806,36 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/icd-10-cm",
+      "resource": {
+      "resourceType": "ValueSet",
+      "url": "https://medplum.com/fhir/ValueSet/icd-10-cm",
+      "status": "active",
+      "compose": {
+          "include": [
+            {
+              "system": "http://hl7.org/fhir/sid/icd-10-cm"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/cpt",
+      "resource": {
+      "resourceType": "ValueSet",
+      "url": "https://medplum.com/fhir/ValueSet/cpt",
+      "status": "active",
+      "compose": {
+          "include": [
+            {
+              "system": "http://www.ama-assn.org/go/cpt"
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/loinc-stub",
       "resource": {
         "resourceType": "CodeSystem",
