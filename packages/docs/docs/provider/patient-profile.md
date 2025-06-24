@@ -1,6 +1,6 @@
 # Patient Profile
 
-The Patient Profile section in the Medplum Provider app is your central hub for managing all patient-related information. This section covers how to register new patients, edit existing profiles, and maintain the Patient Summary sidebar for quick access to key information.
+The Patient Profile section in the Medplum Provider app is your central hub for managing all patient-related information. This section covers how to register new patients, edit existing profiles, and maintain the [Patient Summary](https://storybook.medplum.com/?path=/story/medplum-patientsummary--patient) sidebar for quick access to key information.
 
 <br />
 
@@ -12,14 +12,14 @@ The onboarding process captures essential demographic, insurance, and medical in
 
 ### **Prerequisites**
 
-* Provider access to the Medplum Provider app  
+* Provider access to the [Medplum Provider app](https://provider.medplum.com)
 * Patient insurance information and cards (if applicable)  
 * Patient health history and emergency contact details
 
 ### **How to Register Patients**
 
 1. **Access Patient Registration**  
-   * Open the Medplum Provider app and click "New Patient" from the left navigation menu  
+   * Open the Medplum Provider app and click "[New Patient](https://provider.medplum.com/onboarding)" from the left navigation menu  
 2. **Enter Patient Information**  
    * Demographics  
    * Emergency Contact  
@@ -47,7 +47,7 @@ The onboarding process captures essential demographic, insurance, and medical in
 
 ## **Editing Patient Demographics**
 
-Occasionally core information about a patient may change and require editing on their Profile.
+Occasionally core information about a patient may change and require editing their Profile.
 
 ### **Prerequisites**
 
