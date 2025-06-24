@@ -33,7 +33,7 @@ export async function preCommitValidation(
   project: WithId<Project> | undefined,
   resource: WithId<Resource>,
   interaction: BackgroundJobInteraction
-): Promise<void> {
+): Promise<Resource | void> {
   if (
     !getConfig().preCommitSubscriptionsEnabled ||
     !project?.setting?.find((s) => s.name === 'preCommitSubscriptionsEnabled')?.valueBoolean
@@ -111,5 +111,7 @@ export async function preCommitValidation(
     if (!botResult.success) {
       throw new OperationOutcomeError(normalizeOperationOutcome(botResult.returnValue));
     }
+
+    return botResult.returnValue;
   }
 }
