@@ -34,7 +34,7 @@ Proper Visit documentation ensures continuity of care, supports clinical decisio
    * Create a new Visit by clicking the “New…” button at the top of a patient’s Visit page  
    * Select and verify the Start and End Times selected for the Visit as well as the Class, and Care Template for the Visit  
    * Click “Create” to create this new Visit  
-   * Alternatively, you can create a Visit in the Schedule section which will redirect you to your the unique Visit page  
+   * Alternatively, you can select an existing Visit or create a new one in the Schedule section which will redirect you to your the unique Visit page  
 3. **Start Documenting Your Visit**  
    * On the unique Visit page you’ve created, you can start documenting your visit using the note input and tasks on the “Notes & Tasks” tab  
    * Be sure to change the status of your Visit as it progresses, using the status manager in the upper right corner. Here are the statuses available to choose:  
