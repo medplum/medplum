@@ -379,7 +379,7 @@ describe('Database migrations', () => {
         mockValues.postDeployVersion = 1;
 
         await expect(maybeStartPostDeployMigration(2)).rejects.toThrow(
-          'Post-deploy migration assertion failed. Requested migration v2, but there are no pending post-deploy migrations.'
+          'Requested post-deploy migration v2, but there are no pending post-deploy migrations.'
         );
         expect(queueAddSpy).not.toHaveBeenCalled();
       }));
@@ -397,7 +397,7 @@ describe('Database migrations', () => {
         expect(await getPendingPostDeployMigration(getDatabasePool(DatabaseMode.WRITER))).toStrictEqual(1);
 
         await expect(maybeStartPostDeployMigration(2)).rejects.toThrow(
-          'Post-deploy migration assertion failed. Requested migration v2, but the pending post-deploy migration is v1.'
+          'Requested post-deploy migration v2, but the pending post-deploy migration is v1.'
         );
         expect(queueAddSpy).not.toHaveBeenCalled();
       }));
