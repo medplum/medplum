@@ -50,7 +50,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
 
   const displayText = snomedCodes?.map((code) => code.display).join(', ');
   const codeText = snomedCodes?.map((code) => code.code).join(', ');
-  
+
   return (
     <>
       <Stack p="md">
