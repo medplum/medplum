@@ -306,9 +306,7 @@ export async function maybeStartPostDeployMigration(
           ? 'there are no pending post-deploy migrations'
           : `the pending post-deploy migration is v${pendingPostDeployMigration}`;
       throw new OperationOutcomeError(
-        badRequest(
-          `Post-deploy migration assertion failed. Requested migration v${requestedDataVersion}, but ${endOfMessage}.`
-        )
+        badRequest(`Requested post-deploy migration v${requestedDataVersion}, but ${endOfMessage}.`)
       );
     }
   }
