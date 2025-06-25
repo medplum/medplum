@@ -26,7 +26,7 @@ import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { generateMigrationActions } from '../migrations/migrate';
 import { getPendingPostDeployMigration } from '../migrations/migration-utils';
-import { getPostDeployMigrationVersions, getPreDeployMigrationVersions } from '../migrations/migration-versions';
+import { getPostDeployMigrationVersions } from '../migrations/migration-versions';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
@@ -277,13 +277,11 @@ superAdminRouter.get(
   asyncWrap(async (req: Request, res: Response) => {
     requireSuperAdmin();
 
-    const preDeployMigrations = await getPreDeployMigrationVersions();
     const postDeployMigrations = await getPostDeployMigrationVersions();
     const conn = await getDatabasePool(DatabaseMode.WRITER);
     const pendingPostDeployMigration = await getPendingPostDeployMigration(conn);
 
     res.json({
-      preDeployMigrations,
       postDeployMigrations,
       pendingPostDeployMigration,
     });

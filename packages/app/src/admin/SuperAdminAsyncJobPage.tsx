@@ -2,15 +2,7 @@ import { Button, Group, LoadingOverlay, Stack, Table, Tabs, Title } from '@manti
 import { showNotification } from '@mantine/notifications';
 import { forbidden, formatSearchQuery, normalizeErrorString, Operator, SearchRequest, WithId } from '@medplum/core';
 import { AsyncJob, Resource } from '@medplum/fhirtypes';
-import {
-  Container,
-  Loading,
-  MedplumLink,
-  OperationOutcomeAlert,
-  Panel,
-  SearchControl,
-  useMedplum,
-} from '@medplum/react';
+import { Container, MedplumLink, OperationOutcomeAlert, Panel, SearchControl, useMedplum } from '@medplum/react';
 import { IconMinus, IconPlus, IconRefresh } from '@tabler/icons-react';
 import { JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
@@ -25,9 +17,7 @@ export function SuperAdminAsyncDashboardPage(): JSX.Element {
   const [currentTab, setCurrentTab] = useState(TABS[0]);
 
   function onTabChange(newTabName: string | null): void {
-    if (!newTabName) {
-      newTabName = TABS[0];
-    }
+    newTabName ||= TABS[0];
     if (TABS.includes(newTabName)) {
       setCurrentTab(newTabName);
     }
@@ -75,10 +65,6 @@ function AsyncJobs(): JSX.Element {
   const navigate = useNavigate();
   const [search] = useState<SearchRequest>(SYSTEM_ASYNCJOB_SEARCH);
 
-  if (!search?.resourceType || !search.fields || search.fields.length === 0) {
-    return <Loading />;
-  }
-
   return (
     <Stack>
       <MedplumLink to={`/${search.resourceType}/${formatSearchQuery(search)}`}>Show in search page</MedplumLink>
@@ -104,7 +90,6 @@ const POSTDEPLOY_MIGRATIONS_SEARCH: SearchRequest = {
 };
 
 type MigrationInfo = {
-  preDeployMigrations: number[];
   postDeployMigrations: number[];
   pendingPostDeployMigration: number;
 };
@@ -126,7 +111,9 @@ function PostDeployMigrations(): JSX.Element {
         res.postDeployMigrations.sort((a, b) => b - a);
         setMigrationInfo(res);
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }))
+      .catch((err) => {
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+      })
       .finally(() => setLoadingItems((prev) => prev.filter((item) => item !== loadingName)));
   }, [medplum, refreshCounter]);
 
@@ -143,18 +130,13 @@ function PostDeployMigrations(): JSX.Element {
             { cache: 'no-cache' }
           )
           .then((asyncJobResults) => {
-            if (!asyncJobResults.entry) {
-              showNotification({
-                color: 'red',
-                message: 'No async jobs found. Bundle.entry is missing or empty',
-                autoClose: false,
-              });
-              return;
-            }
-            setPDMAsyncJobs(asyncJobResults.entry.map((entry) => entry.resource as WithId<AsyncJob>));
+            setPDMAsyncJobs(asyncJobResults.entry?.map((entry) => entry.resource as WithId<AsyncJob>));
           })
       )
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }))
+      .catch((err) => {
+        setPDMAsyncJobs(undefined);
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+      })
       .finally(() => setLoadingItems((prev) => prev.filter((item) => item !== loadingName)));
   }, [medplum, refreshCounter]);
 
