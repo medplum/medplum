@@ -26,9 +26,9 @@ The Medplum App setup includes creating four resources which represent the confi
 
 #### Set up an Endpoint Resource
 
-First, set up the [Endpoint](/docs/api/fhir/resources/endpoint). An endpoint is a representation of what the on-site system will connect to. For visibility you may consider adding a `managingOrganization`, `address`, `contact`, and related metadata the `Endpoint` to represent where this physical on-site system is. 
+First, set up the [Endpoint](/docs/api/fhir/resources/endpoint). An endpoint is a representation of what the on-site system will connect to. For visibility you may consider adding a `managingOrganization`, `address`, `contact`, and related metadata the `Endpoint` to represent where this physical on-site system is.
 
-Here is the link to create a [new Endpoint](https://app.medplum.com/Endpoint/new) on the Medplum App. Assuming you want to configure the Endpoint to listen to HL7 v2 over MLLP you'll want set up agent as follows: 
+Here is the link to create a [new Endpoint](https://app.medplum.com/Endpoint/new) on the Medplum App. Assuming you want to configure the Endpoint to listen to HL7 v2 over MLLP you'll want set up agent as follows:
 
 ```json
 {
@@ -57,7 +57,7 @@ Here is the link to create a [new Endpoint](https://app.medplum.com/Endpoint/new
 
 #### Set up a Bot Resource
 
-Second, set up the [Bot](https://app.medplum.com/Bot/new) that accepts the HL7 message, applies necessary transformations and translations, and sends an `ACK` message back to the sender. Ensure that your Bot accepts HL7 inputs, and you may refer to the [HL7 Bots documentation](/docs/bots/hl7-into-fhir) for more advanced uses. For an initial setup, the minimal Bot may be used: 
+Second, set up the [Bot](https://app.medplum.com/Bot/new) that accepts the HL7 message, applies necessary transformations and translations, and sends an `ACK` message back to the sender. Ensure that your Bot accepts HL7 inputs, and you may refer to the [HL7 Bots documentation](/docs/bots/hl7-into-fhir) for more advanced uses. For an initial setup, the minimal Bot may be used:
 
 ```js
 import { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';
@@ -67,7 +67,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
 }
 ```
 
-#### Set up an Agent Resource 
+#### Set up an Agent Resource
 
 Third, set up the [Agent](https://app.medplum.com/Agent/new). This identifies the Agent in the field and helps route and manage the traffic from that agent appropriately. Give the `Agent` a descriptive name. You'll want to link the Agent to the Endpoint and Bot you created to support its setup.
 
@@ -99,7 +99,7 @@ Finally, set up your [Client Application](https://app.medplum.com/admin/clients/
 At the end of the setup you should have the following items:
 
 - Base Url - The base URL of your Medplum server, or https://api.medplum.com for hosted Medplum
-- `ClientId`/`ClientSecret` - obtain these from the [ClientApplication](https://app.medplum.com/ClientApplication/) you created or will use in the Medplum app. 
+- `ClientId`/`ClientSecret` - obtain these from the [ClientApplication](https://app.medplum.com/ClientApplication/) you created or will use in the Medplum app.
 - Agent ID - this is the Agent `id` UUID
 
 You'll need the above to successfully install and connect the agent.
@@ -110,14 +110,15 @@ This guide walks through how to install the agent onto the host. The agent conne
 
 #### Running from Source via CLI
 
-The agent can be run locally using the agent package directory in the Medplum repo. Keep the terminal open after setup so that you can see the logs. You can get started by following these steps: 
+The agent can be run locally using the agent package directory in the Medplum repo. Keep the terminal open after setup so that you can see the logs. You can get started by following these steps:
 
-1. Clone the [Medplum repo](https://github.com/medplum/medplum). 
-2. Run the following commands from the top level of the repo. 
+1. Clone the [Medplum repo](https://github.com/medplum/medplum).
+2. Run the following commands from the top level of the repo.
+
 ```sh
 npm ci
 cd packages/agent
-npm run agent --baseUrl <base_url> --clientId <client_id> --clientSecret <client_secret> --agentId <agent_id>
+npm run agent <base_url> <client_id> <client_secret> <agent_id>
 ```
 
 #### Windows Install
@@ -137,10 +138,13 @@ The Linux version of the Medplum Agent is currently available as a standalone bi
 
 1. Download the latest Linux binary from the [Medplum Releases](https://github.com/medplum/medplum/releases/latest) page.
 2. Make the binary executable
+
 ```bash
 chmod +x medplum-agent-linux
 ```
+
 3. Run the agent with your configuration parameters
+
 ```bash
 ./medplum-agent-linux <base_url> <client_id> <client_secret> <agent_id>
 ```
@@ -178,7 +182,7 @@ Then send a test message:
 medplum hl7 send localhost 56000 --generate-example
 ```
 
-You can also send a specific test message, stored in a `.hl7`, similar extension (`.oru`, `.adt`, etc.), or `.txt.` file, via the following command: 
+You can also send a specific test message, stored in a `.hl7`, similar extension (`.oru`, `.adt`, etc.), or `.txt.` file, via the following command:
 
 ```bash
 npx medplum hl7 send localhost 56000 --file <some-file.hl7>
