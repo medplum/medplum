@@ -1436,9 +1436,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
    * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
    * 6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
+   * 7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
    *
    */
-  static readonly VERSION: number = 6;
+  static readonly VERSION: number = 7;
 
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
