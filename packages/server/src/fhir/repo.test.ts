@@ -41,6 +41,7 @@ import { registerNew, RegisterRequest } from '../auth/register';
 import { loadTestConfig } from '../config/loader';
 import { r4ProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { TokenTable } from './lookups/token';
@@ -649,6 +650,33 @@ describe('FHIR Repo', () => {
     } catch (err) {
       expect(isOk(err as OperationOutcome)).toBe(false);
     }
+  });
+
+  test('Reindex resource errors logged', async () => {
+    const patient1 = await systemRepo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [{ given: ['Identifier'], family: 'Test' }],
+      identifier: [{ system: 'https://example.com/', value: 'some-value' }],
+    });
+
+    const buildColumnSpy = jest.spyOn(Repository.prototype as any, 'buildColumn').mockImplementation(() => {
+      throw new Error('test error');
+    });
+    const logger = getLogger();
+    const errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+
+    await expect(
+      systemRepo.withTransaction(async (conn) => {
+        await systemRepo.reindexResources(conn, [patient1]);
+      })
+    ).rejects.toThrow('test error');
+    expect(errorSpy).toHaveBeenCalledWith('Error building row for resource', {
+      resource: 'Patient/' + patient1.id,
+      err: expect.any(Error),
+    });
+
+    buildColumnSpy.mockRestore();
+    errorSpy.mockRestore();
   });
 
   test('Remove property', () =>

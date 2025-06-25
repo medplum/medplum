@@ -37,6 +37,7 @@ const config: Config = {
             items = items.filter((e) => !(e.type === 'doc' && e.id.endsWith('index')));
             return items;
           },
+          showLastUpdateTime: true,
         },
         blog: {
           showReadingTime: true,

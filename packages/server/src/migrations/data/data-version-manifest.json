@@ -38,5 +38,13 @@
   "v10": {
     "serverVersion": "4.1.9",
     "requiredBefore": "4.2.0"
+  },
+  "v11": {
+    "serverVersion": "4.1.12",
+    "requiredBefore": "4.2.0"
+  },
+  "v12": {
+    "serverVersion": "4.1.12",
+    "requiredBefore": "4.2.0"
   }
 }

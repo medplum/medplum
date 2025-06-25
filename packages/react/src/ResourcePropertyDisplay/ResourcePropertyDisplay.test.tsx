@@ -158,6 +158,26 @@ describe('ResourcePropertyDisplay', () => {
     expect(screen.getByText('world')).toBeInTheDocument();
   });
 
+  test('Renders string array with more than 50 items and shows total count', async () => {
+    const manyStrings = Array.from({ length: 75 }, (_, index) => `item-${index + 1}`);
+
+    await setup(
+      <ResourcePropertyDisplay
+        property={{ ...baseProperty, type: [{ code: 'string' }], max: Number.POSITIVE_INFINITY }}
+        propertyType={PropertyType.string}
+        value={manyStrings}
+      />
+    );
+
+    expect(screen.getByText('item-1')).toBeInTheDocument();
+    expect(screen.getByText('item-50')).toBeInTheDocument();
+
+    expect(screen.queryByText('item-51')).not.toBeInTheDocument();
+    expect(screen.queryByText('item-75')).not.toBeInTheDocument();
+
+    expect(screen.getByText('... 75 total values')).toBeInTheDocument();
+  });
+
   test('Renders markdown', async () => {
     await setup(
       <ResourcePropertyDisplay

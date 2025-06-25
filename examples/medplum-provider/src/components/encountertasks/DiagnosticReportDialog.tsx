@@ -64,7 +64,7 @@ export default function DiagnosticReportDialog(props: DiagnosticReportDialogProp
         />
 
         <CodeableConceptInput
-          binding={HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-condition-code'}
+          binding="http://hl7.org/fhir/sid/icd-10-cm/vs"
           label="ICD-10 Code"
           name="diagnosis"
           path="Condition.code"
