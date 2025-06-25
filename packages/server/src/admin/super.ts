@@ -311,7 +311,11 @@ superAdminRouter.post(
     const dataMigrationJob = await maybeStartPostDeployMigration(req?.body?.dataVersion as number | undefined);
     // If there is no migration job to run, return allOk
     if (!dataMigrationJob) {
-      sendOutcome(res, allOk);
+      if (req.body.dataVersion) {
+        sendOutcome(res, badRequest(`Data migration ${req.body.dataVersion} is not eligible to run`));
+      } else {
+        sendOutcome(res, allOk);
+      }
       return;
     }
     const exec = new AsyncJobExecutor(ctx.repo, dataMigrationJob);

@@ -1,4 +1,4 @@
-import { Button, Group, LoadingOverlay, Table, Tabs, Title } from '@mantine/core';
+import { Button, Group, LoadingOverlay, Stack, Table, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { forbidden, formatSearchQuery, normalizeErrorString, Operator, SearchRequest, WithId } from '@medplum/core';
 import { AsyncJob, Resource } from '@medplum/fhirtypes';
@@ -14,10 +14,11 @@ import {
 import { IconMinus, IconPlus, IconRefresh } from '@tabler/icons-react';
 import { JSX, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { startAsyncJobAsync } from './SuperAdminStartAsyncJob';
 
 const SYSTEM_ASYNCJOB = 'System AsyncJob';
 const POSTDEPLOY_MIGRATIONS = 'Post-deploy Migrations';
-const TABS = [SYSTEM_ASYNCJOB, POSTDEPLOY_MIGRATIONS];
+const TABS = [POSTDEPLOY_MIGRATIONS, SYSTEM_ASYNCJOB];
 
 export function SuperAdminAsyncDashboardPage(): JSX.Element {
   const medplum = useMedplum();
@@ -79,12 +80,15 @@ function AsyncJobs(): JSX.Element {
   }
 
   return (
-    <SearchControl
-      checkboxesEnabled={false}
-      search={search}
-      onClick={(e) => navigate(getResourceUrl(e.resource))?.catch(console.error)}
-      onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
-    />
+    <Stack>
+      <MedplumLink to={`/${search.resourceType}/${formatSearchQuery(search)}`}>Show in search page</MedplumLink>
+      <SearchControl
+        checkboxesEnabled={false}
+        search={search}
+        onClick={(e) => navigate(getResourceUrl(e.resource))?.catch(console.error)}
+        onAuxClick={(e) => window.open(getResourceUrl(e.resource), '_blank')}
+      />
+    </Stack>
   );
 }
 
@@ -154,25 +158,41 @@ function PostDeployMigrations(): JSX.Element {
       .finally(() => setLoadingItems((prev) => prev.filter((item) => item !== loadingName)));
   }, [medplum, refreshCounter]);
 
+  function triggerRefresh(): void {
+    setRefreshCounter((prev) => prev + 1);
+  }
+
+  function runPendingDataMigration(version: number): void {
+    startAsyncJobAsync(medplum, 'Run Pending Data Migration', 'admin/super/migrate', { dataVersion: version })
+      .finally(() => {
+        triggerRefresh();
+      })
+      .catch(() => {});
+    triggerRefresh();
+  }
+
   const isLoading = loadingItems.length > 0;
 
   function renderTable(callback: () => React.ReactNode, { isLoading }: { isLoading: boolean }): JSX.Element {
     return (
-      <Table pos="relative">
+      <div style={{ position: 'relative' }}>
         <LoadingOverlay visible={isLoading} />
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th>Version</Table.Th>
-            <Table.Th>Status</Table.Th>
-            <Table.Th>AsyncJob</Table.Th>
-            <Table.Th>Last Updated</Table.Th>
-            <Table.Th>Request Time</Table.Th>
-            <Table.Th>Duration</Table.Th>
-            <Table.Th>Attempts</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>{callback()}</Table.Tbody>
-      </Table>
+        <Table>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Version</Table.Th>
+              <Table.Th>Action</Table.Th>
+              <Table.Th>Status</Table.Th>
+              <Table.Th>AsyncJob</Table.Th>
+              <Table.Th>Last Updated</Table.Th>
+              <Table.Th>Request Time</Table.Th>
+              <Table.Th>Duration</Table.Th>
+              <Table.Th>Attempts</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>{callback()}</Table.Tbody>
+        </Table>
+      </div>
     );
   }
 
@@ -183,7 +203,7 @@ function PostDeployMigrations(): JSX.Element {
         mb="xs"
         variant="subtle"
         leftSection={<IconRefresh size={14} />}
-        onClick={() => setRefreshCounter((prev) => prev + 1)}
+        onClick={triggerRefresh}
         loading={isLoading}
       >
         Refresh
@@ -220,12 +240,22 @@ function PostDeployMigrations(): JSX.Element {
             );
             const showAll = showAllVersions.includes(version);
 
+            const showStartButton =
+              version === migrationInfo?.pendingPostDeployMigration && (!asyncJob || asyncJob?.status === 'error');
+
             const toShow = [
               <Table.Tr key={version}>
                 <Table.Td>{version}</Table.Td>
+                <Table.Td>
+                  {showStartButton && (
+                    <Button color="green" size="xs" onClick={() => runPendingDataMigration(version)}>
+                      Start
+                    </Button>
+                  )}
+                </Table.Td>
                 <Table.Td>{status}</Table.Td>
                 <Table.Td>
-                  <MedplumLink to={`/AsyncJob/${asyncJob?.id}`}>{asyncJob?.id}</MedplumLink>
+                  {asyncJob && <MedplumLink to={`/AsyncJob/${asyncJob?.id}`}>{asyncJob?.id}</MedplumLink>}
                 </Table.Td>
                 <Table.Td>{asyncJob?.meta?.lastUpdated}</Table.Td>
                 <Table.Td>{asyncJob?.requestTime}</Table.Td>
@@ -275,12 +305,15 @@ function PostDeployMigrations(): JSX.Element {
                   .map((aj) => (
                     <Table.Tr key={aj.id} bg="gray.1">
                       <Table.Td>{version}</Table.Td>
+                      <Table.Td></Table.Td>
                       <Table.Td>{aj.status}</Table.Td>
                       <Table.Td>
                         <MedplumLink to={`/AsyncJob/${aj.id}`}>{aj.id}</MedplumLink>
                       </Table.Td>
                       <Table.Td>{aj.meta?.lastUpdated}</Table.Td>
                       <Table.Td>{aj.requestTime}</Table.Td>
+                      <Table.Td>{getDuration(aj)}</Table.Td>
+                      <Table.Td></Table.Td>
                     </Table.Tr>
                   ))
               );
@@ -302,15 +335,18 @@ function getPostDeployMigrationStatus(
 ): { status: string; asyncJob: WithId<AsyncJob> | undefined; asyncJobs: WithId<AsyncJob>[] } {
   const asyncJobs = sortedAsyncJobs.filter((aj) => aj.dataVersion === version);
   const asyncJob = asyncJobs.find((aj) => aj.status === 'completed') ?? asyncJobs[0];
-  if (!asyncJob) {
-    if (version === pendingPostDeployMigration) {
-      return { status: 'next', asyncJob, asyncJobs };
-    }
-    console.log(version, asyncJobs);
-    return { status: 'pending', asyncJob, asyncJobs };
+  let status: string;
+  if (pendingPostDeployMigration === 0) {
+    status = asyncJob?.status ?? 'completed';
+  } else if (version > pendingPostDeployMigration) {
+    status = asyncJob?.status ?? 'pending';
+  } else if (version === pendingPostDeployMigration) {
+    status = asyncJob?.status ?? 'next';
+  } else {
+    status = asyncJob?.status ?? 'completed';
   }
 
-  return { status: asyncJob.status, asyncJob, asyncJobs };
+  return { status, asyncJob, asyncJobs };
 }
 
 function getResourceUrl<T extends Resource>(resource: T): string {
