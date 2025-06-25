@@ -1,6 +1,6 @@
 {
   "$schema": "https://turborepo.org/schema.json",
-  "globalEnv": ["NODE_VERSION"],
+  "globalEnv": ["NODE_VERSION", "MEDPLUM_GIT_SHORTHASH"],
   "tasks": {
     "clean": {
       "outputs": ["build/**", "dist/**", "coverage/**"]

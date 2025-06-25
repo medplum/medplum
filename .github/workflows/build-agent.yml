@@ -55,9 +55,14 @@ jobs:
       - name: Install dependencies
         run: npm ci --maxsockets 1
 
+      - name: Set repo hash
+        shell: bash
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Build
-        # We need to force so MEDPLUM_VERSION matches, since using cached @medplum/core results in mismatch sometimes
-        run: npm run build -- --filter=@medplum/agent --force
+        run: npm run build -- --filter=@medplum/agent
 
       - name: Find signtool
         uses: actions/github-script@v6
@@ -105,12 +110,6 @@ jobs:
 
             const path = await getSigntoolLocation();
             return path.replace(' ', '\ ');
-
-      - name: Set repo hash
-        shell: bash
-        run: |
-          set -e
-          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Build Agent installer
         shell: bash
@@ -167,9 +166,14 @@ jobs:
       - name: Install dependencies
         run: npm ci --maxsockets 1
 
+      - name: Set repo hash
+        shell: bash
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Build
-        # We need to force so MEDPLUM_VERSION matches, since using cached @medplum/core results in mismatch sometimes
-        run: npm run build -- --filter=@medplum/agent --force
+        run: npm run build -- --filter=@medplum/agent
 
       - name: Build Agent
         shell: bash
@@ -234,6 +238,12 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --maxsockets 1
+
+      - name: Set repo hash
+        shell: bash
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
