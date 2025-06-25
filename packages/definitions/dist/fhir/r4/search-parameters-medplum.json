@@ -213,6 +213,23 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the project membership",
+        "code": "identifier",
+        "base": ["ProjectMembership"],
+        "type": "token",
+        "expression": "ProjectMembership.identifier"
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/SearchParameter/ClientApplication-name",
       "resource": {
         "resourceType": "SearchParameter",
@@ -1351,6 +1368,42 @@
         "base": ["Practitioner"],
         "type": "token",
         "expression": "Practitioner.qualification.code"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Immunization-encounter",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Immunization-encounter",
+        "url": "https://medplum.com/fhir/SearchParameter/Immunization-encounter",
+        "version": "4.0.1",
+        "name": "encounter",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The Encounter this Immunization was part of",
+        "code": "encounter",
+        "base": ["Immunization"],
+        "type": "reference",
+        "target": ["Encounter"],
+        "expression": "Immunization.encounter"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AllergyIntolerance-encounter",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AllergyIntolerance-encounter",
+        "url": "https://medplum.com/fhir/SearchParameter/AllergyIntolerance-encounter",
+        "version": "4.0.1",
+        "name": "encounter",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The Encounter this AllergyIntolerance was part of",
+        "code": "encounter",
+        "base": ["AllergyIntolerance"],
+        "type": "reference",
+        "target": ["Encounter"],
+        "expression": "AllergyIntolerance.encounter"
       }
     },
     {
