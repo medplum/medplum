@@ -5,18 +5,18 @@ import { ChatListItem } from './ChatListItem';
 
 interface ChatListProps {
   communications: Communication[];
-  selectedPatient: Reference<Patient>;
-  onClick: (patient: Reference<Patient>) => void;
+  selectedCommunication: Communication | undefined;
+  onClick: (communication: Communication) => void;
 }
 
 export const ChatList = (props: ChatListProps): JSX.Element => {
-  const { communications, selectedPatient, onClick } = props;
+  const { communications, selectedCommunication, onClick } = props;
 
   return (
     <Stack gap={0} p="xs">
       {communications.map((communication: Communication) => {
         const patient = communication.subject as Reference<Patient>;
-        const _isSelected = selectedPatient.reference === patient.reference;
+        const _isSelected = selectedCommunication?.id === communication.id;
         return (
           <ChatListItem
             key={communication.id}
@@ -24,7 +24,7 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
             communication={communication}
             isSelected={_isSelected}
             onClick={() => {
-              onClick(patient);
+              onClick(communication);
             }}
           />
         );
