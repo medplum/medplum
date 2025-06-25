@@ -107,7 +107,8 @@ describe('CodeSystem $import', () => {
       });
     expect(res2.status).toStrictEqual(200);
 
-    await assertCodeExists(snomed.id, '37931006');
+    const coding = await assertCodeExists(snomed.id, '37931006');
+    expect(coding.isSynonym).toBe(false);
     await assertCodeExists(snomed.id, '315306007');
     await assertPropertyExists(snomed.id, '37931006', 'parent', '315306007');
   });
@@ -295,6 +296,8 @@ async function assertCodeExists(system: string | undefined, code: string): Promi
   const db = getDatabasePool(DatabaseMode.READER);
   const coding = await new SelectQuery('Coding')
     .column('id')
+    .column('display')
+    .column('isSynonym')
     .where('system', '=', system)
     .where('code', '=', code)
     .execute(db);
