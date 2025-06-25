@@ -2419,7 +2419,7 @@ describe('App', () => {
       console.log = originalConsoleLog;
     });
 
-    test.only('Upgrading -- Manifest present on startup, failed to create agent PID', async () => {
+    test('Upgrading -- Manifest present on startup, failed to create agent PID', async () => {
       const unlinkSyncSpy = jest.spyOn(fs, 'unlinkSync');
       const originalConsoleLog = console.log;
       console.log = jest.fn();
