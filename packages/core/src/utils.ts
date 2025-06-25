@@ -6,6 +6,7 @@ import {
   Device,
   Extension,
   ExtensionValue,
+  ExtractResource,
   Identifier,
   ObservationDefinition,
   ObservationDefinitionQualifiedInterval,
@@ -18,6 +19,7 @@ import {
   Reference,
   RelatedPerson,
   Resource,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import { getTypedPropertyValue } from './fhirpath/utils';
 import { formatCodeableConcept, formatHumanName } from './format';
@@ -1156,6 +1158,24 @@ export function findResourceByCode(
       ? getCodeBySystem(r.code || {}, system) === code
       : getCodeBySystem(r.code || {}, system) === getCodeBySystem(code, system)
   );
+}
+
+/**
+ * Tries to find the first resource in the bundle that matches a given resource type and logical ID.
+ *
+ * The logical ID is unique wihin the space of all resources of the same type.
+ * @param resourceBundle - The bundle of resources.
+ * @param resourceType - String of the resource type.
+ * @param id - The logical ID of the resource to search for.
+ * @returns The first resource in the input array that matches the specified type and ID, or undefined if no such resource is found.
+ */
+export function findResourceInBundle<K extends ResourceType>(
+  bundle: Bundle,
+  resourceType: K,
+  id: string
+): ExtractResource<K> | undefined {
+  return bundle.entry?.find(({ resource }) => resource?.resourceType === resourceType && resource?.id === id)
+    ?.resource as ExtractResource<K> | undefined;
 }
 
 export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
