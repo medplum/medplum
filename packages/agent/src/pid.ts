@@ -121,7 +121,8 @@ export function getAppPid(appName: string): number | undefined {
   const existingPidStr = fs.readFileSync(pidFilePath, 'utf8').trim();
   const existingPid = Number.parseInt(existingPidStr, 10);
   if (Number.isNaN(existingPid)) {
-    throw new Error('PID file does not contain a valid numeric PID');
+    pidLogger.warn('PID file does not contain a valid numeric PID');
+    return undefined;
   }
   return existingPid;
 }

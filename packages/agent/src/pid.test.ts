@@ -7,6 +7,7 @@ import {
   deregisterAgentCleanup,
   ensureDirectoryExists,
   forceKillApp,
+  getAppPid,
   getPidFilePath,
   pidLogger,
   registerAgentCleanup,
@@ -280,7 +281,13 @@ describe('PID File Manager', () => {
     expect(err).toStrictEqual(new Error('Timeout while waiting for PID file'));
   });
 
-  test('forceKillApp -- kills running process', async () => {
+  test('getAppPid -- non-numeric PID in PID file is ignored', () => {
+    mockedFs.existsSync.mockReturnValue(true);
+    mockedFs.readFileSync.mockReturnValue('abc');
+    expect(getAppPid('test-app')).toBeUndefined();
+  });
+
+  test('forceKillApp -- kills running process', () => {
     const processKillSpy = jest.spyOn(process, 'kill').mockImplementation();
     createPidFile('test-app');
     forceKillApp('test-app');
