@@ -17,6 +17,7 @@ import {
   serverError,
   WithId,
 } from '@medplum/core';
+import { FhirRequest } from '@medplum/fhir-router';
 import {
   Agent,
   AuditEvent,
@@ -40,7 +41,7 @@ import vm from 'node:vm';
 import { asyncWrap } from '../../async';
 import { runInLambda } from '../../cloud/aws/execute';
 import { getConfig } from '../../config/loader';
-import { buildTracingExtension, getAuthenticatedContext } from '../../context';
+import { AuthenticatedRequestContext, buildTracingExtension, getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
@@ -134,32 +135,17 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
   const systemRepo = getSystemRepo();
   const bot = await systemRepo.readResource<Bot>('Bot', userBot.id);
 
-  // Find the project membership
-  // If the bot is configured to run as the user, then use the current user's membership
-  // Otherwise, use the bot's project membership
-  const project = bot.meta?.project as string;
-  let runAs: ProjectMembership | undefined;
-  let defaultHeaders: Record<string, string> | undefined;
-  if (bot.runAsUser) {
-    runAs = ctx.membership;
-    defaultHeaders = {
-      Cookie: req.headers.cookie as string,
-    };
-  } else {
-    runAs = (await findProjectMembership(project, createReference(bot))) ?? ctx.membership;
-  }
-
   // Execute the bot
   // If the request is HTTP POST, then the body is the input
   // If the request is HTTP GET, then the query string is the input
   const result = await executeBot({
     bot,
-    runAs,
+    runAs: await getBotProjectMembership(ctx, bot),
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
     headers: req.headers,
     traceId: ctx.traceId,
-    defaultHeaders,
+    defaultHeaders: getBotDefaultHeaders(req, bot),
   });
 
   return result;
@@ -192,6 +178,45 @@ async function getBotForRequest(req: Request): Promise<WithId<Bot> | undefined> 
 
   // If no bot ID or identifier, return undefined
   return undefined;
+}
+
+/**
+ * Returns the bot's project membership.
+ * If the bot is configured to run as the user, then use the current user's membership.
+ * Otherwise, use the bot's project membership
+ * @param ctx - The authenticated request context.
+ * @param bot - The bot resource.
+ * @returns The project membership for the bot.
+ */
+export async function getBotProjectMembership(
+  ctx: AuthenticatedRequestContext,
+  bot: WithId<Bot>
+): Promise<ProjectMembership> {
+  if (bot.runAsUser) {
+    // If the bot is configured to run as the user, then use the current user's membership
+    return ctx.membership;
+  }
+  // Otherwise, use the bot's project membership
+  const project = bot.meta?.project as string;
+  return (await findProjectMembership(project, createReference(bot))) ?? ctx.membership;
+}
+
+/**
+ * Returns the default headers to add to the MedplumClient.
+ * If the bot is configured to run as the user, then include the HTTP cookies from the request.
+ * Otherwise, no default headers are added.
+ * @param req - The HTTP request.
+ * @param bot - The bot resource.
+ * @returns The default headers to add to the MedplumClient.
+ */
+export function getBotDefaultHeaders(req: Request | FhirRequest, bot: WithId<Bot>): Record<string, string> | undefined {
+  let defaultHeaders: Record<string, string> | undefined;
+  if (bot.runAsUser) {
+    defaultHeaders = {
+      Cookie: req.headers?.cookie as string,
+    };
+  }
+  return defaultHeaders;
 }
 
 /**
