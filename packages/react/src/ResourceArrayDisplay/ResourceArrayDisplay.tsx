@@ -6,8 +6,9 @@ import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { assignValuesIntoSlices, prepareSlices } from '../ResourceArrayInput/ResourceArrayInput.utils';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { SliceDisplay } from '../SliceDisplay/SliceDisplay';
+import { Group, Text } from '@mantine/core';
 
-const MAX_ARRAY_SIZE = 100;
+const MAX_ARRAY_SIZE = 50;
 
 export interface ResourceArrayDisplayProps {
   /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
@@ -27,6 +28,7 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
   const [loading, setLoading] = useState(true);
   const [slices, setSlices] = useState<SliceDefinitionWithTypes[]>([]);
   const [slicedValues, setSlicedValues] = useState<any[][]>(() => [values]);
+  const [valuesLength, setValuesLength] = useState(0);
   const ctx = useContext(ElementsContext);
 
   useEffect(() => {
@@ -35,9 +37,10 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
       property,
     })
       .then((slices) => {
-        const limitedSlices = slices.slice(0, MAX_ARRAY_SIZE);
-        setSlices(limitedSlices);
-        const slicedValues = assignValuesIntoSlices(values, limitedSlices, property.slicing, ctx.profileUrl);
+        setValuesLength(values.length);
+        setSlices(slices);
+        const limitedValues = values.slice(0, MAX_ARRAY_SIZE);
+        const slicedValues = assignValuesIntoSlices(limitedValues, slices, property.slicing, ctx.profileUrl);
         setSlicedValues(slicedValues);
         setLoading(false);
       })
@@ -110,6 +113,11 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
       })}
 
       {nonSliceContent}
+      {valuesLength > MAX_ARRAY_SIZE && (
+        <Group justify="right">
+          <Text>... {valuesLength} total values</Text>
+        </Group>
+      )}
     </>
   );
 }

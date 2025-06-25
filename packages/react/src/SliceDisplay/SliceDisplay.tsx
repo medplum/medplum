@@ -10,8 +10,6 @@ import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
-const MAX_ARRAY_SIZE = 2;
-
 export interface SliceDisplayProps {
   readonly path: string;
   readonly slice: SliceDefinitionWithTypes;
@@ -40,15 +38,13 @@ export function SliceDisplay(props: SliceDisplayProps): JSX.Element {
     return undefined;
   }, [parentContext, props.path, slice.typeSchema?.url, sliceElements]);
 
-  const limitedValues = props.value.slice(0, MAX_ARRAY_SIZE);
-
   return maybeWrapWithContext(
     ElementsContext.Provider,
     contextValue,
     <>
-      {limitedValues.map((value, valueIndex) => {
+      {props.value.map((value, valueIndex) => {
         return (
-          <div key={`${valueIndex}-${limitedValues.length}`}>
+          <div key={`${valueIndex}-${props.value.length}`}>
             <ResourcePropertyDisplay
               property={property}
               path={props.path}
