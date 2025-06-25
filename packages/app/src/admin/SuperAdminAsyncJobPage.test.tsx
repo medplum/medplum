@@ -224,24 +224,6 @@ describe('SuperAdminAsyncJobPage', () => {
     expect(screen.queryByText('Start')).not.toBeInTheDocument();
   });
 
-  /*     test('Run migration button - forbidden', async () => {
-      const startAsyncJobSpy = jest.spyOn(medplum, 'startAsyncRequest').mockResolvedValueOnce(forbidden);
-
-      await setup(medplum);
-
-      await waitFor(() => screen.getByText('Run Migration for version 2'));
-
-      const runMigrationButton = screen.getByText('Run Migration for version 2');
-      expect(runMigrationButton).toBeInTheDocument();
-
-      await act(async () => {
-        fireEvent.click(runMigrationButton);
-      });
-
-      expect(startAsyncJobSpy).toHaveBeenCalledWith('admin/super/migrate/2');
-      expect(await screen.findByText('Forbidden')).toBeInTheDocument();
-    }); */
-
   describe('System AsyncJob', () => {
     test('Renders search control', async () => {
       await setup(medplum);

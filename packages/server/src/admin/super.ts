@@ -277,7 +277,7 @@ superAdminRouter.get(
   asyncWrap(async (req: Request, res: Response) => {
     requireSuperAdmin();
 
-    const postDeployMigrations = await getPostDeployMigrationVersions();
+    const postDeployMigrations = getPostDeployMigrationVersions();
     const conn = await getDatabasePool(DatabaseMode.WRITER);
     const pendingPostDeployMigration = await getPendingPostDeployMigration(conn);
 

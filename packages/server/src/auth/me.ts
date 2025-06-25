@@ -132,7 +132,7 @@ export function getUserConfigurationMenu(project: Project, membership: ProjectMe
       link: [
         { name: 'Projects', target: '/Project' },
         { name: 'Super Config', target: '/admin/super' },
-        { name: 'Super AsyncJob', target: '/admin/super/async' },
+        { name: 'Super AsyncJob', target: '/admin/super/asyncjob' },
       ],
     });
   }
