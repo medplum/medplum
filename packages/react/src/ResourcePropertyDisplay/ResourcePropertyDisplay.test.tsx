@@ -168,13 +168,13 @@ describe('ResourcePropertyDisplay', () => {
         value={manyStrings}
       />
     );
-    
+
     expect(screen.getByText('item-1')).toBeInTheDocument();
     expect(screen.getByText('item-50')).toBeInTheDocument();
-  
+
     expect(screen.queryByText('item-51')).not.toBeInTheDocument();
     expect(screen.queryByText('item-75')).not.toBeInTheDocument();
-    
+
     expect(screen.getByText('... 75 total values')).toBeInTheDocument();
   });
 
