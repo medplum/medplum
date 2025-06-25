@@ -160,7 +160,7 @@ describe('ResourcePropertyDisplay', () => {
 
   test('Renders string array with more than 50 items and shows total count', async () => {
     const manyStrings = Array.from({ length: 75 }, (_, index) => `item-${index + 1}`);
-    
+
     await setup(
       <ResourcePropertyDisplay
         property={{ ...baseProperty, type: [{ code: 'string' }], max: Number.POSITIVE_INFINITY }}
