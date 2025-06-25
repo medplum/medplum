@@ -34,8 +34,13 @@
     "password": "medplum"
   },
   "bullmq": {
-    "removeOnFail": { "count": 1 },
-    "removeOnComplete": { "count": 1 }
+    "removeOnFail": {
+      "count": 1
+    },
+    "removeOnComplete": {
+      "count": 1
+    }
   },
-  "shutdownTimeoutMilliseconds": 30000
+  "shutdownTimeoutMilliseconds": 30000,
+  "preCommitSubscriptionsEnabled": true
 }

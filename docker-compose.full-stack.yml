@@ -36,7 +36,7 @@ services:
 
   # Medplum server container
   medplum-server:
-    image: medplum/medplum-server:latest
+    image: medplum/medplum-server-staging:74b91ecbd0cca675cb11b88c7e9efa5febee8812
     restart: always
     depends_on:
       postgres:
@@ -121,3 +121,10 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Hapi container
+  hapi-server:
+    image: hapiproject/hapi:latest
+    restart: always
+    ports:
+      - "8080:8080"
