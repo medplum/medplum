@@ -6,6 +6,7 @@ import {
   createPidFile,
   deregisterAgentCleanup,
   ensureDirectoryExists,
+  forceKillApp,
   getPidFilePath,
   pidLogger,
   registerAgentCleanup,
@@ -277,6 +278,15 @@ describe('PID File Manager', () => {
     await sleep(200);
     expect(resolved).toStrictEqual(false);
     expect(err).toStrictEqual(new Error('Timeout while waiting for PID file'));
+  });
+
+  test('forceKillApp -- kills running process', async () => {
+    const processKillSpy = jest.spyOn(process, 'kill').mockImplementation();
+    createPidFile('test-app');
+    forceKillApp('test-app');
+    removePidFile('test-app');
+    expect(processKillSpy).toHaveBeenCalledWith(process.pid, 'SIGTERM');
+    processKillSpy.mockRestore();
   });
 
   describe('registerAgentCleanup', () => {
