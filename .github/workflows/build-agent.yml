@@ -57,6 +57,7 @@ jobs:
 
       - name: Set repo hash
         shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
         run: |
           set -e
           echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -168,6 +169,7 @@ jobs:
 
       - name: Set repo hash
         shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
         run: |
           set -e
           echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
@@ -241,6 +243,7 @@ jobs:
 
       - name: Set repo hash
         shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
         run: |
           set -e
           echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
