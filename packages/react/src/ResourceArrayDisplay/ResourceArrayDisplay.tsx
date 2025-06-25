@@ -1,3 +1,4 @@
+import { Group, Text } from '@mantine/core';
 import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName, isPopulated } from '@medplum/core';
 import { useMedplum } from '@medplum/react-hooks';
 import { JSX, useContext, useEffect, useMemo, useState } from 'react';
@@ -6,7 +7,6 @@ import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { assignValuesIntoSlices, prepareSlices } from '../ResourceArrayInput/ResourceArrayInput.utils';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { SliceDisplay } from '../SliceDisplay/SliceDisplay';
-import { Group, Text } from '@mantine/core';
 
 const MAX_ARRAY_SIZE = 50;
 
