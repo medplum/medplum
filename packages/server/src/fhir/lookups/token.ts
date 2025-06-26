@@ -167,7 +167,7 @@ export class TokenTable extends LookupTable {
       joinName,
       joinOnExpression
     );
-    selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending, 'last');
+    selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending);
   }
 }
 

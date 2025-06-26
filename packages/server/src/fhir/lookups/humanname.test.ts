@@ -241,7 +241,7 @@ describe('HumanName Lookup Table', () => {
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
-  test('Sort by name, missing always last', () =>
+  test('Sort by name with some missing', () =>
     withTestContext(async () => {
       const name = randomUUID();
       const identifier = randomUUID();
@@ -279,7 +279,7 @@ describe('HumanName Lookup Table', () => {
       });
 
       expect(descending.entry?.length).toStrictEqual(3);
-      expect(descending.entry?.map((e) => e.resource?.id)).toStrictEqual([p2.id, p1.id, p3.id]);
+      expect(descending.entry?.map((e) => e.resource?.id)).toStrictEqual([p3.id, p2.id, p1.id]);
     }));
 
   test('Purges related resource type', async () => {

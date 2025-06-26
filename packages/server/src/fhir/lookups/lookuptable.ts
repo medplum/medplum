@@ -196,7 +196,7 @@ export abstract class LookupTable {
       joinName,
       joinOnExpression
     );
-    selectQuery.orderBy(new Column(joinName, columnName), sortRule.descending, 'last');
+    selectQuery.orderBy(new Column(joinName, columnName), sortRule.descending);
   }
 
   /**
