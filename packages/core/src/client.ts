@@ -385,6 +385,13 @@ export interface MedplumRequestOptions extends RequestInit {
   disableAutoBatch?: boolean;
 }
 
+export interface PushToAgentOptions extends MedplumRequestOptions {
+  /**
+   * Time to wait before request timeout in milliseconds; defaults to `10000` (10 s)
+   */
+  waitTimeout?: number;
+}
+
 export type FetchLike = (url: string, options?: any) => Promise<any>;
 
 /**
@@ -2826,8 +2833,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     body: any,
     contentType?: string,
     waitForResponse?: boolean,
-    options?: MedplumRequestOptions
+    options?: PushToAgentOptions
   ): Promise<any> {
+    const { waitTimeout, ...requestOptions } = options ?? {};
     return this.post(
       this.fhirUrl('Agent', resolveId(agent) as string, '$push'),
       {
@@ -2835,9 +2843,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         body,
         contentType,
         waitForResponse,
+        ...(waitTimeout !== undefined ? { waitTimeout } : undefined),
       },
       ContentType.FHIR_JSON,
-      options
+      requestOptions
     );
   }
 
