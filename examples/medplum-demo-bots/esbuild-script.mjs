@@ -12,6 +12,8 @@ const entryPoints = fastGlob.sync('./src/**/*.ts').filter((file) => !file.endsWi
 
 const botLayerDeps = Object.keys(botLayer.dependencies);
 
+const additionalExternals = ['twilio'];
+
 // Define the esbuild options
 const esbuildOptions = {
   entryPoints: entryPoints,
@@ -22,7 +24,7 @@ const esbuildOptions = {
     '.ts': 'ts', // Load TypeScript files
   },
   resolveExtensions: ['.ts', '.js'],
-  external: botLayerDeps,
+  external: [...botLayerDeps, ...additionalExternals],
   format: 'cjs', // Set output format as ECMAScript modules
   target: 'es2020', // Set the target ECMAScript version
   tsconfig: 'tsconfig.json',
