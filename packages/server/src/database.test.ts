@@ -17,7 +17,6 @@ import {
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
 import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
 
-// This isn't really a mocked value, but it must be named that way to appease jest
 const latestVersion = getLatestPostDeployMigrationVersion();
 
 describe('Database config', () => {
