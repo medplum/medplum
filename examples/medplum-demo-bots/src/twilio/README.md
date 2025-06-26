@@ -72,6 +72,32 @@ This bot provides a foundation for voice call handling. You can extend it to:
 - Implement interactive voice response (IVR) menus
 - Queue calls or route to available practitioners
 
+## Deploying the Bot
+
+The provided example uses the [twilio SDK](https://www.npmjs.com/package/twilio) to generate TwiML responses, but building bots with this dependency generates files that are too large to deploy to Medplum. To overcome this, the Medplum bot layer comes pre-installed with `twilio`. To prevent your build from bundling the `twilio` code you need to change `esbuild-script.mjs` and set the `twilio` package as an external dependency.
+
+```js
+// esbuild-script.mjs
+import botLayer from '@medplum/bot-layer/package.json' with { type: 'json' };
+
+const botLayerDeps = Object.keys(botLayer.dependencies);
+const additionalExternals = ['twilio'];
+
+esbuild.build({
+  ...
+  external: [...botLayerDeps, ...additionalExternals],
+});
+```
+
+For this to work as expected you also need to be careful with the way you import from `twilio`. Use the following pattern to access internal modules of the `twilio` package.
+
+```ts
+import twilio from 'twilio';
+
+const { twiml, validateRequest } = twilio;
+const VoiceResponse = twiml.VoiceResponse;
+```
+
 ## Support
 
 For issues related to Medplum, please refer to the [Medplum documentation](https://www.medplum.com/docs) or contact Medplum support in [Discord](https://discord.gg/medplum).
