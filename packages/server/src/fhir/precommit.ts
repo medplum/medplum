@@ -41,13 +41,13 @@ export async function preCommitValidation(
   // or if the server does not have pre-commit enabled
   // or if the project does not have pre-commit enabled
   if (
-    project?.setting?.find((s) => s.name === 'preCommitSubscriptionBlacklist')?.valueString === author.reference ||
     !getConfig().preCommitSubscriptionsEnabled ||
     !project?.setting?.find((s) => s.name === 'preCommitSubscriptionsEnabled')?.valueBoolean
   ) {
     return undefined;
   }
 
+  resource.meta = { ...resource.meta, author };
   const systemRepo = getSystemRepo();
   const logger = getLogger();
   const subscriptions = await systemRepo.searchResources<Subscription>({
