@@ -9,7 +9,7 @@ import {
   resourceMatchesSubscriptionCriteria,
   WithId,
 } from '@medplum/core';
-import { Bot, Project, Resource, Subscription } from '@medplum/fhirtypes';
+import { Bot, Project, Reference, Resource, Subscription } from '@medplum/fhirtypes';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
@@ -31,11 +31,13 @@ export function isPreCommitSubscription(subscription: WithId<Subscription>): boo
  * @returns The validated resource if a pre-commit bot returns one, otherwise undefined.
  */
 export async function preCommitValidation(
+  author: Reference,
   project: WithId<Project> | undefined,
   resource: WithId<Resource>,
   interaction: BackgroundJobInteraction
 ): Promise<Resource | undefined> {
   if (
+    project?.setting?.find((s) => s.name === 'preCommitSubscriptionBlacklist')?.valueString === author.reference ||
     !getConfig().preCommitSubscriptionsEnabled ||
     !project?.setting?.find((s) => s.name === 'preCommitSubscriptionsEnabled')?.valueBoolean
   ) {

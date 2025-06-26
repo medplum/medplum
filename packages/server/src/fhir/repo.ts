@@ -662,7 +662,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    resource = ((await preCommitValidation(this.context.projects?.[0], resource, 'update')) as WithId<T>) ?? resource;
+    resource =
+      ((await preCommitValidation(this.context.author, this.context.projects?.[0], resource, 'update')) as WithId<T>) ??
+      resource;
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
@@ -1092,7 +1094,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(forbidden);
       }
 
-      await preCommitValidation(this.context.projects?.[0], resource, 'delete');
+      await preCommitValidation(this.context.author, this.context.projects?.[0], resource, 'delete');
 
       await this.deleteCacheEntry(resourceType, id);
 
