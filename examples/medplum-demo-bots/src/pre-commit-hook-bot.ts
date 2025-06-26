@@ -117,6 +117,15 @@ async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<Pat
 export async function handler(_medplum: MedplumClient, event: BotEvent): Promise<any> {
   const patient = event.input as Patient;
 
+  const heritageEHRClientApplication = event.secrets['HERITAGE_EHR_APP'].valueString;
+  if (patient.meta?.author?.reference === heritageEHRClientApplication) {
+    console.log('heritage ehr, skipping');
+    delete patient.meta;
+    return patient;
+  }
+
+  delete patient.meta;
+
   if (event.headers?.['X-Medplum-Deleted-Resource']) {
     return syncHapiResource(patient, HTTP_VERBS['DELETE']);
   } else {
