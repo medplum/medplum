@@ -101,6 +101,7 @@ import { validateResourceWithJsonSchema } from './jsonschema';
 import { TokenTable } from './lookups/token';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
+import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
@@ -660,6 +661,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
+    await preCommitValidation(this.context.projects?.[0], resource, 'update');
+
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
@@ -1087,6 +1090,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       if (!this.canPerformInteraction(AccessPolicyInteraction.DELETE, resource)) {
         throw new OperationOutcomeError(forbidden);
       }
+
+      await preCommitValidation(this.context.projects?.[0], resource, 'delete');
 
       await this.deleteCacheEntry(resourceType, id);
 
