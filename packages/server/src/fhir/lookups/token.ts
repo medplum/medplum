@@ -158,7 +158,7 @@ export class TokenTable extends LookupTable {
     const joinName = selectQuery.getNextJoinAlias();
     const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
     selectQuery.join(
-      'INNER JOIN',
+      'LEFT JOIN',
       new SelectQuery(lookupTableName)
         .distinctOn('resourceId')
         .column('resourceId')

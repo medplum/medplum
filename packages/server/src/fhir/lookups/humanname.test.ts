@@ -241,6 +241,47 @@ describe('HumanName Lookup Table', () => {
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
+  test('Sort by name with some missing', () =>
+    withTestContext(async () => {
+      const name = randomUUID();
+      const identifier = randomUUID();
+
+      const p1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ value: identifier }],
+        name: [{ given: ['Alice'], family: name }],
+      });
+
+      const p2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ value: identifier }],
+        name: [{ given: ['Bob'], family: name }],
+      });
+
+      const p3 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        identifier: [{ value: identifier }],
+      });
+
+      const ascending = await systemRepo.search({
+        resourceType: 'Patient',
+        sortRules: [{ code: 'name' }],
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+      });
+
+      expect(ascending.entry?.length).toStrictEqual(3);
+      expect(ascending.entry?.map((e) => e.resource?.id)).toStrictEqual([p1.id, p2.id, p3.id]);
+
+      const descending = await systemRepo.search({
+        resourceType: 'Patient',
+        sortRules: [{ code: 'name', descending: true }],
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: identifier }],
+      });
+
+      expect(descending.entry?.length).toStrictEqual(3);
+      expect(descending.entry?.map((e) => e.resource?.id)).toStrictEqual([p3.id, p2.id, p1.id]);
+    }));
+
   test('Purges related resource type', async () => {
     const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
 
