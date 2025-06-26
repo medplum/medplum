@@ -29,6 +29,14 @@ let project: Project;
 let adminAccessToken: string;
 let nonAdminAccessToken: string;
 
+jest.mock('../migrations/data/index', () => {
+  return {
+    v1: jest.requireMock('../migrations/data/v1'),
+    v2: jest.requireMock('../migrations/data/v2'),
+    v3: jest.requireMock('../migrations/data/v2'),
+  };
+});
+
 describe('isValidTableName', () => {
   test('isValidTableName', () => {
     expect(isValidTableName('Observation')).toStrictEqual(true);
@@ -546,6 +554,20 @@ describe('Super Admin routes', () => {
     expect(res1.status).toStrictEqual(202);
     expect(res1.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+  });
+
+  describe('/migrations', () => {
+    test('Migrate', async () => {
+      const res1 = await request(app)
+        .get('/admin/super/migrations')
+        .set('Authorization', 'Bearer ' + adminAccessToken);
+
+      expect(res1.body).toStrictEqual({
+        postDeployMigrations: [1, 2, 3],
+        pendingPostDeployMigration: 0,
+      });
+      expect(res1.status).toStrictEqual(200);
+    });
   });
 
   describe('Table settings', () => {

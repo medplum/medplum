@@ -90,7 +90,7 @@ export default function ChargeItemPanel(props: ChargeItemPanelProps): JSX.Elemen
           <Box flex={1} mr="md">
             <CodeableConceptInput
               key={cptCodeKey}
-              binding="http://medplum.com/fhir/ValueSet/cpt-codes"
+              binding="http://www.ama-assn.org/go/cpt/vs"
               label="CPT Code"
               name="cptCode"
               path="cptCode"

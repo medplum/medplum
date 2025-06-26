@@ -27,6 +27,7 @@ import { ProjectDetailsPage } from './admin/ProjectDetailsPage';
 import { ProjectPage } from './admin/ProjectPage';
 import { SecretsPage } from './admin/SecretsPage';
 import { SitesPage } from './admin/SitesPage';
+import { SuperAdminAsyncDashboardPage } from './admin/SuperAdminAsyncJobPage';
 import { SuperAdminPage } from './admin/SuperAdminPage';
 import { UsersPage } from './admin/UsersPage';
 import { AssaysPage } from './lab/AssaysPage';
@@ -75,6 +76,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/smart" element={<SmartSearchPage />} />
         <Route path="/forms/:id" element={<FormPage />} />
         <Route path="/admin/super" element={<SuperAdminPage />} />
+        <Route path="/admin/super/asyncjob" element={<SuperAdminAsyncDashboardPage />} />
         <Route path="/admin/config" element={<ProjectAdminConfigPage />} />
         <Route path="/admin" element={<ProjectPage />}>
           <Route path="patients" element={<PatientsPage />} />

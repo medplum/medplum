@@ -7,26 +7,24 @@ import {
   NumberInput,
   PasswordInput,
   Stack,
-  Text,
   TextInput,
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { notifications, showNotification } from '@mantine/notifications';
-import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
-import { Parameters, Resource } from '@medplum/fhirtypes';
+import { showNotification } from '@mantine/notifications';
+import { forbidden, normalizeErrorString } from '@medplum/core';
+import { Parameters } from '@medplum/fhirtypes';
 import {
   DateTimeInput,
   Document,
   Form,
   FormSection,
-  MedplumLink,
   OperationOutcomeAlert,
   convertLocalToIso,
   useMedplum,
 } from '@medplum/react';
-import { IconCheck, IconX } from '@tabler/icons-react';
 import { JSX, ReactNode, useState } from 'react';
+import { startAsyncJob } from './SuperAdminStartAsyncJob';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
@@ -311,57 +309,4 @@ function MaxResourceVersionInput(): JSX.Element {
       )}
     </>
   );
-}
-
-function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: Record<string, string>): void {
-  // Use a random ID rather than just `url` to facilitate multiple requests of the same type
-  const notificationId = Date.now().toString();
-
-  showNotification({
-    id: notificationId,
-    loading: true,
-    title,
-    message: 'Running...',
-    autoClose: false,
-    withCloseButton: false,
-  });
-
-  const options: MedplumRequestOptions = { method: 'POST', pollStatusOnAccepted: true };
-  if (body) {
-    options.body = JSON.stringify(body);
-  }
-
-  medplum
-    .startAsyncRequest<Resource>(url, options)
-    .then((resource) => {
-      let message: React.ReactNode = 'Done';
-      if (resource.resourceType === 'AsyncJob') {
-        message = <MedplumLink to={resource}>View AsyncJob</MedplumLink>;
-      } else if (resource.resourceType === 'OperationOutcome' && resource.issue?.[0]?.details?.text) {
-        message = <Text>{resource.issue[0].details.text}</Text>;
-      }
-
-      notifications.update({
-        id: notificationId,
-        color: 'green',
-        title,
-        message,
-        icon: <IconCheck size="1rem" />,
-        loading: false,
-        autoClose: false,
-        withCloseButton: true,
-      });
-    })
-    .catch((err) => {
-      notifications.update({
-        id: notificationId,
-        color: 'red',
-        title,
-        message: normalizeErrorString(err),
-        icon: <IconX size="1rem" />,
-        loading: false,
-        autoClose: false,
-        withCloseButton: true,
-      });
-    });
 }

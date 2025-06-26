@@ -101,6 +101,7 @@ import { validateResourceWithJsonSchema } from './jsonschema';
 import { TokenTable } from './lookups/token';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
+import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
@@ -660,6 +661,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
+    await preCommitValidation(this.context.projects?.[0], resource, 'update');
+
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
@@ -1088,6 +1091,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(forbidden);
       }
 
+      await preCommitValidation(this.context.projects?.[0], resource, 'delete');
+
       await this.deleteCacheEntry(resourceType, id);
 
       await this.ensureInTransaction(async (conn) => {
@@ -1436,9 +1441,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
    * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
    * 6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
+   * 7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
    *
    */
-  static readonly VERSION: number = 6;
+  static readonly VERSION: number = 7;
 
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
@@ -1457,8 +1463,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const searchParams = getStandardAndDerivedSearchParameters(resourceType);
     if (searchParams.length > 0) {
       const startTime = process.hrtime.bigint();
-      for (const searchParam of searchParams) {
-        this.buildColumn(resource, row, searchParam);
+      try {
+        for (const searchParam of searchParams) {
+          this.buildColumn(resource, row, searchParam);
+        }
+      } catch (err) {
+        getLogger().error('Error building row for resource', {
+          resource: `${resourceType}/${resource.id}`,
+          err,
+        });
+        throw err;
       }
       recordHistogramValue(
         'medplum.server.indexingDurationMs',

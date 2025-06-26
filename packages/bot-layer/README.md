@@ -15,6 +15,7 @@ Current packages:
 - [`pdfmake`](https://www.npmjs.com/package/pdfmake)
 - [`ssh2`](https://www.npmjs.com/package/ssh2)
 - [`ssh2-sftp-client`](https://www.npmjs.com/package/ssh2-sftp-client)
+- [`twilio`](https://www.npmjs.com/package/twilio)
 
 ## Usage
 

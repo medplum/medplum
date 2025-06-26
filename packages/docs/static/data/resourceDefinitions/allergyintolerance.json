@@ -753,6 +753,12 @@
       "type": "token",
       "description": "unconfirmed | confirmed | refuted | entered-in-error",
       "expression": "AllergyIntolerance.verificationStatus"
+    },
+    {
+      "name": "encounter",
+      "type": "reference",
+      "description": "The Encounter this AllergyIntolerance was part of",
+      "expression": "AllergyIntolerance.encounter"
     }
   ]
 }
