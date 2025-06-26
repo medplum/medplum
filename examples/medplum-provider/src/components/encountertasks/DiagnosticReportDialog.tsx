@@ -17,7 +17,6 @@ export default function DiagnosticReportDialog(props: DiagnosticReportDialogProp
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = useCallback(async () => {
-
     if (!diagnosis) {
       showErrorNotification('Please select a diagnosis');
       return;
