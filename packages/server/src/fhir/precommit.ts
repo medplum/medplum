@@ -25,6 +25,7 @@ export function isPreCommitSubscription(subscription: WithId<Subscription>): boo
 /**
  * Performs pre-commit validation for a resource by executing any associated pre-commit bots.
  * Throws an error if the bot execution fails.
+ * @param author - The author of the resource, used to check against blacklisted authors for pre-commit
  * @param project  - The project to which the resource belongs. Must be passed separately because this is called before the resource meta is assigned.
  * @param resource  - The resource to validate.
  * @param interaction - The interaction type (e.g., 'create', 'update', 'delete').
@@ -36,6 +37,9 @@ export async function preCommitValidation(
   resource: WithId<Resource>,
   interaction: BackgroundJobInteraction
 ): Promise<Resource | undefined> {
+  // exit if the author is blacklisted from using pre-commit
+  // or if the server does not have pre-commit enabled
+  // or if the project does not have pre-commit enabled
   if (
     project?.setting?.find((s) => s.name === 'preCommitSubscriptionBlacklist')?.valueString === author.reference ||
     !getConfig().preCommitSubscriptionsEnabled ||
