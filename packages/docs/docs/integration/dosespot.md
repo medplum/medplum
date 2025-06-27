@@ -75,4 +75,3 @@ The DoseSpot eRx interface, provides access to drug monographs when a prescripti
 Drop-down fields within the Medplum eRx interface cannot be customized. However, prescribers can use the free text instructions field for adding notes.
 
 Similarly, the patient notes field can not be auto-populated at this time.
-
