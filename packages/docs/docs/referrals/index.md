@@ -63,67 +63,6 @@ comm -->|about| referral
 | [ICD-10](https://www.cdc.gov/nchs/icd/icd10cm_browsertool.htm) | Used in [`Condition`](/docs/api/fhir/resources/condition) resources to specify diagnoses that justify the referral.                           |
 | [LOINC](https://loinc.org/)                                    | Used in [`Observation`](/docs/api/fhir/resources/observation) resources to specify clinical measurements included in the referral.            |
 
-## Magic Links for Secure Access
-
-For receiving providers who are not users of your system, you can implement magic links to provide secure, temporary access to referral information:
-
-```typescript
-import { MedplumClient } from '@medplum/core';
-import { v4 as uuidv4 } from 'uuid';
-import { createHash } from 'crypto';
-
-// Store for magic link tokens (in production, use a database)
-const magicLinkTokens = new Map();
-
-// Function to generate a magic link for referral access
-export async function generateReferralMagicLink(
-  email: string, 
-  serviceRequestId: string, 
-  redirectUrl: string,
-  expiresIn: number = 24 * 60 * 60 * 1000 // 24 hours by default
-) {
-  // Generate a unique token
-  const token = uuidv4();
-  const tokenHash = createHash('sha256').update(token).digest('hex');
-  
-  // Store token with referral info
-  magicLinkTokens.set(tokenHash, {
-    email,
-    serviceRequestId,
-    expires: Date.now() + expiresIn,
-    used: false
-  });
-
-  // Create the magic link URL
-  const magicLink = `${redirectUrl}?token=${token}`;
-  
-  return magicLink;
-}
-
-// Function to validate a magic link token
-export async function validateReferralMagicLink(token: string) {
-  const tokenHash = createHash('sha256').update(token).digest('hex');
-  const tokenData = magicLinkTokens.get(tokenHash);
-  
-  if (!tokenData) {
-    throw new Error('Invalid token');
-  }
-  
-  if (tokenData.expires < Date.now()) {
-    magicLinkTokens.delete(tokenHash);
-    throw new Error('Token expired');
-  }
-  
-  if (tokenData.used) {
-    throw new Error('Token already used');
-  }
-  
-  // Mark token as used if it's a one-time use token
-  tokenData.used = true;
-  
-  return tokenData.serviceRequestId;
-}
-```
 
 ## Reference
 
