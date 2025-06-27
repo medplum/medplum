@@ -45,16 +45,11 @@ export default function NotFoundContent({ className }: Props): ReactNode {
             </Translate>
           </Heading>
           <p>
-            <Translate id="theme.NotFound.p1" description="The first paragraph of the 404 page">
-              We could not find what you were looking for.
-            </Translate>
-          </p>
-          <p>
-            <Translate id="theme.NotFound.p2" description="The 2nd paragraph of the 404 page">
+            <Translate id="theme.NotFound.p1" description="The 2nd paragraph of the 404 page">
               Search related pages:
             </Translate>
             <span>
-              {' '}
+              {' '}<br></br>
               <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd>
             </span>
           </p>
