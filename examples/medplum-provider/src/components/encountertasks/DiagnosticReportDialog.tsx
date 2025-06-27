@@ -2,7 +2,7 @@ import { JSX, useCallback, useState } from 'react';
 import { CodeableConceptInput, Form, ResourceInput, useMedplum } from '@medplum/react';
 import { Button, Group, Stack } from '@mantine/core';
 import { CodeableConcept, DiagnosticReport, Practitioner } from '@medplum/fhirtypes';
-import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import { showErrorNotification } from '../../utils/notifications';
 
 interface DiagnosticReportDialogProps {
@@ -12,12 +12,16 @@ interface DiagnosticReportDialogProps {
 export default function DiagnosticReportDialog(props: DiagnosticReportDialogProps): JSX.Element {
   const { onDiagnosticReportCreated } = props;
   const medplum = useMedplum();
-  const [problem, setProblem] = useState<CodeableConcept | undefined>(undefined);
   const [diagnosis, setDiagnosis] = useState<CodeableConcept | undefined>(undefined);
   const [performer, setPerformer] = useState<Practitioner | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = useCallback(async () => {
+    if (!diagnosis) {
+      showErrorNotification('Please select a diagnosis');
+      return;
+    }
+
     setIsLoading(true);
     const conclusion = diagnosis ? diagnosis.text || diagnosis.coding?.[0]?.display : undefined;
     const conclusionCodes = [...(diagnosis ? [diagnosis] : [])];
@@ -26,7 +30,7 @@ export default function DiagnosticReportDialog(props: DiagnosticReportDialogProp
     const diagnosticReport: DiagnosticReport = {
       resourceType: 'DiagnosticReport',
       status: 'final',
-      code: problem || { coding: [], text: '' },
+      code: { coding: [...(diagnosis?.coding || [])] },
       performer: performer ? [{ reference: getReferenceString(performer) }] : undefined,
       conclusion,
       conclusionCode,
@@ -41,7 +45,7 @@ export default function DiagnosticReportDialog(props: DiagnosticReportDialogProp
     } finally {
       setIsLoading(false);
     }
-  }, [medplum, problem, diagnosis, performer, onDiagnosticReportCreated]);
+  }, [medplum, diagnosis, performer, onDiagnosticReportCreated]);
 
   return (
     <Form onSubmit={handleSubmit}>
@@ -52,15 +56,6 @@ export default function DiagnosticReportDialog(props: DiagnosticReportDialogProp
           resourceType="Practitioner"
           required
           onChange={(performer) => setPerformer(performer as Practitioner)}
-        />
-
-        <CodeableConceptInput
-          name="code"
-          label="Problem"
-          path="Condition.code"
-          required
-          binding={HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-condition-code'}
-          onChange={(problem) => setProblem(problem)}
         />
 
         <CodeableConceptInput
