@@ -7,6 +7,7 @@ This collaboration enables healthcare professionals to seamlessly place medicati
 - Clinician identity proofing
 - Drug-drug interactions
 - Patient coverage benefits checks
+- Electronic Prescriptions for Controlled Substances (EPCS)
 
 ## DoseSpot FAQ
 
@@ -31,6 +32,19 @@ This procedure is integral to the DoseSpot's identity proofing protocol. Such id
 A "Prescriber" is a user authorized to directly issue prescriptions, holding the necessary credentials and permissions.
 
 A "Proxy" user, however, acts as an assistant or delegate, performing tasks on behalf of a Prescriber but does not have the authority to finalize prescriptions without review and approval by a Prescriber.
+
+### Does Medplum support controlled substances prescriptions?
+
+Yes, Medplum supports Electronic Prescriptions for Controlled Substances (EPCS) through DoseSpot's platform. This includes:
+
+- **Schedule II drugs**: Maximum 90-day supply, days supply field is required
+- **Schedule III-V drugs**: Maximum 120-day supply, days supply field is required
+- **Special requirements for Ohio prescribers**: Days supply is required for all controlled substances
+
+When prescribing controlled substances, additional requirements include:
+- An effective date must be specified
+- A diagnosis is required for EPCS prescriptions
+- Enhanced security measures and identity verification are enforced
 
 ### How do "Refill" and "Reorder" differ within Medplum?
 
@@ -65,3 +79,7 @@ The DoseSpot eRx interface, provides access to drug monographs when a prescripti
 Drop-down fields within the Medplum eRx interface cannot be customized. However, prescribers can use the free text instructions field for adding notes.
 
 Similarly, the patient notes field can not be auto-populated at this time.
+
+### What are the requirements for prescribing compound medications?
+
+When prescribing compound medications or free-text supplies, clinicians must confirm that the prescription is not for a controlled substance by checking the checkbox next to "This is not a controlled substance" before saving the prescription.
