@@ -806,6 +806,60 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/medplum-log-levels",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "medplum-log-levels",
+        "url": "https://medplum.com/fhir/CodeSystem/medplum-log-levels",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/medplum-log-levels",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "none",
+            "display": "NONE",
+            "definition": "None"
+          },
+          {
+            "code": "error",
+            "display": "ERROR",
+            "definition": "Error"
+          },
+          {
+            "code": "warn",
+            "display": "WARN",
+            "definition": "Warn"
+          },
+          {
+            "code": "info",
+            "display": "INFO",
+            "definition": "Info"
+          },
+          {
+            "code": "debug",
+            "display": "DEBUG",
+            "definition": "Debug"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/medplum-log-levels",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "medplum-log-levels",
+        "url": "https://medplum.com/fhir/ValueSet/medplum-log-levels",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/medplum-log-levels"
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/loinc-stub",
       "resource": {
         "resourceType": "CodeSystem",
