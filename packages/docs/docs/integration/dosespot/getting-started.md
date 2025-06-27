@@ -6,16 +6,92 @@ This guide explains how to get the **DoseSpot eRx interface iframed into Medplum
 This is a [premium](/pricing) tier 3rd party integration feature. Please contact us at [support@medplum.com](mailto:support@medplum.com) to get access.
 :::
 
+## Authentication
+
+To use any of the hooks or Bots, you will first need to add your DoseSpot clinician id as an [identifier](/docs/fhir-basics#naming-data-identifiers) to each User's [ProjectMembership](/docs/api/fhir/resources/projectmembership). Please contact Medplum support to get your DoseSpot clinician id.
+
+```typescript
+{
+  "resourceType": "ProjectMembership",
+  "id": "123",
+  "project": {
+    "reference": "Project/123"
+  },
+  "user": {
+    "reference": "User/123"
+  },
+  "identifier": [
+    {
+      "system": "https://my.staging.dosespot.com/webapi/v2/",//https://my.dosespot.com/webapi/v2/ for production
+      "value": "123456"
+    }
+  ],
+}
+```
 ## Syncing Patient and Showing Iframe
 
 To embed the DoseSpot eRx interface into Medplum and sync a patient's data to DoseSpot, you should use the [useDoseSpotIFrame](https://github.com/medplum/medplum/blob/113821deb5058bc1c6bc95f5d294d05e7fc4cd5e/packages/dosespot-react/src/useDoseSpotIFrame.ts#L12) hook, called with *a specific patient*. It will handle the SSO into DoseSpot, returning a URL that can be embedded in an iframe and sync the patient by doing the following:
 
-1. **Syncs Patient -> DoseSpot**: If the patient has not yet been synced with DoseSpot, it will add an identifier with the system `http://dosespot.com/patient-id` to the [Patient](/docs/api/fhir/resources/patient) resource (if not already present).
-
-2. **Syncs [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) -> DoseSpot for DAI (Drug-Allergy-Interaction) checks**: You must have an [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) resource with the patient reference set. On successful sync, a DoseSpot identifier with the system `http://dosespot.com/self-reported-allergy-id` is added to the [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) resource.
+1. **Syncs Patient -> DoseSpot**: If the patient has not yet been synced with DoseSpot, it will add an identifier with the system `http://dosespot.com/patient-id` to the [Patient](/docs/api/fhir/resources/patient) resource (if not already present). The patient must include a valid:
+- email address
+- 9 digit phone number with no +1 prefix
+- address
+- date of birth
+- name (first and last)
 
 <details>
-  <summary>Example of an AllergyIntolerance that will be synced to DoseSpot to be used for **DAI checks in DoseSpot**</summary>
+  <summary>See this example of a valid Patient that will be synced to DoseSpot</summary>
+
+```typescript
+{
+  {
+  "resourceType": "Patient",
+  "name": [ //Required
+    {
+      "given": [
+        "Frodo"
+      ],
+      "family": "Baggins"
+    }
+  ],
+  "telecom": [
+    {
+      "system": "email",
+      "use": "home",
+      "value": "frodo@example.com" //Required
+    },
+    {
+      "system": "phone",
+      "use": "home",
+      "value": "6175672093"//Required: cannot have a +1 prefix and must be 9 digits
+    }
+  ],
+  "address": [//Required
+    {
+      "line": [
+        "98 Battery St"
+      ],
+      "city": "San Francisco",
+      "state": "CA",
+      "postalCode": "94118"
+    }
+  ],
+  "birthDate": "1978-06-15",//Required
+  "identifier": [ 
+    { //This is added if the sync is successful
+      "system": "https://dosespot.com/patient-id",
+      "value": "78089260"
+    }
+  ]
+}
+```
+</details>
+
+
+2. **Syncs [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) -> DoseSpot for DAI (Drug-Allergy-Interaction) checks**: You must have an [AllergyIntolerance](/docs/api/fhir/resources/allergyintolerance) resource with the patient reference set.
+
+<details>
+  <summary>Example of a valid AllergyIntolerance that will be synced to DoseSpot to be used for **DAI checks in DoseSpot**</summary>
 
 ```typescript
 {
@@ -33,12 +109,18 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
     ],
     "text": "Vibramycin 100 mg capsule"
   },
+  "identifier": [//This is added if the sync is successful
+    {
+      "system": "https://dosespot.com/self-reported-allergy-id",
+      "value": "123"
+    }
+  ]
   //...
 }
 ```
 </details>
 
-3. **Syncs any self-reported [MedicationRequest](/docs/api/fhir/resources/medicationrequest) -> DoseSpot for DDI (Drug-Drug-Interaction) checks**: For the MedicationRequest to be synced, you must create a MedicationRequest resource with `MedicationRequest.intent` set to `plan`. On successful sync, a DoseSpot identifier with the system `http://dosespot.com/self-reported-medication-id` is added to the [MedicationRequest](/docs/api/fhir/resources/medicationrequest) resource.
+3. **Syncs any self-reported [MedicationRequest](/docs/api/fhir/resources/medicationrequest) -> DoseSpot for DDI (Drug-Drug-Interaction) checks**: For the MedicationRequest to be synced, you must create a MedicationRequest resource with `MedicationRequest.intent` set to `plan`.
 
 <details>
   <summary>Example of a MedicationRequest that will be synced to DoseSpot to be used for **DDI checks in DoseSpot**</summary>
@@ -57,6 +139,12 @@ To embed the DoseSpot eRx interface into Medplum and sync a patient's data to Do
     ],
     "text": "Vibramycin 100 mg capsule"
   },
+  "identifier": [//This is added if the sync is successful
+    {
+      "system": "https://dosespot.com/self-reported-medication-id",
+      "value": "123"
+    }
+  ]
   //...
 }
 ```
