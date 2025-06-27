@@ -7,6 +7,7 @@ This collaboration enables healthcare professionals to seamlessly place medicati
 - Clinician identity proofing
 - Drug-drug interactions
 - Patient coverage benefits checks
+- Electronic Prescriptions for Controlled Substances (EPCS)
 
 ## DoseSpot FAQ
 
@@ -31,6 +32,15 @@ This procedure is integral to the DoseSpot's identity proofing protocol. Such id
 A "Prescriber" is a user authorized to directly issue prescriptions, holding the necessary credentials and permissions.
 
 A "Proxy" user, however, acts as an assistant or delegate, performing tasks on behalf of a Prescriber but does not have the authority to finalize prescriptions without review and approval by a Prescriber.
+
+### Does Medplum support controlled substances prescriptions?
+
+Yes, Medplum supports Electronic Prescriptions for Controlled Substances (EPCS) through DoseSpot's platform. 
+
+When prescribing controlled substances, additional requirements include:
+- An effective date must be specified
+- A diagnosis is required for EPCS prescriptions
+- Enhanced security measures and identity verification are enforced
 
 ### How do "Refill" and "Reorder" differ within Medplum?
 
