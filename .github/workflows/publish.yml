@@ -236,14 +236,14 @@ jobs:
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-installer-" + process.env.MEDPLUM_VERSION + ".exe",
-              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + process.env.MEDPLUM_VERSION + ".exe")
+              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe`)
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-installer-" + process.env.MEDPLUM_VERSION + ".exe.sha256",
-              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + process.env.MEDPLUM_VERSION + ".exe.sha256")
+              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.sha256`)
             });
 
   build_agent_linux-x64:
@@ -312,14 +312,14 @@ jobs:
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-x64",
-              data: await fs.readFileSync("packages/agent/medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-x64")
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux-x64`)
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-x64.sha256",
-              data: await fs.readFileSync("packages/agent/medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-x64.sha256")
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux-x64.sha256`)
             });
 
   build_agent_linux-arm64:
@@ -388,12 +388,12 @@ jobs:
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-arm64",
-              data: await fs.readFileSync("packages/agent/medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-arm64")
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux-arm64`)
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-arm64.sha256",
-              data: await fs.readFileSync("packages/agent/medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-arm64.sha256")
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux-arm64.sha256`)
             });
