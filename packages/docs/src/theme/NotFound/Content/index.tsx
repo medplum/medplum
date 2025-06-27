@@ -55,7 +55,7 @@ export default function NotFoundContent({ className }: Props): ReactNode {
             </Translate>
             <span>
               {' '}
-              <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>F</kbd>
+              <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd>
             </span>
           </p>
         </div>
