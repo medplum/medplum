@@ -16,12 +16,24 @@ export default function NotFoundContent({ className }: Props): ReactNode {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
-      // ctrlKey for Windows/Linux, metaKey for Mac
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
         e.preventDefault();
-        const searchUrl = getSearchUrl();
-        if (searchUrl) {
-          window.location.assign(searchUrl);
+
+        // Open the search modal (simulate click on the search button)
+        const searchButton = document.querySelector('.DocSearch-Button') as HTMLElement;
+        if (searchButton) {
+          searchButton.click();
+
+          // Wait for the input to appear, then set its value
+          setTimeout(() => {
+            const input = document.querySelector('.DocSearch-Input') as HTMLElement;
+            if (input) {
+              const path = window.location.pathname + window.location.search + window.location.hash;
+              input.value = path;
+              // Dispatch input event so DocSearch picks up the change
+              input.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          }, 100); // Adjust delay as needed
         }
       }
     }
@@ -44,34 +56,15 @@ export default function NotFoundContent({ className }: Props): ReactNode {
             </Translate>
           </p>
           <p>
-            <Translate id="theme.NotFound.p2" description="The 2nd paragraph of the 404 page">
-              Try searching for related pages:
+            <Translate
+              id="theme.NotFound.p2"
+              description="The 2nd paragraph of the 404 page">
+              Search related pages: 
             </Translate>
-            {(() => {
-              if (typeof window === 'undefined') {
-                return null;
-              }
-              const searchUrl = getSearchUrl();
-              return (
-                <div style={{ marginTop: '1em' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5em', marginTop: '0.5em' }}>
-                    <input
-                      type="text"
-                      value={searchUrl}
-                      readOnly
-                      style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.95em' }}
-                      aria-label="Medplum search URL"
-                    />
-                    <a href={searchUrl} target="_blank" rel="noopener noreferrer" style={{ whiteSpace: 'nowrap' }}>
-                      Open
-                    </a>
-                  </div>
-                  <div style={{ fontSize: '0.95em', marginTop: '0.5em' }}>
-                    Hit <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>F</kbd> to find related pages.
-                  </div>
-                </div>
-              );
-            })()}
+            <span>
+              {' '}
+              <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>F</kbd>
+            </span>
           </p>
         </div>
       </div>
