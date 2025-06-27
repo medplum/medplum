@@ -28,8 +28,6 @@ export interface LookupTableSearchParameterImplementation extends SearchParamete
 export interface TokenColumnSearchParameterImplementation extends SearchParameterDetails {
   readonly searchStrategy: typeof SearchStrategies.TOKEN_COLUMN;
   readonly hasDedicatedColumns: boolean;
-  readonly legacyColumnName: string;
-  readonly legacyTextSearchColumnName: string;
   readonly tokenColumnName: string;
   readonly sortColumnName: string;
   readonly textSearchColumnName: string;
@@ -159,11 +157,7 @@ function buildSearchParameterImplementation(
       writeable.tokenColumnName = '__sharedTokens';
       writeable.textSearchColumnName = '__sharedTokensText';
     }
-
     writeable.sortColumnName = '__' + baseName + 'Sort';
-
-    writeable.legacyColumnName = '__tokens';
-    writeable.legacyTextSearchColumnName = '__tokensText';
 
     writeable.caseInsensitive = tokenTable.isCaseInsensitive(searchParam, resourceType);
     writeable.textSearch = ContainsSupportSearchParameterIds.includes(searchParam.id as string);

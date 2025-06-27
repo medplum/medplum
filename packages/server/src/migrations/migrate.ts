@@ -533,8 +533,6 @@ function getSearchParameterColumns(
         { name: impl.tokenColumnName, type: 'UUID[]' },
         { name: impl.textSearchColumnName, type: 'TEXT[]' },
         { name: impl.sortColumnName, type: 'TEXT' },
-        { name: impl.legacyColumnName, type: 'TEXT[]' },
-        { name: impl.legacyTextSearchColumnName, type: 'TEXT[]' },
       ];
 
       if (legacyColumnImpl) {
@@ -563,16 +561,6 @@ function getSearchParameterIndexes(
             {
               expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.textSearchColumnName)}) gin_trgm_ops`,
               name: impl.textSearchColumnName + 'Trgm',
-            },
-          ],
-          indexType: 'gin',
-        },
-        { columns: [impl.legacyColumnName], indexType: 'gin' },
-        {
-          columns: [
-            {
-              expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.legacyTextSearchColumnName)}) gin_trgm_ops`,
-              name: impl.legacyColumnName + 'Trgm',
             },
           ],
           indexType: 'gin',

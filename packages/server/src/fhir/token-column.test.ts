@@ -84,14 +84,6 @@ describe('buildTokenColumns', () => {
         'focus' + DELIM + DELIM + '123',
       ].map(hashTokenColumnValue),
       __sharedTokensText: ['focus' + DELIM + 'ONE TWO THREE'],
-      __tokens: [
-        'focus',
-        'focus' + DELIM + DELIM + 'ONE TWO THREE',
-        'focus' + DELIM + system,
-        'focus' + DELIM + system + DELIM + '123',
-        'focus' + DELIM + DELIM + '123',
-      ],
-      __tokensText: ['focus' + DELIM + DELIM + 'ONE TWO THREE'],
     });
 
     buildTokenColumns(location, locationImpl, columns, rs);
@@ -117,26 +109,6 @@ describe('buildTokenColumns', () => {
         'focus' + DELIM + 'ONE TWO THREE',
         'location' + DELIM + 'ONE TWO THREE',
         'location' + DELIM + 'FOUR FIVE SIX',
-      ],
-      __tokens: [
-        'focus',
-        'focus' + DELIM + DELIM + 'ONE TWO THREE',
-        'focus' + DELIM + system,
-        'focus' + DELIM + system + DELIM + '123',
-        'focus' + DELIM + DELIM + '123',
-        'location',
-        'location' + DELIM + DELIM + 'ONE TWO THREE',
-        'location' + DELIM + system,
-        'location' + DELIM + system + DELIM + '123',
-        'location' + DELIM + DELIM + '123',
-        'location' + DELIM + DELIM + 'FOUR FIVE SIX',
-        'location' + DELIM + system + DELIM + '456',
-        'location' + DELIM + DELIM + '456',
-      ],
-      __tokensText: [
-        'focus' + DELIM + DELIM + 'ONE TWO THREE',
-        'location' + DELIM + DELIM + 'ONE TWO THREE',
-        'location' + DELIM + DELIM + 'FOUR FIVE SIX',
       ],
     });
   });

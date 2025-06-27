@@ -159,14 +159,6 @@ describe('Generator', () => {
           notNull: false,
         },
         {
-          name: '__tokens',
-          type: 'TEXT[]',
-        },
-        {
-          name: '__tokensText',
-          type: 'TEXT[]',
-        },
-        {
           name: '__sharedTokens',
           type: 'UUID[]',
         },
