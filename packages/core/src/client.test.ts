@@ -2633,6 +2633,34 @@ describe('Client', () => {
     );
   });
 
+  test('Push to agent -- waitForResponse, waitTimeout configured', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.pushToAgent(
+      { resourceType: 'Agent', id: '123' },
+      { resourceType: 'Device', id: '456' },
+      'XYZ',
+      ContentType.HL7_V2,
+      true,
+      { waitTimeout: 20000 }
+    );
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Agent/123/$push',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Accept: DEFAULT_ACCEPT,
+          'Content-Type': ContentType.FHIR_JSON,
+          'X-Medplum': 'extended',
+        },
+        body: expect.stringMatching(
+          /.+"destination":".+"body":"XYZ".+"contentType":"x-application\/hl7-v2\+er7".+"waitForResponse":true.+"waitTimeout":20000.+/
+        ),
+      })
+    );
+  });
+
   test('Storage events', async () => {
     // Make window.location writeable
     Object.defineProperty(window, 'location', {
