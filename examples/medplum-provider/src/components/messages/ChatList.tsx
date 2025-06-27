@@ -15,17 +15,18 @@ interface ChatListProps {
 export const ChatList = (props: ChatListProps): JSX.Element => {
   const { communications, selectedCommunication, onClick } = props;
   const medplum = useMedplum();
-  const [lastCommunications, setLastCommunications] = useState<{ id: string, communication: Communication }[] | undefined>(undefined);
+  const [lastCommunications, setLastCommunications] = useState<
+    { id: string; communication: Communication }[] | undefined
+  >(undefined);
 
   useEffect(() => {
-
     const fetchLastCommunications = async (): Promise<void> => {
       const communicationReferences = communications.map((communication) => createReference(communication));
       const allCommunications = await medplum.graphql(`
         query {
           CommunicationList(
             _sort: "-sent"
-            _filter: "part-of eq ${communicationReferences.map(ref => getReferenceString(ref)).join(' or part-of eq ')}"
+            _filter: "part-of eq ${communicationReferences.map((ref) => getReferenceString(ref)).join(' or part-of eq ')}"
           ) {
             id
             partOf {
@@ -41,24 +42,22 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
       const lastCommunications = allCommunications.data.CommunicationList.map((communication: Communication) => {
         return {
           id: communication.partOf?.[0]?.reference?.split('/')[1],
-          communication: communication
+          communication: communication,
         };
       });
 
       setLastCommunications(lastCommunications);
-    }
+    };
 
     fetchLastCommunications().catch((error) => {
       showErrorNotification(error);
     });
-
   }, [communications, medplum]);
-
 
   return (
     <Stack gap={0} p="xs">
       {communications.map((communication: Communication) => {
-        const lastCommunication = lastCommunications?.find(lc => lc.id === communication.id)?.communication;
+        const lastCommunication = lastCommunications?.find((lc) => lc.id === communication.id)?.communication;
         if (!lastCommunication) {
           return null;
         }

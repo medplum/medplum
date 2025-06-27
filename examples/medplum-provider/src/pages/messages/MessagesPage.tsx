@@ -32,9 +32,11 @@ export function MessagesPage(): JSX.Element {
       }
     }
     setLoading(true);
-    fetchAllCommunications().catch(showErrorNotification).finally(() => {
-      setLoading(false);
-    });
+    fetchAllCommunications()
+      .catch(showErrorNotification)
+      .finally(() => {
+        setLoading(false);
+      });
   }, [medplum, selectedThread]);
 
   return (
