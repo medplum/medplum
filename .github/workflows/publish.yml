@@ -246,8 +246,15 @@ jobs:
               data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.sha256`)
             });
 
-  build_agent_linux-x64:
-    runs-on: ubuntu-latest
+  build_agent_linux:
+    strategy:
+      matrix:
+        arch:
+          - image: ubuntu-latest
+            suffix: x64
+          - image: ubuntu-24.04-arm
+            suffix: arm64
+    runs-on: ${{ matrix.arch.image }}
     timeout-minutes: 45
     env:
       NODE_VERSION: '20'
@@ -311,89 +318,13 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-x64",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux-x64`)
+              name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-${{ matrix.arch.suffix }}",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux`)
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-x64.sha256",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux-x64.sha256`)
-            });
-
-  build_agent_linux-arm64:
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 45
-    env:
-      NODE_VERSION: '20'
-      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_CACHE: 'remote:rw'
-    permissions:
-      actions: read
-      contents: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-agent-${{ env.cache-name }}-
-            ${{ runner.os }}-build-agent
-            ${{ runner.os }}-
-
-      - name: Install dependencies
-        run: npm ci --maxsockets 1
-
-      - name: Set repo hash for agent build
-        shell: bash
-        # This forces git shorthash to match between @medplum/agent and @medplum/core
-        run: |
-          set -e
-          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
-      - name: Build
-        run: npm run build -- --filter=@medplum/agent
-
-      - name: Build Agent
-        shell: bash
-        run: ./scripts/build-agent-installer-linux.sh
-
-      - name: Upload Agent
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const fs = require('fs');
-            const tag = context.ref.replace("refs/tags/", "");
-            const release = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag
-            });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-arm64",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux-arm64`)
-            });
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: release.data.id,
-              name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-arm64.sha256",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux-arm64.sha256`)
+              name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-${{ matrix.arch.suffix }}.sha256",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux.sha256`)
             });
