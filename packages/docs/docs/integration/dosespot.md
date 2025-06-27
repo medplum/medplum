@@ -35,11 +35,7 @@ A "Proxy" user, however, acts as an assistant or delegate, performing tasks on b
 
 ### Does Medplum support controlled substances prescriptions?
 
-Yes, Medplum supports Electronic Prescriptions for Controlled Substances (EPCS) through DoseSpot's platform. This includes:
-
-- **Schedule II drugs**: Maximum 90-day supply, days supply field is required
-- **Schedule III-V drugs**: Maximum 120-day supply, days supply field is required
-- **Special requirements for Ohio prescribers**: Days supply is required for all controlled substances
+Yes, Medplum supports Electronic Prescriptions for Controlled Substances (EPCS) through DoseSpot's platform. 
 
 When prescribing controlled substances, additional requirements include:
 - An effective date must be specified
