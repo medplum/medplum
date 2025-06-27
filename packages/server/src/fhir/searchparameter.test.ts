@@ -11,7 +11,6 @@ import {
   SearchStrategies,
   TokenColumnSearchParameterImplementation,
 } from './searchparameter';
-import { isLegacyTokenColumnSearchParameter } from './tokens';
 
 describe('SearchParameterImplementation', () => {
   const indexedSearchParams: SearchParameter[] = [];
@@ -246,11 +245,6 @@ describe('SearchParameterImplementation', () => {
     const searchParam = indexedSearchParams.find((e) => e.id === 'clinical-code') as SearchParameter;
     const impl = getSearchParameterImplementation('MedicationRequest', searchParam);
     expectTokenColumnImplementation(impl);
-
-    expect(isLegacyTokenColumnSearchParameter(searchParam, 'MedicationRequest')).toBe(true);
-    const legacyImpl = getSearchParameterImplementation('MedicationRequest', searchParam, true);
-    assertColumnImplementation(legacyImpl);
-    expect(legacyImpl.columnName).toStrictEqual('code');
   });
 
   test('Observation-code excluded from legacy behavior', () => {

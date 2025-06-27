@@ -43,7 +43,6 @@ export type SearchParameterImplementation =
 
 interface ResourceTypeSearchParameterInfo {
   searchParamsImplementations: Record<string, SearchParameterImplementation>;
-  legacyTokenSearchParamsImplementations: Record<string, ColumnSearchParameterImplementation>;
 }
 
 type IndexedSearchParameters = {
@@ -54,34 +53,8 @@ export const globalSearchParameterRegistry: IndexedSearchParameters = { types: {
 
 export function getSearchParameterImplementation(
   resourceType: string,
-  searchParam: SearchParameter,
-  forceColumnImplementation: true
-): ColumnSearchParameterImplementation;
-export function getSearchParameterImplementation(
-  resourceType: string,
   searchParam: SearchParameter
-): SearchParameterImplementation;
-export function getSearchParameterImplementation(
-  resourceType: string,
-  searchParam: SearchParameter,
-  forceColumnImplementation?: boolean
 ): SearchParameterImplementation {
-  if (forceColumnImplementation) {
-    let legacyImpl: ColumnSearchParameterImplementation | undefined =
-      globalSearchParameterRegistry.types[resourceType]?.legacyTokenSearchParamsImplementations?.[
-        searchParam.code as string
-      ];
-    if (!legacyImpl) {
-      legacyImpl = buildSearchParameterImplementation(
-        resourceType,
-        searchParam,
-        true
-      ) as ColumnSearchParameterImplementation;
-      setSearchParameterImplementation(resourceType, searchParam.code, legacyImpl, true);
-    }
-    return legacyImpl;
-  }
-
   let result: SearchParameterImplementation | undefined =
     globalSearchParameterRegistry.types[resourceType]?.searchParamsImplementations?.[searchParam.code as string];
   if (!result) {
@@ -94,19 +67,14 @@ export function getSearchParameterImplementation(
 function setSearchParameterImplementation(
   resourceType: string,
   code: string,
-  implementation: SearchParameterImplementation,
-  isLegacy?: boolean
+  implementation: SearchParameterImplementation
 ): void {
   let typeSchema = globalSearchParameterRegistry.types[resourceType];
   if (!typeSchema) {
-    typeSchema = { searchParamsImplementations: {}, legacyTokenSearchParamsImplementations: {} };
+    typeSchema = { searchParamsImplementations: {} };
     globalSearchParameterRegistry.types[resourceType] = typeSchema;
   }
-  if (isLegacy) {
-    typeSchema.legacyTokenSearchParamsImplementations[code] = implementation as ColumnSearchParameterImplementation;
-  } else {
-    typeSchema.searchParamsImplementations[code] = implementation;
-  }
+  typeSchema.searchParamsImplementations[code] = implementation;
 }
 
 const ContainsSupportSearchParameterIds = [
@@ -121,27 +89,16 @@ const ContainsSupportSearchParameterIds = [
 
 function buildSearchParameterImplementation(
   resourceType: string,
-  searchParam: SearchParameter,
-  forceColumnImplementation?: boolean
+  searchParam: SearchParameter
 ): SearchParameterImplementation {
   const code = searchParam.code;
-  let impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
-
-  if (forceColumnImplementation) {
-    // Since impl manipulates the object returned from `getSearchParameterDetails`,
-    // make a copy of only the `SearchParameterDetails` properties so we are starting over
-    impl = {
-      type: impl.type,
-      elementDefinitions: impl.elementDefinitions,
-      array: impl.array,
-    } as SearchParameterImplementation;
-  }
+  const impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
 
   if (!searchParam.base?.includes(resourceType as ResourceType)) {
     throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
   }
 
-  const lookupTable = forceColumnImplementation ? undefined : getLookupTable(resourceType, searchParam);
+  const lookupTable = getLookupTable(resourceType, searchParam);
   if (lookupTable === tokenTable) {
     const writeable = impl as Writeable<TokenColumnSearchParameterImplementation>;
     writeable.searchStrategy = 'token-column';

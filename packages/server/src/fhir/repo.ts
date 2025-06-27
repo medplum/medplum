@@ -119,7 +119,6 @@ import {
   periodToRangeString,
 } from './sql';
 import { buildTokenColumns } from './token-column';
-import { isLegacyTokenColumnSearchParameter } from './tokens';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
@@ -1613,11 +1612,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     let columnImpl: ColumnSearchParameterImplementation | undefined;
     if (impl.searchStrategy === 'token-column') {
       buildTokenColumns(searchParam, impl, columns, resource);
-
-      if (isLegacyTokenColumnSearchParameter(searchParam, resource.resourceType)) {
-        // This is a legacy search parameter that should be indexed as a regular string column as well
-        columnImpl = getSearchParameterImplementation(resource.resourceType, searchParam, true);
-      }
     } else {
       impl satisfies ColumnSearchParameterImplementation;
       columnImpl = impl;
