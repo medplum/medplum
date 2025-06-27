@@ -20,7 +20,10 @@ export default function NotFoundContent({ className }: Props): ReactNode {
             const input = document.querySelector('.DocSearch-Input');
             if (input) {
               const path = window.location.pathname + window.location.search + window.location.hash;
-              const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+              const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+                window.HTMLInputElement.prototype,
+                'value'
+              )?.set;
               nativeInputValueSetter?.call(input, path);
               input.dispatchEvent(new Event('input', { bubbles: true }));
             }
@@ -47,10 +50,8 @@ export default function NotFoundContent({ className }: Props): ReactNode {
             </Translate>
           </p>
           <p>
-            <Translate
-              id="theme.NotFound.p2"
-              description="The 2nd paragraph of the 404 page">
-              Search related pages: 
+            <Translate id="theme.NotFound.p2" description="The 2nd paragraph of the 404 page">
+              Search related pages:
             </Translate>
             <span>
               {' '}
