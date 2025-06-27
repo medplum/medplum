@@ -1,5 +1,7 @@
 import { badRequest, getReferenceString, OperationOutcomeError, parseSearchRequest, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { Pool, PoolClient } from 'pg';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { Repository } from '../fhir/repo';
@@ -74,6 +76,16 @@ export function getPostDeployMigration(migrationNumber: number): PostDeployMigra
   }
 
   return migration;
+}
+
+export function getPostDeployManifestEntry(migrationNumber: number): {
+  serverVersion: string;
+  requiredBefore: string | undefined;
+} {
+  const manifest = JSON.parse(
+    readFileSync(resolve(__dirname, 'data/data-version-manifest.json'), { encoding: 'utf-8' })
+  ) as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
+  return manifest['v' + migrationNumber];
 }
 
 export async function upsertPostDeployMigrationAsyncJob(

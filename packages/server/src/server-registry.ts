@@ -4,10 +4,10 @@ import { heartbeat } from './heartbeat';
 import { getRedis } from './redis';
 import { getServerVersion } from './util/version';
 
-const SERVER_REGISTRY_KEY_PREFIX = 'medplum:server-registry';
+const SERVER_REGISTRY_KEY_PREFIX = 'medplum:server-registry:';
 const SERVER_REGISTRY_TTL_SECONDS = 60;
 
-type ServerRegistryInfo = {
+export type ServerRegistryInfo = {
   /* Unique identifier for a server instance */
   id: string;
   /* Timestamp of the first heartbeat */
@@ -22,12 +22,25 @@ type ServerRegistryInfo = {
 
 export async function setServerRegistryPayload(value: ServerRegistryInfo): Promise<void> {
   const redis = getRedis();
-  await redis.setex(SERVER_REGISTRY_KEY_PREFIX + ':' + value.id, SERVER_REGISTRY_TTL_SECONDS, JSON.stringify(value));
+  await redis.setex(SERVER_REGISTRY_KEY_PREFIX + value.id, SERVER_REGISTRY_TTL_SECONDS, JSON.stringify(value));
 }
 
 let serverRegistryHeartbeatListener: (() => Promise<void>) | undefined;
 
 let registryPayload: ServerRegistryInfo | undefined;
+
+function getServerRegistryPayload(): ServerRegistryInfo {
+  const now = new Date().toISOString();
+  registryPayload ??= {
+    id: randomUUID(),
+    firstSeen: now,
+    lastSeen: now,
+    version: getServerVersion(),
+    fullVersion: MEDPLUM_VERSION,
+  };
+  registryPayload.lastSeen = now;
+  return registryPayload;
+}
 
 export function initServerRegistryHeartbeatListener(): void {
   if (serverRegistryHeartbeatListener) {
@@ -35,17 +48,8 @@ export function initServerRegistryHeartbeatListener(): void {
   }
 
   serverRegistryHeartbeatListener = async () => {
-    const now = new Date().toISOString();
-    registryPayload ??= {
-      id: randomUUID(),
-      firstSeen: now,
-      lastSeen: now,
-      version: getServerVersion(),
-      fullVersion: MEDPLUM_VERSION,
-    };
-
-    registryPayload.lastSeen = now;
-    await setServerRegistryPayload(registryPayload);
+    const payload = getServerRegistryPayload();
+    await setServerRegistryPayload(payload);
   };
   heartbeat.addEventListener('heartbeat', serverRegistryHeartbeatListener);
 }
@@ -72,17 +76,33 @@ export type ClusterStatus = {
   servers: ServerRegistryInfoWithComputed[];
 };
 
-async function getRegisteredServers(): Promise<ServerRegistryInfoWithComputed[]> {
+/**
+ * @param ensureSelf - If true, includes the current process in the list of registered servers, even
+ * if it has not registered within the last minute.
+ * @returns A list of registered servers.
+ */
+export async function getRegisteredServers(ensureSelf: boolean): Promise<ServerRegistryInfo[]> {
   const redis = getRedis();
-  const servers: ServerRegistryInfoWithComputed[] = [];
-  const keys = await redis.keys(SERVER_REGISTRY_KEY_PREFIX + ':*');
-  const payloads = await redis.mget(keys);
-  const now = Date.now();
-  for (const payload of payloads) {
-    if (payload) {
-      servers.push(addComputedFields(now, JSON.parse(payload)));
+  const servers: ServerRegistryInfo[] = [];
+  const keys = await redis.keys(SERVER_REGISTRY_KEY_PREFIX + '*');
+
+  // `redis.mget` throws an error if keys is empty
+  if (keys.length > 0) {
+    const payloads = await redis.mget(keys);
+    for (const payload of payloads) {
+      if (payload) {
+        servers.push(JSON.parse(payload));
+      }
     }
   }
+
+  if (ensureSelf) {
+    const self = await getServerRegistryPayload();
+    if (!servers.find((s) => s.id === self.id)) {
+      servers.push(self);
+    }
+  }
+
   return servers;
 }
 
@@ -103,8 +123,7 @@ function getServersByVersion(servers: ServerRegistryInfo[]): Record<string, Serv
   return versionMap;
 }
 
-export async function getClusterStatus(): Promise<ClusterStatus> {
-  const servers = await getRegisteredServers();
+export async function getClusterStatus(servers: ServerRegistryInfo[]): Promise<ClusterStatus> {
   servers.sort((a, b) => a.fullVersion.localeCompare(b.fullVersion));
   const versionMap = getServersByVersion(servers);
   const versions = Object.keys(versionMap).sort((a, b) => a.localeCompare(b));
@@ -113,6 +132,7 @@ export async function getClusterStatus(): Promise<ClusterStatus> {
     return versionCounts;
   }, {});
 
+  const now = Date.now();
   return {
     timestamp: new Date().toISOString(),
     totalServers: servers.length,
@@ -120,6 +140,6 @@ export async function getClusterStatus(): Promise<ClusterStatus> {
     oldestVersion: versions[0],
     newestVersion: versions[versions.length - 1],
     isHomogeneous: versions.length === 1,
-    servers,
+    servers: servers.map((server) => addComputedFields(now, server)),
   };
 }

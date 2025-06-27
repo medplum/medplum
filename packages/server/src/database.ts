@@ -1,7 +1,5 @@
 import { badRequest, OperationOutcomeError, sleep, WithId } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import { Pool, PoolClient } from 'pg';
 import * as semver from 'semver';
 import { getConfig } from './config/loader';
@@ -11,6 +9,7 @@ import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
   getPendingPostDeployMigration,
+  getPostDeployManifestEntry,
   getPreDeployMigration,
   queuePostDeployMigration,
 } from './migrations/migration-utils';
@@ -190,11 +189,7 @@ async function migrate(client: PoolClient): Promise<void> {
     // Before migrating, check if we have pending data migrations to apply
     // We have to check these first since they depend on particular versions of the server code to be present in order
     // To ensure that the migration is applied before at a particular point in time before the version that requires it
-    const manifest = JSON.parse(
-      readFileSync(resolve(__dirname, 'migrations/data/data-version-manifest.json'), { encoding: 'utf-8' })
-    ) as Record<string, { serverVersion: string; requiredBefore: string | undefined }>;
-    const versionEntry = manifest['v' + pendingPostDeployMigration];
-
+    const versionEntry = getPostDeployManifestEntry(pendingPostDeployMigration);
     const serverVersion = getServerVersion();
 
     // We don't want to run the data migration until the specified version at least
