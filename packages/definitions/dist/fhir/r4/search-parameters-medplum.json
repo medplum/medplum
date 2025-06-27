@@ -122,7 +122,7 @@
         "base": ["ProjectMembership"],
         "type": "reference",
         "expression": "ProjectMembership.user",
-        "target": ["ClientApplication", "User"]
+        "target": ["Bot", "ClientApplication", "User"]
       }
     },
     {
@@ -140,7 +140,7 @@
         "base": ["ProjectMembership"],
         "type": "reference",
         "expression": "ProjectMembership.profile",
-        "target": ["ClientApplication", "Patient", "Practitioner"]
+        "target": ["Bot", "ClientApplication", "Patient", "Practitioner", "RelatedPerson"]
       }
     },
     {
