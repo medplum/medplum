@@ -7,7 +7,7 @@ import { useEffect, type ReactNode } from 'react';
 export default function NotFoundContent({ className }: Props): ReactNode {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
 
         // Open the search modal (simulate click on the search button)
