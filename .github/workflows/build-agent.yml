@@ -55,6 +55,13 @@ jobs:
       - name: Install dependencies
         run: npm ci --maxsockets 1
 
+      - name: Set repo hash
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Build
         run: npm run build -- --filter=@medplum/agent
 
@@ -160,6 +167,13 @@ jobs:
       - name: Install dependencies
         run: npm ci --maxsockets 1
 
+      - name: Set repo hash
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Build
         run: npm run build -- --filter=@medplum/agent
 
@@ -226,6 +240,13 @@ jobs:
 
       - name: Install dependencies
         run: npm ci --maxsockets 1
+
+      - name: Set repo hash
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Build
         run: npm run build -- --filter=@medplum/agent
