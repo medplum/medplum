@@ -8,7 +8,7 @@ This is a [premium](/pricing) tier 3rd party integration feature. Please contact
 
 ## Authentication
 
-To use any of the hooks or Bots, you will first need to add your DoseSpot clinician id as an [identifier](/docs/fhir-basics#naming-data-identifiers) to each User's [ProjectMembership](/docs/api/fhir/resources/projectmembership). Please contact Medplum support to get your DoseSpot clinician id.
+To use any of the hooks or Bots, you will first need to add your DoseSpot clinician id as an [identifier](/docs/fhir-basics#naming-data-identifiers) to each User's [ProjectMembership](/docs/api/fhir/medplum/projectmembership). Please contact Medplum support to get your DoseSpot clinician id.
 
 ```typescript
 {
