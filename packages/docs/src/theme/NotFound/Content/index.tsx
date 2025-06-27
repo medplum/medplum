@@ -49,7 +49,8 @@ export default function NotFoundContent({ className }: Props): ReactNode {
               Search related pages:
             </Translate>
             <span>
-              {' '}<br></br>
+              {' '}
+              <br></br>
               <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>K</kbd>
             </span>
           </p>
