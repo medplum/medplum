@@ -188,6 +188,34 @@ For example, say you have a patient profile that requires patients to have an as
 - Create the updated [`StructureDefinition](/docs/api/fhir/resources/structuredefinition).
 - Validate and update your [`Patient`](/docs/api/fhir/resources/patient) resources to adhere to the new profile.
 
+### Updating FSH Profiles
+
+When using FSH, the profile update process becomes more streamlined:
+
+1. **Update the FSH definition** with your changes
+2. **Increment the version** in your `sushi-config.yaml`
+3. **Rebuild the profiles** using SUSHI
+4. **Upload the new StructureDefinition** to Medplum
+5. **Migrate existing resources** to the new profile version
+
+For example, updating the FSH patient profile to require a phone number:
+
+```fsh
+Profile: MedplumTestPatient
+Parent: Patient
+Id: medplum-test-patient
+Title: "Medplum Test Patient Profile"
+Description: "A Patient profile that requires a birth date and phone number"
+* birthDate 1..1 MS
+* name 1..* MS
+* telecom 1..* MS  // New requirement
+* telecom ^slicing.discriminator.type = #pattern
+* telecom ^slicing.discriminator.path = "system"
+* telecom ^slicing.rules = #open
+* telecom contains phone 1..1 MS
+* telecom[phone].system = #phone (exactly)
+```
+
 <details>
 <summary>Example: Update your profile</summary>
   <MedplumCodeBlock language="bash" selectBlocks="updateProfile">
