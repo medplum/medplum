@@ -5,15 +5,6 @@ import clsx from 'clsx';
 import { useEffect, type ReactNode } from 'react';
 
 export default function NotFoundContent({ className }: Props): ReactNode {
-  // Compute the search URL based on the current path
-  const getSearchUrl = (): string => {
-    if (typeof window === 'undefined') {
-      return '';
-    }
-    const path = window.location.pathname + window.location.search + window.location.hash;
-    return `https://www.medplum.com/search?q=${encodeURIComponent(path)}`;
-  };
-
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent): void {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
@@ -26,11 +17,11 @@ export default function NotFoundContent({ className }: Props): ReactNode {
 
           // Wait for the input to appear, then set its value
           setTimeout(() => {
-            const input = document.querySelector('.DocSearch-Input') as HTMLElement;
+            const input = document.querySelector('.DocSearch-Input');
             if (input) {
               const path = window.location.pathname + window.location.search + window.location.hash;
-              input.value = path;
-              // Dispatch input event so DocSearch picks up the change
+              const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+              nativeInputValueSetter?.call(input, path);
               input.dispatchEvent(new Event('input', { bubbles: true }));
             }
           }, 100); // Adjust delay as needed
