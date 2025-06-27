@@ -1,3 +1,4 @@
+import { sleep } from '@medplum/core';
 import net from 'node:net';
 import { Hl7Connection } from './connection';
 
@@ -13,6 +14,20 @@ export class Hl7Server {
     const server = net.createServer((socket) => {
       const connection = new Hl7Connection(socket, encoding, enhancedMode);
       this.handler(connection);
+    });
+
+    // Node errors have a code
+    const errorListener = async (e: Error & { code?: string }): Promise<void> => {
+      if (e?.code === 'EADDRINUSE') {
+        await sleep(50);
+        server.close();
+        server.listen(port);
+      }
+    };
+    server.on('error', errorListener);
+
+    server.once('listening', () => {
+      server.off('error', errorListener);
     });
 
     server.listen(port);
