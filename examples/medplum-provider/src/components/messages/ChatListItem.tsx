@@ -7,23 +7,23 @@ import classes from './ChatListItem.module.css';
 import cx from 'clsx';
 
 interface ChatListItemProps {
-  communication: Communication;
-  patient: Reference<Patient>;
+  topic: Communication;
+  lastCommunication: Communication | undefined;
   isSelected: boolean;
   onClick: () => void;
 }
 
 export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
-  const { communication, patient, isSelected, onClick } = props;
-  const patientResource = useResource(patient);
+  const { topic, lastCommunication, isSelected, onClick } = props;
+  const patientResource = useResource(topic.subject as Reference<Patient>);
   const patientName = formatHumanName(patientResource?.name?.[0] as HumanName);
-  const lastMsg = communication.payload?.[0]?.contentString || 'No preview';
+  const lastMsg = lastCommunication?.payload?.[0]?.contentString || 'No preview';
   const content = lastMsg.length > 100 ? lastMsg.slice(0, 100) + '...' : lastMsg;
 
   return (
     <Group
       p="xs"
-      key={patient.reference}
+      key={topic.id}
       align="center"
       wrap="nowrap"
       className={cx(classes.contentContainer, {
@@ -31,7 +31,7 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
       })}
       onClick={onClick}
     >
-      <ResourceAvatar value={{ reference: patient.reference }} radius="xl" size={36} />
+      <ResourceAvatar value={topic.subject as Reference<Patient>} radius="xl" size={36} />
       <Stack gap={0}>
         <Text size="sm" fw={700} truncate="end">
           {patientName}
@@ -40,7 +40,7 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
           {content}
         </Text>
         <Text size="xs" c="gray.6" style={{ marginTop: 2 }}>
-          {formatDateTime(communication.sent)}
+          {lastCommunication ? formatDateTime(lastCommunication.sent) : ''}
         </Text>
       </Stack>
     </Group>

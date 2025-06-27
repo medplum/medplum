@@ -1,4 +1,4 @@
-import { ScrollArea, Text, Loader, Grid, Flex, Paper, Group } from '@mantine/core';
+import { ScrollArea, Text, Loader, Grid, Paper, Group } from '@mantine/core';
 import { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum, PatientSummary, ThreadChat } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
@@ -31,7 +31,10 @@ export function MessagesPage(): JSX.Element {
         setSelectedThread(searchResult[0]);
       }
     }
-    fetchAllCommunications().catch(showErrorNotification);
+    setLoading(true);
+    fetchAllCommunications().catch(showErrorNotification).finally(() => {
+      setLoading(false);
+    });
   }, [medplum, selectedThread]);
 
   return (
@@ -46,9 +49,9 @@ export function MessagesPage(): JSX.Element {
               </Text>
             </Group>
             {loading ? (
-              <Flex h="100%" align="center" justify="center">
+              <Group h="100%" align="center" justify="center">
                 <Loader />
-              </Flex>
+              </Group>
             ) : (
               threadMessages.length > 0 && (
                 <ChatList
