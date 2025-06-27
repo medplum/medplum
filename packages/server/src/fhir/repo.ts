@@ -1483,13 +1483,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       );
     }
 
-    // compartments is a non-null column on all resource types since it used to be required for access control,
-    // it is in the process of being removed from the Binary resource type, so make sure it meets the NOT NULL
-    // constraint
-    if (resourceType === 'Binary') {
-      row.compartments = [];
-    }
-
     return row;
   }
 
