@@ -76,6 +76,3 @@ Drop-down fields within the Medplum eRx interface cannot be customized. However,
 
 Similarly, the patient notes field can not be auto-populated at this time.
 
-### What are the requirements for prescribing compound medications?
-
-When prescribing compound medications or free-text supplies, clinicians must confirm that the prescription is not for a controlled substance by checking the checkbox next to "This is not a controlled substance" before saving the prescription.
