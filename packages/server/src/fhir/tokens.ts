@@ -10,14 +10,6 @@ import {
 } from '@medplum/core';
 import { CodeableConcept, Coding, ContactPoint, Identifier, Resource, SearchParameter } from '@medplum/fhirtypes';
 
-export const TokenColumnsFeature: {
-  write: boolean;
-  read: 'token-tables' | 'unified-tokens-column' | 'column-per-code';
-} = {
-  write: true,
-  read: 'token-tables',
-};
-
 export interface Token {
   readonly code: string;
   readonly system: string | undefined;
