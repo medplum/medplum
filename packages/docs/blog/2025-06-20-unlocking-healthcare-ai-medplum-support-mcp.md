@@ -17,6 +17,8 @@ That's why we're thrilled to announce our beta support for Anthropic's **Model C
 <iframe width="560" height="315" src="https://www.youtube.com/embed/y3gD7TQ-SM8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
 </div>
 
+<!--truncate-->
+
 ## What is the Model Context Protocol (MCP)?
 Think of the Model Context Protocol (MCP) as the **universal adapter for AI applications**. Developed by Anthropic, MCP is an open standard designed to standardize how AI models, particularly LLMs, connect with and utilize external tools, systems, and data sources.  
 
