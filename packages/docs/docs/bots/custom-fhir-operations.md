@@ -34,20 +34,20 @@ Custom operations are implemented through three main components:
 
 1. **Bot** - Contains the JavaScript code that implements your custom logic
 2. **OperationDefinition** - Defines the operation interface and links to your Bot
-3. **Extension** - Links the OperationDefinition to the Bot implementation
+3. **Extension** - Links the `OperationDefinition` to the `Bot` implementation
 
 When a client calls your custom operation (e.g., `POST /fhir/R4/Patient/$my-custom-operation`), Medplum:
 
-1. Looks up the corresponding OperationDefinition
+1. Looks up the corresponding `OperationDefinition`
 2. Finds the linked Bot via the extension
-3. Executes the Bot with the operation input
-4. Returns the Bot's output as the operation result
+3. Executes the `Bot` with the operation input
+4. Returns the `Bot`'s output as the operation result
 
 ## How to Use Custom FHIR Operations
 
 ### Step 1: Create a Bot
 
-First, create a Bot that contains your custom logic:
+First, create a `Bot` that contains your custom logic:
 
 ```javascript
 exports.handler = async function (medplum, event) {
@@ -77,21 +77,18 @@ See [Bot Basics](/docs/bots/bot-basics) for more details on creating Bots.
 
 Deploy your Bot code using the `$deploy` operation:
 
-```http
-POST /fhir/R4/Bot/{bot-id}/$deploy
-Content-Type: application/fhir+json
-Authorization: Bearer {access-token}
-
-{
-  "code": "exports.handler = async function (medplum, event) { ... }"
-}
+```bash
+curl -X POST "https://api.medplum.com/fhir/R4/Bot/{bot-id}/\$deploy" \
+  -H "Content-Type: application/fhir+json" \
+  -H "Authorization: Bearer {access-token}" \
+  -d '{
+    "code": "exports.handler = async function (medplum, event) { ... }"
+  }'
 ```
-
-See [Bot Basics](/docs/bots/bot-basics) for more details on creating Bots.
 
 ### Step 3: Create an OperationDefinition
 
-Create an OperationDefinition that describes your operation and links to your Bot:
+Create an `OperationDefinition` that describes your operation and links to your `Bot`:
 
 ```json
 {
@@ -140,20 +137,19 @@ Create an OperationDefinition that describes your operation and links to your Bo
 
 Once deployed, you can invoke your custom operation like any standard FHIR operation:
 
-```http
-POST /fhir/R4/Patient/$my-custom-operation
-Content-Type: application/fhir+json
-Authorization: Bearer {access-token}
-
-{
-  "resourceType": "Patient",
-  "name": [
-    {
-      "family": "Smith",
-      "given": ["John"]
-    }
-  ]
-}
+```bash
+curl -X POST "https://api.medplum.com/fhir/R4/Patient/\$my-custom-operation" \
+  -H "Content-Type: application/fhir+json" \
+  -H "Authorization: Bearer {access-token}" \
+  -d '{
+    "resourceType": "Patient",
+    "name": [
+      {
+        "family": "Smith",
+        "given": ["John"]
+      }
+    ]
+  }'
 ```
 
 ## Operation Types
@@ -164,7 +160,7 @@ Custom operations support all standard FHIR operation types:
 - **Type-level operations**: `/fhir/R4/Patient/$my-operation`
 - **Instance-level operations**: `/fhir/R4/Patient/123/$my-operation`
 
-Configure the operation type using the `system`, `type`, and `instance` properties in your OperationDefinition.
+Configure the operation type using the `system`, `type`, and `instance` properties in your `OperationDefinition`.
 
 ## Input and Output Handling
 
@@ -176,7 +172,7 @@ Configure the operation type using the `system`, `type`, and `instance` properti
 
 ### Output Processing
 
-The Bot's return value is automatically formatted according to the OperationDefinition's output parameters. You can return:
+The `Bot`'s return value is automatically formatted according to the `OperationDefinition`'s output parameters. You can return:
 
 - FHIR resources directly
 - Primitive values (strings, numbers, booleans)
