@@ -10,10 +10,10 @@ import {
   WithId,
 } from '@medplum/core';
 import { Bot, Project, Resource, Subscription } from '@medplum/fhirtypes';
+import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
 import { findProjectMembership } from '../workers/utils';
-import { executeBot } from './operations/execute';
 import { getSystemRepo } from './repo';
 
 export const PRE_COMMIT_SUBSCRIPTION_URL = 'https://medplum.com/fhir/StructureDefinition/pre-commit-bot';

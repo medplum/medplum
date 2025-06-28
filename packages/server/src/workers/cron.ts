@@ -2,7 +2,7 @@ import { BackgroundJobContext, ContentType, createReference, WithId } from '@med
 import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
-import { executeBot } from '../fhir/operations/execute';
+import { executeBot } from '../bots/execute';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { findProjectMembership, queueRegistry, WorkerInitializer } from './utils';

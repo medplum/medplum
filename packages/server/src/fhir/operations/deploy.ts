@@ -10,13 +10,13 @@ import {
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Attachment, Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
+import { isBotEnabled } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
 import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
 import { getSystemRepo, Repository } from '../repo';
-import { isBotEnabled } from './execute';
 
 export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();

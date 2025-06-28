@@ -1,6 +1,6 @@
 import { Hl7Message, createReference, normalizeErrorString } from '@medplum/core';
+import { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
-import { BotExecutionContext, BotExecutionResult } from '../../fhir/operations/execute';
 import { executeFissionFunction } from './utils';
 
 /**

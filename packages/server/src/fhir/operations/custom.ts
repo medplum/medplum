@@ -1,9 +1,10 @@
 import { allOk, badRequest, getExtension, isOperationOutcome, Operator } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Bot, OperationDefinition, Reference } from '@medplum/fhirtypes';
+import { executeBot } from '../../bots/execute';
+import { getBotDefaultHeaders, getBotProjectMembership } from '../../bots/utils';
 import { getAuthenticatedContext } from '../../context';
 import { getSystemRepo, Repository } from '../repo';
-import { executeBot, getBotDefaultHeaders, getBotProjectMembership } from './execute';
 import { buildOutputParameters } from './utils/parameters';
 
 export async function tryCustomOperation(req: FhirRequest, repo: Repository): Promise<FhirResponse | undefined> {
