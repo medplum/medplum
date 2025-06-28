@@ -3,6 +3,7 @@ import {
   ContentType,
   getAllDataTypes,
   getSearchParameters,
+  HTTP_TERMINOLOGY_HL7_ORG,
   InternalTypeSchema,
   isResourceType,
   MEDPLUM_VERSION,
@@ -241,7 +242,7 @@ function buildSecurity(config: MedplumServerConfig): CapabilityStatementRestSecu
     service: ['OAuth', 'Basic', 'SMART-on-FHIR'].map((service) => ({
       coding: [
         {
-          system: 'http://terminology.hl7.org/CodeSystem/restful-security-service',
+          system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/restful-security-service',
           code: service,
         },
       ],
