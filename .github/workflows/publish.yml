@@ -224,6 +224,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            const packageJson = require('./packages/agent/package.json');
             const fs = require('fs');
             const tag = context.ref.replace("refs/tags/", "");
             const release = await github.rest.repos.getReleaseByTag({
@@ -235,15 +236,15 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-installer-" + process.env.MEDPLUM_VERSION + ".exe",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe`)
+              name: "medplum-agent-installer-" + packageJson.version + ".exe",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe`)
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-installer-" + process.env.MEDPLUM_VERSION + ".exe.sha256",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.sha256`)
+              name: "medplum-agent-installer-" + packageJson.version + ".exe.sha256",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.sha256`)
             });
 
   build_agent_linux:
@@ -307,6 +308,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            const packageJson = require('./packages/agent/package.json');
             const fs = require('fs');
             const tag = context.ref.replace("refs/tags/", "");
             const release = await github.rest.repos.getReleaseByTag({
@@ -318,13 +320,13 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-${{ matrix.arch.suffix }}",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux`)
+              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux`)
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-" + process.env.MEDPLUM_VERSION + "-linux-${{ matrix.arch.suffix }}.sha256",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${process.env.MEDPLUM_VERSION}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux.sha256`)
+              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}.sha256",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux.sha256`)
             });
