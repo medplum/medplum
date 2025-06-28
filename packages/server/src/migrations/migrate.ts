@@ -133,13 +133,21 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
     }
   }
 
+  const matchedStartTables = new Set<TableDefinition>();
   for (const targetTable of targetDefinition.tables) {
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
     if (!startTable) {
       actions.push({ type: 'CREATE_TABLE', definition: targetTable });
     } else {
+      matchedStartTables.add(startTable);
       actions.push(...generateColumnsActions(ctx, startTable, targetTable));
       actions.push(...generateIndexesActions(ctx, startTable, targetTable, options));
+    }
+  }
+
+  for (const startTable of startDefinition.tables) {
+    if (!matchedStartTables.has(startTable)) {
+      actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
     }
   }
 
@@ -435,27 +443,6 @@ export function buildCreateTables(
       { columns: ['id'], indexType: 'btree' },
       { columns: ['lastUpdated'], indexType: 'btree' },
       { columns: ['versionId'], indexType: 'btree', unique: true },
-    ],
-  });
-
-  result.tables.push({
-    name: resourceType + '_Token',
-    columns: [
-      { name: 'resourceId', type: 'UUID', notNull: true },
-      { name: 'code', type: 'TEXT', notNull: true },
-      { name: 'system', type: 'TEXT' },
-      { name: 'value', type: 'TEXT' },
-    ],
-    indexes: [
-      { columns: ['resourceId'], indexType: 'btree' },
-      {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, value)", name: 'text' }],
-        indexType: 'gin',
-        where: "system = 'text'::text",
-        indexNameSuffix: 'idx_tsv',
-      },
-      { columns: ['code', 'value'], indexType: 'btree', include: ['resourceId'] },
-      { columns: ['code', 'system', 'value'], indexType: 'btree', include: ['resourceId'] },
     ],
   });
 
@@ -874,6 +861,11 @@ export async function executeMigrationActions(
         }
         break;
       }
+      case 'DROP_TABLE': {
+        const query = getDropTableQuery(action.tableName);
+        await fns.query(client, results, query);
+        break;
+      }
       case 'ADD_COLUMN': {
         const query = getAddColumnQuery(action.tableName, action.columnDefinition);
         await fns.query(client, results, query);
@@ -940,6 +932,11 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
         for (const query of queries) {
           b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         }
+        break;
+      }
+      case 'DROP_TABLE': {
+        const query = getDropTableQuery(action.tableName);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ADD_COLUMN': {
@@ -1103,6 +1100,10 @@ function getCreateTableQueries(tableDef: TableDefinition): string[] {
   }
 
   return queries;
+}
+
+function getDropTableQuery(tableName: string): string {
+  return `DROP TABLE IF EXISTS "${tableName}"`;
 }
 
 function getAddColumnQuery(tableName: string, columnDefinition: ColumnDefinition): string {
