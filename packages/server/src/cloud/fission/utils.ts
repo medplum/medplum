@@ -1,26 +1,12 @@
 import { CustomObjectsApi, KubeConfig, PatchStrategy, setHeaderOptions } from '@kubernetes/client-node';
 import fetch from 'node-fetch';
+import { getConfig } from '../../config/loader';
+import { MedplumFissionConfig } from '../../config/types';
 import { getLogger } from '../../logger';
 
 const FISSION_GROUP = 'fission.io';
 const FISSION_VERSION = 'v1';
 const FISSION_API_VERSION = `${FISSION_GROUP}/${FISSION_VERSION}`;
-
-export interface FissionConfig {
-  readonly namespace: string;
-  readonly fieldManager: string;
-  readonly environmentName: string;
-  readonly routerHost: string;
-  readonly routerPort: number;
-}
-
-const config: FissionConfig = {
-  namespace: 'default', // Change this to your desired namespace
-  fieldManager: 'medplum-fission-example', // Change this to your desired field manager name
-  environmentName: 'nodejs', // Change this to your desired Fission environment name
-  routerHost: 'localhost', // Change this to your Fission router host
-  routerPort: 31314, // Change this to your Fission router port
-};
 
 const plurals = {
   Package: 'packages',
@@ -34,6 +20,19 @@ const getTriggerName = (id: string): string => `bot-trigger-${id}`;
 const getRelativeUrl = (id: string): string => `/bot-${id}`;
 
 /**
+ * Returns the Fission configuration from the Medplum configuration.
+ * Throws an error if Fission is not enabled in the configuration.
+ * @returns The Fission configuration object.
+ */
+export function getFissionConfig(): MedplumFissionConfig {
+  const config = getConfig().fission;
+  if (!config) {
+    throw new Error('Fission bots are not enabled');
+  }
+  return config;
+}
+
+/**
  * Deploys a Fission function with the given ID and function code.
  * This function creates a Fission package, function, and HTTP trigger.
  * It uses server-side apply to ensure the resources are created or updated as needed.
@@ -42,6 +41,7 @@ const getRelativeUrl = (id: string): string => `/bot-${id}`;
  * @param zipFile - The function code as a Uint8Array, which will be encoded in base64 and used as the deployment literal.
  */
 export async function deployFissionFunction(id: string, zipFile: Uint8Array): Promise<void> {
+  const config = getFissionConfig();
   const logger = getLogger();
 
   const kc = new KubeConfig();
@@ -156,20 +156,9 @@ export async function deployFissionFunction(id: string, zipFile: Uint8Array): Pr
  * @returns A promise that resolves to the response body from the Fission function.
  */
 export async function executeFissionFunction(id: string, body: string): Promise<string> {
+  const config = getFissionConfig();
+
   const relativeUrl = getRelativeUrl(id);
-
-  // **IMPORTANT: Determine the Fission Router's IP and Port.**
-  // As per your `kubectl get svc -n fission` output, `router` is a NodePort service.
-  // Its NodePort is 31314.
-  // To access this from your local machine (outside the cluster), you need the IP address of a Kubernetes node.
-  // In Docker Desktop, this is usually `localhost` or `127.0.0.1`.
-
-  // const fissionRouterHost = "localhost"; // For Docker Desktop Kubernetes
-  // const fissionRouterPort = 31314; // The NodePort exposed by the router service
-
-  // If your server app runs *inside* the Kubernetes cluster, you would use:
-  // const fissionRouterHost = "router.fission.svc.cluster.local"; // Fission router's internal ClusterIP service name
-  // const fissionRouterPort = 80; // The internal service port
 
   const url = `http://${config.routerHost}:${config.routerPort}${relativeUrl}`;
   const response = await fetch(url, {
