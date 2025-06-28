@@ -321,12 +321,12 @@ jobs:
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux`)
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux`)
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}.sha256",
-              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}-linux.sha256`)
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux.sha256`)
             });
