@@ -5,7 +5,7 @@ import { CodingTable } from './lookups/coding';
 import { HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
 import { ReferenceTable } from './lookups/reference';
-import { TokenTable } from './lookups/token';
+import { getTokenIndexType, TokenIndexTypes } from './tokens';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
@@ -31,7 +31,6 @@ export interface TokenColumnSearchParameterImplementation extends SearchParamete
   readonly tokenColumnName: string;
   readonly sortColumnName: string;
   readonly textSearchColumnName: string;
-  readonly lookupTable: LookupTable;
   readonly caseInsensitive: boolean;
   readonly textSearch: boolean;
 }
@@ -98,11 +97,10 @@ function buildSearchParameterImplementation(
     throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
   }
 
-  const lookupTable = getLookupTable(resourceType, searchParam);
-  if (lookupTable === tokenTable) {
+  const tokenIndexType = getTokenIndexType(searchParam, resourceType);
+  if (tokenIndexType) {
     const writeable = impl as Writeable<TokenColumnSearchParameterImplementation>;
     writeable.searchStrategy = 'token-column';
-    writeable.lookupTable = lookupTable;
 
     const baseName = convertCodeToColumnName(code);
     if (hasDedicatedTokenColumns(searchParam, resourceType)) {
@@ -116,10 +114,13 @@ function buildSearchParameterImplementation(
     }
     writeable.sortColumnName = '__' + baseName + 'Sort';
 
-    writeable.caseInsensitive = tokenTable.isCaseInsensitive(searchParam, resourceType);
+    writeable.caseInsensitive = tokenIndexType === TokenIndexTypes.CASE_INSENSITIVE;
     writeable.textSearch = ContainsSupportSearchParameterIds.includes(searchParam.id as string);
     return impl;
-  } else if (lookupTable) {
+  }
+
+  const lookupTable = getLookupTable(resourceType, searchParam);
+  if (lookupTable) {
     const writeable = impl as Writeable<LookupTableSearchParameterImplementation>;
     writeable.searchStrategy = 'lookup-table';
     writeable.lookupTable = lookupTable;
@@ -144,15 +145,12 @@ function convertCodeToColumnName(code: string): string {
   return code.split(/[-:]/).reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
-const tokenTable = new TokenTable();
-
 /**
  * The lookup tables array includes a list of special tables for search indexing.
  */
 export const lookupTables: LookupTable[] = [
   new AddressTable(),
   new HumanNameTable(),
-  tokenTable,
   new ReferenceTable(),
   new CodingTable(),
 ];

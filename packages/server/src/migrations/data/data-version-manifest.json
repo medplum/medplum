@@ -52,5 +52,8 @@
   },
   "v14": {
     "serverVersion": "4.3.0"
+  },
+  "v15": {
+    "serverVersion": "4.3.0"
   }
 }
