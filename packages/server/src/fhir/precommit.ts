@@ -9,7 +9,7 @@ import {
   resourceMatchesSubscriptionCriteria,
   WithId,
 } from '@medplum/core';
-import { Bot, Project, Resource, Subscription } from '@medplum/fhirtypes';
+import { Bot, Project, Reference, Resource, Subscription } from '@medplum/fhirtypes';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
 import { findProjectMembership } from '../workers/utils';
@@ -25,22 +25,29 @@ export function isPreCommitSubscription(subscription: WithId<Subscription>): boo
 /**
  * Performs pre-commit validation for a resource by executing any associated pre-commit bots.
  * Throws an error if the bot execution fails.
+ * @param author - The author of the resource, used to check against blacklisted authors for pre-commit
  * @param project  - The project to which the resource belongs. Must be passed separately because this is called before the resource meta is assigned.
  * @param resource  - The resource to validate.
  * @param interaction - The interaction type (e.g., 'create', 'update', 'delete').
+ * @returns The validated resource if a pre-commit bot returns one, otherwise undefined.
  */
 export async function preCommitValidation(
+  author: Reference,
   project: WithId<Project> | undefined,
   resource: WithId<Resource>,
   interaction: BackgroundJobInteraction
-): Promise<void> {
+): Promise<Resource | undefined> {
+  // exit if the author is blacklisted from using pre-commit
+  // or if the server does not have pre-commit enabled
+  // or if the project does not have pre-commit enabled
   if (
     !getConfig().preCommitSubscriptionsEnabled ||
     !project?.setting?.find((s) => s.name === 'preCommitSubscriptionsEnabled')?.valueBoolean
   ) {
-    return;
+    return undefined;
   }
 
+  resource.meta = { ...resource.meta, author };
   const systemRepo = getSystemRepo();
   const logger = getLogger();
   const subscriptions = await systemRepo.searchResources<Subscription>({
@@ -111,5 +118,9 @@ export async function preCommitValidation(
     if (!botResult.success) {
       throw new OperationOutcomeError(normalizeOperationOutcome(botResult.returnValue));
     }
+
+    return botResult.returnValue;
   }
+
+  return undefined;
 }
