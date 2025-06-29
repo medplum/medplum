@@ -97,7 +97,7 @@ export async function getRegisteredServers(ensureSelf: boolean): Promise<ServerR
   }
 
   if (ensureSelf) {
-    const self = await getServerRegistryPayload();
+    const self = getServerRegistryPayload();
     if (!servers.find((s) => s.id === self.id)) {
       servers.push(self);
     }
