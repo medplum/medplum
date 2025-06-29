@@ -2,7 +2,8 @@ import { allOk, badRequest, getStatus, isOperationOutcome } from '@medplum/core'
 import { Binary, Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { executeBot, getResponseBodyFromResult, getResponseContentType } from '../fhir/operations/execute';
+import { executeBot } from '../bots/execute';
+import { getResponseBodyFromResult, getResponseContentType } from '../bots/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { sendBinaryResponse } from '../fhir/response';

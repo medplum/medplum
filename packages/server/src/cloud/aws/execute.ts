@@ -2,8 +2,8 @@ import { InvokeCommand, LambdaClient } from '@aws-sdk/client-lambda';
 import { Hl7Message, createReference, getIdentifier, normalizeErrorString } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { TextDecoder, TextEncoder } from 'util';
+import { BotExecutionContext, BotExecutionResult } from '../../bots/types';
 import { getConfig } from '../../config/loader';
-import { BotExecutionContext, BotExecutionResult } from '../../fhir/operations/execute';
 
 /**
  * Executes a Bot in an AWS Lambda.
