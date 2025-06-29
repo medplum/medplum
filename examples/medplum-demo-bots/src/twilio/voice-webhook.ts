@@ -6,8 +6,10 @@
 
 import { BotEvent, getReferenceString, MedplumClient, resolveId, unauthorized } from '@medplum/core';
 import { Binary, OperationOutcome } from '@medplum/fhirtypes';
-import VoiceResponse from 'twilio/lib/twiml/VoiceResponse';
-import { validateRequest } from 'twilio/lib/webhooks/webhooks';
+import twilio from 'twilio';
+
+const { twiml, validateRequest } = twilio;
+const VoiceResponse = twiml.VoiceResponse;
 
 async function isValidTwilioRequest(medplum: MedplumClient, event: BotEvent<any>): Promise<boolean> {
   const membership = await medplum.searchOne('ProjectMembership', {
@@ -48,18 +50,18 @@ export async function handler(medplum: MedplumClient, event: BotEvent<any>): Pro
   const systemNumber = event.secrets['TWILIO_NUMBER']?.valueString;
   const params = Object.fromEntries(Object.entries(event.input));
 
-  const twiml = new VoiceResponse();
+  const twimlResponse = new VoiceResponse();
 
   if (params.To !== systemNumber) {
     // This is an outbound call
-    const dial = twiml.dial({
+    const dial = twimlResponse.dial({
       callerId: systemNumber,
     });
     dial.number(params.To as string);
   } else {
     // This is an inbound call
-    twiml.say('Thanks for calling Medplum. Please hold while we connect you.');
-    const dial = twiml.dial();
+    twimlResponse.say('Thanks for calling Medplum. Please hold while we connect you.');
+    const dial = twimlResponse.dial();
     dial.client(systemNumber);
   }
 
@@ -67,6 +69,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<any>): Pro
   return {
     resourceType: 'Binary',
     contentType: 'application/xml',
-    data: Buffer.from(twiml.toString(), 'utf-8').toString('base64'),
+    data: Buffer.from(twimlResponse.toString(), 'utf-8').toString('base64'),
   };
 }

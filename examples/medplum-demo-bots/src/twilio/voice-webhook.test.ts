@@ -7,14 +7,24 @@ import {
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Binary, Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { validateRequest } from 'twilio/lib/webhooks/webhooks';
+import twilio from 'twilio';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler } from './voice-webhook';
 
-// Mock the Twilio validateRequest function
-vi.mock('twilio/lib/webhooks/webhooks', () => ({
-  validateRequest: vi.fn(),
-}));
+// Mock only the validateRequest function from Twilio, keeping everything else intact
+vi.mock('twilio', async () => {
+  const actual = await vi.importActual('twilio');
+  const actualDefault = actual.default as any;
+  return {
+    ...actual,
+    default: {
+      ...actualDefault,
+      validateRequest: vi.fn(),
+    },
+  };
+});
+
+const { validateRequest } = twilio;
 
 describe('Twilio Voice Webhook', () => {
   let medplum: MockClient;
