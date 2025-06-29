@@ -50,7 +50,8 @@ export default function PricingPage(): JSX.Element {
                   </sup>
                 </th>
                 <th>
-                  Enterprise<sup>
+                  Enterprise
+                  <sup>
                     <a href="#note4">4</a>
                   </sup>
                 </th>
@@ -61,7 +62,10 @@ export default function PricingPage(): JSX.Element {
                   </sup>
                 </th>
                 <th>
-                  Enterprise<sup><a href="#note6">6</a></sup>
+                  Enterprise
+                  <sup>
+                    <a href="#note6">6</a>
+                  </sup>
                 </th>
               </tr>
             </thead>
@@ -126,12 +130,37 @@ export default function PricingPage(): JSX.Element {
               </tr>
               <tr>
                 <td>Usage</td>
-                <td>Test<sup><a href="#note14">14</a></sup></td>
-                <td>Growth<sup><a href="#note15">15</a></sup></td>
-                <td>Scale<sup><a href="#note16">16</a></sup></td>
-                <td>Enterprise<sup><a href="#note17">17</a></sup></td>
+                <td>
+                  Test
+                  <sup>
+                    <a href="#note14">14</a>
+                  </sup>
+                </td>
+                <td>
+                  Growth
+                  <sup>
+                    <a href="#note15">15</a>
+                  </sup>
+                </td>
+                <td>
+                  Scale
+                  <sup>
+                    <a href="#note16">16</a>
+                  </sup>
+                </td>
+                <td>
+                  Enterprise
+                  <sup>
+                    <a href="#note17">17</a>
+                  </sup>
+                </td>
                 <td></td>
-                <td>Enterprise<sup><a href="#note17">17</a></sup></td>
+                <td>
+                  Enterprise
+                  <sup>
+                    <a href="#note17">17</a>
+                  </sup>
+                </td>
               </tr>
               <tr>
                 <td>Custom Domains</td>
@@ -480,11 +509,12 @@ export default function PricingPage(): JSX.Element {
                 <strong>Free</strong>: recommended for prototyping or learning.
               </li>
               <li id="note2">
-                <strong>Production</strong>: recommended for production applications, e.g. treatment of patients or conducting
-                research.
+                <strong>Production</strong>: recommended for production applications, e.g. treatment of patients or
+                conducting research.
               </li>
               <li id="note3">
-                <strong>Premium</strong>: Includes diagnostics, lab and medication integrations. Recommended for messaging heavy and integration heavy use cases.
+                <strong>Premium</strong>: Includes diagnostics, lab and medication integrations. Recommended for
+                messaging heavy and integration heavy use cases.
               </li>
               <li id="note4">
                 <strong>Enterprise</strong>: recommended for institutions with complex workflow, integration or data
@@ -496,7 +526,7 @@ export default function PricingPage(): JSX.Element {
               </li>
               <li id="note6">
                 <strong>Enterprise Self-Hosted</strong>: recommended for those who must host the application on their
-                own cloud infrastructure.  Read more details on our <a href="/enterprise">Enterprise</a> offering page.
+                own cloud infrastructure. Read more details on our <a href="/enterprise">Enterprise</a> offering page.
               </li>
               <li id="note7">
                 <strong>Bot Invocations</strong>: refers to custom logic written by customers to execute their workflow.{' '}
@@ -530,16 +560,20 @@ export default function PricingPage(): JSX.Element {
                 transaction. See <a href="/docs/integration/health-gorilla">Lab Integration</a> for more details.
               </li>
               <li id="note14">
-                <strong> Test Usage</strong>: For low-volume use cases such as development, testing, or small internal tools.
+                <strong> Test Usage</strong>: For low-volume use cases such as development, testing, or small internal
+                tools.
               </li>
               <li id="note15">
-                <strong> Growth Usage</strong>: Supports moderate usage typical of production deployments or lightweight applications.
+                <strong> Growth Usage</strong>: Supports moderate usage typical of production deployments or lightweight
+                applications.
               </li>
               <li id="note16">
-                <strong> Scale Usage</strong>: Designed for high-throughput environments with sustained and growing traffic.
+                <strong> Scale Usage</strong>: Designed for high-throughput environments with sustained and growing
+                traffic.
               </li>
               <li id="note17">
-                <strong> Enterprise Usage</strong>: Handles very high or mission-critical volumes, with customization and service level guarantees.
+                <strong> Enterprise Usage</strong>: Handles very high or mission-critical volumes, with customization
+                and service level guarantees.
               </li>
             </ol>
           </div>
