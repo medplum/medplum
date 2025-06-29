@@ -1,4 +1,13 @@
-import { ContentType, getAllDataTypes, getSearchParameters, InternalTypeSchema, isResourceType } from '@medplum/core';
+import {
+  concatUrls,
+  ContentType,
+  getAllDataTypes,
+  getSearchParameters,
+  HTTP_TERMINOLOGY_HL7_ORG,
+  InternalTypeSchema,
+  isResourceType,
+  MEDPLUM_VERSION,
+} from '@medplum/core';
 import {
   CapabilityStatement,
   CapabilityStatementRest,
@@ -17,12 +26,11 @@ import { MedplumServerConfig } from '../config/types';
 const baseStmt: CapabilityStatement = {
   resourceType: 'CapabilityStatement',
   id: 'medplum-server',
-  url: 'http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server',
-  version: '0.9.34',
+  version: MEDPLUM_VERSION,
   name: 'MedplumCapabilityStatement',
   title: 'Medplum Capability Statement',
   status: 'active',
-  date: '2022-09-02',
+  date: new Date().toISOString(),
   publisher: 'Medplum',
   contact: [
     {
@@ -183,11 +191,11 @@ export function getCapabilityStatement(): CapabilityStatement {
 
 function buildCapabilityStatement(): CapabilityStatement {
   const name = 'medplum';
-  const version = baseStmt.version;
+  const version = MEDPLUM_VERSION;
   const config = getConfig();
   const baseUrl = config.baseUrl;
-  const fhirBaseUrl = baseUrl + 'fhir/R4/';
-  const metadataUrl = fhirBaseUrl + 'metadata';
+  const fhirBaseUrl = concatUrls(baseUrl, 'fhir/R4/');
+  const metadataUrl = concatUrls(fhirBaseUrl, 'metadata');
 
   return {
     ...baseStmt,
@@ -230,6 +238,15 @@ function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
 
 function buildSecurity(config: MedplumServerConfig): CapabilityStatementRestSecurity {
   return {
+    cors: true,
+    service: ['OAuth', 'Basic', 'SMART-on-FHIR'].map((service) => ({
+      coding: [
+        {
+          system: HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/restful-security-service',
+          code: service,
+        },
+      ],
+    })),
     extension: [
       {
         url: 'http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris',
