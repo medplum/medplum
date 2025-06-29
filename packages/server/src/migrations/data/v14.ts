@@ -31,6 +31,7 @@ async function run(client: PoolClient, results: MigrationActionResult[]): Promis
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "__sharedTokensText"`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "___tag"`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "___tagText"`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "compartments"`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "CapabilityStatement" DROP COLUMN IF EXISTS "context"`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "ChargeItemDefinition" DROP COLUMN IF EXISTS "context"`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "CodeSystem" DROP COLUMN IF EXISTS "context"`);
