@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { AuthenticatedRequestContext } from './context';
-import { DatabaseMode, getDatabasePool, maybeStartPostDeployMigration } from './database';
+import { DatabaseMode, getDatabasePool } from './database';
 import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
@@ -18,7 +18,7 @@ import {
   PostDeployJobData,
 } from './migrations/data/types';
 import * as migrateModule from './migrations/migrate';
-import { getPendingPostDeployMigration } from './migrations/migration-utils';
+import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import { MigrationAction, MigrationActionResult } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
