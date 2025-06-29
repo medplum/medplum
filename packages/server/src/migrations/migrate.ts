@@ -386,6 +386,7 @@ function buildTargetDefinition(): SchemaDefinition {
   buildHumanNameTable(result);
   buildCodingTable(result);
   buildCodingPropertyTable(result);
+  buildCodeSystemPropertyTable(result);
   buildDatabaseMigrationTable(result);
 
   return result;
@@ -823,6 +824,29 @@ function buildCodingPropertyTable(result: SchemaDefinition): void {
       { columns: ['coding', 'property', 'target', 'value'], indexType: 'btree', unique: true },
       { columns: ['target', 'property', 'coding'], indexType: 'btree', unique: false, where: 'target IS NOT NULL' },
       { columns: ['coding'], indexType: 'btree', unique: false },
+    ],
+  });
+}
+
+function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'CodeSystem_Property',
+    columns: [
+      {
+        name: 'id',
+        type: 'BIGINT',
+        notNull: true,
+        defaultValue: 'nextval(\'"CodeSystem_Property_id_seq"\'::regclass)',
+      },
+      { name: 'system', type: 'UUID', notNull: true },
+      { name: 'code', type: 'TEXT', notNull: true },
+      { name: 'type', type: 'TEXT', notNull: true },
+      { name: 'uri', type: 'TEXT' },
+      { name: 'description', type: 'TEXT' },
+    ],
+    indexes: [
+      { columns: ['id'], indexType: 'btree', unique: true },
+      { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
     ],
   });
 }
