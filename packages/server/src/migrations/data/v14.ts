@@ -22,6 +22,15 @@ export const migration: CustomPostDeployMigration = {
 // prettier-ignore
 async function run(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
   await fns.query(client, results, `ALTER TABLE IF EXISTS "ActivityDefinition" DROP COLUMN IF EXISTS "context"`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "__tokens"`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "__tokensText"`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "___securitySort"`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "___tagSort"`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "___compartmentIdentifierSort"`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "__sharedTokens"`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "__sharedTokensText"`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "___tag"`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "Binary" DROP COLUMN IF EXISTS "___tagText"`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "CapabilityStatement" DROP COLUMN IF EXISTS "context"`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "ChargeItemDefinition" DROP COLUMN IF EXISTS "context"`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "CodeSystem" DROP COLUMN IF EXISTS "context"`);
