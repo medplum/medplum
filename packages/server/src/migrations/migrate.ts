@@ -401,7 +401,7 @@ export function buildCreateTables(
       { name: 'content', type: 'TEXT', notNull: true },
       { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
       { name: 'deleted', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
-      { name: 'compartments', type: 'UUID[]', notNull: true },
+      { name: 'compartments', type: 'UUID[]', notNull: resourceType !== 'Binary' },
       { name: 'projectId', type: 'UUID' },
       { name: '__version', type: 'INTEGER' },
       { name: '_source', type: 'TEXT' },

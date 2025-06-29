@@ -1,8 +1,10 @@
 import {
   allOk,
   badRequest,
+  ContentType,
   created,
   createReference,
+  encodeBase64,
   getReferenceString,
   isOk,
   notFound,
@@ -14,6 +16,7 @@ import {
   WithId,
 } from '@medplum/core';
 import {
+  Binary,
   BundleEntry,
   ElementDefinition,
   Login,
@@ -1565,6 +1568,37 @@ describe('FHIR Repo', () => {
       expect(orgs.length).toStrictEqual(2);
       expect(orgs.map((p) => p.id)).toContain(org.id);
       expect(orgs.map((p) => p.id)).toContain(linkedOrg.id);
+    }));
+
+  test('Binary writes no search parameter columns', () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withClient: true, withRepo: true });
+      const buildResourceRowSpy = jest.spyOn(Repository.prototype as any, 'buildResourceRow');
+      const binary = await repo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: ContentType.TEXT,
+        data: encodeBase64('this is some test data'),
+        meta: {
+          tag: [{ system: 'https://example.com', code: 'tag' }],
+          security: [{ system: 'https://example.com', code: 'security' }],
+        },
+      });
+      expect(binary).toBeDefined();
+      expect(binary.id).toBeDefined();
+
+      expect(buildResourceRowSpy).toHaveBeenCalledTimes(1);
+      const binaryRow = buildResourceRowSpy.mock.results[0].value as Record<string, any>;
+
+      expect(binaryRow).toStrictEqual({
+        id: binary.id,
+        lastUpdated: expect.any(String),
+        deleted: false,
+        projectId: project.id,
+        content: expect.any(String),
+        __version: Repository.VERSION,
+      });
+
+      buildResourceRowSpy.mockRestore();
     }));
 });
 
