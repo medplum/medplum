@@ -15,6 +15,7 @@ import {
 } from '../migrations/data/types';
 import { executeMigrationActions } from '../migrations/migrate';
 import {
+  enforceStrictMigrationVersionChecks,
   getPostDeployManifestEntry,
   getPostDeployMigration,
   MigrationDefinitionNotFoundError,
@@ -65,13 +66,12 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
 };
 
 export async function isClusterCompatible(migrationNumber: number): Promise<boolean> {
-  const servers = await getRegisteredServers(true);
-  const entry = getPostDeployManifestEntry(migrationNumber);
-
-  if (process.env.NODE_ENV !== 'production') {
+  if (!enforceStrictMigrationVersionChecks()) {
     return true;
   }
 
+  const servers = await getRegisteredServers(true);
+  const entry = getPostDeployManifestEntry(migrationNumber);
   const requiredVersion = entry.serverVersion;
   return servers.every((server) => semver.gte(server.version, requiredVersion));
 }

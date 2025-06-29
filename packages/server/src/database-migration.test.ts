@@ -151,11 +151,13 @@ describe('Database migrations', () => {
     test('Current version is greater than `requiredBefore`', () =>
       withTestContext(async () => {
         mockValues.serverVersion = '4.0.0';
+        process.env.MEDPLUM_ENABLE_STRICT_MIGRATION_VERSION_CHECKS = 'true';
         await expect(initAppServices(getConfig())).rejects.toThrow(
           new Error(
             'Unable to run this version of Medplum server. Pending post-deploy migration v1 requires server at version 3.3.0 <= version < 4.0.0, but current server version is 4.0.0'
           )
         );
+        delete process.env.MEDPLUM_ENABLE_STRICT_MIGRATION_VERSION_CHECKS;
       }));
 
     // 3.2.0 is less than the v1.serverVersion in the post-deploy migration manifest file,

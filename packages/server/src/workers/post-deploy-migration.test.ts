@@ -341,6 +341,7 @@ describe('Post-Deploy Migration Worker', () => {
       } else {
         expect(job.moveToDelayed).not.toHaveBeenCalled();
       }
+      getPostDeployMigrationSpy.mockRestore();
     }
   );
 
@@ -458,7 +459,9 @@ describe('Post-Deploy Migration Worker', () => {
     });
 
     if (includeOldServer) {
+      process.env.MEDPLUM_ENABLE_STRICT_MIGRATION_VERSION_CHECKS = 'true';
       await expect(jobProcessor(job)).rejects.toBeInstanceOf(DelayedError);
+      delete process.env.MEDPLUM_ENABLE_STRICT_MIGRATION_VERSION_CHECKS;
       expect(mockCustomMigration.run).not.toHaveBeenCalled();
       expect(job.moveToDelayed).toHaveBeenCalledTimes(1);
       expect(job.moveToDelayed).toHaveBeenCalledWith(expect.any(Number), 'some-token');

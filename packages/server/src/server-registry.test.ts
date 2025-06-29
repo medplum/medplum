@@ -116,8 +116,14 @@ describe('server-registry', () => {
     ]);
     mockRedis.mget.mockResolvedValue([JSON.stringify(server1), JSON.stringify(server2), JSON.stringify(server3)]);
 
-    const servers = await getRegisteredServers(true);
-    expect(servers).toStrictEqual([server1, server2, server3]);
+    const withoutSelf = await getRegisteredServers(false);
+    expect(withoutSelf).toStrictEqual([server1, server2, server3]);
+
+    const withSelf = await getRegisteredServers(true);
+    expect(withSelf).toHaveLength(4);
+    expect(withSelf).toContainEqual(server1);
+    expect(withSelf).toContainEqual(server2);
+    expect(withSelf).toContainEqual(server3);
   });
 
   test('getClusterStatus - heterogeneous', async () => {

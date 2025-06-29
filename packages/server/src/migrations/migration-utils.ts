@@ -114,6 +114,10 @@ export async function upsertPostDeployMigrationAsyncJob(
   return repo.createResource(toSave);
 }
 
+export function enforceStrictMigrationVersionChecks(): boolean {
+  return process.env.NODE_ENV === 'production' || Boolean(process.env.MEDPLUM_ENABLE_STRICT_MIGRATION_VERSION_CHECKS);
+}
+
 export async function preparePostDeployMigrationAsyncJob(
   systemRepo: Repository,
   version: number

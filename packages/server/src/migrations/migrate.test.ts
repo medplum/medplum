@@ -22,12 +22,7 @@ describe('Generator', () => {
       for (const [resourceType, typeSchema] of dataTypes) {
         buildCreateTables(result, resourceType, typeSchema);
       }
-      expect(result.tables.map((t) => t.name)).toStrictEqual([
-        'Patient',
-        'Patient_History',
-        'Patient_Token',
-        'Patient_References',
-      ]);
+      expect(result.tables.map((t) => t.name)).toStrictEqual(['Patient', 'Patient_History', 'Patient_References']);
 
       const table = result.tables.find((t) => t.name === 'Patient') as TableDefinition;
       expect(table).toBeDefined();

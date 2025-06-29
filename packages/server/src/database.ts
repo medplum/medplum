@@ -8,6 +8,7 @@ import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import { getPostDeployVersion, getPreDeployVersion } from './migration-sql';
 import {
+  enforceStrictMigrationVersionChecks,
   getPendingPostDeployMigration,
   getPostDeployManifestEntry,
   getPreDeployMigration,
@@ -200,9 +201,12 @@ async function migrate(client: PoolClient): Promise<void> {
     // 2. Greater than or equal to the specified serverVersion and less than the requiredBefore version (entry.serverVersion <= version <= entry.requiredBefore) -- notify that a data migration is ready, allow startup
     // 3. Greater than or equal to the requiredBefore version (version >= entry.requiredBefore) -- throw from this function and do not allow server to startup
     if (semver.gte(serverVersion, versionEntry.serverVersion)) {
-      const isProd = process.env.NODE_ENV === 'production';
       // We allow any version where the data migration is greater than or equal to the specified `serverVersion` and it less than the `requiredBefore` version
-      if (isProd && versionEntry.requiredBefore && semver.gte(serverVersion, versionEntry.requiredBefore)) {
+      if (
+        enforceStrictMigrationVersionChecks() &&
+        versionEntry.requiredBefore &&
+        semver.gte(serverVersion, versionEntry.requiredBefore)
+      ) {
         throw new Error(
           `Unable to run this version of Medplum server. Pending post-deploy migration v${pendingPostDeployMigration} requires server at version ${versionEntry.serverVersion} <= version < ${versionEntry.requiredBefore}, but current server version is ${serverVersion}`
         );
