@@ -1388,7 +1388,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
           expressions.push(
-            new Condition('compartments', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', policyCompartmentId, 'UUID[]')
+            new Condition('compartments', 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', policyCompartmentId, 'UUID[]')
           );
         } else if (policy.criteria) {
           if (!policy.criteria.startsWith(policy.resourceType + '?')) {
