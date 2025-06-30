@@ -2,7 +2,7 @@ import { BackgroundJobContext, ContentType, createReference, WithId } from '@med
 import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
-import { executeBot } from '../fhir/operations/execute';
+import { executeBot } from '../bots/execute';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger, globalLogger } from '../logger';
 import { findProjectMembership, queueRegistry, WorkerInitializer } from './utils';
@@ -93,7 +93,7 @@ export async function addCronJobs(
 
   const oldCronStr = getCronStringForBot(previousVersion as Bot);
   const newCronStr = getCronStringForBot(bot);
-  logger.info('Cron job for bot', { botId: bot.id, oldCronStr, newCronStr });
+  logger.debug('Cron job for bot', { botId: bot.id, oldCronStr, newCronStr });
 
   if (oldCronStr === newCronStr) {
     // No change in cron job
