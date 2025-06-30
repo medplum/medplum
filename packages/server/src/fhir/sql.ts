@@ -83,17 +83,6 @@ export const Operator = {
     }
     sql.append(')');
   },
-  ARRAY_CONTAINS_SUBQUERY: (sql: SqlBuilder, column: Column, expression: Expression, expressionType?: string) => {
-    sql.append('(');
-    sql.appendColumn(column);
-    sql.append(' && (');
-    sql.appendExpression(expression);
-    sql.append(')');
-    if (expressionType) {
-      sql.append('::' + expressionType);
-    }
-    sql.append(')');
-  },
   TOKEN_ARRAY_IREGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.append(`${TokenArrayToTextFn.name}(`);
     sql.appendColumn(column);
