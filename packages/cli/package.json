@@ -69,7 +69,7 @@
     "@medplum/core": "4.2.4",
     "@medplum/hl7": "4.2.4",
     "commander": "12.1.0",
-    "dotenv": "16.6.1",
+    "dotenv": "17.0.0",
     "fast-glob": "3.3.3",
     "iconv-lite": "0.6.3",
     "node-fetch": "2.7.0",
