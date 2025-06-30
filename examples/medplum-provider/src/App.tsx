@@ -87,18 +87,6 @@ export function App(): JSX.Element | null {
         profile && (
           <>
             <NotificationIcon
-              label="Mail"
-              resourceType="Communication"
-              countCriteria={`recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
-              subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
-              iconComponent={<IconMail />}
-              onClick={() =>
-                navigate(
-                  `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`
-                )
-              }
-            />
-            <NotificationIcon
               label="Tasks"
               resourceType="Task"
               countCriteria={`owner=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
