@@ -60543,6 +60543,10 @@
           "description": "Optional flag to indicate that the bot should be run as the user.",
           "$ref": "#/definitions/boolean"
         },
+        "publicWebhook": {
+          "description": "Optional flag to indicate that the bot can be used as an unauthenticated public webhook. Note that this is a security risk and should only be used for public bots that do not require authentication.",
+          "$ref": "#/definitions/boolean"
+        },
         "auditEventTrigger": {
           "description": "Criteria for creating an AuditEvent as a result of the bot invocation. Possible values are \u0027always\u0027, \u0027never\u0027, \u0027on-error\u0027, or \u0027on-output\u0027. Default value is \u0027always\u0027.",
           "enum": ["always", "never", "on-error", "on-output"]

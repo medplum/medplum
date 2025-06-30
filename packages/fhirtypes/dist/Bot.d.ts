@@ -152,6 +152,14 @@ export interface Bot {
   runAsUser?: boolean;
 
   /**
+   * Optional flag to indicate that the bot can be used as an
+   * unauthenticated public webhook. Note that this is a security risk and
+   * should only be used for public bots that do not require
+   * authentication.
+   */
+  publicWebhook?: boolean;
+
+  /**
    * Criteria for creating an AuditEvent as a result of the bot invocation.
    * Possible values are 'always', 'never', 'on-error', or 'on-output'.
    * Default value is 'always'.
