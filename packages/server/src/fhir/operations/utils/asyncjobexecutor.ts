@@ -5,9 +5,10 @@ import { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
-import { DatabaseMode, getDatabasePool, maybeAutoRunPendingPostDeployMigration } from '../../../database';
+import { DatabaseMode, getDatabasePool } from '../../../database';
 import { getLogger } from '../../../logger';
 import { markPostDeployMigrationCompleted } from '../../../migration-sql';
+import { maybeAutoRunPendingPostDeployMigration } from '../../../migrations/migration-utils';
 import { sendOutcome } from '../../outcomes';
 import { Repository, getSystemRepo } from '../../repo';
 

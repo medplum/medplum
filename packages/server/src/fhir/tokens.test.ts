@@ -18,7 +18,7 @@ import { getSystemRepo, Repository } from './repo';
 import { getSearchParameterImplementation, TokenColumnSearchParameterImplementation } from './searchparameter';
 import { loadStructureDefinitions } from './structure';
 import { TokenQueryOperators } from './token-column';
-import { buildTokensForSearchParameter, isLegacyTokenColumnSearchParameter, Token } from './tokens';
+import { buildTokensForSearchParameter, Token } from './tokens';
 
 const systemRepo = getSystemRepo();
 
@@ -1284,15 +1284,13 @@ describe('MedicationRequest.code legacy behavior', () => {
     });
   });
 
-  test('Uses legacy column implementation when NOT using token columns', async () => {
+  test('Formerly "legacy" column implementation search params use `token-column` strategy', async () => {
     const searchParam = getSearchParameter('MedicationRequest', 'code');
     if (!searchParam) {
       throw new Error('Could not find MedicationRequest-code search parameter');
     }
-
     const impl = getSearchParameterImplementation('MedicationRequest', searchParam);
     expect(impl.searchStrategy).toBe('token-column');
-    expect(isLegacyTokenColumnSearchParameter(searchParam, 'MedicationRequest')).toBe(true);
   });
 
   test('Search by system only works when using token columns', async () => {

@@ -31,9 +31,6 @@ export function buildTokenColumns(
   const tokens = new Set<string>(columns[impl.tokenColumnName]);
   const textSearchTokens = new Set<string>(columns[impl.textSearchColumnName]);
 
-  const legacyTokens = new Set<string>(columns[impl.legacyColumnName]);
-  const legacyTextSearchTokens = new Set<string>(columns[impl.legacyTextSearchColumnName]);
-
   let sortColumnValue: string | null = null;
   for (const t of allTokens) {
     const code = t.code;
@@ -54,7 +51,6 @@ export function buildTokenColumns(
 
     // text search
     if (value && (system === TEXT_SEARCH_SYSTEM || impl.textSearch)) {
-      legacyTextSearchTokens.add(code + DELIM + DELIM + value);
       if (impl.hasDedicatedColumns) {
         textSearchTokens.add(value);
       } else {
@@ -76,7 +72,6 @@ export function buildTokenColumns(
 
     // :missing/:present - in a token column per search parameter, the presence of any elements
     // in the main token column, `impl.tokenColumnName`, is sufficient.
-    legacyTokens.add(code);
     if (!impl.hasDedicatedColumns) {
       addHashedToken(tokens, code);
     }
@@ -86,12 +81,10 @@ export function buildTokenColumns(
     // The TEXT_SEARCH_SYSTEM is never searchable
     if (system && system !== TEXT_SEARCH_SYSTEM) {
       // [parameter]=[system]|
-      legacyTokens.add(code + DELIM + system);
       addHashedToken(tokens, prefix + system);
 
       if (value) {
         // [parameter]=[system]|[code]
-        legacyTokens.add(code + DELIM + system + DELIM + value);
         addHashedToken(tokens, prefix + system + DELIM + value);
       }
     }
@@ -100,12 +93,10 @@ export function buildTokenColumns(
       sortColumnValue = sortColumnValue && sortColumnValue.localeCompare(value) <= 0 ? sortColumnValue : value;
 
       // [parameter]=[code]
-      legacyTokens.add(code + DELIM + DELIM + value);
       addHashedToken(tokens, prefix + DELIM + value);
 
       if (!system) {
         // [parameter]=|[code]
-        legacyTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
         addHashedToken(tokens, prefix + NULL_SYSTEM + DELIM + value);
       }
     }
@@ -114,8 +105,6 @@ export function buildTokenColumns(
   columns[impl.tokenColumnName] = Array.from(tokens);
   columns[impl.textSearchColumnName] = Array.from(textSearchTokens);
   columns[impl.sortColumnName] = sortColumnValue;
-  columns[impl.legacyColumnName] = Array.from(legacyTokens);
-  columns[impl.legacyTextSearchColumnName] = Array.from(legacyTextSearchTokens);
 }
 
 function addHashedToken(tokenSet: Set<string>, token: string): void {

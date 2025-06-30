@@ -98,7 +98,6 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
-import { TokenTable } from './lookups/token';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
 import { preCommitValidation } from './precommit';
@@ -119,7 +118,6 @@ import {
   periodToRangeString,
 } from './sql';
 import { buildTokenColumns } from './token-column';
-import { TokenColumnsFeature, isLegacyTokenColumnSearchParameter } from './tokens';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
@@ -1612,14 +1610,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     let columnImpl: ColumnSearchParameterImplementation | undefined;
     if (impl.searchStrategy === 'token-column') {
-      if (TokenColumnsFeature.write) {
-        buildTokenColumns(searchParam, impl, columns, resource);
-      }
-
-      if (isLegacyTokenColumnSearchParameter(searchParam, resource.resourceType)) {
-        // This is a legacy search parameter that should be indexed as a regular string column as well
-        columnImpl = getSearchParameterImplementation(resource.resourceType, searchParam, true);
-      }
+      buildTokenColumns(searchParam, impl, columns, resource);
     } else {
       impl satisfies ColumnSearchParameterImplementation;
       columnImpl = impl;
@@ -1862,17 +1853,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return undefined;
   }
 
-  private disableTokenTableWrites: boolean | undefined;
-  private skipTokenTableWrite(): boolean {
-    if (this.disableTokenTableWrites === undefined) {
-      const project = this.currentProject();
-      const maybeWriteBoolean = project?.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')?.valueBoolean;
-      // If the Project.systemSetting exists, use its value. Otherwise, default to false
-      this.disableTokenTableWrites = maybeWriteBoolean ?? false;
-    }
-    return this.disableTokenTableWrites;
-  }
-
   /**
    * Writes resources values to the lookup tables.
    * @param client - The database client inside the transaction.
@@ -1881,9 +1861,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
-      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
-        continue;
-      }
       await lookupTable.indexResource(client, resource, create);
     }
   }
@@ -1894,9 +1871,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     create: boolean
   ): Promise<void> {
     for (const lookupTable of lookupTables) {
-      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
-        continue;
-      }
       await lookupTable.batchIndexResources(client, resources, create);
     }
   }

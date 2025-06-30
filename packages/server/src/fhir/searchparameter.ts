@@ -5,7 +5,7 @@ import { CodingTable } from './lookups/coding';
 import { HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
 import { ReferenceTable } from './lookups/reference';
-import { TokenTable } from './lookups/token';
+import { getTokenIndexType, TokenIndexTypes } from './tokens';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
@@ -28,12 +28,9 @@ export interface LookupTableSearchParameterImplementation extends SearchParamete
 export interface TokenColumnSearchParameterImplementation extends SearchParameterDetails {
   readonly searchStrategy: typeof SearchStrategies.TOKEN_COLUMN;
   readonly hasDedicatedColumns: boolean;
-  readonly legacyColumnName: string;
-  readonly legacyTextSearchColumnName: string;
   readonly tokenColumnName: string;
   readonly sortColumnName: string;
   readonly textSearchColumnName: string;
-  readonly lookupTable: LookupTable;
   readonly caseInsensitive: boolean;
   readonly textSearch: boolean;
 }
@@ -45,7 +42,6 @@ export type SearchParameterImplementation =
 
 interface ResourceTypeSearchParameterInfo {
   searchParamsImplementations: Record<string, SearchParameterImplementation>;
-  legacyTokenSearchParamsImplementations: Record<string, ColumnSearchParameterImplementation>;
 }
 
 type IndexedSearchParameters = {
@@ -56,34 +52,8 @@ export const globalSearchParameterRegistry: IndexedSearchParameters = { types: {
 
 export function getSearchParameterImplementation(
   resourceType: string,
-  searchParam: SearchParameter,
-  forceColumnImplementation: true
-): ColumnSearchParameterImplementation;
-export function getSearchParameterImplementation(
-  resourceType: string,
   searchParam: SearchParameter
-): SearchParameterImplementation;
-export function getSearchParameterImplementation(
-  resourceType: string,
-  searchParam: SearchParameter,
-  forceColumnImplementation?: boolean
 ): SearchParameterImplementation {
-  if (forceColumnImplementation) {
-    let legacyImpl: ColumnSearchParameterImplementation | undefined =
-      globalSearchParameterRegistry.types[resourceType]?.legacyTokenSearchParamsImplementations?.[
-        searchParam.code as string
-      ];
-    if (!legacyImpl) {
-      legacyImpl = buildSearchParameterImplementation(
-        resourceType,
-        searchParam,
-        true
-      ) as ColumnSearchParameterImplementation;
-      setSearchParameterImplementation(resourceType, searchParam.code, legacyImpl, true);
-    }
-    return legacyImpl;
-  }
-
   let result: SearchParameterImplementation | undefined =
     globalSearchParameterRegistry.types[resourceType]?.searchParamsImplementations?.[searchParam.code as string];
   if (!result) {
@@ -96,19 +66,14 @@ export function getSearchParameterImplementation(
 function setSearchParameterImplementation(
   resourceType: string,
   code: string,
-  implementation: SearchParameterImplementation,
-  isLegacy?: boolean
+  implementation: SearchParameterImplementation
 ): void {
   let typeSchema = globalSearchParameterRegistry.types[resourceType];
   if (!typeSchema) {
-    typeSchema = { searchParamsImplementations: {}, legacyTokenSearchParamsImplementations: {} };
+    typeSchema = { searchParamsImplementations: {} };
     globalSearchParameterRegistry.types[resourceType] = typeSchema;
   }
-  if (isLegacy) {
-    typeSchema.legacyTokenSearchParamsImplementations[code] = implementation as ColumnSearchParameterImplementation;
-  } else {
-    typeSchema.searchParamsImplementations[code] = implementation;
-  }
+  typeSchema.searchParamsImplementations[code] = implementation;
 }
 
 const ContainsSupportSearchParameterIds = [
@@ -123,31 +88,19 @@ const ContainsSupportSearchParameterIds = [
 
 function buildSearchParameterImplementation(
   resourceType: string,
-  searchParam: SearchParameter,
-  forceColumnImplementation?: boolean
+  searchParam: SearchParameter
 ): SearchParameterImplementation {
   const code = searchParam.code;
-  let impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
-
-  if (forceColumnImplementation) {
-    // Since impl manipulates the object returned from `getSearchParameterDetails`,
-    // make a copy of only the `SearchParameterDetails` properties so we are starting over
-    impl = {
-      type: impl.type,
-      elementDefinitions: impl.elementDefinitions,
-      array: impl.array,
-    } as SearchParameterImplementation;
-  }
+  const impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
 
   if (!searchParam.base?.includes(resourceType as ResourceType)) {
     throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
   }
 
-  const lookupTable = forceColumnImplementation ? undefined : getLookupTable(resourceType, searchParam);
-  if (lookupTable === tokenTable) {
+  const tokenIndexType = getTokenIndexType(searchParam, resourceType);
+  if (tokenIndexType) {
     const writeable = impl as Writeable<TokenColumnSearchParameterImplementation>;
     writeable.searchStrategy = 'token-column';
-    writeable.lookupTable = lookupTable;
 
     const baseName = convertCodeToColumnName(code);
     if (hasDedicatedTokenColumns(searchParam, resourceType)) {
@@ -159,16 +112,15 @@ function buildSearchParameterImplementation(
       writeable.tokenColumnName = '__sharedTokens';
       writeable.textSearchColumnName = '__sharedTokensText';
     }
-
     writeable.sortColumnName = '__' + baseName + 'Sort';
 
-    writeable.legacyColumnName = '__tokens';
-    writeable.legacyTextSearchColumnName = '__tokensText';
-
-    writeable.caseInsensitive = tokenTable.isCaseInsensitive(searchParam, resourceType);
+    writeable.caseInsensitive = tokenIndexType === TokenIndexTypes.CASE_INSENSITIVE;
     writeable.textSearch = ContainsSupportSearchParameterIds.includes(searchParam.id as string);
     return impl;
-  } else if (lookupTable) {
+  }
+
+  const lookupTable = getLookupTable(resourceType, searchParam);
+  if (lookupTable) {
     const writeable = impl as Writeable<LookupTableSearchParameterImplementation>;
     writeable.searchStrategy = 'lookup-table';
     writeable.lookupTable = lookupTable;
@@ -193,15 +145,12 @@ function convertCodeToColumnName(code: string): string {
   return code.split(/[-:]/).reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
-const tokenTable = new TokenTable();
-
 /**
  * The lookup tables array includes a list of special tables for search indexing.
  */
 export const lookupTables: LookupTable[] = [
   new AddressTable(),
   new HumanNameTable(),
-  tokenTable,
   new ReferenceTable(),
   new CodingTable(),
 ];

@@ -41,6 +41,7 @@ export interface IndexDefinition {
 export type MigrationAction =
   | { type: 'CREATE_FUNCTION'; name: string; createQuery: string }
   | { type: 'CREATE_TABLE'; definition: TableDefinition }
+  | { type: 'DROP_TABLE'; tableName: string }
   | { type: 'ADD_COLUMN'; tableName: string; columnDefinition: ColumnDefinition }
   | { type: 'DROP_COLUMN'; tableName: string; columnName: string }
   | { type: 'ALTER_COLUMN_SET_DEFAULT'; tableName: string; columnName: string; defaultValue: string }
