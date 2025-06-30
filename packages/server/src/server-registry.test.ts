@@ -5,6 +5,7 @@ import * as serverRegistry from './server-registry';
 import {
   cleanupServerRegistryHeartbeatListener,
   getClusterStatus,
+  getRegisteredServers,
   initServerRegistryHeartbeatListener,
 } from './server-registry';
 
@@ -85,7 +86,7 @@ describe('server-registry', () => {
     expect(heartbeatRemoveListenerSpy).not.toHaveBeenCalled();
   });
 
-  test('getClusterStatus - heterogeneous', async () => {
+  test('getRegisteredServers', async () => {
     const server1 = {
       id: 'server1',
       firstSeen: new Date(now.getTime() - 20000).toISOString(),
@@ -115,14 +116,40 @@ describe('server-registry', () => {
     ]);
     mockRedis.mget.mockResolvedValue([JSON.stringify(server1), JSON.stringify(server2), JSON.stringify(server3)]);
 
-    const status = await getClusterStatus();
+    const withoutSelf = await getRegisteredServers(false);
+    expect(withoutSelf).toStrictEqual([server1, server2, server3]);
 
-    expect(mockRedis.keys).toHaveBeenCalledWith('medplum:server-registry:*');
-    expect(mockRedis.mget).toHaveBeenCalledWith([
-      'medplum:server-registry:server1',
-      'medplum:server-registry:server2',
-      'medplum:server-registry:server3',
-    ]);
+    const withSelf = await getRegisteredServers(true);
+    expect(withSelf).toHaveLength(4);
+    expect(withSelf).toContainEqual(server1);
+    expect(withSelf).toContainEqual(server2);
+    expect(withSelf).toContainEqual(server3);
+  });
+
+  test('getClusterStatus - heterogeneous', async () => {
+    const server1 = {
+      id: 'server1',
+      firstSeen: new Date(now.getTime() - 20000).toISOString(),
+      lastSeen: new Date(now.getTime() - 10000).toISOString(),
+      version: '1.0.0',
+      fullVersion: '1.0.0-a',
+    };
+    const server2 = {
+      id: 'server2',
+      firstSeen: new Date(now.getTime() - 40000).toISOString(),
+      lastSeen: new Date(now.getTime() - 5000).toISOString(),
+      version: '1.0.0',
+      fullVersion: '1.0.0-a',
+    };
+    const server3 = {
+      id: 'server3',
+      firstSeen: new Date(now.getTime() - 60000).toISOString(),
+      lastSeen: new Date(now.getTime() - 15000).toISOString(),
+      version: '1.1.0',
+      fullVersion: '1.1.0-b',
+    };
+
+    const status = await getClusterStatus([server1, server2, server3]);
 
     expect(status.totalServers).toBe(3);
     expect(status.isHomogeneous).toBe(false);
@@ -161,10 +188,7 @@ describe('server-registry', () => {
       fullVersion: '1.0.0-a',
     };
 
-    mockRedis.keys.mockResolvedValue(['medplum:server-registry:server1', 'medplum:server-registry:server2']);
-    mockRedis.mget.mockResolvedValue([JSON.stringify(server1), JSON.stringify(server2)]);
-
-    const status = await getClusterStatus();
+    const status = await getClusterStatus([server1, server2]);
 
     expect(status.totalServers).toBe(2);
     expect(status.isHomogeneous).toBe(true);
@@ -181,10 +205,7 @@ describe('server-registry', () => {
   });
 
   test('getClusterStatus - empty mget', async () => {
-    mockRedis.keys.mockResolvedValue(['medplum:server-registry:server1']);
-    mockRedis.mget.mockResolvedValue([null]);
-
-    const status = await getClusterStatus();
+    const status = await getClusterStatus([]);
     expect(status.totalServers).toBe(0);
     expect(status.servers).toHaveLength(0);
     expect(status.isHomogeneous).toBe(false);

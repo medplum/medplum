@@ -22,7 +22,6 @@ import {
   TokenColumnSearchParameterImplementation,
 } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, TokenArrayToTextFn } from '../fhir/sql';
-import { isLegacyTokenColumnSearchParameter } from '../fhir/tokens';
 import * as fns from './migrate-functions';
 import { escapeUnicode, normalizeColumnType, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
 import {
@@ -133,13 +132,21 @@ export async function generateMigrationActions(options: BuildMigrationOptions): 
     }
   }
 
+  const matchedStartTables = new Set<TableDefinition>();
   for (const targetTable of targetDefinition.tables) {
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
     if (!startTable) {
       actions.push({ type: 'CREATE_TABLE', definition: targetTable });
     } else {
+      matchedStartTables.add(startTable);
       actions.push(...generateColumnsActions(ctx, startTable, targetTable));
       actions.push(...generateIndexesActions(ctx, startTable, targetTable, options));
+    }
+  }
+
+  for (const startTable of startDefinition.tables) {
+    if (!matchedStartTables.has(startTable)) {
+      actions.push({ type: 'DROP_TABLE', tableName: startTable.name });
     }
   }
 
@@ -378,6 +385,7 @@ function buildTargetDefinition(): SchemaDefinition {
   buildHumanNameTable(result);
   buildCodingTable(result);
   buildCodingPropertyTable(result);
+  buildCodeSystemPropertyTable(result);
   buildDatabaseMigrationTable(result);
 
   return result;
@@ -401,12 +409,12 @@ export function buildCreateTables(
       { name: 'content', type: 'TEXT', notNull: true },
       { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
       { name: 'deleted', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
-      { name: 'compartments', type: 'UUID[]', notNull: resourceType !== 'Binary' },
+      resourceType !== 'Binary' ? { name: 'compartments', type: 'UUID[]', notNull: true } : undefined,
       { name: 'projectId', type: 'UUID' },
       { name: '__version', type: 'INTEGER' },
       { name: '_source', type: 'TEXT' },
       { name: '_profile', type: 'TEXT[]' },
-    ],
+    ].filter((c) => c !== undefined),
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
       { columns: ['lastUpdated'], indexType: 'btree' },
@@ -435,27 +443,6 @@ export function buildCreateTables(
       { columns: ['id'], indexType: 'btree' },
       { columns: ['lastUpdated'], indexType: 'btree' },
       { columns: ['versionId'], indexType: 'btree', unique: true },
-    ],
-  });
-
-  result.tables.push({
-    name: resourceType + '_Token',
-    columns: [
-      { name: 'resourceId', type: 'UUID', notNull: true },
-      { name: 'code', type: 'TEXT', notNull: true },
-      { name: 'system', type: 'TEXT' },
-      { name: 'value', type: 'TEXT' },
-    ],
-    indexes: [
-      { columns: ['resourceId'], indexType: 'btree' },
-      {
-        columns: [{ expression: "to_tsvector('simple'::regconfig, value)", name: 'text' }],
-        indexType: 'gin',
-        where: "system = 'text'::text",
-        indexNameSuffix: 'idx_tsv',
-      },
-      { columns: ['code', 'value'], indexType: 'btree', include: ['resourceId'] },
-      { columns: ['code', 'system', 'value'], indexType: 'btree', include: ['resourceId'] },
     ],
   });
 
@@ -497,11 +484,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       continue;
     }
 
-    const legacyColumnImpl = isLegacyTokenColumnSearchParameter(searchParam, resourceType)
-      ? getSearchParameterImplementation(resourceType, searchParam, true)
-      : undefined;
-
-    for (const column of getSearchParameterColumns(impl, legacyColumnImpl)) {
+    for (const column of getSearchParameterColumns(impl)) {
       const existing = tableDefinition.columns.find((c) => c.name === column.name);
       if (existing) {
         if (!columnDefinitionsEqual(existing, column)) {
@@ -514,7 +497,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       tableDefinition.columns.push(column);
     }
 
-    for (const index of getSearchParameterIndexes(searchParam, impl, legacyColumnImpl)) {
+    for (const index of getSearchParameterIndexes(searchParam, impl)) {
       const existing = tableDefinition.indexes.find((i) => indexDefinitionsEqual(i, index));
       if (existing) {
         continue;
@@ -533,8 +516,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
 }
 
 function getSearchParameterColumns(
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation,
-  legacyColumnImpl?: ColumnSearchParameterImplementation
+  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
 ): ColumnDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
@@ -545,13 +527,8 @@ function getSearchParameterColumns(
         { name: impl.tokenColumnName, type: 'UUID[]' },
         { name: impl.textSearchColumnName, type: 'TEXT[]' },
         { name: impl.sortColumnName, type: 'TEXT' },
-        { name: impl.legacyColumnName, type: 'TEXT[]' },
-        { name: impl.legacyTextSearchColumnName, type: 'TEXT[]' },
       ];
 
-      if (legacyColumnImpl) {
-        columns.push(getColumnDefinition(legacyColumnImpl.columnName, legacyColumnImpl));
-      }
       return columns;
     }
     case 'column':
@@ -563,8 +540,7 @@ function getSearchParameterColumns(
 
 function getSearchParameterIndexes(
   searchParam: SearchParameter,
-  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation,
-  legacyColumnImpl?: ColumnSearchParameterImplementation
+  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
 ): IndexDefinition[] {
   switch (impl.searchStrategy) {
     case 'token-column': {
@@ -579,21 +555,8 @@ function getSearchParameterIndexes(
           ],
           indexType: 'gin',
         },
-        { columns: [impl.legacyColumnName], indexType: 'gin' },
-        {
-          columns: [
-            {
-              expression: `${TokenArrayToTextFn.name}(${escapeIdentifier(impl.legacyTextSearchColumnName)}) gin_trgm_ops`,
-              name: impl.legacyColumnName + 'Trgm',
-            },
-          ],
-          indexType: 'gin',
-        },
       ];
 
-      if (legacyColumnImpl) {
-        indexes.push({ columns: [legacyColumnImpl.columnName], indexType: legacyColumnImpl.array ? 'gin' : 'btree' });
-      }
       return indexes;
     }
     case 'column': {
@@ -840,6 +803,29 @@ function buildCodingPropertyTable(result: SchemaDefinition): void {
   });
 }
 
+function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'CodeSystem_Property',
+    columns: [
+      {
+        name: 'id',
+        type: 'BIGINT',
+        notNull: true,
+        defaultValue: 'nextval(\'"CodeSystem_Property_id_seq"\'::regclass)',
+      },
+      { name: 'system', type: 'UUID', notNull: true },
+      { name: 'code', type: 'TEXT', notNull: true },
+      { name: 'type', type: 'TEXT', notNull: true },
+      { name: 'uri', type: 'TEXT' },
+      { name: 'description', type: 'TEXT' },
+    ],
+    indexes: [
+      { columns: ['id'], indexType: 'btree', unique: true },
+      { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
+    ],
+  });
+}
+
 function buildDatabaseMigrationTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'DatabaseMigration',
@@ -872,6 +858,11 @@ export async function executeMigrationActions(
         for (const query of queries) {
           await fns.query(client, results, query);
         }
+        break;
+      }
+      case 'DROP_TABLE': {
+        const query = getDropTableQuery(action.tableName);
+        await fns.query(client, results, query);
         break;
       }
       case 'ADD_COLUMN': {
@@ -940,6 +931,11 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
         for (const query of queries) {
           b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         }
+        break;
+      }
+      case 'DROP_TABLE': {
+        const query = getDropTableQuery(action.tableName);
+        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         break;
       }
       case 'ADD_COLUMN': {
@@ -1103,6 +1099,10 @@ function getCreateTableQueries(tableDef: TableDefinition): string[] {
   }
 
   return queries;
+}
+
+function getDropTableQuery(tableName: string): string {
+  return `DROP TABLE IF EXISTS "${tableName}"`;
 }
 
 function getAddColumnQuery(tableName: string, columnDefinition: ColumnDefinition): string {

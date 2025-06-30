@@ -8,7 +8,7 @@ import request from 'supertest';
 import { initApp, initAppServices, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config/loader';
 import { AuthenticatedRequestContext } from './context';
-import { DatabaseMode, getDatabasePool, maybeStartPostDeployMigration } from './database';
+import { DatabaseMode, getDatabasePool } from './database';
 import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as migrationSql from './migration-sql';
@@ -18,7 +18,7 @@ import {
   PostDeployJobData,
 } from './migrations/data/types';
 import * as migrateModule from './migrations/migrate';
-import { getPendingPostDeployMigration } from './migrations/migration-utils';
+import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from './migrations/migration-utils';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';
 import { MigrationAction, MigrationActionResult } from './migrations/types';
 import { generateAccessToken } from './oauth/keys';
@@ -151,11 +151,13 @@ describe('Database migrations', () => {
     test('Current version is greater than `requiredBefore`', () =>
       withTestContext(async () => {
         mockValues.serverVersion = '4.0.0';
+        process.env.MEDPLUM_ENABLE_STRICT_MIGRATION_VERSION_CHECKS = 'true';
         await expect(initAppServices(getConfig())).rejects.toThrow(
           new Error(
             'Unable to run this version of Medplum server. Pending post-deploy migration v1 requires server at version 3.3.0 <= version < 4.0.0, but current server version is 4.0.0'
           )
         );
+        delete process.env.MEDPLUM_ENABLE_STRICT_MIGRATION_VERSION_CHECKS;
       }));
 
     // 3.2.0 is less than the v1.serverVersion in the post-deploy migration manifest file,
