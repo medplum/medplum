@@ -45,7 +45,7 @@
     "@medplum/definitions": "4.2.4",
     "@medplum/fhirtypes": "4.2.4",
     "@medplum/mock": "4.2.4",
-    "@types/node": "20.19.1",
+    "@types/node": "20.19.2",
     "vitest": "3.2.4"
   },
   "peerDependencies": {

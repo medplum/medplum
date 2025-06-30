@@ -24,7 +24,7 @@
     "last 1 Chrome versions"
   ],
   "devDependencies": {
-    "@graphiql/react": "0.34.1",
+    "@graphiql/react": "0.35.1",
     "@graphiql/toolkit": "0.11.3",
     "@mantine/core": "7.17.8",
     "@mantine/hooks": "7.17.8",
