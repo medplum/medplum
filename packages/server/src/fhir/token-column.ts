@@ -206,7 +206,7 @@ export function buildTokenColumnsSearchFilter(
       if (!impl.hasDedicatedColumns) {
         const cond = new TypedCondition(
           new Column(tableName, impl.tokenColumnName),
-          'ARRAY_CONTAINS',
+          'ARRAY_OVERLAPS',
           hashTokenColumnValue(filter.code),
           'UUID[]'
         );
@@ -348,7 +348,7 @@ function buildTokenColumnsWhereCondition(
 
       searchString = hashTokenColumnValue(searchString);
 
-      return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_CONTAINS', searchString, 'UUID[]');
+      return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_OVERLAPS', searchString, 'UUID[]');
     }
     default: {
       operator satisfies never;

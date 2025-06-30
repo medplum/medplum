@@ -58,39 +58,42 @@ export const Operator = {
   IN: simpleBinaryOperator('IN'),
   /*
     Why do both of these exist? Mainly for consideration when negating the condition:
-    Negating ARRAY_CONTAINS_AND_IS_NOT_NULL includes records where the column is NULL.
-    Negating ARRAY_CONTAINS does NOT include records where the column is NULL.
+    Negating ARRAY_OVERLAPS_AND_IS_NOT_NULL includes records where the column is NULL.
+    Negating ARRAY_OVERLAPS does NOT include records where the column is NULL.
   */
-  ARRAY_CONTAINS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+  ARRAY_OVERLAPS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
     sql.appendColumn(column);
-    sql.append(' && ARRAY[');
+    // && is the overlap operator, @> is the contains operator
+    // When `parameter` is a single value, @> is functionally equivalent to && and
+    // can lead to better query plans
+    if (sql.parameterCount(parameter) > 1) {
+      sql.append(' && ARRAY[');
+    } else {
+      sql.append(' @> ARRAY[');
+    }
     sql.appendParameters(parameter, false);
     sql.append(']');
     if (paramType) {
       sql.append('::' + paramType);
     }
   },
-  ARRAY_CONTAINS_AND_IS_NOT_NULL: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+  ARRAY_OVERLAPS_AND_IS_NOT_NULL: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
     sql.append('(');
     sql.appendColumn(column);
     sql.append(' IS NOT NULL AND ');
     sql.appendColumn(column);
-    sql.append(' && ARRAY[');
+    // && is the overlap operator, @> is the contains operator
+    // When `parameter` is a single value, @> is functionally equivalent to && and
+    // can lead to better query plans
+    if (sql.parameterCount(parameter) > 1) {
+      sql.append(' && ARRAY[');
+    } else {
+      sql.append(' @> ARRAY[');
+    }
     sql.appendParameters(parameter, false);
     sql.append(']');
     if (paramType) {
       sql.append('::' + paramType);
-    }
-    sql.append(')');
-  },
-  ARRAY_CONTAINS_SUBQUERY: (sql: SqlBuilder, column: Column, expression: Expression, expressionType?: string) => {
-    sql.append('(');
-    sql.appendColumn(column);
-    sql.append(' && (');
-    sql.appendExpression(expression);
-    sql.append(')');
-    if (expressionType) {
-      sql.append('::' + expressionType);
     }
     sql.append(')');
   },
@@ -258,7 +261,7 @@ export class Condition implements Expression {
 
   constructor(column: Column | string, operator: keyof typeof Operator, parameter: any, parameterType?: string) {
     if (
-      (operator === 'ARRAY_CONTAINS_AND_IS_NOT_NULL' || operator === 'ARRAY_CONTAINS' || operator === 'ARRAY_EMPTY') &&
+      (operator === 'ARRAY_OVERLAPS_AND_IS_NOT_NULL' || operator === 'ARRAY_OVERLAPS' || operator === 'ARRAY_EMPTY') &&
       !parameterType
     ) {
       throw new Error(`${operator} requires paramType`);
@@ -465,6 +468,16 @@ export class SqlBuilder {
       this.sql.push('$' + this.values.length);
     }
     return this;
+  }
+
+  parameterCount(value: any): number {
+    if (Array.isArray(value)) {
+      return value.length;
+    }
+    if (value instanceof Set) {
+      return value.size;
+    }
+    return 1;
   }
 
   appendParameters(parameter: any, addParens: boolean): void {

@@ -49,13 +49,13 @@ describe('SqlBuilder', () => {
     describe('array contains', () => {
       test('single value', () => {
         const sql = new SqlBuilder();
-        new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', 'x', 'TEXT[]').buildSql(sql);
-        expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" && ARRAY[$1]::TEXT[]');
+        new SelectQuery('MyTable').column('id').where('name', 'ARRAY_OVERLAPS', 'x', 'TEXT[]').buildSql(sql);
+        expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" @> ARRAY[$1]::TEXT[]');
       });
 
       test('multiple values', () => {
         const sql = new SqlBuilder();
-        new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', ['x', 'y'], 'TEXT[]').buildSql(sql);
+        new SelectQuery('MyTable').column('id').where('name', 'ARRAY_OVERLAPS', ['x', 'y'], 'TEXT[]').buildSql(sql);
         expect(sql.toString()).toBe(
           'SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" && ARRAY[$1,$2]::TEXT[]'
         );
@@ -64,8 +64,8 @@ describe('SqlBuilder', () => {
       test('missing param type', () => {
         const sql = new SqlBuilder();
         expect(() =>
-          new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', 'x').buildSql(sql)
-        ).toThrow('ARRAY_CONTAINS requires paramType');
+          new SelectQuery('MyTable').column('id').where('name', 'ARRAY_OVERLAPS', 'x').buildSql(sql)
+        ).toThrow('ARRAY_OVERLAPS requires paramType');
       });
     });
 
@@ -74,10 +74,10 @@ describe('SqlBuilder', () => {
         const sql = new SqlBuilder();
         new SelectQuery('MyTable')
           .column('id')
-          .where('name', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', 'x', 'TEXT[]')
+          .where('name', 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', 'x', 'TEXT[]')
           .buildSql(sql);
         expect(sql.toString()).toBe(
-          'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" && ARRAY[$1]::TEXT[])'
+          'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" @> ARRAY[$1]::TEXT[])'
         );
       });
 
@@ -85,7 +85,7 @@ describe('SqlBuilder', () => {
         const sql = new SqlBuilder();
         new SelectQuery('MyTable')
           .column('id')
-          .where('name', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', ['x', 'y'], 'TEXT[]')
+          .where('name', 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', new Set(['x', 'y']), 'TEXT[]')
           .buildSql(sql);
         expect(sql.toString()).toBe(
           'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" && ARRAY[$1,$2]::TEXT[])'
@@ -95,8 +95,8 @@ describe('SqlBuilder', () => {
       test('missing param type', () => {
         const sql = new SqlBuilder();
         expect(() =>
-          new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', 'x').buildSql(sql)
-        ).toThrow('ARRAY_CONTAINS_AND_IS_NOT_NULL requires paramType');
+          new SelectQuery('MyTable').column('id').where('name', 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', 'x').buildSql(sql)
+        ).toThrow('ARRAY_OVERLAPS_AND_IS_NOT_NULL requires paramType');
       });
     });
 
