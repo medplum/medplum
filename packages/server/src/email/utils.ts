@@ -15,7 +15,8 @@ export function getFromAddress(options: Mail.Options): string {
 
   if (options.from) {
     const fromAddress = addressToString(options.from);
-    if (fromAddress && config.approvedSenderEmails?.split(',')?.includes(fromAddress)) {
+    const fromEmail = extractEmailFromAddress(fromAddress);
+    if (fromAddress && fromEmail && config.approvedSenderEmails?.split(',')?.includes(fromEmail)) {
       return fromAddress;
     }
     getLogger().warn('Email from address is not an approved sender', {
@@ -57,6 +58,23 @@ export function addressToString(address: Address | string | undefined): string |
     }
   }
   return undefined;
+}
+
+/**
+ * Returns the email address from a string that may include a display name.
+ * @param address - The email address string, which may include a display name.
+ * @returns The email address extracted from the string, or undefined if the input is undefined.
+ */
+export function extractEmailFromAddress(address: string | undefined): string | undefined {
+  if (!address) {
+    return undefined;
+  }
+  // Handle "Display Name <email@example.com>" format
+  const angleMatch = address.match(/<([^>]+)>/);
+  if (angleMatch) {
+    return angleMatch[1].trim();
+  }
+  return address.trim();
 }
 
 /**
