@@ -1,6 +1,7 @@
 import { Operator as FhirOperator, Filter, SortRule, splitSearchOnComma, WithId } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
+import { getLogger } from '../../logger';
 import {
   Column,
   Condition,
@@ -102,7 +103,15 @@ export abstract class LookupTable {
             `batchIndexResources must be called with resources of the same type: ${resource.resourceType} vs ${resourceType}`
           );
         }
-        this.extractValues(newRows, resource);
+        try {
+          this.extractValues(newRows, resource);
+        } catch (err) {
+          getLogger().error('Error extracting values for resource', {
+            resource: `${resourceType}/${resource.id}`,
+            err,
+          });
+          throw err;
+        }
       }
 
       if (newRows.length > 0) {
@@ -182,7 +191,7 @@ export abstract class LookupTable {
     const columnName = this.getColumnName(sortRule.code);
     const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
     selectQuery.join(
-      'INNER JOIN',
+      'LEFT JOIN',
       new SelectQuery(lookupTableName).distinctOn('resourceId').column('resourceId').column(columnName),
       joinName,
       joinOnExpression

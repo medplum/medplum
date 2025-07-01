@@ -152,6 +152,13 @@ jobs:
       - name: Install dependencies
         run: npm ci --maxsockets 1
 
+      - name: Set repo hash for agent build
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Build
         run: npm run build -- --filter=@medplum/agent
 
@@ -230,18 +237,25 @@ jobs:
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-installer-" + packageJson.version + ".exe",
-              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe")
+              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe`)
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
               name: "medplum-agent-installer-" + packageJson.version + ".exe.sha256",
-              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe.sha256")
+              data: await fs.readFileSync(`packages/agent/medplum-agent-installer-${packageJson.version}-${process.env.MEDPLUM_GIT_SHORTHASH}.exe.sha256`)
             });
 
   build_agent_linux:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch:
+          - image: ubuntu-latest
+            suffix: x64
+          - image: ubuntu-24.04-arm
+            suffix: arm64
+    runs-on: ${{ matrix.arch.image }}
     timeout-minutes: 45
     env:
       NODE_VERSION: '20'
@@ -276,6 +290,13 @@ jobs:
       - name: Install dependencies
         run: npm ci --maxsockets 1
 
+      - name: Set repo hash for agent build
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
       - name: Build
         run: npm run build -- --filter=@medplum/agent
 
@@ -299,13 +320,13 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-linux",
-              data: await fs.readFileSync("packages/agent/medplum-agent-" + packageJson.version + "-linux")
+              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux`)
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-" + packageJson.version + "-linux.sha256",
-              data: await fs.readFileSync("packages/agent/medplum-agent-" + packageJson.version + "-linux.sha256")
+              name: "medplum-agent-" + packageJson.version + "-linux-${{ matrix.arch.suffix }}.sha256",
+              data: await fs.readFileSync(`packages/agent/medplum-agent-${packageJson.version}-linux.sha256`)
             });

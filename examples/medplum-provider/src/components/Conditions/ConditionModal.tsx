@@ -3,6 +3,7 @@ import { Group, Stack } from '@mantine/core';
 import { useCallback, useState, JSX } from 'react';
 import { addProfileToResource, createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG } from '@medplum/core';
 import { CodeableConcept, Condition, Encounter, Patient } from '@medplum/fhirtypes';
+import { showErrorNotification } from '../../utils/notifications';
 
 export interface ConditionDialogProps {
   readonly patient: Patient;
@@ -12,11 +13,15 @@ export interface ConditionDialogProps {
 
 export default function ConditionModal(props: ConditionDialogProps): JSX.Element {
   const { patient, encounter, onSubmit } = props;
-  const [problem, setProblem] = useState<CodeableConcept | undefined>();
   const [diagnosis, setDiagnosis] = useState<CodeableConcept | undefined>();
   const [clinicalStatus, setClinicalStatus] = useState<CodeableConcept | undefined>();
 
   const handleSubmit = useCallback(() => {
+    if (!diagnosis) {
+      showErrorNotification('Please select a diagnosis');
+      return;
+    }
+
     const updatedCondition: Condition = addProfileToResource(
       {
         resourceType: 'Condition',
@@ -35,7 +40,7 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
         subject: createReference(patient),
         encounter: encounter && createReference(encounter),
         code: {
-          coding: [...(problem?.coding || []), ...(diagnosis?.coding || [])],
+          coding: diagnosis.coding ? [...diagnosis.coding] : [],
         },
         clinicalStatus,
       },
@@ -43,22 +48,13 @@ export default function ConditionModal(props: ConditionDialogProps): JSX.Element
     );
 
     onSubmit(updatedCondition);
-  }, [patient, encounter, problem, diagnosis, clinicalStatus, onSubmit]);
+  }, [patient, encounter, diagnosis, clinicalStatus, onSubmit]);
 
   return (
     <Form onSubmit={handleSubmit}>
       <Stack>
         <CodeableConceptInput
-          name="code"
-          label="Problem"
-          path="Condition.code"
-          required
-          binding={HTTP_HL7_ORG + '/fhir/us/core/ValueSet/us-core-condition-code'}
-          onChange={(problem) => setProblem(problem)}
-        />
-
-        <CodeableConceptInput
-          binding="http://hl7.org/fhir/ValueSet/icd-10"
+          binding="http://hl7.org/fhir/sid/icd-10-cm/vs"
           label="ICD-10 Code"
           name="diagnosis"
           path="Condition.code"

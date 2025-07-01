@@ -1,4 +1,4 @@
-import { allOk, ContentType, isOk, OperationOutcomeError, stringify } from '@medplum/core';
+import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
 import { BatchEvent, FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
@@ -25,6 +25,7 @@ import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
+import { tryCustomOperation } from './operations/custom';
 import { dbInvalidIndexesHandler } from './operations/dbinvalidindexes';
 import { dbSchemaDiffHandler } from './operations/dbschemadiff';
 import { dbStatsHandler } from './operations/dbstats';
@@ -393,7 +394,15 @@ protectedRoutes.use(
       },
     };
 
-    const result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
+    let result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
+
+    if (isNotFound(result[0])) {
+      const customOperationResponse = await tryCustomOperation(request, ctx.repo);
+      if (customOperationResponse) {
+        result = customOperationResponse;
+      }
+    }
+
     if (result.length === 1) {
       if (!isOk(result[0])) {
         throw new OperationOutcomeError(result[0]);

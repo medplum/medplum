@@ -2,7 +2,8 @@ import { allOk, badRequest, getStatus, isOperationOutcome } from '@medplum/core'
 import { Binary, Bot, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { executeBot, getResponseBodyFromResult, getResponseContentType } from '../fhir/operations/execute';
+import { executeBot } from '../bots/execute';
+import { getResponseBodyFromResult, getResponseContentType } from '../bots/utils';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { sendBinaryResponse } from '../fhir/response';
@@ -35,7 +36,7 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
   // At least one of the allowed signature headers must be present
   const hasSignatureHeader = SIGNATURE_HEADERS.some((header) => req.header(header));
   if (!hasSignatureHeader) {
-    res.status(400).send('Missing required signature header');
+    res.status(403).send('Missing required signature header');
     return;
   }
 
@@ -45,11 +46,24 @@ export const webhookHandler = asyncWrap(async (req: Request, res: Response) => {
 
   // The ProjectMembership must be for a Bot resource
   if (!runAs.profile.reference?.startsWith('Bot/')) {
-    res.status(400).send('ProjectMembership must be for a Bot resource');
+    res.status(403).send('ProjectMembership must be for a Bot resource');
+    return;
+  }
+
+  // The ProjectMembership must have an Access Policy
+  if (!runAs.access && !runAs.accessPolicy) {
+    res.status(403).send('ProjectMembership must have an Access Policy');
     return;
   }
 
   const bot = await systemRepo.readReference<Bot>(runAs.profile as Reference<Bot>);
+
+  // The Bot must have a publicWebhook flag set to true
+  if (!bot.publicWebhook) {
+    res.status(403).send('Bot is not configured for public webhook access');
+    return;
+  }
+
   const headers = req.headers as Record<string, string>;
 
   // Execute the bot

@@ -1235,6 +1235,12 @@
       "type": "token",
       "description": "Vaccine Product Administered",
       "expression": "Immunization.vaccineCode"
+    },
+    {
+      "name": "encounter",
+      "type": "reference",
+      "description": "The Encounter this Immunization was part of",
+      "expression": "Immunization.encounter"
     }
   ]
 }

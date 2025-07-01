@@ -18,13 +18,15 @@ import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
-import { DatabaseMode, getDatabasePool, maybeStartPostDeployMigration } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { markPostDeployMigrationCompleted } from '../migration-sql';
 import { generateMigrationActions } from '../migrations/migrate';
+import { getPendingPostDeployMigration, maybeStartPostDeployMigration } from '../migrations/migration-utils';
+import { getPostDeployMigrationVersions } from '../migrations/migration-versions';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
@@ -266,6 +268,22 @@ superAdminRouter.post(
           `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
         );
       }
+    });
+  })
+);
+
+superAdminRouter.get(
+  '/migrations',
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const postDeployMigrations = getPostDeployMigrationVersions();
+    const conn = await getDatabasePool(DatabaseMode.WRITER);
+    const pendingPostDeployMigration = await getPendingPostDeployMigration(conn);
+
+    res.json({
+      postDeployMigrations,
+      pendingPostDeployMigration,
     });
   })
 );

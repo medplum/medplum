@@ -537,6 +537,12 @@
       "type": "reference",
       "description": "The access policy of the user",
       "expression": "ProjectMembership.accessPolicy | ProjectMembership.access.policy"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "The identifier of the project membership",
+      "expression": "ProjectMembership.identifier"
     }
   ]
 }

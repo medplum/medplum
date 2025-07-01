@@ -17,11 +17,12 @@ import {
   fetchLatestVersionString,
   isValidHostname,
   normalizeErrorString,
+  sleep,
 } from '@medplum/core';
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
 import { ChildProcess, ExecException, ExecOptions, exec, spawn } from 'node:child_process';
-import { existsSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
 import process from 'node:process';
@@ -30,6 +31,7 @@ import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from '.
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -78,10 +80,11 @@ export class App {
 
     await this.startWebSocket();
 
-    // We do this after starting WebSockets so that we can send a message if we finished upgrading
-    await this.maybeFinalizeUpgrade();
-
     await this.reloadConfig();
+
+    // We do this after starting WebSockets so that we can send a message if we finished upgrading
+    // We also do it after reloading the config, to make sure that we have bound to the ports before releasing the upgrading agent PID file
+    await this.maybeFinalizeUpgrade();
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
@@ -104,7 +107,7 @@ export class App {
       };
 
       // If we are on the right version, send success response to Medplum
-      if (upgradeDetails.targetVersion === MEDPLUM_VERSION.split('-')[0]) {
+      if (MEDPLUM_VERSION.startsWith(upgradeDetails.targetVersion)) {
         // Send message
         await this.sendToWebSocket({
           type: 'agent:upgrade:response',
@@ -124,7 +127,35 @@ export class App {
       }
 
       // Delete manifest
-      rmSync(UPGRADE_MANIFEST_PATH);
+      unlinkSync(UPGRADE_MANIFEST_PATH);
+
+      await this.tryToCreateAgentPidFile();
+
+      // Wait for upgrading agent PID file since it could have been created just a few ms ago
+      await waitForPidFile('medplum-upgrading-agent');
+
+      // Now make sure to remove it
+      removePidFile('medplum-upgrading-agent');
+    }
+  }
+
+  private async tryToCreateAgentPidFile(): Promise<void> {
+    // Should be ~ 500 seconds (500 ms wait x 1000 times)
+    const maxAttempts = 1000;
+    let attempt = 0;
+    let success = false;
+    while (!success) {
+      try {
+        createPidFile('medplum-agent');
+        success = true;
+      } catch (_err) {
+        this.log.info('Unable to create agent PID file, trying again...');
+        attempt++;
+        if (attempt === maxAttempts) {
+          throw new Error('Too many unsuccessful attempts to create agent PID file');
+        }
+        await sleep(500);
+      }
     }
   }
 
@@ -277,7 +308,7 @@ export class App {
   }
 
   private async reloadConfig(): Promise<void> {
-    const agent = await this.medplum.readResource('Agent', this.agentId);
+    const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
 
     if (!keepAlive && this.hl7Clients.size !== 0) {
@@ -310,7 +341,9 @@ export class App {
 
     const endpointPromises = [] as Promise<Endpoint>[];
     for (const definition of channels) {
-      endpointPromises.push(this.medplum.readReference(definition.endpoint as Reference<Endpoint>));
+      endpointPromises.push(
+        this.medplum.readReference(definition.endpoint as Reference<Endpoint>, { cache: 'no-cache' })
+      );
     }
 
     const endpoints = await Promise.all(endpointPromises);
@@ -581,8 +614,24 @@ export class App {
   }
 
   private async tryUpgradeAgent(message: AgentUpgradeRequest): Promise<void> {
+    this.log.info(`Attempting to upgrade from ${MEDPLUM_VERSION} to ${message.version ?? 'latest'}...`);
+
     if (platform() !== 'win32') {
       const errMsg = 'Auto-upgrading is currently only supported on Windows';
+      this.log.error(errMsg);
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
+      return;
+    }
+
+    const upgradeInProgress = this.isAgentUpgrading();
+
+    // If the agent detects there is already an upgrade in progress, and force mode is not on, then prevent attempt to upgrade
+    if (upgradeInProgress && !message.force) {
+      const errMsg = 'Pending upgrade is already in progress';
       this.log.error(errMsg);
       await this.sendToWebSocket({
         type: 'agent:error',
@@ -627,17 +676,36 @@ export class App {
       this.log.info(`Forcing upgrade from ${MEDPLUM_VERSION} to ${targetVersion}`);
     }
 
+    if (upgradeInProgress && message.force) {
+      // If running, just cleanup the file since it could be that the cleanup failed for whatever reason
+      if (isAppRunning('medplum-upgrading-agent')) {
+        removePidFile('medplum-upgrading-agent');
+      }
+      // If running, kill the upgrader and cleanup the file
+      if (isAppRunning('medplum-agent-upgrader')) {
+        // Attempt to kill the upgrader
+        forceKillApp('medplum-agent-upgrader');
+        // Remove PID file
+        removePidFile('medplum-agent-upgrader');
+      }
+      // Clean up upgrade.json
+      unlinkSync(UPGRADE_MANIFEST_PATH);
+    }
+
     try {
       const command = __filename;
       const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
-      child = spawn(command, ['--upgrade'], { detached: true, stdio: ['ignore', logFile, logFile, 'ipc'] });
+      child = spawn(command, ['--upgrade'], {
+        detached: true,
+        stdio: ['ignore', logFile, logFile, 'ipc'],
+      });
       // We unref the child process so that this process can close before the child has closed (since we want the child to be able to close the parent process)
       child.unref();
 
       await new Promise<void>((resolve, reject) => {
         const childTimeout = setTimeout(
           () => reject(new Error('Timed out while waiting for message from child')),
-          5000
+          15000
         );
         child.on('message', (msg: { type: string }) => {
           clearTimeout(childTimeout);
@@ -647,10 +715,11 @@ export class App {
             reject(new Error(`Received unexpected message type ${msg.type} when expected type STARTED`));
           }
         });
-      });
 
-      child.on('error', (err) => {
-        this.log.error(normalizeErrorString(err));
+        child.on('error', (err) => {
+          this.log.error(normalizeErrorString(err));
+          reject(err);
+        });
       });
     } catch (err) {
       const versionTag = message.version ? `v${message.version}` : 'latest';
@@ -665,10 +734,6 @@ export class App {
     }
 
     try {
-      // Stop the agent to prepare for service being restarted
-      await this.stop();
-      this.log.info('Successfully stopped agent network services');
-
       // Write a manifest file
       this.log.info('Writing upgrade manifest...', { previousVersion: MEDPLUM_VERSION, targetVersion });
       writeFileSync(
@@ -792,5 +857,15 @@ export class App {
           client.close();
         }
       });
+  }
+
+  private isAgentUpgrading(): boolean {
+    if (existsSync(UPGRADE_MANIFEST_PATH)) {
+      return true;
+    }
+    if (isAppRunning('medplum-upgrading-agent') || isAppRunning('medplum-agent-upgrader')) {
+      return true;
+    }
+    return false;
   }
 }

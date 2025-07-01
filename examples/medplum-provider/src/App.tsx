@@ -43,6 +43,7 @@ import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { TaskDetails } from './pages/tasks/TaskDetails';
+import { MessagesPage } from './pages/messages/MessagesPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -69,6 +70,10 @@ export function App(): JSX.Element | null {
           links: [{ icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' }],
         },
         {
+          title: 'Communication',
+          links: [{ icon: <IconMail />, label: 'Messages', href: '/messages' }],
+        },
+        {
           title: 'Onboarding',
           links: [{ icon: <IconPencil />, label: 'New Patient', href: '/onboarding' }],
         },
@@ -81,18 +86,6 @@ export function App(): JSX.Element | null {
       notifications={
         profile && (
           <>
-            <NotificationIcon
-              label="Mail"
-              resourceType="Communication"
-              countCriteria={`recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_summary=count`}
-              subscriptionCriteria={`Communication?recipient=${getReferenceString(profile as ProfileResource)}`}
-              iconComponent={<IconMail />}
-              onClick={() =>
-                navigate(
-                  `/Communication?recipient=${getReferenceString(profile as ProfileResource)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`
-                )
-              }
-            />
             <NotificationIcon
               label="Tasks"
               resourceType="Task"
@@ -143,6 +136,7 @@ export function App(): JSX.Element | null {
                 <Route index element={<TaskTab />} />
                 <Route path="*" element={<TaskTab />} />
               </Route>
+              <Route path="/messages" element={<MessagesPage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />

@@ -12594,6 +12594,17 @@
           ]
         },
         {
+          "id": "Bot.publicWebhook",
+          "path": "Bot.publicWebhook",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
           "id": "Bot.auditEventTrigger",
           "path": "Bot.auditEventTrigger",
           "min": 0,

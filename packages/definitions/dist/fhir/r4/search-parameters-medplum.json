@@ -122,7 +122,7 @@
         "base": ["ProjectMembership"],
         "type": "reference",
         "expression": "ProjectMembership.user",
-        "target": ["ClientApplication", "User"]
+        "target": ["Bot", "ClientApplication", "User"]
       }
     },
     {
@@ -140,7 +140,7 @@
         "base": ["ProjectMembership"],
         "type": "reference",
         "expression": "ProjectMembership.profile",
-        "target": ["ClientApplication", "Patient", "Practitioner"]
+        "target": ["Bot", "ClientApplication", "Patient", "Practitioner", "RelatedPerson"]
       }
     },
     {
@@ -210,6 +210,23 @@
         "type": "reference",
         "expression": "ProjectMembership.accessPolicy | ProjectMembership.access.policy",
         "target": ["AccessPolicy"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the project membership",
+        "code": "identifier",
+        "base": ["ProjectMembership"],
+        "type": "token",
+        "expression": "ProjectMembership.identifier"
       }
     },
     {
@@ -1351,6 +1368,71 @@
         "base": ["Practitioner"],
         "type": "token",
         "expression": "Practitioner.qualification.code"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/Immunization-encounter",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "Immunization-encounter",
+        "extension" : [{
+          "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+          "valueCode" : "trial-use"
+        },
+        {
+          "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-wg",
+          "valueCode" : "pher"
+        }],
+        "url" : "http://hl7.org/fhir/SearchParameter/Immunization-encounter",
+        "version" : "6.0.0-ballot3",
+        "name" : "encounter",
+        "status" : "draft",
+        "experimental" : false,
+        "date" : "2025-04-01T12:16:37+11:00",
+        "publisher" : "HL7 International / Public Health",
+        "contact" : [{
+          "telecom" : [{
+            "system" : "url",
+            "value" : "http://www.hl7.org/Special/committees/fiwg"
+          }]
+        },
+        {
+          "telecom" : [{
+            "system" : "url",
+            "value" : "http://www.hl7.org/Special/committees/pher"
+          }]
+        }],
+        "description" : "The Encounter this Immunization was part of",
+        "jurisdiction" : [{
+          "coding" : [{
+            "system" : "http://unstats.un.org/unsd/methods/m49/m49.htm",
+            "code" : "001",
+            "display" : "World"
+          }]
+        }],
+        "code" : "encounter",
+        "base" : ["Immunization"],
+        "type" : "reference",
+        "expression" : "Immunization.encounter",
+        "target" : ["Encounter"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AllergyIntolerance-encounter",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AllergyIntolerance-encounter",
+        "url": "https://medplum.com/fhir/SearchParameter/AllergyIntolerance-encounter",
+        "version": "4.0.1",
+        "name": "encounter",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The Encounter this AllergyIntolerance was part of",
+        "code": "encounter",
+        "base": ["AllergyIntolerance"],
+        "type": "reference",
+        "target": ["Encounter"],
+        "expression": "AllergyIntolerance.encounter"
       }
     },
     {

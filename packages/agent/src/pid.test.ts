@@ -1,3 +1,4 @@
+import { sleep } from '@medplum/core';
 import fs, { PathOrFileDescriptor } from 'node:fs';
 import os from 'node:os';
 import { dirname } from 'node:path';
@@ -5,10 +6,13 @@ import {
   createPidFile,
   deregisterAgentCleanup,
   ensureDirectoryExists,
+  forceKillApp,
+  getAppPid,
   getPidFilePath,
   pidLogger,
   registerAgentCleanup,
   removePidFile,
+  waitForPidFile,
 } from './pid';
 
 jest.mock('node:fs');
@@ -85,7 +89,7 @@ describe('PID File Manager', () => {
     );
 
     // Remove PID file
-    removePidFile(pidFilePath);
+    removePidFile(APP_NAME);
 
     // Verify unlink was called
     expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
@@ -203,7 +207,7 @@ describe('PID File Manager', () => {
 
   test('safely handles non-existent PID file during removal', () => {
     // Should not throw
-    removePidFile(TEST_PID_PATH);
+    removePidFile(APP_NAME);
 
     // Verify unlink was not called
     expect(mockedFs.unlinkSync).not.toHaveBeenCalled();
@@ -227,10 +231,69 @@ describe('PID File Manager', () => {
     });
 
     // Should not throw
-    expect(() => removePidFile(TEST_PID_PATH)).not.toThrow('Permission denied');
+    expect(() => removePidFile(APP_NAME)).not.toThrow('Permission denied');
 
     // Verify unlink was attempted
     expect(mockedFs.unlinkSync).toHaveBeenCalledWith(TEST_PID_PATH);
+  });
+
+  test('waitForPidFile waits until PID file available', async () => {
+    mockedFs.existsSync.mockReturnValue(false);
+    const waitForPromise = waitForPidFile(APP_NAME);
+    let resolved = false;
+    waitForPromise
+      .then(() => {
+        resolved = true;
+      })
+      .catch(console.error);
+
+    // Wait and check twice that the promise has not resolved
+    await sleep(100);
+    expect(resolved).toStrictEqual(false);
+    await sleep(100);
+    expect(resolved).toStrictEqual(false);
+
+    mockedFs.existsSync.mockReturnValue(true);
+    // Await next tick so that promise can resolve
+    await sleep(0);
+    expect(resolved).toStrictEqual(true);
+  });
+
+  test('waitForPidFile times out if PID file does not exist before `timeoutMs` milliseconds', async () => {
+    mockedFs.existsSync.mockReturnValue(false);
+    const waitForPromise = waitForPidFile(APP_NAME, 200);
+    let resolved = false;
+    let err: Error | undefined = undefined;
+    waitForPromise
+      .then(() => {
+        resolved = true;
+      })
+      .catch((_err) => {
+        err = _err;
+      });
+
+    // Wait and check twice that the promise has not resolved
+    await sleep(100);
+    expect(resolved).toStrictEqual(false);
+    expect(err).toBeUndefined();
+    await sleep(200);
+    expect(resolved).toStrictEqual(false);
+    expect(err).toStrictEqual(new Error('Timeout while waiting for PID file'));
+  });
+
+  test('getAppPid -- non-numeric PID in PID file is ignored', () => {
+    mockedFs.existsSync.mockReturnValue(true);
+    mockedFs.readFileSync.mockReturnValue('abc');
+    expect(getAppPid('test-app')).toBeUndefined();
+  });
+
+  test('forceKillApp -- kills running process', () => {
+    const processKillSpy = jest.spyOn(process, 'kill').mockImplementation();
+    createPidFile('test-app');
+    forceKillApp('test-app');
+    removePidFile('test-app');
+    expect(processKillSpy).toHaveBeenCalledWith(process.pid, 'SIGTERM');
+    processKillSpy.mockRestore();
   });
 
   describe('registerAgentCleanup', () => {

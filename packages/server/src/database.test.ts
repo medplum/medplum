@@ -15,6 +15,9 @@ import {
   releaseAdvisoryLock,
 } from './database';
 import { GetDataVersionSql, GetVersionSql } from './migration-sql';
+import { getLatestPostDeployMigrationVersion } from './migrations/migration-versions';
+
+const latestVersion = getLatestPostDeployMigrationVersion();
 
 describe('Database config', () => {
   let poolSpy: jest.SpyInstance<pg.Pool, [config?: pg.PoolConfig | undefined]>;
@@ -44,7 +47,7 @@ describe('Database config', () => {
             result.rows = [{ pg_try_advisory_lock: advisoryLockResponse } as unknown as R];
           }
           if (sql === mockQueries.GetDataVersionSql) {
-            result.rows = [{ dataVersion: 1 } as unknown as R];
+            result.rows = [{ dataVersion: latestVersion } as unknown as R];
           }
 
           return result;

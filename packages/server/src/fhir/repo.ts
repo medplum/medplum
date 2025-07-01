@@ -98,9 +98,9 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
-import { TokenTable } from './lookups/token';
 import { getStandardAndDerivedSearchParameters } from './lookups/util';
 import { getPatients } from './patient';
+import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
@@ -118,7 +118,6 @@ import {
   periodToRangeString,
 } from './sql';
 import { buildTokenColumns } from './token-column';
-import { TokenColumnsFeature, isLegacyTokenColumnSearchParameter } from './tokens';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
@@ -660,6 +659,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
+    await preCommitValidation(this.context.projects?.[0], resource, 'update');
+
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
@@ -1088,6 +1089,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(forbidden);
       }
 
+      await preCommitValidation(this.context.projects?.[0], resource, 'delete');
+
       await this.deleteCacheEntry(resourceType, id);
 
       await this.ensureInTransaction(async (conn) => {
@@ -1383,7 +1386,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
           expressions.push(
-            new Condition('compartments', 'ARRAY_CONTAINS_AND_IS_NOT_NULL', policyCompartmentId, 'UUID[]')
+            new Condition('compartments', 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', policyCompartmentId, 'UUID[]')
           );
         } else if (policy.criteria) {
           if (!policy.criteria.startsWith(policy.resourceType + '?')) {
@@ -1436,9 +1439,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
    * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
    * 6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
+   * 7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
    *
    */
-  static readonly VERSION: number = 6;
+  static readonly VERSION: number = 7;
 
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
@@ -1457,8 +1461,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const searchParams = getStandardAndDerivedSearchParameters(resourceType);
     if (searchParams.length > 0) {
       const startTime = process.hrtime.bigint();
-      for (const searchParam of searchParams) {
-        this.buildColumn(resource, row, searchParam);
+      try {
+        for (const searchParam of searchParams) {
+          this.buildColumn(resource, row, searchParam);
+        }
+      } catch (err) {
+        getLogger().error('Error building row for resource', {
+          resource: `${resourceType}/${resource.id}`,
+          err,
+        });
+        throw err;
       }
       recordHistogramValue(
         'medplum.server.indexingDurationMs',
@@ -1467,13 +1479,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           options: { unit: 'ms' },
         }
       );
-    }
-
-    // compartments is a non-null column on all resource types since it used to be required for access control,
-    // it is in the process of being removed from the Binary resource type, so make sure it meets the NOT NULL
-    // constraint
-    if (resourceType === 'Binary') {
-      row.compartments = [];
     }
 
     return row;
@@ -1605,14 +1610,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     let columnImpl: ColumnSearchParameterImplementation | undefined;
     if (impl.searchStrategy === 'token-column') {
-      if (TokenColumnsFeature.write) {
-        buildTokenColumns(searchParam, impl, columns, resource);
-      }
-
-      if (isLegacyTokenColumnSearchParameter(searchParam, resource.resourceType)) {
-        // This is a legacy search parameter that should be indexed as a regular string column as well
-        columnImpl = getSearchParameterImplementation(resource.resourceType, searchParam, true);
-      }
+      buildTokenColumns(searchParam, impl, columns, resource);
     } else {
       impl satisfies ColumnSearchParameterImplementation;
       columnImpl = impl;
@@ -1855,17 +1853,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return undefined;
   }
 
-  private disableTokenTableWrites: boolean | undefined;
-  private skipTokenTableWrite(): boolean {
-    if (this.disableTokenTableWrites === undefined) {
-      const project = this.currentProject();
-      const maybeWriteBoolean = project?.systemSetting?.find((s) => s.name === 'disableTokenTableWrites')?.valueBoolean;
-      // If the Project.systemSetting exists, use its value. Otherwise, default to false
-      this.disableTokenTableWrites = maybeWriteBoolean ?? false;
-    }
-    return this.disableTokenTableWrites;
-  }
-
   /**
    * Writes resources values to the lookup tables.
    * @param client - The database client inside the transaction.
@@ -1874,9 +1861,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   private async writeLookupTables(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
     for (const lookupTable of lookupTables) {
-      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
-        continue;
-      }
       await lookupTable.indexResource(client, resource, create);
     }
   }
@@ -1887,9 +1871,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     create: boolean
   ): Promise<void> {
     for (const lookupTable of lookupTables) {
-      if (lookupTable instanceof TokenTable && this.skipTokenTableWrite()) {
-        continue;
-      }
       await lookupTable.batchIndexResources(client, resources, create);
     }
   }

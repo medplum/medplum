@@ -1,6 +1,7 @@
 import { getReferenceString, WithId } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import * as semver from 'semver';
 import { getRequestContext, tryRunInRequestContext } from '../context';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
@@ -14,11 +15,14 @@ import {
 } from '../migrations/data/types';
 import { executeMigrationActions } from '../migrations/migrate';
 import {
+  enforceStrictMigrationVersionChecks,
+  getPostDeployManifestEntry,
   getPostDeployMigration,
   MigrationDefinitionNotFoundError,
   withLongRunningDatabaseClient,
 } from '../migrations/migration-utils';
 import { MigrationAction, MigrationActionResult } from '../migrations/types';
+import { getRegisteredServers } from '../server-registry';
 import {
   addVerboseQueueLogging,
   isJobActive,
@@ -61,6 +65,17 @@ export const initPostDeployMigrationWorker: WorkerInitializer = (config) => {
   return { queue, worker, name: PostDeployMigrationQueueName };
 };
 
+export async function isClusterCompatible(migrationNumber: number): Promise<boolean> {
+  if (!enforceStrictMigrationVersionChecks()) {
+    return true;
+  }
+
+  const servers = await getRegisteredServers(true);
+  const entry = getPostDeployManifestEntry(migrationNumber);
+  const requiredVersion = entry.serverVersion;
+  return servers.every((server) => semver.gte(server.version, requiredVersion));
+}
+
 export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
   const asyncJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', job.data.asyncJobId);
 
@@ -102,6 +117,13 @@ export async function jobProcessor(job: Job<PostDeployJobData>): Promise<void> {
 
   if (migration.type !== job.data.type) {
     throw new Error(`Post-deploy migration ${migrationNumber} is not a ${job.data.type} migration`);
+  }
+
+  if (!(await isClusterCompatible(migrationNumber))) {
+    await moveToDelayedAndThrow(
+      job,
+      `Post-deploy migration v${migrationNumber} delayed since the server cluster is not compatible`
+    );
   }
 
   const result: PostDeployJobRunResult = await migration.run(getSystemRepo(), job, job.data);

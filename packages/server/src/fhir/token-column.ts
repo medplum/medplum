@@ -31,9 +31,6 @@ export function buildTokenColumns(
   const tokens = new Set<string>(columns[impl.tokenColumnName]);
   const textSearchTokens = new Set<string>(columns[impl.textSearchColumnName]);
 
-  const legacyTokens = new Set<string>(columns[impl.legacyColumnName]);
-  const legacyTextSearchTokens = new Set<string>(columns[impl.legacyTextSearchColumnName]);
-
   let sortColumnValue: string | null = null;
   for (const t of allTokens) {
     const code = t.code;
@@ -54,7 +51,6 @@ export function buildTokenColumns(
 
     // text search
     if (value && (system === TEXT_SEARCH_SYSTEM || impl.textSearch)) {
-      legacyTextSearchTokens.add(code + DELIM + DELIM + value);
       if (impl.hasDedicatedColumns) {
         textSearchTokens.add(value);
       } else {
@@ -76,7 +72,6 @@ export function buildTokenColumns(
 
     // :missing/:present - in a token column per search parameter, the presence of any elements
     // in the main token column, `impl.tokenColumnName`, is sufficient.
-    legacyTokens.add(code);
     if (!impl.hasDedicatedColumns) {
       addHashedToken(tokens, code);
     }
@@ -86,12 +81,10 @@ export function buildTokenColumns(
     // The TEXT_SEARCH_SYSTEM is never searchable
     if (system && system !== TEXT_SEARCH_SYSTEM) {
       // [parameter]=[system]|
-      legacyTokens.add(code + DELIM + system);
       addHashedToken(tokens, prefix + system);
 
       if (value) {
         // [parameter]=[system]|[code]
-        legacyTokens.add(code + DELIM + system + DELIM + value);
         addHashedToken(tokens, prefix + system + DELIM + value);
       }
     }
@@ -100,12 +93,10 @@ export function buildTokenColumns(
       sortColumnValue = sortColumnValue && sortColumnValue.localeCompare(value) <= 0 ? sortColumnValue : value;
 
       // [parameter]=[code]
-      legacyTokens.add(code + DELIM + DELIM + value);
       addHashedToken(tokens, prefix + DELIM + value);
 
       if (!system) {
         // [parameter]=|[code]
-        legacyTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
         addHashedToken(tokens, prefix + NULL_SYSTEM + DELIM + value);
       }
     }
@@ -114,8 +105,6 @@ export function buildTokenColumns(
   columns[impl.tokenColumnName] = Array.from(tokens);
   columns[impl.textSearchColumnName] = Array.from(textSearchTokens);
   columns[impl.sortColumnName] = sortColumnValue;
-  columns[impl.legacyColumnName] = Array.from(legacyTokens);
-  columns[impl.legacyTextSearchColumnName] = Array.from(legacyTextSearchTokens);
 }
 
 function addHashedToken(tokenSet: Set<string>, token: string): void {
@@ -173,8 +162,7 @@ export function buildTokenColumnsSearchFilter(
   resourceType: ResourceType,
   tableName: string,
   param: SearchParameter,
-  filter: Filter,
-  strategy: 'unified-tokens-column' | 'column-per-code'
+  filter: Filter
 ): Expression {
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy !== 'token-column') {
@@ -193,13 +181,7 @@ export function buildTokenColumnsSearchFilter(
       // https://www.hl7.org/fhir/r4/search.html#combining
       const expressions: Expression[] = [];
       for (const searchValue of splitSearchOnComma(filter.value)) {
-        if (strategy === 'unified-tokens-column') {
-          expressions.push(
-            legacyBuildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue)
-          );
-        } else {
-          expressions.push(buildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue));
-        }
+        expressions.push(buildTokenColumnsWhereCondition(impl, tableName, filter.code, filter.operator, searchValue));
       }
 
       const expression = new Disjunction(expressions);
@@ -210,23 +192,10 @@ export function buildTokenColumnsSearchFilter(
     }
     case FhirOperator.MISSING:
     case FhirOperator.PRESENT: {
-      if (strategy === 'unified-tokens-column') {
-        const cond = new TypedCondition(
-          new Column(tableName, impl.legacyColumnName),
-          'ARRAY_CONTAINS',
-          filter.code,
-          'TEXT[]'
-        );
-        if (!shouldTokenExistForMissingOrPresent(filter.operator, filter.value)) {
-          return new Negation(cond);
-        }
-        return cond;
-      }
-
       if (!impl.hasDedicatedColumns) {
         const cond = new TypedCondition(
           new Column(tableName, impl.tokenColumnName),
-          'ARRAY_CONTAINS',
+          'ARRAY_OVERLAPS',
           hashTokenColumnValue(filter.code),
           'UUID[]'
         );
@@ -368,80 +337,7 @@ function buildTokenColumnsWhereCondition(
 
       searchString = hashTokenColumnValue(searchString);
 
-      return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_CONTAINS', searchString, 'UUID[]');
-    }
-    default: {
-      operator satisfies never;
-      throw new OperationOutcomeError(badRequest(`Unexpected search operator '${operator}'`));
-    }
-  }
-}
-
-/**
- * Build a filter for each comma-separated query value. Negation should NOT be handled here;
- * the calling function is responsible for negating the disjunction of the expressions returned
- * by this function.
- * @param impl - The search parameter implementation.
- * @param tableName - The table name.
- * @param code - The search parameter code.
- * @param operator - The search operator.
- * @param query - The query value.
- * @returns The filter expression for the search parameter without negation.
- */
-function legacyBuildTokenColumnsWhereCondition(
-  impl: TokenColumnSearchParameterImplementation,
-  tableName: string,
-  code: string,
-  operator: TokenQueryOperator,
-  query: string
-): Expression {
-  query = query.trim();
-  const tokenCol = new Column(tableName, impl.legacyColumnName);
-  const textSearchCol = new Column(tableName, impl.legacyTextSearchColumnName);
-
-  switch (operator) {
-    case FhirOperator.TEXT:
-    case FhirOperator.CONTAINS: {
-      // perform a regex search on the string generated by the token_array_to_text function
-      // the array entries are of the form `code + DELIM + DELIM + value` and are joined by ARRAY_DELIM
-      // as well as having an ARRAY_DELIM prefix and suffix on the entire string:
-      // Overall, the string being searched by regex is of the form:
-      // ARRAY_DELIM + <code1> + DELIM + DELIM + <value1> + ARRAY_DELIM + <code2> + DELIM + DELIM + <value2> + ARRAY_DELIM
-
-      // this regex looks for an entry from the format described above:
-      // `ARRAY_DELIM + <code> + DELIM + DELIM` followed by any number of characters that are not `ARRAY_DELIM`
-      // and then the query string
-      const regexStr = ARRAY_DELIM + code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + escapeRegexString(query);
-      const regexCond = new TypedCondition(textSearchCol, 'TOKEN_ARRAY_IREGEX', regexStr, 'TEXT[]');
-      return regexCond;
-    }
-    case FhirOperator.EQUALS:
-    case FhirOperator.EXACT:
-    case FhirOperator.NOT:
-    case FhirOperator.NOT_EQUALS: {
-      // exact matches on the formats <value>,<system>|<value>,<system>|,|<value>
-
-      let system: string;
-      let value: string;
-      const parts = splitN(query, '|', 2);
-      if (parts.length === 2) {
-        system = parts[0] || NULL_SYSTEM; // If query is "|foo", searching for "foo" values without a system, aka NULL_SYSTEM
-        value = parts[1];
-      } else {
-        system = '';
-        value = query;
-      }
-
-      if (value && impl.caseInsensitive) {
-        value = value.toLocaleLowerCase();
-      }
-
-      const valuePart = value ? DELIM + value : '';
-
-      // Always start with code + DELIM + system (system may be empty string which is okay/expected)
-      // if a value is specified, add DELIM + value resulting in code + DELIM + system + DELIM + value
-      // if a value is not specified, result is code + DELIM + system
-      return new TypedCondition(tokenCol, 'ARRAY_CONTAINS', code + DELIM + system + valuePart, 'TEXT[]');
+      return new TypedCondition(new Column(tableName, impl.tokenColumnName), 'ARRAY_OVERLAPS', searchString, 'UUID[]');
     }
     default: {
       operator satisfies never;
