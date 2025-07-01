@@ -61,12 +61,6 @@ export class AgentHl7Channel extends BaseChannel {
       this.connections.delete(c.remote);
     });
     this.log.info(`HL7 connection established: ${c.remote}`);
-    // We should never find an old connection in the connections map since the connections should be cleaned up on close
-    const oldConnection = this.connections.get(c.remote);
-    if (oldConnection) {
-      this.log.warn(`Old connection found for remote ${c.remote}.`);
-      oldConnection.close();
-    }
     this.connections.set(c.remote, c);
   }
 }
