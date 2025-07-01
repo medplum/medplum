@@ -1,15 +1,4 @@
-import {
-  Box,
-  Button,
-  Flex,
-  Group,
-  Menu,
-  Paper,
-  SegmentedControl,
-  Stack,
-  Text,
-  Modal,
-} from '@mantine/core';
+import { Box, Button, Flex, Group, Menu, Paper, SegmentedControl, Stack, Text, Modal } from '@mantine/core';
 import { formatDate, formatHumanName } from '@medplum/core';
 import { Encounter, HumanName, Practitioner } from '@medplum/fhirtypes';
 import { IconChevronDown } from '@tabler/icons-react';

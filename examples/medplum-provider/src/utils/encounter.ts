@@ -180,21 +180,21 @@ export async function updateEncounterStatus(
   };
 
   if (appointment) {
-  const updatedAppointment: Appointment = appointment;
-  switch (newStatus) {
-    case 'cancelled':
-      updatedAppointment.status = 'cancelled';
-      break;
-    case 'finished':
-      updatedAppointment.status = 'fulfilled';
-      break;
-    case 'in-progress':
-      updatedAppointment.status = 'checked-in';
-      break;
-    case 'arrived':
-      updatedAppointment.status = 'arrived';
-      break;
-    default:
+    const updatedAppointment: Appointment = appointment;
+    switch (newStatus) {
+      case 'cancelled':
+        updatedAppointment.status = 'cancelled';
+        break;
+      case 'finished':
+        updatedAppointment.status = 'fulfilled';
+        break;
+      case 'in-progress':
+        updatedAppointment.status = 'checked-in';
+        break;
+      case 'arrived':
+        updatedAppointment.status = 'arrived';
+        break;
+      default:
         break;
     }
     await medplum.updateResource(updatedAppointment);
