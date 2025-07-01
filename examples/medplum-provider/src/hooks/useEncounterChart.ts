@@ -1,5 +1,5 @@
 import { getReferenceString } from '@medplum/core';
-import { ChargeItem, Claim, ClinicalImpression, Encounter, Practitioner, Task } from '@medplum/fhirtypes';
+import { Appointment, ChargeItem, Claim, ClinicalImpression, Encounter, Practitioner, Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useState } from 'react';
 import { getChargeItemsForEncounter } from '../utils/chargeitems';
@@ -14,6 +14,7 @@ export interface EncounterChartHook {
   tasks: Task[];
   clinicalImpression: ClinicalImpression | undefined;
   chargeItems: ChargeItem[];
+  appointment: Appointment | undefined;
   // State setters
   setEncounter: React.Dispatch<React.SetStateAction<Encounter | undefined>>;
   setClaim: React.Dispatch<React.SetStateAction<Claim | undefined>>;
@@ -21,6 +22,7 @@ export interface EncounterChartHook {
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
   setClinicalImpression: React.Dispatch<React.SetStateAction<ClinicalImpression | undefined>>;
   setChargeItems: React.Dispatch<React.SetStateAction<ChargeItem[]>>;
+  setAppointment: React.Dispatch<React.SetStateAction<Appointment | undefined>>;
 }
 
 export function useEncounterChart(patientId?: string, encounterId?: string): EncounterChartHook {
@@ -33,6 +35,7 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
   const [tasks, setTasks] = useState<Task[]>([]);
   const [clinicalImpression, setClinicalImpression] = useState<ClinicalImpression | undefined>();
   const [chargeItems, setChargeItems] = useState<ChargeItem[]>([]);
+  const [appointment, setAppointment] = useState<Appointment | undefined>();
 
   // Load encounter data
   useEffect(() => {
@@ -130,6 +133,20 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     }
   }, [encounter, medplum]);
 
+  // Fetch appointment related to the encounter
+  useEffect(() => {
+    const fetchAppointment = async (): Promise<void> => {
+      if (encounter?.appointment) {
+        const appointmentResult = await medplum.readReference(encounter.appointment[encounter.appointment.length - 1]);
+        setAppointment(appointmentResult as Appointment);
+      }
+    };
+
+    if (encounter) {
+      fetchAppointment().catch((err) => showErrorNotification(err));
+    }
+  }, [encounter, medplum]);
+
   return {
     // State values
     encounter,
@@ -138,7 +155,7 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     tasks,
     clinicalImpression,
     chargeItems,
-
+    appointment,
     // State setters
     setEncounter,
     setClaim,
@@ -146,5 +163,6 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
     setTasks,
     setClinicalImpression,
     setChargeItems,
+    setAppointment,
   };
 }
