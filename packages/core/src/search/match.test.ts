@@ -1031,6 +1031,12 @@ describe('Search matching', () => {
         expect(matchesStringValue(token, '', false)).toBe(false);
       });
 
+      it('matches exact and substring for object types', () => {
+        expect(matchesStringValue({ foo: 'bar' }, 'foo', false)).toBe(true);
+        expect(matchesStringValue({ foo: 'bar' }, 'bar', false)).toBe(true);
+        expect(matchesStringValue({ foo: 'bar' }, '123', false)).toBe(false);
+      });
+
       describe('asToken = true', () => {
         it('matches exact and substring when found in system portion', () => {
           expect(matchesStringValue(token, 'example', true)).toBe(true);
