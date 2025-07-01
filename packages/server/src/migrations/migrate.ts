@@ -76,19 +76,28 @@ export async function main(): Promise<void> {
     allowPostDeployActions: process.argv.includes('--allowPostDeploy'),
     dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
     analyzeResourceTables: process.argv.includes('--analyzeResourceTables'),
+    schemaOnly: process.argv.includes('--schemaOnly'),
   };
-  await dbClient.connect();
 
-  const b = new FileBuilder();
-  await buildMigration(b, options);
+  if (!options.schemaOnly) {
+    await dbClient.connect();
 
-  await dbClient.end();
-  if (dryRun) {
-    console.log(b.toString());
-  } else {
-    writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
-    rewriteMigrationExports();
+    const b = new FileBuilder();
+    await buildMigration(b, options);
+
+    await dbClient.end();
+
+    if (dryRun) {
+      console.log(b.toString());
+    } else {
+      writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
+      rewriteMigrationExports();
+    }
   }
+
+  const schemaBuilder = new FileBuilder();
+  buildSchema(schemaBuilder);
+  writeFileSync(`${SCHEMA_DIR}/schema.sql`, schemaBuilder.toString(), 'utf8');
 }
 
 export type BuildMigrationOptions = {
@@ -97,11 +106,31 @@ export type BuildMigrationOptions = {
   skipPostDeployActions?: boolean;
   allowPostDeployActions?: boolean;
   analyzeResourceTables?: boolean;
+  schemaOnly?: boolean;
 };
 
 export async function buildMigration(b: FileBuilder, options: BuildMigrationOptions): Promise<void> {
   const actions = await generateMigrationActions(options);
   writeActionsToBuilder(b, actions);
+}
+
+export function buildSchema(builder: FileBuilder): void {
+  const targetDefinition = buildTargetDefinition();
+
+  const actions: MigrationAction[] = [];
+
+  for (const targetFunction of targetDefinition.functions) {
+    actions.push({
+      type: 'CREATE_FUNCTION',
+      name: targetFunction.name,
+      createQuery: targetFunction.createQuery,
+    });
+  }
+
+  for (const targetTable of targetDefinition.tables) {
+    actions.push({ type: 'CREATE_TABLE', definition: targetTable });
+  }
+  writeSchema(builder, actions);
 }
 
 export async function generateMigrationActions(options: BuildMigrationOptions): Promise<MigrationAction[]> {
@@ -417,7 +446,6 @@ export function buildCreateTables(
       { name: '_profile', type: 'TEXT[]' },
     ],
     indexes: [
-      { columns: ['id'], indexType: 'btree', unique: true },
       { columns: ['lastUpdated'], indexType: 'btree' },
       { columns: ['projectId', 'lastUpdated'], indexType: 'btree' },
       { columns: ['projectId'], indexType: 'btree' },
@@ -447,7 +475,6 @@ export function buildCreateTables(
     indexes: [
       { columns: ['id'], indexType: 'btree' },
       { columns: ['lastUpdated'], indexType: 'btree' },
-      { columns: ['versionId'], indexType: 'btree', unique: true },
     ],
   });
 
@@ -459,10 +486,7 @@ export function buildCreateTables(
       { name: 'code', type: 'TEXT', notNull: true },
     ],
     compositePrimaryKey: ['resourceId', 'targetId', 'code'],
-    indexes: [
-      { columns: ['resourceId', 'targetId', 'code'], indexType: 'btree', unique: true },
-      { columns: ['targetId', 'code'], indexType: 'btree', include: ['resourceId'] },
-    ],
+    indexes: [{ columns: ['targetId', 'code'], indexType: 'btree', include: ['resourceId'] }],
   });
 }
 
@@ -787,7 +811,14 @@ function buildCodingTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'Coding',
     columns: [
-      { name: 'id', type: 'BIGINT', notNull: true, defaultValue: 'nextval(\'"Coding_id_seq"\'::regclass)' },
+      {
+        name: 'id',
+        type: 'BIGINT',
+        primaryKey: true,
+        notNull: true,
+        serial: true,
+        defaultValue: 'nextval(\'"Coding_id_seq"\'::regclass)',
+      },
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'display', type: 'TEXT' },
@@ -848,7 +879,9 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
       {
         name: 'id',
         type: 'BIGINT',
+        primaryKey: true,
         notNull: true,
+        serial: true,
         defaultValue: 'nextval(\'"CodeSystem_Property_id_seq"\'::regclass)',
       },
       { name: 'system', type: 'UUID', notNull: true },
@@ -857,10 +890,7 @@ function buildCodeSystemPropertyTable(result: SchemaDefinition): void {
       { name: 'uri', type: 'TEXT' },
       { name: 'description', type: 'TEXT' },
     ],
-    indexes: [
-      { columns: ['id'], indexType: 'btree', unique: true },
-      { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
-    ],
+    indexes: [{ columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] }],
   });
 }
 
@@ -873,7 +903,7 @@ function buildDatabaseMigrationTable(result: SchemaDefinition): void {
       { name: 'dataVersion', type: 'INTEGER', notNull: true },
       { name: 'firstBoot', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
     ],
-    indexes: [{ columns: ['id'], indexType: 'btree', unique: true }],
+    indexes: [],
   });
 }
 
@@ -892,7 +922,7 @@ export async function executeMigrationActions(
         break;
       }
       case 'CREATE_TABLE': {
-        const queries = getCreateTableQueries(action.definition);
+        const queries = getCreateTableQueries(action.definition, { includeIfExists: true });
         for (const query of queries) {
           await fns.query(client, results, query);
         }
@@ -946,6 +976,50 @@ export async function executeMigrationActions(
   return results;
 }
 
+function writeSchema(b: FileBuilder, actions: MigrationAction[]): void {
+  b.append('\\set ON_ERROR_STOP true');
+  b.append('\\set QUIET on');
+  b.newLine();
+
+  b.appendNoWrap('DROP DATABASE IF EXISTS medplum;');
+  b.appendNoWrap('CREATE DATABASE medplum;');
+  b.newLine();
+
+  b.appendNoWrap('\\c medplum');
+  b.newLine();
+
+  b.append('DO $$');
+  b.append('BEGIN');
+  b.append(`  IF current_database() NOT IN ('medplum') THEN`);
+  b.append(`    RAISE EXCEPTION 'Connected to wrong database: %', current_database();`);
+  b.append('  END IF;');
+  b.append('END $$;');
+  b.newLine();
+
+  b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS btree_gin;`);
+  b.appendNoWrap(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
+  b.newLine();
+
+  for (const action of actions) {
+    switch (action.type) {
+      case 'CREATE_FUNCTION': {
+        b.appendNoWrap(ensureEndsWithSemicolon(escapeUnicode(action.createQuery)));
+        b.newLine();
+        break;
+      }
+      case 'CREATE_TABLE': {
+        const queries = getCreateTableQueries(action.definition, { includeIfExists: false });
+        for (const query of queries) {
+          b.appendNoWrap(ensureEndsWithSemicolon(query));
+        }
+        b.newLine();
+        break;
+      }
+      default:
+        throw new Error('Unsupported writeSchema action type: ' + action.type);
+    }
+  }
+}
 function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void {
   b.append("import { PoolClient } from 'pg';");
   b.append("import * as fns from '../migrate-functions';");
@@ -965,7 +1039,7 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
         break;
       }
       case 'CREATE_TABLE': {
-        const queries = getCreateTableQueries(action.definition);
+        const queries = getCreateTableQueries(action.definition, { includeIfExists: true });
         for (const query of queries) {
           b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
         }
@@ -1114,25 +1188,38 @@ function generateAlterColumnActions(
   return actions;
 }
 
-function getCreateTableQueries(tableDef: TableDefinition): string[] {
+function getCreateTableQueries(tableDef: TableDefinition, options: { includeIfExists: boolean }): string[] {
   const queries: string[] = [];
-  const createTableParts = [`CREATE TABLE IF NOT EXISTS "${tableDef.name}" (`];
+  const createTableParts = [`CREATE TABLE ${options.includeIfExists ? 'IF NOT EXISTS' : ''} "${tableDef.name}" (`];
   for (let i = 0; i < tableDef.columns.length; i++) {
     const column = tableDef.columns[i];
-    createTableParts.push(`  "${column.name}" ${column.type}` + (i !== tableDef.columns.length - 1 ? ',' : ''));
+    const typePart = column.serial ? column.type.replace('INT', 'SERIAL') : column.type;
+    const pkPart = column.primaryKey ? ' PRIMARY KEY' : '';
+    const notNullPart = column.notNull && !column.primaryKey ? ' NOT NULL' : '';
+    const defaultPart = column.defaultValue && !column.serial ? ' DEFAULT ' + column.defaultValue : '';
+    createTableParts.push(
+      `  "${column.name}" ${typePart}${pkPart}${notNullPart}${defaultPart}` +
+        (i !== tableDef.columns.length - 1 ? ',' : '')
+    );
   }
   createTableParts.push(')');
   queries.push(createTableParts.join('\n'));
 
   if (tableDef.compositePrimaryKey !== undefined && tableDef.compositePrimaryKey.length > 0) {
     queries.push(
-      `ALTER TABLE IF EXISTS "${tableDef.name}" ADD PRIMARY KEY (${tableDef.compositePrimaryKey.map((c) => `"${c}"`).join(', ')})`
+      `ALTER TABLE ${options.includeIfExists ? 'IF EXISTS' : ''} "${tableDef.name}" ADD PRIMARY KEY (${tableDef.compositePrimaryKey.map((c) => `"${c}"`).join(', ')})`
     );
   }
 
   for (const indexDef of tableDef.indexes) {
+    if (indexDef.primaryKey) {
+      continue;
+    }
     const indexName = getIndexName(tableDef.name, indexDef);
-    const createIndexSql = buildIndexSql(tableDef.name, indexName, indexDef);
+    const createIndexSql = buildIndexSql(tableDef.name, indexName, indexDef, {
+      concurrent: false,
+      ifNotExists: options.includeIfExists,
+    });
     queries.push(createIndexSql);
   }
 
@@ -1183,7 +1270,30 @@ function generateIndexesActions(
   const matchedIndexes = new Set<IndexDefinition>();
   const seenIndexNames = new Set<string>();
 
-  for (const targetIndex of targetTable.indexes) {
+  const computedIndexes: IndexDefinition[] = [];
+  let pkIndex: IndexDefinition | undefined;
+  if (targetTable.compositePrimaryKey) {
+    pkIndex = {
+      columns: targetTable.compositePrimaryKey,
+      indexType: 'btree',
+      unique: true,
+      primaryKey: true,
+    };
+  } else {
+    const pkColumn = targetTable.columns.find((c) => c.primaryKey);
+    if (pkColumn) {
+      pkIndex = {
+        columns: [pkColumn.name],
+        indexType: 'btree',
+        unique: true,
+        primaryKey: true,
+      };
+    }
+  }
+  if (pkIndex) {
+    computedIndexes.push(pkIndex);
+  }
+  for (const targetIndex of [...targetTable.indexes, ...computedIndexes]) {
     const indexName = getIndexName(targetTable.name, targetIndex);
     if (seenIndexNames.has(indexName)) {
       throw new Error('Duplicate index name: ' + indexName, { cause: targetIndex });
@@ -1194,7 +1304,10 @@ function generateIndexesActions(
     if (!startIndex) {
       ctx.postDeployAction(
         () => {
-          const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex);
+          const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex, {
+            concurrent: true,
+            ifNotExists: true,
+          });
           actions.push({ type: 'CREATE_INDEX', indexName, createIndexSql });
         },
         `CREATE INDEX ${escapeIdentifier(indexName)} ON ${escapeIdentifier(targetTable.name)} ...`
@@ -1223,6 +1336,10 @@ function generateIndexesActions(
 }
 
 function getIndexName(tableName: string, index: IndexDefinition): string {
+  if (index.primaryKey) {
+    return tableName + '_pkey';
+  }
+
   let indexName = tableName;
 
   indexName = applyAbbreviations(indexName, TableNameAbbreviations) + '_';
@@ -1240,21 +1357,36 @@ function getIndexName(tableName: string, index: IndexDefinition): string {
   return indexName;
 }
 
-function buildIndexSql(tableName: string, indexName: string, index: IndexDefinition): string {
+function buildIndexSql(
+  tableName: string,
+  indexName: string,
+  index: IndexDefinition,
+  options: { concurrent: boolean; ifNotExists: boolean }
+): string {
   let result = 'CREATE ';
 
   if (index.unique) {
     result += 'UNIQUE ';
   }
 
-  result += 'INDEX CONCURRENTLY IF NOT EXISTS "';
+  result += 'INDEX ';
+
+  if (options.concurrent) {
+    result += 'CONCURRENTLY ';
+  }
+
+  if (options.ifNotExists) {
+    result += 'IF NOT EXISTS ';
+  }
+
+  result += '"';
   result += indexName;
   result += '" ON "';
   result += tableName;
   result += '" ';
 
-  if (index.indexType === 'gin') {
-    result += 'USING gin ';
+  if (index.indexType !== 'btree') {
+    result += 'USING ' + index.indexType + ' ';
   }
 
   result += '(';
@@ -1314,8 +1446,9 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
   const [aPrime, bPrime] = [a, b].map((d) => {
     return {
       ...d,
-      unique: d.unique ?? false,
-      // don't care about indexNameSuffix, indexdef, nor expression names
+      unique: (d.primaryKey || d.unique) ?? false,
+      // don't care about indexNameSuffix, indexdef, primaryKey, nor expression names
+      primaryKey: undefined,
       indexNameSuffix: undefined,
       indexdef: undefined,
       columns: d.columns.map((c) => (typeof c === 'string' ? c : c.expression)),
@@ -1378,6 +1511,13 @@ function expandAbbreviations(name: string, abbreviations: Record<string, string 
   }
 
   return result;
+}
+
+function ensureEndsWithSemicolon(query: string): string {
+  if (query.endsWith(';')) {
+    return query;
+  }
+  return query + ';';
 }
 
 if (require.main === module) {
