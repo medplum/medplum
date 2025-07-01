@@ -133,7 +133,7 @@ function matchesStringFilter(
       } else if (searchParamElementType === PropertyType.CodeableConcept) {
         match = matchesTokenCodeableConceptValue(resourceValue as Coding, filter.operator, filterValue);
       } else {
-        match = matchesStringValue(resourceValue, filter.operator, filterValue, asToken);
+        match = matchesStringValue(resourceValue, filterValue, asToken);
       }
       if (match) {
         return !negated;
@@ -145,27 +145,28 @@ function matchesStringFilter(
   return negated;
 }
 
-function matchesStringValue(
-  resourceValue: unknown,
-  operator: Operator,
-  filterValue: string,
-  asToken?: boolean
-): boolean {
-  if (asToken && filterValue.includes('|')) {
-    const [system, code] = filterValue.split('|');
-    return (
-      matchesStringValue(resourceValue, operator, system, false) &&
-      (!code || matchesStringValue(resourceValue, operator, code, false))
-    );
+export function matchesStringValue(resourceValue: unknown, filterValue: string, asToken?: boolean): boolean {
+  // If the filter value is empty, then it does not match anything
+  if (filterValue === '') {
+    return false;
   }
+
+  if (asToken && typeof resourceValue === 'string' && resourceValue.includes('|')) {
+    const [system, code] = resourceValue.split('|');
+    // Match system or code (if code exists)
+    const systemMatches = matchesStringValue(system, filterValue, false);
+    const codeMatches = code ? matchesStringValue(code, filterValue, false) : false;
+
+    return systemMatches || codeMatches;
+  }
+
   let str = '';
-  if (resourceValue) {
-    if (typeof resourceValue === 'string') {
-      str = resourceValue;
-    } else if (typeof resourceValue === 'object') {
-      str = JSON.stringify(resourceValue);
-    }
+  if (typeof resourceValue === 'string') {
+    str = resourceValue;
+  } else if (typeof resourceValue === 'object') {
+    str = JSON.stringify(resourceValue);
   }
+
   return str.toLowerCase().includes(filterValue.toLowerCase());
 }
 
