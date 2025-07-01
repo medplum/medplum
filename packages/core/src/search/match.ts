@@ -161,10 +161,12 @@ export function matchesStringValue(resourceValue: unknown, filterValue: string, 
   }
 
   let str = '';
-  if (typeof resourceValue === 'string') {
-    str = resourceValue;
-  } else if (typeof resourceValue === 'object') {
-    str = JSON.stringify(resourceValue);
+  if (resourceValue) {
+    if (typeof resourceValue === 'string') {
+      str = resourceValue;
+    } else if (typeof resourceValue === 'object') {
+      str = JSON.stringify(resourceValue);
+    }
   }
 
   return str.toLowerCase().includes(filterValue.toLowerCase());
