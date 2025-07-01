@@ -61,6 +61,7 @@ import {
   Disjunction,
   escapeLikeString,
   Expression,
+  GeneratedUnionAll,
   Negation,
   Parameter,
   periodToRangeString,
@@ -142,6 +143,76 @@ export async function searchImpl<T extends Resource>(
 }
 
 export async function searchByReferenceImpl<T extends Resource>(
+  repo: Repository,
+  searchRequest: SearchRequest<T>,
+  referenceField: string,
+  referenceValues: string[]
+): Promise<Record<string, WithId<T>[]>> {
+  validateSearchResourceTypes(repo, searchRequest);
+
+  // Hold on to references to parts of the SelectQuery that need to be modified per reference value
+  const referenceConditions: Condition[] = [];
+  const referenceColumns: Column[] = [];
+
+  const searchQuery = getSelectQueryForSearch(repo, searchRequest, {
+    addColumns: true,
+    limitModifier: 0,
+    resourceTypeQueryCallback: (resourceType, builder) => {
+      const param = getSearchParameter(resourceType, referenceField);
+      if (param?.type !== 'reference') {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
+        );
+      }
+      const impl = getSearchParameterImplementation(resourceType, param);
+      if (impl.searchStrategy !== 'column') {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
+        );
+      }
+      const expr = buildReferenceEqualsCondition(builder.tableName, impl, referenceValues[0]);
+      referenceConditions.push(expr);
+      builder.whereExpr(expr);
+
+      const column = new Column(undefined, `'${referenceValues[0]}'`, true, 'ref');
+      referenceColumns.push(column);
+      builder.column(column);
+    },
+  });
+
+  const builder = new GeneratedUnionAll(searchQuery, function* refGenerator(): Generator<boolean> {
+    for (const refValue of referenceValues) {
+      // Update each condition with the current reference value
+      for (const cond of referenceConditions) {
+        cond.parameter = refValue;
+      }
+      // Update each column with the current reference value literal
+      for (const column of referenceColumns) {
+        column.columnName = `'${refValue}'`;
+      }
+      yield true;
+    }
+  });
+
+  const rows: {
+    content: string;
+    ref: string;
+  }[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+
+  const results: Record<string, WithId<T>[]> = Object.create(null);
+  for (const ref of referenceValues) {
+    results[ref] = [];
+  }
+  for (const row of rows) {
+    const resource = JSON.parse(row.content) as WithId<T>;
+    removeResourceFields(resource, repo, searchRequest);
+    results[row.ref].push(resource);
+  }
+
+  return results;
+}
+
+export async function searchByReferenceImplOld<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest<T>,
   referenceField: string,
@@ -356,7 +427,8 @@ function getBaseSelectQuery(
     }
     builder = new SelectQuery('combined', new Union(...queries));
     if (opts?.addColumns ?? true) {
-      builder.column('id').column('lastUpdated').column('content');
+      // builder.column('id').column('lastUpdated').column('content');
+      builder.raw('*');
     }
   } else {
     builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, opts);
@@ -1277,6 +1349,21 @@ function buildReferenceSearchFilter(
     condition = new Condition(column, 'IN', values);
   }
   return operator === Operator.NOT || operator === Operator.NOT_EQUALS ? new Negation(condition) : condition;
+}
+
+function buildReferenceEqualsCondition(
+  table: string,
+  impl: ColumnSearchParameterImplementation,
+  value: string | Column
+): Condition {
+  const column = new Column(table, impl.columnName);
+  let condition: Condition;
+  if (impl.array) {
+    condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', [value], 'TEXT[]');
+  } else {
+    condition = new Condition(column, '=', value);
+  }
+  return condition;
 }
 
 /**

@@ -211,7 +211,7 @@ export interface Expression {
 
 export class Column implements Expression {
   readonly tableName: string | undefined;
-  readonly columnName: string;
+  columnName: string;
   readonly raw?: boolean;
   readonly alias?: string;
 
@@ -256,7 +256,7 @@ export class Negation implements Expression {
 export class Condition implements Expression {
   readonly column: Column;
   readonly operator: keyof typeof Operator;
-  readonly parameter: any;
+  parameter: any;
   readonly parameterType?: string;
 
   constructor(column: Column | string, operator: keyof typeof Operator, parameter: any, parameterType?: string) {
@@ -363,6 +363,34 @@ export class SqlFunction implements Expression {
       }
     }
     sql.append(')');
+  }
+}
+
+export class GeneratedUnionAll implements Expression {
+  readonly query: SelectQuery;
+  readonly generator: (selectQuery: SelectQuery) => Generator<boolean>;
+  constructor(query: SelectQuery, generator: (selectQuery: SelectQuery) => Generator<boolean>) {
+    this.query = query;
+    this.generator = generator;
+  }
+
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
+    const sql = new SqlBuilder();
+    sql.appendExpression(this);
+    return (await sql.execute(conn)).rows;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    let i = 0;
+    for (const _iter of this.generator(this.query)) {
+      if (i > 0) {
+        sql.append(' UNION ALL ');
+      }
+      sql.append('(');
+      sql.appendExpression(this.query);
+      sql.append(')');
+      i++;
+    }
   }
 }
 
