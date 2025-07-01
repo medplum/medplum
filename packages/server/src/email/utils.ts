@@ -1,6 +1,7 @@
 import MailComposer from 'nodemailer/lib/mail-composer';
 import Mail, { Address } from 'nodemailer/lib/mailer';
 import { getConfig } from '../config/loader';
+import { getLogger } from '../logger';
 
 /**
  * Returns the from address to use.
@@ -17,6 +18,10 @@ export function getFromAddress(options: Mail.Options): string {
     if (fromAddress && config.approvedSenderEmails?.split(',')?.includes(fromAddress)) {
       return fromAddress;
     }
+    getLogger().warn('Email from address is not an approved sender', {
+      from: fromAddress,
+      approvedSenders: config.approvedSenderEmails,
+    });
   }
 
   return config.supportEmail;

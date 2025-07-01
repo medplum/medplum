@@ -409,23 +409,26 @@ export function buildCreateTables(
       { name: 'content', type: 'TEXT', notNull: true },
       { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
       { name: 'deleted', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
-      resourceType !== 'Binary' ? { name: 'compartments', type: 'UUID[]', notNull: true } : undefined,
       { name: 'projectId', type: 'UUID' },
       { name: '__version', type: 'INTEGER' },
       { name: '_source', type: 'TEXT' },
       { name: '_profile', type: 'TEXT[]' },
-    ].filter((c) => c !== undefined),
+    ],
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
       { columns: ['lastUpdated'], indexType: 'btree' },
       { columns: ['projectId', 'lastUpdated'], indexType: 'btree' },
-      { columns: ['compartments'], indexType: 'gin' },
       { columns: ['projectId'], indexType: 'btree' },
       { columns: ['_source'], indexType: 'btree' },
       { columns: ['_profile'], indexType: 'gin' },
       { columns: ['__version'], indexType: 'btree' },
     ],
   };
+
+  if (resourceType !== 'Binary') {
+    tableDefinition.columns.push({ name: 'compartments', type: 'UUID[]', notNull: true });
+    tableDefinition.indexes.push({ columns: ['compartments'], indexType: 'gin' });
+  }
 
   buildSearchColumns(tableDefinition, resourceType);
   buildSearchIndexes(tableDefinition, resourceType);
