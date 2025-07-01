@@ -70,9 +70,10 @@ export function extractEmailFromAddress(address: string | undefined): string | u
     return undefined;
   }
   // Handle "Display Name <email@example.com>" format
-  const angleMatch = address.match(/<([^>]+)>/);
-  if (angleMatch) {
-    return angleMatch[1].trim();
+  const openBracket = address.indexOf('<');
+  const closeBracket = address.indexOf('>', openBracket);
+  if (openBracket !== -1 && closeBracket !== -1) {
+    return address.substring(openBracket + 1, closeBracket).trim();
   }
   return address.trim();
 }
