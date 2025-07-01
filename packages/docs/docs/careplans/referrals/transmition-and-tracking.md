@@ -53,54 +53,11 @@ Successful referrals require comprehensive clinical documentation to ensure:
 | **Patient Demographics** | Name, DOB, MRN, Insurance ID | [`Patient`](/docs/api/fhir/resources/patient) | Required for claims processing |
 | **Clinical Justification** | Primary/secondary diagnoses with ICD-10 codes | [`Condition`](/docs/api/fhir/resources/condition) | Medical necessity for authorization |
 | **Diagnostic Evidence** | Lab results, imaging reports, diagnostic tests | [`Observation`](/docs/api/fhir/resources/observation), [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) | Supports medical necessity |
-| **Treatment History** | Previous interventions, medications tried | [`MedicationStatement`](/docs/api/fhir/resources/medicationstatement), [`Procedure`](/docs/api/fhir/resources/procedure) | Demonstrates step therapy compliance |
+| **Treatment History** | Previous interventions, medications tried | [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest), [`Procedure`](/docs/api/fhir/resources/procedure) | Demonstrates step therapy compliance |
 | **Current Medications** | Active prescriptions with dosages | [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) | Drug interaction screening |
 | **Allergies & Intolerances** | Known allergies and adverse reactions | [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) | Safety screening |
 | **Insurance Information** | Coverage details, authorization requirements | [`Coverage`](/docs/api/fhir/resources/coverage) | Claims processing and authorization |
 
-### Billing and Authorization Considerations
-
-#### Prior Authorization Support
-Many specialist referrals require prior authorization from insurance providers. Include:
-
-```json
-{
-  "resourceType": "ServiceRequest",
-  "identifier": [
-    {
-      "type": {
-        "coding": [
-          {
-            "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
-            "code": "PLAC",
-            "display": "Placer Identifier"
-          }
-        ]
-      },
-      "value": "AUTH-REQ-2024-001234"
-    }
-  ],
-  "insurance": [
-    {
-      "reference": "Coverage/patient-primary-insurance"
-    }
-  ],
-  "supportingInfo": [
-    {
-      "reference": "DocumentReference/prior-auth-request",
-      "display": "Prior authorization request"
-    }
-  ]
-}
-```
-
-#### Medical Necessity Documentation
-Ensure referrals include sufficient clinical evidence:
-
-- **Symptom duration and severity**: Timeline and impact on daily activities
-- **Failed conservative treatments**: Documentation of attempted therapies
-- **Clinical indicators**: Relevant test results, physical findings
-- **Specialist-specific requirements**: Lab values, imaging studies as needed per specialty guidelines
 
 ## Tracking Referral Status
 
@@ -300,6 +257,3 @@ Specialist responses should include appropriate billing codes for services rende
   }
 }
 ```
-
-
-
