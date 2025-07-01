@@ -64,6 +64,12 @@ export class Hl7Client extends Hl7Base {
             this.socket.destroy();
             this.socket = undefined;
           }
+
+          if (this.connection) {
+            this.connection.close();
+            this.connection = undefined;
+          }
+
           reject(error);
         });
       }
@@ -84,6 +90,7 @@ export class Hl7Client extends Hl7Base {
         // Set up event handlers
         connection.addEventListener('close', () => {
           this.socket = undefined;
+          this.connection = undefined;
           this.dispatchEvent(new Hl7CloseEvent());
         });
 

@@ -821,10 +821,14 @@ export class App {
       }
     }
 
+    const requestMsg = Hl7Message.parse(message.body);
+    const msh10 = requestMsg.getSegment('MSH')?.getField(10);
+    this.log.info(`Request${msh10 ? '[' + msh10 + ']' : ''}: ${requestMsg.toString().replaceAll('\r', '\n')}`);
+
     client
-      .sendAndWait(Hl7Message.parse(message.body))
+      .sendAndWait(requestMsg)
       .then((response) => {
-        this.log.info(`Response: ${response.toString().replaceAll('\r', '\n')}`);
+        this.log.info(`Response${msh10 ? '[' + msh10 + ']' : ''}: ${response.toString().replaceAll('\r', '\n')}`);
         this.addToWebSocketQueue({
           type: 'agent:transmit:response',
           channel: message.channel,

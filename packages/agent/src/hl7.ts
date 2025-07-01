@@ -1,6 +1,6 @@
 import { AgentTransmitResponse, ContentType, Hl7Message, Logger, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
-import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
+import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
 import { randomUUID } from 'node:crypto';
 import { App } from './app';
 import { BaseChannel } from './channel';
@@ -49,12 +49,24 @@ export class AgentHl7Channel extends BaseChannel {
     const connection = this.connections.get(msg.remote as string);
     if (connection) {
       connection.hl7Connection.send(Hl7Message.parse(msg.body));
+    } else {
+      this.log.warn(`Attempted to send message to disconnected remote: ${msg.remote}`);
     }
   }
 
   private handleNewConnection(connection: Hl7Connection): void {
     const c = new AgentHl7ChannelConnection(this, connection);
+    c.hl7Connection.addEventListener('close', () => {
+      this.log.info(`Closing connection: ${c.remote}`);
+      this.connections.delete(c.remote);
+    });
     this.log.info(`HL7 connection established: ${c.remote}`);
+    // We should never find an old connection in the connections map since the connections should be cleaned up on close
+    const oldConnection = this.connections.get(c.remote);
+    if (oldConnection) {
+      this.log.warn(`Old connection found for remote ${c.remote}.`);
+      oldConnection.close();
+    }
     this.connections.set(c.remote, c);
   }
 }
@@ -70,10 +82,11 @@ export class AgentHl7ChannelConnection {
     this.remote = `${hl7Connection.socket.remoteAddress}:${hl7Connection.socket.remotePort}`;
 
     // Add listener immediately to handle incoming messages
-    this.hl7Connection.addEventListener('message', (event) => this.handler(event));
+    this.hl7Connection.addEventListener('message', (event) => this.handleMessage(event));
+    this.hl7Connection.addEventListener('error', (event) => this.handleError(event));
   }
 
-  private async handler(event: Hl7MessageEvent): Promise<void> {
+  private async handleMessage(event: Hl7MessageEvent): Promise<void> {
     try {
       this.channel.log.info(`Received: ${event.message.toString().replaceAll('\r', '\n')}`);
       this.channel.app.addToWebSocketQueue({
@@ -88,6 +101,10 @@ export class AgentHl7ChannelConnection {
     } catch (err) {
       this.channel.log.error(`HL7 error: ${normalizeErrorString(err)}`);
     }
+  }
+
+  private async handleError(event: Hl7ErrorEvent): Promise<void> {
+    this.channel.log.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
   }
 
   close(): void {
