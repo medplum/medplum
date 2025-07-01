@@ -1,12 +1,21 @@
-import { OperationOutcomeError, TypedValue, allOk, append, badRequest, notFound, serverError } from '@medplum/core';
+import {
+  OperationOutcomeError,
+  TypedValue,
+  WithId,
+  allOk,
+  append,
+  badRequest,
+  notFound,
+  serverError,
+} from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, CodeSystemProperty, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { Column, Condition, SelectQuery } from '../sql';
+import { Column, Condition } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { findTerminologyResource } from './utils/terminology';
+import { findTerminologyResource, selectCoding } from './utils/terminology';
 
 const operation = getOperationDefinition('CodeSystem', 'lookup');
 
@@ -21,7 +30,7 @@ type CodeSystemLookupParameters = {
 export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemLookupParameters>(operation, req);
 
-  let codeSystem: CodeSystem;
+  let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
@@ -32,9 +41,12 @@ export async function codeSystemLookupHandler(req: FhirRequest): Promise<FhirRes
     return [badRequest('No code system specified')];
   }
 
-  let coding: Coding;
+  let coding: Coding & { code: string };
   if (params.coding) {
-    coding = params.coding;
+    if (!params.coding.code) {
+      return [badRequest('No code specified')];
+    }
+    coding = params.coding as Coding & { code: string };
   } else if (params.code) {
     coding = { system: params.system ?? codeSystem.url, code: params.code };
   } else {
@@ -51,12 +63,15 @@ export type CodeSystemLookupOutput = {
   property?: { code: string; description: string; value: TypedValue }[];
 };
 
-export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Promise<CodeSystemLookupOutput> {
+export async function lookupCoding(
+  codeSystem: WithId<CodeSystem>,
+  coding: Coding & { code: string }
+): Promise<CodeSystemLookupOutput> {
   if (coding.system && coding.system !== codeSystem.url) {
     throw new OperationOutcomeError(notFound);
   }
 
-  const lookup = new SelectQuery('Coding').column('display');
+  const lookup = selectCoding(codeSystem.id, coding.code);
   const propertyTable = lookup.getNextJoinAlias();
   lookup.join(
     'LEFT JOIN',
@@ -83,9 +98,7 @@ export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Prom
     .column(new Column(csPropTable, 'type'))
     .column(new Column(csPropTable, 'description'))
     .column(new Column(propertyTable, 'value'))
-    .column(new Column(target, 'display', undefined, 'targetDisplay'))
-    .where('code', '=', coding.code)
-    .where('system', '=', codeSystem.id);
+    .column(new Column(target, 'display', undefined, 'targetDisplay'));
 
   const db = getDatabasePool(DatabaseMode.READER);
   const result = await lookup.execute(db);

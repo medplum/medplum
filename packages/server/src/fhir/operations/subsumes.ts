@@ -1,12 +1,11 @@
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, WithId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
-import { Column, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { findAncestor, findTerminologyResource } from './utils/terminology';
+import { findAncestor, findTerminologyResource, selectCoding } from './utils/terminology';
 
 const operation = getOperationDefinition('CodeSystem', 'subsumes');
 
@@ -23,7 +22,7 @@ type CodeSystemSubsumesParameters = {
 export async function codeSystemSubsumesOperation(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemSubsumesParameters>(operation, req);
 
-  let codeSystem: CodeSystem;
+  let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
@@ -42,7 +41,7 @@ export async function codeSystemSubsumesOperation(req: FhirRequest): Promise<Fhi
 export type SubsumptionOutcome = 'equivalent' | 'subsumes' | 'subsumed-by' | 'not-subsumed';
 
 export async function testSubsumption(
-  codeSystem: CodeSystem,
+  codeSystem: WithId<CodeSystem>,
   left: string,
   right: string
 ): Promise<SubsumptionOutcome> {
@@ -60,14 +59,13 @@ export async function testSubsumption(
   }
 }
 
-export async function isSubsumed(baseCode: string, ancestorCode: string, codeSystem: CodeSystem): Promise<boolean> {
+export async function isSubsumed(
+  baseCode: string,
+  ancestorCode: string,
+  codeSystem: WithId<CodeSystem>
+): Promise<boolean> {
   const ctx = getAuthenticatedContext();
-  const base = new SelectQuery('Coding')
-    .column('id')
-    .column('code')
-    .column('display')
-    .where(new Column('Coding', 'system'), '=', codeSystem.id)
-    .where(new Column('Coding', 'code'), '=', baseCode);
+  const base = selectCoding(codeSystem.id, baseCode);
 
   const query = findAncestor(base, codeSystem, ancestorCode);
   const results = await query.execute(ctx.repo.getDatabaseClient(DatabaseMode.READER));

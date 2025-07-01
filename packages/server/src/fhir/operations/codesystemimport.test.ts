@@ -7,6 +7,7 @@ import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject, initTestAuth } from '../../test.setup';
 import { Column, Condition, SelectQuery } from '../sql';
+import { selectCoding } from './utils/terminology';
 
 const app = express();
 
@@ -294,12 +295,8 @@ describe('CodeSystem $import', () => {
 
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {
   const db = getDatabasePool(DatabaseMode.READER);
-  const coding = await new SelectQuery('Coding')
-    .column('id')
-    .column('display')
+  const coding = await selectCoding(system as string, code)
     .column('isSynonym')
-    .where('system', '=', system)
-    .where('code', '=', code)
     .execute(db);
   expect(coding).toHaveLength(1);
   return coding[0];
