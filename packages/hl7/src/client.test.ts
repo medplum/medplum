@@ -234,7 +234,7 @@ describe('Hl7Client', () => {
     expect(connectionCount).toBe(1);
   });
 
-  test.only('Creates new connection whenever connection is closed from other side and a new message is sent', async () => {
+  test('Creates new connection whenever connection is closed from other side and a new message is sent', async () => {
     const port = getRandomPort();
 
     let serverSideConnection!: Hl7Connection;
