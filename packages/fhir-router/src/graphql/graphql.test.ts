@@ -1108,7 +1108,7 @@ describe('GraphQL', () => {
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]?.issue?.[0]?.details?.text).toStrictEqual(
-      'Field "PatientUpdate" argument "res" of type "PatientUpdate!" is required, but it was not provided.'
+      'Field "PatientUpdate" argument "res" of type "PatientCreate!" is required, but it was not provided.'
     );
   });
 
@@ -1326,12 +1326,10 @@ describe('GraphQL', () => {
       query: `mutation {
         PatientPatch(
           id: "${testPatient.id}"
-          res: {
-            resourceType: "Patient"
-            id: "${testPatient.id}"
-            gender: "male"
-            name: [{ given: ["Alice"], family: "Smith" }]
-          }
+          patch: [
+            { op: "replace", path: "/name/0/family", value: "Smith" },
+            { op: "replace", path: "/gender", value: "male" }
+          ]
         ) {
           id
           gender
@@ -1371,10 +1369,10 @@ describe('GraphQL', () => {
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     // GraphQL validation happens before our resolver, so we get a validation error in the OperationOutcome
-    expect(res[0]?.issue?.[0]?.details?.text).toMatch(/Field "PatientPatch" argument "res" of type "PatientPatch!" is required/);
+    expect(res[0]?.issue?.[0]?.details?.text).toMatch(/Field "PatientPatch" argument "patch" of type "\[PatchOperationInput!\]!" is required/);
   });
 
-  test('Invalid Patch Resource Type', async () => {
+  test('Invalid Patch Operations', async () => {
     const testPatient = await repo.createResource<Patient>({
       resourceType: 'Patient',
       gender: 'female',
@@ -1384,11 +1382,7 @@ describe('GraphQL', () => {
       query: `mutation {
         PatientPatch(
           id: "${testPatient.id}"
-          res: {
-            resourceType: "Practitioner"
-            id: "${testPatient.id}"
-            gender: "male"
-          }
+          patch: "not-an-array"
         ) {
           id
         }
@@ -1396,6 +1390,7 @@ describe('GraphQL', () => {
     });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
-    expect(res[1]?.errors?.[0]?.message).toMatch(/Invalid resourceType/);
+    // GraphQL type validation catches this before our resolver
+    expect(res[0]?.issue?.[0]?.details?.text).toMatch(/Expected value of type "\[PatchOperationInput!\]!", found "not-an-array"/);
   });
 });

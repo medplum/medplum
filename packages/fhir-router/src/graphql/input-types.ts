@@ -11,12 +11,13 @@ const inputTypeCache: Record<string, GraphQLInputType | undefined> = {
   ...typeCache,
 };
 
+let patchOperationInputType: GraphQLInputObjectType | undefined;
+
 export function getGraphQLInputType(inputType: string, nameSuffix: string): GraphQLInputType {
-  const cacheKey = inputType + nameSuffix;
-  let result = inputTypeCache[cacheKey];
+  let result = inputTypeCache[inputType];
   if (!result) {
     result = buildGraphQLInputType(inputType, nameSuffix);
-    inputTypeCache[cacheKey] = result;
+    inputTypeCache[inputType] = result;
   }
 
   return result;
@@ -73,30 +74,6 @@ function buildInputPropertyField(
     typeName = elementDefinition.type[0].code;
   }
 
-  // Check if this is a primitive type that should be mapped to a GraphQL scalar
-  const primitiveType = typeCache[typeName];
-  if (primitiveType) {
-    const fieldConfig: GraphQLInputFieldConfig = {
-      description: elementDefinition.description, // TODO: elementDefinition.short
-      type: primitiveType,
-    };
-
-    if (elementDefinition.max > 1) {
-      fieldConfig.type = new GraphQLList(new GraphQLNonNull(primitiveType));
-    }
-    if (elementDefinition.min > 0 && !key.endsWith('[x]')) {
-      fieldConfig.type = new GraphQLNonNull(fieldConfig.type);
-    }
-
-    const propertyName = (key.split('.').pop() as string).replace(
-      '[x]',
-      capitalize(elementDefinitionType.code as string)
-    );
-    fields[propertyName] = fieldConfig;
-    return;
-  }
-
-  // For complex types, create input types
   const fieldConfig: GraphQLInputFieldConfig = {
     description: elementDefinition.description, // TODO: elementDefinition.short
     type: getGraphQLInputType(typeName, nameSuffix),
@@ -114,4 +91,19 @@ function buildInputPropertyField(
     capitalize(elementDefinitionType.code as string)
   );
   fields[propertyName] = fieldConfig;
+}
+
+export function getPatchOperationInputType(): GraphQLInputObjectType {
+  if (!patchOperationInputType) {
+    patchOperationInputType = new GraphQLInputObjectType({
+      name: 'PatchOperationInput',
+      description: 'A JSON Patch operation as per RFC 6902',
+      fields: {
+        op: { type: new GraphQLNonNull(GraphQLString), description: 'The operation to perform' },
+        path: { type: new GraphQLNonNull(GraphQLString), description: 'A JSON-Pointer' },
+        value: { type: GraphQLString, description: 'The value to use within the operations. (May be any scalar, but GraphQL input types are limited.)' },
+      },
+    });
+  }
+  return patchOperationInputType;
 }
