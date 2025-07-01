@@ -4,7 +4,7 @@
 
 Here's an example of a ServiceRequest resource representing a cardiology referral:
 
-```json
+```ts
 {
   "resourceType": "ServiceRequest",
   "id": "cardiology-referral-example",
@@ -88,7 +88,7 @@ Here's an example of a ServiceRequest resource representing a cardiology referra
 
 Here's an example of a Task resource for tracking the referral status:
 
-```json
+```ts
 {
   "resourceType": "Task",
   "id": "referral-task-example",
@@ -139,7 +139,7 @@ Here's an example of a Task resource for tracking the referral status:
 
 Here's a sample Questionnaire for capturing referral data:
 
-```json
+```ts
 {
   "resourceType": "Questionnaire",
   "id": "cardiology-referral-questionnaire",
@@ -254,7 +254,7 @@ Here's a sample Questionnaire for capturing referral data:
 
 Here's an example of a Communication resource for the referral transmission:
 
-```json
+```ts
 {
   "resourceType": "Communication",
   "id": "referral-communication-example",
@@ -310,7 +310,7 @@ Here's an example of a Communication resource for the referral transmission:
 
 Here's an example of a DocumentReference containing a referral summary PDF:
 
-```json
+```ts
 {
   "resourceType": "DocumentReference",
   "id": "referral-summary-doc-id",
