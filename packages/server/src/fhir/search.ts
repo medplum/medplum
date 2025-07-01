@@ -63,13 +63,11 @@ import {
   Expression,
   GeneratedUnionAll,
   Negation,
-  Parameter,
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
   SqlFunction,
   Union,
-  ValuesQuery,
 } from './sql';
 import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-column';
 
@@ -193,66 +191,6 @@ export async function searchByReferenceImpl<T extends Resource>(
       yield true;
     }
   });
-
-  const rows: {
-    content: string;
-    ref: string;
-  }[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-
-  const results: Record<string, WithId<T>[]> = Object.create(null);
-  for (const ref of referenceValues) {
-    results[ref] = [];
-  }
-  for (const row of rows) {
-    const resource = JSON.parse(row.content) as WithId<T>;
-    removeResourceFields(resource, repo, searchRequest);
-    results[row.ref].push(resource);
-  }
-
-  return results;
-}
-
-export async function searchByReferenceImplOld<T extends Resource>(
-  repo: Repository,
-  searchRequest: SearchRequest<T>,
-  referenceField: string,
-  referenceValues: string[]
-): Promise<Record<string, WithId<T>[]>> {
-  validateSearchResourceTypes(repo, searchRequest);
-
-  const referencesTableName = 'references';
-  const referencesColumnName = 'ref';
-  const referenceColumn = new Column(referencesTableName, referencesColumnName);
-
-  const searchQuery = getSelectQueryForSearch(repo, searchRequest, {
-    addColumns: true,
-    limitModifier: 0,
-    resourceTypeQueryCallback: (resourceType, builder) => {
-      const param = getSearchParameter(resourceType, referenceField);
-      if (param?.type !== 'reference') {
-        throw new OperationOutcomeError(
-          badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
-        );
-      }
-      const impl = getSearchParameterImplementation(resourceType, param);
-      if (impl.searchStrategy !== 'column') {
-        throw new OperationOutcomeError(
-          badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
-        );
-      }
-      builder.whereExpr(buildReferenceSearchFilter(builder.tableName, impl, Operator.EQUALS, referenceColumn));
-    },
-  });
-  const builder = new SelectQuery(
-    referencesTableName,
-    new ValuesQuery(
-      referencesTableName,
-      [referencesColumnName],
-      referenceValues.map((r) => [r])
-    )
-  );
-  builder.join('INNER JOIN LATERAL', searchQuery, 'results', new Parameter('true'));
-  builder.column(new Column('results', 'id')).column(new Column('results', 'content')).column(referenceColumn);
 
   const rows: {
     content: string;
