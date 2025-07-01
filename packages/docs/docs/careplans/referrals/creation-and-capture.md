@@ -6,7 +6,7 @@ A variety of referral capture experiences are possible, and customizability is o
 
 Some implementations use a simple form interface that collects basic information about the patient, reason for referral, and intended recipient, then constructs a [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) resource.
 
-More sophisticated implementations use a library of [`Questionnaires`](/docs/questionnaires/) tailored to different specialties or referral types, and then use [`Bots`](/docs/bots/) to process the [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) and create the appropriate resources.
+More sophisticated implementations use a library of [`Questionnaires`](/docs/questionnaires/) tailored to different specialties or referral types, and then use [`Bots`](/docs/bots/bot-for-questionnaire-response) to process the [`QuestionnaireResponse`](/docs/api/fhir/resources/questionnaireresponse) and create the appropriate resources.
 
 ```mermaid
 
