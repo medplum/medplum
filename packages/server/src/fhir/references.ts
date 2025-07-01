@@ -109,10 +109,10 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
 
 async function resolveReplacementReference(
   repo: Repository,
-  reference: Reference,
+  reference: Reference | undefined,
   path: string
 ): Promise<Reference | undefined> {
-  if (!reference.reference?.includes?.('?')) {
+  if (!reference?.reference?.includes?.('?')) {
     return undefined;
   }
 
