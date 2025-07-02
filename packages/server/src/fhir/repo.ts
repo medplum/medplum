@@ -636,11 +636,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private async updateResourceImpl<T extends Resource>(
-    resource: T,
-    create: boolean,
-    versionId?: string
-  ): Promise<WithId<T>> {
+  private checkResourcePermissions(resource: Resource, create: boolean): void {
     if (!isResourceWithId(resource)) {
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
@@ -657,14 +653,29 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       )?.profile;
       resource.meta = { ...resource.meta, profile: defaultProfiles };
     }
-
     if (!this.supportsInteraction(interaction, resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
+  }
 
-    resource =
-      ((await preCommitValidation(this.context.author, this.context.projects?.[0], resource, 'update')) as WithId<T>) ??
-      resource;
+  private async updateResourceImpl<T extends Resource>(
+    resource: T,
+    create: boolean,
+    versionId?: string
+  ): Promise<WithId<T>> {
+    this.checkResourcePermissions(resource, create);
+
+    const preCommitResult = await preCommitValidation(
+      this.context.author,
+      this.context.projects?.[0],
+      resource,
+      'update'
+    );
+
+    if (isResourceWithId(preCommitResult, resource.resourceType) && preCommitResult.id === resource.id) {
+      this.checkResourcePermissions(preCommitResult, create);
+      resource = preCommitResult as WithId<T>;
+    }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
