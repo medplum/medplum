@@ -1,12 +1,6 @@
 # Medplum Healthie Connector
 
-The Medplum Healthie Connector is a integration tool that synchronizes patient data from the Healthie EMR to Medplum.
-
-## Features
-
-- Synchronize Patient data synchronization between Medplum and Healthie
-- Automated bot deployment for data fetching
-- Secure authentication handling
+The Medplum Healthie Connector is a integration tool that synchronizes patient data from the Healthie EMR into Medplum.
 
 ## Prerequisites
 
