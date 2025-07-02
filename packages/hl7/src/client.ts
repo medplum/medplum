@@ -64,12 +64,6 @@ export class Hl7Client extends Hl7Base {
             this.socket.destroy();
             this.socket = undefined;
           }
-
-          if (this.connection) {
-            this.connection.close();
-            this.connection = undefined;
-          }
-
           reject(error);
         });
       }
