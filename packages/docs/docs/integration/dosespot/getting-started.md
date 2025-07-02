@@ -376,6 +376,16 @@ flowchart TD
   end
 ```
 
+### Distinguishing Between Different MedicationRequests
+
+When working with DoseSpot integration, it's important to understand the different types of [MedicationRequests](/docs/api/fhir/resources/medicationrequest) that will be in your Medplum project.
+
+- **`MedicationRequest?intent=plan`** - Self-reported medications. These are used for drug-drug interaction (DDI) checks in DoseSpot. You create these.
+
+- **`MedicationRequest?intent=order`** - Active medication orders that have been prescribed and are currently being filled or taken by the patient. These represent the current active prescriptions. The DoseSpot Prescription Sync Bot creates these.
+
+- **`MedicationRequest?intent=original-order`** - Medication histories from SureScripts and other providers. These represent historical medication data that has been retrieved from external sources. The DoseSpot Medication History Bot creates these.
+
 ## Processing DoseSpot Notifications
 
 You can use the [useDoseSpotNotifications](https://github.com/medplum/medplum/blob/main/packages/dosespot-react/src/useDoseSpotNotifications.ts) hook to poll for DoseSpot notifications.
