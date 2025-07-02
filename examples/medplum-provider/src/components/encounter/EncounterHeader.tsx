@@ -3,7 +3,6 @@ import { formatDate, formatHumanName } from '@medplum/core';
 import { Encounter, HumanName, Practitioner } from '@medplum/fhirtypes';
 import { IconChevronDown } from '@tabler/icons-react';
 import { JSX, useState } from 'react';
-import { notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 
 interface EncounterHeaderProps {
@@ -32,38 +31,12 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
   const confirmStatusChange = (): void => {
     setStatus('cancelled');
     onStatusChange?.('cancelled');
-    notifications.show({
-      title: 'Encounter Cancelled',
-      message: 'The encounter has been cancelled successfully.',
-      color: 'red',
-      autoClose: 3000,
-    });
     closeConfirm();
   };
 
   const handleTabChange = (tab: string): void => {
     setActiveTab(tab);
     onTabChange?.(tab);
-  };
-
-  const getStatusColor = (status: Encounter['status']): string => {
-    if (status === 'finished') {
-      return 'green';
-    }
-    if (status === 'cancelled') {
-      return 'red';
-    }
-    if (status === 'arrived' || status === 'in-progress' || status === 'planned') {
-      return 'blue';
-    }
-    return 'gray';
-  };
-
-  const getStatusDisplay = (status: Encounter['status']): string => {
-    return status
-      .split('-')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
   };
 
   const practitionerName = practitioner?.name?.[0]
@@ -77,7 +50,8 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       return (
         <>
           <Menu.Item onClick={() => handleStatusChange('arrived')}>Arrived</Menu.Item>
-          <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancel</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('in-progress')}>In Progress</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
           <Menu.Divider />
         </>
       );
@@ -87,7 +61,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       return (
         <>
           <Menu.Item onClick={() => handleStatusChange('in-progress')}>In Progress</Menu.Item>
-          <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancel</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
           <Menu.Divider />
         </>
       );
@@ -103,9 +77,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     }
 
     return (
-      <>
-        <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
-      </>
+      <></>
     );
   };
 
@@ -122,7 +94,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
             </Text>
           </Stack>
           <Group>
-            {status === 'cancelled' ? (
+            {status === 'cancelled' || status === 'finished' ? (
               <Button variant="light" color={getStatusColor(status)} radius="xl" size="sm">
                 {getStatusDisplay(status)}
               </Button>
@@ -194,4 +166,25 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       </Modal>
     </>
   );
+};
+
+
+const getStatusColor = (status: Encounter['status']): string => {
+  if (status === 'finished') {
+    return 'green';
+  }
+  if (status === 'cancelled') {
+    return 'red';
+  }
+  if (status === 'arrived' || status === 'in-progress' || status === 'planned') {
+    return 'blue';
+  }
+  return 'gray';
+};
+
+const getStatusDisplay = (status: Encounter['status']): string => {
+  return status
+    .split('-')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 };
