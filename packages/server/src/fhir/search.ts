@@ -61,13 +61,13 @@ import {
   Disjunction,
   escapeLikeString,
   Expression,
-  GeneratedUnionAll,
   Negation,
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
   SqlFunction,
   Union,
+  UnionAllBuilder,
 } from './sql';
 import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-column';
 
@@ -178,24 +178,23 @@ export async function searchByReferenceImpl<T extends Resource>(
     },
   });
 
-  const builder = new GeneratedUnionAll(searchQuery, function* refGenerator(): Generator<boolean> {
-    for (const refValue of referenceValues) {
-      // Update each condition with the current reference value
-      for (const cond of referenceConditions) {
-        cond.parameter = refValue;
-      }
-      // Update each column with the current reference value literal
-      for (const column of referenceColumns) {
-        column.columnName = `'${refValue}'`;
-      }
-      yield true;
+  const unionAllBuilder = new UnionAllBuilder();
+  for (const refValue of referenceValues) {
+    // Update each condition with the current reference value
+    for (const cond of referenceConditions) {
+      cond.parameter = refValue;
     }
-  });
+    // Update each column with the current reference value literal
+    for (const column of referenceColumns) {
+      column.columnName = `'${refValue}'`;
+    }
+    unionAllBuilder.add(searchQuery);
+  }
 
   const rows: {
     content: string;
     ref: string;
-  }[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  }[] = await unionAllBuilder.execute(repo.getDatabaseClient(DatabaseMode.READER));
 
   const results: Record<string, WithId<T>[]> = Object.create(null);
   for (const ref of referenceValues) {

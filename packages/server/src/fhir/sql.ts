@@ -366,31 +366,26 @@ export class SqlFunction implements Expression {
   }
 }
 
-export class GeneratedUnionAll implements Expression {
-  readonly query: SelectQuery;
-  readonly generator: (selectQuery: SelectQuery) => Generator<boolean>;
-  constructor(query: SelectQuery, generator: (selectQuery: SelectQuery) => Generator<boolean>) {
-    this.query = query;
-    this.generator = generator;
+export class UnionAllBuilder {
+  private queryCount: number = 0;
+  private sql: SqlBuilder;
+
+  constructor() {
+    this.sql = new SqlBuilder();
+  }
+
+  add(query: SelectQuery): void {
+    if (this.queryCount > 0) {
+      this.sql.append(' UNION ALL ');
+    }
+    this.sql.append('(');
+    this.sql.appendExpression(query);
+    this.sql.append(')');
+    this.queryCount++;
   }
 
   async execute(conn: Pool | PoolClient): Promise<any[]> {
-    const sql = new SqlBuilder();
-    sql.appendExpression(this);
-    return (await sql.execute(conn)).rows;
-  }
-
-  buildSql(sql: SqlBuilder): void {
-    let i = 0;
-    for (const _iter of this.generator(this.query)) {
-      if (i > 0) {
-        sql.append(' UNION ALL ');
-      }
-      sql.append('(');
-      sql.appendExpression(this.query);
-      sql.append(')');
-      i++;
-    }
+    return (await this.sql.execute(conn)).rows;
   }
 }
 
