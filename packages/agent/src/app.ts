@@ -821,10 +821,19 @@ export class App {
       }
     }
 
+    const requestMsg = Hl7Message.parse(message.body);
+    const msh10 = requestMsg.getSegment('MSH')?.getField(10);
+    if (!msh10) {
+      this.log.error('MSH.10 is missing but required');
+      return;
+    }
+
+    this.log.info(`[Request -- ID: ${msh10}]: ${requestMsg.toString().replaceAll('\r', '\n')}`);
+
     client
-      .sendAndWait(Hl7Message.parse(message.body))
+      .sendAndWait(requestMsg)
       .then((response) => {
-        this.log.info(`Response: ${response.toString().replaceAll('\r', '\n')}`);
+        this.log.info(`[Response -- ID: ${msh10}]: ${response.toString().replaceAll('\r', '\n')}`);
         this.addToWebSocketQueue({
           type: 'agent:transmit:response',
           channel: message.channel,
