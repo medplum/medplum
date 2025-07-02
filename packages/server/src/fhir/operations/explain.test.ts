@@ -1,4 +1,4 @@
-import { ContentType, getReferenceString } from '@medplum/core';
+import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import { Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -40,7 +40,11 @@ describe('$explain', () => {
   });
 
   test('Respects On-Behalf-Of', async () => {
-    const { membership, project } = await createTestProject({ withClient: true });
+    const { project: linkedProject } = await createTestProject({ withClient: true });
+    const { membership, project } = await createTestProject({
+      withClient: true,
+      project: { link: [{ project: createReference(linkedProject) }] },
+    });
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     const res1 = await request(app)
@@ -55,10 +59,8 @@ describe('$explain', () => {
     expect(res1.status).toBe(200);
 
     const output = res1.body.parameter as ParametersParameter[];
-    expect(output).toStrictEqual(
-      expect.arrayContaining<ParametersParameter>([
-        { name: 'explain', valueString: expect.stringContaining(project.id) },
-      ])
-    );
+    const plan = output.find((p) => p.name === 'explain')?.valueString;
+    expect(plan).toContain(project.id);
+    expect(plan).toContain(linkedProject.id);
   });
 });
