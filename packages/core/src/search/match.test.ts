@@ -13,7 +13,7 @@ import {
 } from '@medplum/fhirtypes';
 import { indexSearchParameterBundle } from '../types';
 import { indexStructureDefinitionBundle } from '../typeschema/types';
-import { matchesSearchRequest } from './match';
+import { matchesSearchRequest, matchesStringValue } from './match';
 import { Operator, SearchRequest, parseSearchRequest } from './search';
 
 // Dimensions:
@@ -1007,5 +1007,69 @@ describe('Search matching', () => {
       filters: [{ code: 'organization', operator: Operator.PRESENT, value: 'false' }],
     };
     expect(matchesSearchRequest(resource, search2)).toBe(false);
+  });
+
+  describe('Utils', () => {
+    describe('matchesStringValue', () => {
+      const token = 'http://example.com/mrn|12345';
+      const systemToken = 'http://example.com/mrn|';
+
+      it('matches exact and substring (case-insensitive)', () => {
+        expect(matchesStringValue('Foo Bar', 'bar')).toBe(true);
+        expect(matchesStringValue('FOO', 'foo')).toBe(true);
+        expect(matchesStringValue('foo', 'bar')).toBe(false);
+      });
+
+      it('matches token substring when asToken is false', () => {
+        expect(matchesStringValue(token, 'example', false)).toBe(true);
+        expect(matchesStringValue(token, '1234', false)).toBe(true);
+        expect(matchesStringValue(token, '5678', false)).toBe(false);
+      });
+
+      it('does not match when value is empty', () => {
+        expect(matchesStringValue('foo', '', false)).toBe(false);
+        expect(matchesStringValue(token, '', false)).toBe(false);
+      });
+
+      it('matches exact and substring for object types', () => {
+        expect(matchesStringValue({ foo: 'bar' }, 'foo', false)).toBe(true);
+        expect(matchesStringValue({ foo: 'bar' }, 'bar', false)).toBe(true);
+        expect(matchesStringValue({ foo: 'bar' }, '123', false)).toBe(false);
+      });
+
+      describe('asToken = true', () => {
+        it('matches exact and substring when found in system portion', () => {
+          expect(matchesStringValue(token, 'example', true)).toBe(true);
+          expect(matchesStringValue(token, 'http://example.com', true)).toBe(true);
+          expect(matchesStringValue(token, 'http://example.com/mrn', true)).toBe(true);
+          expect(matchesStringValue(token, 'mrn', true)).toBe(true);
+        });
+
+        it('matches exact and substring when found in code portion', () => {
+          expect(matchesStringValue(token, '123', true)).toBe(true);
+          expect(matchesStringValue(token, '12345', true)).toBe(true);
+        });
+
+        it('matches when value is found in both system and code', () => {
+          expect(matchesStringValue('http://12345.org|12345', '12345', true)).toBe(true);
+        });
+
+        it('does not match if neither system or code', () => {
+          expect(matchesStringValue(token, 'foo', true)).toBe(false);
+          expect(matchesStringValue(token, '456', true)).toBe(false);
+        });
+
+        it('handles tokens with no code portion', () => {
+          expect(matchesStringValue(systemToken, 'example', true)).toBe(true);
+          expect(matchesStringValue(systemToken, 'http://example.com/mrn', true)).toBe(true);
+          expect(matchesStringValue(systemToken, '1234', true)).toBe(false);
+        });
+
+        it('handles tokens with empty string', () => {
+          expect(matchesStringValue(token, '', true)).toBe(false);
+          expect(matchesStringValue(systemToken, '', true)).toBe(false);
+        });
+      });
+    });
   });
 });
