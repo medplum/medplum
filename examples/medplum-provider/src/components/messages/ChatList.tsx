@@ -38,7 +38,7 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
           }
         }
       `);
-      const lastCommunications = allCommunications.data.CommunicationList; 
+      const lastCommunications = allCommunications.data.CommunicationList;
       setLastCommunications(lastCommunications);
     };
 
@@ -50,7 +50,7 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
     if (!lastCommunications) {
       return new Map<string, Communication>();
     }
-    
+
     const map = new Map<string, Communication>();
     lastCommunications.forEach((comm) => {
       const partOfRef = comm.partOf?.[0]?.reference;
