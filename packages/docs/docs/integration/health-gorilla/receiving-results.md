@@ -12,13 +12,13 @@ When Health Gorilla receives results from performing laboratories (Quest, Labcor
 
 Understanding how results are structured and connected is essential for building clinical workflows and displaying results to providers.
 
-| Concept                   | Description                                                                         |
-| ------------------------- | ----------------------------------------------------------------------------------- |
-| Unsolicited Results       | Lab values delivered as machine-readable FHIR `Observations`                        |
-| Performing Lab Details    | `Organization` information for the specific lab that processed specimens            |
-| Health Gorilla PDF Report | CLIA-certified lab report in a format that is consistent across all performing labs |
-| Clinical Lab PDF Report   | The original lab report delivered by the performing lab                             |
-| Structured Lab Results    | Lab values delivered as machine-readable FHIR `Observations`                        |
+| Concept                   | Description                                                                                                        |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Unsolicited Results       | Lab values delivered as machine-readable FHIR `Observations`                                                       |
+| Performing Lab Details    | `Organization` information for the specific lab that processed specimens                                           |
+| Health Gorilla PDF Report | `DocumentReference` containing CLIA-certified lab report in a format that is consistent across all performing labs |
+| Clinical Lab PDF Report   | `DocumentReference` containing the original lab report delivered by the performing lab                             |
+| Structured Lab Results    | Lab values delivered as machine-readable FHIR `Observations`                                                       |
 
 ## FHIR Data Model
 
@@ -177,12 +177,6 @@ The `DiagnosticReport` serves as the primary container for all results related t
   ]
 }
 ```
-
-#### Lab-specific Notes
-
-**Quest**:
-
-- **Preliminary Results**: Quest sends results on a rolling basis, and will send the same report multiple times. Check the `DiagnosticReport.status` element to see when the final report has be sent
 
 ### Observations
 
@@ -358,7 +352,7 @@ Unstructured PDF reports are stored as `DocumentReference` resources, with diffe
 }
 ```
 
-### DetectedIssues
+### Detected Issues
 
 The Medplum Health Gorilla integration creates `DetectedIssue` resources to flag clinical workflow concerns.
 
@@ -396,7 +390,7 @@ Currently, the main source of `DetectedIssues` are unsolicited reports (see belo
 
 ### Organizations
 
-Health Gorilla returns detailed information about the performing laboratory for each observation, including regional lab locations, lab directors, and contact information. This data is captured by creating `Organization` resources linked to each observation.
+Health Gorilla returns detailed information about the performing laboratory for each observation. If the corresponding lab does not exist inside your Medplum project, `receive-from-health-gorilla` will create the corresponding `Organization` resource and link it to each observation.
 
 **Key Information Captured:**
 
@@ -439,6 +433,12 @@ Health Gorilla returns detailed information about the performing laboratory for 
   ],
 }
 ```
+
+## Lab-specific Behavior
+
+### Quest
+
+- **Preliminary Results**: Quest sends preliminary results on a rolling basis, and will send the same report multiple times, updating Medplum's `DiagnosticReport` resource _in-place_. Monitor the value of `DiagnosticReport.status` to see when the report has been finalized.
 
 ## Special Workflows
 
