@@ -333,6 +333,16 @@ describe('BaseChat', () => {
     expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
   });
 
+  test('excludeHeader', async () => {
+    const baseProps = { title: 'Testing', query: HOMER_DR_ALICE_CHAT_QUERY, sendMessage: () => undefined };
+    const { rerender } = await setup({ ...baseProps });
+    expect(screen.getByRole('heading', { name: /testing/i })).toBeInTheDocument();
+    await rerender({ ...baseProps, excludeHeader: false });
+    expect(screen.getByRole('heading', { name: /testing/i })).toBeInTheDocument();
+    await rerender({ ...baseProps, excludeHeader: true });
+    expect(screen.queryByRole('heading', { name: /testing/i })).not.toBeInTheDocument();
+  });
+
   test('Notifies user when disconnected and reconnected, refetches message after reconnect', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
     medplum.setSubscriptionManager(defaultSubManager);

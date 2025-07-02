@@ -70,6 +70,7 @@ export interface BaseChatProps extends PaperProps {
   readonly onMessageReceived?: (message: Communication) => void;
   readonly onMessageUpdated?: (message: Communication) => void;
   readonly inputDisabled?: boolean;
+  readonly excludeHeader?: boolean;
   readonly onError?: (err: Error) => void;
 }
 
@@ -92,6 +93,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     onMessageUpdated,
     inputDisabled,
     onError,
+    excludeHeader = false,
     ...paperProps
   } = props;
   const medplum = useMedplum();
@@ -250,9 +252,11 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 
   return (
     <Paper className={classes.chatPaper} p={0} radius="md" {...paperProps}>
-      <Title order={2} className={classes.chatTitle}>
-        {title}
-      </Title>
+      {!excludeHeader && (
+        <Title order={2} className={classes.chatTitle}>
+          {title}
+        </Title>
+      )}
       <div className={classes.chatBody} ref={parentRef as LegacyRef<HTMLDivElement>}>
         {initialLoadRef.current ? (
           <Stack key="skeleton-chat-messages" align="stretch" mt="lg">

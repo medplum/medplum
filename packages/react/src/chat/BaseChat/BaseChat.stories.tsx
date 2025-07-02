@@ -235,3 +235,45 @@ export const InputDisabled = (): JSX.Element => {
     </Document>
   );
 };
+
+export const WithoutHeader = (): JSX.Element => {
+  const sent1 = new Date();
+  const sent2 = new Date(sent1);
+  sent2.setSeconds(sent1.getSeconds() + 1);
+
+  return (
+    <Document>
+      <div style={{ width: 360, height: 400, margin: '0 auto' }}>
+        <BaseChat
+          title="Chat with Homer Simpson"
+          query={`sender=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}&recipient=${getReferenceString(HomerSimpson)},${getReferenceString(DrAliceSmith)}`}
+          communications={[
+            {
+              id: 'message-1',
+              resourceType: 'Communication',
+              sender: createReference(DrAliceSmith),
+              recipient: [createReference(HomerSimpson)],
+              status: 'completed',
+              payload: [
+                { contentString: 'Hi, Homer. Can you come in to discuss treatment for your radiation poisoning?' },
+              ],
+              sent: sent1.toISOString(),
+            },
+            {
+              id: 'message-2',
+              resourceType: 'Communication',
+              sender: createReference(HomerSimpson),
+              recipient: [createReference(DrAliceSmith)],
+              status: 'completed',
+              payload: [{ contentString: 'Aww, not again... Doh!' }],
+              sent: sent2.toISOString(),
+            },
+          ]}
+          setCommunications={() => undefined}
+          sendMessage={() => undefined}
+          excludeHeader
+        />
+      </div>
+    </Document>
+  );
+};
