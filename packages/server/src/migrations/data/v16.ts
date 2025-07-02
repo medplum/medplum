@@ -23,19 +23,16 @@ async function run(client: PoolClient, results: MigrationActionResult[]): Promis
   await fns.query(client, results, `UPDATE "Coding" SET "isSynonym" = false WHERE "isSynonym" IS NULL`);
   await fns.query(client, results, `ALTER TABLE IF EXISTS "Coding" ALTER COLUMN "isSynonym" SET NOT NULL`);
 
-  const prefIdx = 'Coding_preferred_idx';
   await fns.idempotentCreateIndex(
     client,
     results,
-    prefIdx,
-    `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "${prefIdx}" ON "Coding" (system, code) INCLUDE (id) WHERE NOT "isSynonym"`
+    'Coding_system_code_preferred_idx',
+    `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "Coding_system_code_preferred" ON "Coding" ("system", "code") INCLUDE ("id") WHERE (NOT "isSynonym")`
   );
-
-  const identIdx = 'Coding_identity_idx';
   await fns.idempotentCreateIndex(
     client,
     results,
-    identIdx,
-    `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "${identIdx}" ON "Coding" (system, code, display)`
+    'Coding_system_code_display_idx',
+    `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "Coding_system_code_display_idx" ON "Coding" ("system", "code", "display")`
   );
 }

@@ -777,11 +777,20 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'display', type: 'TEXT' },
-      { name: 'isSynonym', type: 'BOOLEAN' },
+      { name: 'isSynonym', type: 'BOOLEAN', notNull: true },
     ],
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
       { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
+      {
+        columns: ['system', 'code'],
+        indexType: 'btree',
+        unique: true,
+        include: ['id'],
+        where: `NOT "isSynonym"`,
+        indexNameSuffix: 'preferred_idx',
+      },
+      { columns: ['system', 'code', 'display'], indexType: 'btree', unique: true },
       // This index definition is cheating since "display gin_trgm_ops" is of course not just a column name
       // It should have a special parser
       { columns: ['system', 'display gin_trgm_ops'], indexType: 'gin' },
