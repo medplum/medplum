@@ -51,12 +51,7 @@ export function MessagesPage(): JSX.Element {
                 <Text fz="h4" fw={800} truncate>
                   Messages
                 </Text>
-                <ActionIcon
-                  radius="50%"
-                  variant="filled"
-                  color="blue"
-                  onClick={openModal}
-                >
+                <ActionIcon radius="50%" variant="filled" color="blue" onClick={openModal}>
                   <IconPlus size={16} />
                 </ActionIcon>
               </Flex>
@@ -108,4 +103,3 @@ export function MessagesPage(): JSX.Element {
     </>
   );
 }
-  

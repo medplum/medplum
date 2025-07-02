@@ -1,7 +1,14 @@
 import { Button, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference } from '@medplum/core';
-import { Communication, Patient, Practitioner, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import {
+  Communication,
+  Patient,
+  Practitioner,
+  Questionnaire,
+  QuestionnaireResponse,
+  Reference,
+} from '@medplum/fhirtypes';
 import { QuestionnaireForm, ResourceInput, useMedplum } from '@medplum/react';
 import { JSX, useState } from 'react';
 
@@ -63,7 +70,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
             name="patient"
             required={true}
             onChange={(value) => {
-              setPatient(value ? createReference(value) as Reference<Patient> : undefined);
+              setPatient(value ? (createReference(value) as Reference<Patient>) : undefined);
             }}
           />
         </Stack>
@@ -76,7 +83,10 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
             questionnaire={questionnaire}
             excludeButtons={true}
             onChange={(value: QuestionnaireResponse) => {
-              const references = value.item?.[0].answer?.map((item) => item.valueReference).filter((ref): ref is Reference<Practitioner> => ref !== undefined) ?? [];
+              const references =
+                value.item?.[0].answer
+                  ?.map((item) => item.valueReference)
+                  .filter((ref): ref is Reference<Practitioner> => ref !== undefined) ?? [];
               setPractitioners(references);
             }}
           />
@@ -86,11 +96,7 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
           <Text fw={500}>Topic (optional)</Text>
           <Text c="dimmed">Enter a topic for the message</Text>
 
-          <TextInput
-            placeholder="Enter your topic"
-            value={topic}
-            onChange={(e) => setTopic(e.target.value)}
-          />
+          <TextInput placeholder="Enter your topic" value={topic} onChange={(e) => setTopic(e.target.value)} />
         </Stack>
 
         <Button onClick={handleSubmit}>Next</Button>
