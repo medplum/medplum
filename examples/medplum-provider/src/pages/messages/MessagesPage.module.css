@@ -1,0 +1,7 @@
+.container {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}

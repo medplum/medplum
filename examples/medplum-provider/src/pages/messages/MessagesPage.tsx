@@ -1,12 +1,14 @@
-import { ScrollArea, Text, Loader, Paper, Group, Stack, Divider, Flex, Button } from '@mantine/core';
+import { ScrollArea, Text, Loader, Paper, Group, Stack, Divider, Flex, Button, ActionIcon } from '@mantine/core';
 import { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum, PatientSummary, ThreadChat } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
 import { getReferenceString } from '@medplum/core';
 import { ChatList } from '../../components/messages/ChatList';
+import { NewTopicDialog } from '../../components/messages/NewTopicDialog';
 import { showErrorNotification } from '../../utils/notifications';
-import { IconTrash } from '@tabler/icons-react';
+import { IconPlus, IconTrash } from '@tabler/icons-react';
 import classes from './MessagesPage.module.css';
+import { useDisclosure } from '@mantine/hooks';
 
 /**
  * Messages page that matches the Home page layout but without the patient list.
@@ -17,12 +19,10 @@ export function MessagesPage(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [selectedThread, setSelectedThread] = useState<Communication | undefined>(undefined);
   const [threadMessages, setThreadMessages] = useState<Communication[]>([]);
+  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
 
   useEffect(() => {
     async function fetchAllCommunications(): Promise<void> {
-      if (selectedThread) {
-        return;
-      }
       const searchParams = new URLSearchParams();
       searchParams.append('_sort', '-sent');
       searchParams.append('part-of:missing', 'true');
@@ -39,20 +39,25 @@ export function MessagesPage(): JSX.Element {
       .finally(() => {
         setLoading(false);
       });
-  }, [medplum, selectedThread]);
+  }, [medplum]);
 
   return (
+    <>
     <div className={classes.container}>
-      <Flex h="100%">
+      <Flex h="100%" w="100%">
         {/* Left sidebar - Messages list */}
-        <Flex direction="column" w="25%" h="100%">
+        <Flex direction="column" w="25%" h="100%" style={{ borderRight: '1px solid var(--mantine-color-gray-3)' }}>
           <Paper h="100%">
             <ScrollArea h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
-              <Group p="md">
+              <Flex p="md" justify="space-between">
                 <Text fz="h4" fw={800} truncate>
                   Messages
                 </Text>
-              </Group>
+                <ActionIcon radius="50%" variant="filled" color="blue" onClick={openModal}>
+                  <IconPlus size={16} />
+                </ActionIcon>
+              </Flex>
+              <Divider />
               {loading ? (
                 <Group h="100%" align="center" justify="center">
                   <Loader />
@@ -78,7 +83,7 @@ export function MessagesPage(): JSX.Element {
             <Paper h="100%">
               <Stack h="100%" gap={0}>
                 <Flex h={64} align="center" justify="space-between" p="md">
-                  <Text fz="h4" fw={800} truncate>
+                  <Text fw={800} truncate fz="lg">
                     {selectedThread.topic?.text ?? 'Messages'}
                   </Text>
                   <Button variant="outline" size="xs" leftSection={<IconTrash />}>
@@ -104,9 +109,18 @@ export function MessagesPage(): JSX.Element {
             <ScrollArea p={0} h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
               <PatientSummary key={selectedThread.id} patient={selectedThread.subject as Reference<Patient>} />
             </ScrollArea>
-          )}
+            )}
+          </Flex>
         </Flex>
-      </Flex>
-    </div>
+      </div>
+      <NewTopicDialog
+        opened={modalOpened}
+        onClose={closeModal}
+        onSubmit={(communication) => {
+          setThreadMessages([communication, ...threadMessages]);
+          setSelectedThread(communication);
+        }}
+      />
+    </>
   );
 }
