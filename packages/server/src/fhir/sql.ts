@@ -211,7 +211,7 @@ export interface Expression {
 
 export class Column implements Expression {
   readonly tableName: string | undefined;
-  readonly columnName: string;
+  columnName: string;
   readonly raw?: boolean;
   readonly alias?: string;
 
@@ -256,7 +256,7 @@ export class Negation implements Expression {
 export class Condition implements Expression {
   readonly column: Column;
   readonly operator: keyof typeof Operator;
-  readonly parameter: any;
+  parameter: any;
   readonly parameterType?: string;
 
   constructor(column: Column | string, operator: keyof typeof Operator, parameter: any, parameterType?: string) {
@@ -363,6 +363,29 @@ export class SqlFunction implements Expression {
       }
     }
     sql.append(')');
+  }
+}
+
+export class UnionAllBuilder {
+  private queryCount: number = 0;
+  sql: SqlBuilder;
+
+  constructor() {
+    this.sql = new SqlBuilder();
+  }
+
+  add(query: SelectQuery): void {
+    if (this.queryCount > 0) {
+      this.sql.append(' UNION ALL ');
+    }
+    this.sql.append('(');
+    this.sql.appendExpression(query);
+    this.sql.append(')');
+    this.queryCount++;
+  }
+
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
+    return (await this.sql.execute(conn)).rows;
   }
 }
 

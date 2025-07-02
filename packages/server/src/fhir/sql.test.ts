@@ -6,6 +6,7 @@ import {
   Operator,
   SelectQuery,
   SqlBuilder,
+  UnionAllBuilder,
   ValuesQuery,
   periodToRangeString,
 } from './sql';
@@ -247,6 +248,24 @@ describe('SqlBuilder', () => {
       ).buildSql(sql);
       expect(sql.toString()).toBe(
         'SELECT * FROM (VALUES($1,$2,$3),($4,$5,$6)) AS "MyValues"("firstCol","secondCol","thirdCol")'
+      );
+    });
+  });
+
+  describe('UnionAllBuilder', () => {
+    test('multiple queries', () => {
+      const unionAllBuilder = new UnionAllBuilder();
+      unionAllBuilder.add(new SelectQuery('MyTable').column('id').column('my_table_col'));
+      expect(unionAllBuilder.sql.toString()).toBe('(SELECT "MyTable"."id", "MyTable"."my_table_col" FROM "MyTable")');
+
+      unionAllBuilder.add(new SelectQuery('MyOtherTable').column('id').column('my_other_table_col'));
+      expect(unionAllBuilder.sql.toString()).toBe(
+        '(SELECT "MyTable"."id", "MyTable"."my_table_col" FROM "MyTable") UNION ALL (SELECT "MyOtherTable"."id", "MyOtherTable"."my_other_table_col" FROM "MyOtherTable")'
+      );
+
+      unionAllBuilder.add(new SelectQuery('MyThirdTable').column('id').column('my_third_table_col'));
+      expect(unionAllBuilder.sql.toString()).toBe(
+        '(SELECT "MyTable"."id", "MyTable"."my_table_col" FROM "MyTable") UNION ALL (SELECT "MyOtherTable"."id", "MyOtherTable"."my_other_table_col" FROM "MyOtherTable") UNION ALL (SELECT "MyThirdTable"."id", "MyThirdTable"."my_third_table_col" FROM "MyThirdTable")'
       );
     });
   });
