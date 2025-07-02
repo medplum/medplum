@@ -364,7 +364,6 @@ function getBaseSelectQuery(
     }
     builder = new SelectQuery('combined', new Union(...queries));
     if (opts?.addColumns ?? true) {
-      // builder.column('id').column('lastUpdated').column('content');
       builder.raw('*');
     }
   } else {
