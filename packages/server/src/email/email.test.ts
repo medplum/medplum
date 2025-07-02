@@ -89,6 +89,31 @@ describe('Email', () => {
     expect(parsed.text).toBe('Hello Alice\n');
   });
 
+  test('Send with display string', async () => {
+    const fromAddress = 'Display Test <no-reply@example.com>';
+    const toAddresses = 'alice@example.com';
+    await sendEmail(systemRepo, {
+      from: fromAddress,
+      to: toAddresses,
+      cc: 'bob@example.com',
+      subject: 'Hello',
+      text: 'Hello Alice',
+    });
+
+    expect(mockSESv2Client.send.callCount).toBe(1);
+    expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+
+    const inputArgs = mockSESv2Client.commandCalls(SendEmailCommand)[0].args[0].input;
+
+    expect(inputArgs?.FromEmailAddress).toBe(fromAddress);
+    expect(inputArgs?.Destination?.ToAddresses?.[0] ?? '').toBe('alice@example.com');
+    expect(inputArgs?.Destination?.CcAddresses?.[0] ?? '').toBe('bob@example.com');
+
+    const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
+    expect(parsed.subject).toBe('Hello');
+    expect(parsed.text).toBe('Hello Alice\n');
+  });
+
   test('Send with attachments', async () => {
     await sendEmail(systemRepo, {
       to: 'alice@example.com',

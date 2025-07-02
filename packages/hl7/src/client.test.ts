@@ -1,6 +1,7 @@
-import { Hl7Message } from '@medplum/core';
+import { Hl7Message, sleep } from '@medplum/core';
 import { createServer, Socket } from 'node:net';
 import { Hl7Client } from './client';
+import { Hl7Connection } from './connection';
 import { Hl7Server } from './server';
 
 describe('Hl7Client', () => {
@@ -200,7 +201,7 @@ describe('Hl7Client', () => {
       });
     });
 
-    await server.start(port);
+    server.start(port);
 
     // Create client
     const client = new Hl7Client({
@@ -231,5 +232,55 @@ describe('Hl7Client', () => {
 
     // Should only have seen one connection
     expect(connectionCount).toBe(1);
+  });
+
+  test('Creates new connection whenever connection is closed from other side and a new message is sent', async () => {
+    const port = getRandomPort();
+
+    let serverSideConnection!: Hl7Connection;
+
+    // Create a server that tracks connection counts
+    const server = new Hl7Server((connection) => {
+      serverSideConnection = connection;
+      connection.addEventListener('message', ({ message }) => {
+        connection.send(message.buildAck());
+      });
+    });
+
+    server.start(port);
+
+    // Create client with keepAlive = true
+    const client = new Hl7Client({
+      host: 'localhost',
+      port,
+      keepAlive: true,
+    });
+
+    let ack = await client.sendAndWait(
+      Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+      )
+    );
+
+    expect(ack).toBeDefined();
+
+    serverSideConnection.close();
+
+    // Need to sleep since close event are emitted on next tick
+    await sleep(0);
+
+    // Should succeed
+    ack = await client.sendAndWait(
+      Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+      )
+    );
+
+    expect(ack).toBeDefined();
+
+    client.close();
+    await server.stop();
   });
 });

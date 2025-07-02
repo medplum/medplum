@@ -1377,6 +1377,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
+    // Binary has no search parameters, so it cannot be restricted by an access policy
+    if (resourceType === 'Binary') {
+      return;
+    }
+
     const expressions: Expression[] = [];
 
     for (const policy of accessPolicy.resource) {

@@ -1,6 +1,10 @@
+---
+sidebar_position: 1
+---
+
 # Sending Orders
 
-This guide explains how laboratory orders work in the Medplum-Health Gorilla integration.
+This guide explains how laboratory orders work in the Medplum-Health Gorilla labs integration.
 
 The high-level workflow for sending laboratory & imaging orders is:
 
@@ -273,13 +277,11 @@ Each individual test within the order is represented by its own `ServiceRequest`
 Several additional FHIR resources provide important order details:
 
 1. **Ask on Entry (AoE) Responses**
-
    - Stored as `QuestionnaireResponse` resources
    - Referenced by each test's `ServiceRequest.supportingInfo`
    - Contains answers to test-specific questions
 
 2. **Specimens**
-
    - The `Specimen` resource tracks specimen details
    - Particularly important for recording `collectionDate` with in-house collections
    - Links specimen type and collection method information
@@ -294,26 +296,22 @@ Several additional FHIR resources provide important order details:
 Orders progress through several states:
 
 1. `draft`
-
    - Initial state from the order form
    - Order has not yet been sent to the Health Gorilla
    - All updates and changes are allowed in Medplum
 
 2. `active`
-
    - Order has been transmitted to Health Gorilla and the performing lab
    - The downstream lab (e.g Quest, Labcorp) consider this order immutable
    - No modifications allowed in lab's system
    - Set by the `send-to-health-gorilla` bot
 
 3. `completed`
-
    - Results have been received
    - Order processing is finished
    - Set by the `receive-from-health-gorilla` bot
 
 4. `on-hold`
-
    - An error occurred during processing
    - Set
    - Error details can be found
