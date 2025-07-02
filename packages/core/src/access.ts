@@ -139,6 +139,10 @@ function matchesAccessPolicyResourcePolicy(
   if (!shallowMatchesResourcePolicy(resourcePolicy, resourceType, interaction)) {
     return false;
   }
+  // Binary has no search parameters, so it cannot be restricted by compartment or criteria
+  if (resourceType === 'Binary') {
+    return true;
+  }
   if (
     resourcePolicy.compartment &&
     !resource.meta?.compartment?.some((c) => c.reference === resourcePolicy.compartment?.reference)
