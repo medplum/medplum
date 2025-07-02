@@ -368,7 +368,7 @@ export class SqlFunction implements Expression {
 
 export class UnionAllBuilder {
   private queryCount: number = 0;
-  private sql: SqlBuilder;
+  sql: SqlBuilder;
 
   constructor() {
     this.sql = new SqlBuilder();
