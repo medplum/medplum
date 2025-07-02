@@ -1,6 +1,6 @@
 import { Stack } from '@mantine/core';
 import { Communication } from '@medplum/fhirtypes';
-import { JSX, useEffect, useState } from 'react';
+import { JSX, useEffect, useState, useMemo } from 'react';
 import { ChatListItem } from './ChatListItem';
 import { createReference, getReferenceString } from '@medplum/core';
 import { useMedplum } from '@medplum/react';
@@ -19,9 +19,11 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
     { id: string; communication: Communication }[] | undefined
   >(undefined);
 
+  // Create a stable reference to communication IDs to prevent unnecessary re-fetches
+  const communicationReferences = useMemo(() => communications.map((c) => createReference(c)), [communications]);
+
   useEffect(() => {
     const fetchLastCommunications = async (): Promise<void> => {
-      const communicationReferences = communications.map((communication) => createReference(communication));
       const allCommunications = await medplum.graphql(`
         query {
           CommunicationList(
@@ -45,22 +47,16 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
           communication: communication,
         };
       });
-
       setLastCommunications(lastCommunications);
     };
 
-    fetchLastCommunications().catch((error) => {
-      showErrorNotification(error);
-    });
-  }, [communications, medplum]);
+    fetchLastCommunications().catch(showErrorNotification);
+  }, [communicationReferences, medplum]);
 
   return (
     <Stack gap={0} p="xs">
       {communications.map((communication: Communication) => {
         const lastCommunication = lastCommunications?.find((lc) => lc.id === communication.id)?.communication;
-        if (!lastCommunication) {
-          return null;
-        }
         const _isSelected = selectedCommunication?.id === communication.id;
         return (
           <ChatListItem
