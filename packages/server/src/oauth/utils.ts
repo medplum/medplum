@@ -965,7 +965,7 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
     return;
   }
 
-  if (!authState.membership.admin) {
+  if (!authState.membership.admin && !authState.project.superAdmin) {
     throw new OperationOutcomeError(forbidden);
   }
 
