@@ -787,7 +787,7 @@ function buildCodingTable(result: SchemaDefinition): void {
         indexType: 'btree',
         unique: true,
         include: ['id'],
-        where: `NOT "isSynonym"`,
+        where: `"isSynonym" = false`,
         indexNameSuffix: 'preferred_idx',
       },
       { columns: ['system', 'code', 'display'], indexType: 'btree', unique: true },

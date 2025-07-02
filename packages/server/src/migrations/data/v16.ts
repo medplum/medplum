@@ -27,7 +27,7 @@ async function run(client: PoolClient, results: MigrationActionResult[]): Promis
     client,
     results,
     'Coding_system_code_preferred_idx',
-    `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "Coding_system_code_preferred" ON "Coding" ("system", "code") INCLUDE ("id") WHERE (NOT "isSynonym")`
+    `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "Coding_system_code_preferred_idx" ON "Coding" ("system", "code") INCLUDE ("id") WHERE ("isSynonym" = false)`
   );
   await fns.idempotentCreateIndex(
     client,
