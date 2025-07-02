@@ -36,8 +36,7 @@ export async function preCommitValidation(
   project: WithId<Project> | undefined,
   resource: WithId<Resource>,
   interaction: BackgroundJobInteraction
-): Promise<Resource | undefined> {
-  // exit if the author is blacklisted from using pre-commit
+): Promise<Resource | boolean | undefined> {
   // or if the server does not have pre-commit enabled
   // or if the project does not have pre-commit enabled
   if (
