@@ -76,9 +76,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       );
     }
 
-    return (
-      <></>
-    );
+    return <></>;
   };
 
   return (
@@ -167,7 +165,6 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
     </>
   );
 };
-
 
 const getStatusColor = (status: Encounter['status']): string => {
   if (status === 'finished') {
