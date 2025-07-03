@@ -40,7 +40,7 @@ The following sections outline the primary functionality of the Medplum Provider
   * [Editing Patient Demographics](./provider/patient-profile#editing-patient-demographics)
   * [Updating the Patient Summary Sidebar](./provider/patient-profile#updating-the-patient-summary-sidebar)
 
-#### [Schedule] (./provider/schedule#scheduling-a-visit)
+#### [Schedule](./provider/schedule#scheduling-a-visit)
   * [Scheduling a Visit](./provider/schedule#scheduling-a-visit)  
   * [Setting Provider Availability](./provider/schedule#setting-provider-availability)  
 
