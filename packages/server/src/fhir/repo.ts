@@ -636,7 +636,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private checkResourcePermissions(resource: Resource, interaction: AccessPolicyInteraction): Resource {
+  private checkResourcePermissions<T extends Resource>(resource: T, interaction: AccessPolicyInteraction): T {
     if (!isResourceWithId(resource)) {
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
@@ -665,17 +665,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   ): Promise<WithId<T>> {
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
     const { resourceType, id } = resource;
-    resource = this.checkResourcePermissions(resource, interaction) as T;
+    resource = this.checkResourcePermissions(resource, interaction);
 
     const preCommitResult = await preCommitValidation(
       this.context.author,
       this.context.projects?.[0],
-      resource as WithId<Resource>,
+      resource,
       'update'
     );
 
     if (isResourceWithId(preCommitResult, resource.resourceType) && preCommitResult.id === resource.id) {
-      resource = this.checkResourcePermissions(preCommitResult as T, interaction) as T;
+      resource = this.checkResourcePermissions(preCommitResult, interaction);
     }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id as string);
