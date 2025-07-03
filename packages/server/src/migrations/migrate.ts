@@ -724,6 +724,18 @@ function buildHumanNameTable(result: SchemaDefinition): void {
     ['name', 'given', 'family'],
     [
       {
+        columns: [{ expression: 'name gin_trgm_ops', name: 'nameTrgm' }],
+        indexType: 'gin',
+      },
+      {
+        columns: [{ expression: 'given gin_trgm_ops', name: 'givenTrgm' }],
+        indexType: 'gin',
+      },
+      {
+        columns: [{ expression: 'family gin_trgm_ops', name: 'familyTrgm' }],
+        indexType: 'gin',
+      },
+      {
         columns: [{ expression: "to_tsvector('simple'::regconfig, name)", name: 'name' }],
         indexType: 'gin',
         unique: false,
@@ -791,9 +803,7 @@ function buildCodingTable(result: SchemaDefinition): void {
         indexNameSuffix: 'preferred_idx',
       },
       { columns: ['system', 'code', 'display'], indexType: 'btree', unique: true },
-      // This index definition is cheating since "display gin_trgm_ops" is of course not just a column name
-      // It should have a special parser
-      { columns: ['system', 'display gin_trgm_ops'], indexType: 'gin' },
+      { columns: ['system', { expression: 'display gin_trgm_ops', name: 'displayTrgm' }], indexType: 'gin' },
     ],
   });
 }

@@ -37,19 +37,17 @@ export const Operator = {
       sql.appendParameters(parameter, true);
     }
   },
-  LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+  LOWER_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.append('LOWER(');
     sql.appendColumn(column);
     sql.append(')');
     sql.append(' LIKE ');
     sql.param((parameter as string).toLowerCase());
   },
-  NOT_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
-    sql.append('LOWER(');
+  ILIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.appendColumn(column);
-    sql.append(')');
-    sql.append(' NOT LIKE ');
-    sql.param((parameter as string).toLowerCase());
+    sql.append(' ILIKE ');
+    sql.param(parameter as string);
   },
   '<': simpleBinaryOperator('<'),
   '<=': simpleBinaryOperator('<='),
