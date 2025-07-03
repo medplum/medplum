@@ -1,11 +1,11 @@
-import { CloseButton, Paper } from '@mantine/core';
+import { CloseButton, Paper, PaperProps } from '@mantine/core';
 import { createReference, HTTP_HL7_ORG, ProfileResource } from '@medplum/core';
 import { Signature } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { JSX, useEffect, useRef } from 'react';
 import SignaturePad from 'signature_pad';
 
-export interface SignatureInputProps {
+export interface SignatureInputProps extends PaperProps {
   readonly width?: number;
   readonly height?: number;
   readonly defaultValue?: Signature;
@@ -14,7 +14,7 @@ export interface SignatureInputProps {
 
 export function SignatureInput(props: SignatureInputProps): JSX.Element {
   const medplum = useMedplum();
-  const { defaultValue, onChange } = props;
+  const { width = 500, height = 200, defaultValue, onChange, ...rest } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePad>(null);
 
@@ -59,11 +59,8 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
     }
   };
 
-  const width = props.width ?? 500;
-  const height = props.height ?? 200;
-
   return (
-    <Paper withBorder p={0} w={width} h={height} pos="relative">
+    <Paper withBorder p={0} w={width} h={height} pos="relative" {...rest}>
       <canvas ref={canvasRef} width={width} height={height} aria-label="Signature input area"></canvas>
       <CloseButton onClick={clearSignature} aria-label="Clear signature" pos="absolute" top={0} right={0} />
     </Paper>
