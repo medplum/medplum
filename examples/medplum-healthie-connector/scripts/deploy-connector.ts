@@ -80,7 +80,7 @@ async function deployBot(medplum: MedplumClient, bot: WithId<Bot>, baseFilename:
 function connectToMedplum(): MedplumClient {
   const args = process.argv.slice(2);
   if (args.length < 3) {
-    console.error('Usage: ts-node deploy-connector.ts <PROJECT_ID> <CLIENT_ID> <CLIENT_SECRET>');
+    console.error('Usage: ts-node deploy-connector.ts <PROJECT_ID> <CLIENT_ID> <CLIENT_SECRET> [<BASE_URL>]');
     process.exit(1);
   }
 

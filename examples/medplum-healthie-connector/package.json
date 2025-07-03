@@ -4,10 +4,9 @@
   "description": "Medplum Healthie Connector",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
-  "type": "module",
   "scripts": {
     "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
-    "deploy": "npm run build && node --loader ts-node/esm scripts/deploy-bots.ts",
+    "deploy": "ts-node scripts/deploy-connector.ts",
     "clean": "rimraf dist",
     "lint": "eslint src/",
     "prettier": "prettier --write .",
@@ -44,13 +43,8 @@
     "@vitest/ui": "3.1.1",
     "esbuild": "0.25.2",
     "fast-glob": "3.3.3",
-    "fast-xml-parser": "5.0.9",
-    "form-data": "4.0.2",
     "node-fetch": "2.7.0",
-    "pdfmake": "0.2.18",
-    "rimraf": "6.0.1",
-    "ssh2-sftp-client": "12.0.0",
-    "stripe": "17.7.0",
+    "ts-node": "10.9.2",
     "typescript": "5.8.2",
     "vitest": "3.1.1"
   }
