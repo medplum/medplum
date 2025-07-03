@@ -2101,7 +2101,7 @@ describe('App', () => {
       }
       clearTimeout(timeout);
 
-      expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade'], {
+      expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade', '4.3.1'], {
         detached: true,
         stdio: ['ignore', 42, 42, 'ipc'],
       });
