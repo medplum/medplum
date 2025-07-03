@@ -33,12 +33,6 @@ enum HTTP_VERBS {
  * @param verb - The HTTP method to use (PUT for create/update, DELETE for deletion)
  * @returns Promise that resolves to true if successful
  * @throws OperationOutcomeError if the sync fails
- *
- * @example
- * ```typescript
- * const patient: Patient = { resourceType: 'Patient', id: '123' };
- * await syncHapiResource(patient, HTTP_VERBS['PUT']);
- * ```
  */
 async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<boolean> {
   try {
@@ -141,12 +135,6 @@ async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<boo
  * @param event - The bot event containing patient data and headers
  * @returns Promise that resolves when sync is complete
  * @throws OperationOutcomeError if sync fails
- *
- * @example
- * Triggered automatically by Medplum when patient resources are modified
- *
- * Event structure:
- * ```typescript
  * {
  *   input: Patient,
  *   headers: {
