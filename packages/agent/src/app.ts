@@ -695,7 +695,7 @@ export class App {
     try {
       const command = __filename;
       const logFile = openSync(UPGRADER_LOG_PATH, 'w+');
-      child = spawn(command, ['--upgrade', message.version], {
+      child = spawn(command, message.version ? ['--upgrade', message.version] : ['--upgrade'], {
         detached: true,
         stdio: ['ignore', logFile, logFile, 'ipc'],
       });
