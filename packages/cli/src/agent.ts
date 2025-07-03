@@ -203,7 +203,7 @@ agentUpgradeCommand
   )
   .option(
     '--force',
-    'Used to force an upgrade in a scenario where a pending upgrade may have gotten into a bad state. USE AT YOUR OWN RISK!'
+    'Forces an upgrade when a pending upgrade is in an inconsistent state. Use with caution.'
   )
   .addOption(
     new Option('--output <format>', 'An optional output format, defaults to table')
