@@ -1,5 +1,5 @@
 import { CloseButton, Paper } from '@mantine/core';
-import { createReference, ProfileResource } from '@medplum/core';
+import { createReference, HTTP_HL7_ORG, ProfileResource } from '@medplum/core';
 import { Signature } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { JSX, useEffect, useRef } from 'react';
@@ -26,14 +26,14 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
       onChangeRef.current?.({
         type: [
           {
-            system: 'http://hl7.org/fhir/signature-type',
+            system: HTTP_HL7_ORG + '/fhir/signature-type',
             code: 'ProofOfOrigin',
             display: 'Proof of Origin',
           },
         ],
         when: new Date().toISOString(),
         who: createReference(medplum.getProfile() as ProfileResource),
-        data: canvasRef.current?.toDataURL(),
+        data: signaturePadRef.current?.toDataURL(),
       });
     }
 
@@ -64,8 +64,8 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
 
   return (
     <Paper withBorder p={0} w={width} h={height} pos="relative">
-      <canvas ref={canvasRef} width={width} height={height} role="img" aria-label="Signature input area"></canvas>
-      <CloseButton onClick={clearSignature} pos="absolute" top={0} right={0} />
+      <canvas ref={canvasRef} width={width} height={height} aria-label="Signature input area"></canvas>
+      <CloseButton onClick={clearSignature} aria-label="Clear signature" pos="absolute" top={0} right={0} />
     </Paper>
   );
 }
