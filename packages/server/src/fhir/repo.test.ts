@@ -53,10 +53,7 @@ import { SelectQuery } from './sql';
 jest.mock('hibp');
 
 describe('FHIR Repo', () => {
-  const testProject: WithId<Project> = {
-    resourceType: 'Project',
-    id: randomUUID(),
-  };
+  let testProject: WithId<Project>;
 
   let testProjectRepo: Repository;
   let systemRepo: Repository;
@@ -64,6 +61,11 @@ describe('FHIR Repo', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
+
+    testProject = await getSystemRepo().createResource({
+      resourceType: 'Project',
+      id: randomUUID(),
+    });
     testProjectRepo = new Repository({
       projects: [testProject],
       extendedMode: true,
@@ -85,7 +87,10 @@ describe('FHIR Repo', () => {
     await expect(() =>
       getRepoForLogin({
         login: { resourceType: 'Login' } as Login,
-        membership: { resourceType: 'ProjectMembership' } as WithId<ProjectMembership>,
+        membership: {
+          resourceType: 'ProjectMembership',
+          project: createReference(testProject),
+        } as WithId<ProjectMembership>,
         project: testProject,
         userConfig: {} as UserConfiguration,
       })
@@ -1205,6 +1210,7 @@ describe('FHIR Repo', () => {
 
   test('Handles caching of profile from linked project', async () =>
     withTestContext(async () => {
+      const systemRepo = getSystemRepo();
       const { membership, project } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
@@ -1220,7 +1226,10 @@ describe('FHIR Repo', () => {
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      project.link = [{ project: createReference(project2) }];
+      const updatedProject = await systemRepo.updateResource({
+        ...project,
+        link: [{ project: createReference(project2) }],
+      });
 
       const repo2 = await getRepoForLogin({
         login: {} as Login,
@@ -1244,17 +1253,20 @@ describe('FHIR Repo', () => {
       let repo = await getRepoForLogin({
         login: {} as Login,
         membership,
-        project,
+        project: updatedProject,
         userConfig: {} as UserConfiguration,
       });
       await expect(repo.createResource(patientJson)).rejects.toThrow(/Missing required property/);
 
       // Unlink Project and verify that profile is not cached; resource upload should succeed without access to profile
-      project.link = undefined;
+      const unlinkedProject = await systemRepo.updateResource({
+        ...updatedProject,
+        link: undefined,
+      });
       repo = await getRepoForLogin({
         login: {} as Login,
         membership,
-        project,
+        project: unlinkedProject,
         userConfig: {} as UserConfiguration,
       });
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
