@@ -31,12 +31,12 @@ export function isPreCommitSubscription(subscription: WithId<Subscription>): boo
  * @param interaction - The interaction type (e.g., 'create', 'update', 'delete').
  * @returns The validated resource if a pre-commit bot returns one, otherwise undefined.
  */
-export async function preCommitValidation(
+export async function preCommitValidation<T extends Resource>(
   author: Reference,
   project: WithId<Project> | undefined,
-  resource: WithId<Resource>,
+  resource: T,
   interaction: BackgroundJobInteraction
-): Promise<Resource | boolean | undefined> {
+): Promise<T | boolean | undefined> {
   // reject if the server does not have pre-commit enabled
   // or if the project does not have pre-commit enabled
   if (
