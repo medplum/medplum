@@ -1,11 +1,11 @@
-import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
+import { OperationOutcomeError, WithId, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem, Coding, OperationDefinition } from '@medplum/fhirtypes';
+import { CodeSystem, CodeSystemProperty, Coding, OperationDefinition } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
 import { InsertQuery, SelectQuery } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { findTerminologyResource, parentProperty } from './utils/terminology';
+import { findTerminologyResource, parentProperty, selectCoding } from './utils/terminology';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -66,7 +66,7 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
 
-  let codeSystem: CodeSystem;
+  let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
     codeSystem = await repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
@@ -89,7 +89,7 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 
 export async function importCodeSystem(
   db: PoolClient,
-  codeSystem: CodeSystem,
+  codeSystem: WithId<CodeSystem>,
   concepts?: Coding[],
   properties?: ImportedProperty[]
 ): Promise<void> {
@@ -98,6 +98,7 @@ export async function importCodeSystem(
       system: codeSystem.id,
       code: c.code,
       display: c.display,
+      isSynonym: false,
     }));
     const query = new InsertQuery('Coding', rows).mergeOnConflict(['system', 'code']);
     await query.execute(db);
@@ -119,58 +120,54 @@ function uniqueOn<T>(arr: T[], keyFn: (el: T) => string): T[] {
 
 async function processProperties(
   importedProperties: ImportedProperty[],
-  codeSystem: CodeSystem,
+  codeSystem: WithId<CodeSystem>,
   db: PoolClient
 ): Promise<void> {
-  const cache: Record<string, { id: number; isRelationship: boolean }> = Object.create(null);
+  const cache: Record<string, { id: number; property: CodeSystemProperty }> = Object.create(null);
   const lookupCodes = new Set<string>();
   for (const imported of importedProperties) {
     const propertyCode = imported.property;
     const cacheKey = codeSystem.url + '|' + propertyCode;
-    let { id: propId, isRelationship } = cache[cacheKey] ?? {};
+    let { id: propId, property } = cache[cacheKey] ?? {};
     if (!propId) {
-      [propId, isRelationship] = await resolveProperty(codeSystem, propertyCode, db);
-      cache[cacheKey] = { id: propId, isRelationship };
+      [propId, property] = await resolveProperty(codeSystem, propertyCode, db);
+      cache[cacheKey] = { id: propId, property };
     }
 
     lookupCodes.add(imported.code);
-    if (isRelationship) {
+    if (property.type === 'code') {
       lookupCodes.add(imported.value);
     }
   }
 
   // Batch lookup all Codings with associated properties
-  const codingIds = await new SelectQuery('Coding')
-    .column('id')
-    .column('code')
-    .where('system', '=', codeSystem.id)
-    .where('code', 'IN', lookupCodes)
-    .execute(db);
-
-  const rows = [];
+  const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
+  const rows: Record<string, any>[] = [];
   for (const imported of importedProperties) {
     const sourceCodingId = codingIds.find((r) => r.code === imported.code)?.id;
     if (!sourceCodingId) {
       throw new OperationOutcomeError(badRequest(`Unknown code: ${codeSystem.url}|${imported.code}`));
     }
 
-    const { id: propId, isRelationship } = cache[`${codeSystem.url}|${imported.property}`] ?? {};
+    const { id: propId, property } = cache[`${codeSystem.url}|${imported.property}`] ?? {};
     const targetCodingId = codingIds.find((r) => r.code === imported.value)?.id;
-    const property: Record<string, any> = {
+    rows.push({
       coding: sourceCodingId,
       property: propId,
       value: imported.value,
-      target: isRelationship && targetCodingId ? targetCodingId : null,
-    };
-
-    rows.push(property);
+      target: property.type === 'code' && targetCodingId ? targetCodingId : null,
+    });
   }
 
   const query = new InsertQuery('Coding_Property', rows).ignoreOnConflict();
   await query.execute(db);
 }
 
-async function resolveProperty(codeSystem: CodeSystem, code: string, db: PoolClient): Promise<[number, boolean]> {
+async function resolveProperty(
+  codeSystem: CodeSystem,
+  code: string,
+  db: PoolClient
+): Promise<[number, CodeSystemProperty]> {
   let prop = codeSystem.property?.find((p) => p.code === code);
   if (!prop) {
     if (code === codeSystem.hierarchyMeaning || (code === 'parent' && !codeSystem.hierarchyMeaning)) {
@@ -179,7 +176,6 @@ async function resolveProperty(codeSystem: CodeSystem, code: string, db: PoolCli
       throw new OperationOutcomeError(badRequest(`Unknown property: ${code}`));
     }
   }
-  const isRelationship = prop.type === 'code';
 
   const knownProp = (
     await new SelectQuery('CodeSystem_Property')
@@ -189,7 +185,7 @@ async function resolveProperty(codeSystem: CodeSystem, code: string, db: PoolCli
       .execute(db)
   )[0];
   if (knownProp) {
-    return [knownProp.id, isRelationship];
+    return [knownProp.id, prop];
   }
 
   const newProp = (
@@ -205,5 +201,5 @@ async function resolveProperty(codeSystem: CodeSystem, code: string, db: PoolCli
       .returnColumn('id')
       .execute(db)
   ).rows[0];
-  return [newProp.id, isRelationship];
+  return [newProp.id, prop];
 }

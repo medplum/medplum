@@ -7,6 +7,7 @@ import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject, initTestAuth } from '../../test.setup';
 import { Column, Condition, SelectQuery } from '../sql';
+import { selectCoding } from './utils/terminology';
 
 const app = express();
 
@@ -107,7 +108,8 @@ describe('CodeSystem $import', () => {
       });
     expect(res2.status).toStrictEqual(200);
 
-    await assertCodeExists(snomed.id, '37931006');
+    const coding = await assertCodeExists(snomed.id, '37931006');
+    expect(coding.isSynonym).toBe(false);
     await assertCodeExists(snomed.id, '315306007');
     await assertPropertyExists(snomed.id, '37931006', 'parent', '315306007');
   });
@@ -293,10 +295,8 @@ describe('CodeSystem $import', () => {
 
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {
   const db = getDatabasePool(DatabaseMode.READER);
-  const coding = await new SelectQuery('Coding')
-    .column('id')
-    .where('system', '=', system)
-    .where('code', '=', code)
+  const coding = await selectCoding(system as string, code)
+    .column('isSynonym')
     .execute(db);
   expect(coding).toHaveLength(1);
   return coding[0];

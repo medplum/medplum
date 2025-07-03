@@ -1,4 +1,4 @@
-import { OperationOutcomeError, allOk, badRequest } from '@medplum/core';
+import { OperationOutcomeError, WithId, allOk, badRequest } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   CodeSystem,
@@ -10,11 +10,10 @@ import {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode } from '../../database';
-import { Column, SelectQuery } from '../sql';
 import { validateCoding } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { addPropertyFilter, findAncestor, findTerminologyResource } from './utils/terminology';
+import { addPropertyFilter, findAncestor, findTerminologyResource, selectCoding } from './utils/terminology';
 
 const operation = getOperationDefinition('ValueSet', 'validate-code');
 
@@ -91,7 +90,7 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
     );
   }
 
-  const candidates = codings.filter((c) => c.system === include.system);
+  const candidates = codings.filter((c) => c.system === include.system && c.code) as (Coding & { code: string })[];
   if (!candidates.length) {
     return undefined;
   }
@@ -101,7 +100,9 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
   } else if (include.filter) {
     const codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', include.system);
     for (const coding of candidates) {
-      const filterResults = await Promise.all(include.filter.map((filter) => satisfies(coding, filter, codeSystem)));
+      const filterResults = await Promise.all(
+        include.filter.map((filter) => satisfies(coding.code, filter, codeSystem))
+      );
       if (filterResults.every((r) => r)) {
         return coding;
       }
@@ -114,17 +115,12 @@ async function findIncludedCode(include: ValueSetComposeInclude, ...codings: Cod
 }
 
 async function satisfies(
-  coding: Coding,
+  code: string,
   filter: ValueSetComposeIncludeFilter,
-  codeSystem: CodeSystem
+  codeSystem: WithId<CodeSystem>
 ): Promise<boolean> {
   const { logger, repo } = getAuthenticatedContext();
-  let query = new SelectQuery('Coding')
-    .column('id')
-    .column('code')
-    .column('display')
-    .where(new Column('Coding', 'system'), '=', codeSystem.id)
-    .where(new Column('Coding', 'code'), '=', coding.code);
+  let query = selectCoding(codeSystem.id, code);
 
   switch (filter.op) {
     case '=':
