@@ -201,10 +201,7 @@ agentUpgradeCommand
     '--agentVersion <version>',
     'An optional agent version to upgrade to. Defaults to the latest version if flag not included'
   )
-  .option(
-    '--force',
-    'Forces an upgrade when a pending upgrade is in an inconsistent state. Use with caution.'
-  )
+  .option('--force', 'Forces an upgrade when a pending upgrade is in an inconsistent state. Use with caution.')
   .addOption(
     new Option('--output <format>', 'An optional output format, defaults to table')
       .choices(['table', 'json'])
