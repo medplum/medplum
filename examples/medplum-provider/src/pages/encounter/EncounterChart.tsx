@@ -7,7 +7,8 @@ import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { usePatient } from '../../hooks/usePatient';
 import { showErrorNotification } from '../../utils/notifications';
-import { EncounterHeader } from '../../components/Encounter/EncounterHeader';
+import { updateEncounterStatus } from '../../utils/encounter';
+import { EncounterHeader } from '../../components/encounter/EncounterHeader';
 import { TaskPanel } from '../../components/encountertasks/TaskPanel';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 import { BillingTab } from './BillingTab';
@@ -24,6 +25,7 @@ export const EncounterChart = (): JSX.Element => {
     tasks,
     clinicalImpression,
     chargeItems,
+    appointment,
     setEncounter,
     setClaim,
     setPractitioner,
@@ -46,31 +48,13 @@ export const EncounterChart = (): JSX.Element => {
         return;
       }
       try {
-        const updatedEncounter: Encounter = {
-          ...encounter,
-          status: newStatus,
-          ...(newStatus === 'in-progress' &&
-            !encounter.period?.start && {
-              period: {
-                ...encounter.period,
-                start: new Date().toISOString(),
-              },
-            }),
-          ...(newStatus === 'finished' &&
-            !encounter.period?.end && {
-              period: {
-                ...encounter.period,
-                end: new Date().toISOString(),
-              },
-            }),
-        };
-        await medplum.updateResource(updatedEncounter);
+        const updatedEncounter = await updateEncounterStatus(medplum, encounter, appointment, newStatus);
         setEncounter(updatedEncounter);
       } catch (err) {
         showErrorNotification(err);
       }
     },
-    [encounter, medplum, setEncounter]
+    [encounter, medplum, setEncounter, appointment]
   );
 
   const handleTabChange = (tab: string): void => {

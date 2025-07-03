@@ -13,7 +13,7 @@ import {
 } from '@medplum/fhirtypes';
 import { IconDownload, IconFileText, IconSend } from '@tabler/icons-react';
 import { JSX, useCallback, useEffect, useState } from 'react';
-import { VisitDetailsPanel } from '../../components/Encounter/VisitDetailsPanel';
+import { VisitDetailsPanel } from '../../components/encounter/VisitDetailsPanel';
 import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import { showErrorNotification } from '../../utils/notifications';
 import { useMedplum } from '@medplum/react';

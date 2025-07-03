@@ -1,5 +1,6 @@
 import { getReferenceString, MedplumClient, createReference, formatHumanName } from '@medplum/core';
 import {
+  Appointment,
   ChargeItem,
   ClinicalImpression,
   Coding,
@@ -151,4 +152,53 @@ async function createChargeItemFromServiceRequest(
   };
 
   await medplum.createResource(chargeItem);
+}
+
+export async function updateEncounterStatus(
+  medplum: MedplumClient,
+  encounter: Encounter,
+  appointment: Appointment | undefined,
+  newStatus: Encounter['status']
+): Promise<Encounter> {
+  const updatedEncounter: Encounter = {
+    ...encounter,
+    status: newStatus,
+    ...(newStatus === 'in-progress' &&
+      !encounter.period?.start && {
+        period: {
+          ...encounter.period,
+          start: new Date().toISOString(),
+        },
+      }),
+    ...(newStatus === 'finished' &&
+      !encounter.period?.end && {
+        period: {
+          ...encounter.period,
+          end: new Date().toISOString(),
+        },
+      }),
+  };
+
+  if (appointment) {
+    const updatedAppointment: Appointment = appointment;
+    switch (newStatus) {
+      case 'cancelled':
+        updatedAppointment.status = 'cancelled';
+        break;
+      case 'finished':
+        updatedAppointment.status = 'fulfilled';
+        break;
+      case 'in-progress':
+        updatedAppointment.status = 'checked-in';
+        break;
+      case 'arrived':
+        updatedAppointment.status = 'arrived';
+        break;
+      default:
+        break;
+    }
+    await medplum.updateResource(updatedAppointment);
+  }
+
+  return medplum.updateResource(updatedEncounter);
 }
