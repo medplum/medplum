@@ -65,7 +65,7 @@ export function MessagesPage(): JSX.Element {
           <Flex direction="column" w="25%" h="100%" style={{ borderRight: '1px solid var(--mantine-color-gray-3)' }}>
             <Paper h="100%">
               <ScrollArea h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
-                <Flex p="md" justify="space-between">
+                <Flex h={64} align="center" justify="space-between" p="md">
                   <Text fz="h4" fw={800} truncate>
                     Messages
                   </Text>
@@ -83,9 +83,7 @@ export function MessagesPage(): JSX.Element {
                     <ChatList
                       communications={threadMessages}
                       selectedCommunication={selectedThread}
-                      onClick={(thread) => {
-                        setSelectedThread(thread);
-                      }}
+                      onClick={setSelectedThread}
                     />
                   )
                 )}
@@ -103,7 +101,6 @@ export function MessagesPage(): JSX.Element {
                       {selectedThread.topic?.text ?? 'Messages'}
                     </Text>
 
-                    {/* {selectedThread.status !== 'completed' && ( */}
                     <Menu position="bottom-end" shadow="md">
                       <Menu.Target>
                         <Button
@@ -131,7 +128,6 @@ export function MessagesPage(): JSX.Element {
                         </>
                       )}
                     </Menu>
-                    {/* )} */}
                   </Flex>
                   <Divider />
                   <Flex direction="column" h="100%">
@@ -139,6 +135,7 @@ export function MessagesPage(): JSX.Element {
                       key={`${getReferenceString(selectedThread)}`}
                       title={'Messages'}
                       thread={selectedThread}
+                      excludeHeader={true}
                     />
                   </Flex>
                 </Stack>
