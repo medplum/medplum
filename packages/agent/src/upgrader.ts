@@ -3,6 +3,7 @@ import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { platform } from 'node:os';
 import process from 'node:process';
+import * as semver from 'semver';
 import { downloadRelease, getReleaseBinPath } from './upgrader-utils';
 
 export async function upgraderMain(argv: string[]): Promise<void> {
@@ -49,6 +50,14 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   clearTimeout(disconnectTimeout);
 
   try {
+    // If downgrading to a pre-zero-downtime agent (pre-4.2.4), stop and uninstall the current agent service before continuing
+    if (semver.lt(version, '4.2.4')) {
+      // Call the current binary with the --remove-old-services and the --all flags to remove all existing agent services before installing the "new" (old, pre-4.2.4) agent
+      globalLogger.info('Uninstalling the current agent service before installing the pre-zero-downtime agent...');
+      spawnSync(__filename, ['--remove-old-services', '--all']);
+      globalLogger.info('Successfully uninstalled all existing agent services');
+    }
+
     // Run installer
     globalLogger.info('Running installer silently', { binPath });
     spawnSync(`"${binPath}" /S`, { windowsHide: true, shell: true });
