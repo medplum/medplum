@@ -45,7 +45,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
   const formattedDate = formatDate(encounter.period?.start);
   const encounterDetail = formattedDate ? `${formattedDate} · ${practitionerName}` : practitionerName;
 
-  const renderMenuItems = (): JSX.Element => {
+  const renderMenuItems = (): JSX.Element | null => {
     if (status === 'planned') {
       return (
         <>
@@ -76,9 +76,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       );
     }
 
-    return (
-      <></>
-    );
+    return null;
   };
 
   return (
