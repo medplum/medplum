@@ -56,6 +56,11 @@ export async function upgraderMain(argv: string[]): Promise<void> {
       globalLogger.info('Uninstalling the current agent service before installing the pre-zero-downtime agent...');
       spawnSync(__filename, ['--remove-old-services', '--all']);
       globalLogger.info('Successfully uninstalled all existing agent services');
+
+      // We use this command to create a mock 'MedplumAgent' service, which allows us to preserve the agent.properties file by opting into the 'Upgrade' installer path
+      globalLogger.info('Creating mock MedplumAgent service to opt into "Upgrade" path in installer...');
+      execSync('sc.exe create MedplumAgent binPath=cmd.exe');
+      globalLogger.info('Successfully created mock service');
     }
 
     // Run installer
