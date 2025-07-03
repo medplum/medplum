@@ -98,7 +98,7 @@ export class HealthieClient {
   async fetchMedications(patientId: string): Promise<HealthieMedicationType[]> {
     const query = `
       query {
-        medications(userId: "${patientId}") {
+        medications(patient_id: "${patientId}") {
           id
           name
           active

@@ -11,8 +11,11 @@ import {
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   const { HEALTHIE_API_URL, HEALTHIE_CLIENT_SECRET } = event.secrets;
-  if (!HEALTHIE_API_URL?.valueString || !HEALTHIE_CLIENT_SECRET?.valueString) {
-    throw new Error('HEALTHIE_API_URL and HEALTHIE_CLIENT_SECRET must be set');
+  if (!HEALTHIE_API_URL?.valueString) {
+    throw new Error('HEALTHIE_API_URL must be set');
+  }
+  if (!HEALTHIE_CLIENT_SECRET?.valueString) {
+    throw new Error('HEALTHIE_CLIENT_SECRET must be set');
   }
 
   const healthie = new HealthieClient(HEALTHIE_API_URL.valueString, HEALTHIE_CLIENT_SECRET.valueString);
