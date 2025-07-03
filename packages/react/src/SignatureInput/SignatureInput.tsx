@@ -40,7 +40,7 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
     if (canvasRef.current) {
       const signaturePad = new SignaturePad(canvasRef.current);
       if (defaultValue?.data) {
-        signaturePad.fromDataURL(defaultValue.data);
+        signaturePad.fromDataURL(defaultValue.data).catch(console.error);
       }
       signaturePad.addEventListener('endStroke', handleEndStroke);
       signaturePadRef.current = signaturePad;
