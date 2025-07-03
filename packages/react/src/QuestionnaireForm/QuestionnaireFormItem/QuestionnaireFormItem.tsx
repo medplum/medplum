@@ -269,8 +269,6 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
         );
       } else if (isDropdownChoice(item) || (item.answerValueSet && !isRadiobuttonChoice(item))) {
         // defaults answervalueset items to dropdown and everything else to radio button
-
-        console.log('props.required', props.required, item.required);
         formComponent = (
           <QuestionnaireDropdownInput
             name={name}
