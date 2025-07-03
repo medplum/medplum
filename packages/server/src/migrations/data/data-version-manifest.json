@@ -57,6 +57,9 @@
     "serverVersion": "4.3.0"
   },
   "v16": {
-    "serverVersion": "4.3.1"
+    "serverVersion": "4.3.3"
+  },
+  "v17": {
+    "serverVersion": "4.3.3"
   }
 }
