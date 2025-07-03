@@ -244,7 +244,7 @@ For a more thorough example implementing this bot, see the Provider App's [DoseS
       "url": "https://dosespot.com/prescription-status",
       "valueCode": "PharmacyVerified"
     }
-  ]
+  ],
   "intent": "order", // designates this as an active prescription ordered in DoseSpot
   "medicationCodeableConcept": {
     "coding": [
