@@ -2705,11 +2705,7 @@ describe('QuestionnaireForm', () => {
             text: 'Required Radio Choice',
             type: QuestionnaireItemType.choice,
             required: true,
-            answerOption: [
-              { valueString: 'Option 1' },
-              { valueString: 'Option 2' },
-              { valueString: 'Option 3' },
-            ],
+            answerOption: [{ valueString: 'Option 1' }, { valueString: 'Option 2' }, { valueString: 'Option 3' }],
           },
         ],
       },
@@ -2752,11 +2748,7 @@ describe('QuestionnaireForm', () => {
             text: 'Required Dropdown Choice',
             type: QuestionnaireItemType.choice,
             required: true,
-            answerOption: [
-              { valueString: 'Option A' },
-              { valueString: 'Option B' },
-              { valueString: 'Option C' },
-            ],
+            answerOption: [{ valueString: 'Option A' }, { valueString: 'Option B' }, { valueString: 'Option C' }],
             extension: [
               {
                 url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
@@ -2906,5 +2898,4 @@ describe('QuestionnaireForm', () => {
 
     expect(onSubmit).toHaveBeenCalled();
   });
-
 });
