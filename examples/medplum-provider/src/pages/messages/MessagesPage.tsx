@@ -165,7 +165,7 @@ export function MessagesPage(): JSX.Element {
   );
 }
 
-function getStatusColor(status: string): string {
+function getStatusColor(status: Communication['status']): string {
   if (status === 'completed') {
     return 'green';
   }
