@@ -636,7 +636,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private checkResourcePermissions(resource: Resource, create: boolean): void {
+  private checkResourcePermissions(resource: Resource, interaction: AccessPolicyInteraction): Resource {
     if (!isResourceWithId(resource)) {
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
@@ -644,7 +644,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
-    const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
 
     // Add default profiles before validating resource
     if (!resource.meta?.profile && this.currentProject()?.defaultProfile) {
@@ -656,6 +655,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.supportsInteraction(interaction, resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
+    return resource;
   }
 
   private async updateResourceImpl<T extends Resource>(
@@ -663,21 +663,22 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     create: boolean,
     versionId?: string
   ): Promise<WithId<T>> {
-    this.checkResourcePermissions(resource, create);
+    const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
+    const { resourceType, id } = resource;
+    resource = this.checkResourcePermissions(resource, interaction) as T;
 
     const preCommitResult = await preCommitValidation(
       this.context.author,
       this.context.projects?.[0],
-      resource,
-      'update'
+      resource as WithId<Resource>,
+       'update'
     );
 
-    if (isResourceWithId(preCommitResult, resource.resourceType) && preCommitResult.id === resource.id) {
-      this.checkResourcePermissions(preCommitResult, create);
-      resource = preCommitResult as WithId<T>;
+    if (preCommitResult && typeof preCommitResult !== 'boolean' && isResourceWithId(preCommitResult, resource.resourceType) && preCommitResult.id === resource.id) {
+      resource = this.checkResourcePermissions(preCommitResult as T, interaction) as T;
     }
 
-    const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
+    const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id as string);
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
       if (!this.canPerformInteraction(interaction, existing)) {
