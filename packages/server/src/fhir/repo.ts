@@ -671,10 +671,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       this.context.author,
       this.context.projects?.[0],
       resource as WithId<Resource>,
-       'update'
+      'update'
     );
 
-    if (preCommitResult && typeof preCommitResult !== 'boolean' && isResourceWithId(preCommitResult, resource.resourceType) && preCommitResult.id === resource.id) {
+    if (
+      preCommitResult &&
+      typeof preCommitResult !== 'boolean' &&
+      isResourceWithId(preCommitResult, resource.resourceType) &&
+      preCommitResult.id === resource.id
+    ) {
       resource = this.checkResourcePermissions(preCommitResult as T, interaction) as T;
     }
 
