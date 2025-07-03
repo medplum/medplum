@@ -37,7 +37,7 @@ export async function preCommitValidation(
   resource: WithId<Resource>,
   interaction: BackgroundJobInteraction
 ): Promise<Resource | boolean | undefined> {
-  // or if the server does not have pre-commit enabled
+  // reject if the server does not have pre-commit enabled
   // or if the project does not have pre-commit enabled
   if (
     !getConfig().preCommitSubscriptionsEnabled ||
