@@ -120,6 +120,8 @@ export abstract class LookupTable {
     }
   }
 
+  protected readonly CONTAINS_SQL_OPERATOR: 'ILIKE' | 'LOWER_LIKE' = 'LOWER_LIKE';
+
   /**
    * Builds a "where" condition for the select query builder.
    * @param _selectQuery - The select query builder.
@@ -145,7 +147,11 @@ export abstract class LookupTable {
         disjunction.expressions.push(new Condition(new Column(lookupTableName, columnName), '=', option.trim()));
       } else if (filter.operator === FhirOperator.CONTAINS) {
         disjunction.expressions.push(
-          new Condition(new Column(lookupTableName, columnName), 'LIKE', `%${escapeLikeString(option)}%`)
+          new Condition(
+            new Column(lookupTableName, columnName),
+            this.CONTAINS_SQL_OPERATOR,
+            `%${escapeLikeString(option)}%`
+          )
         );
       } else {
         disjunction.expressions.push(

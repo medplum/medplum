@@ -175,16 +175,16 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" <> $1');
     });
 
-    test('Select where like', () => {
+    test('Select where lower like', () => {
       const sql = new SqlBuilder();
-      new SelectQuery('MyTable').column('id').where('name', 'LIKE', 'x').buildSql(sql);
+      new SelectQuery('MyTable').column('id').where('name', 'LOWER_LIKE', 'x').buildSql(sql);
       expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") LIKE $1');
     });
 
-    test('Select where not like', () => {
+    test('Select where ilike', () => {
       const sql = new SqlBuilder();
-      new SelectQuery('MyTable').column('id').where('name', 'NOT_LIKE', 'x').buildSql(sql);
-      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") NOT LIKE $1');
+      new SelectQuery('MyTable').column('id').where('name', 'ILIKE', 'x').buildSql(sql);
+      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" ILIKE $1');
     });
 
     test('Select missing columns', () => {

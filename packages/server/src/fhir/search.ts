@@ -1172,9 +1172,9 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
     if (operator === Operator.EXACT) {
       return new Condition(column, '=', v);
     } else if (operator === Operator.CONTAINS) {
-      return new Condition(column, 'LIKE', `%${escapeLikeString(v)}%`);
+      return new Condition(column, 'LOWER_LIKE', `%${escapeLikeString(v)}%`);
     } else if (prefixMatchOperators.includes(operator)) {
-      return new Condition(column, 'LIKE', `${escapeLikeString(v)}%`);
+      return new Condition(column, 'LOWER_LIKE', `${escapeLikeString(v)}%`);
     } else {
       throw new OperationOutcomeError(badRequest('Unsupported string search operator: ' + operator));
     }

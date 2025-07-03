@@ -42,6 +42,8 @@ export class HumanNameTable extends LookupTable {
     return resourceTypeSet.has(resourceType as any);
   }
 
+  protected readonly CONTAINS_SQL_OPERATOR: LookupTable['CONTAINS_SQL_OPERATOR'] = 'ILIKE';
+
   /**
    * Returns the table name.
    * @returns The table name.
