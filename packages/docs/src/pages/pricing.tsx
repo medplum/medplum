@@ -235,9 +235,7 @@ export default function PricingPage(): JSX.Element {
                 <td></td>
               </tr>
               <tr>
-                <td>
-                  Lab/Diagnostics
-                </td>
+                <td>Lab/Diagnostics</td>
                 <td></td>
                 <td></td>
                 <td>✔️</td>
