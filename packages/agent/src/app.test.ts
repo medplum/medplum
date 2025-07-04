@@ -2101,10 +2101,14 @@ describe('App', () => {
       }
       clearTimeout(timeout);
 
-      expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade', '4.3.1'], {
-        detached: true,
-        stdio: ['ignore', 42, 42, 'ipc'],
-      });
+      expect(spawnSpy).toHaveBeenLastCalledWith(
+        resolve(__dirname, 'app.ts'),
+        ['--upgrade', MEDPLUM_VERSION.split('-')[0]],
+        {
+          detached: true,
+          stdio: ['ignore', 42, 42, 'ipc'],
+        }
+      );
       expect(openSyncSpy).toHaveBeenCalled();
       expect(child.unref).toHaveBeenCalled();
       expect(child.disconnect).toHaveBeenCalled();
