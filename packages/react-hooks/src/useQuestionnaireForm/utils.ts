@@ -2,6 +2,7 @@ import {
   HTTP_HL7_ORG,
   PropertyType,
   TypedValue,
+  capitalize,
   deepClone,
   evalFhirPathTyped,
   getExtension,
@@ -48,18 +49,58 @@ export const QuestionnaireItemType = {
 } as const;
 export type QuestionnaireItemType = (typeof QuestionnaireItemType)[keyof typeof QuestionnaireItemType];
 
+export const QUESTIONNAIRE_ITEM_CONTROL_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-itemControl`;
+export const QUESTIONNAIRE_REFERENCE_FILTER_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-referenceFilter`;
+export const QUESTIONNAIRE_REFERENCE_RESOURCE_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-referenceResource`;
+export const QUESTIONNAIRE_VALIDATION_ERROR_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-validationError`;
+export const QUESTIONNAIRE_ENABLED_WHEN_EXPRESSION_URL = `${HTTP_HL7_ORG}/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-enableWhenExpression`;
+export const QUESTIONNAIRE_CALCULATED_EXPRESSION_URL = `${HTTP_HL7_ORG}/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression`;
+
+/**
+ * Returns true if the item is a choice question.
+ * @param item - The questionnaire item to check.
+ * @returns True if the item is a choice question, false otherwise.
+ */
 export function isChoiceQuestion(item: QuestionnaireItem): boolean {
   return item.type === 'choice' || item.type === 'open-choice';
 }
 
+/**
+ * Returns true if the questionnaire item is enabled based on the enableWhen conditions or expression.
+ * @param item - The questionnaire item to check.
+ * @param questionnaireResponse - The questionnaire response to check against.
+ * @returns True if the question is enabled, false otherwise.
+ */
 export function isQuestionEnabled(
   item: QuestionnaireItem,
   questionnaireResponse: QuestionnaireResponse | undefined
 ): boolean {
-  const extension = getExtension(
-    item,
-    HTTP_HL7_ORG + '/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-enableWhenExpression'
-  );
+  const extensionResult = isQuestionEnabledViaExtension(item, questionnaireResponse);
+  if (extensionResult !== undefined) {
+    return extensionResult;
+  }
+  return isQuestionEnabledViaEnabledWhen(item, questionnaireResponse);
+}
+
+/**
+ * Returns true if the questionnaire item is enabled via an extension expression.
+ *
+ *   An expression that returns a boolean value for whether to enable the item.
+ *   If the expression does not resolve to a boolean, it is considered an error in the design of the Questionnaire.
+ *   Form renderer behavior is undefined.
+ *   Some tools may attempt to force the value to be a boolean (e.g. is it a non-empty collection, non-null, non-zero - if so, then true).
+ *
+ * See: https://build.fhir.org/ig/HL7/sdc/StructureDefinition-sdc-questionnaire-enableWhenExpression.html
+ *
+ * @param item - The questionnaire item to check.
+ * @param questionnaireResponse - The questionnaire response to check against.
+ * @returns True if the question is enabled via an extension expression, false otherwise.
+ */
+function isQuestionEnabledViaExtension(
+  item: QuestionnaireItem,
+  questionnaireResponse: QuestionnaireResponse | undefined
+): boolean | undefined {
+  const extension = getExtension(item, QUESTIONNAIRE_ENABLED_WHEN_EXPRESSION_URL);
   if (questionnaireResponse && extension) {
     const expression = extension.valueExpression?.expression;
     if (expression) {
@@ -68,7 +109,23 @@ export function isQuestionEnabled(
       return toJsBoolean(result);
     }
   }
+  return undefined;
+}
 
+/**
+ * Returns true if the questionnaire item is enabled based on the enableWhen conditions.
+ *
+ * See: https://hl7.org/fhir/R4/questionnaire-definitions.html#Questionnaire.item.enableWhen
+ * See: https://hl7.org/fhir/R4/questionnaire-definitions.html#Questionnaire.item.enableBehavior
+ *
+ * @param item - The questionnaire item to check.
+ * @param questionnaireResponse - The questionnaire response to check against.
+ * @returns True if the question is enabled based on the enableWhen conditions, false otherwise.
+ */
+function isQuestionEnabledViaEnabledWhen(
+  item: QuestionnaireItem,
+  questionnaireResponse: QuestionnaireResponse | undefined
+): boolean {
   if (!item.enableWhen) {
     return true;
   }
@@ -97,51 +154,70 @@ export function isQuestionEnabled(
   return enableBehavior !== 'any';
 }
 
+/**
+ * Evaluates the calculated expressions in a questionnaire.
+ * Updates response item answers in place with the calculated values.
+ *
+ * See: https://build.fhir.org/ig/HL7/sdc/StructureDefinition-sdc-questionnaire-calculatedExpression.html
+ *
+ * @param items - The questionnaire items to evaluate.
+ * @param response - The questionnaire response to evaluate against.
+ * @param responseItems - The response items to update.
+ */
 export function evaluateCalculatedExpressionsInQuestionnaire(
   items: QuestionnaireItem[],
-  response: QuestionnaireResponse | undefined
-): QuestionnaireResponseItem[] {
-  return items
-    .map((item): QuestionnaireResponseItem | null => {
-      if (item.item) {
-        return {
-          ...item,
-          item: evaluateCalculatedExpressionsInQuestionnaire(item.item, response),
-        };
-      } else {
-        try {
-          const calculatedValue = evaluateCalculatedExpression(item, response);
-          if (!calculatedValue) {
-            return null;
-          }
-          const answer = typedValueToResponseItem(item, calculatedValue);
-          if (!answer) {
-            return null;
-          }
-          return {
-            id: item?.id,
-            linkId: item?.linkId,
-            text: item.text,
-            answer: [answer],
-          };
-        } catch (error) {
-          return {
-            id: item?.id,
-            linkId: item?.linkId,
-            text: item.text,
-            answer: [],
-            extension: [
-              {
-                url: `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-validationError`,
-                valueString: `Expression evaluation failed: ${normalizeErrorString(error)}`,
-              },
-            ],
-          };
-        }
+  response: QuestionnaireResponse,
+  responseItems: QuestionnaireResponseItem[] | undefined = response.item
+): void {
+  for (const item of items) {
+    const responseItem = responseItems?.find((r) => r.linkId === item.linkId);
+    if (responseItem) {
+      evaluateQuestionnaireItemCalculatedExpressions(response, item, responseItem);
+      if (item.item && responseItem.item) {
+        // If the item has nested items, evaluate their calculated expressions as well
+        evaluateCalculatedExpressionsInQuestionnaire(item.item, response, responseItem.item);
       }
-    })
-    .filter((item): item is QuestionnaireResponseItem => item !== null);
+    }
+  }
 }
+
+function evaluateQuestionnaireItemCalculatedExpressions(
+  response: QuestionnaireResponse,
+  item: QuestionnaireItem,
+  responseItem: QuestionnaireResponseItem
+): void {
+  try {
+    const calculatedValue = evaluateCalculatedExpression(item, response);
+    if (!calculatedValue) {
+      return;
+    }
+    const answer = typedValueToResponseItem(item, calculatedValue);
+    if (!answer) {
+      return;
+    }
+    responseItem.answer = [answer];
+  } catch (error) {
+    responseItem.extension = [
+      {
+        url: QUESTIONNAIRE_VALIDATION_ERROR_URL,
+        valueString: `Expression evaluation failed: ${normalizeErrorString(error)}`,
+      },
+    ];
+  }
+}
+
+const questionnaireItemTypesAllowedPropertyTypes: Record<string, string[]> = {
+  [QuestionnaireItemType.boolean]: [PropertyType.boolean],
+  [QuestionnaireItemType.date]: [PropertyType.date],
+  [QuestionnaireItemType.dateTime]: [PropertyType.dateTime],
+  [QuestionnaireItemType.time]: [PropertyType.time],
+  [QuestionnaireItemType.url]: [PropertyType.string, PropertyType.uri, PropertyType.url],
+  [QuestionnaireItemType.attachment]: [PropertyType.Attachment],
+  [QuestionnaireItemType.reference]: [PropertyType.Reference],
+  [QuestionnaireItemType.quantity]: [PropertyType.Quantity],
+  [QuestionnaireItemType.decimal]: [PropertyType.decimal, PropertyType.integer],
+  [QuestionnaireItemType.integer]: [PropertyType.decimal, PropertyType.integer],
+} as const;
 
 export function typedValueToResponseItem(
   item: QuestionnaireItem,
@@ -150,35 +226,23 @@ export function typedValueToResponseItem(
   if (!item.type) {
     return undefined;
   }
-
-  switch (item.type) {
-    case QuestionnaireItemType.boolean:
-      return value.type === PropertyType.boolean ? { valueBoolean: value.value } : undefined;
-    case QuestionnaireItemType.date:
-      return value.type === PropertyType.date ? { valueDate: value.value } : undefined;
-    case QuestionnaireItemType.dateTime:
-      return value.type === PropertyType.dateTime ? { valueDateTime: value.value } : undefined;
-    case QuestionnaireItemType.time:
-      return value.type === PropertyType.time ? { valueTime: value.value } : undefined;
-    case QuestionnaireItemType.url:
-      return value.type === PropertyType.url ? { valueString: value.value } : undefined;
-    case QuestionnaireItemType.text:
-      return value.type === PropertyType.string ? { valueString: value.value } : undefined;
-    case QuestionnaireItemType.attachment:
-      return value.type === PropertyType.Attachment ? { valueAttachment: value.value } : undefined;
-    case QuestionnaireItemType.reference:
-      return value.type === PropertyType.Reference ? { valueReference: value.value } : undefined;
-    case QuestionnaireItemType.quantity:
-      return { valueQuantity: value.value };
-    case QuestionnaireItemType.decimal:
-      return { valueDecimal: value.value };
-    case QuestionnaireItemType.integer:
-      return { valueInteger: value.value };
-    case QuestionnaireItemType.string:
-      return { valueString: value.value };
-    default:
-      return undefined;
+  if (item.type === QuestionnaireItemType.choice || item.type === QuestionnaireItemType.openChoice) {
+    // Choice and open-choice items can have multiple answer options
+    return { [`value${capitalize(value.type)}`]: value.value };
   }
+  if (item.type === QuestionnaireItemType.string || item.type === QuestionnaireItemType.text) {
+    // Always coerce string values to valueString
+    if (typeof value.value === 'string') {
+      return { valueString: value.value };
+    }
+    return undefined;
+  }
+  const allowedPropertyTypes = questionnaireItemTypesAllowedPropertyTypes[item.type];
+  if (allowedPropertyTypes?.includes(value.type)) {
+    // Use the questionnaire item type to determine the response item type
+    return { [`value${capitalize(item.type)}`]: value.value };
+  }
+  return undefined;
 }
 
 function evaluateCalculatedExpression(
@@ -189,11 +253,7 @@ function evaluateCalculatedExpression(
     return undefined;
   }
 
-  const extension = getExtension(
-    item,
-    HTTP_HL7_ORG + '/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression'
-  );
-
+  const extension = getExtension(item, QUESTIONNAIRE_CALCULATED_EXPRESSION_URL);
   if (extension) {
     const expression = extension.valueExpression?.expression;
     if (expression) {
@@ -203,27 +263,6 @@ function evaluateCalculatedExpression(
     }
   }
   return undefined;
-}
-
-export function mergeUpdatedItems(
-  mergedItems: QuestionnaireResponseItem[],
-  updatedItems: QuestionnaireResponseItem[]
-): QuestionnaireResponseItem[] {
-  return mergedItems.map((mergedItem) => {
-    const updatedItem = updatedItems.find((updated) => updated.linkId === mergedItem.linkId);
-
-    // Usually fields with calculated expressions would be readOnly in the case where it allows foe manual updates.
-    // It would get replaced with content from calcultaed expresion.
-    if (updatedItem) {
-      return {
-        ...mergedItem,
-        item: updatedItem.item ? mergeUpdatedItems(mergedItem.item || [], updatedItem.item) : mergedItem.item,
-        answer: updatedItem.answer || mergedItem.answer,
-        extension: updatedItem.extension || mergedItem.extension,
-      };
-    }
-    return mergedItem;
-  });
 }
 
 export function getNewMultiSelectValues(
@@ -321,7 +360,7 @@ function checkAnswers(
 }
 
 export function getQuestionnaireItemReferenceTargetTypes(item: QuestionnaireItem): ResourceType[] | undefined {
-  const extension = getExtension(item, 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource');
+  const extension = getExtension(item, QUESTIONNAIRE_REFERENCE_RESOURCE_URL);
   if (!extension) {
     return undefined;
   }
@@ -339,7 +378,7 @@ export function setQuestionnaireItemReferenceTargetTypes(
   targetTypes: ResourceType[] | undefined
 ): QuestionnaireItem {
   const result = deepClone(item);
-  let extension = getExtension(result, 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource');
+  let extension = getExtension(result, QUESTIONNAIRE_REFERENCE_RESOURCE_URL);
 
   if (!targetTypes || targetTypes.length === 0) {
     if (extension) {
@@ -349,10 +388,8 @@ export function setQuestionnaireItemReferenceTargetTypes(
   }
 
   if (!extension) {
-    if (!result.extension) {
-      result.extension = [];
-    }
-    extension = { url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource' };
+    result.extension ??= [];
+    extension = { url: QUESTIONNAIRE_REFERENCE_RESOURCE_URL };
     result.extension.push(extension);
   }
 
@@ -369,7 +406,7 @@ export function setQuestionnaireItemReferenceTargetTypes(
 
 /**
  * Returns the reference filter for the given questionnaire item.
- * @see https://build.fhir.org/ig/HL7/fhir-extensions//StructureDefinition-questionnaire-referenceFilter-definitions.html
+ * @see https://build.fhir.org/ig/HL7/fhir-extensions/StructureDefinition-questionnaire-referenceFilter-definitions.html
  * @param item - The questionnaire item to get the reference filter for.
  * @param subject - Optional subject reference.
  * @param encounter - Optional encounter reference.
@@ -380,7 +417,7 @@ export function getQuestionnaireItemReferenceFilter(
   subject: Reference | undefined,
   encounter: Reference<Encounter> | undefined
 ): Record<string, string> | undefined {
-  const extension = getExtension(item, 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceFilter');
+  const extension = getExtension(item, QUESTIONNAIRE_REFERENCE_FILTER_URL);
   if (!extension?.valueString) {
     return undefined;
   }
@@ -420,23 +457,45 @@ export function buildInitialResponse(
 
 function buildInitialResponseItems(
   items: QuestionnaireItem[] | undefined,
-  questionnaireResponseItems?: QuestionnaireResponseItem[]
-): QuestionnaireResponseItem[] {
-  return items?.map((item) => buildInitialResponseItem(item, questionnaireResponseItems)) ?? [];
+  responseItems: QuestionnaireResponseItem[] | undefined
+): QuestionnaireResponseItem[] | undefined {
+  if (!items) {
+    return undefined;
+  }
+
+  const result = [];
+  for (const item of items) {
+    if (item.type === QuestionnaireItemType.display) {
+      // Display items do not have response items, so we skip them.
+      continue;
+    }
+
+    const existingResponseItems = responseItems?.filter((responseItem) => responseItem.linkId === item.linkId);
+    if (existingResponseItems && existingResponseItems?.length > 0) {
+      for (const existingResponseItem of existingResponseItems) {
+        // Update existing response item
+        existingResponseItem.id = existingResponseItem.id ?? generateId();
+        existingResponseItem.text = existingResponseItem.text ?? item.text;
+        existingResponseItem.item = buildInitialResponseItems(item.item, existingResponseItem.item);
+        existingResponseItem.answer = buildInitialResponseAnswer(item, existingResponseItem);
+        result.push(existingResponseItem);
+      }
+    } else {
+      // Add new response item
+      result.push(buildInitialResponseItem(item));
+    }
+  }
+
+  return result;
 }
 
-export function buildInitialResponseItem(
-  item: QuestionnaireItem,
-  questionnaireResponseItem?: QuestionnaireResponseItem[]
-): QuestionnaireResponseItem {
-  const existingResponseItem = questionnaireResponseItem?.find((responseItem) => responseItem.linkId === item.linkId);
-
+export function buildInitialResponseItem(item: QuestionnaireItem): QuestionnaireResponseItem {
   return {
-    id: existingResponseItem ? existingResponseItem.id : generateId(),
+    id: generateId(),
     linkId: item.linkId,
     text: item.text,
-    item: buildInitialResponseItems(item.item, existingResponseItem?.item),
-    answer: existingResponseItem ? existingResponseItem.answer : (item.initial?.map(buildInitialResponseAnswer) ?? []),
+    item: buildInitialResponseItems(item.item, undefined),
+    answer: buildInitialResponseAnswer(item),
   };
 }
 
@@ -445,33 +504,28 @@ function generateId(): string {
   return 'id-' + nextId++;
 }
 
-function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): QuestionnaireResponseItemAnswer {
-  // This works because QuestionnaireItemInitial and QuestionnaireResponseItemAnswer
-  // have the same properties.
-  return { ...answer };
-}
-
-/**
- * Returns the number of pages in the questionnaire.
- *
- * By default, a questionnaire is represented as a simple single page questionnaire,
- * so the default return value is 1.
- *
- * If the questionnaire has a page extension on the first item, then the number of pages
- * is the number of top level items in the questionnaire.
- *
- * @param questionnaire - The questionnaire to get the number of pages for.
- * @returns The number of pages in the questionnaire. Default is 1.
- */
-export function getNumberOfPages(questionnaire: Questionnaire): number {
-  const firstItem = questionnaire?.item?.[0];
-  if (firstItem) {
-    const extension = getExtension(firstItem, 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl');
-    if (extension?.valueCodeableConcept?.coding?.[0]?.code === 'page') {
-      return (questionnaire.item as QuestionnaireItem[]).length;
-    }
+function buildInitialResponseAnswer(
+  item: QuestionnaireItem,
+  responseItem?: QuestionnaireResponseItem
+): QuestionnaireResponseItemAnswer[] | undefined {
+  if (item.type === QuestionnaireItemType.display || item.type === QuestionnaireItemType.group) {
+    return undefined;
   }
-  return 1;
+
+  if (responseItem?.answer && responseItem.answer.length > 0) {
+    // If the response item already has answers, return them as is.
+    return responseItem.answer;
+  }
+
+  if (item.initial && item.initial.length > 0) {
+    // If the item has initial values, return them as answers.
+    // This works because QuestionnaireItemInitial and QuestionnaireResponseItemAnswer
+    // have the same properties.
+    return item.initial.map((initial) => ({ ...initial }));
+  }
+
+  // Otherwise, return an array with one empty answer.
+  return [{}];
 }
 
 export function getItemInitialValue(initial: QuestionnaireItemInitial | undefined): TypedValue {

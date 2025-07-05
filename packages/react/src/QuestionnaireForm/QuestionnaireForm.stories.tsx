@@ -1,4 +1,4 @@
-import { QuestionnaireResponse } from '@medplum/fhirtypes';
+import { QuestionnaireItem, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
 import { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -267,7 +267,7 @@ export const LabOrdering = (): JSX.Element => {
     };
   }
 
-  const vendors: any = {
+  const vendors: QuestionnaireItem = {
     id: 'question2',
     linkId: 'question2',
     text: 'Vendor',
@@ -303,7 +303,7 @@ export const LabOrdering = (): JSX.Element => {
     ],
   };
 
-  const orders: any = {
+  const orders: QuestionnaireItem = {
     id: 'the-big',
     linkId: 'q2',
     type: 'group',
