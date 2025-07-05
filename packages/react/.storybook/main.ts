@@ -38,6 +38,7 @@ const config: StorybookConfig = {
         resolve: {
           alias: {
             '@medplum/core': path.resolve(__dirname, '../../core/src'),
+            '@medplum/react-hooks': path.resolve(__dirname, '../../react-hooks/src'),
           },
         },
       });
