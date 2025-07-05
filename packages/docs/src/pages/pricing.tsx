@@ -235,12 +235,7 @@ export default function PricingPage(): JSX.Element {
                 <td></td>
               </tr>
               <tr>
-                <td>
-                  Lab/Diagnostics
-                  <sup>
-                    <a href="#note13">13</a>
-                  </sup>
-                </td>
+                <td>Lab/Diagnostics</td>
                 <td></td>
                 <td></td>
                 <td>✔️</td>
@@ -553,11 +548,6 @@ export default function PricingPage(): JSX.Element {
               <li id="note12">
                 <strong>External Identity Providers</strong>: connect your Okta, Azure SSO, Auth0 or other oAuth based
                 identity provider.
-              </li>
-              <li id="note13">
-                <strong> Lab/Diagnostics Orders Pricing</strong>: Premium tier includes 1,000 transactions per month at
-                no additional cost. After that, it is $1 per transaction. An order and result are both considered a
-                transaction. See <a href="/docs/integration/health-gorilla">Lab Integration</a> for more details.
               </li>
               <li id="note14">
                 <strong> Test Usage</strong>: For low-volume use cases such as development, testing, or small internal
