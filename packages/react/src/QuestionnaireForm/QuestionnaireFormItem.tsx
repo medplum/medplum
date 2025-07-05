@@ -30,64 +30,47 @@ import {
   ValueSet,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
-import { ChangeEvent, JSX, useContext, useEffect, useState } from 'react';
-import { AttachmentInput } from '../../AttachmentInput/AttachmentInput';
-import { CheckboxFormSection } from '../../CheckboxFormSection/CheckboxFormSection';
-import { DateTimeInput } from '../../DateTimeInput/DateTimeInput';
-import { QuantityInput } from '../../QuantityInput/QuantityInput';
-import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
-import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import {
   getItemAnswerOptionValue,
   getItemInitialValue,
   getNewMultiSelectValues,
   getQuestionnaireItemReferenceFilter,
   getQuestionnaireItemReferenceTargetTypes,
+  QUESTIONNAIRE_ITEM_CONTROL_URL,
+  QuestionnaireFormLoadedState,
   QuestionnaireItemType,
-} from '../../utils/questionnaire';
-import { ValueSetAutocomplete } from '../../ValueSetAutocomplete/ValueSetAutocomplete';
-import { QuestionnaireFormContext } from '../QuestionnaireForm.context';
+  useMedplum,
+} from '@medplum/react-hooks';
+import { ChangeEvent, JSX, useEffect, useState } from 'react';
+import { AttachmentInput } from '../AttachmentInput/AttachmentInput';
+import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
+import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
+import { QuantityInput } from '../QuantityInput/QuantityInput';
+import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
 const MAX_DISPLAYED_CHECKBOX_RADIO_VALUE_SET_OPTIONS = 30;
 const MAX_DISPLAYED_CHECKBOX_RADIO_EXPLICITOPTION_OPTIONS = 50;
 
 export interface QuestionnaireFormItemProps {
+  readonly formState?: QuestionnaireFormLoadedState;
+  readonly context?: QuestionnaireResponseItem[];
   readonly item: QuestionnaireItem;
   readonly index: number;
   readonly required?: boolean;
-  readonly response: QuestionnaireResponseItem;
-  readonly onChange: (newResponseItem: QuestionnaireResponseItem) => void;
+  readonly responseItem: QuestionnaireResponseItem;
 }
 
 export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.Element | null {
-  const context = useContext(QuestionnaireFormContext);
+  const formState = props.formState;
   const item = props.item;
-  const response = props.response;
+  const response = props.responseItem;
 
-  function onChangeAnswer(
-    newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[]
-  ): void {
-    let updatedAnswers: QuestionnaireResponseItemAnswer[];
-    if (Array.isArray(newResponseAnswer)) {
-      // It's a multi-select case, so use the array directly.
-      updatedAnswers = newResponseAnswer;
-    } else if (props.index >= (props.response?.answer?.length ?? 0)) {
-      // if adding a new answer
-      updatedAnswers = (props.response?.answer ?? []).concat([newResponseAnswer]);
-    } else {
-      // if updating an existing answer
-      const newAnswers = (props.response?.answer ?? []).map((a, idx) =>
-        idx === props.index ? newResponseAnswer : a
-      ) as QuestionnaireResponseItemAnswer[];
-      updatedAnswers = newAnswers ?? [];
+  function onChangeAnswer(newResponseAnswer: QuestionnaireResponseItemAnswer[]): void {
+    if (formState && props.context) {
+      formState.onChangeAnswer(props.context, props.item, newResponseAnswer);
     }
-    props.onChange({
-      id: response?.id,
-      linkId: response?.linkId,
-      text: item.text,
-      answer: updatedAnswers,
-    });
   }
 
   const type = item.type;
@@ -120,7 +103,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             id={props.item.linkId}
             name={props.item.linkId}
             defaultChecked={defaultValue?.value}
-            onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked })}
+            onChange={(e) => onChangeAnswer([{ valueBoolean: e.currentTarget.checked }])}
           />
         </CheckboxFormSection>
       );
@@ -135,7 +118,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) =>
-            onChangeAnswer({ valueDecimal: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber })
+            onChangeAnswer([{ valueDecimal: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber }])
           }
         />
       );
@@ -150,7 +133,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) =>
-            onChangeAnswer({ valueInteger: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber })
+            onChangeAnswer([{ valueInteger: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber }])
           }
         />
       );
@@ -163,7 +146,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
-          onChange={(e) => onChangeAnswer({ valueDate: e.currentTarget.value })}
+          onChange={(e) => onChangeAnswer([{ valueDate: e.currentTarget.value }])}
         />
       );
       break;
@@ -173,7 +156,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
-          onChange={(newValue: string) => onChangeAnswer({ valueDateTime: newValue })}
+          onChange={(newValue: string) => onChangeAnswer([{ valueDateTime: newValue }])}
         />
       );
       break;
@@ -185,7 +168,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
-          onChange={(e) => onChangeAnswer({ valueTime: e.currentTarget.value })}
+          onChange={(e) => onChangeAnswer([{ valueTime: e.currentTarget.value }])}
         />
       );
       break;
@@ -199,7 +182,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           defaultValue={defaultValue?.value}
           onChange={(e) => {
             const value = e.currentTarget.value;
-            onChangeAnswer({ valueString: value === '' ? undefined : value });
+            onChangeAnswer([{ valueString: value === '' ? undefined : value }]);
           }}
         />
       );
@@ -213,7 +196,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           defaultValue={defaultValue?.value}
           onChange={(e) => {
             const value = e.currentTarget.value;
-            onChangeAnswer({ valueString: value === '' ? undefined : value });
+            onChangeAnswer([{ valueString: value === '' ? undefined : value }]);
           }}
         />
       );
@@ -225,7 +208,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             path=""
             name={name}
             defaultValue={defaultValue?.value}
-            onChange={(newValue) => onChangeAnswer({ valueAttachment: newValue })}
+            onChange={(newValue) => onChangeAnswer([{ valueAttachment: newValue }])}
           />
         </Group>
       );
@@ -236,9 +219,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={props.required ?? item.required}
           targetTypes={getQuestionnaireItemReferenceTargetTypes(item)}
-          searchCriteria={getQuestionnaireItemReferenceFilter(item, context.subject, context.encounter)}
+          searchCriteria={getQuestionnaireItemReferenceFilter(item, formState?.subject, formState?.encounter)}
           defaultValue={defaultValue?.value}
-          onChange={(newValue) => onChangeAnswer({ valueReference: newValue })}
+          onChange={(newValue) => onChangeAnswer([{ valueReference: newValue }])}
         />
       );
       break;
@@ -249,7 +232,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           name={name}
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
-          onChange={(newValue) => onChangeAnswer({ valueQuantity: newValue })}
+          onChange={(newValue) => onChangeAnswer([{ valueQuantity: newValue }])}
           disableWheel
         />
       );
@@ -314,9 +297,7 @@ interface QuestionnaireChoiceInputProps {
   readonly initial: QuestionnaireItemInitial | undefined;
   readonly required: boolean | undefined;
   readonly response: QuestionnaireResponseItem;
-  readonly onChangeAnswer: (
-    newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[]
-  ) => void;
+  readonly onChangeAnswer: (newResponseAnswer: QuestionnaireResponseItemAnswer[]) => void;
 }
 
 function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
@@ -342,12 +323,12 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
         onChange={(values) => {
           if (isMultiSelect) {
             if (values.length === 0) {
-              onChangeAnswer({});
+              onChangeAnswer([{}]);
             } else {
               onChangeAnswer(values.map((coding) => ({ valueCoding: coding })));
             }
           } else {
-            onChangeAnswer({ valueCoding: values[0] });
+            onChangeAnswer([{ valueCoding: values[0] }]);
           }
         }}
         defaultValue={defaultValue?.value}
@@ -366,7 +347,7 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
         required={required}
         onChange={(selected) => {
           if (selected.length === 0) {
-            onChangeAnswer({});
+            onChangeAnswer([{}]);
           } else {
             const values = getNewMultiSelectValues(selected, propertyName, item);
             onChangeAnswer(values);
@@ -390,13 +371,13 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
         onChange={(e: ChangeEvent<HTMLSelectElement>) => {
           const index = e.currentTarget.selectedIndex;
           if (index === 0) {
-            onChangeAnswer({});
+            onChangeAnswer([{}]);
             return;
           }
           const option = (item.answerOption as QuestionnaireItemAnswerOption[])[index - 1];
           const optionValue = getItemAnswerOptionValue(option);
           const propertyName = 'value' + capitalize(optionValue.type);
-          onChangeAnswer({ [propertyName]: optionValue.value });
+          onChangeAnswer([{ [propertyName]: optionValue.value }]);
         }}
         defaultValue={formatCoding(defaultValue?.value) || defaultValue?.value}
         data={data}
@@ -518,7 +499,7 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
           if (option) {
             const optionValue = option[1];
             const propertyName = 'value' + capitalize(optionValue.type);
-            onChangeAnswer({ [propertyName]: optionValue.value });
+            onChangeAnswer([{ [propertyName]: optionValue.value }]);
           }
         }}
       >
@@ -601,7 +582,7 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
 
       setSelectedValues(newCodings);
       if (newCodings.length === 0) {
-        onChangeAnswer({});
+        onChangeAnswer([{}]);
       } else {
         onChangeAnswer(newCodings.map((coding) => ({ valueCoding: coding })));
       }
@@ -618,7 +599,7 @@ function QuestionnaireCheckboxInput(props: QuestionnaireChoiceInputProps): JSX.E
 
       setSelectedValues(newValues);
       if (newValues.length === 0) {
-        onChangeAnswer({});
+        onChangeAnswer([{}]);
       } else {
         const values = getNewMultiSelectValues(newValues, 'value' + capitalize(optionValue.type), item);
         onChangeAnswer(values);
@@ -675,7 +656,7 @@ function getCurrentMultiSelectAnswer(response: QuestionnaireResponseItem): strin
     return [];
   }
   const typedValues = results.map((a) => getItemAnswerOptionValue(a));
-  return typedValues.map((type) => formatCoding(type?.value) || type?.value);
+  return typedValues.map((type) => formatCoding(type?.value) || type?.value).filter(Boolean);
 }
 
 function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: TypedValue): string | undefined {
@@ -686,9 +667,7 @@ type ChoiceType = 'check-box' | 'drop-down' | 'radio-button' | 'multi-select' | 
 
 function hasChoiceType(item: QuestionnaireItem, type: ChoiceType): boolean {
   return !!item.extension?.some(
-    (e) =>
-      e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
-      e.valueCodeableConcept?.coding?.[0]?.code === type
+    (e) => e.url === QUESTIONNAIRE_ITEM_CONTROL_URL && e.valueCodeableConcept?.coding?.[0]?.code === type
   );
 }
 
