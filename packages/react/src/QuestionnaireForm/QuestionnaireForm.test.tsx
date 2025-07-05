@@ -2898,4 +2898,48 @@ describe('QuestionnaireForm', () => {
 
     expect(onSubmit).toHaveBeenCalled();
   });
+
+  test('Required boolean field validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-boolean',
+            text: 'Required Boolean Field',
+            type: QuestionnaireItemType.boolean,
+            required: true,
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toBeInTheDocument();
+    expect(checkbox).toHaveAttribute('required');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(checkbox);
+    });
+
+    expect(checkbox).toBeChecked();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer[0].valueBoolean).toBe(true);
+  });
 });

@@ -119,6 +119,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           <Checkbox
             id={props.item.linkId}
             name={props.item.linkId}
+            required={props.required ?? item.required}
             defaultChecked={defaultValue?.value}
             onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked })}
           />
