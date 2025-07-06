@@ -15,6 +15,7 @@ export interface QuestionnaireFormRepeatableItemProps {
 export function QuestionnaireFormRepeatableItem(props: QuestionnaireFormRepeatableItemProps): JSX.Element | null {
   const { formState, context, item, responseItem } = props;
   const showAddButton = item.type !== QuestionnaireItemType.choice && item.type !== QuestionnaireItemType.openChoice;
+  const answers = responseItem.answer && responseItem.answer.length > 0 ? responseItem.answer : [{}];
   return (
     <FormSection
       key={props.item.linkId}
@@ -23,7 +24,7 @@ export function QuestionnaireFormRepeatableItem(props: QuestionnaireFormRepeatab
       withAsterisk={props.item.required}
     >
       <Stack gap="xs">
-        {responseItem.answer?.map((_, index) => (
+        {answers?.map((_, index) => (
           <QuestionnaireFormItem
             key={`${item.linkId}-${index}`}
             formState={formState}

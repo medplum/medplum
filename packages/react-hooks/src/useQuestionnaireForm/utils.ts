@@ -524,8 +524,8 @@ function buildInitialResponseAnswer(
     return item.initial.map((initial) => ({ ...initial }));
   }
 
-  // Otherwise, return an array with one empty answer.
-  return [{}];
+  // Otherwise, return undefined to indicate no initial answers.
+  return undefined;
 }
 
 export function getItemInitialValue(initial: QuestionnaireItemInitial | undefined): TypedValue {

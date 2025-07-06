@@ -41,7 +41,6 @@ describe('useQuestionnaireForm', () => {
           expect.objectContaining({
             linkId: 'test-item',
             text: 'Test Item',
-            answer: [{}],
           }),
         ],
       }),
@@ -217,18 +216,29 @@ describe('useQuestionnaireForm', () => {
           repeats: true,
         },
       ],
-    };
+    } as const;
 
     const { result } = renderHook(() => useQuestionnaireForm({ questionnaire }), { wrapper });
     expect(result.current).toMatchObject({ loading: false });
 
-    const formState = result.current as QuestionnaireFormLoadedState;
-    expect(formState.items).toHaveLength(1);
-    expect(formState.questionnaireResponse.item).toHaveLength(1);
-    expect(formState.questionnaireResponse.item?.[0]?.answer).toHaveLength(1);
+    const formState1 = result.current as QuestionnaireFormLoadedState;
+    expect(formState1.items).toHaveLength(1);
+    expect(formState1.questionnaireResponse.item).toHaveLength(1);
+    expect(formState1.questionnaireResponse.item?.[0]?.answer).toBeUndefined();
 
     await act(async () => {
-      formState.onAddAnswer([], questionnaire.item[0] as QuestionnaireItem);
+      formState1.onChangeAnswer([], questionnaire.item[0], [{ valueString: 'Test Answer' }]);
+    });
+
+    const formState2 = result.current as QuestionnaireFormLoadedState;
+    expect(formState2.questionnaireResponse.item?.[0]).toMatchObject({
+      linkId: 'test-item',
+      text: 'Test Item',
+      answer: [{ valueString: 'Test Answer' }],
+    });
+
+    await act(async () => {
+      formState2.onAddAnswer([], questionnaire.item[0] as QuestionnaireItem);
     });
 
     const updatedState = result.current as QuestionnaireFormLoadedState;
