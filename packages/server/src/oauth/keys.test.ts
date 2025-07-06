@@ -82,7 +82,7 @@ describe('Keys', () => {
 
     // Construct a broken JWT with empty "kid"
     const accessToken = await new SignJWT({})
-      .setProtectedHeader({ alg: 'RS256', kid: '', typ: 'JWT' })
+      .setProtectedHeader({ alg: 'ES256', kid: '', typ: 'JWT' })
       .setIssuedAt()
       .setIssuer(config.issuer)
       .setAudience('my-audience')
