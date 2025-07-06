@@ -27,7 +27,9 @@ describe('useQuestionnaireForm', () => {
         },
       ],
     } as const;
-    const { result } = renderHook(() => useQuestionnaireForm({ questionnaire }), { wrapper });
+    const onChange = jest.fn();
+    const { result } = renderHook(() => useQuestionnaireForm({ questionnaire, onChange }), { wrapper });
+    expect(onChange).toHaveBeenCalledTimes(1);
     expect(result.current).toMatchObject({
       loading: false,
       questionnaire,
@@ -44,11 +46,13 @@ describe('useQuestionnaireForm', () => {
         ],
       }),
     });
+    onChange.mockClear();
 
     const formState = result.current as QuestionnaireFormLoadedState;
     await act(async () => {
       formState.onChangeAnswer([], questionnaire.item[0], [{ valueString: 'Test Answer' }]);
     });
+    expect(onChange).toHaveBeenCalledTimes(1);
 
     const updatedState = result.current as QuestionnaireFormLoadedState;
     expect(updatedState.questionnaireResponse.item?.[0]).toMatchObject({

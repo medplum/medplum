@@ -34,6 +34,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     encounter: props.encounter,
     source: props.source,
     disablePagination: props.disablePagination,
+    onChange: props.onChange,
   });
   const formStateRef = useRef(formState);
   formStateRef.current = formState;

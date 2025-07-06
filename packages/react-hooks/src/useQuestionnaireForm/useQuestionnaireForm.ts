@@ -40,7 +40,7 @@ export interface UseQuestionnaireFormProps {
   readonly encounter?: Reference<Encounter>;
   readonly source?: QuestionnaireResponse['source'];
   readonly disablePagination?: boolean;
-  readonly withSignature?: boolean;
+  readonly onChange?: (response: QuestionnaireResponse) => void;
 }
 
 export interface QuestionnaireFormPage {
@@ -138,13 +138,13 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
   // If we are expecting a questionnaire response, and it is loaded, then use it.
   if (questionnaire && props.defaultValue && defaultResponse && !state.current.questionnaireResponse) {
     state.current.questionnaireResponse = buildInitialResponse(questionnaire, defaultResponse);
-    updateCalculatedExpressions();
+    emitChange();
   }
 
   // If we are not expecting a questionnaire response, we will create a new one.
   if (questionnaire && !props.defaultValue && !state.current.questionnaireResponse) {
     state.current.questionnaireResponse = buildInitialResponse(questionnaire);
-    updateCalculatedExpressions();
+    emitChange();
   }
 
   if (!state.current.questionnaire || !state.current.questionnaireResponse) {
@@ -188,7 +188,7 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
     if (responseItem) {
       responseItem.item ??= [];
       responseItem.item.push(buildInitialResponseItem(item));
-      forceUpdate();
+      emitChange();
     }
   }
 
@@ -197,8 +197,7 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
     if (currentItem) {
       currentItem.answer ??= [];
       currentItem.answer.push({});
-      updateCalculatedExpressions();
-      forceUpdate();
+      emitChange();
     }
   }
 
@@ -210,8 +209,7 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
     const currentItem = getResponseItemByContext(context, item);
     if (currentItem) {
       currentItem.answer = answer;
-      updateCalculatedExpressions();
-      forceUpdate();
+      emitChange();
     }
   }
 
@@ -221,6 +219,16 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
       const response = state.current.questionnaireResponse as QuestionnaireResponse;
       evaluateCalculatedExpressionsInQuestionnaire(questionnaire.item, response);
     }
+  }
+
+  function emitChange(): void {
+    const currentResponse = state.current.questionnaireResponse;
+    if (!currentResponse) {
+      return;
+    }
+    updateCalculatedExpressions();
+    forceUpdate();
+    props.onChange?.(currentResponse);
   }
 
   return {

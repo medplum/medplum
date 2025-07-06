@@ -78,6 +78,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Groups', async () => {
+    const onChange = jest.fn();
     const onSubmit = jest.fn();
 
     await setup({
@@ -126,6 +127,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
+      onChange,
       onSubmit,
     });
 
@@ -133,9 +135,11 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByText('Group 1')).toBeDefined();
     expect(screen.getByText('Group 2')).toBeDefined();
 
+    onChange.mockClear();
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'a1' } });
     });
+    expect(onChange).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Question 2'), { target: { value: 'a2' } });
