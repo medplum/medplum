@@ -1,6 +1,6 @@
-# Medplum Healthie Connector
+# Medplum Healthie Importer
 
-The Medplum Healthie Connector is a integration tool that synchronizes patient data from the Healthie EMR into Medplum.
+The Medplum Healthie Importer is a tool that synchronizes patient data from the Healthie EMR into Medplum.
 
 ## Prerequisites
 
@@ -50,6 +50,8 @@ Or with custom base URL:
 ```bash
 npm run deploy -- my-client-id my-client-secret --base-url https://api.medplum.com/
 ```
+
+## Running
 
 ## Support
 

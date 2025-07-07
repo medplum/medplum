@@ -9,8 +9,8 @@ const CONNECTOR_BOT = {
   identifier: [{ system: 'https://www.medplum.com', value: 'medplum-healthie-connector/fetch-patients' }],
   name: 'Medplum Healthie Connector: Fetch Patients',
   description: 'Connector to fetch patients from Healthie',
-  sourceCode: { url: 'src/fetch-patients.ts' },
-  executableCode: { url: 'dist/fetch-patients.js' },
+  sourceCode: { url: 'src/import-healthie-patients.ts' },
+  executableCode: { url: 'dist/import-healthie-patients.js' },
 } satisfies Partial<Bot>;
 
 async function main(): Promise<void> {

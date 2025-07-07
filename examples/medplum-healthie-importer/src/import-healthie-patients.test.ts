@@ -3,7 +3,7 @@ import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bot, Bundle, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { handler } from './fetch-patients';
+import { handler } from './import-healthie-patients';
 import { HealthieClient } from './healthie/client';
 
 vi.mock('./healthie', async (importOriginal) => {
