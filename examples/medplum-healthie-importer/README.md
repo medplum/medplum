@@ -27,6 +27,8 @@ npm run build
 
 ## Deployment
 
+### Deploy the Bots
+
 The connector uses a bot system that needs to be deployed to your Medplum project. To deploy the bots:
 
 ```bash
@@ -51,7 +53,22 @@ Or with custom base URL:
 npm run deploy -- my-client-id my-client-secret --base-url https://api.medplum.com/
 ```
 
-## Running
+### Setup Project Secrets
+
+Setup the following secrets with the details of your Healthie API Access. You can find more information about setting secrets [here](https://www.medplum.com/docs/bots/bot-secrets)
+
+| Secret Name              | Description                                       | Required |
+| ------------------------ | ------------------------------------------------- | -------- |
+| `HEALTHIE_API_URL`       | The base URL for the Healthie API                 | Yes      |
+| `HEALTHIE_CLIENT_SECRET` | The client secret for Healthie API authentication | Yes      |
+
+## Running the importer
+
+To import patients from Healthie, simply run the bot with identifier `medplum-healthie-importer/import-healthie-patients`.
+
+```
+POST <MedplumBaseUrl>/Bot/$execute?identifier=medplum-healthie-importer/import-healthie-patients
+```
 
 ## Support
 

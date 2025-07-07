@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler } from './import-healthie-patients';
 import { HealthieClient } from './healthie/client';
 
-vi.mock('./healthie', async (importOriginal) => {
+vi.mock('./healthie/client', async (importOriginal) => {
   const original = await importOriginal<typeof import('./healthie/client')>();
   original.HealthieClient.prototype.query = vi.fn();
   return original;
@@ -250,7 +250,7 @@ describe('fetch-patients handler', () => {
       secrets: {},
       bot: { reference: 'Bot/test-bot' } as Reference<Bot>,
     };
-    await expect(handler(medplum, event)).rejects.toThrow('HEALTHIE_API_URL and HEALTHIE_CLIENT_SECRET must be set');
+    await expect(handler(medplum, event)).rejects.toThrow('HEALTHIE_API_URL must be set');
   });
 
   test('handles empty patient list', async () => {
