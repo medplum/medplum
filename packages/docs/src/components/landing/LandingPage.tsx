@@ -5,7 +5,6 @@ import { CardButton } from '../CardButton';
 import { CardContainer } from '../CardContainer';
 import { Container } from '../Container';
 import { AnimatedCircle } from './AnimatedCircle';
-import { AnimatedInfinity } from './AnimatedInfinity';
 import { Feature, FeatureGrid } from './FeatureGrid';
 import { HeroSection } from './HeroSection';
 import { Jumbotron } from './Jumbotron';
@@ -42,35 +41,63 @@ export function LandingPage(): JSX.Element {
             <CardContainer>
               <Card>
                 <div className={styles.cardImage}>
-                  <AnimatedCircle value={200} suffix="k" />
+                  <AnimatedCircle value={20} suffix="m" />
                 </div>
-                <h3>Dev hours saved annually</h3>
+                <h3>Active patients</h3>
                 <p>
-                  No more choosing between prepackaged EHRs or spending thousands of dev hours on homegrown solutions.
-                  Medplum moves the starting line so you can get to the unique features of your app, stat.
+                  From startups to enterprises, Medplum facilitates care for over 20 million patients with hundreds of
+                  practices.
                 </p>
               </Card>
               <Card>
                 <div className={styles.cardImage}>
-                  <AnimatedInfinity />
+                  <AnimatedCircle value={120} suffix="m" />
                 </div>
-                <h3>Infinitely programmable, forever</h3>
-                <p>
-                  Medplum enables any application, any automation, any integration you can imagine, and lets you
-                  seamlessly operate in the wider healthcare ecosystem of today, tomorrow, and every day after.
-                </p>
+                <h3>Custom workflows</h3>
+                <p>Powering over 120 million custom workflow actions designed uniquely for your requirements.</p>
               </Card>
               <Card>
                 <div className={styles.cardImage}>
-                  <AnimatedCircle value={114} />
+                  <AnimatedCircle value={132} />
                 </div>
-                <h3>Elite healthcare dev contributors</h3>
+                <h3>Elite contributors</h3>
                 <p>
-                  Our robust universe of documentation, community, and support keeps you in the company of today's best
-                  healthcare developers.
+                  Our robust ecosystem of community and documentation keeps you in the company of today's best
+                  developers.
                 </p>
               </Card>
             </CardContainer>
+          </Section>
+          <SectionHeader>
+            <h2>What will you build?</h2>
+          </SectionHeader>
+          <Section>
+            <FeatureGrid columns={3}>
+              <Feature title="Custom EHR" imgSrc="/img/icons/api.svg">
+                Build the exact custom EHR your organization needs, tailored precisely to your unique workflows and
+                specifications. Gain complete control over your clinical data and operations.
+              </Feature>
+              <Feature title="Patient Engagement" imgSrc="/img/icons/automation.svg">
+                Deepen your connection with patients by creating custom, modern experiences that truly resonate. Drive
+                better health outcomes through seamless and engaging interactions.
+              </Feature>
+              <Feature title="Scribe &amp; Agents" imgSrc="/img/icons/code.svg">
+                Go beyond simple transcription with agentic scribes that take action, not just notes. Elevate your AI
+                capabilities to streamline operations and enhance decision-making.
+              </Feature>
+              <Feature title="Population Health" imgSrc="/img/icons/locker.svg">
+                Transform fragmented patient data into powerful insights for coordinated care delivery. Our platform
+                empowers population health teams to improve outcomes and maximize shared savings.
+              </Feature>
+              <Feature title="Care Management" imgSrc="/img/icons/shield.svg">
+                Free your care managers to focus on providing truly compassionate and personalized support. Streamline
+                administrative tasks so they can dedicate more time to what matters most: patient well-being.
+              </Feature>
+              <Feature title="Revenue Cycle Management" imgSrc="/img/icons/scalable.svg">
+                Design and automate custom routing and business rules that perfectly fit your financial operations.
+                Optimize your revenue cycle for efficiency and maximum returns.
+              </Feature>
+            </FeatureGrid>
           </Section>
           <SectionHeader>
             <h2>Get started, fast</h2>
