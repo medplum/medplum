@@ -2691,4 +2691,255 @@ describe('QuestionnaireForm', () => {
     expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
     expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
   });
+
+  test('Required radio button choice validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-radio',
+            text: 'Required Radio Choice',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerOption: [{ valueString: 'Option 1' }, { valueString: 'Option 2' }, { valueString: 'Option 3' }],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const radioGroup = screen.getByRole('radiogroup');
+    expect(radioGroup).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    const radioOption = screen.getByLabelText('Option 1');
+    await act(async () => {
+      fireEvent.click(radioOption);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer[0].valueString).toBe('Option 1');
+  });
+
+  test('Required dropdown choice validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-dropdown',
+            text: 'Required Dropdown Choice',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerOption: [{ valueString: 'Option A' }, { valueString: 'Option B' }, { valueString: 'Option C' }],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const dropdown = screen.getByLabelText('Required Dropdown Choice *');
+    expect(dropdown).toBeInTheDocument();
+    expect(dropdown).toHaveAttribute('required');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.change(dropdown, { target: { value: 'Option A' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer[0].valueString).toBe('Option A');
+  });
+
+  test('Required value set dropdown validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-valueset-dropdown',
+            text: 'Required Value Set Dropdown',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const autocomplete = screen.getByRole('searchbox');
+    expect(autocomplete).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    await act(async () => {
+      fireEvent.change(autocomplete, { target: { value: 'Test' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  test('Required value set radio button validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-valueset-radio',
+            text: 'Required Value Set Radio',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'radio-button',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      jest.runAllTimers();
+    });
+
+    const radioButtons = screen.getAllByRole('radio');
+    expect(radioButtons.length).toBeGreaterThan(0);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(radioButtons[0]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  test('Required boolean field validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-boolean',
+            text: 'Required Boolean Field',
+            type: QuestionnaireItemType.boolean,
+            required: true,
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toBeInTheDocument();
+    expect(checkbox).toHaveAttribute('required');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(checkbox);
+    });
+
+    expect(checkbox).toBeChecked();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer[0].valueBoolean).toBe(true);
+  });
 });

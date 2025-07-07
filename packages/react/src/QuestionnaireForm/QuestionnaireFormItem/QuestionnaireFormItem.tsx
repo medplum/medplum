@@ -119,6 +119,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           <Checkbox
             id={props.item.linkId}
             name={props.item.linkId}
+            required={props.required ?? item.required}
             defaultChecked={defaultValue?.value}
             onChange={(e) => onChangeAnswer({ valueBoolean: e.currentTarget.checked })}
           />
@@ -261,6 +262,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           <QuestionnaireCheckboxInput
             name={name}
             item={item}
+            required={props.required ?? item.required}
             initial={initial}
             response={response}
             onChangeAnswer={(e) => onChangeAnswer(e)}
@@ -272,6 +274,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           <QuestionnaireDropdownInput
             name={name}
             item={item}
+            required={props.required ?? item.required}
             initial={initial}
             response={response}
             onChangeAnswer={(e) => onChangeAnswer(e)}
@@ -282,6 +285,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           <QuestionnaireRadiobuttonInput
             name={name}
             item={item}
+            required={props.required ?? item.required}
             initial={initial}
             response={response}
             onChangeAnswer={(e) => onChangeAnswer(e)}
@@ -309,6 +313,7 @@ interface QuestionnaireChoiceInputProps {
   readonly name: string;
   readonly item: QuestionnaireItem;
   readonly initial: QuestionnaireItemInitial | undefined;
+  readonly required: boolean | undefined;
   readonly response: QuestionnaireResponseItem;
   readonly onChangeAnswer: (
     newResponseAnswer: QuestionnaireResponseItemAnswer | QuestionnaireResponseItemAnswer[]
@@ -316,7 +321,7 @@ interface QuestionnaireChoiceInputProps {
 }
 
 function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, onChangeAnswer, response } = props;
+  const { name, item, required, initial, onChangeAnswer, response } = props;
 
   if (!item.answerOption?.length && !item.answerValueSet) {
     return <NoAnswerDisplay />;
@@ -334,6 +339,7 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
         placeholder="Select items"
         binding={item.answerValueSet}
         maxValues={isMultiSelect ? undefined : 1}
+        required={required}
         onChange={(values) => {
           if (isMultiSelect) {
             if (values.length === 0) {
@@ -358,6 +364,7 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
         placeholder="Select items"
         searchable
         defaultValue={currentAnswer || [typedValueToString(initialValue)]}
+        required={required}
         onChange={(selected) => {
           if (selected.length === 0) {
             onChangeAnswer({});
@@ -380,6 +387,7 @@ function QuestionnaireDropdownInput(props: QuestionnaireChoiceInputProps): JSX.E
       <NativeSelect
         id={name}
         name={name}
+        required={required}
         onChange={(e: ChangeEvent<HTMLSelectElement>) => {
           const index = e.currentTarget.selectedIndex;
           if (index === 0) {
@@ -458,7 +466,7 @@ function getOptionsFromValueSet(valueSetOptions: ValueSetExpansionContains[], na
 }
 
 function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JSX.Element {
-  const { name, item, initial, onChangeAnswer, response } = props;
+  const { name, item, required, initial, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
   const initialValue = getItemInitialValue(initial);
   const [valueSetOptions, isLoading] = useValueSetOptions(item.answerValueSet);
@@ -505,6 +513,7 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
       <Radio.Group
         name={name}
         value={answerLinkId ?? defaultValue}
+        required={required}
         onChange={(newValue) => {
           const option = options.find((option) => option[0] === newValue);
           if (option) {
@@ -520,6 +529,7 @@ function QuestionnaireRadiobuttonInput(props: QuestionnaireChoiceInputProps): JS
             id={optionName}
             value={optionName}
             py={4}
+            required={required}
             label={
               <ResourcePropertyDisplay
                 property={valueElementDefinition}

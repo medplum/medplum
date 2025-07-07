@@ -10,9 +10,11 @@ export function HeroSection(): JSX.Element {
         <Jumbotron>
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>
-              Fast and easy
+              Building the future
               <br />
-              healthcare dev
+              of healthcare,
+              <br />
+              faster
             </h1>
             <p className={styles.heroText}>
               Medplum is the open source healthcare developer platform that helps you build, test, and deliver any
