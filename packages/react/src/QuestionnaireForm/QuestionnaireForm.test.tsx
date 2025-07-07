@@ -1,12 +1,11 @@
 import { getAllQuestionnaireAnswers, getQuestionnaireAnswers } from '@medplum/core';
 import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react-hooks';
+import { MedplumProvider, QuestionnaireItemType } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import { MemoryRouter } from 'react-router';
 import { act, fireEvent, render, screen } from '../test-utils/render';
-import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
 const medplum = new MockClient();
@@ -79,6 +78,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Groups', async () => {
+    const onChange = jest.fn();
     const onSubmit = jest.fn();
 
     await setup({
@@ -127,6 +127,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
+      onChange,
       onSubmit,
     });
 
@@ -134,9 +135,11 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByText('Group 1')).toBeDefined();
     expect(screen.getByText('Group 2')).toBeDefined();
 
+    onChange.mockClear();
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'a1' } });
     });
+    expect(onChange).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Question 2'), { target: { value: 'a2' } });
