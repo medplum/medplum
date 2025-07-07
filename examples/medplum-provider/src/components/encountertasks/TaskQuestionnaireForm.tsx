@@ -20,7 +20,7 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
       item: response.item,
       status: 'in-progress',
     };
-    
+
     onChangeResponse?.(updatedResponse);
   };
 
