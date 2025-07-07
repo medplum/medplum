@@ -10,7 +10,7 @@
     "dev": "npm run build:profiles"
   },
   "devDependencies": {
-    "fsh-sushi": "3.16.0",
+    "fsh-sushi": "3.16.2",
     "rimraf": "6.0.1"
   },
   "packageManager": "npm@10.9.2",
