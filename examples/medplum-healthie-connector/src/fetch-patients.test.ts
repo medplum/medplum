@@ -4,10 +4,10 @@ import { Bot, Bundle, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler } from './fetch-patients';
-import { HealthieClient } from './healthie';
+import { HealthieClient } from './healthie/client';
 
 vi.mock('./healthie', async (importOriginal) => {
-  const original = await importOriginal<typeof import('./healthie')>();
+  const original = await importOriginal<typeof import('./healthie/client')>();
   original.HealthieClient.prototype.query = vi.fn();
   return original;
 });
