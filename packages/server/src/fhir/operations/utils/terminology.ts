@@ -87,7 +87,7 @@ export function selectCoding(systemId: string, ...code: string[]): SelectQuery {
     .column('display')
     .where('system', '=', systemId)
     .where('code', 'IN', code)
-    .where('isSynonym', '=', false);
+    .where('synonymOf', '=', null);
 }
 
 export function addPropertyFilter(
