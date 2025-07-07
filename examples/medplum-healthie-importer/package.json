@@ -1,12 +1,12 @@
 {
-  "name": "medplum-healthie-connector",
+  "name": "medplum-healthie-importer",
   "version": "4.0.4",
-  "description": "Medplum Healthie Connector",
+  "description": "Medplum Healthie Importer",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
     "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
-    "deploy": "ts-node scripts/deploy-connector.ts",
+    "deploy": "ts-node scripts/deploy-importer.ts",
     "clean": "rimraf dist",
     "lint": "eslint src/",
     "prettier": "prettier --write .",

@@ -4,23 +4,23 @@ import { readFileSync } from 'fs';
 import { Command } from 'commander';
 import path from 'path';
 
-// Define the fetch-patients bpt
-const CONNECTOR_BOT = {
-  identifier: [{ system: 'https://www.medplum.com', value: 'medplum-healthie-connector/fetch-patients' }],
-  name: 'Medplum Healthie Connector: Fetch Patients',
-  description: 'Connector to fetch patients from Healthie',
+// Define the import-healthie-patients bot
+const IMPORTER_BOT = {
+  identifier: [{ system: 'https://www.medplum.com', value: 'medplum-healthie-importer/import-healthie-patients' }],
+  name: 'Medplum Healthie Importer: Import Patients',
+  description: 'Importer to import patients from Healthie',
   sourceCode: { url: 'src/import-healthie-patients.ts' },
   executableCode: { url: 'dist/import-healthie-patients.js' },
 } satisfies Partial<Bot>;
 
 async function main(): Promise<void> {
-  console.log('Installing Healthie connector bot...');
+  console.log('Installing Healthie importer bot...');
 
   // Parse command line arguments
   const program = new Command();
   program
-    .name('deploy-connector')
-    .description('Deploy Healthie connector bot to Medplum')
+    .name('deploy-importer')
+    .description('Deploy Healthie importer bot to Medplum')
     .argument('<clientId>', 'Medplum client ID')
     .argument('<clientSecret>', 'Medplum client secret')
     .option('-u, --base-url <baseUrl>', 'Medplum base URL', 'https://api.medplum.com/')
@@ -36,7 +36,7 @@ async function main(): Promise<void> {
   };
 
   const medplum = await connectToMedplum(deployOptions);
-  await deployConnectorBot(medplum);
+  await deployImporterBot(medplum);
 }
 
 /**
@@ -57,14 +57,14 @@ async function createOrUpdateBot(medplum: MedplumClient): Promise<WithId<Bot>> {
 
   // Extract source code and executable code files from CONNECTOR_BOT
   // Note: botFields should be CONNECTOR_BOT based on the context
-  const { sourceCode: sourceCodeFile, executableCode: executableCodeFile, ...otherFields } = CONNECTOR_BOT;
+  const { sourceCode: sourceCodeFile, executableCode: executableCodeFile, ...otherFields } = IMPORTER_BOT;
   if (!sourceCodeFile?.url || !executableCodeFile?.url) {
     throw new Error('Source code and executable code URL is required');
   }
 
   // Check if a bot with the same identifier already exists
   let existing = await medplum.searchOne('Bot', {
-    identifier: `${CONNECTOR_BOT.identifier?.[0].system}|${CONNECTOR_BOT.identifier?.[0].value}`,
+    identifier: `${IMPORTER_BOT.identifier?.[0].system}|${IMPORTER_BOT.identifier?.[0].value}`,
   });
 
   // Create attachments for source code and executable code
@@ -83,8 +83,8 @@ async function createOrUpdateBot(medplum: MedplumClient): Promise<WithId<Bot>> {
     // Create the bot resource in the project
     existing = await medplum
       .post('admin/projects/' + projectId + '/bot', {
-        name: CONNECTOR_BOT.name,
-        description: CONNECTOR_BOT.description,
+        name: IMPORTER_BOT.name,
+        description: IMPORTER_BOT.description,
         sourceCode,
         executableCode,
       })
@@ -112,13 +112,13 @@ async function createOrUpdateBot(medplum: MedplumClient): Promise<WithId<Bot>> {
   });
 }
 
-async function deployConnectorBot(medplum: MedplumClient): Promise<void> {
+async function deployImporterBot(medplum: MedplumClient): Promise<void> {
   const bot = await createOrUpdateBot(medplum);
   console.log('Deploying bot', bot.name, getReferenceString(bot));
 
   const id = bot.id;
 
-  const codeFilename = CONNECTOR_BOT.executableCode.url.replace('file://', '');
+  const codeFilename = IMPORTER_BOT.executableCode.url.replace('file://', '');
   const code = readFileSync(codeFilename, 'utf8');
   await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'), { code, filename: path.basename(codeFilename) });
 }
