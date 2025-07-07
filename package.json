@@ -35,16 +35,11 @@
     "root": true
   },
   "overrides": {
-    "es5-ext": "0.10.53",
     "esbuild": "0.25.5",
-    "formidable": "3.5.4",
-    "got": "11.8.6",
     "react": "19.1.0",
     "react-compiler-runtime": "latest",
     "react-dom": "19.1.0",
-    "react-native": "0.80.0",
-    "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@1.4.15",
-    "trim": "0.0.3",
+    "react-native": "0.80.1",
     "whatwg-url": "14.0.0"
   },
   "devDependencies": {
