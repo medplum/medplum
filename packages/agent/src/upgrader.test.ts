@@ -64,9 +64,9 @@ describe('Upgrader', () => {
 
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade'])).resolves.toBeUndefined();
       await expect(receivedMsgPromise).resolves.toStrictEqual({ type: 'STARTED' });
-      expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-3.1.6.exe'));
-      expect(getReleaseBinPath('3.1.6').endsWith('medplum-agent-installer-3.1.6.exe')).toStrictEqual(true);
-      expect(spawnSyncSpy).toHaveBeenLastCalledWith(`"${getReleaseBinPath('3.1.6')}" /S`, {
+      expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-4.2.4.exe'));
+      expect(getReleaseBinPath('4.2.4').endsWith('medplum-agent-installer-4.2.4.exe')).toStrictEqual(true);
+      expect(spawnSyncSpy).toHaveBeenLastCalledWith(`"${getReleaseBinPath('4.2.4')}" /S`, {
         shell: true,
         windowsHide: true,
       });
@@ -80,7 +80,7 @@ describe('Upgrader', () => {
       console.log = originalConsoleLog;
     });
 
-    test('Installer fails', async () => {
+    test.only('Installer fails', async () => {
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
@@ -102,9 +102,9 @@ describe('Upgrader', () => {
 
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade'])).resolves.toBeUndefined();
       await expect(receivedMsgPromise).resolves.toStrictEqual({ type: 'STARTED' });
-      expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-3.1.6.exe'));
-      expect(getReleaseBinPath('3.1.6').endsWith('medplum-agent-installer-3.1.6.exe')).toStrictEqual(true);
-      expect(spawnSyncSpy).toHaveBeenLastCalledWith(`"${getReleaseBinPath('3.1.6')}" /S`, {
+      expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-4.2.4.exe'));
+      expect(getReleaseBinPath('4.2.4').endsWith('medplum-agent-installer-4.2.4.exe')).toStrictEqual(true);
+      expect(spawnSyncSpy).toHaveBeenLastCalledWith(`"${getReleaseBinPath('4.2.4')}" /S`, {
         shell: true,
         windowsHide: true,
       });

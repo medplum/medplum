@@ -1641,7 +1641,7 @@ describe('App', () => {
         resolve(__dirname, 'upgrade.json'),
         JSON.stringify({
           previousVersion: MEDPLUM_VERSION,
-          targetVersion: '3.1.6',
+          targetVersion: '4.2.4',
           callback,
         }),
         { encoding: 'utf8', flag: 'w+' }
@@ -1740,7 +1740,7 @@ describe('App', () => {
         JSON.stringify({
           type: 'agent:upgrade:request',
           callback,
-          version: '3.1.6',
+          version: '4.2.4',
         } satisfies AgentUpgradeRequest)
       );
 
@@ -1766,7 +1766,7 @@ describe('App', () => {
       }
       clearTimeout(timeout);
 
-      expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade', '3.1.6'], {
+      expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade', '4.2.4'], {
         detached: true,
         stdio: ['ignore', 42, 42, 'ipc'],
       });
@@ -1778,7 +1778,7 @@ describe('App', () => {
         resolve(__dirname, 'upgrade.json'),
         JSON.stringify({
           previousVersion: MEDPLUM_VERSION,
-          targetVersion: '3.1.6',
+          targetVersion: '4.2.4',
           callback,
         }),
         { encoding: 'utf8', flag: 'w+' }
@@ -2206,7 +2206,7 @@ describe('App', () => {
         JSON.stringify({
           type: 'agent:upgrade:request',
           callback: getReferenceString(agent) + '-' + randomUUID(),
-          version: '3.1.6',
+          version: '4.2.4',
         } satisfies AgentUpgradeRequest)
       );
 
@@ -2222,7 +2222,7 @@ describe('App', () => {
         await sleep(100);
       }
       clearTimeout(timeout);
-      expect(state.agentError.body).toStrictEqual("Error during upgrading to version 'v3.1.6': Unable to open file");
+      expect(state.agentError.body).toStrictEqual("Error during upgrading to version 'v4.2.4': Unable to open file");
 
       await app.stop();
       await new Promise<void>((resolve) => {
@@ -2780,7 +2780,7 @@ describe('App', () => {
       resolve(__dirname, 'upgrade.json'),
       JSON.stringify({
         previousVersion: MEDPLUM_VERSION,
-        targetVersion: '3.1.6',
+        targetVersion: '4.2.4',
         callback,
       }),
       { encoding: 'utf8', flag: 'w+' }
