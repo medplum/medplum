@@ -205,6 +205,7 @@ describe('Upgrader', () => {
           'Uninstalling the current agent service before installing the pre-zero-downtime agent...'
         )
       );
+      expect(spawnSyncSpy).toHaveBeenCalledWith(resolve(__dirname, 'upgrader.ts'), ['--remove-old-services', '--all']);
 
       for (const spy of [fetchSpy, existsSyncSpy, spawnSyncSpy, execSyncSpy]) {
         spy.mockRestore();
