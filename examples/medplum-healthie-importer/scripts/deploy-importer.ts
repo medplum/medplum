@@ -7,7 +7,7 @@ import path from 'path';
 // Define the import-healthie-patients bot
 const IMPORTER_BOT = {
   identifier: [{ system: 'https://www.medplum.com', value: 'medplum-healthie-importer/import-healthie-patients' }],
-  name: 'Medplum Healthie Importer: Import Patients',
+  name: 'Healthie Patient Importer',
   description: 'Importer to import patients from Healthie',
   sourceCode: { url: 'src/import-healthie-patients.ts' },
   executableCode: { url: 'dist/import-healthie-patients.js' },
