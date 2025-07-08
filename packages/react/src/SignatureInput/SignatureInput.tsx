@@ -58,6 +58,7 @@ export function SignatureInput(props: SignatureInputProps): JSX.Element {
     if (signaturePadRef.current) {
       signaturePadRef.current.clear();
     }
+    onChangeRef.current?.(undefined);
   };
 
   return (

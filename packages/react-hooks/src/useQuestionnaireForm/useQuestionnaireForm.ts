@@ -1,4 +1,4 @@
-import { getExtension } from '@medplum/core';
+import { getExtension, HTTP_HL7_ORG } from '@medplum/core';
 import {
   Encounter,
   Questionnaire,
@@ -7,6 +7,7 @@ import {
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
   Reference,
+  Signature,
 } from '@medplum/fhirtypes';
 import { useReducer, useRef } from 'react';
 import { useResource } from '../useResource/useResource';
@@ -101,6 +102,12 @@ export interface QuestionnaireFormLoadedState {
     item: QuestionnaireItem,
     answer: QuestionnaireResponseItemAnswer[]
   ) => void;
+
+  /**
+   * Sets or updates the signature for the questionnaire response.
+   * @param signature - The signature to set, or undefined to clear the signature.
+   */
+  onChangeSignature: (signature: Signature | undefined) => void;
 }
 
 export interface QuestionnaireFormSinglePageState extends QuestionnaireFormLoadedState {
@@ -213,6 +220,28 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
     }
   }
 
+  function onChangeSignature(signature: Signature | undefined): void {
+    const currentResponse = state.current.questionnaireResponse;
+    if (!currentResponse) {
+      return;
+    }
+    if (signature) {
+      currentResponse.extension = currentResponse.extension ?? [];
+      currentResponse.extension = currentResponse.extension.filter(
+        (ext) => ext.url !== `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`
+      );
+      currentResponse.extension.push({
+        url: `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`,
+        valueSignature: signature,
+      });
+    } else {  
+      currentResponse.extension = currentResponse.extension?.filter(
+        (ext) => ext.url !== `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`
+      );
+    }
+    emitChange();
+  }
+
   function updateCalculatedExpressions(): void {
     const questionnaire = state.current.questionnaire;
     if (questionnaire?.item) {
@@ -251,6 +280,7 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
     onAddGroup,
     onAddAnswer,
     onChangeAnswer,
+    onChangeSignature,
   } as QuestionnaireFormSinglePageState | QuestionnaireFormPaginationState;
 }
 
