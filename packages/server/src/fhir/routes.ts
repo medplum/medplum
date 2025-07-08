@@ -349,21 +349,18 @@ function initInternalFhirRouter(): FhirRouter {
   router.addEventListener('batch', (event: any) => {
     const ctx = getAuthenticatedContext();
     const projectId = ctx.project.id;
-
     const { count, errors, size, bundleType } = event as BatchEvent;
-    const batchMetricOptions = { attributes: { bundleType, projectId } };
-    if (count !== undefined) {
-      recordHistogramValue('medplum.batch.entries', count, batchMetricOptions);
-    }
-    if (errors !== undefined) {
-      recordHistogramValue('medplum.batch.errors', errors, batchMetricOptions);
 
-      if (errors > 0 && bundleType === 'transaction') {
-        ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: projectId });
-      }
+    const metricOpts = { attributes: { bundleType, projectId } };
+    if (count !== undefined) {
+      recordHistogramValue('medplum.batch.entries', count, metricOpts);
+    }
+    if (errors?.length) {
+      recordHistogramValue('medplum.batch.errors', errors.length, metricOpts);
+      ctx.logger.warn('Error processing batch', { bundleType, count, errors, size, project: projectId });
     }
     if (size !== undefined) {
-      recordHistogramValue('medplum.batch.size', size, batchMetricOptions);
+      recordHistogramValue('medplum.batch.size', size, metricOpts);
     }
   });
 
