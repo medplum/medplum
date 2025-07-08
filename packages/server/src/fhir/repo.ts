@@ -315,7 +315,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, {
+        durationMs,
+        resource: { type: resource.resourceType },
+      });
       throw err;
     }
   }
