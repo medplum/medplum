@@ -48,6 +48,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     console.warn('No patients to create/update');
   }
 
+  // Fetch medications for each patient
   console.log(`Syncing Medications for ${healthiePatients.length} Healthie Patients`);
   for (const healthiePatient of healthiePatients) {
     const medicationBundle: Bundle = {
@@ -65,6 +66,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
         },
       });
     }
+
+    // <You can add additional resources conversions here>
+
     if (medicationBundle.entry && medicationBundle.entry?.length > 0) {
       await medplum.executeBatch(medicationBundle);
     } else {

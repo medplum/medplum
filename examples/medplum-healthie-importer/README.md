@@ -2,6 +2,11 @@
 
 The Medplum Healthie Importer is a tool that synchronizes patient data from the Healthie EMR into Medplum.
 
+Currently we support importing the following data:
+
+- Patient Demographics (`Patient`)
+- Medication History (`MedicationRequest`)
+
 ## Prerequisites
 
 - Node.js (LTS version recommended)
