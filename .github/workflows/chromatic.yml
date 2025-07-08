@@ -19,7 +19,7 @@ jobs:
         run: npm run build -- --filter=@medplum/react
 
       - name: Publish @medplum/react Chromatic
-        uses: chromaui/action@v11.0.0
+        uses: chromaui/action@v13.1.2
         with:
           projectToken: chpt_429b596edaecafb
           workingDir: packages/react
