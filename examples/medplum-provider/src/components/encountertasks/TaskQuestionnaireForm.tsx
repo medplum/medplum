@@ -1,5 +1,4 @@
 import { Box } from '@mantine/core';
-import { deepEquals } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
@@ -15,22 +14,14 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
 
   const onChange = (response: QuestionnaireResponse): void => {
-    if (!questionnaireResponse) {
-      const updatedResponse: QuestionnaireResponse = { ...response, status: 'in-progress' };
-      setQuestionnaireResponse(updatedResponse);
-      onChangeResponse?.(updatedResponse);
-    } else {
-      const equals = deepEquals(response.item, questionnaireResponse?.item);
-      if (!equals) {
-        const updatedResponse: QuestionnaireResponse = {
-          ...questionnaireResponse,
-          item: response.item,
-          status: 'in-progress',
-        };
-        setQuestionnaireResponse(updatedResponse);
-        onChangeResponse?.(updatedResponse);
-      }
-    }
+    const baseResponse = questionnaireResponse || response;
+    const updatedResponse: QuestionnaireResponse = {
+      ...baseResponse,
+      item: response.item,
+      status: 'in-progress',
+    };
+
+    onChangeResponse?.(updatedResponse);
   };
 
   useEffect(() => {
