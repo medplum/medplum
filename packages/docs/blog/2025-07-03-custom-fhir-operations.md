@@ -75,6 +75,6 @@ We're also considering whether customers should be able to override built-in ope
 
 ## Ready to Try It?
 
-Custom FHIR operations are available now in Medplum. Check out [our documentation](./docs/bots/custom-fhir-operations) for detailed setup instructions, examples, and best practices.
+Custom FHIR operations are available now in Medplum. Check out [our documentation](/docs/bots/custom-fhir-operations) for detailed setup instructions, examples, and best practices.
 
 This feature represents our commitment to providing healthcare developers with powerful, standards-compliant tools that adapt to real-world workflows. We can't wait to see what custom operations you build.
