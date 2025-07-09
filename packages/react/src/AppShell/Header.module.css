@@ -1,10 +1,10 @@
 .logoButton {
-  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  padding: 6px 10px;
   border-radius: var(--mantine-radius-sm);
   transition: background-color 100ms ease;
 
   &:hover {
-    background-color: var(--mantine-primary-color-light-hover);
+    background-color: var(--mantine-color-grape-light-hover);
   }
 }
 

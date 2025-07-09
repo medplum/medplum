@@ -34,7 +34,7 @@ export function App(): JSX.Element {
 
   return (
     <AppShell
-      logo={<Logo size={24} />}
+      logo={<Logo size={28} />}
       pathname={location.pathname}
       searchParams={searchParams}
       version={MEDPLUM_VERSION}
