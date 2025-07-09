@@ -234,7 +234,7 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
         url: `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`,
         valueSignature: signature,
       });
-    } else {  
+    } else {
       currentResponse.extension = currentResponse.extension?.filter(
         (ext) => ext.url !== `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`
       );
