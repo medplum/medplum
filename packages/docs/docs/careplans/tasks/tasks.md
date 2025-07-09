@@ -91,8 +91,6 @@ While these terms might feel awkward in a digital health setting, Medplum recomm
 
 `Task.for` indicates who _benefits_ from the task, and is most commonly the patient for whom care is being delivered.
 
-`Task.performerType` indicates the persona of that owner of the task. This can be based upon a role (Doctor, Care Coordinator, etc, see 'Assigning tasks to roles' below), or based upon another segmentation (care providers in California, )
-
 `Task.owner` indicates the party responsible for _performing_ the task. This can be either:
 
 - An individual: [`Practitioner`](/docs/api/fhir/resources/practitioner), [`PractitionerRole`](/docs/api/fhir/resources/practitionerrole), [`Patient`](/docs/api/fhir/resources/patient), [`RelatedPerson`](/docs/api/fhir/resources/relatedperson), or
