@@ -8,7 +8,7 @@ tags:
 import AboutMedplum from './_about-medplum.mdx';
 import Benefits from './_benefits.mdx';
 
-# Founding Developer Experience Engineer
+# Developer Experience Engineer
 
 ![Developer Experience](/img/careers/developer-experience.webp)
 
