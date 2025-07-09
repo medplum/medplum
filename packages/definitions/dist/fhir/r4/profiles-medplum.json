@@ -3337,7 +3337,7 @@
             "id": "JsonWebKey.alg",
             "path": "JsonWebKey.alg",
             "definition": "The specific cryptographic algorithm used with the key.",
-            "min": 0,
+            "min": 1,
             "max": "1",
             "type": [
               {
@@ -3346,7 +3346,7 @@
             ],
             "base": {
               "path": "JsonWebKey.alg",
-              "min": 0,
+              "min": 1,
               "max": "1"
             }
           },
@@ -3354,7 +3354,7 @@
             "id": "JsonWebKey.kty",
             "path": "JsonWebKey.kty",
             "definition": "The family of cryptographic algorithms used with the key.",
-            "min": 0,
+            "min": 1,
             "max": "1",
             "type": [
               {
@@ -3363,7 +3363,7 @@
             ],
             "base": {
               "path": "JsonWebKey.kty",
-              "min": 0,
+              "min": 1,
               "max": "1"
             }
           },
@@ -3584,6 +3584,57 @@
             ],
             "base": {
               "path" : "JsonWebKey.qi",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id": "JsonWebKey.x",
+            "path": "JsonWebKey.x",
+            "definition": "The x coordinate of the elliptic curve point (base64url encoded).",
+            "min": 0,
+            "max": "1",
+            "type": [
+              {
+                "code": "string"
+              }
+            ],
+            "base": {
+              "path" : "JsonWebKey.x",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id": "JsonWebKey.y",
+            "path": "JsonWebKey.y",
+            "definition": "The y coordinate of the elliptic curve point (base64url encoded).",
+            "min": 0,
+            "max": "1",
+            "type": [
+              {
+                "code": "string"
+              }
+            ],
+            "base": {
+              "path" : "JsonWebKey.y",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id": "JsonWebKey.crv",
+            "path": "JsonWebKey.crv",
+            "definition": "The cryptographic curve identifier (e.g., 'P-256', 'P-384', 'P-521').",
+            "min": 0,
+            "max": "1",
+            "type": [
+              {
+                "code": "string"
+              }
+            ],
+            "base": {
+              "path" : "JsonWebKey.crv",
               "min" : 0,
               "max" : "1"
             }

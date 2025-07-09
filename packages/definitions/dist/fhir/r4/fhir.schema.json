@@ -60440,10 +60440,22 @@
         "qi": {
           "description": "The first CRT coefficient.",
           "$ref": "#/definitions/string"
+        },
+        "x": {
+          "description": "The x coordinate of the elliptic curve point (base64url encoded).",
+          "$ref": "#/definitions/string"
+        },
+        "y": {
+          "description": "The y coordinate of the elliptic curve point (base64url encoded).",
+          "$ref": "#/definitions/string"
+        },
+        "crv": {
+          "description": "The cryptographic curve identifier (e.g., \u0027P-256\u0027, \u0027P-384\u0027, \u0027P-521\u0027).",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,
-      "required": ["resourceType"]
+      "required": ["resourceType", "alg", "kty"]
     },
     "Bot": {
       "description": "Bot account for automated actions.",
