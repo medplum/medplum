@@ -10,45 +10,6 @@ import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
 const medplum = new MockClient();
 
-// Mock canvas context and SignaturePad before any tests
-HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
-  fillStyle: '',
-  fillRect: jest.fn(),
-  clearRect: jest.fn(),
-  getImageData: jest.fn(),
-  putImageData: jest.fn(),
-  createImageData: jest.fn(),
-  setTransform: jest.fn(),
-  drawImage: jest.fn(),
-  save: jest.fn(),
-  restore: jest.fn(),
-  beginPath: jest.fn(),
-  moveTo: jest.fn(),
-  lineTo: jest.fn(),
-  closePath: jest.fn(),
-  stroke: jest.fn(),
-  fill: jest.fn(),
-  arc: jest.fn(),
-  rect: jest.fn(),
-  quadraticCurveTo: jest.fn(),
-  bezierCurveTo: jest.fn(),
-  scale: jest.fn(),
-  rotate: jest.fn(),
-  translate: jest.fn(),
-  canvas: {
-    width: 500,
-    height: 200,
-  },
-})) as any;
-
-// Mock ResizeObserver
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
-
-// Mock SignaturePad
 jest.mock('signature_pad', () => {
   return jest.fn().mockImplementation(() => ({
     fromDataURL: jest.fn().mockResolvedValue(undefined),
@@ -2906,7 +2867,7 @@ describe('QuestionnaireForm', () => {
             linkId: 'required-valueset-radio',
             text: 'Required Value Set Radio',
             type: QuestionnaireItemType.choice,
-            // required: true,
+            required: true,
             answerValueSet: 'http://example.com/valueset',
             extension: [
               {
