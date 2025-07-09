@@ -46,8 +46,13 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   formStateRef.current = formState;
 
   const isSignatureRequired = useMemo(() => {
-    if (formState.loading) {return false;}
-    return !!getExtension(formState.questionnaire, `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-signatureRequired`);
+    if (formState.loading) {
+      return false;
+    }
+    return !!getExtension(
+      formState.questionnaire,
+      `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-signatureRequired`
+    );
   }, [formState]);
 
   const hasSignature = useMemo(() => {
@@ -85,7 +90,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         source = createReference(profile);
       }
     }
-    
+
     onSubmit({
       ...response,
       questionnaire: questionnaire.url ?? getReferenceString(questionnaire),
