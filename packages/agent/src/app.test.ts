@@ -2197,7 +2197,7 @@ describe('App', () => {
         await sleep(100);
       }
 
-      const targetVersion = '3.1.6'; // Known bad version
+      const targetVersion = '3.1.6'; // Known pre-4.2.4 version
 
       state.mySocket.send(
         JSON.stringify({
@@ -2231,6 +2231,148 @@ describe('App', () => {
 
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+
+    test('Upgrade -- Pre-4.2.4, force = true', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      let child!: MockChildProcess;
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentUpgradeResponse: undefined as AgentUpgradeResponse | undefined,
+        agentError: undefined as AgentError | undefined,
+        disconnectCalled: false,
+      };
+
+      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const fetchSpy = mockFetchForUpgrader();
+      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
+      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
+      const rmSyncSpy = jest.spyOn(fs, 'rmSync').mockImplementation(jest.fn());
+      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
+        jest.fn(() => {
+          child = new MockChildProcess();
+          child.onDisconnect = () => {
+            state.disconnectCalled = true;
+          };
+          return child;
+        })
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.agentUpgradeResponse = command;
+              break;
+
+            case 'agent:error':
+              state.agentError = command;
+              break;
+
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to reconnect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+
+      const targetVersion = '3.1.6';
+
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          callback,
+          version: targetVersion,
+          force: true,
+        } satisfies AgentUpgradeRequest)
+      );
+
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+
+      // eslint-disable-next-line no-unmodified-loop-condition
+      while (!child) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for child to spawn');
+        }
+        await sleep(100);
+      }
+
+      child.emit('message', { type: 'STARTED' });
+      while (!state.disconnectCalled) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for disconnect');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade', targetVersion], {
+        detached: true,
+        stdio: ['ignore', 42, 42, 'ipc'],
+      });
+      expect(openSyncSpy).toHaveBeenCalled();
+      expect(child.unref).toHaveBeenCalled();
+      expect(child.disconnect).toHaveBeenCalled();
+
+      expect(writeFileSyncSpy).toHaveBeenLastCalledWith(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: MEDPLUM_VERSION,
+          targetVersion,
+          callback,
+        }),
+        { encoding: 'utf8', flag: 'w+' }
+      );
+      expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
+
+      expect(state.agentError).toBeUndefined();
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      for (const spy of [platformSpy, fetchSpy, openSyncSpy, writeFileSyncSpy, rmSyncSpy, spawnSpy]) {
+        spy.mockRestore();
+      }
       console.log = originalConsoleLog;
     });
 
