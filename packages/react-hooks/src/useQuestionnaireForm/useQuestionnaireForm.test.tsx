@@ -273,7 +273,7 @@ describe('useQuestionnaireForm', () => {
         {
           system: 'urn:iso-astm:E1762-95:2013',
           code: '1.2.840.10065.1.12.1.1',
-          display: 'Author\'s Signature',
+          display: "Author's Signature",
         },
       ],
       when: '2023-01-01T00:00:00Z',

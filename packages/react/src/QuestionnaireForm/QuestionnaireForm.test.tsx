@@ -3029,6 +3029,5 @@ describe('QuestionnaireForm', () => {
       expect(screen.getByText('Signature is required.')).toBeInTheDocument();
       expect(onSubmit).not.toHaveBeenCalled();
     });
-
   });
 });
