@@ -53,6 +53,11 @@ const sidebars: SidebarsConfig = {
         { type: 'doc', id: 'careplans/diagnostic-catalog/diagnostic-catalog' },
         { type: 'doc', id: 'careplans/reference-ranges' },
         { type: 'doc', id: 'careplans/loinc' },
+        { type: 'html', value: '<strong class="menu__link">Referrals</strong>' },
+        { type: 'doc', id: 'careplans/referrals/index' },
+        { type: 'doc', id: 'careplans/referrals/creation-and-capture' },
+        { type: 'doc', id: 'careplans/referrals/transmition-and-tracking' },
+        { type: 'doc', id: 'careplans/referrals/fhir-resource-examples' },
       ],
     },
     {
