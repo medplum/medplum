@@ -24,17 +24,23 @@ graph TD
     A[Ensure correct demographic information for patient] --> B[Select Performing Lab]
     B --> C[Fill out Choose a lab panel, e.g., Hepatic Function Panel]
     C --> D[Are specimens collected onsite?]
-    D -- Yes --> E[Enter Ask On Entry questions (e.g., Fasting? Y/N), and collected date and time]
+    D -->|Yes| E[Enter Ask On Entry questions e.g., Fasting? Y/N, and collected date and time]
     E --> F[Are you synchronizing patient insurance to lab provider?]
-    F -- Yes --> G[Ensure Coverage is collected]
-    F -- No --> P
+    F -->|Yes| G[Ensure Coverage is collected]
+    F -->|No| P
     G --> H[Medicare patient?]
-    H -- Yes --> I[Show the ABN and and capture diagnosis codes] --> P[Attach requisition to specimen and send to lab] --> M
-    D -- No --> J[Leave the collected date and time blank]
+    H -->|Yes| I[Show the ABN and and capture diagnosis codes] --> P[Attach requisition to specimen and send to lab] --> M
+    D -->|No| J[Leave the collected date and time blank]
     J --> K[Give patient requisition]
     K --> L[Lab collects insurance/specimen]
     L --> M[Receive results via API]
     M --> N[Release results to patient following state resulting protocol]
+    
+    classDef question fill:#A5D6A7,stroke:#333,stroke-width:2px
+    classDef action fill:#B088E1,stroke:#333,stroke-width:2px
+    
+    class D,F,H question
+    class A,B,C,E,G,I,J,K,L,M,N,P action
 ```
 
 Below is information on how to systemize the collection of this information. 
@@ -69,7 +75,7 @@ If collecting specimens on site, you'll need to provide the collection details a
 
 ## Sample Health Gorilla PDF's 
 
-The below table includes a list of sample documents for PDF's provided by Health Gorilla during the lab order requisition process. Please [Contact our team](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) for access. 
+The below table includes a list of sample documents for PDF's provided by Health Gorilla during the lab order requisition process. Please [contact our team](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) for access. 
 
 | Sample PDF             | Purpose                                 | 
 | ---------------------- | --------------------------------------- | 
