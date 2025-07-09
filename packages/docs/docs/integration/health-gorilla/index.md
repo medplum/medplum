@@ -49,7 +49,7 @@ In order to use Health Gorilla's integration, you must retain an account number 
 
 ### Choose a lab panel 
 
-To standardize the labs or the sets of labs (i.e. blood glucose level, standard STD test set, etc) that can be selected by clinicians, care managers can set up [PlanDefinitions](/docs/api/fhir/resources/plandefinition), that are then instantiated into [ServiceRequests](/docs/api/fhir/resources/servicerequest) when they are ordered for a specific patient. For more information, see our [order structure FHIR data model](/docs/integration/health-gorilla/sendingorders#fhir-data-model). 
+To standardize the labs or the sets of labs (i.e. blood glucose level, standard STD test set, etc) that can be selected by clinicians, care managers can set up [PlanDefinitions](/docs/api/fhir/resources/plandefinition), that are then instantiated into [ServiceRequests](/docs/api/fhir/resources/servicerequest) when they are ordered for a specific patient. For more information, see our [order structure FHIR data model](/docs/integration/health-gorilla/sending-orders#fhir-data-model). 
 
 ### Ensuring Coverage are collected 
 
