@@ -636,7 +636,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private checkResourcePermissions<T extends Resource>(resource: T, interaction: AccessPolicyInteraction): T {
+  private checkResourcePermissions<T extends Resource>(resource: T, interaction: AccessPolicyInteraction): WithId<T> {
     if (!isResourceWithId(resource)) {
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
@@ -665,17 +665,20 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   ): Promise<WithId<T>> {
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
     const { resourceType, id } = resource;
-    resource = this.checkResourcePermissions(resource, interaction);
+    let validatedResource = this.checkResourcePermissions(resource, interaction);
 
     const preCommitResult = await preCommitValidation(
       this.context.author,
       this.context.projects?.[0],
-      resource,
+      validatedResource,
       'update'
     );
 
-    if (isResourceWithId(preCommitResult, resource.resourceType) && preCommitResult.id === resource.id) {
-      resource = this.checkResourcePermissions(preCommitResult, interaction);
+    if (
+      isResourceWithId(preCommitResult, validatedResource.resourceType) &&
+      preCommitResult.id === validatedResource.id
+    ) {
+      validatedResource = this.checkResourcePermissions(preCommitResult, interaction);
     }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id as string);
@@ -690,16 +693,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
-    let updated = (await rewriteAttachments(RewriteMode.REFERENCE, this, {
-      ...this.restoreReadonlyFields(resource, existing),
-    })) as WithId<T>;
+    let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, {
+      ...this.restoreReadonlyFields(validatedResource, existing),
+    });
     updated = await replaceConditionalReferences(this, updated);
 
     const resultMeta: Meta = {
       ...updated.meta,
       versionId: this.generateId(),
-      lastUpdated: this.getLastUpdated(existing, resource),
-      author: this.getAuthor(resource),
+      lastUpdated: this.getLastUpdated(existing, validatedResource),
+      author: this.getAuthor(validatedResource),
       onBehalfOf: this.context.onBehalfOf,
     };
 
