@@ -26,6 +26,7 @@ import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'n
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
 import process from 'node:process';
+import * as semver from 'semver';
 import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
@@ -674,6 +675,21 @@ export class App {
       }
 
       this.log.info(`Forcing upgrade from ${MEDPLUM_VERSION} to ${targetVersion}`);
+    }
+
+    // If downgrading to a pre-zero-downtime version, we should check if we are forcing first
+    // If not forcing, we should error and warn the user about the implications of downgrading to a pre-zero-downtime version
+    // Including downtime during the current downgrade (since the currently running service must stop before downgrading)
+    // And future downtime upon any future upgrades
+    if (semver.lt(targetVersion, '4.2.4') && !message.force) {
+      const errMsg = `WARNING: ${targetVersion} predates the zero-downtime upgrade feature. Downgrading to this version will 1) incur downtime during the downgrade process, as the current agent must stop itself before installing the older agent, and 2) incur downtime on any subsequent upgrade to a later version. We recommend against downgrading to this version, but if you must, reissue the command with force set to true to downgrade.`;
+      this.log.error(errMsg);
+      await this.sendToWebSocket({
+        type: 'agent:error',
+        callback: message.callback,
+        body: errMsg,
+      } satisfies AgentError);
+      return;
     }
 
     if (upgradeInProgress && message.force) {
