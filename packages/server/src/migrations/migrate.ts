@@ -666,6 +666,10 @@ function buildSearchIndexes(result: TableDefinition, resourceType: ResourceType)
       unique: true,
     });
     result.indexes.push({ columns: ['project', 'userName'], indexType: 'btree', unique: true });
+    result.indexes.push({
+      columns: ['user', 'project'],
+      indexType: 'btree',
+    });
   }
 }
 
