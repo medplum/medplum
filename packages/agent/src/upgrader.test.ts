@@ -190,11 +190,7 @@ describe('Upgrader', () => {
 
       const fetchSpy = mockFetchForUpgrader();
       const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
-      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(
-        jest.fn(() => {
-          throw new Error('Failed to stop the service');
-        })
-      );
+      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(jest.fn());
       const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
 
       // Try to use a pre-4.2.4 version

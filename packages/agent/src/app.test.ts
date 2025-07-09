@@ -2149,7 +2149,6 @@ describe('App', () => {
 
       const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
       const fetchSpy = mockFetchForUpgrader();
-      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(jest.fn());
 
       function mockConnectionHandler(socket: Client): void {
         state.mySocket = socket;
@@ -2232,7 +2231,6 @@ describe('App', () => {
 
       platformSpy.mockRestore();
       fetchSpy.mockRestore();
-      spawnSyncSpy.mockRestore();
       console.log = originalConsoleLog;
     });
 
