@@ -246,4 +246,57 @@ describe('useQuestionnaireForm', () => {
     expect(updatedState.questionnaireResponse.item).toHaveLength(1);
     expect(updatedState.questionnaireResponse.item?.[0]?.answer).toHaveLength(2);
   });
+
+  test('Signature functionality', async () => {
+    const questionnaire = {
+      resourceType: 'Questionnaire',
+      id: 'test',
+      status: 'active',
+      item: [
+        {
+          type: 'string',
+          linkId: 'test-item',
+          text: 'Test Item',
+        },
+      ],
+    } as const;
+
+    const { result } = renderHook(() => useQuestionnaireForm({ questionnaire }), { wrapper });
+    expect(result.current).toMatchObject({ loading: false });
+
+    const formState = result.current as QuestionnaireFormLoadedState;
+
+    expect(formState.questionnaireResponse.extension).toBeUndefined();
+
+    const signature = {
+      type: [
+        {
+          system: 'urn:iso-astm:E1762-95:2013',
+          code: '1.2.840.10065.1.12.1.1',
+          display: 'Author\'s Signature',
+        },
+      ],
+      when: '2023-01-01T00:00:00Z',
+      who: { reference: 'Practitioner/test' },
+      data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
+    };
+
+    await act(async () => {
+      formState.onChangeSignature(signature);
+    });
+
+    const signedState = result.current as QuestionnaireFormLoadedState;
+    expect(signedState.questionnaireResponse.extension).toHaveLength(1);
+    expect(signedState.questionnaireResponse.extension?.[0]).toMatchObject({
+      url: 'http://hl7.org/fhir/StructureDefinition/questionnaireresponse-signature',
+      valueSignature: signature,
+    });
+
+    await act(async () => {
+      formState.onChangeSignature(undefined);
+    });
+
+    const unsignedState = result.current as QuestionnaireFormLoadedState;
+    expect(unsignedState.questionnaireResponse.extension).toEqual([]);
+  });
 });

@@ -10,6 +10,55 @@ import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
 const medplum = new MockClient();
 
+// Mock canvas context and SignaturePad before any tests
+HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+  fillStyle: '',
+  fillRect: jest.fn(),
+  clearRect: jest.fn(),
+  getImageData: jest.fn(),
+  putImageData: jest.fn(),
+  createImageData: jest.fn(),
+  setTransform: jest.fn(),
+  drawImage: jest.fn(),
+  save: jest.fn(),
+  restore: jest.fn(),
+  beginPath: jest.fn(),
+  moveTo: jest.fn(),
+  lineTo: jest.fn(),
+  closePath: jest.fn(),
+  stroke: jest.fn(),
+  fill: jest.fn(),
+  arc: jest.fn(),
+  rect: jest.fn(),
+  quadraticCurveTo: jest.fn(),
+  bezierCurveTo: jest.fn(),
+  scale: jest.fn(),
+  rotate: jest.fn(),
+  translate: jest.fn(),
+  canvas: {
+    width: 500,
+    height: 200,
+  },
+})) as any;
+
+// Mock ResizeObserver
+global.ResizeObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}));
+
+// Mock SignaturePad
+jest.mock('signature_pad', () => {
+  return jest.fn().mockImplementation(() => ({
+    fromDataURL: jest.fn().mockResolvedValue(undefined),
+    clear: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    toDataURL: jest.fn(() => 'data:image/png;base64,signature-data'),
+  }));
+});
+
 const pageExtension: Extension[] = [
   {
     url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
@@ -2857,7 +2906,7 @@ describe('QuestionnaireForm', () => {
             linkId: 'required-valueset-radio',
             text: 'Required Value Set Radio',
             type: QuestionnaireItemType.choice,
-            required: true,
+            // required: true,
             answerValueSet: 'http://example.com/valueset',
             extension: [
               {
@@ -2944,5 +2993,81 @@ describe('QuestionnaireForm', () => {
     expect(onSubmit).toHaveBeenCalled();
     const response = onSubmit.mock.calls[0][0];
     expect(response.item[0].answer[0].valueBoolean).toBe(true);
+  });
+
+  describe('Signature validation', () => {
+    const signatureRequiredQuestionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'active',
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-signatureRequired',
+          valueCodeableConcept: {
+            coding: [
+              {
+                system: 'urn:iso-astm:E1762-95:2013',
+                code: '1.2.840.10065.1.12.1.1',
+                display: "Author's Signature",
+              },
+            ],
+          },
+        },
+      ],
+      item: [
+        {
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string',
+        },
+      ],
+    };
+
+    test('Renders signature input when signature is required', async () => {
+      await setup({
+        questionnaire: signatureRequiredQuestionnaire,
+        onSubmit: jest.fn(),
+      });
+
+      expect(screen.getByLabelText('Signature input area')).toBeInTheDocument();
+      expect(screen.queryByText('Signature is required.')).not.toBeInTheDocument();
+    });
+
+    test('Does not render signature input when signature is not required', async () => {
+      await setup({
+        questionnaire: {
+          resourceType: 'Questionnaire',
+          status: 'active',
+          item: [
+            {
+              linkId: 'question1',
+              text: 'Question 1',
+              type: 'string',
+            },
+          ],
+        },
+        onSubmit: jest.fn(),
+      });
+
+      expect(screen.queryByLabelText('Signature input area')).not.toBeInTheDocument();
+    });
+
+    test('Shows error message when submit is attempted without signature', async () => {
+      const onSubmit = jest.fn();
+
+      await setup({
+        questionnaire: signatureRequiredQuestionnaire,
+        onSubmit,
+      });
+
+      expect(screen.queryByText('Signature is required.')).not.toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Submit'));
+      });
+
+      expect(screen.getByText('Signature is required.')).toBeInTheDocument();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
   });
 });

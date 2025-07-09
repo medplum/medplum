@@ -1,4 +1,4 @@
-import { Group, Text, Title } from '@mantine/core';
+import { Group, Stack, Text, Title } from '@mantine/core';
 import { createReference, getExtension, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import { Encounter, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useQuestionnaireForm } from '@medplum/react-hooks';
@@ -130,14 +130,17 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
             responseItems={formState.responseItems}
           />
           {isSignatureRequired() && (
-            <>
-              <SignatureInput mt="xs" onChange={formState.onChangeSignature} />
+            <Stack mt="md" gap={0}>
+              <Text size="sm" fw={500}>
+                Signature
+              </Text>
+              <SignatureInput onChange={formState.onChangeSignature} />
               {!hasSignature() && signatureRequiredSubmitted && (
-                <Text c="red" size="sm" mt="xs">
+                <Text c="red" size="sm">
                   Signature is required.
                 </Text>
               )}
-            </>
+            </Stack>
           )}
 
           {!props.excludeButtons && (
