@@ -2,7 +2,7 @@ import { Group, Stack, Text, Title } from '@mantine/core';
 import { createReference, getExtension, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import { Encounter, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useQuestionnaireForm } from '@medplum/react-hooks';
-import { JSX, useCallback, useRef, useState } from 'react';
+import { JSX, useCallback, useMemo, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
 import { SignatureInput } from '../SignatureInput/SignatureInput';
@@ -45,17 +45,12 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const formStateRef = useRef(formState);
   formStateRef.current = formState;
 
-  const isSignatureRequired = useCallback(() => {
-    if (formState.loading) {
-      return false;
-    }
-    return !!getExtension(
-      formState.questionnaire,
-      `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-signatureRequired`
-    );
+  const isSignatureRequired = useMemo(() => {
+    if (formState.loading) {return false;}
+    return !!getExtension(formState.questionnaire, `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-signatureRequired`);
   }, [formState]);
 
-  const hasSignature = useCallback(() => {
+  const hasSignature = useMemo(() => {
     if (formState.loading) {
       return false;
     }
@@ -75,7 +70,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       return;
     }
 
-    if (isSignatureRequired() && !hasSignature()) {
+    if (isSignatureRequired && !hasSignature) {
       setSignatureRequiredSubmitted(true);
       return;
     }
@@ -90,7 +85,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         source = createReference(profile);
       }
     }
-    console.log('response', response);
+    
     onSubmit({
       ...response,
       questionnaire: questionnaire.url ?? getReferenceString(questionnaire),
@@ -129,13 +124,13 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
             items={formState.items}
             responseItems={formState.responseItems}
           />
-          {isSignatureRequired() && (
+          {isSignatureRequired && (
             <Stack mt="md" gap={0}>
               <Text size="sm" fw={500}>
                 Signature
               </Text>
               <SignatureInput onChange={formState.onChangeSignature} />
-              {!hasSignature() && signatureRequiredSubmitted && (
+              {!hasSignature && signatureRequiredSubmitted && (
                 <Text c="red" size="sm">
                   Signature is required.
                 </Text>
