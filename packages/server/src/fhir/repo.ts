@@ -664,8 +664,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     versionId?: string
   ): Promise<WithId<T>> {
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
-    const { resourceType, id } = resource;
     let validatedResource = this.checkResourcePermissions(resource, interaction);
+    const { resourceType, id } = validatedResource;
 
     const preCommitResult = await preCommitValidation(
       this.context.author,
@@ -681,7 +681,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       validatedResource = this.checkResourcePermissions(preCommitResult, interaction);
     }
 
-    const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id as string);
+    const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
       if (!this.canPerformInteraction(interaction, existing)) {
