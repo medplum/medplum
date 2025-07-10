@@ -1,4 +1,4 @@
-import { Hl7Message } from '@medplum/core';
+import { Hl7Message, sleep } from '@medplum/core';
 import iconv from 'iconv-lite';
 import net from 'node:net';
 import { Hl7Base } from './base';
@@ -18,15 +18,25 @@ export class Hl7Connection extends Hl7Base {
   readonly socket: net.Socket;
   readonly encoding: string;
   readonly enhancedMode: boolean;
+  private messagesPerSec: number | undefined;
   private chunks: Buffer[] = [];
   private readonly messageQueue: Hl7MessageQueueItem[] = [];
+  private readonly responseQueue: Hl7MessageEvent[] = [];
+  private lastMessageDispatchedTime = 0;
+  private responseQueueProcessing = false;
 
-  constructor(socket: net.Socket, encoding: string = 'utf-8', enhancedMode = false) {
+  constructor(
+    socket: net.Socket,
+    encoding: string = 'utf-8',
+    enhancedMode = false,
+    messagesPerSec: number | undefined = undefined
+  ) {
     super();
 
     this.socket = socket;
     this.encoding = encoding;
     this.enhancedMode = enhancedMode;
+    this.messagesPerSec = messagesPerSec;
 
     socket.on('data', (data: Buffer) => {
       try {
@@ -36,8 +46,9 @@ export class Hl7Connection extends Hl7Base {
           const contentBuffer = buffer.subarray(1, buffer.length - 2);
           const contentString = iconv.decode(contentBuffer, this.encoding);
           const message = Hl7Message.parse(contentString);
-          this.dispatchEvent(new Hl7MessageEvent(this, message));
+          this.responseQueue.push(new Hl7MessageEvent(this, message));
           this.resetBuffer();
+          this.processResponseQueue();
         }
       } catch (err) {
         this.dispatchEvent(new Hl7ErrorEvent(err as Error));
@@ -71,6 +82,40 @@ export class Hl7Connection extends Hl7Base {
       // Resolve the promise if there is one pending for this message
       next.resolve?.(event.message);
     });
+  }
+
+  private async processResponseQueueWithThrottle(): Promise<void> {
+    if (this.responseQueueProcessing) {
+      return;
+    }
+
+    this.responseQueueProcessing = true;
+    while (this.responseQueue.length) {
+      const millisBetweenMsgs = 1000 / (this.messagesPerSec as number);
+      const elapsedMillis = Date.now() - this.lastMessageDispatchedTime;
+      if (millisBetweenMsgs > elapsedMillis) {
+        await sleep(millisBetweenMsgs - elapsedMillis);
+      }
+      this.dispatchEvent(this.responseQueue.shift() as Hl7MessageEvent);
+      this.lastMessageDispatchedTime = Date.now();
+    }
+    this.responseQueueProcessing = false;
+  }
+
+  private processResponseQueue(): void {
+    // If not throttled, just go until we clear out the queue
+    if (!this.messagesPerSec) {
+      while (this.responseQueue.length) {
+        const messageEvent = this.responseQueue.shift();
+        if (messageEvent) {
+          this.dispatchEvent(messageEvent);
+        }
+      }
+    } else {
+      this.processResponseQueueWithThrottle().catch((err) => {
+        this.dispatchEvent(new Hl7ErrorEvent(err));
+      });
+    }
   }
 
   private sendImpl(reply: Hl7Message, queueItem: Hl7MessageQueueItem): void {
