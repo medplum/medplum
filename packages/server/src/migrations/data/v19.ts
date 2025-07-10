@@ -23,4 +23,6 @@ export const migration: CustomPostDeployMigration = {
 async function run(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
   await fns.idempotentCreateIndex(client, results, 'Coding_Property_identity_idx', `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "Coding_Property_identity_idx" ON "Coding_Property" ("property", "value", "coding")`);
   await fns.query(client, results, `DROP INDEX CONCURRENTLY IF EXISTS "Coding_Property_idx"`);
+  await fns.idempotentCreateIndex(client, results, 'Coding_Property_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Coding_Property_idx" ON "Coding_Property" ("coding", "property")`);
+  await fns.query(client, results, `DROP INDEX CONCURRENTLY IF EXISTS "Coding_Property_coding_idx"`);
 }
