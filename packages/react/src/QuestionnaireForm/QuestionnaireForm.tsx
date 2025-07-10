@@ -1,7 +1,12 @@
 import { Group, Stack, Text, Title } from '@mantine/core';
 import { createReference, getExtension, getReferenceString } from '@medplum/core';
 import { Encounter, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
-import { QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QUESTIONNAIRE_SIGNATURE_RESPONSE_URL, useMedplum, useQuestionnaireForm } from '@medplum/react-hooks';
+import {
+  QUESTIONNAIRE_SIGNATURE_REQUIRED_URL,
+  QUESTIONNAIRE_SIGNATURE_RESPONSE_URL,
+  useMedplum,
+  useQuestionnaireForm,
+} from '@medplum/react-hooks';
 import { JSX, useCallback, useMemo, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
@@ -46,7 +51,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   formStateRef.current = formState;
 
   const isSignatureRequired = useMemo(() => {
-    if (formState.loading) {return false;}
+    if (formState.loading) {
+      return false;
+    }
     return !!getExtension(formState.questionnaire, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL);
   }, [formState]);
 
@@ -54,9 +61,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     if (formState.loading) {
       return false;
     }
-    return !!formState.questionnaireResponse.extension?.find(
-      (ext) => ext.url === QUESTIONNAIRE_SIGNATURE_RESPONSE_URL
-    );
+    return !!formState.questionnaireResponse.extension?.find((ext) => ext.url === QUESTIONNAIRE_SIGNATURE_RESPONSE_URL);
   }, [formState]);
 
   const handleSubmit = useCallback(() => {
@@ -85,7 +90,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         source = createReference(profile);
       }
     }
-    
+
     onSubmit({
       ...response,
       questionnaire: questionnaire.url ?? getReferenceString(questionnaire),
