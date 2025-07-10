@@ -322,7 +322,7 @@ export class App {
       }
     }
 
-    if (this.logStatsFreqSecs !== logStatsFreqSecs) {
+    if (this.logStatsFreqSecs !== logStatsFreqSecs && this.logStatsTimer) {
       // Clear the interval for log stats if logStatsFreqSecs is not the same in the new config
       clearInterval(this.logStatsTimer);
       this.logStatsTimer = undefined;
@@ -495,6 +495,11 @@ export class App {
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = undefined;
+    }
+
+    if (this.logStatsTimer) {
+      clearInterval(this.logStatsTimer);
+      this.logStatsTimer = undefined;
     }
 
     if (this.webSocket) {

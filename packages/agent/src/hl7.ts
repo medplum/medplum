@@ -57,11 +57,11 @@ export class AgentHl7Channel extends BaseChannel {
 
   private handleNewConnection(connection: Hl7Connection): void {
     const c = new AgentHl7ChannelConnection(this, connection);
-    updateStat('hl7ConnectionsOpen', getCurrentStats().hl7ConnectionsOpen++);
+    updateStat('hl7ConnectionsOpen', getCurrentStats().hl7ConnectionsOpen + 1);
     c.hl7Connection.addEventListener('close', () => {
       this.log.info(`Closing connection: ${c.remote}`);
       this.connections.delete(c.remote);
-      updateStat('hl7ConnectionsOpen', getCurrentStats().hl7ConnectionsOpen--);
+      updateStat('hl7ConnectionsOpen', getCurrentStats().hl7ConnectionsOpen - 1);
     });
     this.log.info(`HL7 connection established: ${c.remote}`);
     this.connections.set(c.remote, c);
