@@ -258,7 +258,7 @@ function applyProjectAdminAccessPolicy(
     accessPolicy.resource.push({
       resourceType: 'User',
       hiddenFields: ['passwordHash', 'mfaSecret'],
-      readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+      readonlyFields: ['emailVerified', 'mfaEnrolled', 'project'],
     });
   } else {
     // Remove any references to project admin resource types
