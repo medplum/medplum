@@ -44,6 +44,7 @@ import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { TaskDetails } from './pages/tasks/TaskDetails';
 import { MessagesPage } from './pages/messages/MessagesPage';
+import { TasksPage } from './pages/tasks/TasksPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -72,6 +73,10 @@ export function App(): JSX.Element | null {
         {
           title: 'Communication',
           links: [{ icon: <IconMail />, label: 'Messages', href: '/messages' }],
+        },
+        {
+          title: 'Tasks',
+          links: [{ icon: <IconClipboardCheck />, label: 'Tasks', href: '/tasks' }],
         },
         {
           title: 'Onboarding',
@@ -137,6 +142,7 @@ export function App(): JSX.Element | null {
                 <Route path="*" element={<TaskTab />} />
               </Route>
               <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/tasks" element={<TasksPage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />
