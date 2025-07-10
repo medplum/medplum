@@ -29,8 +29,16 @@ export class AgentHl7Channel extends BaseChannel {
     const address = new URL(this.getEndpoint().address as string);
     const encoding = address.searchParams.get('encoding') ?? undefined;
     const enhancedMode = address.searchParams.get('enhanced')?.toLowerCase() === 'true';
+    const messagesPerSecRaw = address.searchParams.get('messagesPerSec') ?? undefined;
+    let messagesPerSec = messagesPerSecRaw ? Number.parseInt(messagesPerSecRaw, 10) : undefined;
+    if (messagesPerSec !== undefined && !Number.isInteger(messagesPerSec)) {
+      this.log.warn(
+        `Invalid messagesPerSec: ${messagesPerSecRaw}; must be a valid integer. Creating channel without a set messagesPerSec...`
+      );
+      messagesPerSec = undefined;
+    }
     this.log.info(`Channel starting on ${address}...`);
-    this.server.start(Number.parseInt(address.port, 10), encoding, enhancedMode);
+    this.server.start(Number.parseInt(address.port, 10), encoding, enhancedMode, messagesPerSec);
     this.log.info('Channel started successfully');
   }
 
