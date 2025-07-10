@@ -198,20 +198,9 @@ Add the `Prefer: respond-async` header to any bot execution request:
 <Tabs>
   <TabItem value="ts" label="TypeScript">
 
-```typescript
-const response = await medplum.executeBot(
-  {
-    botId: 'your-bot-id',
-    input: { foo: 'bar' },
-  },
-  undefined,
-  {
-    headers: {
-      Prefer: 'respond-async',
-    },
-  }
-);
-```
+<MedplumCodeBlock language="ts" selectBlocks="execute-async">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
   <TabItem value="cli" label="CLI">
@@ -248,39 +237,16 @@ You can poll this URL to check the status of your bot execution:
 
 <Tabs>
   <TabItem value="ts" label="TypeScript">
+The `MedplumClient` provides helper utilities to poll job status automatically
+<MedplumCodeBlock language="ts" selectBlocks="execute-async-with-polling">
+  {ExampleCode}
+</MedplumCodeBlock>
 
-```typescript
-// Get the status URL from the Content-Location header
-const statusUrl = response.headers.get('Content-Location');
+However, you can also manually poll the status URL
 
-// Poll the status until completion
-async function checkJobStatus(statusUrl: string): Promise<any> {
-  const statusResponse = await fetch(statusUrl, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-
-  const asyncJob = await statusResponse.json();
-
-  // Check if job is complete
-  if (asyncJob.status === 'completed') {
-    // Extract the result from the output parameters
-    const responseBody = asyncJob.output?.parameter?.find((p) => p.name === 'responseBody');
-    return responseBody.valueString || responseBody.valueBoolean || responseBody.valueInteger;
-  } else if (asyncJob.status === 'error') {
-    // Handle error case
-    const outcome = asyncJob.output?.parameter?.find((p) => p.name === 'outcome');
-    throw new Error(`Bot execution failed: ${outcome?.resource?.issue?.[0]?.details?.text}`);
-  } else {
-    // Job still running, wait and try again
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return checkJobStatus(statusUrl);
-  }
-}
-
-const result = await checkJobStatus(statusUrl);
-```
+<MedplumCodeBlock language="ts" selectBlocks="check-job-status-manual">
+  {ExampleCode}
+</MedplumCodeBlock>
 
   </TabItem>
   <TabItem value="cli" label="CLI">
@@ -321,55 +287,12 @@ The status endpoint returns an `AsyncJob` resource with the following key fields
 
 When the bot execution completes successfully:
 
-```json
-{
-  "resourceType": "AsyncJob",
-  "id": "job-id",
-  "status": "completed",
-  "request": "https://api.medplum.com/fhir/R4/Bot/bot-id/$execute",
-  "requestTime": "2023-01-01T00:00:00.000Z",
-  "transactionTime": "2023-01-01T00:00:05.000Z",
-  "output": {
-    "resourceType": "Parameters",
-    "parameter": [
-      {
-        "name": "responseBody",
-        "valueString": "Bot execution result"
-      }
-    ]
-  }
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="example-success-response">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 When the bot execution fails:
 
-```json
-{
-  "resourceType": "AsyncJob",
-  "id": "job-id",
-  "status": "error",
-  "request": "https://api.medplum.com/fhir/R4/Bot/bot-id/$execute",
-  "requestTime": "2023-01-01T00:00:00.000Z",
-  "transactionTime": "2023-01-01T00:00:05.000Z",
-  "output": {
-    "resourceType": "Parameters",
-    "parameter": [
-      {
-        "name": "outcome",
-        "resource": {
-          "resourceType": "OperationOutcome",
-          "issue": [
-            {
-              "severity": "error",
-              "code": "processing",
-              "details": {
-                "text": "Bot execution failed"
-              }
-            }
-          ]
-        }
-      }
-    ]
-  }
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="example-error-response">
+  {ExampleCode}
+</MedplumCodeBlock>
