@@ -1,4 +1,4 @@
-import { getExtension, HTTP_HL7_ORG } from '@medplum/core';
+import { getExtension } from '@medplum/core';
 import {
   Encounter,
   Questionnaire,
@@ -16,6 +16,7 @@ import {
   buildInitialResponseItem,
   evaluateCalculatedExpressionsInQuestionnaire,
   QUESTIONNAIRE_ITEM_CONTROL_URL,
+  QUESTIONNAIRE_SIGNATURE_RESPONSE_URL,
 } from './utils';
 
 // React Hook for Questionnaire Form
@@ -228,15 +229,15 @@ export function useQuestionnaireForm(props: UseQuestionnaireFormProps): Readonly
     if (signature) {
       currentResponse.extension = currentResponse.extension ?? [];
       currentResponse.extension = currentResponse.extension.filter(
-        (ext) => ext.url !== `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`
+        (ext) => ext.url !== QUESTIONNAIRE_SIGNATURE_RESPONSE_URL
       );
       currentResponse.extension.push({
-        url: `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`,
+        url: QUESTIONNAIRE_SIGNATURE_RESPONSE_URL,
         valueSignature: signature,
       });
     } else {
       currentResponse.extension = currentResponse.extension?.filter(
-        (ext) => ext.url !== `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`
+        (ext) => ext.url !== QUESTIONNAIRE_SIGNATURE_RESPONSE_URL
       );
     }
     emitChange();

@@ -1,7 +1,7 @@
 import { Group, Stack, Text, Title } from '@mantine/core';
-import { createReference, getExtension, getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
+import { createReference, getExtension, getReferenceString } from '@medplum/core';
 import { Encounter, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useQuestionnaireForm } from '@medplum/react-hooks';
+import { QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QUESTIONNAIRE_SIGNATURE_RESPONSE_URL, useMedplum, useQuestionnaireForm } from '@medplum/react-hooks';
 import { JSX, useCallback, useMemo, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
@@ -47,7 +47,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   const isSignatureRequired = useMemo(() => {
     if (formState.loading) {return false;}
-    return !!getExtension(formState.questionnaire, `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-signatureRequired`);
+    return !!getExtension(formState.questionnaire, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL);
   }, [formState]);
 
   const hasSignature = useMemo(() => {
@@ -55,7 +55,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       return false;
     }
     return !!formState.questionnaireResponse.extension?.find(
-      (ext) => ext.url === `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`
+      (ext) => ext.url === QUESTIONNAIRE_SIGNATURE_RESPONSE_URL
     );
   }, [formState]);
 

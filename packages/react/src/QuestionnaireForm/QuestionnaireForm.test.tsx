@@ -1,7 +1,7 @@
 import { getAllQuestionnaireAnswers, getQuestionnaireAnswers } from '@medplum/core';
 import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider, QuestionnaireItemType } from '@medplum/react-hooks';
+import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
 import { MemoryRouter } from 'react-router';
@@ -2962,7 +2962,7 @@ describe('QuestionnaireForm', () => {
       status: 'active',
       extension: [
         {
-          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-signatureRequired',
+          url: QUESTIONNAIRE_SIGNATURE_REQUIRED_URL,
           valueCodeableConcept: {
             coding: [
               {
