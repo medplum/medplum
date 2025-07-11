@@ -636,11 +636,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private async updateResourceImpl<T extends Resource>(
-    resource: T,
-    create: boolean,
-    versionId?: string
-  ): Promise<WithId<T>> {
+  private checkResourcePermissions<T extends Resource>(resource: T, interaction: AccessPolicyInteraction): WithId<T> {
     if (!isResourceWithId(resource)) {
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
@@ -648,7 +644,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
-    const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
 
     // Add default profiles before validating resource
     if (!resource.meta?.profile && this.currentProject()?.defaultProfile) {
@@ -657,12 +652,34 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       )?.profile;
       resource.meta = { ...resource.meta, profile: defaultProfiles };
     }
-
     if (!this.supportsInteraction(interaction, resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
+    return resource;
+  }
 
-    await preCommitValidation(this.context.projects?.[0], resource, 'update');
+  private async updateResourceImpl<T extends Resource>(
+    resource: T,
+    create: boolean,
+    versionId?: string
+  ): Promise<WithId<T>> {
+    const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
+    let validatedResource = this.checkResourcePermissions(resource, interaction);
+    const { resourceType, id } = validatedResource;
+
+    const preCommitResult = await preCommitValidation(
+      this.context.author,
+      this.context.projects?.[0],
+      validatedResource,
+      'update'
+    );
+
+    if (
+      isResourceWithId(preCommitResult, validatedResource.resourceType) &&
+      preCommitResult.id === validatedResource.id
+    ) {
+      validatedResource = this.checkResourcePermissions(preCommitResult, interaction);
+    }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
@@ -677,15 +694,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, {
-      ...this.restoreReadonlyFields(resource, existing),
+      ...this.restoreReadonlyFields(validatedResource, existing),
     });
     updated = await replaceConditionalReferences(this, updated);
 
     const resultMeta: Meta = {
       ...updated.meta,
       versionId: this.generateId(),
-      lastUpdated: this.getLastUpdated(existing, resource),
-      author: this.getAuthor(resource),
+      lastUpdated: this.getLastUpdated(existing, validatedResource),
+      author: this.getAuthor(validatedResource),
       onBehalfOf: this.context.onBehalfOf,
     };
 
@@ -1092,7 +1109,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(forbidden);
       }
 
-      await preCommitValidation(this.context.projects?.[0], resource, 'delete');
+      await preCommitValidation(this.context.author, this.context.projects?.[0], resource, 'delete');
 
       await this.deleteCacheEntry(resourceType, id);
 
