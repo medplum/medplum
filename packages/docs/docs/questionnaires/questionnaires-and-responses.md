@@ -164,4 +164,4 @@ To require a signature for a Questionnaire, add the following extension to the Q
 
 The `QuestionnaireForm` component will automatically render a signature input field when the signature extension is present in the Questionnaire. The signature input field will be required and will validate that a signature is provided before submission.
 
-See the [Storybook](https://storybook.medplum.com/?path=/story/medplum-questionnaireform) for an example.
+See the [Storybook](https://storybook.medplum.com/?path=/story/medplum-questionnaireform--signature-required) for an example.
