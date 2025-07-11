@@ -127,6 +127,7 @@ export async function exampleResponses(): Promise<void> {
       },
     };
   // end-block example-success-response
+  console.log(_successResponse);
 
   const _errorResponse =
     // start-block example-error-response
@@ -159,4 +160,5 @@ export async function exampleResponses(): Promise<void> {
       },
     };
   // end-block example-error-response
+  console.log(_errorResponse);
 }
