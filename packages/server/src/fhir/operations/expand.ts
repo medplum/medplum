@@ -296,10 +296,10 @@ export function expansionQuery(
           }
           break;
         case '=':
-          query = addPropertyFilter(query, condition.property, '=', condition.value);
+          query = addPropertyFilter(query, condition.property, '=', condition.value, codeSystem);
           break;
         case 'in':
-          query = addPropertyFilter(query, condition.property, 'IN', condition.value.split(','));
+          query = addPropertyFilter(query, condition.property, 'IN', condition.value.split(','), codeSystem);
           break;
         default:
           getLogger().warn('Unknown filter type in ValueSet', { filter: condition });
