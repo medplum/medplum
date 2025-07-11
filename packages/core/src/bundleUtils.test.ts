@@ -1,5 +1,5 @@
-import { getResourcesByType, populateReferences } from './bundleUtils';
 import { Bundle } from '@medplum/fhirtypes';
+import { getResourcesByType, populateReferences } from './bundleUtils';
 
 describe('getResourcesByType', () => {
   it('groups resources by type', () => {
@@ -30,30 +30,30 @@ describe('populateReferences', () => {
           resource: {
             resourceType: 'Practitioner',
             id: 'p1',
-            name: [{ family: 'Smith' }]
-          }
+            name: [{ family: 'Smith' }],
+          },
         },
         {
           resource: {
             resourceType: 'ServiceRequest',
             id: 's1',
-            requester: { reference: 'Practitioner/p1' }
-          }
+            requester: { reference: 'Practitioner/p1' },
+          },
         },
         {
           resource: {
             resourceType: 'Observation',
             id: 'o1',
-            basedOn: [{ reference: 'ServiceRequest/s1' }]
-          }
-        }
-      ]
+            basedOn: [{ reference: 'ServiceRequest/s1' }],
+          },
+        },
+      ],
     };
 
     const result = populateReferences(bundle);
 
-    const obs = result.entry?.find(e => e.resource?.resourceType === 'Observation')?.resource as any;
-    const sr = result.entry?.find(e => e.resource?.resourceType === 'ServiceRequest')?.resource as any;
+    const obs = result.entry?.find((e) => e.resource?.resourceType === 'Observation')?.resource as any;
+    const sr = result.entry?.find((e) => e.resource?.resourceType === 'ServiceRequest')?.resource as any;
 
     expect(obs.basedOn?.[0].resource).toBeDefined();
     expect(obs.basedOn?.[0].resource.id).toBe('s1');
@@ -71,10 +71,10 @@ describe('populateReferences', () => {
           resource: {
             resourceType: 'Observation',
             id: 'o1',
-            basedOn: [{ reference: 'ServiceRequest/doesnotexist' }]
-          }
-        }
-      ]
+            basedOn: [{ reference: 'ServiceRequest/doesnotexist' }],
+          },
+        },
+      ],
     };
 
     expect(() => populateReferences(bundle)).not.toThrow();
