@@ -1,7 +1,8 @@
 import { BackgroundJobContext, WithId } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { MedplumServerConfig } from '../config/types';
-import { globalLogger } from '../logger';
+import { Repository } from '../fhir/repo';
+import { getLogger, globalLogger } from '../logger';
 import { initBatchWorker } from './batch';
 import { addCronJobs, initCronWorker } from './cron';
 import { addDownloadJobs, initDownloadWorker } from './download';
@@ -41,16 +42,44 @@ export async function closeWorkers(): Promise<void> {
 
 /**
  * Adds all background jobs for a given resource.
+ * @param repo - The repository to use for adding background jobs.
  * @param resource - The resource that was created or updated.
  * @param previousVersion - The previous version of the resource, if available.
  * @param context - The background job context.
  */
 export async function addBackgroundJobs(
+  repo: Repository,
   resource: WithId<Resource>,
   previousVersion: Resource | undefined,
   context: BackgroundJobContext
 ): Promise<void> {
-  await addSubscriptionJobs(resource, previousVersion, context);
-  await addDownloadJobs(resource, context);
-  await addCronJobs(resource, previousVersion, context);
+  try {
+    await repo.postCommit(() => addSubscriptionJobs(resource, previousVersion, context));
+  } catch (err) {
+    getLogger().error('Error adding subscription jobs', {
+      resourceType: resource.resourceType,
+      resource: resource.id,
+      err,
+    });
+  }
+
+  try {
+    await repo.postCommit(() => addDownloadJobs(resource, context));
+  } catch (err) {
+    getLogger().error('Error adding download jobs', {
+      resourceType: resource.resourceType,
+      resource: resource.id,
+      err,
+    });
+  }
+
+  try {
+    await repo.postCommit(() => addCronJobs(resource, previousVersion, context));
+  } catch (err) {
+    getLogger().error('Error adding cron jobs', {
+      resourceType: resource.resourceType,
+      resource: resource.id,
+      err,
+    });
+  }
 }

@@ -691,9 +691,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const result = { ...updated, meta: resultMeta };
 
-    const project = this.getProjectId(existing, updated);
-    if (project) {
-      resultMeta.project = project;
+    const projectId = this.getProjectId(existing, updated);
+    if (projectId) {
+      resultMeta.project = projectId;
     }
     const accounts = await this.getAccounts(existing, updated);
     if (accounts) {
@@ -721,11 +721,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     await this.handleStorage(result, create);
-    await this.postCommit(async () => {
-      await this.handleBinaryUpdate(existing, result);
-      const project = await this.getProjectById(result.meta?.project);
-      await addBackgroundJobs(result, existing, { project, interaction });
-    });
+    await this.postCommit(() => this.handleBinaryUpdate(existing, result));
+    const project = await this.getProjectById(projectId);
+    await addBackgroundJobs(this, result, existing, { project, interaction });
 
     const output = deepClone(result);
     return this.removeHiddenFields(output);
