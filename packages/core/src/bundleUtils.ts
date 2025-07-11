@@ -1,4 +1,4 @@
-import { Bundle, Resource, Reference } from '@medplum/fhirtypes';
+import { Bundle, Resource } from '@medplum/fhirtypes';
 
 /**
  * Groups all resources in a FHIR Bundle by their resourceType.
@@ -28,6 +28,7 @@ export function getResourcesByType(bundle: Bundle): Map<string, Resource[]> {
  */
 export function populateReferences(bundle: Bundle): Bundle {
   if (!bundle?.entry) return bundle;
+
   // Build a lookup map of all resources in the bundle
   const resourceMap = new Map<string, Resource>();
   for (const entry of bundle.entry) {
@@ -36,30 +37,44 @@ export function populateReferences(bundle: Bundle): Bundle {
       resourceMap.set(`${resource.resourceType}/${resource.id}`, resource);
     }
   }
-  // Recursively populate references in all resources
+
+  // Recursively populate references
   for (const entry of bundle.entry) {
     if (entry.resource) {
       _populateResourceReferences(entry.resource, resourceMap);
     }
   }
+
   return bundle;
 }
 
 function _populateResourceReferences(obj: any, resourceMap: Map<string, Resource>): void {
-  if (!obj || typeof obj !== 'object') return;
-  for (const key of Object.keys(obj)) {
-    const value = obj[key];
-    if (Array.isArray(value)) {
-      value.forEach((item) => _populateResourceReferences(item, resourceMap));
-    } else if (value && typeof value === 'object') {
-      // If this is a Reference
-      if (value.reference && typeof value.reference === 'string' && !value.resource) {
-        const refResource = resourceMap.get(value.reference);
-        if (refResource) {
-          value.resource = refResource;
-        }
+  const visited = new Set();
+
+  function traverse(node: any) {
+    if (!node || typeof node !== 'object' || visited.has(node)) return;
+
+    visited.add(node);
+
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        traverse(item);
       }
-      _populateResourceReferences(value, resourceMap);
+      return;
+    }
+
+    // Inject resource if it's a FHIR Reference
+    if (typeof node.reference === 'string' && !node.resource) {
+      const resource = resourceMap.get(node.reference);
+      if (resource) {
+        node.resource = resource;
+      }
+    }
+
+    for (const key of Object.keys(node)) {
+      traverse(node[key]);
     }
   }
-} 
+
+  traverse(obj);
+}
