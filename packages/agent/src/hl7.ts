@@ -4,6 +4,7 @@ import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent, Hl7Server } from '@medpl
 import { randomUUID } from 'node:crypto';
 import { App } from './app';
 import { BaseChannel } from './channel';
+import { getCurrentStats, updateStat } from './stats';
 
 export class AgentHl7Channel extends BaseChannel {
   readonly server: Hl7Server;
@@ -56,9 +57,11 @@ export class AgentHl7Channel extends BaseChannel {
 
   private handleNewConnection(connection: Hl7Connection): void {
     const c = new AgentHl7ChannelConnection(this, connection);
+    updateStat('hl7ConnectionsOpen', getCurrentStats().hl7ConnectionsOpen + 1);
     c.hl7Connection.addEventListener('close', () => {
       this.log.info(`Closing connection: ${c.remote}`);
       this.connections.delete(c.remote);
+      updateStat('hl7ConnectionsOpen', getCurrentStats().hl7ConnectionsOpen - 1);
     });
     this.log.info(`HL7 connection established: ${c.remote}`);
     this.connections.set(c.remote, c);
