@@ -29,7 +29,10 @@ describe('Reference checks', () => {
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      project.checkReferencesOnWrite = true;
+      await getSystemRepo().updateResource({
+        ...project,
+        checkReferencesOnWrite: true,
+      });
 
       const authState: AuthState = {
         login: {} as Login,
@@ -82,6 +85,7 @@ describe('Reference checks', () => {
 
   test('References to resources in linked Project', () =>
     withTestContext(async () => {
+      const systemRepo = getSystemRepo();
       const { membership, project } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
@@ -97,8 +101,11 @@ describe('Reference checks', () => {
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      project.checkReferencesOnWrite = true;
-      project.link = [{ project: createReference(project2) }];
+      const updatedProject = await systemRepo.updateResource({
+        ...project,
+        checkReferencesOnWrite: true,
+        link: [{ project: createReference(project2) }],
+      });
 
       const repo2 = await getRepoForLogin({
         login: {} as Login,
@@ -114,7 +121,7 @@ describe('Reference checks', () => {
       let repo = await getRepoForLogin({
         login: {} as Login,
         membership,
-        project,
+        project: updatedProject,
         userConfig: {} as UserConfiguration,
       });
       const patient = await repo.createResource({
@@ -123,12 +130,15 @@ describe('Reference checks', () => {
       });
       expect(patient.link?.[0]?.other).toStrictEqual(createReference(patient2));
 
-      // Unlink Project and vaerify that access is revoked
-      project.link = undefined;
+      // Unlink Project and verify that access is revoked
+      const unlinkedProject = await systemRepo.updateResource({
+        ...updatedProject,
+        link: undefined,
+      });
       repo = await getRepoForLogin({
         login: {} as Login,
         membership,
-        project,
+        project: unlinkedProject,
         userConfig: {} as UserConfiguration,
       });
       await expect(
