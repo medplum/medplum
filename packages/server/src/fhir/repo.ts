@@ -724,7 +724,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
     await this.postCommit(async () => {
       const project = await this.getProjectById(projectId);
-      await addBackgroundJobs(this, result, existing, { project, interaction });
+      await addBackgroundJobs(result, existing, { project, interaction });
     });
 
     const output = deepClone(result);
