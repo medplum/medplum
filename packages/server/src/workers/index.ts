@@ -54,7 +54,7 @@ export async function addBackgroundJobs(
   context: BackgroundJobContext
 ): Promise<void> {
   try {
-    await repo.postCommit(() => addSubscriptionJobs(resource, previousVersion, context));
+    await addSubscriptionJobs(resource, previousVersion, context);
   } catch (err) {
     getLogger().error('Error adding subscription jobs', {
       resourceType: resource.resourceType,
@@ -64,7 +64,7 @@ export async function addBackgroundJobs(
   }
 
   try {
-    await repo.postCommit(() => addDownloadJobs(resource, context));
+    await addDownloadJobs(resource, context);
   } catch (err) {
     getLogger().error('Error adding download jobs', {
       resourceType: resource.resourceType,
@@ -74,7 +74,7 @@ export async function addBackgroundJobs(
   }
 
   try {
-    await repo.postCommit(() => addCronJobs(resource, previousVersion, context));
+    await addCronJobs(resource, previousVersion, context);
   } catch (err) {
     getLogger().error('Error adding cron jobs', {
       resourceType: resource.resourceType,

@@ -721,9 +721,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     await this.handleStorage(result, create);
-    await this.postCommit(() => this.handleBinaryUpdate(existing, result));
-    const project = await this.getProjectById(projectId);
-    await addBackgroundJobs(this, result, existing, { project, interaction });
+    await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
+    await this.postCommit(async () => {
+      const project = await this.getProjectById(projectId);
+      await addBackgroundJobs(this, result, existing, { project, interaction });
+    });
 
     const output = deepClone(result);
     return this.removeHiddenFields(output);
@@ -2501,6 +2503,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       this.preCommitCallbacks.push(fn);
     } else {
+      // rely on thrown errors bubbling up from here to halt the transaction
       await fn();
     }
   }
@@ -2509,15 +2512,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const callbacks = this.preCommitCallbacks;
     this.preCommitCallbacks = [];
     for (const cb of callbacks) {
-      try {
-        await cb();
-      } catch (err) {
-        if (err instanceof Error) {
-          getLogger().error('Error processing pre-commit callback', err);
-        } else {
-          getLogger().error('Error processing pre-commit callback', { err });
-        }
-      }
+      // rely on thrown errors bubbling up from here to halt the transaction
+      await cb();
     }
   }
 
@@ -2525,7 +2521,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       this.postCommitCallbacks.push(fn);
     } else {
-      await fn();
+      await this.invokePostCommitCallback(fn);
     }
   }
 
@@ -2533,14 +2529,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const callbacks = this.postCommitCallbacks;
     this.postCommitCallbacks = [];
     for (const cb of callbacks) {
-      try {
-        await cb();
-      } catch (err) {
-        if (err instanceof Error) {
-          getLogger().error('Error processing post-commit callback', err);
-        } else {
-          getLogger().error('Error processing post-commit callback', { err });
-        }
+      await this.invokePostCommitCallback(cb);
+    }
+  }
+
+  private async invokePostCommitCallback(fn: () => Promise<void>): Promise<void> {
+    try {
+      await fn();
+    } catch (err) {
+      if (err instanceof Error) {
+        getLogger().error('Error processing post-commit callback', err);
+      } else {
+        getLogger().error('Error processing post-commit callback', { err });
       }
     }
   }
