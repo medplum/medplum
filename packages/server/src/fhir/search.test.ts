@@ -1034,6 +1034,8 @@ describe('project-scoped Repository', () => {
     ['1985', false],
     ['1985-11', false],
     ['1985-11-30', true],
+    ['1985-11-30T05:05', true],
+    ['1985-11-30T05:05Z', true],
     ['1985-11-30T05:05:55', true],
     ['1985-11-30T05:05:55Z', true],
     ['1985-11-30T05:05:55.000Z', true],
@@ -1050,7 +1052,7 @@ describe('project-scoped Repository', () => {
         filters: [
           {
             code: '_lastUpdated',
-            operator: Operator.GREATER_THAN,
+            operator: Operator.LESS_THAN,
             value,
           },
         ],
