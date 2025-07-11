@@ -2509,7 +2509,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const callbacks = this.preCommitCallbacks;
     this.preCommitCallbacks = [];
     for (const cb of callbacks) {
-      await cb();
+      try {
+        await cb();
+      } catch (err) {
+        if (err instanceof Error) {
+          getLogger().error('Error processing pre-commit callback', err);
+        } else {
+          getLogger().error('Error processing pre-commit callback', { err });
+        }
+      }
     }
   }
 
@@ -2525,7 +2533,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const callbacks = this.postCommitCallbacks;
     this.postCommitCallbacks = [];
     for (const cb of callbacks) {
-      await cb();
+      try {
+        await cb();
+      } catch (err) {
+        if (err instanceof Error) {
+          getLogger().error('Error processing post-commit callback', err);
+        } else {
+          getLogger().error('Error processing post-commit callback', { err });
+        }
+      }
     }
   }
 
