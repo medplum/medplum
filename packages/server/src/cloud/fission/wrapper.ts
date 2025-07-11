@@ -15,7 +15,17 @@ const fetch = require('node-fetch');
 const PdfPrinter = require('pdfmake');
 const userCode = require('./user.js');
 
+const logOutput = [];
+for (const fnName of ['log', 'error', 'warn', 'info', 'debug']) {
+  const originalFn = console[fnName];
+  console[fnName] = (...args) => {
+    logOutput.push(args.join(' '));
+    originalFn.apply(console, args);
+  };
+}
+
 module.exports = async function (context) {
+  logOutput.length = 0;
   try {
     const event = context.request.body;
     const { bot, baseUrl, accessToken, contentType, secrets, traceId, headers } = event;
@@ -34,7 +44,7 @@ module.exports = async function (context) {
     if (contentType === ContentType.HL7_V2 && input) {
       input = Hl7Message.parse(input);
     }
-    let result = await userCode.handler(medplum, {
+    let returnValue = await userCode.handler(medplum, {
       bot,
       input,
       contentType,
@@ -42,27 +52,30 @@ module.exports = async function (context) {
       traceId,
       headers,
     });
-    if (contentType === ContentType.HL7_V2 && result) {
-      result = result.toString();
-    }
-    if (typeof result !== 'string') {
-      result = JSON.stringify(result, undefined, 2);
+    if (contentType === ContentType.HL7_V2 && returnValue) {
+      returnValue = returnValue.toString();
     }
     return {
       status: 200,
-      body: result,
+      body: JSON.stringify({
+        returnValue,
+        logResult: logOutput.join('\\n'),
+      }),
     };
   } catch (err) {
     if (err instanceof Error) {
-      console.log('Unhandled error: ' + err.message + '\\n' + err.stack);
+      console.error('Unhandled error: ' + err.message + '\\n' + err.stack);
     } else if (typeof err === 'object') {
-      console.log('Unhandled error: ' + JSON.stringify(err, undefined, 2));
+      console.error('Unhandled error: ' + JSON.stringify(err, undefined, 2));
     } else {
-      console.log('Unhandled error: ' + err);
+      console.error('Unhandled error: ' + err);
     }
     return {
       status: 400,
-      body: JSON.stringify(normalizeOperationOutcome(err)),
+      body: JSON.stringify({
+        returnValue: normalizeOperationOutcome(err),
+        logResult: logOutput.join('\\n'),
+      }),
     };
   }
 };

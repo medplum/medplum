@@ -26,6 +26,34 @@ These settings specify the network address (hostname or IP address) and the port
   - `routerHost`: This should be the internal ClusterIP service name of the Fission Router. Kubernetes DNS will automatically resolve this name within the cluster. The standard format is `router.fission.svc.cluster.local`.
   - `routerPort`: This will typically be the standard HTTP port `80`, as the internal ClusterIP service usually exposes the router on its default HTTP port.
 
+## Medplum Server Configuration for Fission
+
+Add your Fission router configuration to your Medplum server configuration.
+
+For example, when running a local development setup with Fission in a Docker Desktop Kubernetes cluster, add the following to `medplum.config.json`:
+
+```json
+"fission": {
+  "namespace": "default",
+  "fieldManager": "medplum-fission-example",
+  "environmentName": "nodejs",
+  "routerHost": "localhost",
+  "routerPort": 31314
+}
+```
+
+When using AWS Parameter Store, you can add a single `fission` parameter with the following JSON value:
+
+```json
+{
+  "namespace": "default",
+  "fieldManager": "medplum-fission-example",
+  "environmentName": "nodejs",
+  "routerHost": "localhost",
+  "routerPort": 31314
+}
+```
+
 ## Local Development Setup for Fission
 
 To get started with Fission for local development or testing, follow these steps to install it on your Kubernetes cluster. For detailed and up-to-date installation instructions, always refer to the official Fission documentation: [https://fission.io/docs/installation/](https://fission.io/docs/installation/)

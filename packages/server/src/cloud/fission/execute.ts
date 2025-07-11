@@ -25,11 +25,11 @@ export async function executeFissionBot(request: BotExecutionContext): Promise<B
   try {
     const body = JSON.stringify(payload);
     const response = await executeFissionFunction(bot.id, body);
-    const returnValue = response ? JSON.parse(response) : undefined;
+    const responseBody = response ? JSON.parse(response) : undefined;
     return {
       success: true,
-      logResult: 'TODO',
-      returnValue,
+      logResult: responseBody?.logResult ?? '',
+      returnValue: responseBody?.returnValue,
     };
   } catch (err) {
     return {
