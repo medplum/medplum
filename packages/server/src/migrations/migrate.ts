@@ -816,12 +816,12 @@ function buildCodingPropertyTable(result: SchemaDefinition): void {
       { name: 'coding', type: 'BIGINT', notNull: true },
       { name: 'property', type: 'BIGINT', notNull: true },
       { name: 'target', type: 'BIGINT' },
-      { name: 'value', type: 'TEXT' },
+      { name: 'value', type: 'TEXT', notNull: true },
     ],
     indexes: [
-      { columns: ['coding', 'property', 'target', 'value'], indexType: 'btree', unique: true },
       { columns: ['target', 'property', 'coding'], indexType: 'btree', unique: false, where: 'target IS NOT NULL' },
-      { columns: ['coding'], indexType: 'btree', unique: false },
+      { columns: ['coding', 'property'], indexType: 'btree', unique: false, indexNameSuffix: '_idx' },
+      { columns: ['property', 'value', 'coding'], indexType: 'btree', unique: true, indexNameSuffix: 'identity_idx' },
     ],
   });
 }

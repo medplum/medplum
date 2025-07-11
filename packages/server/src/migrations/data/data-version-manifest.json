@@ -64,5 +64,8 @@
   },
   "v18": {
     "serverVersion": "4.3.4"
+  },
+  "v19": {
+    "serverVersion": "4.3.4"
   }
 }
