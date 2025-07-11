@@ -253,10 +253,10 @@ export async function shutdownApp(): Promise<void> {
 
 const loggingMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   const ctx = getRequestContext();
-  const start = Date.now();
+  const start = new Date();
 
   res.on('close', () => {
-    const duration = Date.now() - start;
+    const duration = Date.now() - start.valueOf();
 
     ctx.logger.info('Request served', {
       durationMs: duration,
