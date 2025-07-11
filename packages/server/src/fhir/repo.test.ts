@@ -1299,6 +1299,52 @@ describe('FHIR Repo', () => {
       expect(cachedPatient.gender).toStrictEqual('unknown');
     }));
 
+  test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
+    const repo = getSystemRepo();
+    const loggerErrorSpy = jest.spyOn(getLogger(), 'error');
+    const finalPostCommit = jest.fn();
+
+    const error = new Error('Post-commit hook failed');
+    const promise = repo.withTransaction(async () => {
+      await repo.postCommit(async () => {
+        throw new Error('Post-commit hook failed');
+      });
+      await repo.postCommit(async () => {
+        // eslint-disable-next-line no-throw-literal
+        throw 'Post-commit hook failed with string';
+      });
+      await repo.postCommit(finalPostCommit);
+      if (mode === 'rollback') {
+        throw new Error('Transaction failed');
+      }
+    });
+
+    if (mode === 'commit') {
+      await promise;
+      expect(finalPostCommit).toHaveBeenCalled();
+      expect(loggerErrorSpy).toHaveBeenCalledTimes(2);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(expect.any(String), error);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          err: 'Post-commit hook failed with string',
+        })
+      );
+    } else {
+      await expect(promise).rejects.toThrow('Transaction failed');
+      expect(finalPostCommit).not.toHaveBeenCalled();
+      expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          error: 'Transaction failed',
+        })
+      );
+    }
+
+    loggerErrorSpy.mockRestore();
+  });
+
   test('Handles resources with many entries stored in lookup table', async () =>
     withTestContext(async () => {
       const { repo } = await createTestProject({ withRepo: true });
