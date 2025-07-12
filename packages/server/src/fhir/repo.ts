@@ -708,9 +708,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const result = { ...updated, meta: resultMeta };
 
-    const project = this.getProjectId(existing, updated);
-    if (project) {
-      resultMeta.project = project;
+    const projectId = this.getProjectId(existing, updated);
+    if (projectId) {
+      resultMeta.project = projectId;
     }
     const accounts = await this.getAccounts(existing, updated);
     if (accounts) {
@@ -738,9 +738,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     await this.handleStorage(result, create);
+    await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
     await this.postCommit(async () => {
-      await this.handleBinaryUpdate(existing, result);
-      const project = await this.getProjectById(result.meta?.project);
+      const project = await this.getProjectById(projectId);
       await addBackgroundJobs(result, existing, { project, interaction });
     });
 
@@ -2520,6 +2520,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       this.preCommitCallbacks.push(fn);
     } else {
+      // rely on thrown errors bubbling up from here to halt the transaction
       await fn();
     }
   }
@@ -2528,6 +2529,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const callbacks = this.preCommitCallbacks;
     this.preCommitCallbacks = [];
     for (const cb of callbacks) {
+      // rely on thrown errors bubbling up from here to halt the transaction
       await cb();
     }
   }
@@ -2536,7 +2538,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       this.postCommitCallbacks.push(fn);
     } else {
-      await fn();
+      await this.invokePostCommitCallback(fn);
     }
   }
 
@@ -2544,7 +2546,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const callbacks = this.postCommitCallbacks;
     this.postCommitCallbacks = [];
     for (const cb of callbacks) {
-      await cb();
+      await this.invokePostCommitCallback(cb);
+    }
+  }
+
+  private async invokePostCommitCallback(fn: () => Promise<void>): Promise<void> {
+    try {
+      await fn();
+    } catch (err) {
+      if (err instanceof Error) {
+        getLogger().error('Error processing post-commit callback', err);
+      } else {
+        getLogger().error('Error processing post-commit callback', { err });
+      }
     }
   }
 
