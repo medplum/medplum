@@ -10,8 +10,8 @@ export default function PricingPage(): JSX.Element {
         <div className={styles.pricing}>
           <h1>Pricing</h1>
           <p style={{ maxWidth: 600, margin: '20px auto' }}>
-            For questions about pricing or to <a href="https://cal.com/medplum/15">schedule a demo</a> please reach out to us at{' '}
-            <a href="mailto:hello@medplum.com">hello@medplum.com</a>.
+            For questions about pricing or to <a href="https://cal.com/medplum/15">schedule a demo</a> please reach out
+            to us at <a href="mailto:hello@medplum.com">hello@medplum.com</a>.
           </p>
           <table style={{ width: 950, margin: 'auto' }}>
             <colgroup>
@@ -571,8 +571,11 @@ export default function PricingPage(): JSX.Element {
                 and service level guarantees.
               </li>
               <li id="note17">
-              <strong> Cloud Hosted</strong>: Medplum is available for purchase through{' '}
-                <a href="https://aws.amazon.com/marketplace/pp/prodview-gfbi35l2l7mma?sr=0-1&ref_=beagle&applicationId=AWSMPContessa">AWS Marketplace</a>.
+                <strong> Cloud Hosted</strong>: Medplum is available for purchase through{' '}
+                <a href="https://aws.amazon.com/marketplace/pp/prodview-gfbi35l2l7mma?sr=0-1&ref_=beagle&applicationId=AWSMPContessa">
+                  AWS Marketplace
+                </a>
+                .
               </li>
             </ol>
           </div>
