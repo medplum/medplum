@@ -52,7 +52,9 @@ describe('Execute Fission bots', () => {
     (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
       status: 200,
       ok: true,
-      text: jest.fn(async () => JSON.stringify({ result: 'test result' })),
+      text: jest.fn(async () =>
+        JSON.stringify({ success: true, logResult: '', returnValue: { result: 'test result' } })
+      ),
     }));
 
     await expect(
@@ -88,7 +90,9 @@ describe('Execute Fission bots', () => {
     (fetch as unknown as jest.Mock).mockImplementationOnce(() => ({
       status: 400,
       ok: false,
-      text: jest.fn(async () => JSON.stringify({ result: 'unhandled error' })),
+      text: jest.fn(async () =>
+        JSON.stringify({ success: false, logResult: 'unhandled error', returnValue: { result: 'unhandled error' } })
+      ),
     }));
 
     await expect(
