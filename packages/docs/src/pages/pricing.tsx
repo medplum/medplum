@@ -220,7 +220,7 @@ export default function PricingPage(): JSX.Element {
                 <td>✔️</td>
               </tr>
               <tr>
-                <td>Concurrent Connections</td>
+                <td>Concurrent Websocket Connections</td>
                 <td></td>
                 <td></td>
                 <td>2000</td>
