@@ -77,7 +77,7 @@ For interrupted workflows—a constant reality in busy radiology departments—I
 
 ## Medplum's Unique Position in Healthcare Interoperability
 
-Medplum's achievement of IRA Hub certification represents a **natural evolution** of their FHIR-native platform strategy. As an open-source platform released under Apache 2.0 license, through open source Medplum makes integrations possible that weren't before. Their architecture combines the flexibility developers need with the compliance healthcare requires, including HIPAA compliance, SOC 2 Type 2 certification, and ONC certification for patient API services.
+Medplum's achievement of IRA Hub certification represents a **natural evolution** of our FHIR-native platform strategy. As an open-source platform released under Apache 2.0 license, through open source Medplum makes integrations possible that weren't before. The Medplum architecture combines the flexibility developers need with the compliance healthcare requires, including HIPAA compliance, SOC 2 Type 2 certification, and ONC certification for patient API services.
 
 The Hub certification adds a **critical capability** to Medplum's platform: the ability to orchestrate complex, multi-vendor radiology workflows. Unlike traditional integration approaches requiring custom interfaces between each application pair, Medplum's IRA Hub provides a standards-based switchboard that any compliant application can connect to. This dramatically reduces integration complexity while enabling true plug-and-play interoperability between best-of-breed radiology solutions.
 
