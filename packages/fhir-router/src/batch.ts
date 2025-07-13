@@ -1,14 +1,20 @@
 import {
   append,
+  arrayify,
   badRequest,
+  crawlTypedValue,
   Event,
   getReferenceString,
   getStatus,
+  isObject,
   isOk,
+  isString,
   normalizeOperationOutcome,
   notFound,
   OperationOutcomeError,
   parseSearchRequest,
+  toTypedValue,
+  TypedValue,
   WithId,
 } from '@medplum/core';
 import {
@@ -30,7 +36,7 @@ const maxSerializableTransactionEntries = 8;
 const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 const uuidUriPrefix = 'urn:uuid';
 
-type BundleEntryIdentity = { placeholder: string; reference: string };
+type BundleEntryIdentity = { placeholder: string; resource: WithId<Resource> };
 
 type BundlePreprocessInfo = {
   ordering: number[];
@@ -67,7 +73,7 @@ class BatchProcessor {
   private readonly repo: FhirRepository;
   private readonly bundle: Bundle;
   private readonly req: FhirRequest;
-  private readonly resolvedIdentities: Record<string, string>;
+  private readonly resolvedIdentities: Record<string, WithId<Resource>>;
 
   /**
    * Creates a batch processor.
@@ -219,7 +225,7 @@ class BatchProcessor {
       return badRequest('Missing Bundle entry request URL', `Bundle.entry[${index}].request.url`);
     }
 
-    let resolved: { placeholder: string; reference: string } | undefined;
+    let resolved: BundleEntryIdentity | undefined;
     try {
       resolved = await this.resolveIdentity(entry, `Bundle.entry[${index}]`);
     } catch (err: any) {
@@ -231,14 +237,15 @@ class BatchProcessor {
 
     if (resolved) {
       // Track resolved identity for reference rewriting
-      this.resolvedIdentities[resolved.placeholder] = resolved.reference;
+      this.resolvedIdentities[resolved.placeholder] = resolved.resource;
 
       // If in a transaction, ensure identity is unique
       if (this.isTransaction()) {
-        if (seenIdentities.has(resolved.reference)) {
+        const reference = getReferenceString(resolved.resource);
+        if (seenIdentities.has(reference)) {
           throw new OperationOutcomeError(badRequest('Duplicate resource identity found in Bundle'));
         }
-        seenIdentities.add(resolved.reference);
+        seenIdentities.add(reference);
       }
     }
     return undefined;
@@ -280,12 +287,12 @@ class BatchProcessor {
         parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
       );
       if (existing.length === 1) {
-        return { placeholder, reference: getReferenceString(existing[0]) };
+        return { placeholder, resource: existing[0] };
       }
     }
     if (entry.resource) {
       entry.resource.id = this.repo.generateId();
-      return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
+      return { placeholder, resource: entry.resource as WithId<Resource> };
     }
     return undefined;
   }
@@ -322,7 +329,7 @@ class BatchProcessor {
               }
 
               entry.resource.id = this.repo.generateId();
-              return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
+              return { placeholder, resource: entry.resource as WithId<Resource> };
             }
             return undefined;
           default:
@@ -342,11 +349,11 @@ class BatchProcessor {
       if (entry.resource) {
         entry.resource.id = resolved.id;
       }
-      return { placeholder, reference };
+      return { placeholder, resource: resolved };
     }
 
     if (entry.request?.url.includes('/')) {
-      return { placeholder, reference: entry.request.url };
+      return { placeholder, resource: entry.resource as WithId<Resource> };
     }
 
     return undefined;
@@ -381,7 +388,7 @@ class BatchProcessor {
     for (let n = 0; n < bundleInfo.ordering.length; n++) {
       const entryIndex = bundleInfo.ordering[n];
       const entry = entries[entryIndex];
-      const rewritten = this.rewriteIdsInObject(entry);
+      const rewritten = this.rewriteIds(entry);
       try {
         resultEntries[entryIndex] = await this.processBatchEntry(rewritten);
       } catch (err: any) {
@@ -548,35 +555,70 @@ class BatchProcessor {
     return op;
   }
 
-  private rewriteIds(input: any): any {
+  rewriteIdsInResource<T extends Resource | undefined>(input: T): T {
+    if (!input) {
+      return input;
+    }
+    // TODO: Ideally we could use this strategy
+    // Unfortunately, the crawler does not support mutable values
+    crawlTypedValue(toTypedValue(input), {
+      visitProperty: (_parent, _key, _path, propertyValues) => {
+        for (const propertyValue of propertyValues) {
+          for (const value of arrayify(propertyValue) as TypedValue[]) {
+            if (isString(value.value)) {
+              (value as any).value = this.rewriteIdsInString(_key, value.value);
+            }
+          }
+        }
+      },
+    });
+    return input;
+  }
+
+  private rewriteIds<T>(input: T, propertyName?: string): T {
     if (Array.isArray(input)) {
-      return this.rewriteIdsInArray(input);
+      return this.rewriteIdsInArray(input, propertyName) as T;
     }
-    if (typeof input === 'string') {
-      return this.rewriteIdsInString(input);
+    if (isString(input)) {
+      return this.rewriteIdsInString(input, propertyName) as T;
     }
-    if (typeof input === 'object' && input !== null) {
-      return this.rewriteIdsInObject(input);
+    if (isObject(input)) {
+      return this.rewriteIdsInObject(input) as T;
     }
     return input;
   }
 
-  private rewriteIdsInArray(input: any[]): any[] {
-    return input.map((item) => this.rewriteIds(item));
+  private rewriteIdsInArray<T>(input: T[], propertyName?: string): T[] {
+    return input.map((item) => this.rewriteIds(item, propertyName));
   }
 
-  private rewriteIdsInObject(input: any): any {
-    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v)]));
+  private rewriteIdsInObject<T extends Record<string, unknown>>(input: T): T {
+    return Object.fromEntries(Object.entries(input).map(([k, v]) => [k, this.rewriteIds(v, k)])) as T;
   }
 
-  private rewriteIdsInString(input: string): string {
+  private rewriteIdsInString(input: string, propertyName?: string): string {
     const rewritable = localBundleReference.exec(input)?.[0];
     if (!rewritable) {
       return input;
     }
 
     const urn = rewritable.replaceAll('%3A', ':'); // Handle specific URL encoding for the URN format
-    const referenceString = this.resolvedIdentities[urn];
+    const resolvedIdentity = this.resolvedIdentities[urn];
+    if (!resolvedIdentity) {
+      return input;
+    }
+
+    let referenceString: string;
+    // TODO: Use type introspection to determine the property type
+    // We need to know if it's a canonical or reference
+    // Unfortunately, this code currently uses a naive crawler, and therefore does not have type information
+    // So, for demonstration purposes, we assume that if the property name is 'definitionCanonical', it is a canonical
+    if (propertyName === 'definitionCanonical') {
+      referenceString = (resolvedIdentity as { url: string }).url;
+    } else {
+      referenceString = getReferenceString(resolvedIdentity);
+    }
+
     return referenceString ? input.replaceAll(rewritable, referenceString) : input;
   }
 

@@ -19,6 +19,7 @@ import {
   Observation,
   OperationOutcome,
   Patient,
+  PlanDefinition,
   Practitioner,
   SearchParameter,
   ServiceRequest,
@@ -1384,5 +1385,68 @@ describe('Batch', () => {
     const result = await processBatch(req, repo, router, bundle);
     const report = result.entry?.[1]?.resource as DiagnosticReport;
     expect(report.basedOn?.[0].reference).toStrictEqual('ServiceRequest/12345');
+  });
+
+  test('Canonical references', async () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:6daf3dad-772a-4d7f-b3c4-0e3aaf5bbc16',
+          resource: {
+            resourceType: 'Questionnaire',
+            url: 'http://example.com/MinimalVitalSignsAssessment',
+            name: 'MinimalVitalSignsAssessment',
+            status: 'active',
+            item: [
+              {
+                linkId: '1',
+                type: 'string',
+                text: 'Blood Pressure',
+              },
+            ],
+            title: 'Minimal Vital Signs Assessment',
+          },
+          request: {
+            method: 'POST',
+            url: 'Questionnaire',
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:70be0dde-6b50-4b10-8da5-8bd8888de40e',
+          resource: {
+            resourceType: 'PlanDefinition',
+            name: 'MinimalPlanWithQuestionnaire',
+            type: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/plan-definition-type',
+                  code: 'workflow-definition',
+                },
+              ],
+            },
+            status: 'active',
+            title: 'Minimal Plan Referencing Questionnaire',
+            action: [
+              {
+                id: 'action-1',
+                title: 'Perform Vital Signs Assessment',
+                definitionCanonical: 'urn:uuid:6daf3dad-772a-4d7f-b3c4-0e3aaf5bbc16',
+              },
+            ],
+          },
+          request: {
+            method: 'POST',
+            url: 'PlanDefinition',
+          },
+        },
+      ],
+    };
+    const result = await processBatch(req, repo, router, bundle);
+    const planDefinition = result.entry?.[1]?.resource as PlanDefinition;
+    expect(planDefinition.action?.[0].definitionCanonical).toStrictEqual(
+      'http://example.com/MinimalVitalSignsAssessment'
+    );
   });
 });
