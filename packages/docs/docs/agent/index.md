@@ -231,7 +231,7 @@ HL7 Feeds can be extremely high volume, and before you go live with a high-volum
 - [Medplum Agent design discussion](https://github.com/medplum/medplum/discussions/2012)
 - [Medplum WebSockets design discussion](https://github.com/medplum/medplum/discussions/1490)
 - [FHIR WebSocket Subscriptions](https://build.fhir.org/ig/HL7/fhir-subscription-backport-ig/channels.html#websockets)
-- [FHIRCast](https://fhircast.org/)
+- [FHIRcast](https://fhircast.org/)
 - [Medplum CLI](/docs/cli)
 - [Sim Hospital](https://github.com/google/simhospital) is a useful tool to generate HL7 V2 test messages locally for testing
 - [Medplum Agent Demo Video](https://youtu.be/MmE3Dn939B4) on Youtube

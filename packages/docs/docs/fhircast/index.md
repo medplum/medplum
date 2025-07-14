@@ -1,4 +1,4 @@
-# FHIRCast
+# FHIRcast
 
 :::caution
 
