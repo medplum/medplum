@@ -2429,6 +2429,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
     let error: OperationOutcomeError | undefined;
     for (let attempt = 0; attempt < transactionAttempts; attempt++) {
+      const attemptStartTime = Date.now();
       try {
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
         const result = await callback(client);
@@ -2448,6 +2449,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         this.endTransaction();
       }
 
+      const attemptDurationMs = Date.now() - attemptStartTime;
+
       if (attempt + 1 < transactionAttempts) {
         const baseDelayMs = config.transactionExpBackoffBaseDelayMs ?? defaultExpBackoffBaseDelayMs;
         // Attempts are 0-indexed, so first wait after first attempt will be somewhere between 75% and 100% of baseDelayMs
@@ -2456,7 +2459,20 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
         // etc...
         const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.25));
+        getLogger().info('Retrying transaction after delay', {
+          attempt,
+          attemptDurationMs,
+          transactionAttempts,
+          delayMs,
+          baseDelayMs,
+        });
         await sleep(delayMs);
+      } else {
+        getLogger().info('Transaction failed after final <attempt></attempt>', {
+          attempt,
+          attemptDurationMs,
+          transactionAttempts,
+        });
       }
     }
 
