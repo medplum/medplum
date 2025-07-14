@@ -40,6 +40,7 @@
     "react-compiler-runtime": "latest",
     "react-dom": "19.1.0",
     "react-native": "0.80.1",
+    "rollup": "4.44.2",
     "whatwg-url": "14.0.0"
   },
   "devDependencies": {
