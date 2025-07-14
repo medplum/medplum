@@ -16,7 +16,7 @@ npx @modelcontextprotocol/inspector
 
 Set "Transport Type" to "Streamable HTTP" (recommended transport).
 
-Set "URL" to the `/mcp` path on your server, e.g. `http://localhost:8103/mcp`.
+Set "URL" to the `/mcp/stream` path on your server, e.g. `http://localhost:8103/mcp/stream`.
 
 ### Testing SSE
 

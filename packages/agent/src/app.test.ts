@@ -772,6 +772,120 @@ describe('App', () => {
     });
   });
 
+  test('Enable stats logging', async () => {
+    const originalConsoleLog = console.log;
+    console.log = jest.fn();
+
+    // Create agent with an HL7 channel
+    const state = {
+      mySocket: undefined as Client | undefined,
+      gotAgentReloadResponse: false,
+      gotAgentError: false,
+      lastMessageReceived: undefined as Hl7Message | undefined,
+    };
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+        switch (command.type) {
+          case 'agent:connect:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+            break;
+
+          case 'agent:heartbeat:request':
+            socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+            break;
+
+          case 'agent:reloadconfig:response':
+            if (command.statusCode !== 200) {
+              throw new Error('Invalid status code. Expected 200');
+            }
+            state.gotAgentReloadResponse = true;
+            break;
+
+          case 'agent:error':
+            state.gotAgentError = true;
+            break;
+
+          default:
+            throw new Error('Unhandled message type');
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    // Create the initial endpoints for all channels
+    const hl7ProdEndpoint = await medplum.createResource<Endpoint>({
+      resourceType: 'Endpoint',
+      status: 'active',
+      address: 'mllp://0.0.0.0:9001',
+      connectionType: { code: ContentType.HL7_V2 },
+      payloadType: [{ coding: [{ code: ContentType.HL7_V2 }] }],
+    });
+
+    const bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      channel: [
+        {
+          name: 'hl7-prod',
+          endpoint: createReference(hl7ProdEndpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+      setting: [
+        {
+          name: 'logStatsFreqSecs',
+          valueInteger: 1,
+        },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    app.heartbeatPeriod = 100;
+    await app.start();
+
+    // Wait for the WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    // Test HL7 endpoint is there
+    expect(app.channels.has('hl7-prod')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(1);
+
+    let shouldTimeout = false;
+    const timeout = setTimeout(() => {
+      shouldTimeout = true;
+    }, 5000);
+
+    let logged = false;
+    while (!logged) {
+      try {
+        expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Agent stats'));
+        logged = true;
+        clearTimeout(timeout);
+      } catch (err) {
+        if (shouldTimeout) {
+          throw err;
+        }
+        await sleep(500);
+      }
+    }
+
+    await app.stop();
+    await new Promise<void>((resolve) => {
+      mockServer.stop(resolve);
+    });
+    console.log = originalConsoleLog;
+  });
+
   test("Setting Agent.status to 'off'", async () => {
     const state = {
       mySocket: undefined as Client | undefined,

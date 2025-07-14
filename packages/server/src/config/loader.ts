@@ -113,6 +113,9 @@ function loadEnvConfig(): MedplumServerConfig {
     } else if (key.startsWith('SMTP_')) {
       key = key.substring('SMTP_'.length);
       currConfig = config.smtp = config.smtp ?? {};
+    } else if (key.startsWith('FISSION_')) {
+      key = key.substring('FISSION_'.length);
+      currConfig = config.fission = config.fission ?? {};
     }
 
     // Convert key from CAPITAL_CASE to camelCase

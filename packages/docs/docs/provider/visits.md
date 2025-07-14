@@ -69,6 +69,8 @@ There are two main approaches for setting up Care Templates. The first is by cre
 
 For this guide, we will take the first approach: creating a Care Template, then creating our Resources, and finally linking the related resources within our Care Template.
 
+Medplum provides a [sample Care Template](https://drive.google.com/file/d/1WWozOVUtOZ0l7tCxSALDZ5VJ9eER0V7r/view?usp=sharing) for testing and prototyping.  Download this sample and upload it to the [batch](https://app.medplum.com/batch) tool to create a PlanDefinition you can use for testing.
+
 1. **Navigate to the PlanDefinition Resource Page**
    - In the Medplum App, use the “Resource Type” search in the sidebar to find and then click on “PlanDefinition”
 2. **Create a New PlanDefinition**

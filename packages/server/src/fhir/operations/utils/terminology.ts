@@ -94,7 +94,8 @@ export function addPropertyFilter(
   query: SelectQuery,
   property: string,
   operator: keyof typeof SqlOperator,
-  value: string | string[]
+  value: string | string[],
+  codeSystem: CodeSystem
 ): SelectQuery {
   const propertyQuery = new SelectQuery('Coding_Property').whereExpr(
     new Conjunction([
@@ -111,6 +112,7 @@ export function addPropertyFilter(
     new Conjunction([
       new Condition(new Column(csPropertyTable, 'id'), '=', new Column(propertyQuery.tableName, 'property')),
       new Condition(new Column(csPropertyTable, 'code'), '=', property),
+      new Condition(new Column(csPropertyTable, 'system'), '=', codeSystem.id),
     ])
   );
 

@@ -60522,7 +60522,7 @@
         },
         "runtimeVersion": {
           "description": "The identifier of the bot runtime environment (i.e., vmcontext, awslambda, etc).",
-          "enum": ["awslambda", "vmcontext"]
+          "enum": ["awslambda", "vmcontext", "fission"]
         },
         "timeout": {
           "description": "The maximum allowed execution time of the bot in seconds.",

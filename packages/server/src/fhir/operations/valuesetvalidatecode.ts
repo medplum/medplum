@@ -124,10 +124,10 @@ async function satisfies(
 
   switch (filter.op) {
     case '=':
-      query = addPropertyFilter(query, filter.property, '=', filter.value);
+      query = addPropertyFilter(query, filter.property, '=', filter.value, codeSystem);
       break;
     case 'in':
-      query = addPropertyFilter(query, filter.property, 'IN', filter.value.split(','));
+      query = addPropertyFilter(query, filter.property, 'IN', filter.value.split(','), codeSystem);
       break;
     case 'is-a':
     case 'descendent-of':

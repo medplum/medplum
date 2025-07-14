@@ -56,7 +56,7 @@ export function stopFhircastHeartbeat(): void {
 }
 
 /**
- * Handles a new WebSocket connection to the FHIRCast hub.
+ * Handles a new WebSocket connection to the FHIRcast hub.
  * @param socket - The WebSocket connection.
  * @param request - The HTTP request.
  */

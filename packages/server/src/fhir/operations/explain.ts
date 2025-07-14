@@ -47,7 +47,7 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
   const explain = result[0]['QUERY PLAN'][0];
 
   const output = buildOutputParameters(operation, {
-    explain: JSON.stringify(explain, (key, value) => (key.endsWith('Blocks') && value === 0 ? undefined : value), 2),
+    explain: JSON.stringify(explain, (key, value) => (key.endsWith('Blocks') && value === 0 ? undefined : value), 0),
   });
   return [allOk, output];
 }

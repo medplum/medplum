@@ -112,7 +112,7 @@ export interface Bot {
    * The identifier of the bot runtime environment (i.e., vmcontext,
    * awslambda, etc).
    */
-  runtimeVersion?: 'awslambda' | 'vmcontext';
+  runtimeVersion?: 'awslambda' | 'vmcontext' | 'fission';
 
   /**
    * The maximum allowed execution time of the bot in seconds.

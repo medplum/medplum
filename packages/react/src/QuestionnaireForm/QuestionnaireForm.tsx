@@ -1,10 +1,16 @@
-import { Group, Title } from '@mantine/core';
-import { createReference, getReferenceString } from '@medplum/core';
+import { Group, Stack, Text, Title } from '@mantine/core';
+import { createReference, getExtension, getReferenceString } from '@medplum/core';
 import { Encounter, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
-import { useMedplum, useQuestionnaireForm } from '@medplum/react-hooks';
-import { JSX, useCallback, useRef } from 'react';
+import {
+  QUESTIONNAIRE_SIGNATURE_REQUIRED_URL,
+  QUESTIONNAIRE_SIGNATURE_RESPONSE_URL,
+  useMedplum,
+  useQuestionnaireForm,
+} from '@medplum/react-hooks';
+import { JSX, useCallback, useMemo, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { SubmitButton } from '../Form/SubmitButton';
+import { SignatureInput } from '../SignatureInput/SignatureInput';
 import { QuestionnaireFormItemArray } from './QuestionnaireFormItemArray';
 import { QuestionnaireFormStepper } from './QuestionnaireFormStepper';
 
@@ -23,9 +29,14 @@ export interface QuestionnaireFormProps {
 
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
   const medplum = useMedplum();
-
+  const [signatureRequiredSubmitted, setSignatureRequiredSubmitted] = useState(false);
   const propsRef = useRef(props);
   propsRef.current = props;
+
+  const onFormChange = useCallback((response: QuestionnaireResponse) => {
+    setSignatureRequiredSubmitted(false);
+    propsRef.current.onChange?.(response);
+  }, []);
 
   const formState = useQuestionnaireForm({
     questionnaire: props.questionnaire,
@@ -34,10 +45,24 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     encounter: props.encounter,
     source: props.source,
     disablePagination: props.disablePagination,
-    onChange: props.onChange,
+    onChange: onFormChange,
   });
   const formStateRef = useRef(formState);
   formStateRef.current = formState;
+
+  const isSignatureRequired = useMemo(() => {
+    if (formState.loading) {
+      return false;
+    }
+    return !!getExtension(formState.questionnaire, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL);
+  }, [formState]);
+
+  const hasSignature = useMemo(() => {
+    if (formState.loading) {
+      return false;
+    }
+    return !!formState.questionnaireResponse.extension?.find((ext) => ext.url === QUESTIONNAIRE_SIGNATURE_RESPONSE_URL);
+  }, [formState]);
 
   const handleSubmit = useCallback(() => {
     const formState = formStateRef.current;
@@ -47,6 +72,11 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
     const onSubmit = propsRef.current.onSubmit;
     if (!onSubmit) {
+      return;
+    }
+
+    if (isSignatureRequired && !hasSignature) {
+      setSignatureRequiredSubmitted(true);
       return;
     }
 
@@ -60,6 +90,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         source = createReference(profile);
       }
     }
+
     onSubmit({
       ...response,
       questionnaire: questionnaire.url ?? getReferenceString(questionnaire),
@@ -68,7 +99,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       authored: new Date().toISOString(),
       status: 'completed',
     });
-  }, [medplum]);
+  }, [medplum, isSignatureRequired, hasSignature]);
 
   if (formState.loading) {
     return null;
@@ -98,6 +129,20 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
             items={formState.items}
             responseItems={formState.responseItems}
           />
+          {isSignatureRequired && (
+            <Stack mt="md" gap={0}>
+              <Text size="sm" fw={500}>
+                Signature
+              </Text>
+              <SignatureInput onChange={formState.onChangeSignature} />
+              {!hasSignature && signatureRequiredSubmitted && (
+                <Text c="red" size="sm">
+                  Signature is required.
+                </Text>
+              )}
+            </Stack>
+          )}
+
           {!props.excludeButtons && (
             <Group justify="flex-end" mt="xl" gap="xs">
               <SubmitButton>{props.submitButtonText ?? 'Submit'}</SubmitButton>

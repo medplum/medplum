@@ -33,6 +33,7 @@ import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } f
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
+import { getCurrentStats } from './stats';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -66,6 +67,8 @@ export class App {
   private live = false;
   private shutdown = false;
   private keepAlive = false;
+  private logStatsFreqSecs = -1;
+  private logStatsTimer?: NodeJS.Timeout;
   private config: Agent | undefined;
 
   constructor(medplum: MedplumClient, agentId: string, logLevel: LogLevel) {
@@ -311,6 +314,7 @@ export class App {
   private async reloadConfig(): Promise<void> {
     const agent = await this.medplum.readResource('Agent', this.agentId, { cache: 'no-cache' });
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
+    const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
 
     if (!keepAlive && this.hl7Clients.size !== 0) {
       for (const client of this.hl7Clients.values()) {
@@ -318,8 +322,31 @@ export class App {
       }
     }
 
+    if (this.logStatsFreqSecs !== logStatsFreqSecs && this.logStatsTimer) {
+      // Clear the interval for log stats if logStatsFreqSecs is not the same in the new config
+      clearInterval(this.logStatsTimer);
+      this.logStatsTimer = undefined;
+    }
+
     this.config = agent;
     this.keepAlive = keepAlive ?? false;
+    this.logStatsFreqSecs = logStatsFreqSecs ?? -1;
+
+    if (this.logStatsFreqSecs > 0) {
+      this.logStatsTimer = setInterval(() => {
+        const stats = getCurrentStats();
+        this.log.info('Agent stats', {
+          stats: {
+            ...stats,
+            webSocketQueueDepth: this.webSocketQueue.length,
+            hl7QueueDepth: this.hl7Queue.length,
+            hl7ClientCount: this.hl7Clients.size,
+            live: this.live,
+            outstandingHeartbeats: this.outstandingHeartbeats,
+          },
+        });
+      }, this.logStatsFreqSecs * 1000);
+    }
 
     await this.hydrateListeners();
   }
@@ -468,6 +495,11 @@ export class App {
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = undefined;
+    }
+
+    if (this.logStatsTimer) {
+      clearInterval(this.logStatsTimer);
+      this.logStatsTimer = undefined;
     }
 
     if (this.webSocket) {
