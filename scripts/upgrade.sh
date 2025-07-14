@@ -94,7 +94,8 @@ fi
 # jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # express - version 5 is now latest and has some breaking changes -- we need to make sure middleware and other related deps work with new version
-MAJOR_EXCLUDE="@jest/* @mantine/* @storybook/* @types/express @types/jest @types/node babel-jest commander eslint express jest jest-* jose node-fetch npm storybook storybook-*"
+# zod - version 4+ is incompatible with MCP SDK
+MAJOR_EXCLUDE="@jest/* @mantine/* @storybook/* @types/express @types/jest @types/node babel-jest commander eslint express jest jest-* jose node-fetch npm storybook storybook-* zod"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
@@ -109,7 +110,7 @@ if [ "$LAST_STEP" -lt 1 ]; then
 
     # Commit and push before running NPM install
     git add -u .
-    git commit -m "Dependency upgrades - step 1"
+    git commit -s -m "Dependency upgrades - step 1"
     git push origin "$BRANCH_NAME"
 fi
 
@@ -137,7 +138,7 @@ if [ "$LAST_STEP" -lt 2 ]; then
 
     # Commit and push after running NPM install
     git add -u .
-    git commit -m "Dependency upgrades - step 2"
+    git commit -s -m "Dependency upgrades - step 2"
     git push origin "$BRANCH_NAME"
     gh pr ready
 fi
@@ -156,7 +157,7 @@ if [ "$LAST_STEP" -lt 3 ]; then
 
     # Commit and push before running NPM install
     git add -u .
-    git commit -m "Dependency upgrades - step 3"
+    git commit -s -m "Dependency upgrades - step 3"
     git push origin "$BRANCH_NAME"
 fi
 
@@ -166,6 +167,6 @@ if [ "$LAST_STEP" -lt 4 ]; then
 
     # Commit and push after running NPM install
     git add -u .
-    git commit -m "Dependency upgrades - step 4"
+    git commit -s -m "Dependency upgrades - step 4"
     git push origin "$BRANCH_NAME"
 fi

@@ -25,7 +25,7 @@
     "@medplum/expo-polyfills": "4.3.3",
     "@medplum/fhirtypes": "4.3.3",
     "@medplum/react-hooks": "4.3.3",
-    "expo": "53.0.17",
+    "expo": "53.0.19",
     "expo-status-bar": "2.2.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
