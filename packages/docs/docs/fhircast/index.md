@@ -1,6 +1,6 @@
 # FHIRcast
 
-Medplum has alpha support for [FHIRcast STU3](https://fhircast.org/).
+Medplum has alpha support for [FHIRcast STU3](https://build.fhir.org/ig/HL7/fhircast-docs/).
 
 ## Overview
 
