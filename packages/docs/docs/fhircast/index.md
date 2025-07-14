@@ -21,7 +21,7 @@ FHIRcast is a **lightweight, topic-based publish/subscribe protocol** that enabl
 2. **Subscription**: The subscriber expresses interest in specific context topics (e.g., patient context).
 3. **Context Change**: When a user in the context source application (e.g., an EHR) changes the active patient, the source publishes a FHIRcast event to the relevant topic.
 4. **Notification**: Subscribers to that topic receive the event, which includes the new context (e.g., the ID of the newly selected patient).
-5. **Synchronization**: Upon receiving the event, the subscriber application can then update its own display or internal state to reflect the new context, often by fetching the full FHIR resource (e.g., Patient resource) using the provided ID.
+5. **Synchronization**: Upon receiving the event, the subscriber application can then update its own display or internal state to reflect the new context.
 
 ## Use Cases
 
