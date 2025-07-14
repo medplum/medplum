@@ -2434,6 +2434,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
         const result = await callback(client);
         await this.commitTransaction();
+        getLogger().info('Completed transaction', {
+          attempt,
+          attemptDurationMs: Date.now() - attemptStartTime,
+          transactionAttempts,
+        });
         return result;
       } catch (err) {
         const operationOutcomeError = normalizeDatabaseError(err);
@@ -2459,7 +2464,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
         // etc...
         const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.25));
-        getLogger().info('Retrying transaction after delay', {
+        getLogger().info('Retrying transaction', {
           attempt,
           attemptDurationMs,
           transactionAttempts,
@@ -2468,7 +2473,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
         await sleep(delayMs);
       } else {
-        getLogger().info('Transaction failed after final <attempt></attempt>', {
+        getLogger().info('Transaction failed final attempt', {
           attempt,
           attemptDurationMs,
           transactionAttempts,
