@@ -125,7 +125,6 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
         <Textarea
           label="Description"
           value={description}
-          variant="filled"
           minRows={3}
           autosize
           onChange={(event) => handleDescriptionChange(event.currentTarget.value)}
