@@ -112,6 +112,7 @@ import {
   Disjunction,
   Expression,
   InsertQuery,
+  PostgresError,
   SelectQuery,
   TransactionIsolationLevel,
   normalizeDatabaseError,
@@ -121,7 +122,7 @@ import { buildTokenColumns } from './token-column';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
-const retryableTransactionErrorCodes = ['40001'];
+const retryableTransactionErrorCodes: string[] = [PostgresError.SerializationFailure];
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
