@@ -27,7 +27,6 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
         [classes.selected]: isSelected,
       })}
       onClick={onClick}
-      
     >
       <Stack gap={0}>
         <Text fw={700} className={classes.content}>
@@ -38,11 +37,7 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
             Due {formatDate(task.restriction?.period?.end)}
           </Text>
         )}
-        {patient && (
-          <Text >
-            For: {formatHumanName(patient.name?.[0] as HumanName)}
-          </Text>
-        )}
+        {patient && <Text>For: {formatHumanName(patient.name?.[0] as HumanName)}</Text>}
         {owner && (
           <Text size="sm" c="dimmed">
             Assigned to {formatHumanName(owner.name?.[0] as HumanName)}
