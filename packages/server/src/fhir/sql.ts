@@ -552,6 +552,13 @@ export class SqlBuilder {
   }
 }
 
+export const PostgresError = {
+  UniqueViolation: '23505',
+  SerializationFailure: '40001',
+  QueryCanceled: '57014',
+  InFailedSqlTransaction: '25P02',
+} as const;
+
 export function normalizeDatabaseError(err: any): OperationOutcomeError {
   if (err instanceof OperationOutcomeError) {
     // Pass through already-normalized errors
@@ -561,18 +568,18 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
   // Handle known Postgres error codes
   // @see https://www.postgresql.org/docs/16/errcodes-appendix.html
   switch (err?.code) {
-    case '23505': // unique_violation
+    case PostgresError.UniqueViolation:
       // Duplicate key error -> 409 Conflict
       // @see https://github.com/brianc/node-postgres/issues/1602
       return new OperationOutcomeError(conflict(err.detail), err);
-    case '40001': // serialization_failure
+    case PostgresError.SerializationFailure:
       // Transaction rollback due to serialization error -> 409 Conflict
       return new OperationOutcomeError(conflict(err.message, err.code), err);
-    case '57014': // query_canceled
+    case PostgresError.QueryCanceled:
       // Statement timeout -> 504 Gateway Timeout
       getLogger().warn('Database statement timeout', { error: err.message, stack: err.stack, code: err.code });
       return new OperationOutcomeError(serverTimeout(err.message), err);
-    case '25P02': // in_failed_sql_transaction
+    case PostgresError.InFailedSqlTransaction:
       getLogger().warn('Statement in failed transaction', { stack: err.stack });
       return new OperationOutcomeError(normalizeOperationOutcome(err), err);
   }
