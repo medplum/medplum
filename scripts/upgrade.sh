@@ -109,7 +109,7 @@ if [ "$LAST_STEP" -lt 1 ]; then
 
     # Commit and push before running NPM install
     git add -u .
-    git commit -m "Dependency upgrades - step 1"
+    git commit -s -m "Dependency upgrades - step 1"
     git push origin "$BRANCH_NAME"
 fi
 
@@ -137,7 +137,7 @@ if [ "$LAST_STEP" -lt 2 ]; then
 
     # Commit and push after running NPM install
     git add -u .
-    git commit -m "Dependency upgrades - step 2"
+    git commit -s -m "Dependency upgrades - step 2"
     git push origin "$BRANCH_NAME"
     gh pr ready
 fi
@@ -156,7 +156,7 @@ if [ "$LAST_STEP" -lt 3 ]; then
 
     # Commit and push before running NPM install
     git add -u .
-    git commit -m "Dependency upgrades - step 3"
+    git commit -s -m "Dependency upgrades - step 3"
     git push origin "$BRANCH_NAME"
 fi
 
@@ -166,6 +166,6 @@ if [ "$LAST_STEP" -lt 4 ]; then
 
     # Commit and push after running NPM install
     git add -u .
-    git commit -m "Dependency upgrades - step 4"
+    git commit -s -m "Dependency upgrades - step 4"
     git push origin "$BRANCH_NAME"
 fi
