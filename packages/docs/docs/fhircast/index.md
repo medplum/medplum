@@ -25,7 +25,7 @@ FHIRcast is a **lightweight, topic-based publish/subscribe protocol** that enabl
 
 ## Use Cases
 
-- **EHR to SMART App Integration**: An EHR system publishes patient-open events, and a SMART on FHIR application automatically loads the newly selected patient's data.
+- **EHR to SMART App Integration**: An EHR system publishes Patient-open events, and a SMART on FHIR application automatically loads the newly selected patient's data.
 - **Clinical Decision Support**: A CDS application subscribes to encounter-open events, and when a new encounter is opened, it automatically retrieves relevant patient data to provide real-time recommendations.
 - **Multi-Application Workflows**: In a clinic setting, as a clinician moves from patient to patient in one application, other connected applications (e.g., a billing system, a lab order entry system) automatically switch to the same patient context.
 - **PACS Synchronization**: A Picture Archiving and Communication System (PACS) can subscribe to patient or encounter context changes, automatically loading the relevant imaging studies when a patient or encounter is selected in another clinical application.
