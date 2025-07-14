@@ -93,7 +93,7 @@
     "uuid": "11.1.0",
     "validator": "13.15.15",
     "ws": "8.18.3",
-    "zod": "3.25.76"
+    "zod": "4.0.5"
   },
   "devDependencies": {
     "@jest/test-sequencer": "29.7.0",
