@@ -36,7 +36,7 @@
     "@medplum/mock": "4.3.3",
     "@medplum/react": "4.3.3",
     "@tabler/icons-react": "3.17.0",
-    "@types/node": "20.19.4",
+    "@types/node": "20.19.7",
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6",
     "@vitejs/plugin-react": "4.6.0",

@@ -26,7 +26,7 @@
   "dependencies": {
     "@medplum/core": "4.3.3",
     "@medplum/hl7": "4.3.3",
-    "dcmjs-dimse": "0.2.7",
+    "dcmjs-dimse": "0.3.0",
     "iconv-lite": "0.6.3",
     "semver": "7.7.2",
     "ws": "8.18.3"

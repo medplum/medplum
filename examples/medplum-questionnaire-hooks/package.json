@@ -8,6 +8,16 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview"
   },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
+  },
   "devDependencies": {
     "@medplum/core": "4.3.3",
     "@medplum/eslint-config": "4.3.3",
@@ -20,5 +30,9 @@
     "react-dom": "19.1.0",
     "typescript": "5.8.3",
     "vite": "6.3.5"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.0.0"
   }
 }
