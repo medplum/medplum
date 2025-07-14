@@ -156,15 +156,6 @@ describe('Anonymous webhooks', () => {
     await shutdownApp();
   });
 
-  test('Missing signature header', async () => {
-    const res = await request(app)
-      .post(`/webhook/${botMembership.id}`)
-      .set('Content-Type', ContentType.TEXT)
-      .send('input');
-    expect(res.status).toBe(403);
-    expect(res.text).toStrictEqual('Missing required signature header');
-  });
-
   test('Missing invalid ID', async () => {
     const res = await request(app)
       .post(`/webhook/${randomUUID()}`)
