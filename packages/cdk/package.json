@@ -28,8 +28,8 @@
     "@medplum/core": "4.3.3",
     "aws-cdk-lib": "2.204.0",
     "cdk": "2.1020.2",
-    "cdk-nag": "2.36.34",
-    "cdk-serverless-clamscan": "2.11.71",
+    "cdk-nag": "2.36.38",
+    "cdk-serverless-clamscan": "2.11.77",
     "constructs": "10.4.2",
     "object-hash": "3.0.0"
   },
