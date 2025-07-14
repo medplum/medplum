@@ -68,7 +68,7 @@ RELEASE_NOTES=$(echo -e "## What's Changed\n" && git log $(git describe --tags -
 git add -u .
 
 # Commit the changes with the release notes
-git commit -m "Release Version $NEW_VERSION" -m "$RELEASE_NOTES"
+git commit -s -m "Release Version $NEW_VERSION" -m "$RELEASE_NOTES"
 
 # Push the changes to the remote branch
 git push origin "$BRANCH_NAME"
