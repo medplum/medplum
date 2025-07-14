@@ -109,7 +109,6 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
           name="patient"
           defaultValue={task?.for as Reference<Patient>}
           onChange={async (patient: Patient | undefined) => {
-            console.log('patient', patient);
             await handlePatientChange(patient ? { reference: getReferenceString(patient) } : undefined);
           }}
         />
