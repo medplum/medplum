@@ -13,7 +13,7 @@ FHIRcast is a **lightweight, topic-based publish/subscribe protocol** that enabl
 - **Context Subscriber**: An application that listens for and reacts to context changes published by a source. These can be various SMART on FHIR apps, decision support tools, or other integrated systems.
 - **Topic**: A specific channel for context updates, often identified by a UUID. Applications subscribe to topics to receive relevant context changes.
 - **Event**: A specific type of context change, such as Patient-open, Patient-close, Encounter-open, or Encounter-close. FHIRcast defines a set of standard events.
-- **Webhook/websocket**: FHIRcast primarily uses websockets for real-time, bidirectional communication, allowing subscribers to receive updates as they happen. It can also leverage webhooks for simpler, one-way notifications.
+- **WebSockets**: FHIRcast primarily uses WebSockets for real-time, bidirectional communication, allowing subscribers to receive updates as they happen.
 
 ## How FHIRcast Works
 
