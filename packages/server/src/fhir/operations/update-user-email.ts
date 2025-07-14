@@ -12,6 +12,7 @@ import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
 import { resetPassword } from '../../auth/resetpassword';
 import { getAuthenticatedContext } from '../../context';
+import { sendEmail } from '../../email/email';
 import { getSystemRepo } from '../repo';
 import { parseInputParameters } from './utils/parameters';
 
@@ -100,7 +101,24 @@ async function updateUser(userId: string, params: InputParams, project: Project)
     user = await systemRepo.updateResource(user);
 
     if (!params.skipEmailVerification) {
-      await resetPassword(user, 'verify-email');
+      const url = await resetPassword(user, 'verify-email');
+      await sendEmail(systemRepo, {
+        to: params.email,
+        subject: 'Medplum Email Address Updated',
+        text: [
+          'A request to update the email address associated with your Medplum account.',
+          '',
+          'Please click on the following link to verify your ability to receive emails:',
+          '',
+          url,
+          '',
+          'If you received this in error, you can safely ignore it.',
+          '',
+          'Thank you,',
+          'Medplum',
+          '',
+        ].join('\n'),
+      });
     }
 
     if (params.updateProfileTelecom && user.project?.reference) {
@@ -128,6 +146,8 @@ async function updateUser(userId: string, params: InputParams, project: Project)
             previous.use = 'old';
           }
           (profile as ProfileResource).telecom = telecom;
+
+          await systemRepo.updateResource(profile);
         }
       }
     }
