@@ -2,9 +2,9 @@
 
 Scheduling is a common workflow and correct use of the FHIR spec supports many complex scheduling workflows.
 
-## Demo and Example App 
+## Demo and Example App
 
-For a brief overview of Scheduling at Medplum, see the video below. For an example scheduling application, see our [Medplum Scheduling Demo](https://github.com/medplum/medplum-scheduling-demo). 
+For a brief overview of Scheduling at Medplum, see the video below. For an example scheduling application, see our [Medplum Scheduling Demo](https://github.com/medplum/medplum-scheduling-demo).
 
 <div className="responsive-iframe-wrapper">
   <iframe width="560" height="315" src="https://www.youtube.com/embed/6yAROc0KPos" title="YouTube video player" frameborder="0"
@@ -51,6 +51,26 @@ The [`Schedule` usage documentation](/docs/api/fhir/resources/schedule?section=u
 - [`Practitioners`](/docs/api/fhir/resources/practitioner)
 - [`HealthcareServices`](/docs/api/fhir/resources/healthcareservice)
 - specific practice [`Locations`](/docs/api/fhir/resources/location)
+
+:::tip Add a Timezone to a Practitioner
+
+There are times where it may be appropriate to add a timezone to a [`Practitioner`](/docs/api/fhir/resources/practitioner) resource to ensure that appointments are accurately scheduled. However, there is no standard way to do this on the [`Practitioner`](/docs/api/fhir/resources/practitioner) resource, so you will need to add an extension.
+
+```ts
+{
+  resourceType: 'Practitioner',
+  // ...
+  extension: [
+    {
+      url: "http://hl7.org/fhir/StructureDefinition/timezone",
+      valueCode: "America/Los­_Angeles"
+    }
+  ]
+}
+
+```
+
+:::
 
 ## Tracking Appointments
 
