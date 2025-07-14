@@ -29,6 +29,7 @@ FHIRcast is a **lightweight, topic-based publish/subscribe protocol** that enabl
 - **Clinical Decision Support**: A CDS application subscribes to Encounter-open events, and when a new encounter is opened, it automatically retrieves relevant patient data to provide real-time recommendations.
 - **Multi-Application Workflows**: In a clinic setting, as a clinician moves from patient to patient in one application, other connected applications (e.g., a billing system, a lab order entry system) automatically switch to the same patient context.
 - **PACS Synchronization**: A Picture Archiving and Communication System (PACS) can subscribe to patient or encounter context changes, automatically loading the relevant imaging studies when a patient or encounter is selected in another clinical application.
+- **Streamlined Radiology Workflows**: As a radiologist creates imaging measurements in a PACS, the PACS creates DiagnosticReport-update events containing ImagingSelection resources, which informs the report creator of the new measurements. As the radiologist is dictating and highlighting relevant measurements in the PACS, the PACS sends DiagnosticReport-select events, letting the report creator know which measurement is being referenced at different parts without any extra input from the radiologist.
 
 ## Related Reading
 
