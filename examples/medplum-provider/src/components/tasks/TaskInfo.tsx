@@ -16,7 +16,7 @@ interface TaskInfoProps {
 export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
   const { task, onTaskChange } = props;
   const medplum = useMedplum();
-  const practitioner: Practitioner = useResource(task?.requester as Reference<Practitioner>) as Practitioner;
+  const practitioner = useResource(task?.requester);
   const [description, setDescription] = useState<string | undefined>(task?.description);
   const [dueDate, setDueDate] = useState<string | undefined>(task?.restriction?.period?.end);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
@@ -64,7 +64,7 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
             {getDisplayString(task)}
           </Text>
           <Text size="sm" c="dimmed">
-            Created {formatDate(task?.authoredOn)} by {formatHumanName(practitioner?.name?.[0] as HumanName)}
+            Created {formatDate(task?.authoredOn)} {practitioner?.resourceType === 'Practitioner' && `by ${formatHumanName(practitioner.name?.[0] as HumanName)}`}
           </Text>
         </Stack>
 
