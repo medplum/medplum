@@ -1,4 +1,4 @@
-import { Box, Divider, Flex, Paper, SegmentedControl, Stack } from '@mantine/core';
+import { Box, Divider, Flex, Paper, SegmentedControl, Skeleton, Stack } from '@mantine/core';
 import { JSX, useEffect, useMemo, useState } from 'react';
 import styles from './TasksPage.module.css';
 import { Patient, Task } from '@medplum/fhirtypes';
@@ -14,6 +14,7 @@ export function TasksPage(): JSX.Element {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
   const [activeTab, setActiveTab] = useState<string>('patient-summary');
+  const [loading, setLoading] = useState<boolean>(false);
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
 
   useEffect(() => {
@@ -32,7 +33,8 @@ export function TasksPage(): JSX.Element {
       }
     };
 
-    fetchTasks().catch(showErrorNotification);
+    setLoading(true);
+    fetchTasks().catch(showErrorNotification).finally(() => setLoading(false));
   }, [medplum, profileRef]);
 
   const handleTaskChange = (task: Task): void => {
@@ -49,12 +51,16 @@ export function TasksPage(): JSX.Element {
       <Flex h="100%" w="100%">
         <Flex direction="column" w="25%" h="100%" className={styles.borderRight}>
           <Paper h="100%" p="xs">
-            {tasks.map((task) => (
-              <Stack key={task.id} gap={0}>
-                <TaskListItem task={task} selectedTask={selectedTask} onClick={() => setSelectedTask(task)} />
-                <Divider />
-              </Stack>
-            ))}
+            {loading ? (
+              <TaskListSkeleton />
+            ) : (
+              tasks.map((task) => (
+                <Stack key={task.id} gap={0}>
+                  <TaskListItem task={task} selectedTask={selectedTask} onClick={() => setSelectedTask(task)} />
+                  <Divider />
+                </Stack>
+              ))
+            )}
           </Paper>
         </Flex>
 
@@ -88,5 +94,22 @@ export function TasksPage(): JSX.Element {
         </Flex>
       </Flex>
     </div>
+  );
+}
+
+function TaskListSkeleton(): JSX.Element {
+  return (
+    <Stack gap="md" p="md">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <Stack key={index}>
+            <Flex direction="column" gap="xs" align="flex-start">
+              <Skeleton height={16} width={`${Math.random() * 40 + 60}%`} />
+              <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
+              <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
+            </Flex>
+            <Divider />
+        </Stack>
+      ))}
+    </Stack>
   );
 }
