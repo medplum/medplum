@@ -293,12 +293,13 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                   )}
                   {c.sender?.reference === profileRefStr ? (
                     <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
-                      <ChatBubble
-                        alignment="right"
-                        communication={c}
-                        showDelivered={showDelivered}
+                      <ChatBubble alignment="right" communication={c} showDelivered={showDelivered} />
+                      <ResourceAvatar
+                        radius="xl"
+                        color="orange"
+                        value={c.sender}
+                        mb={!showDelivered ? 'sm' : undefined}
                       />
-                      <ResourceAvatar radius="xl" color="orange" value={c.sender} mb={!showDelivered ? 'sm' : undefined}/>
                     </Group>
                   ) : (
                     <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
