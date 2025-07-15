@@ -64,7 +64,9 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
             {getDisplayString(task)}
           </Text>
           <Text size="sm" c="dimmed">
-            Created {formatDate(task?.authoredOn)} {practitioner?.resourceType === 'Practitioner' && `by ${formatHumanName(practitioner.name?.[0] as HumanName)}`}
+            Created {formatDate(task?.authoredOn)}{' '}
+            {practitioner?.resourceType === 'Practitioner' &&
+              `by ${formatHumanName(practitioner.name?.[0] as HumanName)}`}
           </Text>
         </Stack>
 
