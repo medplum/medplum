@@ -90,7 +90,7 @@ export function TasksPage(): JSX.Element {
                 className={styles.segmentedControl}
               />
             </Box>
-            
+
             {selectedPatient?.resourceType === 'Patient' && (
               <>
                 {activeTab === 'patient-summary' && <PatientSummary patient={selectedPatient} />}
