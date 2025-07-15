@@ -1,8 +1,8 @@
 import { Box, Divider, Flex, Paper, SegmentedControl, Skeleton, Stack } from '@mantine/core';
 import React, { JSX, useEffect, useMemo, useState } from 'react';
 import styles from './TasksPage.module.css';
-import { Patient, Task } from '@medplum/fhirtypes';
-import { PatientSummary, PatientTimeline, useMedplum, useMedplumProfile } from '@medplum/react';
+import { Patient, Reference, Task } from '@medplum/fhirtypes';
+import { PatientSummary, PatientTimeline, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { showErrorNotification } from '../../utils/notifications';
 import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
 import { TaskListItem } from '../../components/tasks/TaskListItem';
@@ -13,6 +13,7 @@ export function TasksPage(): JSX.Element {
   const profile = useMedplumProfile();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
+  const selectedPatient = useResource(selectedTask?.for as Reference<Patient>);
   const [activeTab, setActiveTab] = useState<string>('patient-summary');
   const [loading, setLoading] = useState<boolean>(false);
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
@@ -90,8 +91,8 @@ export function TasksPage(): JSX.Element {
               />
             </Box>
 
-            {activeTab === 'patient-summary' && <PatientSummary patient={selectedTask?.for as Patient} />}
-            {activeTab === 'activity-log' && <PatientTimeline patient={selectedTask?.for as Patient} />}
+            {activeTab === 'patient-summary' && selectedPatient && <PatientSummary patient={selectedPatient} />}
+            {activeTab === 'activity-log' && selectedPatient && <PatientTimeline patient={selectedPatient} />}
           </Paper>
         </Flex>
       </Flex>
