@@ -1,5 +1,5 @@
 import { Box, Divider, Flex, Paper, SegmentedControl, Skeleton, Stack } from '@mantine/core';
-import { JSX, useEffect, useMemo, useState } from 'react';
+import React, { JSX, useEffect, useMemo, useState } from 'react';
 import styles from './TasksPage.module.css';
 import { Patient, Task } from '@medplum/fhirtypes';
 import { PatientSummary, PatientTimeline, useMedplum, useMedplumProfile } from '@medplum/react';
@@ -56,11 +56,15 @@ export function TasksPage(): JSX.Element {
             {loading ? (
               <TaskListSkeleton />
             ) : (
-              tasks.map((task) => (
-                <Stack key={task.id} gap={0}>
-                  <TaskListItem task={task} selectedTask={selectedTask} onClick={() => setSelectedTask(task)} />
-                  <Divider />
-                </Stack>
+              tasks.map((task, index) => (
+                <React.Fragment key={task.id}>
+                <TaskListItem 
+                  task={task} 
+                  selectedTask={selectedTask} 
+                  onClick={() => setSelectedTask(task)} 
+                />
+                {index < tasks.length - 1 && <Divider />}
+              </React.Fragment>
               ))
             )}
           </Paper>
