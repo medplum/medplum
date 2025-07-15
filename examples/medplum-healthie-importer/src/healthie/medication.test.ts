@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { HealthieClient } from './client';
-import { HEALTHIE_MEDICATION_CODE_SYSTEM, HEALTHIE_MEDICATION_ID_SYSTEM } from './constants';
+import {
+  HEALTHIE_MEDICATION_CODE_SYSTEM,
+  HEALTHIE_MEDICATION_ID_SYSTEM,
+  HEALTHIE_MEDICATION_ROUTE_CODE_SYSTEM,
+} from './constants';
 import { convertHealthieMedicationToFhir, fetchMedications, HealthieMedicationType, parseDosage } from './medication';
 
 type MockResponse = {
@@ -89,7 +93,7 @@ describe('convertHealthieMedicationToFhir', () => {
       status: 'active',
       intent: 'proposal',
       subject: {
-        display: 'John Doe',
+        display: 'Test Patient',
         reference: 'Patient/123',
       },
       medicationCodeableConcept: {
@@ -126,7 +130,8 @@ describe('convertHealthieMedicationToFhir', () => {
     };
 
     const result = convertHealthieMedicationToFhir(inactiveMedication, {
-      display: 'John Doe',
+      display: 'Test Patient',
+      reference: 'Patient/123',
     });
 
     expect(result.status).toBe('unknown');
@@ -186,6 +191,43 @@ describe('convertHealthieMedicationToFhir', () => {
     const result = convertHealthieMedicationToFhir(medicationWithInvalidDosage, { display: 'John Doe' });
 
     expect(result.dosageInstruction?.[0].doseAndRate?.[0].doseQuantity).toBeUndefined();
+  });
+
+  test('handles medication with route', () => {
+    const medicationWithRoute: HealthieMedicationType = {
+      ...mockMedication,
+      route: 'oral',
+    };
+
+    const result = convertHealthieMedicationToFhir(medicationWithRoute, {
+      display: 'Test Patient',
+      reference: 'Patient/123',
+    });
+
+    expect(result.dosageInstruction?.[0].route).toEqual({
+      text: 'oral',
+      coding: [
+        {
+          system: HEALTHIE_MEDICATION_ROUTE_CODE_SYSTEM,
+          code: 'oral',
+          display: 'oral',
+        },
+      ],
+    });
+  });
+
+  test('handles medication without route', () => {
+    const medicationWithoutRoute: HealthieMedicationType = {
+      ...mockMedication,
+      route: undefined,
+    };
+
+    const result = convertHealthieMedicationToFhir(medicationWithoutRoute, {
+      display: 'Test Patient',
+      reference: 'Patient/123',
+    });
+
+    expect(result.dosageInstruction?.[0].route).toBeUndefined();
   });
 });
 

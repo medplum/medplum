@@ -1,6 +1,10 @@
 import { MedicationRequest, Patient, Quantity, Reference } from '@medplum/fhirtypes';
 import { HealthieClient } from './client';
-import { HEALTHIE_MEDICATION_CODE_SYSTEM, HEALTHIE_MEDICATION_ID_SYSTEM } from './constants';
+import {
+  HEALTHIE_MEDICATION_CODE_SYSTEM,
+  HEALTHIE_MEDICATION_ID_SYSTEM,
+  HEALTHIE_MEDICATION_ROUTE_CODE_SYSTEM,
+} from './constants';
 
 /**
  * Interface representing a medication from Healthie API
@@ -114,6 +118,18 @@ export function convertHealthieMedicationToFhir(
                 doseQuantity: parseDosage(medication.dosage),
               },
             ],
+            route: medication.route
+              ? {
+                  text: medication.route,
+                  coding: [
+                    {
+                      system: HEALTHIE_MEDICATION_ROUTE_CODE_SYSTEM,
+                      code: medication.route,
+                      display: medication.route,
+                    },
+                  ],
+                }
+              : undefined,
           },
         ]
       : undefined,

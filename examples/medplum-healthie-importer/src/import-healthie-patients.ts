@@ -1,7 +1,12 @@
 import { BotEvent, createReference, generateId, MedplumClient } from '@medplum/core';
 import { Bundle, Patient, Reference } from '@medplum/fhirtypes';
+import { convertHealthieAllergyToFhir, fetchAllergySensitivities } from './healthie/allergy';
 import { HealthieClient } from './healthie/client';
-import { HEALTHIE_MEDICATION_ID_SYSTEM, HEALTHIE_USER_ID_SYSTEM } from './healthie/constants';
+import {
+  HEALTHIE_ALLERGY_ID_SYSTEM,
+  HEALTHIE_MEDICATION_ID_SYSTEM,
+  HEALTHIE_USER_ID_SYSTEM,
+} from './healthie/constants';
 import { convertHealthieMedicationToFhir, fetchMedications } from './healthie/medication';
 import { convertHealthiePatientToFhir, fetchHealthiePatientIds, fetchHealthiePatients } from './healthie/patient';
 
@@ -64,6 +69,20 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           request: {
             method: 'PUT',
             url: `MedicationRequest?identifier=${HEALTHIE_MEDICATION_ID_SYSTEM}|${medication.id}`,
+          },
+        });
+      }
+
+      // Fetch and add all allergies for this patient
+      const allergies = await fetchAllergySensitivities(healthie, healthiePatient.id);
+      console.log(`Found ${allergies.length} allergies for patient ${healthiePatient.id}`);
+
+      for (const allergy of allergies) {
+        patientBundle.entry?.push({
+          resource: convertHealthieAllergyToFhir(allergy, patientReference),
+          request: {
+            method: 'PUT',
+            url: `AllergyIntolerance?identifier=${HEALTHIE_ALLERGY_ID_SYSTEM}|${allergy.id}`,
           },
         });
       }
