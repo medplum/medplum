@@ -1306,9 +1306,10 @@ function buildReferenceEqualsCondition(
  * From the dateTime regex on {@link https://hl7.org/fhir/R4/datatypes.html#primitive}, but with:
  * - year and month required
  * - seconds optional when minutes specified for backwards compatibility, e.g. 1985-11-30T05:05Z
+ * - A space is allowed instead of a T as the date/time separator
  */
 const supportedDateRegex =
-  /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3])(:[0-5]\d(:([0-5]\d|60))?(\.\d{1,9})?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?$/;
+  /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])([T ]([01]\d|2[0-3])(:[0-5]\d(:([0-5]\d|60))?(\.\d{1,9})?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?$/;
 
 /**
  * Perform validation on date or dateTime values to ensure compatibility with Postgres timestamp parsing.
