@@ -55,6 +55,8 @@ export const QUESTIONNAIRE_REFERENCE_RESOURCE_URL = `${HTTP_HL7_ORG}/fhir/Struct
 export const QUESTIONNAIRE_VALIDATION_ERROR_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-validationError`;
 export const QUESTIONNAIRE_ENABLED_WHEN_EXPRESSION_URL = `${HTTP_HL7_ORG}/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-enableWhenExpression`;
 export const QUESTIONNAIRE_CALCULATED_EXPRESSION_URL = `${HTTP_HL7_ORG}/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression`;
+export const QUESTIONNAIRE_SIGNATURE_REQUIRED_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaire-signatureRequired`;
+export const QUESTIONNAIRE_SIGNATURE_RESPONSE_URL = `${HTTP_HL7_ORG}/fhir/StructureDefinition/questionnaireresponse-signature`;
 
 /**
  * Returns true if the item is a choice question.

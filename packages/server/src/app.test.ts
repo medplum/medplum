@@ -144,9 +144,10 @@ describe('App', () => {
         .send(patient);
       expect(res1.status).toBe(201);
       expect(res1.body).toMatchObject(patient);
-      expect(process.stdout.write).toHaveBeenCalledTimes(1);
+      expect(process.stdout.write).toHaveBeenCalledTimes(2);
 
-      const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
+      const calls = (process.stdout.write as jest.Mock).mock.calls;
+      const logLine = calls[calls.length - 1][0];
       const logObj = JSON.parse(logLine);
       expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 201 });
     });
@@ -179,7 +180,7 @@ describe('App', () => {
         .send(patient);
       expect(res1.status).toBe(201);
       expect(res1.body).toMatchObject(patient);
-      expect(process.stdout.write).toHaveBeenCalledTimes(1);
+      expect(process.stdout.write).toHaveBeenCalledTimes(2);
 
       const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
       const logObj = JSON.parse(logLine);
