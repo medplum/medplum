@@ -11,7 +11,7 @@ import HomepageCallout from '@site/src/components/HomepageCallout'
     <HomepageCallout title="Get Started" body="Set up and run your medical application in 5 minutes" linkText="Read more" linkRef="./docs#get-started" />
     <HomepageCallout title="Plan your Workflows" body="Learn FHIR and plan your workflows" linkText="Read more" linkRef="./docs#plan-your-workflows" />
     <HomepageCallout title="Build in Medplum" body="Medplum tools for full-stack apps with authentication" linkText="Read more" linkRef="./docs#build-in-medplum" />
-    <HomepageCallout title="Connect with with Healthcare Ecosystem" body="Use our on-prem Agent and integrations, for HL7, FHIRcast, labs/prescribing, and beyond" linkText="Read more" linkRef="./solutions/medplum-ehr" />
+    <HomepageCallout title="Connect to the Healthcare Ecosystem" body="Use our on-prem Agent and integrations, for HL7, FHIRcast, labs/prescribing, and beyond" linkText="Read more" linkRef="./docs#connect-to-the-healthcare-ecosystem" />
 </section>
 
 ## What is Medplum?
@@ -43,7 +43,7 @@ Medplum is a **headless EHR**. Using [Medplum products](./products) you can buil
 2. Explore our [React components](.docs/api/react), pre-built to support Medplum data.  
 3. [Run the Medplum stack locally](./docs/self-hosting/running-full-medplum-stack-in-docker), or [self-hosting](./docs/self-hosting) your own Medplum server with our [source code](https://github.com/medplum/medplum) on Github.
 
-## Connect with the Healthcare Ecosystem
+## Connect to the Healthcare Ecosystem
 
 - Get on-prem connectivity with our [Medplum Agent](./docs/agent), connecting to devices over HL7/MLLP, ASTM, and DICOM and surfacing them securely to the cloud. 
     - We also support [FHIRcase](./docs/fhircast) for rela-time synchronization. 
