@@ -44,7 +44,7 @@ for path in examples/*; do
   # Commit and push changes to the listening repo
   cd ${folder_name}
   git add .
-  git commit -m "Merge from main repo: ${formatted_title}"
+  git commit -s -m "Merge from main repo: ${formatted_title}"
   git push origin main
 
   # Cleanup: Remove the cloned repo folder and delete the local branch

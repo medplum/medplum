@@ -53,10 +53,7 @@ import { SelectQuery } from './sql';
 jest.mock('hibp');
 
 describe('FHIR Repo', () => {
-  const testProject: WithId<Project> = {
-    resourceType: 'Project',
-    id: randomUUID(),
-  };
+  let testProject: WithId<Project>;
 
   let testProjectRepo: Repository;
   let systemRepo: Repository;
@@ -64,6 +61,11 @@ describe('FHIR Repo', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
+
+    testProject = await getSystemRepo().createResource({
+      resourceType: 'Project',
+      id: randomUUID(),
+    });
     testProjectRepo = new Repository({
       projects: [testProject],
       extendedMode: true,
@@ -85,7 +87,10 @@ describe('FHIR Repo', () => {
     await expect(() =>
       getRepoForLogin({
         login: { resourceType: 'Login' } as Login,
-        membership: { resourceType: 'ProjectMembership' } as WithId<ProjectMembership>,
+        membership: {
+          resourceType: 'ProjectMembership',
+          project: createReference(testProject),
+        } as WithId<ProjectMembership>,
         project: testProject,
         userConfig: {} as UserConfiguration,
       })
@@ -1205,6 +1210,7 @@ describe('FHIR Repo', () => {
 
   test('Handles caching of profile from linked project', async () =>
     withTestContext(async () => {
+      const systemRepo = getSystemRepo();
       const { membership, project } = await registerNew({
         firstName: randomUUID(),
         lastName: randomUUID(),
@@ -1220,7 +1226,10 @@ describe('FHIR Repo', () => {
         email: randomUUID() + '@example.com',
         password: randomUUID(),
       });
-      project.link = [{ project: createReference(project2) }];
+      const updatedProject = await systemRepo.updateResource({
+        ...project,
+        link: [{ project: createReference(project2) }],
+      });
 
       const repo2 = await getRepoForLogin({
         login: {} as Login,
@@ -1244,17 +1253,20 @@ describe('FHIR Repo', () => {
       let repo = await getRepoForLogin({
         login: {} as Login,
         membership,
-        project,
+        project: updatedProject,
         userConfig: {} as UserConfiguration,
       });
       await expect(repo.createResource(patientJson)).rejects.toThrow(/Missing required property/);
 
       // Unlink Project and verify that profile is not cached; resource upload should succeed without access to profile
-      project.link = undefined;
+      const unlinkedProject = await systemRepo.updateResource({
+        ...updatedProject,
+        link: undefined,
+      });
       repo = await getRepoForLogin({
         login: {} as Login,
         membership,
-        project,
+        project: unlinkedProject,
         userConfig: {} as UserConfiguration,
       });
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
@@ -1286,6 +1298,52 @@ describe('FHIR Repo', () => {
       expect(cachedPatient.meta?.project).toStrictEqual(project.id);
       expect(cachedPatient.gender).toStrictEqual('unknown');
     }));
+
+  test.each(['commit', 'rollback'])('Post-commit handling on %s', async (mode) => {
+    const repo = getSystemRepo();
+    const loggerErrorSpy = jest.spyOn(getLogger(), 'error');
+    const finalPostCommit = jest.fn();
+
+    const error = new Error('Post-commit hook failed');
+    const promise = repo.withTransaction(async () => {
+      await repo.postCommit(async () => {
+        throw new Error('Post-commit hook failed');
+      });
+      await repo.postCommit(async () => {
+        // eslint-disable-next-line no-throw-literal
+        throw 'Post-commit hook failed with string';
+      });
+      await repo.postCommit(finalPostCommit);
+      if (mode === 'rollback') {
+        throw new Error('Transaction failed');
+      }
+    });
+
+    if (mode === 'commit') {
+      await promise;
+      expect(finalPostCommit).toHaveBeenCalled();
+      expect(loggerErrorSpy).toHaveBeenCalledTimes(2);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(expect.any(String), error);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          err: 'Post-commit hook failed with string',
+        })
+      );
+    } else {
+      await expect(promise).rejects.toThrow('Transaction failed');
+      expect(finalPostCommit).not.toHaveBeenCalled();
+      expect(loggerErrorSpy).toHaveBeenCalledTimes(1);
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          error: 'Transaction failed',
+        })
+      );
+    }
+
+    loggerErrorSpy.mockRestore();
+  });
 
   test('Handles resources with many entries stored in lookup table', async () =>
     withTestContext(async () => {
