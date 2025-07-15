@@ -90,11 +90,7 @@ export function TasksPage(): JSX.Element {
                 className={styles.segmentedControl}
               />
             </Box>
-<<<<<<< HEAD
             {selectedPatient?.resourceType === 'Patient' && (
-=======
-            {selectedPatient && selectedPatient.resourceType === 'Patient' && (
->>>>>>> e9be2600b274ff83c09184a53c600595eb0b5177
               <>
                 {activeTab === 'patient-summary' && <PatientSummary patient={selectedPatient} />}
                 {activeTab === 'activity-log' && <PatientTimeline patient={selectedPatient} />}
