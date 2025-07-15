@@ -34,6 +34,131 @@ export interface HealthiePatient {
 }
 
 /**
+ * Options for fetching Healthie patient IDs.
+ */
+export interface FetchHealthiePatientIdsOptions {
+  /** Filter users updated since this date (ISO 8601 format) */
+  sinceLastUpdated?: string;
+}
+
+/**
+ * Fetches patient IDs from Healthie with optional filtering and cursor-based pagination.
+ * @param healthie - The Healthie client instance to use for API calls.
+ * @param options - Optional filtering and pagination parameters.
+ * @returns An array of patient IDs.
+ */
+export async function fetchHealthiePatientIds(
+  healthie: HealthieClient,
+  options: FetchHealthiePatientIdsOptions = {}
+): Promise<string[]> {
+  const { sinceLastUpdated } = options;
+
+  // Fetch all pages
+  let allUsers: { id: string; updated_at: string }[] = [];
+  let hasMorePages = true;
+  let nextCursor = undefined;
+  let loopCount = 0;
+
+  while (hasMorePages) {
+    const {
+      users,
+      nextCursor: endCursor,
+      hasNextPage,
+    } = await fetchHealthiePatientIdsPage(healthie, {
+      sinceLastUpdated,
+      after: nextCursor,
+    });
+
+    allUsers.push(...users.map((user) => ({ id: user.id, updated_at: user.updated_at })));
+
+    // Update pagination state
+    hasMorePages = hasNextPage;
+    nextCursor = endCursor;
+
+    // Prevent infinite loop
+    loopCount++;
+    if (loopCount > 10000) {
+      throw new Error('Exiting fetchHealthiePatientIds due to too many pages');
+    }
+  }
+
+  // Client-side filtering by updated_at if sinceLastUpdated is provided
+  if (sinceLastUpdated) {
+    const sinceDate = new Date(sinceLastUpdated);
+    allUsers = allUsers.filter((user) => {
+      const updatedAt = new Date(user.updated_at);
+      return updatedAt >= sinceDate;
+    });
+  }
+
+  return allUsers.map((user) => user.id);
+}
+
+/**
+ * Fetches a single page of patient IDs using cursor-based pagination.
+ * @param healthie - The Healthie client instance to use for API calls.
+ * @param options - Configuration options for the fetch operation.
+ * @param options.sinceLastUpdated - Filter users updated since this date (ISO 8601 format).
+ * @param options.after - Cursor for pagination - fetch results after this cursor.
+ * @param options.pageSize - Number of items to return per page.
+ * @returns Page result with users and pagination metadata.
+ */
+export async function fetchHealthiePatientIdsPage(
+  healthie: HealthieClient,
+  options: {
+    sinceLastUpdated?: string;
+    after?: string;
+    pageSize?: number;
+  } = {}
+): Promise<{
+  users: { id: string; updated_at: string }[];
+  nextCursor: string | undefined;
+  hasNextPage: boolean;
+}> {
+  const { sinceLastUpdated, after, pageSize = 50 } = options;
+
+  const query = `
+    query fetchPatientIds($after: Cursor, $pageSize: Int) {
+      users(
+        should_paginate: true,
+        after: $after,
+        page_size: $pageSize
+      ) {
+        id
+        updated_at
+        cursor
+      }
+    }
+  `;
+
+  const variables: { after?: string; pageSize?: number } = { after, pageSize };
+
+  const result = await healthie.query<{ users: { id: string; updated_at: string; cursor: string }[] }>(
+    query,
+    variables
+  );
+  let users = result.users ?? [];
+
+  // Client-side filtering by updated_at if sinceLastUpdated is provided
+  if (sinceLastUpdated) {
+    const filterDate = new Date(sinceLastUpdated);
+    users = users.filter((user) => {
+      const userUpdatedAt = new Date(user.updated_at);
+      return userUpdatedAt >= filterDate;
+    });
+  }
+
+  const hasNextPage = users.length === pageSize;
+  const nextCursor = users.length > 0 ? users[users.length - 1].cursor : undefined;
+
+  return {
+    users: users.map((user) => ({ id: user.id, updated_at: user.updated_at })),
+    nextCursor,
+    hasNextPage,
+  };
+}
+
+/**
  * Fetches patients from Healthie.
  * @param healthie - The Healthie client instance to use for API calls.
  * @returns An array of patient data.
