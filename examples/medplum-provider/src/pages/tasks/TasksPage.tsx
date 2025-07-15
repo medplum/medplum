@@ -34,7 +34,9 @@ export function TasksPage(): JSX.Element {
     };
 
     setLoading(true);
-    fetchTasks().catch(showErrorNotification).finally(() => setLoading(false));
+    fetchTasks()
+      .catch(showErrorNotification)
+      .finally(() => setLoading(false));
   }, [medplum, profileRef]);
 
   const handleTaskChange = (task: Task): void => {
@@ -102,12 +104,12 @@ function TaskListSkeleton(): JSX.Element {
     <Stack gap="md" p="md">
       {Array.from({ length: 6 }).map((_, index) => (
         <Stack key={index}>
-            <Flex direction="column" gap="xs" align="flex-start">
-              <Skeleton height={16} width={`${Math.random() * 40 + 60}%`} />
-              <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
-              <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
-            </Flex>
-            <Divider />
+          <Flex direction="column" gap="xs" align="flex-start">
+            <Skeleton height={16} width={`${Math.random() * 40 + 60}%`} />
+            <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
+            <Skeleton height={14} width={`${Math.random() * 50 + 40}%`} />
+          </Flex>
+          <Divider />
         </Stack>
       ))}
     </Stack>
