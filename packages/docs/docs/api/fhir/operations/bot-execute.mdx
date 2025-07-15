@@ -166,7 +166,7 @@ medplum get 'Bot/$execute?identifier=https://example.com/bots|1234'
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234'\
+curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234' \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN"
 ```
 
@@ -233,7 +233,7 @@ HTTP/1.1 202 Accepted
 Content-Location: https://api.medplum.com/fhir/R4/job/[job-id]/status
 ```
 
-You can poll this URL to check the status of your bot execution:
+You can poll this URL to check the status of your bot execution. In general, for long running jobs it's best to poll no more frequently than 1 second.
 
 <Tabs>
   <TabItem value="ts" label="TypeScript">
