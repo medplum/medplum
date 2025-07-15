@@ -161,12 +161,16 @@ export async function fetchHealthiePatientIdsPage(
 /**
  * Fetches patients from Healthie.
  * @param healthie - The Healthie client instance to use for API calls.
+ * @param patientIds - An array of patient IDs to fetch.
  * @returns An array of patient data.
  */
-export async function fetchHealthiePatients(healthie: HealthieClient): Promise<HealthiePatient[]> {
+export async function fetchHealthiePatients(
+  healthie: HealthieClient,
+  patientIds?: string[]
+): Promise<HealthiePatient[]> {
   const query = `
-    query {
-      users {
+    query fetchPatients($ids: [ID!]!) {
+      users(ids: $ids) {
         id
         active
         name
@@ -191,7 +195,11 @@ export async function fetchHealthiePatients(healthie: HealthieClient): Promise<H
     }
   `;
 
-  const result = await healthie.query<{ users: HealthiePatient[] }>(query);
+  if (!patientIds) {
+    patientIds = await fetchHealthiePatientIds(healthie);
+  }
+
+  const result = await healthie.query<{ users: HealthiePatient[] }>(query, { ids: patientIds });
   return result.users ?? [];
 }
 

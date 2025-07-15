@@ -1,6 +1,6 @@
-import { MedicationRequest, Quantity } from '@medplum/fhirtypes';
+import { MedicationRequest, Patient, Quantity, Reference } from '@medplum/fhirtypes';
 import { HealthieClient } from './client';
-import { HEALTHIE_MEDICATION_CODE_SYSTEM, HEALTHIE_MEDICATION_ID_SYSTEM, HEALTHIE_USER_ID_SYSTEM } from './constants';
+import { HEALTHIE_MEDICATION_CODE_SYSTEM, HEALTHIE_MEDICATION_ID_SYSTEM } from './constants';
 
 /**
  * Interface representing a medication from Healthie API
@@ -77,12 +77,12 @@ export async function fetchMedications(healthie: HealthieClient, patientId: stri
 /**
  * Converts a Healthie medication to a FHIR MedicationRequest.
  * @param medication - The Healthie medication object.
- * @param patientId - The ID of the patient.
+ * @param patientReference - The reference to the patient.
  * @returns A FHIR MedicationRequest resource.
  */
 export function convertHealthieMedicationToFhir(
   medication: HealthieMedicationType,
-  patientId: string
+  patientReference: Reference<Patient>
 ): MedicationRequest {
   const fhirMedication: MedicationRequest = {
     resourceType: 'MedicationRequest',
@@ -94,9 +94,7 @@ export function convertHealthieMedicationToFhir(
     // If medication.active is false, then status is unknown
     status: medication.active ? 'active' : 'unknown',
     intent: 'proposal',
-    subject: {
-      reference: `Patient?identifier=${HEALTHIE_USER_ID_SYSTEM}|${patientId}`,
-    },
+    subject: patientReference,
     medicationCodeableConcept: {
       text: medication.name,
       coding: [

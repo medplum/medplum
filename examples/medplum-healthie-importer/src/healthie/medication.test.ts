@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { HealthieClient } from './client';
-import { fetchMedications, parseDosage, convertHealthieMedicationToFhir, HealthieMedicationType } from './medication';
-import { HealthiePatient } from './patient';
-import { HEALTHIE_MEDICATION_ID_SYSTEM, HEALTHIE_USER_ID_SYSTEM, HEALTHIE_MEDICATION_CODE_SYSTEM } from './constants';
+import { HEALTHIE_MEDICATION_CODE_SYSTEM, HEALTHIE_MEDICATION_ID_SYSTEM } from './constants';
+import { convertHealthieMedicationToFhir, fetchMedications, HealthieMedicationType, parseDosage } from './medication';
 
 type MockResponse = {
   json: () => Promise<any>;
@@ -67,20 +66,6 @@ describe('fetchMedications', () => {
 });
 
 describe('convertHealthieMedicationToFhir', () => {
-  const mockPatient: HealthiePatient = {
-    id: 'patient123',
-    active: true,
-    name: 'John Doe',
-    first_name: 'John',
-    last_name: 'Doe',
-    phone_number: '123-456-7890',
-    gender: 'male',
-    gender_identity: 'male',
-    sex: 'male',
-    sexual_orientation: 'straight',
-    locations: [],
-  };
-
   const mockMedication: HealthieMedicationType = {
     id: 'med123',
     name: 'Test Medication',
@@ -93,7 +78,10 @@ describe('convertHealthieMedicationToFhir', () => {
   };
 
   test('converts basic medication to FHIR', () => {
-    const result = convertHealthieMedicationToFhir(mockMedication, mockPatient.id);
+    const result = convertHealthieMedicationToFhir(mockMedication, {
+      display: 'Test Patient',
+      reference: 'Patient/123',
+    });
 
     expect(result).toEqual({
       resourceType: 'MedicationRequest',
@@ -101,7 +89,8 @@ describe('convertHealthieMedicationToFhir', () => {
       status: 'active',
       intent: 'proposal',
       subject: {
-        reference: `Patient?identifier=${HEALTHIE_USER_ID_SYSTEM}|patient123`,
+        display: 'John Doe',
+        reference: 'Patient/123',
       },
       medicationCodeableConcept: {
         text: 'Test Medication',
@@ -136,7 +125,9 @@ describe('convertHealthieMedicationToFhir', () => {
       active: false,
     };
 
-    const result = convertHealthieMedicationToFhir(inactiveMedication, mockPatient.id);
+    const result = convertHealthieMedicationToFhir(inactiveMedication, {
+      display: 'John Doe',
+    });
 
     expect(result.status).toBe('unknown');
   });
@@ -147,7 +138,7 @@ describe('convertHealthieMedicationToFhir', () => {
       dosage: undefined,
     };
 
-    const result = convertHealthieMedicationToFhir(medicationWithoutDosage, mockPatient.id);
+    const result = convertHealthieMedicationToFhir(medicationWithoutDosage, { display: 'John Doe' });
 
     expect(result.dosageInstruction).toBeUndefined();
   });
@@ -158,7 +149,7 @@ describe('convertHealthieMedicationToFhir', () => {
       comment: undefined,
     };
 
-    const result = convertHealthieMedicationToFhir(medicationWithoutComment, mockPatient.id);
+    const result = convertHealthieMedicationToFhir(medicationWithoutComment, { display: 'John Doe' });
 
     expect(result.note).toBeUndefined();
   });
@@ -169,7 +160,7 @@ describe('convertHealthieMedicationToFhir', () => {
       code: undefined,
     };
 
-    const result = convertHealthieMedicationToFhir(medicationWithoutCode, mockPatient.id);
+    const result = convertHealthieMedicationToFhir(medicationWithoutCode, { display: 'John Doe' });
 
     expect(result.medicationCodeableConcept?.coding?.[0].code).toBeUndefined();
   });
@@ -180,7 +171,7 @@ describe('convertHealthieMedicationToFhir', () => {
       name: undefined,
     };
 
-    const result = convertHealthieMedicationToFhir(medicationWithoutName, mockPatient.id);
+    const result = convertHealthieMedicationToFhir(medicationWithoutName, { display: 'John Doe' });
 
     expect(result.medicationCodeableConcept?.text).toBeUndefined();
     expect(result.medicationCodeableConcept?.coding?.[0].display).toBeUndefined();
@@ -192,7 +183,7 @@ describe('convertHealthieMedicationToFhir', () => {
       dosage: 'invalid dosage',
     };
 
-    const result = convertHealthieMedicationToFhir(medicationWithInvalidDosage, mockPatient.id);
+    const result = convertHealthieMedicationToFhir(medicationWithInvalidDosage, { display: 'John Doe' });
 
     expect(result.dosageInstruction?.[0].doseAndRate?.[0].doseQuantity).toBeUndefined();
   });
