@@ -61,20 +61,26 @@ export async function executeAsyncWithPolling(): Promise<void> {
   console.log(response);
 }
 
-export async function checkJobStatus(): Promise<void> {
+export async function checkJobStatusExample(): Promise<void> {
   // start-block check-job-status-manual
   // Example: Get the status URL from the Content-Location header
+  const accessToken = 'your-access-token';
   const response = await fetch('https://api.medplum.com/fhir/R4/Bot/bot-id/$execute', {
-    headers: { Prefer: 'respond-async' },
+    headers: {
+      Prefer: 'respond-async',
+      Authorization: `Bearer ${accessToken}`,
+    },
   });
+
+  // Get the status URL from the Content-Location header
   const statusUrl = response.headers.get('Content-Location');
   if (!statusUrl) {
     throw new Error('No Content-Location header found');
   }
-  const accessToken = 'your-access-token';
 
-  // Poll the status until completion
-  async function checkJobStatus(statusUrl: string): Promise<any> {
+  // Poll the status until completion, using a for loop with max attempts
+  let result: any = undefined;
+  for (let attempt = 1; attempt <= 30; attempt++) {
     const statusResponse = await fetch(statusUrl, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -83,25 +89,25 @@ export async function checkJobStatus(): Promise<void> {
 
     const asyncJob = await statusResponse.json();
 
-    // Check if job is complete
     if (asyncJob.status === 'completed') {
       // Extract the result from the output parameters
       const responseBody = asyncJob.output?.parameter?.find((p: any) => p.name === 'responseBody');
-      return responseBody.valueString || responseBody.valueBoolean || responseBody.valueInteger;
+      result = responseBody?.valueString || responseBody?.valueBoolean || responseBody?.valueInteger;
     } else if (asyncJob.status === 'error') {
       // Handle error case
       const outcome = asyncJob.output?.parameter?.find((p: any) => p.name === 'outcome');
       throw new Error(`Bot execution failed: ${outcome?.resource?.issue?.[0]?.details?.text}`);
-    } else {
-      // Job still running, wait and try again
-      await new Promise((resolve) => {
-        setTimeout(resolve, 1000);
-      });
-      return checkJobStatus(statusUrl);
     }
+
+    // Wait 2 second before polling again
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
-  const result = await checkJobStatus(statusUrl);
+  // If the result is undefined, throw an error
+  if (result === undefined) {
+    throw new Error('Max polling attempts reached without completion');
+  }
+
   // end-block check-job-status-manual
   console.log(result);
 }
