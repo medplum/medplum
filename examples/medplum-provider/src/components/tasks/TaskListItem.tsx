@@ -1,6 +1,6 @@
 import { Group, Stack, Text } from '@mantine/core';
 import { formatDate, formatHumanName, getDisplayString } from '@medplum/core';
-import { HumanName, Patient, Practitioner, Reference, Task } from '@medplum/fhirtypes';
+import { HumanName, Task } from '@medplum/fhirtypes';
 import { JSX } from 'react';
 import classes from './TaskListItem.module.css';
 import cx from 'clsx';
