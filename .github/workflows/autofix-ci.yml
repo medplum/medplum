@@ -20,7 +20,7 @@ jobs:
         with:
           node-version: 20
 
-      - run: npm ci --maxsockets 1
+      - run: npm ci
       - run: npm run prettier
 
       - uses: autofix-ci/action@2891949f3779a1cafafae1523058501de3d4e944
