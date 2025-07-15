@@ -15,8 +15,8 @@ interface TaskListItemProps {
 export function TaskListItem(props: TaskListItemProps): JSX.Element {
   const { task, selectedTask, onClick } = props;
   const isSelected = selectedTask?.id === task.id;
-  const patient = useResource(task.for as Reference<Patient>);
-  const owner = useResource(task.owner as Reference<Practitioner>);
+  const patient = useResource(task.for);
+  const owner = useResource(task.owner);
 
   return (
     <Group
@@ -33,8 +33,8 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
           {getDisplayString(task)}
         </Text>
         {task.restriction?.period && <Text fw={500}>Due {formatDate(task.restriction?.period?.end)}</Text>}
-        {patient && <Text>For: {formatHumanName(patient.name?.[0] as HumanName)}</Text>}
-        {owner && (
+        {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0] as HumanName)}</Text>} 
+        {owner?.resourceType === 'Practitioner' && (
           <Text size="sm" c="dimmed">
             Assigned to {formatHumanName(owner.name?.[0] as HumanName)}
           </Text>
