@@ -58,13 +58,9 @@ export function TasksPage(): JSX.Element {
             ) : (
               tasks.map((task, index) => (
                 <React.Fragment key={task.id}>
-                <TaskListItem 
-                  task={task} 
-                  selectedTask={selectedTask} 
-                  onClick={() => setSelectedTask(task)} 
-                />
-                {index < tasks.length - 1 && <Divider />}
-              </React.Fragment>
+                  <TaskListItem task={task} selectedTask={selectedTask} onClick={() => setSelectedTask(task)} />
+                  {index < tasks.length - 1 && <Divider />}
+                </React.Fragment>
               ))
             )}
           </Paper>
