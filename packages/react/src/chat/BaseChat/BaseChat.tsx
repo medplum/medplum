@@ -285,6 +285,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
               const prevCommunication = i > 0 ? communications[i - 1] : undefined;
               const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
               const currCommTime = parseSentTime(c);
+              const showDelivered = !!c.received && c.id === myLastDeliveredId;
               return (
                 <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
                   {(!prevCommTime || currCommTime !== prevCommTime) && (
@@ -292,16 +293,17 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                   )}
                   {c.sender?.reference === profileRefStr ? (
                     <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
-                      <ChatBubble
-                        alignment="right"
-                        communication={c}
-                        showDelivered={!!c.received && c.id === myLastDeliveredId}
+                      <ChatBubble alignment="right" communication={c} showDelivered={showDelivered} />
+                      <ResourceAvatar
+                        radius="xl"
+                        color="orange"
+                        value={c.sender}
+                        mb={!showDelivered ? 'sm' : undefined}
                       />
-                      <ResourceAvatar radius="xl" color="orange" value={c.sender} />
                     </Group>
                   ) : (
                     <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
-                      <ResourceAvatar radius="xl" value={c.sender} />
+                      <ResourceAvatar radius="xl" value={c.sender} mb="sm" />
                       <ChatBubble alignment="left" communication={c} />
                     </Group>
                   )}

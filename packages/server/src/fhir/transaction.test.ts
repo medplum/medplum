@@ -5,6 +5,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import { Repository, getSystemRepo } from './repo';
+import { PostgresError } from './sql';
 
 describe('FHIR Repo Transactions', () => {
   let repo: Repository;
@@ -505,7 +506,7 @@ describe('FHIR Repo Transactions', () => {
         } else {
           returnValue = true;
           // Emit transaction conflict (Postgres error code 40001)
-          throw new OperationOutcomeError(conflict('transaction', '40001'));
+          throw new OperationOutcomeError(conflict('transaction', PostgresError.SerializationFailure));
         }
       });
 
@@ -539,7 +540,7 @@ describe('FHIR Repo Transactions', () => {
         } else {
           returnValue = true;
           // Emit combined errors
-          const outcome = conflict('transaction conflict', '40001');
+          const outcome = conflict('transaction conflict', PostgresError.SerializationFailure);
           outcome.issue.push({ code: 'invalid', severity: 'error', details: { text: 'invalid data' } });
           throw new OperationOutcomeError(outcome);
         }
@@ -553,7 +554,7 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const txFn = jest.fn(async (): Promise<boolean> => {
         // Emit transaction conflict (Postgres error code 40001)
-        throw new OperationOutcomeError(conflict('transaction conflict', '40001'));
+        throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
       });
 
       await expect(repo.withTransaction(txFn)).rejects.toThrow('transaction conflict');
@@ -569,7 +570,7 @@ describe('FHIR Repo Transactions', () => {
         } else {
           returnValue = true;
           // Emit transaction conflict (Postgres error code 40001)
-          throw new OperationOutcomeError(conflict('transaction', '40001'));
+          throw new OperationOutcomeError(conflict('transaction', PostgresError.SerializationFailure));
         }
       });
       const outerTx = jest.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
@@ -583,7 +584,7 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const txFn = jest.fn(async (): Promise<boolean> => {
         // Emit transaction conflict (Postgres error code 40001)
-        throw new OperationOutcomeError(conflict('transaction conflict', '40001'));
+        throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
       });
       const outerTx = jest.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
 
@@ -596,7 +597,7 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const txFn = jest.fn(async (): Promise<boolean> => {
         // Emit transaction conflict (Postgres error code 40001)
-        throw new OperationOutcomeError(conflict('transaction conflict', '40001'));
+        throw new OperationOutcomeError(conflict('transaction conflict', PostgresError.SerializationFailure));
       });
       const outerTx = jest.fn(async (): Promise<boolean> => {
         try {

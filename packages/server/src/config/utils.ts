@@ -71,7 +71,38 @@ type DefaultConfigKeys =
   | 'defaultAuthRateLimit'
   | 'defaultFhirQuota';
 
-const integerKeys = ['port', 'accurateCountThreshold', 'defaultRateLimit', 'defaultAuthRateLimit', 'defaultFhirQuota'];
+const integerKeys = [
+  'accurateCountThreshold',
+  'bcryptHashSalt',
+  'defaultAuthRateLimit',
+  'defaultFhirQuota',
+  'defaultRateLimit',
+  'heartbeatMilliseconds',
+  'keepAliveTimeout',
+  'maxBotLogLengthForLogs',
+  'maxBotLogLengthForResource',
+  'maxSearchOffset',
+  'port',
+  'shutdownTimeoutMilliseconds',
+  'transactionAttempts',
+  'transactionExpBackoffBaseDelayMs',
+
+  'database.maxConnections',
+  'database.port',
+  'database.queryTimeout',
+  'readonlyDatabase.maxConnections',
+  'readonlyDatabase.port',
+  'readonlyDatabase.queryTimeout',
+
+  'redis.db',
+  'redis.port',
+
+  'smtp.port',
+
+  'bullmq.concurrency',
+
+  'fission.routerPort',
+];
 
 export function isIntegerConfig(key: string): boolean {
   return integerKeys.includes(key);

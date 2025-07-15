@@ -112,6 +112,7 @@ import {
   Disjunction,
   Expression,
   InsertQuery,
+  PostgresError,
   SelectQuery,
   TransactionIsolationLevel,
   normalizeDatabaseError,
@@ -121,7 +122,7 @@ import { buildTokenColumns } from './token-column';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
-const retryableTransactionErrorCodes = ['40001'];
+const retryableTransactionErrorCodes: string[] = [PostgresError.SerializationFailure];
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -2428,10 +2429,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
     let error: OperationOutcomeError | undefined;
     for (let attempt = 0; attempt < transactionAttempts; attempt++) {
+      const attemptStartTime = Date.now();
       try {
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
         const result = await callback(client);
         await this.commitTransaction();
+        getLogger().info('Completed transaction', {
+          attempt,
+          attemptDurationMs: Date.now() - attemptStartTime,
+          transactionAttempts,
+        });
         return result;
       } catch (err) {
         const operationOutcomeError = normalizeDatabaseError(err);
@@ -2447,6 +2454,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         this.endTransaction();
       }
 
+      const attemptDurationMs = Date.now() - attemptStartTime;
+
       if (attempt + 1 < transactionAttempts) {
         const baseDelayMs = config.transactionExpBackoffBaseDelayMs ?? defaultExpBackoffBaseDelayMs;
         // Attempts are 0-indexed, so first wait after first attempt will be somewhere between 75% and 100% of baseDelayMs
@@ -2455,7 +2464,20 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
         // etc...
         const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.25));
+        getLogger().info('Retrying transaction', {
+          attempt,
+          attemptDurationMs,
+          transactionAttempts,
+          delayMs,
+          baseDelayMs,
+        });
         await sleep(delayMs);
+      } else {
+        getLogger().info('Transaction failed final attempt', {
+          attempt,
+          attemptDurationMs,
+          transactionAttempts,
+        });
       }
     }
 
