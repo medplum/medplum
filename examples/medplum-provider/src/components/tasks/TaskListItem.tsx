@@ -33,7 +33,7 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
           {getDisplayString(task)}
         </Text>
         {task.restriction?.period && <Text fw={500}>Due {formatDate(task.restriction?.period?.end)}</Text>}
-        {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0] as HumanName)}</Text>} 
+        {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0] as HumanName)}</Text>}
         {owner?.resourceType === 'Practitioner' && (
           <Text size="sm" c="dimmed">
             Assigned to {formatHumanName(owner.name?.[0] as HumanName)}
