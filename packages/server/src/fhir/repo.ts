@@ -2434,11 +2434,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
         const result = await callback(client);
         await this.commitTransaction();
-        getLogger().info('Completed transaction', {
-          attempt,
-          attemptDurationMs: Date.now() - attemptStartTime,
-          transactionAttempts,
-        });
+        if (attempt > 0) {
+          getLogger().info('Completed transaction', {
+            attempt,
+            attemptDurationMs: Date.now() - attemptStartTime,
+            transactionAttempts,
+            serializable: options?.serializable ?? false,
+          });
+        }
         return result;
       } catch (err) {
         const operationOutcomeError = normalizeDatabaseError(err);
