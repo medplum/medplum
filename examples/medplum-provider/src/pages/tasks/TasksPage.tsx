@@ -51,11 +51,7 @@ export function TasksPage(): JSX.Element {
           <Paper h="100%" p="xs">
             {tasks.map((task) => (
               <Stack key={task.id} gap={0}>
-                <TaskListItem                  
-                  task={task}
-                  selectedTask={selectedTask}
-                  onClick={() => setSelectedTask(task)}
-                />
+                <TaskListItem task={task} selectedTask={selectedTask} onClick={() => setSelectedTask(task)} />
                 <Divider />
               </Stack>
             ))}
