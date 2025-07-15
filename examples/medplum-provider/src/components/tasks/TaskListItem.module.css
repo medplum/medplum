@@ -3,11 +3,9 @@
   overflow-wrap: break-word;
   white-space: normal;
   word-break: break-word;
-  border-radius: 8;
 } 
 
 .contentContainer {
-  border-radius: 8;
   transition: background 0.2s;
   cursor: pointer;
 }
