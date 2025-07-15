@@ -20,7 +20,6 @@ export function useDebouncedUpdateResource<T extends Resource>(
   }, timeoutMs);
 
   return async (resourcePayload: T): Promise<T> => {
-    debouncedCallback(resourcePayload);
-    return resourcePayload;
+    return await debouncedCallback(resourcePayload);
   };
 }

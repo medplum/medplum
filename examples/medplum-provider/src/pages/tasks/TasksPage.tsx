@@ -1,4 +1,4 @@
-import { Box, Divider, Flex, Paper, SegmentedControl } from '@mantine/core';
+import { Box, Divider, Flex, Paper, SegmentedControl, Stack } from '@mantine/core';
 import { JSX, useEffect, useMemo, useState } from 'react';
 import styles from './TasksPage.module.css';
 import { Patient, Task } from '@medplum/fhirtypes';
@@ -47,29 +47,28 @@ export function TasksPage(): JSX.Element {
   return (
     <div className={styles.container}>
       <Flex h="100%" w="100%">
-        <Flex direction="column" w="25%" h="100%" style={{ borderRight: '1px solid var(--mantine-color-gray-3)' }}>
+        <Flex direction="column" w="25%" h="100%" className={styles.borderRight}>
           <Paper h="100%" p="xs">
             {tasks.map((task) => (
-              <>
-                <TaskListItem
-                  key={task.id}
+              <Stack key={task.id} gap={0}>
+                <TaskListItem                  
                   task={task}
                   selectedTask={selectedTask}
                   onClick={() => setSelectedTask(task)}
                 />
                 <Divider />
-              </>
+              </Stack>
             ))}
           </Paper>
         </Flex>
 
-        <Flex direction="column" w="40%" h="100%">
+        <Flex direction="column" w="40%" h="100%" className={styles.borderRight}>
           <Paper h="100%" p="md" style={{ overflow: 'auto' }}>
             {selectedTask && <TaskInfo key={selectedTask.id} task={selectedTask} onTaskChange={handleTaskChange} />}
           </Paper>
         </Flex>
 
-        <Flex direction="column" w="35%" h="100%" style={{ borderLeft: '1px solid var(--mantine-color-gray-3)' }}>
+        <Flex direction="column" w="35%" h="100%">
           <Paper h="100%" p="xs">
             <Box px="md" pb="md">
               <SegmentedControl
@@ -83,20 +82,7 @@ export function TasksPage(): JSX.Element {
                 radius="md"
                 color="gray"
                 size="md"
-                styles={(theme) => ({
-                  root: {
-                    backgroundColor: theme.colors.gray[1],
-                    borderRadius: theme.radius.md,
-                  },
-                  indicator: {
-                    backgroundColor: theme.white,
-                  },
-                  label: {
-                    fontWeight: 500,
-                    color: theme.colors.dark[9],
-                    padding: `${theme.spacing.xs} ${theme.spacing.md}`,
-                  },
-                })}
+                className={styles.segmentedControl}
               />
             </Box>
 
