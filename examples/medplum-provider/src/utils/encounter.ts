@@ -1,4 +1,4 @@
-import { getReferenceString, MedplumClient, createReference, formatHumanName, getExtension } from '@medplum/core';
+import { getReferenceString, MedplumClient, createReference, formatHumanName, getExtension, HTTP_HL7_ORG } from '@medplum/core';
 import {
   Appointment,
   ChargeItem,
@@ -95,7 +95,7 @@ async function createChargeItemFromPlanDefinition(
 
   const serviceBillingCodeExtension = getExtension(
     planDefinition,
-    'http://hl7.org/fhir/uv/order-catalog/StructureDefinition/ServiceBillingCode'
+    `${HTTP_HL7_ORG}/fhir/uv/order-catalog/StructureDefinition/ServiceBillingCode`
   );
 
   const chargeDefinitionExtension = getExtension(
