@@ -92,7 +92,6 @@ async function createChargeItemFromPlanDefinition(
   patient: Patient,
   planDefinition: PlanDefinition
 ): Promise<void> {
-
   const serviceBillingCodeExtension = getExtension(
     planDefinition,
     `${HTTP_HL7_ORG}/fhir/uv/order-catalog/StructureDefinition/ServiceBillingCode`
