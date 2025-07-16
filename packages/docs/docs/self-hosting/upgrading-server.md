@@ -4,49 +4,106 @@ sidebar_position: 90
 
 # Upgrading Medplum Server
 
-Upgrading to newer versions of Medplum server is a crucial step of staying compliant and getting
-the benefits of security patches, new features, and performance improvements. As discussed in
-Medplum's [versioning policy](/docs/compliance/versions), Medplum uses semantic versioning. Starting in
-Medplum v3.3.0, to deploy a new major (X.0.0) or minor (X.Y.0) version, all previous versions' database
-migrations must have already been completed before being able to deploy the newer version of Medplum server.
+Keeping your Medplum server up-to-date ensures you get the latest security patches, new features, and performance improvements while maintaining compliance with healthcare regulations.
 
-Medplum server automatically attempts to apply all new database migrations after starting up by default.
-To upgrade to a newer version of Medplum server, the newest patch version of every intermediate minor version
-must first be deployed and allowed to complete all database migrations successfully before moving on to the next
-minor version. **Attempting to jump ahead and skip a minor version will result in the new version of Medplum server refusing to start.**
+## Before You Begin
 
-For example, the steps for upgrading from Medplum v3.1.2 to Medplum v4.3.4 are as follows:
+:::warning Do Not Skip Minor Versions
+You cannot skip minor versions when upgrading. Attempting to jump ahead (e.g., from v3.1.2 directly to v4.3.4) will cause your server to fail to start.
+:::
 
-- Deploy the latest v3.3.X patch version, e.g. v3.3.0, and allow all database migrations to complete
-- Update your application code to account for the breaking changes in Medplum v4 since major versions are not backward compatible.
-- Deploy the latest v4.0.X patch version, e.g. v4.0.4, and allow all database migrations to complete
-- Deploy the latest v4.1.X patch version, e.g. v4.1.12, and allow all database migrations to complete
-- Deploy the latest v4.2.X patch version, e.g. v4.2.6, and allow all database migrations to complete
-- Deploy the latest v4.3.X patch version, e.g. v4.3.4, and allow all database migrations to complete
+**Prerequisites:**
+- Review the [versioning policy](./docs/compliance/versions) if you're unfamiliar with Medplum's semantic versioning
+- Ensure you have access to [monitor migration progress](#monitoring-migration-progress)
 
-## Database migrations
+## Step-by-Step Upgrade Process
 
-Starting in v4.0.0, Medplum has the concepts of "pre-deploy" and "post-deploy" migrations.
+### 1. Plan Your Upgrade Path
 
-### Pre-deploy migrations
+For each minor version between your current version and target version, you must:
+- Deploy the latest patch version (Z.Y.X where X is the highest available)
+    - Post-deploy migrations will run automatically 
+- Wait for all database migrations to complete successfully
+- Only then proceed to the next minor version
 
-- Pending pre-deploy migrations run automatically during server startup. **If a pre-deploy migration fails, the server will not start.**
-- Must complete quickly (within seconds) regardless of dataset size. This prevents migrations from causing servers to violate their startup availability grace period, typically in the range of single digit minutes, even if many pending pre-deploy migrations have accumulated.
-- Effects of pre-deploy migrations are relied upon immediately by server code in the same deployment.
-- Typically consist adding or altering columns, new tables, etc.
+**Example: Upgrading from v3.1.2 to v4.3.x**
 
-### Post-deploy migrations
+Your upgrade path looks like this:
+```
+v3.1.2 → v3.3.0 → v4.0.4 → v4.1.12 → v4.2.6 → v4.3.x
+```
 
-- Deferred until after server startup
-- Can take anywhere from seconds to hours or days to complete depending on dataset size
-- Migrations can have a `requiredBefore` version specified in a [manifest file](https://github.com/medplum/medplum/blob/main/packages/server/src/migrations/data/data-version-manifest.json). The field is initially blank and is set in next minor version release.
-- Medplum server cannot assume a post-deploy migration has been executed prior to its `requiredBefore` version.
-- Includes:
-  - Concurrently adding indexes
-  - Partial or full reindexing of FHIR resources to support new search parameters, performance improvements, etc.
-  - Data backfilling/transformation
-  - Other schema or data operations that can take longer than a few seconds or must be deferred until after all pre-deploy migrations have completed
+### 2. Handle Breaking Changes (Major Versions Only)
 
-Each post-deploy migration has an associated `AsyncJob` resource that is used internally to track the progress of the migration with `AsyncJob.type` set to `data-migration` and `AsyncJob.dataVersion` set to the migration number. The `AsyncJob` resource can be used to monitor the progress of the migration and to determine when it has completed.
+When crossing major version boundaries (e.g., v3.x.x to v4.x.x):
+- **Before deploying**: Update your application code to handle breaking changes
+- Review the changelog for your target major version
+- Test your application against the new version in a staging environment
 
-Starting in Medplum v4.1.2, an [AsyncJob super admin control panel](https://github.com/medplum/medplum/pull/6862) is available in the `@medplum/app` web app at the path `/admin/super/asyncjob` to facilitate the management of post-deploy migrations.
+### 3. Deploy Each Version
+
+For each step in your upgrade path:
+
+1. **Deploy the version** using your standard deployment process
+2. **Monitor startup** - the server will automatically run pre-deploy migrations
+3. **Wait for completion** - check that all migrations finish successfully
+4. **Verify functionality** - ensure your server is operating normally before proceeding
+
+## Monitoring Migration Progress
+
+### Using the Admin Panel (available after [v4.1.2+](https://github.com/medplum/medplum/pull/6862))
+Navigate to `/admin/super/asyncjob` in your Medplum app to view:
+- Currently running migrations
+- Migration progress and status
+- Completion timestamps
+
+### Using the API
+Query `AsyncJob` resources where:
+- `type` equals `data-migration`
+- `dataVersion` indicates the migration number
+
+## Understanding Database Migrations
+
+Medplum uses two types of migrations to minimize downtime:
+
+### Pre-deploy Migrations
+- **When they run**: Automatically during server startup
+- **Duration**: Complete within seconds
+- **Impact**: Server won't start if these fail
+- **What they do**: Add columns, create tables, other quick schema changes
+
+### Post-deploy Migrations  
+- **When they run**: After server startup (in the background)
+- **Duration**: Can take hours or days for large datasets
+- **Impact**: Server continues running while these execute
+- **What they do**: Add indexes, reindex data, backfill information
+
+## Troubleshooting Common Issues
+
+### Server Won't Start After Upgrade
+**Likely cause**: Pre-deploy migration failed
+
+**Solution**: Check server logs for specific error messages and resolve the underlying issue
+
+### Migration Taking Too Long
+**Likely cause**: Post-deploy migration running on large dataset
+
+**Solution**: Monitor progress via admin panel; migrations can safely run for extended periods
+
+### Skipped a Minor Version
+**Symptoms**: Server refuses to start with version mismatch error
+
+**Solution**: Deploy the missing intermediate versions in order
+
+## Best Practices
+
+- **Test upgrades** in a staging environment first
+- **Monitor closely** during the first few hours after each deployment
+- **Keep your application code** compatible with the versions you're upgrading through
+
+## Need Help?
+
+If you encounter issues during your upgrade:
+1. Check the server logs for specific error messages
+2. Review the [changelog](link-to-changelog) for known issues
+3. Contact Medplum support with your specific error details and upgrade path
