@@ -67,7 +67,7 @@ echo "Medplum data files" > "$VAR_DIR/README.txt"
 pushd "$LIB_DIR"
 
 # Install dependencies
-npm ci --omit=dev --omit=optional --omit=peer --maxsockets 1
+npm ci --omit=dev --omit=optional --omit=peer
 
 # Move back to the original directory
 popd

@@ -21,7 +21,7 @@ WORKDIR /usr/src/medplum
 ADD ./medplum-server.tar.gz ./
 
 # Install dependencies, create non-root user, and set permissions in one layer
-RUN npm ci --maxsockets 1 && \
+RUN npm ci && \
   groupadd -r medplum && \
   useradd -r -g medplum medplum && \
   chown -R medplum:medplum /usr/src/medplum
