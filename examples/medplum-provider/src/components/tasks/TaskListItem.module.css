@@ -1,0 +1,15 @@
+.content {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  word-break: break-word;
+} 
+
+.contentContainer {
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+.contentContainer.selected {
+  background: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-8));
+}
