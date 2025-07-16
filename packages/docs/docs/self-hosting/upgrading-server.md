@@ -13,7 +13,7 @@ You cannot skip minor versions when upgrading. Attempting to jump ahead (e.g., f
 :::
 
 **Prerequisites:**
-- Review the [versioning policy](./docs/compliance/versions) if you're unfamiliar with Medplum's semantic versioning
+- Review the [versioning policy](../compliance/versions) if you're unfamiliar with Medplum's semantic versioning
 - Ensure you have access to [monitor migration progress](#monitoring-migration-progress)
 
 ## Step-by-Step Upgrade Process
@@ -105,5 +105,5 @@ Medplum uses two types of migrations to minimize downtime:
 
 If you encounter issues during your upgrade:
 1. Check the server logs for specific error messages
-2. Review the [changelog](link-to-changelog) for known issues
+2. Review the [changelog](https://github.com/medplum/medplum/releases) for known issues
 3. Contact Medplum support with your specific error details and upgrade path
