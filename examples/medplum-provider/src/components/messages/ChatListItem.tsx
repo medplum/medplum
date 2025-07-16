@@ -37,7 +37,7 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
           {patientName}
         </Text>
         <Text size="sm" fw={400} c="gray.7" lineClamp={2} className={classes.content}>
-          {content ? `${topic.sender?.display}: ${content}` : `No messages available`}
+          {content ? `${lastCommunication?.sender?.display}: ${content}` : `No messages available`}
         </Text>
         <Text size="xs" c="gray.6" style={{ marginTop: 2 }}>
           {lastCommunication ? formatDateTime(lastCommunication.sent) : ''}
