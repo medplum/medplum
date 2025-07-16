@@ -77,8 +77,8 @@ export function MessagesPage(): JSX.Element {
                 <Divider />
                 <Flex p="md" gap="xs">
                   <Button
-                    variant={status === 'in-progress' ? 'filled' : 'outline'}
-                    color="black"
+                    variant={status === 'in-progress' ? 'filled' : 'default'}
+                    color="gray"
                     h={24}
                     radius="xl"
                     onClick={() => setStatus('in-progress')}
@@ -87,8 +87,8 @@ export function MessagesPage(): JSX.Element {
                   </Button>
 
                   <Button
-                    variant={status === 'completed' ? 'filled' : 'outline'}
-                    color="black"
+                    variant={status === 'completed' ? 'filled' : 'default'}
+                    color="gray"
                     h={24}
                     radius="xl"
                     onClick={() => setStatus('completed')}
@@ -177,7 +177,7 @@ export function MessagesPage(): JSX.Element {
           </Flex>
 
           {/* Right sidebar - Patient summary */}
-          <Flex direction="column" w="25%" h="100%">
+          <Flex direction="column" w="25%" h="100%" style={{ borderLeft: '1px solid var(--mantine-color-gray-3)' }}>
             {selectedThread && (
               <ScrollArea p={0} h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
                 <PatientSummary key={selectedThread.id} patient={selectedThread.subject as Reference<Patient>} />
