@@ -1,6 +1,6 @@
 {
   "name": "medplum-demo-bots",
-  "version": "4.3.5",
+  "version": "4.3.6",
   "description": "Medplum Demo Bots",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
@@ -30,12 +30,12 @@
     "root": true
   },
   "devDependencies": {
-    "@medplum/bot-layer": "4.3.5",
-    "@medplum/cli": "4.3.5",
-    "@medplum/core": "4.3.5",
-    "@medplum/eslint-config": "4.3.5",
-    "@medplum/fhirtypes": "4.3.5",
-    "@medplum/mock": "4.3.5",
+    "@medplum/bot-layer": "4.3.6",
+    "@medplum/cli": "4.3.6",
+    "@medplum/core": "4.3.6",
+    "@medplum/eslint-config": "4.3.6",
+    "@medplum/fhirtypes": "4.3.6",
+    "@medplum/mock": "4.3.6",
     "@metriport/api-sdk": "17.0.1",
     "@types/node": "20.19.7",
     "@types/node-fetch": "2.6.12",
