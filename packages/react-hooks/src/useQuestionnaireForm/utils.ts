@@ -526,6 +526,12 @@ function buildInitialResponseAnswer(
     return item.initial.map((initial) => ({ ...initial }));
   }
 
+  if (item.answerOption) {
+    return item.answerOption
+      .filter((option) => option.initialSelected)
+      .map((option) => ({ ...option, initialSelected: undefined }));
+  }
+
   // Otherwise, return undefined to indicate no initial answers.
   return undefined;
 }
