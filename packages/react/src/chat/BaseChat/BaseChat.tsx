@@ -235,19 +235,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     }
   });
 
-  const myLastDeliveredId = useMemo<string>(() => {
-    let i = communications.length;
-
-    while (i--) {
-      const comm = communications[i];
-      if (comm.sender?.reference === profileRefStr && comm.received) {
-        return comm.id as string;
-      }
-    }
-
-    return '';
-  }, [communications, profileRefStr]);
-
   if (!profile) {
     return null;
   }
@@ -287,7 +274,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
               const prevCommunication = i > 0 ? communications[i - 1] : undefined;
               const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
               const currCommTime = parseSentTime(c);
-              const showDelivered = !!c.received && c.id === myLastDeliveredId;
               return (
                 <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
                   {(!prevCommTime || currCommTime !== prevCommTime) && (
@@ -297,13 +283,8 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
                   )}
                   {c.sender?.reference === profileRefStr ? (
                     <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
-                      <ChatBubble alignment="right" communication={c} showDelivered={showDelivered} />
-                      <ResourceAvatar
-                        radius="xl"
-                        color="orange"
-                        value={c.sender}
-                        mb={!showDelivered ? 'sm' : undefined}
-                      />
+                      <ChatBubble alignment="right" communication={c} />
+                      <ResourceAvatar radius="xl" color="orange" value={c.sender} mb="sm" />
                     </Group>
                   ) : (
                     <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">

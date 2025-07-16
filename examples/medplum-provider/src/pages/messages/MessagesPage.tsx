@@ -63,7 +63,7 @@ export function MessagesPage(): JSX.Element {
       <div className={classes.container}>
         <Flex h="100%" w="100%">
           {/* Left sidebar - Messages list */}
-          <Flex direction="column" w="25%" h="100%" style={{ borderRight: '1px solid var(--mantine-color-gray-3)' }}>
+          <Flex direction="column" w="25%" h="100%" className={classes.rightBorder}>
             <Paper h="100%">
               <ScrollArea h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
                 <Flex h={64} align="center" justify="space-between" p="md">
@@ -125,7 +125,7 @@ export function MessagesPage(): JSX.Element {
           </Flex>
 
           {/* Main chat area */}
-          <Flex direction="column" w="50%" h="100%">
+          <Flex direction="column" w="50%" h="100%" className={classes.rightBorder}>
             {selectedThread && (
               <Paper h="100%">
                 <Stack h="100%" gap={0}>
@@ -177,7 +177,7 @@ export function MessagesPage(): JSX.Element {
           </Flex>
 
           {/* Right sidebar - Patient summary */}
-          <Flex direction="column" w="25%" h="100%" style={{ borderLeft: '1px solid var(--mantine-color-gray-3)' }}>
+          <Flex direction="column" w="25%" h="100%">
             {selectedThread && (
               <ScrollArea p={0} h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
                 <PatientSummary key={selectedThread.id} patient={selectedThread.subject as Reference<Patient>} />
