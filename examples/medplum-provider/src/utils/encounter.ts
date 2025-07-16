@@ -1,4 +1,11 @@
-import { getReferenceString, MedplumClient, createReference, formatHumanName, getExtension, HTTP_HL7_ORG } from '@medplum/core';
+import {
+  getReferenceString,
+  MedplumClient,
+  createReference,
+  formatHumanName,
+  getExtension,
+  HTTP_HL7_ORG,
+} from '@medplum/core';
 import {
   Appointment,
   ChargeItem,
