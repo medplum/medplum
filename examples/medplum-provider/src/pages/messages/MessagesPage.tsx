@@ -63,7 +63,7 @@ export function MessagesPage(): JSX.Element {
       <div className={classes.container}>
         <Flex h="100%" w="100%">
           {/* Left sidebar - Messages list */}
-          <Flex direction="column" w="25%" h="100%" style={{ borderRight: '1px solid var(--mantine-color-gray-3)' }}>
+          <Flex direction="column" w="25%" h="100%" className={classes.rightBorder}>
             <Paper h="100%">
               <ScrollArea h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
                 <Flex h={64} align="center" justify="space-between" p="md">
@@ -77,8 +77,8 @@ export function MessagesPage(): JSX.Element {
                 <Divider />
                 <Flex p="md" gap="xs">
                   <Button
-                    variant={status === 'in-progress' ? 'filled' : 'outline'}
-                    color="black"
+                    variant={status === 'in-progress' ? 'filled' : 'default'}
+                    color="gray"
                     h={24}
                     radius="xl"
                     onClick={() => setStatus('in-progress')}
@@ -87,8 +87,8 @@ export function MessagesPage(): JSX.Element {
                   </Button>
 
                   <Button
-                    variant={status === 'completed' ? 'filled' : 'outline'}
-                    color="black"
+                    variant={status === 'completed' ? 'filled' : 'default'}
+                    color="gray"
                     h={24}
                     radius="xl"
                     onClick={() => setStatus('completed')}
@@ -125,7 +125,7 @@ export function MessagesPage(): JSX.Element {
           </Flex>
 
           {/* Main chat area */}
-          <Flex direction="column" w="50%" h="100%">
+          <Flex direction="column" w="50%" h="100%" className={classes.rightBorder}>
             {selectedThread && (
               <Paper h="100%">
                 <Stack h="100%" gap={0}>

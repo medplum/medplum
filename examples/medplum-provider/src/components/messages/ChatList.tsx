@@ -64,7 +64,7 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
   }, [lastCommunications]);
 
   return (
-    <Stack gap={0} p="xs">
+    <Stack gap={0}>
       {communications.map((communication: Communication) => {
         const lastCommunication = lastCommunicationsMap.get(createReference(communication).reference);
         const _isSelected = selectedCommunication?.id === communication.id;
