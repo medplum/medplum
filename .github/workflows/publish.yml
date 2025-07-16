@@ -49,7 +49,7 @@ jobs:
             {"text": "Starting publish: ${{ github.ref_name }}"}
 
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
 
       - name: Build
         run: npm run build:all
@@ -150,7 +150,7 @@ jobs:
             ${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
 
       - name: Set repo hash for agent build
         shell: bash
@@ -288,7 +288,7 @@ jobs:
             ${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
 
       - name: Set repo hash for agent build
         shell: bash
