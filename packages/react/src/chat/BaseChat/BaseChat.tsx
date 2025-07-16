@@ -7,7 +7,6 @@ import {
   ScrollArea,
   Skeleton,
   Stack,
-  Text,
   TextInput,
   Title,
 } from '@mantine/core';
@@ -17,6 +16,7 @@ import { ProfileResource, WithId, getDisplayString, getReferenceString, normaliz
 import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight } from '@tabler/icons-react';
+import cx from 'clsx';
 import { JSX, LegacyRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
@@ -32,11 +32,9 @@ function showError(message: string): void {
 }
 
 function parseSentTime(communication: Communication): string {
-  return new Date(communication.sent ?? 0).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  const sentTime = new Date(communication.sent ?? 0);
+  const sentTimeMins = sentTime.getMinutes().toString();
+  return `${sentTime.getHours()}:${sentTimeMins.length === 1 ? '0' : ''}${sentTimeMins}`;
 }
 
 function upsertCommunications(
@@ -235,6 +233,19 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     }
   });
 
+  const myLastDeliveredId = useMemo<string>(() => {
+    let i = communications.length;
+
+    while (i--) {
+      const comm = communications[i];
+      if (comm.sender?.reference === profileRefStr && comm.received) {
+        return comm.id as string;
+      }
+    }
+
+    return '';
+  }, [communications, profileRefStr]);
+
   if (!profile) {
     return null;
   }
@@ -274,17 +285,21 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
               const prevCommunication = i > 0 ? communications[i - 1] : undefined;
               const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
               const currCommTime = parseSentTime(c);
+              const showDelivered = !!c.received && c.id === myLastDeliveredId;
               return (
                 <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
                   {(!prevCommTime || currCommTime !== prevCommTime) && (
-                    <Text fz="xs" ta="center">
-                      {currCommTime}
-                    </Text>
+                    <div style={{ textAlign: 'center' }}>{currCommTime}</div>
                   )}
                   {c.sender?.reference === profileRefStr ? (
                     <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
-                      <ChatBubble alignment="right" communication={c} />
-                      <ResourceAvatar radius="xl" color="orange" value={c.sender} mb="sm" />
+                      <ChatBubble alignment="right" communication={c} showDelivered={showDelivered} />
+                      <ResourceAvatar
+                        radius="xl"
+                        color="orange"
+                        value={c.sender}
+                        mb={!showDelivered ? 'sm' : undefined}
+                      />
                     </Group>
                   ) : (
                     <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
@@ -337,24 +352,16 @@ interface ChatBubbleProps {
 function ChatBubble(props: ChatBubbleProps): JSX.Element {
   const { communication, alignment, showDelivered } = props;
   const content = communication.payload?.[0]?.contentString || '';
-  const sentTime = new Date(communication.sent ?? -1);
   const seenTime = new Date(communication.received ?? -1);
   const senderResource = useResource(communication.sender);
   return (
     <div className={classes.chatBubbleOuterWrap}>
-      <Text
-        fz="xs"
-        mb="xs"
-        fw={500}
-        className={alignment === 'right' ? classes.chatBubbleNameRight : undefined}
+      <div
+        className={cx(classes.chatBubbleName, alignment === 'right' && classes.chatBubbleNameRight)}
         aria-label="Sender name"
       >
         {senderResource ? getDisplayString(senderResource) : '[Unknown sender]'}
-        &nbsp;&middot;&nbsp;
-        <Text span c="dimmed" fz="xs">
-          {isNaN(sentTime.getTime()) ? '' : sentTime.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-        </Text>
-      </Text>
+      </div>
       <div
         className={
           alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
