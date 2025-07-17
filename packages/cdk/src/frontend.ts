@@ -149,7 +149,7 @@ export class FrontEnd extends Construct {
       this.distribution = new cloudfront.Distribution(this, 'AppDistribution', {
         defaultRootObject: 'index.html',
         defaultBehavior: {
-          origin: new origins.S3Origin(this.appBucket, {
+          origin: origins.S3BucketOrigin.withOriginAccessIdentity(this.appBucket, {
             originAccessIdentity: this.originAccessIdentity,
           }),
           responseHeadersPolicy: this.responseHeadersPolicy,
