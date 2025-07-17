@@ -20,10 +20,10 @@ This guide provides a simple, step-by-step process to deploy the Medplum healthc
 Before starting, ensure you have:
 
 ### Required Software
-- **Docker Desktop** (latest version with at least 8GB RAM allocated)
-- **kubectl** command-line tool
-- **Helm** v3.x
-- **Fission CLI** (optional, for advanced function management)
+- **Docker Desktop** https://docs.docker.com/desktop/ 
+- **kubectl** https://kubernetes.io/docs/tasks/tools/ 
+- **Helm** https://helm.sh/docs/intro/install/
+- **Fission CLI** https://fission.io/docs/installation/
 
 ### Docker Desktop Configuration
 1. Open Docker Desktop
@@ -47,21 +47,11 @@ kubectl get nodes
 # Verify Helm is installed
 helm version
 # Should show version info
-```
 
-### Install Fission CLI (Optional)
-```bash
-# For Linux/macOS
-curl -Lo fission https://github.com/fission/fission/releases/download/v1.21.0/fission-v1.21.0-linux-amd64
-chmod +x fission && sudo mv fission /usr/local/bin/
-
-# For macOS with Homebrew
-brew install fission
-
-# Verify installation
+# Verify Fission CLI is installed
 fission version
+# Should show version info
 ```
-
 ## 🚀 Quick Start
 
 ### 1. Create Project Directory
@@ -125,21 +115,6 @@ Fission is a Kubernetes-native serverless framework that enables you to run Medp
 - Easy deployment and management of bot functions
 - Integration with Kubernetes ecosystem
 
-### Fission Configuration
-The deployment automatically configures Medplum to work with Fission. The configuration is displayed at the end of the deployment:
-
-```json
-{
-  "fission": {
-    "namespace": "default",
-    "fieldManager": "medplum-fission-example",
-    "environmentName": "nodejs",
-    "routerHost": "10.x.x.x",
-    "routerPort": 80
-  }
-}
-```
-
 ### Working with Fission
 ```bash
 # List available environments
@@ -148,17 +123,6 @@ fission env list
 # List deployed functions
 fission fn list
 
-# Create a test function
-echo 'module.exports = async function(context) { return "Hello World!"; }' > hello.js
-fission fn create --name hello --env nodejs --code hello.js
-
-# Test the function
-fission fn test --name hello
-
-# Delete the function
-fission fn delete --name hello
-```
-
 ## 🔧 Management Commands
 
 | Command | Purpose |
@@ -166,8 +130,6 @@ fission fn delete --name hello
 | `./deploy-local.sh` | Deploy Medplum with Fission |
 | `./status-local.sh` | Check deployment status |
 | `./cleanup-local.sh` | Remove everything (with option to keep Fission) |
-| `./debug-fission.sh` | Debug Fission issues |
-| `./fix-fission-cleanup.sh` | Fix Fission cleanup issues |
 
 ### Kubernetes Commands
 
@@ -182,7 +144,7 @@ kubectl get all -n fission
 kubectl logs -n medplum deployment/medplum
 kubectl logs -n medplum deployment/postgres
 kubectl logs -n medplum deployment/redis
-kubectl logs -n fission deployment/controller
+kubectl logs -n fission deployment/executor
 
 # Restart a deployment
 kubectl rollout restart deployment/medplum -n medplum
@@ -240,7 +202,7 @@ kubectl describe pod <pod-name> -n medplum
 
 # Check logs
 kubectl logs -n medplum deployment/medplum
-kubectl logs -n fission deployment/controller
+kubectl logs -n fission deployment/executor
 ```
 
 **Fission issues:**
@@ -264,15 +226,6 @@ kubectl exec -n medplum deployment/postgres -- psql -U medplum -d medplum -c "SE
 kubectl exec -n medplum deployment/redis -- redis-cli -a medplum ping
 ```
 
-**Service not accessible:**
-```bash
-# Check service status
-kubectl get services -n medplum
-
-# Port forward as fallback
-kubectl port-forward -n medplum service/medplum-service 8103:8103
-```
-
 ### Reset Everything
 
 If something goes wrong:
@@ -287,19 +240,6 @@ sleep 10
 # Deploy fresh
 ./deploy-local.sh
 ```
-
-### Fission-specific Issues
-
-**Fission installation hanging:**
-- Ensure Docker Desktop has at least 8GB RAM allocated
-- Check that previous Fission installations are fully cleaned up
-- Run `./fix-fission-cleanup.sh` before deployment
-
-**RBAC permission errors:**
-- The deployment script automatically sets up RBAC
-- Verify with: `kubectl get clusterrole fission-medplum-access`
-- Check binding: `kubectl get clusterrolebinding fission-medplum-binding`
-
 ## 📊 Resource Usage
 
 This deployment uses:
@@ -363,11 +303,8 @@ kubectl logs -f -n medplum deployment/medplum
 kubectl logs -f -n medplum deployment/postgres
 
 # Fission logs
-kubectl logs -f -n fission deployment/controller
+kubectl logs -f -n fission deployment/executor
 kubectl logs -f -n fission deployment/router
-
-# All pod logs
-kubectl logs -f -n medplum --all-containers=true
 ```
 
 ## 🎯 Next Steps
