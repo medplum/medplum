@@ -129,9 +129,7 @@ async function createChargeItemFromPlanDefinition(
     context: createReference(encounter),
     occurrenceDateTime: new Date().toISOString(),
     code: serviceBillingCodeExtension.valueCodeableConcept,
-    extension: [
-      serviceBillingCodeExtension
-    ],
+    extension: [serviceBillingCodeExtension],
     quantity: {
       value: 1,
     },
