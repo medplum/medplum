@@ -111,48 +111,10 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   }
 
   // Upsert profile Resource (e.g. Patient or Practitioner)
-  const profile = await upsertProfileResource(request);
-
-  const partialMembership: Partial<ProjectMembership> = {
-    externalId: request.externalId,
-    accessPolicy: request.accessPolicy,
-    access: request.access,
-    admin: request.admin,
-    ...request.membership,
-  };
+  const profile = await upsertProfileResource(systemRepo, request);
 
   // Upsert ProjectMembership resource to connect User to profile resource in the given Project
-  const membership = await systemRepo.withTransaction(
-    async () => {
-      const existingMembership = await searchForExistingMembership(systemRepo, user, project);
-      if (existingMembership) {
-        if (!request.upsert) {
-          throw new OperationOutcomeError(conflict('User is already a member of this project'));
-        }
-
-        if (existingMembership.profile?.reference !== getReferenceString(profile)) {
-          throw new OperationOutcomeError(
-            conflict('User is already a member of this project with a different profile')
-          );
-        }
-
-        // Update the existing membership
-        // Be careful to preserve the critical properties: id, project, user, and profile
-        return systemRepo.updateResource<ProjectMembership>({
-          ...existingMembership,
-          ...partialMembership,
-          resourceType: 'ProjectMembership',
-          id: existingMembership.id,
-          project: createReference(project),
-          user: createReference(user),
-          profile: createReference(profile),
-        });
-      } else {
-        return createProjectMembership(systemRepo, user, project, profile, partialMembership);
-      }
-    },
-    { serializable: true }
-  );
+  const membership = await upsertProjectMembership(systemRepo, request, project, user, profile);
 
   if (email && request.sendEmail !== false) {
     await sendInviteEmail(systemRepo, request, user, existingUser, passwordResetUrl);
@@ -187,8 +149,10 @@ async function makeUserResource(request: ServerInviteRequest): Promise<User> {
   };
 }
 
-async function upsertProfileResource(request: ServerInviteRequest): Promise<WithId<ProfileResource>> {
-  const systemRepo = getSystemRepo();
+async function upsertProfileResource(
+  systemRepo: Repository,
+  request: ServerInviteRequest
+): Promise<WithId<ProfileResource>> {
   if (request.membership?.profile) {
     const profile = await systemRepo.readReference(request.membership.profile);
     if (profile.meta?.project !== request.project.id) {
@@ -249,6 +213,61 @@ async function upsertProfileResource(request: ServerInviteRequest): Promise<With
       return profile;
     }
   }
+}
+
+async function upsertProjectMembership(
+  systemRepo: Repository,
+  request: ServerInviteRequest,
+  project: WithId<Project>,
+  user: WithId<User>,
+  profile: WithId<ProfileResource>
+): Promise<WithId<ProjectMembership>> {
+  const partialMembership: Partial<ProjectMembership> = {
+    externalId: request.externalId,
+    accessPolicy: request.accessPolicy,
+    access: request.access,
+    admin: request.admin,
+    ...request.membership,
+  };
+
+  if (request.forceNewMembership) {
+    return createProjectMembership(systemRepo, user, project, profile, partialMembership);
+  }
+
+  // Upsert ProjectMembership resource to connect User to profile resource in the given Project
+  const membership = await systemRepo.withTransaction(
+    async () => {
+      const existingMembership = await searchForExistingMembership(systemRepo, user, project);
+      if (existingMembership) {
+        if (!request.upsert) {
+          throw new OperationOutcomeError(conflict('User is already a member of this project'));
+        }
+
+        if (existingMembership.profile?.reference !== getReferenceString(profile)) {
+          throw new OperationOutcomeError(
+            conflict('User is already a member of this project with a different profile')
+          );
+        }
+
+        // Update the existing membership
+        // Be careful to preserve the critical properties: id, project, user, and profile
+        return systemRepo.updateResource<ProjectMembership>({
+          ...existingMembership,
+          ...partialMembership,
+          resourceType: 'ProjectMembership',
+          id: existingMembership.id,
+          project: createReference(project),
+          user: createReference(user),
+          profile: createReference(profile),
+        });
+      } else {
+        return createProjectMembership(systemRepo, user, project, profile, partialMembership);
+      }
+    },
+    { serializable: true }
+  );
+
+  return membership;
 }
 
 async function searchForExistingMembership(
