@@ -10,7 +10,7 @@ global:
     # type: "aws:region:parameterName"
     # type: "gcp:projectId:secretId"
     # type: "azure:keyVaultURL:secretName"
-    type: "env"  # Default to env
+    type: "env" # Default to env
 
 serviceAccount:
   annotations:
@@ -24,6 +24,7 @@ deployment:
   image:
     repository: medplum/medplum-server
     tag: latest
+    pullPolicy: Always
   env:
     # - name: SQL_DEBUG
     #   value: '*'
@@ -44,4 +45,3 @@ ingress:
   deploy: true
   domain: [MY_DOMAIN] # Your domain name
   tlsSecretName: [TLS_SECRET_NAME] # Azure only
-  
