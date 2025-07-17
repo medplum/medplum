@@ -1,4 +1,11 @@
-import { getReferenceString, MedplumClient, createReference, formatHumanName } from '@medplum/core';
+import {
+  getReferenceString,
+  MedplumClient,
+  createReference,
+  formatHumanName,
+  getExtension,
+  HTTP_HL7_ORG,
+} from '@medplum/core';
 import {
   Appointment,
   ChargeItem,
@@ -80,9 +87,56 @@ export async function createEncounter(
     ],
   });
 
+  await createChargeItemFromPlanDefinition(medplum, encounter, patient, planDefinition);
   await handleChargeItemsFromTasks(medplum, encounter, patient);
 
   return encounter;
+}
+
+async function createChargeItemFromPlanDefinition(
+  medplum: MedplumClient,
+  encounter: Encounter,
+  patient: Patient,
+  planDefinition: PlanDefinition
+): Promise<void> {
+  const serviceBillingCodeExtension = getExtension(
+    planDefinition,
+    `${HTTP_HL7_ORG}/fhir/uv/order-catalog/StructureDefinition/ServiceBillingCode`
+  );
+
+  const chargeDefinitionExtension = getExtension(
+    planDefinition,
+    'http://medplum.com/fhir/StructureDefinition/applicable-charge-definition'
+  );
+
+  if (!serviceBillingCodeExtension?.valueCodeableConcept || !chargeDefinitionExtension?.valueCanonical) {
+    console.log('PlanDefinition missing required extensions for charge item creation');
+    return;
+  }
+
+  const cptCoding = serviceBillingCodeExtension.valueCodeableConcept.coding?.find(
+    (coding) => coding.system === 'http://www.ama-assn.org/go/cpt'
+  );
+
+  if (!cptCoding) {
+    return;
+  }
+
+  const chargeItem: ChargeItem = {
+    resourceType: 'ChargeItem',
+    status: 'planned',
+    subject: createReference(patient),
+    context: createReference(encounter),
+    occurrenceDateTime: new Date().toISOString(),
+    code: serviceBillingCodeExtension.valueCodeableConcept,
+    extension: [serviceBillingCodeExtension],
+    quantity: {
+      value: 1,
+    },
+    definitionCanonical: [chargeDefinitionExtension.valueCanonical],
+  };
+
+  await medplum.createResource(chargeItem);
 }
 
 async function handleChargeItemsFromTasks(
@@ -124,14 +178,20 @@ async function createChargeItemFromServiceRequest(
   patient: Patient,
   serviceRequest: ServiceRequest
 ): Promise<void> {
-  let definitionCanonical: string[] = [];
-  const chargeDefinitionExtension = serviceRequest.extension?.find(
-    (ext) => ext.url === 'http://medplum.com/fhir/StructureDefinition/applicable-charge-definition'
+  const chargeDefinitionExtension = getExtension(
+    serviceRequest,
+    'http://medplum.com/fhir/StructureDefinition/applicable-charge-definition'
   );
-  if (chargeDefinitionExtension?.valueCanonical) {
-    const canonicalUrl = chargeDefinitionExtension.valueCanonical;
-    definitionCanonical = [canonicalUrl];
+
+  if (
+    !chargeDefinitionExtension?.valueCanonical ||
+    !serviceRequest.code?.coding?.find((c) => c.system === 'http://www.ama-assn.org/go/cpt')
+  ) {
+    return;
   }
+
+  const canonicalUrl = chargeDefinitionExtension?.valueCanonical;
+  const definitionCanonical = canonicalUrl ? [canonicalUrl] : [];
 
   const chargeItem: ChargeItem = {
     resourceType: 'ChargeItem',

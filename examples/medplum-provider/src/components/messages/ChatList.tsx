@@ -31,6 +31,9 @@ export const ChatList = (props: ChatListProps): JSX.Element => {
             partOf {
               reference
             }
+            sender {
+              display
+            }
             payload {
               contentString
             }
