@@ -1,6 +1,6 @@
 {
   "name": "root",
-  "version": "4.3.4",
+  "version": "4.3.6",
   "private": true,
   "workspaces": [
     "packages/*",
@@ -41,6 +41,7 @@
     "react-dom": "19.1.0",
     "react-native": "0.80.1",
     "rollup": "4.44.2",
+    "typescript": "5.8.3",
     "whatwg-url": "14.0.0"
   },
   "devDependencies": {

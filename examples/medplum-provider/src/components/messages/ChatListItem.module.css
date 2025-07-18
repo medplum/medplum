@@ -6,7 +6,6 @@
 } 
 
 .contentContainer {
-  border-radius: 8;
   transition: background 0.2s;
   cursor: pointer;
 }
