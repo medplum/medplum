@@ -10,9 +10,9 @@ export class Hl7Server {
     this.handler = handler;
   }
 
-  start(port: number, encoding?: string, enhancedMode = false): void {
+  start(port: number, encoding?: string, enhancedMode = false, messagesPerSec: number | undefined = undefined): void {
     const server = net.createServer((socket) => {
-      const connection = new Hl7Connection(socket, encoding, enhancedMode);
+      const connection = new Hl7Connection(socket, encoding, enhancedMode, messagesPerSec);
       this.handler(connection);
     });
 
