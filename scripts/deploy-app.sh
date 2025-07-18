@@ -16,17 +16,9 @@ if [[ -z "${MEDPLUM_BASE_URL}" ]]; then
   exit 1
 fi
 
-if [[ -z "${GOOGLE_CLIENT_ID}" ]]; then
-  echo "GOOGLE_CLIENT_ID is missing"
-  exit 1
-fi
-
-if [[ -z "${RECAPTCHA_SITE_KEY}" ]]; then
-  echo "RECAPTCHA_SITE_KEY is missing"
-  exit 1
-fi
-
 # Setting defaults for the replacements of placeholders which should have defaults
+: ${GOOGLE_CLIENT_ID:=""}
+: ${RECAPTCHA_SITE_KEY:=""}
 : ${MEDPLUM_REGISTER_ENABLED:="true"}
 : ${MEDPLUM_AWS_TEXTRACT_ENABLED:="true"}
 
