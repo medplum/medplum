@@ -1,0 +1,29 @@
+.logoContainer {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-right: 32px;
+}
+
+.logoImage {
+  color: purple;
+  display: block;
+  margin: 0 auto;
+}
+
+.logoImage:hover {
+  animation: pulse 0.3s;
+  color: #902090;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
