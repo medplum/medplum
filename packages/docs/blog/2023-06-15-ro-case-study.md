@@ -20,7 +20,7 @@ tags: [interop, fhir-datastore, compliance, case-study]
 ## Medplum Solutions Used
 
 1. [Lab Network](/solutions/lab) - sending lab orders and receiving diagnostic reports across lab sites
-2. [Provider Portal and FHIR API](/solutions#provider-portal-and-fhir-api) - allow data access with controls, to practitioners and applications
+2. [Provider Portal and FHIR API](/solutions) - allow data access with controls, to practitioners and applications
 
 ## Challenges Faced
 
