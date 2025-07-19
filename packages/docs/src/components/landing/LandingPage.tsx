@@ -1,3 +1,4 @@
+import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import { JSX, useEffect } from 'react';
 import { Card } from '../Card';
@@ -181,10 +182,10 @@ export function LandingPage(): JSX.Element {
                 compliant, and scalable foundation. It’s clean, customizable technology that simply works - from MVP to
                 IPO.
               </p>
-              <a href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
+              <Link href="https://cal.com/medplum/demo" className={styles.getStartedButton}>
                 <div>Book a demo</div>
                 <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
-              </a>
+              </Link>
             </div>
             <div className={styles.heroImage}>
               <img

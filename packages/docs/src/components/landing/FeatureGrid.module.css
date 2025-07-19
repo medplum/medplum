@@ -77,3 +77,20 @@
   color: #946af9;
   font-weight: 400;
 }
+
+.actionButton {
+  display: flex;
+  margin-top: 0.25rem;
+  padding: 0.5rem 1rem;
+  background: var(--ifm-color-primary-lightest);
+  transition: all 200ms ease;
+  font-size: 1.125rem;
+  align-items: center;
+  border-radius: 16px;
+  text-align: center;
+  justify-content: center;
+}
+
+[data-theme='dark'] .actionButton {
+  background: var(--ifm-color-primary-darkest);
+}
