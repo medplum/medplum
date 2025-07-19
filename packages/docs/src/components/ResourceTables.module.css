@@ -1,5 +1,5 @@
 .indentation {
-  border: solid #ddd;
+  border: solid var(--oc-gray-3);
   border-width: 0 0 2px 2px;
   height: 0.5ch;
   width: 0.75rem;

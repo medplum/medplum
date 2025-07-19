@@ -1,0 +1,27 @@
+.logoContainer {
+  background-color: var(--oc-gray-4);
+  padding: 16px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+  margin-bottom: 64px;
+}
+
+.logoCard {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 32px;
+}
+
+.colorCard {
+  border-radius: 32px;
+  font-family: monospace;
+  padding: 32px;
+  width: 240px;
+  height: 160px;
+}

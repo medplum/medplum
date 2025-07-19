@@ -5,15 +5,15 @@
   padding: 2rem;
   flex-direction: column;
   align-items: center;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--oc-gray-2);
   border-radius: 32px;
-  background-color: #fbfbfb;
+  background-color: var(--oc-gray-0);
   transition: all 200ms ease;
 }
 
 [data-theme='dark'] .profileCard {
-  border-color: #333333;
-  background: #000;
+  border-color: var(--oc-gray-8);
+  background: black;
 }
 
 .profileCard h3 {
@@ -38,7 +38,7 @@
   align-items: center;
   border-style: solid;
   border-width: 4px;
-  border-color: #e6e6e6;
+  border-color: var(--oc-grape-2);
   border-radius: 99%;
 }
 
@@ -80,8 +80,8 @@
 
 .profileLink:hover {
   border-radius: 12px;
-  background-color: #f4f0fe;
+  background-color: #eddeff;
   filter: brightness(100%) grayscale(0%);
-  color: #946af9;
+  color: var(--oc-grape-8);
   text-decoration: none;
 }

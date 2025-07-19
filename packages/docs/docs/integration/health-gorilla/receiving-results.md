@@ -46,7 +46,7 @@ graph TD
 
     DI[DetectedIssue<br/>Critical Value Alert] -->|implicated| Obs1
 
-    classDef report fill:#946af9,stroke:#333,stroke-width:2px,color:#fff
+    classDef report fill:#9C36B5,stroke:#333,stroke-width:2px,color:#fff
     classDef observation fill:#45bb2a,stroke:#333,stroke-width:2px,color:#fff
     classDef document fill:#a9722e,stroke:#333,stroke-width:2px,color:#fff
     classDef organization fill:#684bab,stroke:#333,stroke-width:2px,color:#fff

@@ -6,15 +6,15 @@
   grid-row-gap: 1px;
   grid-template-columns: repeat(var(--columns), 1fr);
   grid-template-rows: auto auto;
-  border: 1px solid #e6e6e6;
+  border: 1px solid var(--oc-gray-2);
   border-radius: 32px;
-  background-color: #e6e6e6;
+  background-color: var(--oc-gray-2);
   transition: all 200ms ease;
 }
 
 [data-theme='dark'] .featureGrid {
-  background: #333;
-  border-color: #333;
+  background: var(--oc-gray-8);
+  border-color: var(--oc-gray-9);
 }
 
 @media screen and (max-width: 996px) {
@@ -28,7 +28,7 @@
   padding: 2rem;
   flex-direction: column;
   align-items: flex-start;
-  background-color: #fbfbfb;
+  background-color: var(--oc-gray-0);
   transition: all 200ms ease;
 }
 
@@ -47,13 +47,13 @@
   justify-content: center;
   align-items: center;
   border-radius: 0.5rem;
-  background-color: #f4f0fe;
+  background-color: var(--oc-indigo-1);
   margin: 0 0 2rem 0;
 }
 
 [data-theme='dark'] .featureIcon {
   transition: all 200ms ease;
-  background: #221d2d;
+  background: var(--oc-gray-9);
 }
 
 .featureCell h3 {
@@ -66,15 +66,15 @@
 .featureCell p {
   transition: all 200ms ease;
   font-size: 0.9375rem;
-  color: #4d4d4d;
+  color: var(--oc-gray-7);
 }
 
 [data-theme='dark'] .featureCell p {
-  color: #b2b2b2;
+  color: var(--oc-gray-4);
 }
 
 .featureCell strong {
-  color: #946af9;
+  color: var(--oc-grape-8);
   font-weight: 400;
 }
 
@@ -82,7 +82,7 @@
   display: flex;
   margin-top: 0.25rem;
   padding: 0.5rem 1rem;
-  background: var(--ifm-color-primary-lightest);
+  background-color: var(--oc-indigo-1);
   transition: all 200ms ease;
   font-size: 1.125rem;
   align-items: center;
@@ -92,5 +92,5 @@
 }
 
 [data-theme='dark'] .actionButton {
-  background: var(--ifm-color-primary-darkest);
+  background: var(--oc-gray-9);
 }
