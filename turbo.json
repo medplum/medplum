@@ -16,6 +16,9 @@
         "RECAPTCHA_SITE_KEY"
       ]
     },
+    "generate": {
+      "dependsOn": ["build"]
+    },
     "test": {
       "dependsOn": ["build"],
       "outputs": ["coverage/**"],
