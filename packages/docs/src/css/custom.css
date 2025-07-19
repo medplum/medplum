@@ -9,13 +9,14 @@
   --ifm-font-size-base: 16px;
   --ifm-code-font-size: 95%;
   --ifm-font-family-base: 'Poppins', sans-serif;
-  --ifm-color-primary: #721f6f;
+  --ifm-color-primary: #800080;
   --ifm-color-primary-dark: #c00000;
   --ifm-color-primary-darker: #800000;
   --ifm-color-primary-darkest: #400000;
   --ifm-color-primary-light: #ff8080;
   --ifm-color-primary-lighter: #ffa0a0;
   --ifm-color-primary-lightest: #eddeff;
+  /* --ifm-link-color: #c67dff; */
   --ifm-heading-color: #000000;
   --code-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
   --img-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
@@ -26,6 +27,7 @@
   --ifm-footer-title-color: #909090;
   --ifm-footer-link-color: #ffffff;
   --ifm-footer-link-hover-color: #c67dff;
+  --ifm-footer-padding-vertical: 80px;
 }
 
 [data-theme='dark'] {

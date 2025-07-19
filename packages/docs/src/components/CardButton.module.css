@@ -6,7 +6,7 @@
   grid-column-gap: 0.5rem;
   background-color: #eddeff;
   transition: all 200ms ease;
-  color: #721f6f;
+  color: #800080;
   font-size: 1rem;
   line-height: 2rem;
   text-decoration: none;
@@ -21,7 +21,7 @@
 
 .cardButton:hover {
   background-color: #ebe6fe;
-  color: #721f6f;
+  color: #800080;
   cursor: pointer;
   text-decoration: none;
 }

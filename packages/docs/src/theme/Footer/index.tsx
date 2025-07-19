@@ -10,7 +10,7 @@ function Footer(): ReactNode {
   const { copyright, links } = footer;
   const columns = links as FooterColumnItem[];
   return (
-    <footer className={clsx(ThemeClassNames.layout.footer.container, 'footer')}>
+    <footer className={clsx(ThemeClassNames.layout.footer.container, styles.footer, 'footer')}>
       <div className="container container-fluid">
         <div className={styles.row}>
           <div className={styles.column}>
@@ -23,17 +23,17 @@ function Footer(): ReactNode {
               <br />
               healthcare apps.
             </p>
-            <a href="/security">
+            <Link href="/security">
               <img src="/img/compliance/soc.png" className="medplum-soc-compliance-image" loading="lazy" alt="SOC" />
-            </a>
-            <a href="/security">
+            </Link>
+            <Link href="/security">
               <img
                 src="/img/compliance/hipaa.png"
                 className="medplum-hipaa-compliance-image"
                 loading="lazy"
                 alt="HIPAA"
               />
-            </a>
+            </Link>
           </div>
           <div className={styles.column}>
             <div className={styles.row}>
