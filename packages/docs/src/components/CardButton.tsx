@@ -1,6 +1,6 @@
+import Link from '@docusaurus/Link';
 import { JSX, ReactNode } from 'react';
 import styles from './CardButton.module.css';
-import Link from '@docusaurus/Link';
 
 export interface CardButtonProps {
   readonly href: string;
