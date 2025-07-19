@@ -39,7 +39,7 @@ export default function CaseStudiesPage(): JSX.Element {
               Medplum powers many specialty electronic health record systems and other purpose-built healthcare apps.
               Implmentations include solutions across specialties: <Link href="/blog/tags/pediatrics">pediatrics</Link>,
               <Link href="/blog/tags/radiology">radiology</Link>, <Link href="/blog/ensage-case-study">geriatrics</Link>
-              ,<Link href="/blog/tags/cardiac-care">cardiac care</Link> and more.
+              , cardiac care and more.
             </Feature>
             <Feature title="Diagnostics" imgSrc="/img/icons/cog-icon.svg">
               Diagnostics providers need highly programmable system that can manage data securely at scale. Medplum

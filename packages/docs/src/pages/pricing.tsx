@@ -30,7 +30,7 @@ export default function PricingPage(): JSX.Element {
                 <th colSpan={4}>
                   Cloud Hosted
                   <sup>
-                    <Link href="#note17">17</Link>
+                    <a href="#note17">17</a>
                   </sup>
                 </th>
                 <th colSpan={2}>Self Hosted</th>
@@ -40,37 +40,37 @@ export default function PricingPage(): JSX.Element {
                 <th>
                   Free
                   <sup>
-                    <Link href="#note1">1</Link>
+                    <a href="#note1">1</a>
                   </sup>
                 </th>
                 <th>
                   Production
                   <sup>
-                    <Link href="#note2">2</Link>
+                    <a href="#note2">2</a>
                   </sup>
                 </th>
                 <th>
                   Premium
                   <sup>
-                    <Link href="#note3">3</Link>
+                    <a href="#note3">3</a>
                   </sup>
                 </th>
                 <th>
                   Enterprise
                   <sup>
-                    <Link href="#note4">4</Link>
+                    <a href="#note4">4</a>
                   </sup>
                 </th>
                 <th>
                   Community
                   <sup>
-                    <Link href="#note5">5</Link>
+                    <a href="#note5">5</a>
                   </sup>
                 </th>
                 <th>
                   Enterprise
                   <sup>
-                    <Link href="#note6">6</Link>
+                    <a href="#note6">6</a>
                   </sup>
                 </th>
               </tr>
@@ -115,7 +115,7 @@ export default function PricingPage(): JSX.Element {
                 <td>
                   Bots
                   <sup>
-                    <Link href="#note7">7</Link>
+                    <a href="#note7">7</a>
                   </sup>
                 </td>
                 <td>Not enabled</td>
@@ -139,32 +139,32 @@ export default function PricingPage(): JSX.Element {
                 <td>
                   Test
                   <sup>
-                    <Link href="#note13">13</Link>
+                    <a href="#note13">13</a>
                   </sup>
                 </td>
                 <td>
                   Growth
                   <sup>
-                    <Link href="#note14">14</Link>
+                    <a href="#note14">14</a>
                   </sup>
                 </td>
                 <td>
                   Scale
                   <sup>
-                    <Link href="#note15">15</Link>
+                    <a href="#note15">15</a>
                   </sup>
                 </td>
                 <td>
                   Enterprise
                   <sup>
-                    <Link href="#note16">16</Link>
+                    <a href="#note16">16</a>
                   </sup>
                 </td>
                 <td></td>
                 <td>
                   Enterprise
                   <sup>
-                    <Link href="#note16">16</Link>
+                    <a href="#note16">16</a>
                   </sup>
                 </td>
               </tr>
@@ -210,7 +210,7 @@ export default function PricingPage(): JSX.Element {
                 <td>
                   Websocket Subscriptions
                   <sup>
-                    <Link href="#note10">10</Link>
+                    <a href="#note10">10</a>
                   </sup>
                 </td>
                 <td></td>
@@ -336,7 +336,7 @@ export default function PricingPage(): JSX.Element {
                 <td>
                   Required Auth Methods
                   <sup>
-                    <Link href="#note8">8</Link>
+                    <a href="#note8">8</a>
                   </sup>
                 </td>
                 <td></td>
@@ -350,7 +350,7 @@ export default function PricingPage(): JSX.Element {
                 <td>
                   External Identity Providers
                   <sup>
-                    <Link href="#note12">12</Link>
+                    <a href="#note12">12</a>
                   </sup>
                 </td>
                 <td></td>
@@ -429,7 +429,7 @@ export default function PricingPage(): JSX.Element {
                 <td>
                   <strong>Compliance</strong>
                   <sup>
-                    <Link href="#note9">9</Link>
+                    <a href="#note9">9</a>
                   </sup>
                 </td>
                 <td></td>
@@ -470,7 +470,7 @@ export default function PricingPage(): JSX.Element {
                 <td>
                   Audit Support
                   <sup>
-                    <Link href="#note11">11</Link>
+                    <a href="#note11">11</a>
                   </sup>
                 </td>
                 <td></td>
