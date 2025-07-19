@@ -72,14 +72,6 @@ const config: Config = {
     {
       tagName: 'link',
       attributes: {
-        rel: 'icon',
-        href: '/img/logo.svg',
-        type: 'image/svg+xml',
-      },
-    },
-    {
-      tagName: 'link',
-      attributes: {
         rel: 'manifest',
         href: '/manifest.json',
       },
@@ -88,12 +80,11 @@ const config: Config = {
 
   themeConfig: {
     navbar: {
-      title: 'Medplum',
       logo: {
         alt: 'Medplum Logo',
-        src: 'img/logo.svg',
-        width: 24,
-        height: 32,
+        src: 'img/brand/medplum-wordmark-plum.svg',
+        width: 120,
+        height: 26,
       },
       items: [
         {
@@ -130,12 +121,18 @@ const config: Config = {
       ],
     },
     footer: {
+      logo: {
+        alt: 'Medplum Logo',
+        src: 'img/brand/medplum-wordmark-white.svg',
+        width: 120,
+        height: 26,
+      },
       links: [
         {
-          title: 'Medplum',
           items: [
             {
               html: `
+                <img src="img/brand/medplum-wordmark-white.svg" alt="Medplum Logo" width="212" height="46"><br/>
                 <a href="/security"><img src="/img/compliance/soc.png" class="medplum-soc-compliance-image" loading="lazy" alt="SOC"></a>
                 <a href="/security"><img src="/img/compliance/hipaa.png" class="medplum-hipaa-compliance-image" loading="lazy" alt="HIPAA"></a>
                   `,
