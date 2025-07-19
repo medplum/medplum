@@ -129,17 +129,6 @@ const config: Config = {
       },
       links: [
         {
-          items: [
-            {
-              html: `
-                <img src="img/brand/medplum-wordmark-white.svg" alt="Medplum Logo" width="212" height="46"><br/>
-                <a href="/security"><img src="/img/compliance/soc.png" class="medplum-soc-compliance-image" loading="lazy" alt="SOC"></a>
-                <a href="/security"><img src="/img/compliance/hipaa.png" class="medplum-hipaa-compliance-image" loading="lazy" alt="HIPAA"></a>
-                  `,
-            },
-          ],
-        },
-        {
           title: 'Developers',
           items: [
             {
@@ -191,18 +180,6 @@ const config: Config = {
             {
               label: 'About us',
               to: '/about',
-            },
-            {
-              label: 'Security',
-              to: '/security',
-            },
-            {
-              label: 'Terms of Service',
-              to: '/terms',
-            },
-            {
-              label: 'Privacy Policy',
-              to: '/privacy',
             },
             {
               label: 'Pricing',
