@@ -82,9 +82,9 @@ const config: Config = {
     navbar: {
       logo: {
         alt: 'Medplum Logo',
-        src: 'img/brand/medplum-wordmark-plum.svg',
-        width: 120,
-        height: 26,
+        src: 'img/logo.svg',
+        width: 24,
+        height: 32,
       },
       items: [
         {
@@ -121,12 +121,6 @@ const config: Config = {
       ],
     },
     footer: {
-      logo: {
-        alt: 'Medplum Logo',
-        src: 'img/brand/medplum-wordmark-white.svg',
-        width: 120,
-        height: 26,
-      },
       links: [
         {
           title: 'Developers',

@@ -9,21 +9,11 @@
   color: purple;
   display: block;
   margin: 0 auto;
+  transform: scale(1);
+  transition: all 0.1s ease;
 }
 
 .logoImage:hover {
-  animation: pulse 0.3s;
-  color: #902090;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  10% {
-    transform: scale(1.03);
-  }
-  100% {
-    transform: scale(1);
-  }
+  color: #881088;
+  transform: scale(1.03);
 }
