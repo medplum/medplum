@@ -12,8 +12,16 @@ import { convertHealthieMedicationToFhir, fetchMedications } from './healthie/me
 import { convertHealthiePatientToFhir, fetchHealthiePatientIds, fetchHealthiePatients } from './healthie/patient';
 import { convertHealthieFormAnswerGroupToFhir, fetchHealthieFormAnswerGroups } from './healthie/questionnaire-response';
 
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+interface ImportHealthiePatientsInput {
+  count?: number;
+  offset?: number;
+  patientIds?: string[];
+}
+
+export async function handler(medplum: MedplumClient, event: BotEvent<ImportHealthiePatientsInput>): Promise<any> {
   const { HEALTHIE_API_URL, HEALTHIE_CLIENT_SECRET } = event.secrets;
+  const { count, offset, patientIds } = event.input;
+
   if (!HEALTHIE_API_URL?.valueString) {
     throw new Error('HEALTHIE_API_URL must be set');
   }
@@ -24,7 +32,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   const healthie = new HealthieClient(HEALTHIE_API_URL.valueString, HEALTHIE_CLIENT_SECRET.valueString);
 
   // Fetch all patients from the Healthie API
-  const healthiePatientIds = await fetchHealthiePatientIds(healthie);
+  const healthiePatientIds = patientIds || (await fetchHealthiePatientIds(healthie, { count, offset }));
   console.log(`Found ${healthiePatientIds.length} Healthie patients to sync`);
 
   // Process each patient individually with their own bundle

@@ -39,6 +39,15 @@ export interface HealthiePatient {
 export interface FetchHealthiePatientIdsOptions {
   /** Filter users updated since this date (ISO 8601 format) */
   sinceLastUpdated?: string;
+  /**
+   * Maximum number of patient IDs to return (for pagination).
+   */
+  count?: number;
+
+  /**
+   * Number of patient IDs to skip before starting to collect the result set (for pagination).
+   */
+  offset?: number;
 }
 
 /**
@@ -51,7 +60,7 @@ export async function fetchHealthiePatientIds(
   healthie: HealthieClient,
   options: FetchHealthiePatientIdsOptions = {}
 ): Promise<string[]> {
-  const { sinceLastUpdated } = options;
+  const { sinceLastUpdated, count, offset } = options;
 
   // Fetch all pages
   let allUsers: { id: string; updated_at: string }[] = [];
@@ -67,9 +76,14 @@ export async function fetchHealthiePatientIds(
     } = await fetchHealthiePatientIdsPage(healthie, {
       sinceLastUpdated,
       after: nextCursor,
+      offset,
     });
 
     allUsers.push(...users.map((user) => ({ id: user.id, updated_at: user.updated_at })));
+    if (count !== undefined && allUsers.length >= count) {
+      allUsers = allUsers.slice(0, count);
+      break;
+    }
 
     // Update pagination state
     hasMorePages = hasNextPage;
@@ -101,12 +115,14 @@ export async function fetchHealthiePatientIds(
  * @param options.sinceLastUpdated - Filter users updated since this date (ISO 8601 format).
  * @param options.after - Cursor for pagination - fetch results after this cursor.
  * @param options.pageSize - Number of items to return per page.
+ * @param options.offset - Number of items to skip before starting to collect the result set (for pagination).
  * @returns Page result with users and pagination metadata.
  */
 export async function fetchHealthiePatientIdsPage(
   healthie: HealthieClient,
   options: {
     sinceLastUpdated?: string;
+    offset?: number;
     after?: string;
     pageSize?: number;
   } = {}
@@ -115,12 +131,13 @@ export async function fetchHealthiePatientIdsPage(
   nextCursor: string | undefined;
   hasNextPage: boolean;
 }> {
-  const { sinceLastUpdated, after, pageSize = 50 } = options;
+  const { sinceLastUpdated, after, pageSize = 50, offset } = options;
 
   const query = `
-    query fetchPatientIds($after: Cursor, $pageSize: Int) {
+    query fetchPatientIds($after: Cursor, $pageSize: Int, $offset: Int,) {
       users(
         should_paginate: true,
+        offset: $offset,
         after: $after,
         page_size: $pageSize
       ) {
@@ -131,7 +148,7 @@ export async function fetchHealthiePatientIdsPage(
     }
   `;
 
-  const variables: { after?: string; pageSize?: number } = { after, pageSize };
+  const variables: { after?: string; pageSize?: number; offset?: number } = { after, pageSize, offset };
 
   const result = await healthie.query<{ users: { id: string; updated_at: string; cursor: string }[] }>(
     query,
