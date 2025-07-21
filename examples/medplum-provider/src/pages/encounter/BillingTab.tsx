@@ -18,9 +18,9 @@ import { getReferenceString, HTTP_HL7_ORG } from '@medplum/core';
 import { showErrorNotification } from '../../utils/notifications';
 import { useMedplum } from '@medplum/react';
 import { createSelfPayCoverage } from '../../utils/coverage';
-import { ConditionList } from '../../components/conditions/ConditionList';
+import { ConditionList } from '../../components/Conditions/ConditionList';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
-import { ChargeItemList } from '../../components/chargeitem/ChargeItemList';
+import { ChargeItemList } from '../../components/ChargeItem/ChargeItemList';
 import { createClaimFromEncounter, getCptChargeItems } from '../../utils/claims';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { calculateTotalPrice } from '../../utils/chargeitems';
@@ -92,9 +92,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       }
     }
 
+    const refreshedClaim = await medplum.readResource('Claim', claim.id);
     const diagnosisArray = createDiagnosisArray(conditions || []);
     const claimToExport: Claim = {
-      ...claim,
+      ...refreshedClaim,
       insurance: [
         {
           sequence: 1,
@@ -118,11 +119,14 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
     }
   };
 
-  const handleDiagnosisChange = async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
-    const updatedEncounter = { ...encounter, diagnosis };
-    setEncounter(updatedEncounter);
-    await debouncedUpdateResource(updatedEncounter);
-  };
+  const handleDiagnosisChange = useCallback(
+    async (diagnosis: EncounterDiagnosis[]): Promise<void> => {
+      const updatedEncounter = { ...encounter, diagnosis };
+      setEncounter(updatedEncounter);
+      await debouncedUpdateResource(updatedEncounter);
+    },
+    [encounter, setEncounter, debouncedUpdateResource]
+  );
 
   const handleEncounterChange = useDebouncedCallback(async (updatedEncounter: Encounter): Promise<void> => {
     try {
@@ -271,10 +275,17 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
 
 const createDiagnosisArray = (conditions: Condition[]): ClaimDiagnosis[] => {
   return conditions.map((condition, index) => {
-    const icd10Coding = condition.code?.coding?.find((c) => c.system === `${HTTP_HL7_ORG}/fhir/sid/icd-10`);
+    const icd10Coding = condition.code?.coding?.find((c) => c.system === `${HTTP_HL7_ORG}/fhir/sid/icd-10-cm`);
     return {
       diagnosisCodeableConcept: {
-        coding: icd10Coding ? [icd10Coding] : [],
+        coding: icd10Coding
+          ? [
+              {
+                ...icd10Coding,
+                system: 'http://hl7.org/fhir/sid/icd-10',
+              },
+            ]
+          : [],
       },
       sequence: index + 1,
       type: [{ coding: [{ code: index === 0 ? 'principal' : 'secondary' }] }],
