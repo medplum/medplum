@@ -12,9 +12,13 @@ export class Hl7Server {
     this.handler = handler;
   }
 
-  start(port: number, encoding?: string, enhancedMode = false): void {
-    this.setEncoding(encoding);
-    this.setEnhancedMode(enhancedMode);
+  start(port: number, encoding?: string, enhancedMode?: boolean): void {
+    if (encoding) {
+      this.setEncoding(encoding);
+    }
+    if (enhancedMode !== undefined) {
+      this.setEnhancedMode(enhancedMode);
+    }
 
     const server = net.createServer((socket) => {
       const connection = new Hl7Connection(socket, this.encoding, this.enhancedMode);
