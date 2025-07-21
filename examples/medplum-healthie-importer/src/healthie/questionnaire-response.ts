@@ -1,4 +1,10 @@
-import { QuestionnaireResponse, Reference, Patient } from '@medplum/fhirtypes';
+import {
+  QuestionnaireResponse,
+  Reference,
+  Patient,
+  QuestionnaireResponseItem,
+  QuestionnaireResponseItemAnswer,
+} from '@medplum/fhirtypes';
 import { HealthieClient } from './client';
 import { HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM } from './constants';
 
@@ -14,7 +20,7 @@ export interface HealthieFormAnswerGroup {
 
 export interface HealthieFormAnswer {
   label: string;
-  displayed_answer: string;
+  displayed_answer?: string;
   answer: string;
   id: string;
   custom_module: HealthieCustomModule;
@@ -191,8 +197,9 @@ function convertHealthieAnswerGroupToFhirItem(
 
   // Handle matrix questions (TODO: implement parsing)
   if (custom_module.mod_type === 'matrix') {
-    // TODO: Parse matrix answer and create sub-items
-    return null;
+    // Parse matrix answer and create sub-items
+    const matrixItem = parseMatrixAnswer(firstAnswer.answer, custom_module.id, custom_module.label);
+    return matrixItem;
   }
 
   const item: NonNullable<QuestionnaireResponse['item']>[0] = {
@@ -257,25 +264,112 @@ function convertHealthieAnswerValueToFhir(
 }
 
 /**
- * Parses a matrix answer JSON string and converts to FHIR sub-items
+ * Parses a matrix answer JSON string and converts to FHIR QuestionnaireResponse item
  * @param matrixAnswer - The JSON string containing matrix data
- * @param _linkId - The parent question's linkId
- * @returns Array of FHIR QuestionnaireResponse items
+ * @param linkId - The parent question's linkId
+ * @param label - The parent question's label
+ * @returns FHIR QuestionnaireResponse item with sub-items
  */
-function _parseMatrixAnswer(
+function parseMatrixAnswer(
   matrixAnswer: string,
-  _linkId: string
-): NonNullable<QuestionnaireResponse['item']>[0]['item'] {
-  // TODO: Implement matrix parsing logic
-  // The matrix format appears to be a JSON string containing nested arrays
-  // Each row represents a question-answer pair within the matrix
+  linkId: string,
+  label: string
+): NonNullable<QuestionnaireResponse['item']>[0] | null {
   try {
-    const matrixData = JSON.parse(matrixAnswer);
-    // Implementation will depend on the exact structure of the matrix data
-    console.log('Matrix data to be parsed:', matrixData);
-    return undefined;
+    // Parse the outer JSON array
+    const matrixData = JSON.parse(matrixAnswer) as string[][];
+
+    if (!Array.isArray(matrixData) || matrixData.length === 0) {
+      return null;
+    }
+
+    // First row contains column headers
+    const headerRow = matrixData[0];
+    const columnHeaders: string[] = [];
+
+    // Parse each cell in the header row
+    for (const cellJson of headerRow) {
+      const cellData = JSON.parse(cellJson);
+      columnHeaders.push(cellData.value || '');
+    }
+
+    // Create the main matrix item
+    const matrixItem: NonNullable<QuestionnaireResponse['item']>[0] = {
+      linkId,
+      text: label,
+      item: [],
+    };
+
+    // Process data rows (skip header row)
+    for (let rowIndex = 1; rowIndex < matrixData.length; rowIndex++) {
+      const row = matrixData[rowIndex];
+      if (!Array.isArray(row) || row.length === 0) {
+        continue;
+      }
+
+      // First cell is the row name
+      let rowName = '';
+
+      const firstCellData = JSON.parse(row[0]);
+      rowName = firstCellData.value || `Row ${rowIndex}`;
+
+      // Create a sub-item for this row
+      const rowItem: NonNullable<QuestionnaireResponse['item']>[0] = {
+        linkId: `${linkId}.${rowIndex}`,
+        text: rowName,
+        item: [],
+      };
+
+      // Process the remaining cells in the row (skip first cell which is the row name)
+      for (let colIndex = 1; colIndex < row.length && colIndex < columnHeaders.length; colIndex++) {
+        const cellJson = row[colIndex];
+        const columnHeader = columnHeaders[colIndex];
+
+        if (!columnHeader) {
+          continue;
+        }
+
+        try {
+          const cellData = JSON.parse(cellJson);
+          const cellValue = cellData.value;
+          const cellType = cellData.type;
+
+          // Only create sub-items for cells with values
+          if (cellValue && cellValue.trim() !== '') {
+            const cellItem = {
+              linkId: `${linkId}.${rowIndex}.${colIndex}`,
+              text: columnHeader,
+              answer: [] as QuestionnaireResponseItemAnswer[],
+            } satisfies QuestionnaireResponseItem;
+
+            // Convert cell value based on type
+            if (cellType === 'checkbox') {
+              if (cellItem.answer) {
+                cellItem.answer.push({ valueBoolean: true });
+              }
+            } else {
+              cellItem.answer.push({ valueString: cellValue });
+            }
+
+            if (rowItem.item) {
+              rowItem.item.push(cellItem);
+            }
+          }
+        } catch {
+          // Skip cells that can't be parsed
+          continue;
+        }
+      }
+
+      // Only add the row item if it has sub-items
+      if (rowItem.item && rowItem.item.length > 0 && matrixItem.item) {
+        matrixItem.item.push(rowItem);
+      }
+    }
+
+    return matrixItem.item && matrixItem.item.length > 0 ? matrixItem : null;
   } catch (error) {
     console.warn('Failed to parse matrix answer:', error);
-    return undefined;
+    return null;
   }
 }

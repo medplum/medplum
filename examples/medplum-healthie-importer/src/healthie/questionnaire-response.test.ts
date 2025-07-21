@@ -181,6 +181,249 @@ const MATRIX_FORM: HealthieFormAnswerGroup = {
   ],
 };
 
+const _KITCHEN_SINK_FORM: HealthieFormAnswerGroup = {
+  id: '1009863',
+  user_id: '2498847',
+  name: 'Kitchen Sink',
+  created_at: '2025-07-20 12:01:14 -0700',
+  finished: true,
+  form_answers: [
+    {
+      label: 'Title',
+      answer: '',
+      id: '12020331',
+      custom_module: {
+        required: false,
+        id: '18878900',
+        mod_type: 'label',
+        label: 'Title',
+      },
+    },
+    {
+      label: 'Open answer (short)',
+      answer: 'Example short answer response',
+      id: '12020332',
+      custom_module: {
+        required: false,
+        id: '18878902',
+        mod_type: 'text',
+        label: 'Open answer (short)',
+      },
+    },
+    {
+      label: 'Open answer (long)',
+      answer: '<p>Example log answer rich text <strong>response</strong></p>',
+      id: '12020333',
+      custom_module: {
+        required: false,
+        id: '18878903',
+        mod_type: 'textarea',
+        label: 'Open answer (long)',
+      },
+    },
+    {
+      label: 'Multiple choice (checkbox)',
+      answer: 'b',
+      id: '12020334',
+      custom_module: {
+        required: false,
+        id: '18878866',
+        mod_type: 'checkbox',
+        label: 'Multiple choice (checkbox)',
+      },
+    },
+    {
+      label: 'HIPAA',
+      answer: '',
+      id: '12020335',
+      custom_module: {
+        required: false,
+        id: '18878908',
+        mod_type: 'hipaa',
+        label: 'HIPAA',
+      },
+    },
+    {
+      label: 'Multiple choice',
+      answer: 'a',
+      id: '12020336',
+      custom_module: {
+        required: false,
+        id: '18878904',
+        mod_type: 'radio',
+        label: 'Multiple choice',
+      },
+    },
+    {
+      label: 'Multiple choice (horizontal)',
+      answer: 'c',
+      id: '12020337',
+      custom_module: {
+        required: false,
+        id: '18878905',
+        mod_type: 'horizontal_radio',
+        label: 'Multiple choice (horizontal)',
+      },
+    },
+    {
+      label: 'Number',
+      answer: '3',
+      id: '12020338',
+      custom_module: {
+        required: false,
+        id: '18878906',
+        mod_type: 'number',
+        label: 'Number',
+      },
+    },
+    {
+      label: 'Referring provider',
+      answer: 'Foo,Bar',
+      id: '12020339',
+      custom_module: {
+        required: false,
+        id: '18878910',
+        mod_type: 'referring_provider',
+        label: 'Referring provider',
+      },
+    },
+    {
+      label: 'Body Fat %',
+      answer: '10',
+      id: '12020340',
+      custom_module: {
+        required: false,
+        id: '18878909',
+        mod_type: 'Body Fat %',
+        label: 'Body Fat %',
+      },
+    },
+    {
+      label: 'Dropdown',
+      answer: 'b',
+      id: '12020341',
+      custom_module: {
+        required: false,
+        id: '18878907',
+        mod_type: 'dropdown',
+        label: 'Dropdown',
+      },
+    },
+    {
+      label: 'Time',
+      answer: '0:05',
+      id: '12020342',
+      custom_module: {
+        required: false,
+        id: '18878901',
+        mod_type: 'time',
+        label: 'Time',
+      },
+    },
+    {
+      label: 'Family medical history',
+      answer: '<p>TESTING FAMILY MEDICAL <strong>HISTORY</strong></p>',
+      id: '12020343',
+      custom_module: {
+        required: false,
+        id: '18878916',
+        mod_type: 'textarea',
+        label: 'Family medical history',
+      },
+    },
+    {
+      label: 'Diagnosis',
+      answer: '9311',
+      id: '12020344',
+      custom_module: {
+        required: false,
+        id: '18878918',
+        mod_type: 'diagnosis',
+        label: 'Diagnosis',
+      },
+    },
+    {
+      label: 'Billing item',
+      answer: '8\r\n2\r\n100\r\n',
+      id: '12020345',
+      custom_module: {
+        required: false,
+        id: '18878917',
+        mod_type: 'billing_item',
+        label: 'Billing item',
+      },
+    },
+    {
+      label: 'Allergy',
+      answer:
+        'allergy\r\ndrug\r\nPenicillin V (Penicillin)\r\nactive\r\n/anaphylaxis\r\nsevere\r\n\r\n\r\n\r\nZ2lkOi8vRG9zZXNwb3QvRG9zZXNwb3Q6OkRydWdBbGxlcmdlbi8yMzQz\\\\allergy\r\npet\r\ncustom\r\nactive\r\n/hives\r\nmoderate\r\nDog',
+      id: '12020346',
+      custom_module: {
+        required: false,
+        id: '18878915',
+        mod_type: 'synced_allergy',
+        label: 'Allergy',
+      },
+    },
+    {
+      label: 'Are medical records available',
+      answer: 'Yes',
+      id: '12020347',
+      custom_module: {
+        required: false,
+        id: '18878914',
+        mod_type: 'radio',
+        label: 'Are medical records available',
+      },
+    },
+    {
+      label: 'Matrix',
+      answer:
+        '[["{\\"value\\":\\"Col1\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"Col2\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"Col3\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Row1\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"asdadsa\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}"],["{\\"value\\":\\"Row2\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}","{\\"value\\":\\"adfsafa\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Row3\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}"]]',
+      id: '12020348',
+      custom_module: {
+        required: false,
+        id: '18878867',
+        mod_type: 'matrix',
+        label: 'Matrix',
+      },
+    },
+    {
+      label: 'Require client to agree',
+      answer: 'true',
+      id: '12020349',
+      custom_module: {
+        required: false,
+        id: '18878912',
+        mod_type: 'agree_to_above',
+        label: 'Require client to agree',
+      },
+    },
+    {
+      label: 'Document',
+      answer: '',
+      id: '12020350',
+      custom_module: {
+        required: false,
+        id: '18878913',
+        mod_type: 'document',
+        label: 'Document',
+      },
+    },
+    {
+      label: 'Signature',
+      answer: 'data:image/png;base64,iVBORw0KGgoAAAANSUhE...',
+      id: '12020351',
+      custom_module: {
+        required: false,
+        id: '18878911',
+        mod_type: 'signature',
+        label: 'Signature',
+      },
+    },
+  ],
+};
+
 const INCOMPLETE_FORM: HealthieFormAnswerGroup = {
   id: '1009171',
   user_id: '2494091',
@@ -321,12 +564,51 @@ describe('Healthie QuestionnaireResponse Transformer', () => {
       expect(signatureItem?.answer?.[0]?.valueAttachment?.data).toBe('iVBORw0KGgoAAAANSUhEUgAAAfQAAADI...');
     });
 
-    test('handles matrix questions (stubbed for now)', () => {
+    test('handles matrix questions', () => {
       const result = convertHealthieFormAnswerGroupToFhir(MATRIX_FORM, HEALTHIE_API_URL, PATIENT_REFERENCE);
 
-      // For now, matrix questions should be filtered out until implementation
+      // Should now include the matrix item
       const matrixItem = result.item?.find((item) => item.linkId === '18562262');
-      expect(matrixItem).toBeUndefined();
+      expect(matrixItem).toBeDefined();
+      expect(matrixItem?.text).toBe('Head symptoms');
+      expect(matrixItem?.item).toBeDefined();
+
+      // Should have sub-items for each row with data
+      expect(matrixItem?.item?.length).toBeGreaterThan(0);
+
+      // Check first row structure
+      const firstRow = matrixItem?.item?.[0];
+      expect(firstRow?.text).toBe('Headaches'); // Row name from first cell
+      expect(firstRow?.item).toBeDefined();
+      expect(firstRow?.item?.length).toBeGreaterThan(0);
+    });
+
+    test('parses kitchen sink matrix correctly', () => {
+      const result = convertHealthieFormAnswerGroupToFhir(_KITCHEN_SINK_FORM, HEALTHIE_API_URL, PATIENT_REFERENCE);
+
+      const matrixItem = result.item?.find((item) => item.linkId === '18878867');
+      expect(matrixItem).toBeDefined();
+      expect(matrixItem?.text).toBe('Matrix');
+
+      // Should have rows for Row1, Row2, Row3 (with data)
+      expect(matrixItem?.item).toBeDefined();
+
+      // Check Row1 structure
+      const row1 = matrixItem?.item?.find((item) => item.text === 'Row1');
+      expect(row1).toBeDefined();
+      expect(row1?.item).toBeDefined();
+
+      // Row1 should have Col2 with text value "asdadsa"
+      const col2Item = row1?.item?.find((item) => item.text === 'Col2');
+      expect(col2Item?.answer?.[0]?.valueString).toBe('asdadsa');
+
+      // Check Row2 structure
+      const row2 = matrixItem?.item?.find((item) => item.text === 'Row2');
+      expect(row2).toBeDefined();
+
+      // Row2 should have Col3 with text value "adfsafa"
+      const row2col3Item = row2?.item?.find((item) => item.text === 'Col3');
+      expect(row2col3Item?.answer?.[0]?.valueString).toBe('adfsafa');
     });
 
     test('groups multiple answers for the same question', () => {
@@ -369,6 +651,8 @@ describe('Healthie QuestionnaireResponse Transformer', () => {
       const multiAnswerItem = result.item?.find((item) => item.linkId === '18562300');
       expect(multiAnswerItem).toBeDefined();
       expect(multiAnswerItem?.answer).toHaveLength(2);
+
+      // TODO: map these to real symptom values, rather than two true values
       expect(multiAnswerItem?.answer?.[0]?.valueBoolean).toBe(true); // "Headache" -> true
       expect(multiAnswerItem?.answer?.[1]?.valueBoolean).toBe(true); // "Fatigue" -> true
     });
