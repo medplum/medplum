@@ -4,11 +4,13 @@ import { convertHealthieAllergyToFhir, fetchAllergySensitivities } from './healt
 import { HealthieClient } from './healthie/client';
 import {
   HEALTHIE_ALLERGY_ID_SYSTEM,
+  HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM,
   HEALTHIE_MEDICATION_ID_SYSTEM,
   HEALTHIE_USER_ID_SYSTEM,
 } from './healthie/constants';
 import { convertHealthieMedicationToFhir, fetchMedications } from './healthie/medication';
 import { convertHealthiePatientToFhir, fetchHealthiePatientIds, fetchHealthiePatients } from './healthie/patient';
+import { convertHealthieFormAnswerGroupToFhir, fetchHealthieFormAnswerGroups } from './healthie/questionnaire-response';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   const { HEALTHIE_API_URL, HEALTHIE_CLIENT_SECRET } = event.secrets;
@@ -83,6 +85,24 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           request: {
             method: 'PUT',
             url: `AllergyIntolerance?identifier=${HEALTHIE_ALLERGY_ID_SYSTEM}|${allergy.id}`,
+          },
+        });
+      }
+
+      // Fetch and add all questionnaire responses for this patient
+      const questionnaireResponses = await fetchHealthieFormAnswerGroups(healthiePatient.id, healthie);
+      console.log(`Found ${questionnaireResponses.length} questionnaire responses for patient ${healthiePatient.id}`);
+
+      for (const questionnaireResponse of questionnaireResponses) {
+        patientBundle.entry?.push({
+          resource: convertHealthieFormAnswerGroupToFhir(
+            questionnaireResponse,
+            HEALTHIE_API_URL.valueString,
+            patientReference
+          ),
+          request: {
+            method: 'PUT',
+            url: `QuestionnaireResponse?identifier=${HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM}|${questionnaireResponse.id}`,
           },
         });
       }
