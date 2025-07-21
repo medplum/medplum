@@ -517,6 +517,7 @@ export interface InviteRequest {
   sendEmail?: boolean;
   membership?: Partial<ProjectMembership>;
   upsert?: boolean;
+  forceNewMembership?: boolean;
   /** @deprecated Use membership.accessPolicy instead. */
   accessPolicy?: Reference<AccessPolicy>;
   /** @deprecated Use membership.access instead. */
