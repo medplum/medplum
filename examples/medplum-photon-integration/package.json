@@ -33,7 +33,7 @@
     "@medplum/fhirtypes": "4.3.6",
     "@medplum/react": "4.3.6",
     "@photonhealth/elements": "0.16.12",
-    "@tabler/icons-react": "3.17.0",
+    "@tabler/icons-react": "3.34.1",
     "@types/node": "20.19.9",
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6",

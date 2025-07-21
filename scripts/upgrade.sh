@@ -74,9 +74,8 @@ LAST_STEP=$(get_last_step "$BRANCH_NAME")
 echo "Last completed step: $LAST_STEP"
 
 # Exclude known problem packages
-# @tabler/icons-react - to avoid bad interaction with vite https://github.com/tabler/tabler-icons/issues/1233
 # @graphiql/react - v0.35+ is only compatible with graphiql v5+
-EXCLUDE="@tabler/icons-react @graphiql/react"
+EXCLUDE="@graphiql/react"
 
 # Append any additional excludes from the command line
 if [ -n "$ADDITIONAL_EXCLUDES" ]; then

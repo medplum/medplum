@@ -32,7 +32,7 @@
     "@medplum/react": "4.3.6",
     "@medplum/health-gorilla-core": "4.3.6",
     "@medplum/health-gorilla-react": "4.3.6",
-    "@tabler/icons-react": "3.17.0",
+    "@tabler/icons-react": "3.34.1",
     "@testing-library/dom": "10.4.0",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.3.0",
