@@ -379,7 +379,7 @@ const _KITCHEN_SINK_FORM: HealthieFormAnswerGroup = {
     {
       label: 'Matrix',
       answer:
-        '[["{\\"value\\":\\"Col1\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"Col2\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"Col3\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Row1\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"asdadsa\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}"],["{\\"value\\":\\"Row2\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}","{\\"value\\":\\"adfsafa\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Row3\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}"]]',
+        '[["{\\"value\\":\\"Col1\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"Col2\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"Col3\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Row1\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"asdadsa\\",\\"type\\":\\"text\\"}","{\\"value\\":true,\\"type\\":\\"checkbox\\"}"],["{\\"value\\":\\"Row2\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}","{\\"value\\":\\"adfsafa\\",\\"type\\":\\"text\\"}"],["{\\"value\\":\\"Row3\\",\\"type\\":\\"text\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}","{\\"value\\":\\"\\",\\"type\\":\\"checkbox\\"}"]]',
       id: '12020348',
       custom_module: {
         required: false,
@@ -583,34 +583,6 @@ describe('Healthie QuestionnaireResponse Transformer', () => {
       expect(firstRow?.item?.length).toBeGreaterThan(0);
     });
 
-    test('parses kitchen sink matrix correctly', () => {
-      const result = convertHealthieFormAnswerGroupToFhir(_KITCHEN_SINK_FORM, HEALTHIE_API_URL, PATIENT_REFERENCE);
-
-      const matrixItem = result.item?.find((item) => item.linkId === '18878867');
-      expect(matrixItem).toBeDefined();
-      expect(matrixItem?.text).toBe('Matrix');
-
-      // Should have rows for Row1, Row2, Row3 (with data)
-      expect(matrixItem?.item).toBeDefined();
-
-      // Check Row1 structure
-      const row1 = matrixItem?.item?.find((item) => item.text === 'Row1');
-      expect(row1).toBeDefined();
-      expect(row1?.item).toBeDefined();
-
-      // Row1 should have Col2 with text value "asdadsa"
-      const col2Item = row1?.item?.find((item) => item.text === 'Col2');
-      expect(col2Item?.answer?.[0]?.valueString).toBe('asdadsa');
-
-      // Check Row2 structure
-      const row2 = matrixItem?.item?.find((item) => item.text === 'Row2');
-      expect(row2).toBeDefined();
-
-      // Row2 should have Col3 with text value "adfsafa"
-      const row2col3Item = row2?.item?.find((item) => item.text === 'Col3');
-      expect(row2col3Item?.answer?.[0]?.valueString).toBe('adfsafa');
-    });
-
     test('groups multiple answers for the same question', () => {
       // This would test scenarios where multiple FormAnswers have the same custom_module.id
       // (e.g., multiple checkbox selections for a "check all that apply" question)
@@ -689,16 +661,185 @@ describe('Healthie QuestionnaireResponse Transformer', () => {
       const falseItem = result.item?.find((item) => item.linkId === '18562311');
       expect(falseItem?.answer?.[0]?.valueBoolean).toBe(false);
     });
+  });
 
-    test('handles newline-separated checkbox values from kitchen sink form', () => {
-      const result = convertHealthieFormAnswerGroupToFhir(_KITCHEN_SINK_FORM, HEALTHIE_API_URL, PATIENT_REFERENCE);
+  describe('Kitchen Sink Form - Comprehensive mod_type testing', () => {
+    let result: any;
 
-      // Multiple choice (checkbox) with "a\nb" -> two valueString answers
-      const checkboxItem = result.item?.find((item) => item.linkId === '18878866');
+    beforeAll(() => {
+      result = convertHealthieFormAnswerGroupToFhir(_KITCHEN_SINK_FORM, HEALTHIE_API_URL, PATIENT_REFERENCE);
+    });
+
+    test('label type is filtered out (display-only)', () => {
+      const labelItem = result.item?.find((item: any) => item.linkId === '18878900');
+      expect(labelItem).toBeUndefined();
+    });
+
+    test('text type maps to valueString', () => {
+      const textItem = result.item?.find((item: any) => item.linkId === '18878902');
+      expect(textItem).toBeDefined();
+      expect(textItem?.text).toBe('Open answer (short)');
+      expect(textItem?.answer?.[0]?.valueString).toBe('Example short answer response');
+    });
+
+    test('textarea type maps to valueString with HTML preserved', () => {
+      const textareaItem = result.item?.find((item: any) => item.linkId === '18878903');
+      expect(textareaItem).toBeDefined();
+      expect(textareaItem?.text).toBe('Open answer (long)');
+      expect(textareaItem?.answer?.[0]?.valueString).toBe(
+        '<p>Example log answer rich text <strong>response</strong></p>'
+      );
+    });
+
+    test('checkbox type with multiple values creates multiple valueString answers', () => {
+      const checkboxItem = result.item?.find((item: any) => item.linkId === '18878866');
       expect(checkboxItem).toBeDefined();
+      expect(checkboxItem?.text).toBe('Multiple choice (checkbox)');
       expect(checkboxItem?.answer).toHaveLength(2);
       expect(checkboxItem?.answer?.[0]?.valueString).toBe('a');
       expect(checkboxItem?.answer?.[1]?.valueString).toBe('b');
+    });
+
+    test('hipaa type is filtered out (display-only)', () => {
+      const hipaaItem = result.item?.find((item: any) => item.linkId === '18878908');
+      expect(hipaaItem).toBeUndefined();
+    });
+
+    test('radio type maps to valueString', () => {
+      const radioItem = result.item?.find((item: any) => item.linkId === '18878904');
+      expect(radioItem).toBeDefined();
+      expect(radioItem?.text).toBe('Multiple choice');
+      expect(radioItem?.answer?.[0]?.valueString).toBe('a');
+    });
+
+    test('horizontal_radio type maps to valueString', () => {
+      const horizontalRadioItem = result.item?.find((item: any) => item.linkId === '18878905');
+      expect(horizontalRadioItem).toBeDefined();
+      expect(horizontalRadioItem?.text).toBe('Multiple choice (horizontal)');
+      expect(horizontalRadioItem?.answer?.[0]?.valueString).toBe('c');
+    });
+
+    test('number type maps to valueQuantity', () => {
+      const numberItem = result.item?.find((item: any) => item.linkId === '18878906');
+      expect(numberItem).toBeDefined();
+      expect(numberItem?.text).toBe('Number');
+      expect(numberItem?.answer?.[0]?.valueQuantity?.value).toBe(3);
+    });
+
+    test('referring_provider type maps to valueString', () => {
+      const referringProviderItem = result.item?.find((item: any) => item.linkId === '18878910');
+      expect(referringProviderItem).toBeDefined();
+      expect(referringProviderItem?.text).toBe('Referring provider');
+      expect(referringProviderItem?.answer?.[0]?.valueString).toBe('Foo,Bar');
+    });
+
+    test('Body Fat % type maps to valueQuantity', () => {
+      const bodyFatItem = result.item?.find((item: any) => item.linkId === '18878909');
+      expect(bodyFatItem).toBeDefined();
+      expect(bodyFatItem?.text).toBe('Body Fat %');
+      expect(bodyFatItem?.answer?.[0]?.valueQuantity?.value).toBe(10);
+    });
+
+    test('dropdown type maps to valueString', () => {
+      const dropdownItem = result.item?.find((item: any) => item.linkId === '18878907');
+      expect(dropdownItem).toBeDefined();
+      expect(dropdownItem?.text).toBe('Dropdown');
+      expect(dropdownItem?.answer?.[0]?.valueString).toBe('b');
+    });
+
+    test.skip('time type maps to valueTime', () => {
+      const timeItem = result.item?.find((item: any) => item.linkId === '18878901');
+      expect(timeItem).toBeDefined();
+      expect(timeItem?.text).toBe('Time');
+      expect(timeItem?.answer?.[0]?.valueTime).toBe('00:05:00');
+    });
+
+    test('textarea for family medical history maps to valueString with HTML', () => {
+      const familyHistoryItem = result.item?.find((item: any) => item.linkId === '18878916');
+      expect(familyHistoryItem).toBeDefined();
+      expect(familyHistoryItem?.text).toBe('Family medical history');
+      expect(familyHistoryItem?.answer?.[0]?.valueString).toBe(
+        '<p>TESTING FAMILY MEDICAL <strong>HISTORY</strong></p>'
+      );
+    });
+
+    test('diagnosis type maps to valueString', () => {
+      const diagnosisItem = result.item?.find((item: any) => item.linkId === '18878918');
+      expect(diagnosisItem).toBeDefined();
+      expect(diagnosisItem?.text).toBe('Diagnosis');
+      expect(diagnosisItem?.answer?.[0]?.valueString).toBe('9311');
+    });
+
+    test('billing_item type maps to valueString', () => {
+      const billingItem = result.item?.find((item: any) => item.linkId === '18878917');
+      expect(billingItem).toBeDefined();
+      expect(billingItem?.text).toBe('Billing item');
+      expect(billingItem?.answer?.[0]?.valueString).toBe('8\r\n2\r\n100\r\n');
+    });
+
+    test('synced_allergy type maps to valueString', () => {
+      const allergyItem = result.item?.find((item: any) => item.linkId === '18878915');
+      expect(allergyItem).toBeDefined();
+      expect(allergyItem?.text).toBe('Allergy');
+      expect(allergyItem?.answer?.[0]?.valueString).toBe(
+        'allergy\r\ndrug\r\nPenicillin V (Penicillin)\r\nactive\r\n/anaphylaxis\r\nsevere\r\n\r\n\r\n\r\nZ2lkOi8vRG9zZXNwb3QvRG9zZXNwb3Q6OkRydWdBbGxlcmdlbi8yMzQz\\\\allergy\r\npet\r\ncustom\r\nactive\r\n/hives\r\nmoderate\r\nDog'
+      );
+    });
+
+    test('radio for medical records availability maps to valueString', () => {
+      const medicalRecordsItem = result.item?.find((item: any) => item.linkId === '18878914');
+      expect(medicalRecordsItem).toBeDefined();
+      expect(medicalRecordsItem?.text).toBe('Are medical records available');
+      expect(medicalRecordsItem?.answer?.[0]?.valueString).toBe('Yes');
+    });
+
+    test('matrix type creates hierarchical structure with row/column items', () => {
+      const matrixItem = result.item?.find((item: any) => item.linkId === '18878867');
+      expect(matrixItem).toBeDefined();
+      expect(matrixItem?.text).toBe('Matrix');
+      expect(matrixItem?.item).toBeDefined();
+
+      // Check Row1 structure
+      const row1 = matrixItem?.item?.find((item: any) => item.text === 'Row1');
+      expect(row1).toBeDefined();
+      expect(row1?.item).toBeDefined();
+
+      // Row1 should have Col2 with text value "asdadsa"
+      const col2Item = row1?.item?.find((item: any) => item.text === 'Col2');
+      expect(col2Item?.answer?.[0]?.valueString).toBe('asdadsa');
+
+      // Row1 should have Col3 with boolean value true
+      const col3Item = row1?.item?.find((item: any) => item.text === 'Col3');
+      expect(col3Item?.answer?.[0]?.valueBoolean).toBe(true);
+
+      // Check Row2 structure
+      const row2 = matrixItem?.item?.find((item: any) => item.text === 'Row2');
+      expect(row2).toBeDefined();
+
+      // Row2 should have Col3 with text value "adfsafa"
+      const row2col3Item = row2?.item?.find((item: any) => item.text === 'Col3');
+      expect(row2col3Item?.answer?.[0]?.valueString).toBe('adfsafa');
+    });
+
+    test('agree_to_above type maps to valueBoolean', () => {
+      const agreeItem = result.item?.find((item: any) => item.linkId === '18878912');
+      expect(agreeItem).toBeDefined();
+      expect(agreeItem?.text).toBe('Require client to agree');
+      expect(agreeItem?.answer?.[0]?.valueBoolean).toBe(true);
+    });
+
+    test('document type with empty answer is filtered out', () => {
+      const documentItem = result.item?.find((item: any) => item.linkId === '18878913');
+      expect(documentItem).toBeUndefined();
+    });
+
+    test('signature type maps to valueAttachment', () => {
+      const signatureItem = result.item?.find((item: any) => item.linkId === '18878911');
+      expect(signatureItem).toBeDefined();
+      expect(signatureItem?.text).toBe('Signature');
+      expect(signatureItem?.answer?.[0]?.valueAttachment).toBeDefined();
+      expect(signatureItem?.answer?.[0]?.valueAttachment?.contentType).toBe('image/png');
+      expect(signatureItem?.answer?.[0]?.valueAttachment?.data).toBe('iVBORw0KGgoAAAANSUhE...');
     });
   });
 });

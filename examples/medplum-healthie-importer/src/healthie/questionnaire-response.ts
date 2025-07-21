@@ -264,6 +264,13 @@ function convertHealthieAnswerValueToFhir(
     case 'dob':
       return [{ valueDate: answerValue }];
 
+    case 'time':
+      return [{ valueTime: answerValue }];
+
+    case 'number':
+    case 'Body Fat %':
+      return [{ valueQuantity: { value: parseFloat(answerValue) } }];
+
     case 'signature': {
       // TODO: Use FHIR SDC extension for signatures
       const base64Data = answerValue.includes(',') ? answerValue.split(',')[1] : answerValue;
@@ -278,7 +285,7 @@ function convertHealthieAnswerValueToFhir(
     }
 
     default:
-      return [];
+      return [{ valueString: answerValue }];
   }
 }
 
@@ -350,7 +357,9 @@ function parseMatrixAnswer(matrixAnswer: string, linkId: string, label: string):
           const cellType = cellData.type;
 
           // Only create sub-items for cells with values
-          if (cellValue && cellValue.trim() !== '') {
+          const hasValue =
+            (cellValue && typeof cellValue === 'string' && cellValue.trim() !== '') || typeof cellValue === 'boolean';
+          if (hasValue) {
             const cellItem = {
               linkId: `${linkId}.${rowIndex}.${colIndex}`,
               text: columnHeader,
@@ -360,10 +369,10 @@ function parseMatrixAnswer(matrixAnswer: string, linkId: string, label: string):
             // Convert cell value based on type
             if (cellType === 'checkbox') {
               if (cellItem.answer) {
-                cellItem.answer.push({ valueBoolean: true });
+                cellItem.answer.push({ valueBoolean: cellValue as boolean });
               }
             } else {
-              cellItem.answer.push({ valueString: cellValue });
+              cellItem.answer.push({ valueString: cellValue as string });
             }
 
             if (rowItem.item) {
