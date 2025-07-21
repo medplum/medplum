@@ -4,8 +4,9 @@ import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
+import { FhirRateLimiter } from './fhir/fhirquota';
 import { Repository, getSystemRepo } from './fhir/repo';
-import { FhirRateLimiter } from './fhirquota';
+import { ResourceCap } from './fhir/resource-cap';
 import { globalLogger, systemLogger } from './logger';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { getRedis } from './redis';
@@ -38,6 +39,7 @@ export class AuthenticatedRequestContext extends RequestContext {
   readonly authState: Readonly<AuthState>;
   readonly repo: Repository;
   readonly fhirRateLimiter?: FhirRateLimiter;
+  readonly resourceCap?: ResourceCap;
 
   constructor(requestId: string, traceId: string, authState: Readonly<AuthState>, repo: Repository, logger?: Logger) {
     let loggerMetadata: Record<string, any> | undefined;
@@ -53,6 +55,7 @@ export class AuthenticatedRequestContext extends RequestContext {
     super(requestId, traceId, logger, loggerMetadata);
 
     this.fhirRateLimiter = getFhirRateLimiter(authState, this.logger);
+    this.resourceCap = getResourceCap(authState, this.logger);
 
     this.authState = authState;
     this.repo = repo;
@@ -222,5 +225,12 @@ function getFhirRateLimiter(authState: AuthState, logger?: Logger): FhirRateLimi
 
   return authState.membership
     ? new FhirRateLimiter(getRedis(), authState, userLimit, projectLimit, logger ?? globalLogger)
+    : undefined;
+}
+
+function getResourceCap(authState: AuthState, logger?: Logger): ResourceCap | undefined {
+  const projectLimit = authState.project?.systemSetting?.find((s) => s.name === 'resourceCap')?.valueInteger;
+  return authState.membership && projectLimit
+    ? new ResourceCap(getRedis(), authState, projectLimit, logger ?? globalLogger)
     : undefined;
 }

@@ -43,7 +43,7 @@ POST [base]/[resourceType]/[id]/$expunge
 
 Subsequent requests for the resource will result in HTTP 404 Not Found, as if the resource never existed.
 
-The `$expunge` operation is only available to users with "Super Administrator" access.
+The `$expunge` operation is only available to users with administrator access to the Project in which the resource belongs.
 
 ### Expunge Everything Option
 
@@ -75,7 +75,7 @@ async function restoreDeletedResource(
   try {
     // Get the history of the resource
     const history = await medplum.readHistory(resourceType as Resource['resourceType'], resourceId);
-    
+
     if (!history || !history.entry || history.entry.length === 0) {
       console.log(`No history found for ${resourceType}/${resourceId}`);
       return undefined;
@@ -85,31 +85,33 @@ async function restoreDeletedResource(
     console.log('History entries:', JSON.stringify(history.entry, null, 2));
 
     // Check if the resource was deleted (410 status with deleted OperationOutcome)
-    const isDeleted = history.entry.some(entry => 
-      entry.response?.status === '410' && 
-      entry.response?.outcome?.issue?.some(issue => issue.code === 'deleted')
+    const isDeleted = history.entry.some(
+      (entry) =>
+        entry.response?.status === '410' && entry.response?.outcome?.issue?.some((issue) => issue.code === 'deleted')
     );
 
     if (isDeleted) {
       console.log(`Found deleted resource ${resourceType}/${resourceId}`);
-      
+
       // Get the most recent non-deleted version
-      const latestVersion = history.entry
-        .find(entry => entry.response?.status === '200' && entry.resource)?.resource;
-      
+      const latestVersion = history.entry.find((entry) => entry.response?.status === '200' && entry.resource)?.resource;
+
       if (!latestVersion) {
         console.log('Could not find a version to restore');
         return undefined;
       }
-      
+
       // Create a new version of the resource
       const restoredResource = {
         ...latestVersion,
         meta: {
           ...latestVersion.meta,
-          tag: latestVersion.meta?.tag?.filter(tag => !(tag.system === 'http://terminology.hl7.org/CodeSystem/v3-ActReason' && tag.code === 'DELETED')) || []
+          tag:
+            latestVersion.meta?.tag?.filter(
+              (tag) => !(tag.system === 'http://terminology.hl7.org/CodeSystem/v3-ActReason' && tag.code === 'DELETED')
+            ) || [],
         },
-        active: true
+        active: true,
       };
 
       // Update the resource
@@ -126,4 +128,3 @@ async function restoreDeletedResource(
   }
 }
 ```
-
