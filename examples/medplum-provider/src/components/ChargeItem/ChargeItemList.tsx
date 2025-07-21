@@ -1,13 +1,4 @@
-import {
-  Box,
-  Button,
-  Card,
-  Flex,
-  Modal,
-  Stack,
-  Text,
-  TextInput,
-} from '@mantine/core';
+import { Box, Button, Card, Flex, Modal, Stack, Text, TextInput } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { createReference, HTTP_HL7_ORG } from '@medplum/core';
 import { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
@@ -56,8 +47,6 @@ export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
   const addChargeItem = useCallback(async (): Promise<void> => {
     open();
   }, [open]);
-
-
 
   const handleAddChargeItem = useCallback(
     async (
@@ -161,7 +150,6 @@ function AddChargeItemModal({ opened, onClose, onSubmit }: AddChargeItemModalPro
 
   const loadChargeItemDefinitions = useCallback(
     async (input: string, signal: AbortSignal): Promise<ChargeItemDefinition[]> => {
-
       const searchParams = new URLSearchParams({
         title: input,
         _count: '10',
@@ -222,19 +210,19 @@ function AddChargeItemModal({ opened, onClose, onSubmit }: AddChargeItemModalPro
             </Text>
           </Text>
           <AsyncAutocomplete
-              placeholder="Search for charge item definition..."
-              onChange={handleSelectChargeItemDefinition}
-              toOption={(item: unknown) => {
-                const resource = item as ChargeItemDefinition;
-                return {
-                  value: resource.id || '',
-                  label: resource.title || resource.id || 'Untitled',
-                  resource: resource,
-                };
-              }}
-              maxValues={1}
-              loadOptions={loadChargeItemDefinitions}
-            />
+            placeholder="Search for charge item definition..."
+            onChange={handleSelectChargeItemDefinition}
+            toOption={(item: unknown) => {
+              const resource = item as ChargeItemDefinition;
+              return {
+                value: resource.id || '',
+                label: resource.title || resource.id || 'Untitled',
+                resource: resource,
+              };
+            }}
+            maxValues={1}
+            loadOptions={loadChargeItemDefinitions}
+          />
         </Box>
 
         <Flex justify="flex-end" gap="sm" mt="md">
