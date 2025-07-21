@@ -65,10 +65,12 @@ export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
           subject: createReference(patient),
           context: createReference(encounter),
           occurrenceDateTime: new Date().toISOString(),
-          extension: [{
-            url: `${HTTP_HL7_ORG}/fhir/uv/order-catalog/StructureDefinition/ServiceBillingCode`,
-            valueCodeableConcept: cptCode,
-          }],
+          extension: [
+            {
+              url: `${HTTP_HL7_ORG}/fhir/uv/order-catalog/StructureDefinition/ServiceBillingCode`,
+              valueCodeableConcept: cptCode,
+            },
+          ],
           code: cptCode,
           quantity: {
             value: 1,
