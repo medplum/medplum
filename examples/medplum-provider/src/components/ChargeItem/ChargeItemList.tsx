@@ -9,7 +9,7 @@ import {
   TextInput,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference } from '@medplum/core';
+import { createReference, HTTP_HL7_ORG } from '@medplum/core';
 import { ChargeItem, ChargeItemDefinition, CodeableConcept, Encounter, Patient } from '@medplum/fhirtypes';
 import { CodeableConceptInput, AsyncAutocomplete, useMedplum } from '@medplum/react';
 import { IconPlus } from '@tabler/icons-react';
@@ -76,6 +76,10 @@ export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
           subject: createReference(patient),
           context: createReference(encounter),
           occurrenceDateTime: new Date().toISOString(),
+          extension: [{
+            url: `${HTTP_HL7_ORG}/fhir/uv/order-catalog/StructureDefinition/ServiceBillingCode`,
+            valueCodeableConcept: cptCode,
+          }],
           code: cptCode,
           quantity: {
             value: 1,
