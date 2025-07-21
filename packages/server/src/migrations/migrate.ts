@@ -306,7 +306,7 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
   }
 
   let nulls: string | undefined;
-  const nullsMatch = indexdef.match(/ NULLS (\w+)/);
+  const nullsMatch = indexdef.match(/ NULLS ((NOT )?DISTINCT)/);
   if (nullsMatch) {
     nulls = nullsMatch[1];
     indexdef = indexdef.substring(0, nullsMatch.index);

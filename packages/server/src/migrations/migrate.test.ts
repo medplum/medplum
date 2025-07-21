@@ -204,7 +204,13 @@ describe('Generator', () => {
         'CREATE INDEX "DomainConfiguration_compartments_idx" ON public."DomainConfiguration" USING gin (compartments)';
 
       const def = parseIndexDefinition(indexdef);
-      const expected: IndexDefinition = { columns: ['compartments'], indexType: 'gin', unique: false, indexdef };
+      const expected: IndexDefinition = {
+        columns: ['compartments'],
+        indexType: 'gin',
+        unique: false,
+        indexdef,
+        nulls: undefined,
+      };
 
       expect(def).toStrictEqual(expected);
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
@@ -214,7 +220,13 @@ describe('Generator', () => {
       const indexdef = 'CREATE UNIQUE INDEX "Coding_pkey" ON public."Coding" USING btree (id)';
 
       const def = parseIndexDefinition(indexdef);
-      const expected: IndexDefinition = { columns: ['id'], indexType: 'btree', unique: true, indexdef };
+      const expected: IndexDefinition = {
+        columns: ['id'],
+        indexType: 'btree',
+        unique: true,
+        indexdef,
+        nulls: undefined,
+      };
 
       expect(def).toStrictEqual(expected);
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
@@ -230,6 +242,7 @@ describe('Generator', () => {
         indexType: 'gin',
         unique: false,
         indexdef,
+        nulls: undefined,
       };
       expect(def).toStrictEqual(expected);
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
@@ -246,6 +259,7 @@ describe('Generator', () => {
         include: ['resourceId'],
         unique: false,
         indexdef,
+        nulls: undefined,
       };
       expect(def).toStrictEqual(expected);
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
@@ -261,6 +275,22 @@ describe('Generator', () => {
         where: 'target IS NOT NULL',
         unique: false,
         indexdef,
+        nulls: undefined,
+      };
+      expect(def).toStrictEqual(expected);
+      expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
+    });
+
+    test('parse NULLS', () => {
+      const indexdef =
+        'CREATE UNIQUE INDEX "Coding_identity_idx" ON public."Coding" USING btree (system, code, display, "synonymOf") NULLS NOT DISTINCT';
+      const def = parseIndexDefinition(indexdef);
+      const expected: IndexDefinition = {
+        columns: ['system', 'code', 'display', 'synonymOf'],
+        indexType: 'btree',
+        unique: true,
+        indexdef,
+        nulls: 'NOT DISTINCT',
       };
       expect(def).toStrictEqual(expected);
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
