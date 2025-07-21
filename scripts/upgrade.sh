@@ -74,8 +74,8 @@ LAST_STEP=$(get_last_step "$BRANCH_NAME")
 echo "Last completed step: $LAST_STEP"
 
 # Exclude known problem packages
-# @tabler/icons-react - to avoid bad interaction with vite https://github.com/tabler/tabler-icons/issues/1233
-EXCLUDE="@tabler/icons-react"
+# @graphiql/react - v0.35+ is only compatible with graphiql v5+
+EXCLUDE="@graphiql/react"
 
 # Append any additional excludes from the command line
 if [ -n "$ADDITIONAL_EXCLUDES" ]; then
@@ -95,7 +95,8 @@ fi
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # express - version 5 is now latest and has some breaking changes -- we need to make sure middleware and other related deps work with new version
 # zod - version 4+ is incompatible with MCP SDK
-MAJOR_EXCLUDE="@jest/* @mantine/* @storybook/* @types/express @types/jest @types/node babel-jest commander eslint express jest jest-* jose node-fetch npm storybook storybook-* zod"
+# graphiql - version 5 is a non-trivial major version upgrade, holding back until Medplum 5
+MAJOR_EXCLUDE="@jest/* @mantine/* @storybook/* @types/express @types/jest @types/node babel-jest commander eslint express jest jest-* jose node-fetch npm storybook storybook-* zod graphiql"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
