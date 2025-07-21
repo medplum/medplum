@@ -1,9 +1,9 @@
 import {
-  QuestionnaireResponse,
-  Reference,
   Patient,
+  QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
+  Reference,
 } from '@medplum/fhirtypes';
 import { HealthieClient } from './client';
 import { HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM } from './constants';
@@ -105,7 +105,7 @@ export function convertHealthieFormAnswerGroupToFhir(
     });
 
   // Convert each group to FHIR items
-  const items: NonNullable<QuestionnaireResponse['item']> = [];
+  const items: QuestionnaireResponseItem[] = [];
 
   for (const [, answers] of answerGroups) {
     const item = convertHealthieAnswerGroupToFhirItem(answers);
@@ -178,13 +178,11 @@ export function convertHealthieTimestampToIso(healthieTimestamp: string): string
 /**
  * Converts a group of Healthie FormAnswers (for the same question) to a FHIR QuestionnaireResponse item
  * @param answers - The group of Healthie FormAnswers for the same question
- * @returns FHIR QuestionnaireResponse item or null if should be filtered out
+ * @returns FHIR QuestionnaireResponse item or undefined if should be filtered out
  */
-function convertHealthieAnswerGroupToFhirItem(
-  answers: HealthieFormAnswer[]
-): NonNullable<QuestionnaireResponse['item']>[0] | null {
+function convertHealthieAnswerGroupToFhirItem(answers: HealthieFormAnswer[]): QuestionnaireResponseItem | undefined {
   if (answers.length === 0) {
-    return null;
+    return undefined;
   }
 
   const firstAnswer = answers[0];
@@ -192,7 +190,7 @@ function convertHealthieAnswerGroupToFhirItem(
 
   // Filter out display-only fields
   if (['label', 'read_only', 'hipaa'].includes(custom_module.mod_type)) {
-    return null;
+    return undefined;
   }
 
   // Handle matrix questions (TODO: implement parsing)
@@ -202,7 +200,7 @@ function convertHealthieAnswerGroupToFhirItem(
     return matrixItem;
   }
 
-  const item: NonNullable<QuestionnaireResponse['item']>[0] = {
+  const item: QuestionnaireResponseItem = {
     linkId: custom_module.id,
     text: custom_module.label,
     answer: [],
@@ -217,7 +215,7 @@ function convertHealthieAnswerGroupToFhirItem(
     }
   }
 
-  return item.answer && item.answer.length > 0 ? item : null;
+  return item.answer && item.answer.length > 0 ? item : undefined;
 }
 
 /**
@@ -228,7 +226,7 @@ function convertHealthieAnswerGroupToFhirItem(
  */
 function convertHealthieAnswerValueToFhir(
   answer: HealthieFormAnswer
-): NonNullable<NonNullable<QuestionnaireResponse['item']>[0]['answer']> {
+): NonNullable<QuestionnaireResponseItem['answer']> {
   const { custom_module, answer: answerValue } = answer;
 
   // Helper function to split newline-separated values
@@ -291,17 +289,13 @@ function convertHealthieAnswerValueToFhir(
  * @param label - The parent question's label
  * @returns FHIR QuestionnaireResponse item with sub-items
  */
-function parseMatrixAnswer(
-  matrixAnswer: string,
-  linkId: string,
-  label: string
-): NonNullable<QuestionnaireResponse['item']>[0] | null {
+function parseMatrixAnswer(matrixAnswer: string, linkId: string, label: string): QuestionnaireResponseItem | undefined {
   try {
     // Parse the outer JSON array
     const matrixData = JSON.parse(matrixAnswer) as string[][];
 
     if (!Array.isArray(matrixData) || matrixData.length === 0) {
-      return null;
+      return undefined;
     }
 
     // First row contains column headers
@@ -315,7 +309,7 @@ function parseMatrixAnswer(
     }
 
     // Create the main matrix item
-    const matrixItem: NonNullable<QuestionnaireResponse['item']>[0] = {
+    const matrixItem: QuestionnaireResponseItem = {
       linkId,
       text: label,
       item: [],
@@ -335,7 +329,7 @@ function parseMatrixAnswer(
       rowName = firstCellData.value || `Row ${rowIndex}`;
 
       // Create a sub-item for this row
-      const rowItem: NonNullable<QuestionnaireResponse['item']>[0] = {
+      const rowItem: QuestionnaireResponseItem = {
         linkId: `${linkId}.${rowIndex}`,
         text: rowName,
         item: [],
@@ -388,9 +382,9 @@ function parseMatrixAnswer(
       }
     }
 
-    return matrixItem.item && matrixItem.item.length > 0 ? matrixItem : null;
+    return matrixItem.item && matrixItem.item.length > 0 ? matrixItem : undefined;
   } catch (error) {
     console.warn('Failed to parse matrix answer:', error);
-    return null;
+    return undefined;
   }
 }
