@@ -35,8 +35,8 @@ export interface HealthieCustomModule {
 
 // GraphQL query for fetching form answer groups
 const GET_FORM_ANSWER_GROUPS_QUERY = `
-  query formAnswerGroups($userId: ID!) {
-    formAnswerGroups(user_id: $userId, finished: true) {
+  query formAnswerGroups($userId: String!) {
+    formAnswerGroups(user_id: $userId, page_size: 100) {
       id
       user_id
       name
@@ -116,7 +116,6 @@ export function convertHealthieFormAnswerGroupToFhir(
 
   return {
     resourceType: 'QuestionnaireResponse',
-    id: formAnswerGroup.id,
     identifier: { system: HEALTHIE_FORM_ANSWER_GROUP_ID_SYSTEM, value: formAnswerGroup.id },
     questionnaire: `${healthieApiUrl}/Questionnaire/healthie-${createSlug(formAnswerGroup.name)}`,
     status: formAnswerGroup.finished ? 'completed' : 'in-progress',
@@ -224,10 +223,12 @@ function convertHealthieAnswerGroupToFhirItem(answers: HealthieFormAnswer[]): Qu
  * @param answer - The Healthie FormAnswer
  * @returns Array of FHIR answer values
  */
-function convertHealthieAnswerValueToFhir(
-  answer: HealthieFormAnswer
-): NonNullable<QuestionnaireResponseItem['answer']> {
+function convertHealthieAnswerValueToFhir(answer: HealthieFormAnswer): QuestionnaireResponseItemAnswer[] {
   const { custom_module, answer: answerValue } = answer;
+
+  if (answerValue.trim().length === 0) {
+    return [];
+  }
 
   // Helper function to split newline-separated values
   const splitAnswerValues = (value: string): string[] => {
@@ -318,7 +319,7 @@ function parseMatrixAnswer(matrixAnswer: string, linkId: string, label: string):
     // Create the main matrix item
     const matrixItem: QuestionnaireResponseItem = {
       linkId,
-      text: label,
+      text: label.trim() || undefined,
       item: [],
     };
 
@@ -333,7 +334,7 @@ function parseMatrixAnswer(matrixAnswer: string, linkId: string, label: string):
       let rowName = '';
 
       const firstCellData = JSON.parse(row[0]);
-      rowName = firstCellData.value || `Row ${rowIndex}`;
+      rowName = firstCellData.value?.trim() || `Row ${rowIndex}`;
 
       // Create a sub-item for this row
       const rowItem: QuestionnaireResponseItem = {
@@ -393,7 +394,7 @@ function parseMatrixAnswer(matrixAnswer: string, linkId: string, label: string):
 
     return matrixItem.item && matrixItem.item.length > 0 ? matrixItem : undefined;
   } catch (error) {
-    console.warn('Failed to parse matrix answer:', error);
+    console.log('Failed to parse matrix answer:', error);
     return undefined;
   }
 }

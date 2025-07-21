@@ -32,10 +32,6 @@ export interface HealthieAllergySensitivity {
   status?: 'active' | 'inactive' | 'resolved';
   /** The last time the allergy/sensitivity was updated */
   updated_at?: string;
-  /** User ID of the client this allergy/sensitivity belongs to */
-  user_id?: string;
-  /** Deprecated: use status instead */
-  is_current?: boolean;
 }
 
 /**
@@ -65,8 +61,6 @@ export async function fetchAllergySensitivities(
           severity
           status
           updated_at
-          user_id
-          is_current
         }
       }
     }
@@ -111,7 +105,7 @@ export function convertHealthieAllergyToFhir(
     category: [mapHealthieCategoryTypeToCategory(allergy.category_type)],
     criticality: mapHealthieSeverityToCriticality(allergy.severity),
     patient: patientReference,
-    onsetDateTime: allergy.onset_date,
+    onsetDateTime: allergy.onset_date?.trim() || undefined,
     code: {
       text: allergy.name,
       coding: [

@@ -41,7 +41,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
       const healthiePatient = (await fetchHealthiePatients(healthie, [healthiePatientId]))[0];
       if (!healthiePatient) {
-        console.warn(`Healthie patient ${healthiePatientId} not found`);
+        console.log(`Healthie patient ${healthiePatientId} not found`);
         continue;
       }
 
@@ -111,13 +111,21 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
       // Execute the bundle for this patient
       if (patientBundle.entry && patientBundle.entry.length > 0) {
-        await medplum.executeBatch(patientBundle);
+        const result = await medplum.executeBatch(patientBundle);
+        console.log(
+          result.entry?.forEach((e, index) => {
+            if (!e.response?.status.startsWith('2')) {
+              console.log(JSON.stringify(e.response, null, 2));
+              console.log(JSON.stringify(patientBundle.entry?.[index]?.request, null, 2));
+            }
+          })
+        );
         console.log(`Successfully synced patient ${healthiePatient.id} with ${patientBundle.entry.length} resources`);
       } else {
-        console.warn(`No resources to sync for patient ${healthiePatient.id}`);
+        console.log(`No resources to sync for patient ${healthiePatient.id}`);
       }
     } catch (error) {
-      console.error(`Failed to sync patient ${healthiePatientId}:`, error);
+      console.log(`Failed to sync patient ${healthiePatientId}:`, error);
       // Continue processing other patients even if one fails
     }
   }
