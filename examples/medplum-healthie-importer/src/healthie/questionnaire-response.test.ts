@@ -223,8 +223,8 @@ const _KITCHEN_SINK_FORM: HealthieFormAnswerGroup = {
     },
     {
       label: 'Multiple choice (checkbox)',
-      answer: 'b',
-      id: '12020334',
+      answer: 'a\nb',
+      id: '12023514',
       custom_module: {
         required: false,
         id: '18878866',
@@ -540,9 +540,9 @@ describe('Healthie QuestionnaireResponse Transformer', () => {
     test('maps boolean types correctly', () => {
       const result = convertHealthieFormAnswerGroupToFhir(COVID_SCREENING_FORM, HEALTHIE_API_URL, PATIENT_REFERENCE);
 
-      // checkbox with "Yes, I agree" -> valueBoolean: true
+      // checkbox with "Yes, I agree" -> valueString (checkboxes are now strings)
       const checkboxItem = result.item?.find((item) => item.linkId === '18562180');
-      expect(checkboxItem?.answer?.[0]?.valueBoolean).toBe(true);
+      expect(checkboxItem?.answer?.[0]?.valueString).toBe('Yes, I agree');
 
       const hipaaResult = convertHealthieFormAnswerGroupToFhir(
         HIPAA_AGREEMENT_FORM,
@@ -623,20 +623,9 @@ describe('Healthie QuestionnaireResponse Transformer', () => {
         form_answers: [
           {
             label: 'Which symptoms do you have?',
-            displayed_answer: 'Headache',
-            answer: 'Headache',
+            displayed_answer: 'Headache, Fatigue',
+            answer: 'Headache\nFatigue',
             id: '12018560',
-            custom_module: {
-              id: '18562300',
-              mod_type: 'checkbox',
-              label: 'Which symptoms do you have?',
-            },
-          },
-          {
-            label: 'Which symptoms do you have?',
-            displayed_answer: 'Fatigue',
-            answer: 'Fatigue',
-            id: '12018561',
             custom_module: {
               id: '18562300',
               mod_type: 'checkbox',
@@ -652,9 +641,9 @@ describe('Healthie QuestionnaireResponse Transformer', () => {
       expect(multiAnswerItem).toBeDefined();
       expect(multiAnswerItem?.answer).toHaveLength(2);
 
-      // TODO: map these to real symptom values, rather than two true values
-      expect(multiAnswerItem?.answer?.[0]?.valueBoolean).toBe(true); // "Headache" -> true
-      expect(multiAnswerItem?.answer?.[1]?.valueBoolean).toBe(true); // "Fatigue" -> true
+      // Checkbox with newline-separated values -> multiple valueString answers
+      expect(multiAnswerItem?.answer?.[0]?.valueString).toBe('Headache');
+      expect(multiAnswerItem?.answer?.[1]?.valueString).toBe('Fatigue');
     });
 
     test('handles edge cases in boolean conversion', () => {
@@ -692,11 +681,24 @@ describe('Healthie QuestionnaireResponse Transformer', () => {
 
       const result = convertHealthieFormAnswerGroupToFhir(edgeCaseForm, HEALTHIE_API_URL, PATIENT_REFERENCE);
 
+      // checkbox with "No" -> valueString (checkboxes are now strings)
       const noItem = result.item?.find((item) => item.linkId === '18562310');
-      expect(noItem?.answer?.[0]?.valueBoolean).toBe(false);
+      expect(noItem?.answer?.[0]?.valueString).toBe('No');
 
+      // agree_to_above with "false" -> valueBoolean: false
       const falseItem = result.item?.find((item) => item.linkId === '18562311');
       expect(falseItem?.answer?.[0]?.valueBoolean).toBe(false);
+    });
+
+    test('handles newline-separated checkbox values from kitchen sink form', () => {
+      const result = convertHealthieFormAnswerGroupToFhir(_KITCHEN_SINK_FORM, HEALTHIE_API_URL, PATIENT_REFERENCE);
+
+      // Multiple choice (checkbox) with "a\nb" -> two valueString answers
+      const checkboxItem = result.item?.find((item) => item.linkId === '18878866');
+      expect(checkboxItem).toBeDefined();
+      expect(checkboxItem?.answer).toHaveLength(2);
+      expect(checkboxItem?.answer?.[0]?.valueString).toBe('a');
+      expect(checkboxItem?.answer?.[1]?.valueString).toBe('b');
     });
   });
 });

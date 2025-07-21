@@ -210,9 +210,10 @@ function convertHealthieAnswerGroupToFhirItem(
 
   // Convert each answer in the group
   for (const answer of answers) {
-    const fhirAnswer = convertHealthieAnswerValueToFhir(answer);
-    if (fhirAnswer && item.answer) {
-      item.answer.push(fhirAnswer);
+    const fhirAnswers = convertHealthieAnswerValueToFhir(answer);
+    if (fhirAnswers && item.answer) {
+      // fhirAnswers is now an array to handle newline-separated values
+      item.answer.push(...fhirAnswers);
     }
   }
 
@@ -220,46 +221,66 @@ function convertHealthieAnswerGroupToFhirItem(
 }
 
 /**
- * Converts a single Healthie FormAnswer value to a FHIR answer value
+ * Converts a single Healthie FormAnswer value to FHIR answer values
+ * Handles newline-separated multiple values (e.g., checkbox selections)
  * @param answer - The Healthie FormAnswer
- * @returns FHIR answer value or null
+ * @returns Array of FHIR answer values
  */
 function convertHealthieAnswerValueToFhir(
   answer: HealthieFormAnswer
-): NonNullable<NonNullable<QuestionnaireResponse['item']>[0]['answer']>[0] | null {
+): NonNullable<NonNullable<QuestionnaireResponse['item']>[0]['answer']> {
   const { custom_module, answer: answerValue } = answer;
 
+  // Helper function to split newline-separated values
+  const splitAnswerValues = (value: string): string[] => {
+    return value
+      .split('\n')
+      .map((v) => v.trim())
+      .filter((v) => v !== '');
+  };
+
   switch (custom_module.mod_type) {
+    case 'checkbox': {
+      // Checkbox answers can be newline-separated for multiple selections
+      const values = splitAnswerValues(answerValue);
+      return values.map((value) => ({ valueString: value }));
+    }
+
     case 'radio':
     case 'text':
     case 'textarea':
     case 'name':
-    case 'checkbox':
-      return { valueString: answerValue };
+      return [{ valueString: answerValue }];
 
     case 'agree_to_above':
-      return {
-        valueBoolean:
-          answerValue.toLowerCase() === 'true' || answerValue.toLowerCase() === 'yes' || answerValue.includes('agree'),
-      };
+      return [
+        {
+          valueBoolean:
+            answerValue.toLowerCase() === 'true' ||
+            answerValue.toLowerCase() === 'yes' ||
+            answerValue.includes('agree'),
+        },
+      ];
 
     case 'date':
     case 'dob':
-      return { valueDate: answerValue };
+      return [{ valueDate: answerValue }];
 
     case 'signature': {
       // TODO: Use FHIR SDC extension for signatures
       const base64Data = answerValue.includes(',') ? answerValue.split(',')[1] : answerValue;
-      return {
-        valueAttachment: {
-          contentType: 'image/png',
-          data: base64Data,
+      return [
+        {
+          valueAttachment: {
+            contentType: 'image/png',
+            data: base64Data,
+          },
         },
-      };
+      ];
     }
 
     default:
-      return null;
+      return [];
   }
 }
 
