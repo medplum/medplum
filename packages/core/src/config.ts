@@ -95,6 +95,25 @@ export interface MedplumSourceInfraConfig {
 
   rdsIdsMajorVersionSuffix?: boolean;
   rdsPersistentParameterGroups?: boolean;
+
+  fireLens?: {
+    enabled: true;
+    logDriverConfig?: {
+      options?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+      secretOptions?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+    };
+    logRouterConfig: {
+      type: 'fluentbit' | 'fluentd';
+      options?: Record<string, unknown>;
+    };
+    environment?: {
+      [key: string]: ValueOrExternalSecret<string>;
+    };
+  };
 }
 
 export interface MedplumInfraConfig {
@@ -177,4 +196,23 @@ export interface MedplumInfraConfig {
 
   rdsIdsMajorVersionSuffix?: boolean;
   rdsPersistentParameterGroups?: boolean;
+
+  fireLens?: {
+    enabled: true;
+    logDriverConfig?: {
+      options?: {
+        [key: string]: string;
+      };
+      secretOptions?: {
+        [key: string]: string;
+      };
+    };
+    logRouterConfig: {
+      type: 'fluentbit' | 'fluentd';
+      options?: Record<string, unknown>;
+    };
+    environment?: {
+      [key: string]: string;
+    };
+  };
 }
