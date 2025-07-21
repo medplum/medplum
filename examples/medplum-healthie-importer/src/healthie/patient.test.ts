@@ -64,6 +64,14 @@ describe('fetchHealthiePatients', () => {
       },
     ];
 
+    mockFetch.mockImplementationOnce(() => {
+      return Promise.resolve({
+        json: () => Promise.resolve({ data: { users: mockPatients } }),
+        ok: true,
+        status: 200,
+      });
+    });
+
     mockFetch.mockImplementationOnce(
       (): Promise<MockResponse> =>
         Promise.resolve({
