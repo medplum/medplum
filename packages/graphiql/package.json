@@ -24,7 +24,7 @@
     "last 1 Chrome versions"
   ],
   "devDependencies": {
-    "@graphiql/react": "0.37.1",
+    "@graphiql/react": "0.34.1",
     "@graphiql/toolkit": "0.11.3",
     "@mantine/core": "7.17.8",
     "@mantine/hooks": "7.17.8",
@@ -33,7 +33,7 @@
     "@medplum/react": "4.3.6",
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6",
-    "graphiql": "5.2.0",
+    "graphiql": "4.1.2",
     "graphql": "16.11.0",
     "graphql-ws": "6.0.6",
     "postcss": "8.5.6",
