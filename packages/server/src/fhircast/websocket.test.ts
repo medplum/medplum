@@ -786,7 +786,7 @@ describe('FHIRcast WebSocket', () => {
     beforeAll(async () => {
       app = express();
       config = await loadTestConfig();
-      config.heartbeatMilliseconds = 100;
+      config.heartbeatMilliseconds = 300;
       server = await initApp(app, config);
       accessToken = await initTestAuth({ membership: { admin: true } });
       await new Promise<void>((resolve) => {
@@ -894,8 +894,10 @@ describe('FHIRcast WebSocket', () => {
                 await once(ws, 'message');
                 const endTime = Date.now();
 
-                // setInterval doesn't guarantee a minimum time between executions, so we give a little leniency for the 100ms
-                expect(endTime - startTime).toBeGreaterThanOrEqual(80);
+                // setInterval doesn't guarantee a minimum time between executions, so we give a little leniency for the 300ms
+                // Because our tests run in very unstable conditions on GitHub, we give a lot of tolerance since the pinned CPU
+                // can result in very early firing
+                expect(endTime - startTime).toBeGreaterThanOrEqual(150);
               })
               // We're just expecting the two calls we already caught in the above exec
               .expectJson((obj) => {
