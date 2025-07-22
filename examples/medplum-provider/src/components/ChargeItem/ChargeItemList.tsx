@@ -127,9 +127,6 @@ export const ChargeItemList = (props: ChargeItemListProps): JSX.Element => {
         <Card withBorder shadow="sm">
           <Stack gap="md" align="center">
             <Text c="dimmed">No charge items available</Text>
-            <Button leftSection={<IconPlus size={16} />} onClick={addChargeItem}>
-              Add Charge Item
-            </Button>
           </Stack>
         </Card>
       )}

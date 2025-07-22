@@ -137,7 +137,7 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
             rank: encounter.diagnosis?.length ? encounter.diagnosis.length + 1 : 1,
           },
         ];
-        setConditions(conditions?.filter((c) => c.id !== condition.id) || []);
+        setConditions([...(conditions || []), newCondition]);
         onDiagnosisChange(updatedDiagnosis);
       }
     } catch (err) {
