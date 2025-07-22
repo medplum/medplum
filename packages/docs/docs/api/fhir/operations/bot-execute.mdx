@@ -166,7 +166,7 @@ medplum get 'Bot/$execute?identifier=https://example.com/bots|1234'
   <TabItem value="curl" label="cURL">
 
 ```bash
-curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234'\
+curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.com/bots|1234' \
   -H "Authorization: Bearer $MY_ACCESS_TOKEN"
 ```
 
@@ -177,16 +177,122 @@ curl 'https://api.medplum.com/fhir/R4/Bot/$execute?identifier=https://example.co
 
 Medplum Bots support a variety of input content types. Specify the input content type using the standard `Content-Type` HTTP header, or as an optional parameter to `MedplumClient.executeBot()`.
 
-| Content-Type                         | typeof `event.input`                         | Description                                                                                                                                                         |
-| ------------------------------------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `text/plain`                         | `string`                                     | `<INPUT_DATA>` is parsed as plaintext string                                                                                                                        |
-| `application/json`                   | `Record<string, any>`                        | `<INPUT_DATA>` is parsed as JSON-encoded object                                                                                                                     |
-| `application/x-www-form-urlencoded ` | `Record<string, string>`                     | `<INPUT_DATA>` is parsed as URL-encoded string, resulting in a key/value map                                                                                        |
-| `application/fhir+json`              | [`Resource`](/docs/api/fhir/resources)       | `<INPUT_DATA>` is parsed as a [FHIR Resource](/docs/fhir-basics#storing-data-resources) encoded as JSON                                                                          |
+| Content-Type                         | typeof `event.input`                      | Description                                                                                                                                                         |
+| ------------------------------------ | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text/plain`                         | `string`                                  | `<INPUT_DATA>` is parsed as plaintext string                                                                                                                        |
+| `application/json`                   | `Record<string, any>`                     | `<INPUT_DATA>` is parsed as JSON-encoded object                                                                                                                     |
+| `application/x-www-form-urlencoded ` | `Record<string, string>`                  | `<INPUT_DATA>` is parsed as URL-encoded string, resulting in a key/value map                                                                                        |
+| `application/fhir+json`              | [`Resource`](/docs/api/fhir/resources)    | `<INPUT_DATA>` is parsed as a [FHIR Resource](/docs/fhir-basics#storing-data-resources) encoded as JSON                                                             |
 | `x-application/hl7-v2+er7`           | [`HL7Message`](/docs/sdk/core.hl7message) | `<INPUT_DATA>` is a string that should be parsed as a pipe-delimited HL7v2 message. HL7v2 is a common text-based message protocol used in legacy healthcare systems |
 
 The input data that will be parsed according to `CONTENT_TYPE` and passed into your Bot as `event.input`.
 
 ## Asynchronous Execution
 
-To run bots asynchronously, you can specify the `Prefer: respond-async` header to move execution of the bot to the background.  Asynchronous execution will result in an HTTP `202 Accepted` response immediately.
+To run bots asynchronously, you can specify the `Prefer: respond-async` header to move execution of the bot to the background. Asynchronous execution will result in an HTTP `202 Accepted` response immediately, and the bot will continue running in the background.
+
+### Making an Async Request
+
+Add the `Prefer: respond-async` header to any bot execution request:
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+
+<MedplumCodeBlock language="ts" selectBlocks="execute-async">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+
+```bash
+medplum post 'Bot/[id]/$execute' '{ "foo": "bar" }' --prefer-async
+```
+
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/Bot/[id]/$execute' \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $MY_ACCESS_TOKEN" \
+  -H "Prefer: respond-async" \
+  -d '{"foo":"bar"}'
+```
+
+  </TabItem>
+</Tabs>
+
+### Checking Job Status
+
+When using async execution, the server returns a `202 Accepted` response with a `Content-Location` header containing the URL to check the job status:
+
+```http
+HTTP/1.1 202 Accepted
+Content-Location: https://api.medplum.com/fhir/R4/job/[job-id]/status
+```
+
+You can poll this URL to check the status of your bot execution. In general, for long running jobs it's best to poll no more frequently than 1 second.
+
+<Tabs>
+  <TabItem value="ts" label="TypeScript">
+The `MedplumClient` provides helper utilities to poll job status automatically
+<MedplumCodeBlock language="ts" selectBlocks="execute-async-with-polling">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+However, you can also manually poll the status URL
+
+<MedplumCodeBlock language="ts" selectBlocks="check-job-status-manual">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+  </TabItem>
+  <TabItem value="cli" label="CLI">
+
+```bash
+# Check job status
+medplum get 'job/[job-id]/status'
+```
+
+  </TabItem>
+  <TabItem value="curl" label="cURL">
+
+```bash
+# Check job status
+curl 'https://api.medplum.com/fhir/R4/job/[job-id]/status' \
+  -H "Authorization: Bearer $MY_ACCESS_TOKEN"
+```
+
+  </TabItem>
+</Tabs>
+
+### AsyncJob Resource Structure
+
+The status endpoint returns an `AsyncJob` resource with the following key fields:
+
+- **`status`**: Current job status
+  - `accepted` - Job has been queued
+  - `active` - Job is currently running
+  - `completed` - Job finished successfully
+  - `error` - Job failed
+  - `cancelled` - Job was cancelled
+
+- **`output`**: Contains the results when status is `completed` or `error`
+  - For successful bot execution: `parameter[0].name` will be `responseBody`
+  - For failed execution: `parameter[0].name` will be `outcome` with error details
+
+### Example Response
+
+When the bot execution completes successfully:
+
+<MedplumCodeBlock language="ts" selectBlocks="example-success-response">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+When the bot execution fails:
+
+<MedplumCodeBlock language="ts" selectBlocks="example-error-response">
+  {ExampleCode}
+</MedplumCodeBlock>
