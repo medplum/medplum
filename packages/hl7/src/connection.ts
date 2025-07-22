@@ -14,14 +14,16 @@ export type Hl7MessageQueueItem = {
   reject?: (err: Error) => void;
 };
 
+export const DEFAULT_ENCODING = 'utf-8';
+
 export class Hl7Connection extends Hl7Base {
   readonly socket: net.Socket;
-  readonly encoding: string;
-  readonly enhancedMode: boolean;
+  encoding: string;
+  enhancedMode: boolean;
   private chunks: Buffer[] = [];
   private readonly messageQueue: Hl7MessageQueueItem[] = [];
 
-  constructor(socket: net.Socket, encoding: string = 'utf-8', enhancedMode = false) {
+  constructor(socket: net.Socket, encoding: string = DEFAULT_ENCODING, enhancedMode = false) {
     super();
 
     this.socket = socket;
@@ -54,7 +56,7 @@ export class Hl7Connection extends Hl7Base {
     });
 
     this.addEventListener('message', (event) => {
-      if (enhancedMode) {
+      if (this.enhancedMode) {
         this.send(event.message.buildAck({ ackCode: 'CA' }));
       }
       // Get the queue item at the head of the queue
@@ -108,5 +110,21 @@ export class Hl7Connection extends Hl7Base {
 
   private resetBuffer(): void {
     this.chunks = [];
+  }
+
+  setEncoding(encoding: string | undefined): void {
+    this.encoding = encoding ?? DEFAULT_ENCODING;
+  }
+
+  getEncoding(): string {
+    return this.encoding;
+  }
+
+  setEnhancedMode(enhancedMode: boolean): void {
+    this.enhancedMode = enhancedMode;
+  }
+
+  getEnhancedMode(): boolean {
+    return this.enhancedMode;
   }
 }
