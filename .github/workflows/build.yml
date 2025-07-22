@@ -156,7 +156,7 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22]
-        pg-version: [14, 16]
+        pg-version: [13, 17]
         redis-version: [6, 7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
@@ -237,7 +237,7 @@ jobs:
           POSTGRES_PORT: 5432
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Upload code coverage
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
+        if: ${{ matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7 }}
         uses: actions/upload-artifact@v4
         with:
           name: medplum-code-coverage
@@ -251,7 +251,7 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22]
-        pg-version: [14, 16]
+        pg-version: [13, 17]
         redis-version: [6, 7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
@@ -362,7 +362,7 @@ jobs:
           npm run test:smoke
           popd
       - name: Upload test results
-        if: ${{ failure() || (matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7) }}
+        if: ${{ failure() || (matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7) }}
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-results-node-${{ matrix.node-version }}-pg-${{ matrix.pg-version }}-redis-${{ matrix.redis-version }}
