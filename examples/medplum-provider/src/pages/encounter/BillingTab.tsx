@@ -92,10 +92,9 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
       }
     }
 
-    const refreshedClaim = await medplum.readResource('Claim', claim.id);
     const diagnosisArray = createDiagnosisArray(conditions || []);
     const claimToExport: Claim = {
-      ...refreshedClaim,
+      ...claim,
       insurance: [
         {
           sequence: 1,
