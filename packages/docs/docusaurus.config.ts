@@ -18,11 +18,9 @@ const config: Config = {
 
   // Set this to true to enable the faster experimental build mode.
   // https://github.com/facebook/docusaurus/issues/10556
-  customFields: {
-    future: {
-      v4: true,
-      experimental_faster: true,
-    },
+  future: {
+    v4: true,
+    experimental_faster: true,
   },
 
   // Even if you don't use internationalization, you can use this field to set
