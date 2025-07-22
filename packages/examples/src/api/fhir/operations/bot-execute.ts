@@ -100,7 +100,7 @@ export async function checkJobStatusExample(): Promise<void> {
     }
 
     // Wait 2 second before polling again
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await sleep(2000);
   }
 
   // If the result is undefined, throw an error
@@ -110,6 +110,12 @@ export async function checkJobStatusExample(): Promise<void> {
 
   // end-block check-job-status-manual
   console.log(result);
+}
+
+async function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 export async function exampleResponses(): Promise<void> {
