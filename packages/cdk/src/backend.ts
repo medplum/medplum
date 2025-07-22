@@ -41,8 +41,8 @@ export class BackEnd extends Construct {
   taskRolePolicies: iam.PolicyDocument;
   taskRole: iam.Role;
   taskDefinition: ecs.FargateTaskDefinition;
-  logGroup: logs.ILogGroup;
-  logDriver: ecs.AwsLogDriver;
+  logGroup?: logs.ILogGroup;
+  logDriver: ecs.LogDriver;
   serviceContainer: ecs.ContainerDefinition;
   fargateSecurityGroup: ec2.SecurityGroup;
   fargateService: ecs.FargateService;
@@ -443,16 +443,24 @@ export class BackEnd extends Construct {
       taskRole: this.taskRole,
     });
 
-    // Log Groups
-    this.logGroup = new logs.LogGroup(this, 'LogGroup', {
-      logGroupName: '/ecs/medplum/' + name,
-      removalPolicy: RemovalPolicy.DESTROY,
-    });
+    // Log Drivers
+    if (config.fireLens?.enabled) {
+      this.logDriver = new ecs.FireLensLogDriver({
+        options: {
+          ...config.fireLens.logDriverConfig?.options,
+        },
+      });
+    } else {
+      this.logGroup = new logs.LogGroup(this, 'LogGroup', {
+        logGroupName: '/ecs/medplum/' + name,
+        removalPolicy: RemovalPolicy.DESTROY,
+      });
 
-    this.logDriver = new ecs.AwsLogDriver({
-      logGroup: this.logGroup,
-      streamPrefix: 'Medplum',
-    });
+      this.logDriver = new ecs.AwsLogDriver({
+        logGroup: this.logGroup,
+        streamPrefix: 'Medplum',
+      });
+    }
 
     // Task Containers
     this.serviceContainer = this.taskDefinition.addContainer('MedplumTaskDefinition', {
@@ -478,6 +486,15 @@ export class BackEnd extends Construct {
           essential: container.essential ?? false, // Default to false
         });
       }
+    }
+
+    if (config.fireLens?.enabled) {
+      this.taskDefinition.addFirelensLogRouter('FireLensRouter', {
+        image: ecs.ContainerImage.fromRegistry('public.ecr.aws/aws-observability/aws-for-fluent-bit:stable'),
+        essential: true,
+        firelensConfig: config.fireLens.logRouterConfig as ecs.FirelensConfig,
+        environment: config.fireLens.environment,
+      });
     }
 
     // Security Groups

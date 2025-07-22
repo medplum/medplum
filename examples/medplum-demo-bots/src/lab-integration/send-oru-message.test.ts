@@ -23,7 +23,7 @@ import * as dotenv from 'dotenv';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createOruMessage, handler } from './send-oru-message';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const CONNECTION_DETAILS = {
   SFTP_HOST: { name: 'SFTP_HOST', valueString: 'example.server.transfer.us-east-1.amazonaws.com' },

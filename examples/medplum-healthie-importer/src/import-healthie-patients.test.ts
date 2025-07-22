@@ -2,7 +2,7 @@ import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@med
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bot, Bundle, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler } from './import-healthie-patients';
 import { HealthieClient } from './healthie/client';
 
@@ -140,12 +140,45 @@ describe('fetch-patients handler', () => {
 
   beforeEach(() => {
     medplum = new MockClient();
-    // Mock only the query method for patient data
-    vi.mocked(HealthieClient.prototype.query)
-      .mockResolvedValueOnce(MOCK_PATIENT_RESPONSE)
-      .mockResolvedValueOnce(MOCK_MEDICATION_RESPONSE)
-      .mockResolvedValue({ medications: [] });
   });
+
+  function setupMocks(): void {
+    const mockQuery = vi.mocked(HealthieClient.prototype.query);
+    mockQuery.mockReset();
+
+    // Mock patient IDs query (fetchHealthiePatientIds) - return patients needed for tests
+    mockQuery.mockResolvedValueOnce({
+      users: [
+        { id: '2494091', updated_at: '2025-01-01T00:00:00Z', cursor: 'cursor1' },
+        { id: '2498842', updated_at: '2025-01-01T00:00:00Z', cursor: 'cursor2' }, // Patient with medications
+        { id: '2501783', updated_at: '2025-01-01T00:00:00Z', cursor: 'cursor3' }, // Patient with full demographics
+      ],
+    });
+
+    // For each patient, we need to mock:
+    // 1. fetchHealthiePatients (patient details)
+    // 2. fetchMedications
+    // 3. fetchAllergySensitivities
+    // 4. fetchHealthieFormAnswerGroups
+
+    // Patient 2494091
+    mockQuery.mockResolvedValueOnce({ users: [MOCK_PATIENT_RESPONSE.users[0]] }); // Basic patient
+    mockQuery.mockResolvedValueOnce({ medications: [] });
+    mockQuery.mockResolvedValueOnce({ user: { allergy_sensitivities: [] } });
+    mockQuery.mockResolvedValueOnce({ formAnswerGroups: [] });
+
+    // Patient 2498842 (the one with medications)
+    mockQuery.mockResolvedValueOnce({ users: [MOCK_PATIENT_RESPONSE.users[1]] }); // Patient with medications
+    mockQuery.mockResolvedValueOnce(MOCK_MEDICATION_RESPONSE); // This patient has the medications
+    mockQuery.mockResolvedValueOnce({ user: { allergy_sensitivities: [] } });
+    mockQuery.mockResolvedValueOnce({ formAnswerGroups: [] });
+
+    // Patient 2501783 (the one with complete demographics)
+    mockQuery.mockResolvedValueOnce({ users: [MOCK_PATIENT_RESPONSE.users[4]] }); // Patient with full demo data
+    mockQuery.mockResolvedValueOnce({ medications: [] });
+    mockQuery.mockResolvedValueOnce({ user: { allergy_sensitivities: [] } });
+    mockQuery.mockResolvedValueOnce({ formAnswerGroups: [] });
+  }
 
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -160,6 +193,8 @@ describe('fetch-patients handler', () => {
   });
 
   test('syncs patient demographics correctly', async () => {
+    setupMocks();
+
     const event = {
       input: {},
       contentType: 'application/json',
@@ -203,6 +238,8 @@ describe('fetch-patients handler', () => {
   });
 
   test('syncs medications correctly for multiple patients', async () => {
+    setupMocks();
+
     const event = {
       input: {},
       contentType: 'application/json',
@@ -264,6 +301,7 @@ describe('fetch-patients handler', () => {
       bot: { reference: 'Bot/test-bot' } as Reference<Bot>,
     };
 
+    // Mock empty patient IDs response
     vi.mocked(HealthieClient.prototype.query).mockReset().mockResolvedValue({ users: [] });
 
     await handler(medplum, event);

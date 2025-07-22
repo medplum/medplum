@@ -5,14 +5,24 @@ import { Hl7Connection } from './connection';
 export class Hl7Server {
   readonly handler: (connection: Hl7Connection) => void;
   server?: net.Server;
+  private encoding: string | undefined = undefined;
+  private enhancedMode = false;
+  private messagesPerSec: number | undefined = undefined;
 
   constructor(handler: (connection: Hl7Connection) => void) {
     this.handler = handler;
   }
 
-  start(port: number, encoding?: string, enhancedMode = false, messagesPerSec: number | undefined = undefined): void {
+  start(port: number, encoding?: string, enhancedMode?: boolean): void {
+    if (encoding) {
+      this.setEncoding(encoding);
+    }
+    if (enhancedMode !== undefined) {
+      this.setEnhancedMode(enhancedMode);
+    }
+
     const server = net.createServer((socket) => {
-      const connection = new Hl7Connection(socket, encoding, enhancedMode, messagesPerSec);
+      const connection = new Hl7Connection(socket, this.encoding, this.enhancedMode);
       this.handler(connection);
     });
 
@@ -49,5 +59,29 @@ export class Hl7Server {
       });
       this.server = undefined;
     });
+  }
+
+  setEnhancedMode(enhancedMode: boolean): void {
+    this.enhancedMode = enhancedMode;
+  }
+
+  getEnhancedMode(): boolean {
+    return this.enhancedMode;
+  }
+
+  setEncoding(encoding: string | undefined): void {
+    this.encoding = encoding;
+  }
+
+  getEncoding(): string | undefined {
+    return this.encoding;
+  }
+
+  setMessagesPerSec(messagesPerSec: number | undefined): void {
+    this.messagesPerSec = messagesPerSec;
+  }
+
+  getMessagesPerSec(): number | undefined {
+    return this.messagesPerSec;
   }
 }

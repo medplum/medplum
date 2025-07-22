@@ -14,11 +14,13 @@ export type Hl7MessageQueueItem = {
   reject?: (err: Error) => void;
 };
 
+export const DEFAULT_ENCODING = 'utf-8';
+
 export class Hl7Connection extends Hl7Base {
   readonly socket: net.Socket;
-  readonly encoding: string;
-  readonly enhancedMode: boolean;
-  private messagesPerSec: number | undefined;
+  encoding: string;
+  enhancedMode: boolean;
+  private messagesPerSec: number | undefined = undefined;
   private chunks: Buffer[] = [];
   private readonly messageQueue: Hl7MessageQueueItem[] = [];
   private readonly responseQueue: Hl7MessageEvent[] = [];
@@ -27,9 +29,9 @@ export class Hl7Connection extends Hl7Base {
 
   constructor(
     socket: net.Socket,
-    encoding: string = 'utf-8',
+    encoding: string = DEFAULT_ENCODING,
     enhancedMode = false,
-    messagesPerSec: number | undefined = undefined
+    messagesPerSec = undefined
   ) {
     super();
 
@@ -48,7 +50,9 @@ export class Hl7Connection extends Hl7Base {
           const message = Hl7Message.parse(contentString);
           this.responseQueue.push(new Hl7MessageEvent(this, message));
           this.resetBuffer();
-          this.processResponseQueue();
+          this.processResponseQueue().catch((err) => {
+            this.dispatchEvent(new Hl7ErrorEvent(err));
+          });
         }
       } catch (err) {
         this.dispatchEvent(new Hl7ErrorEvent(err as Error));
@@ -65,7 +69,7 @@ export class Hl7Connection extends Hl7Base {
     });
 
     this.addEventListener('message', (event) => {
-      if (enhancedMode) {
+      if (this.enhancedMode) {
         this.send(event.message.buildAck({ ackCode: 'CA' }));
       }
       // Get the queue item at the head of the queue
@@ -84,38 +88,27 @@ export class Hl7Connection extends Hl7Base {
     });
   }
 
-  private async processResponseQueueWithThrottle(): Promise<void> {
+  private async processResponseQueue(): Promise<void> {
     if (this.responseQueueProcessing) {
       return;
     }
 
     this.responseQueueProcessing = true;
     while (this.responseQueue.length) {
-      const millisBetweenMsgs = 1000 / (this.messagesPerSec as number);
-      const elapsedMillis = Date.now() - this.lastMessageDispatchedTime;
-      if (millisBetweenMsgs > elapsedMillis) {
-        await sleep(millisBetweenMsgs - elapsedMillis);
+      if (this.messagesPerSec) {
+        const millisBetweenMsgs = 1000 / (this.messagesPerSec as number);
+        const elapsedMillis = Date.now() - this.lastMessageDispatchedTime;
+        if (millisBetweenMsgs > elapsedMillis) {
+          await sleep(millisBetweenMsgs - elapsedMillis);
+        }
       }
-      this.dispatchEvent(this.responseQueue.shift() as Hl7MessageEvent);
+      const messageEvent = this.responseQueue.shift() as Hl7MessageEvent;
+      if (messageEvent) {
+        this.dispatchEvent(messageEvent);
+      }
       this.lastMessageDispatchedTime = Date.now();
     }
     this.responseQueueProcessing = false;
-  }
-
-  private processResponseQueue(): void {
-    // If not throttled, just go until we clear out the queue
-    if (!this.messagesPerSec) {
-      while (this.responseQueue.length) {
-        const messageEvent = this.responseQueue.shift();
-        if (messageEvent) {
-          this.dispatchEvent(messageEvent);
-        }
-      }
-    } else {
-      this.processResponseQueueWithThrottle().catch((err) => {
-        this.dispatchEvent(new Hl7ErrorEvent(err));
-      });
-    }
   }
 
   private sendImpl(reply: Hl7Message, queueItem: Hl7MessageQueueItem): void {
@@ -153,5 +146,29 @@ export class Hl7Connection extends Hl7Base {
 
   private resetBuffer(): void {
     this.chunks = [];
+  }
+
+  setEncoding(encoding: string | undefined): void {
+    this.encoding = encoding ?? DEFAULT_ENCODING;
+  }
+
+  getEncoding(): string {
+    return this.encoding;
+  }
+
+  setEnhancedMode(enhancedMode: boolean): void {
+    this.enhancedMode = enhancedMode;
+  }
+
+  getEnhancedMode(): boolean {
+    return this.enhancedMode;
+  }
+
+  setMessagesPerSec(messagesPerSec: number | undefined): void {
+    this.messagesPerSec = messagesPerSec;
+  }
+
+  getMessagesPerSec(): number | undefined {
+    return this.messagesPerSec;
   }
 }

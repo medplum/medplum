@@ -154,6 +154,32 @@ export class AgentDicomChannel extends BaseChannel {
     this.log = app.log.clone({ options: { prefix: `[DICOM:${definition.name}] ` } });
   }
 
+  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
+    const previousEndpoint = this.endpoint;
+    this.definition = definition;
+    this.endpoint = endpoint;
+
+    this.log.info('Reloading config... Evaluating if channel needs to change address...');
+
+    if (this.needToRebindToPort(previousEndpoint, endpoint)) {
+      await this.stop();
+      this.start();
+      this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
+    } else {
+      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
+    }
+  }
+
+  private needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
+    if (
+      firstEndpoint.address === secondEndpoint.address ||
+      new URL(firstEndpoint.address).port === new URL(secondEndpoint.address).port
+    ) {
+      return false;
+    }
+    return true;
+  }
+
   start(): void {
     if (this.started) {
       return;
