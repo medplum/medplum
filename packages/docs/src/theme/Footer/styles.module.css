@@ -12,6 +12,17 @@
   flex-grow: 1;
 }
 
+@media (max-width: 600px) {
+  .row {
+    display: flex;
+    flex-flow: column;
+  }
+
+  .column {
+    margin-bottom: 32px;
+  }
+}
+
 .rightAligned {
   text-align: right;
 }

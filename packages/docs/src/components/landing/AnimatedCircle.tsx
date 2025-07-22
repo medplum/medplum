@@ -35,7 +35,6 @@ export function AnimatedCircle(props: AnimatedCircleProps): JSX.Element {
 
   return (
     <svg viewBox="0 0 200 150" className="heroImage" ref={ref}>
-      <circle cx="100" cy="75" r="64" fill="none" stroke="#800080" strokeWidth="1" />
       <text x="50%" y="50%" textAnchor="middle" fontSize="32" fontWeight="bold" fill="#800080" stroke="none" dy="0.4em">
         {value.toLocaleString() + (props.suffix ?? '')}
       </text>
@@ -46,12 +45,13 @@ export function AnimatedCircle(props: AnimatedCircleProps): JSX.Element {
           cy="75"
           r="64"
           fill="none"
-          stroke="rgba(198, 125, 255, 0.5)"
+          stroke="rgba(217, 221, 255, 0.9)"
           strokeLinecap="round"
           strokeWidth="8"
           transform="rotate(-90 100 75)"
         />
       )}
+      <circle cx="100" cy="75" r="64" fill="none" stroke="#800080" strokeWidth="1" />
     </svg>
   );
 }
