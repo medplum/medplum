@@ -281,7 +281,7 @@ const createDiagnosisArray = (conditions: Condition[]): ClaimDiagnosis[] => {
           ? [
               {
                 ...icd10Coding,
-                system: 'http://hl7.org/fhir/sid/icd-10',
+                system: `${HTTP_HL7_ORG}/fhir/sid/icd-10`,
               },
             ]
           : [],
