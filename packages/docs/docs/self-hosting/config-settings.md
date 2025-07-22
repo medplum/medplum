@@ -615,6 +615,12 @@ Limit for the rate at which auth requests can be sent to or processed by the ser
 
 **Default:** `60/minute`
 
+### defaultFhirQuota
+
+Limit for the total number of FHIR request that can be sent to ot processed by the server. For more default see the [Rate Limit docs](/docs/rate-limits)
+
+**Default:** `50000/minute`
+
 :::tip Local Config
 To make changes to the server config after your first deploy, you must the edit parameter values _directly in AWS parameter store_
 
