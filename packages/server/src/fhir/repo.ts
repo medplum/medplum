@@ -69,7 +69,7 @@ import {
 import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
-import { v7 } from 'uuid';
+import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project } from '../constants';
 import { tryGetRequestContext } from '../context';
@@ -325,7 +325,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   generateId(): string {
-    return v7();
+    return v4();
   }
 
   async readResource<T extends Resource>(
