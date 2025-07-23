@@ -481,4 +481,116 @@ describe('BaseChat', () => {
     await sleep(500);
     expect(baseProps.onError).toHaveBeenCalledWith(new Error('Something is broken'));
   });
+
+  test('Day sections are displayed when messages span multiple days', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const twoDaysAgo = new Date(today);
+    twoDaysAgo.setDate(today.getDate() - 2);
+
+    await Promise.all([
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: twoDaysAgo.toISOString(),
+        payload: [{ contentString: 'Message from two days ago' }],
+      }),
+      createCommunication(medplum, {
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: yesterday.toISOString(),
+        payload: [{ contentString: 'Message from yesterday' }],
+      }),
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: today.toISOString(),
+        payload: [{ contentString: 'Message from today' }],
+      }),
+    ]);
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(screen.getByText('Message from two days ago')).toBeInTheDocument();
+    expect(screen.getByText('Message from yesterday')).toBeInTheDocument();
+    expect(screen.getByText('Message from today')).toBeInTheDocument();
+
+    const twoDaysAgoFormatted = twoDaysAgo.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    const yesterdayFormatted = yesterday.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    const todayFormatted = today.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+
+    expect(screen.getByText(twoDaysAgoFormatted)).toBeInTheDocument();
+    expect(screen.getByText(yesterdayFormatted)).toBeInTheDocument();
+    expect(screen.getByText(todayFormatted)).toBeInTheDocument();
+  });
+
+  test('Day sections are not duplicated for messages on the same day', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const today = new Date();
+    const todayMorning = new Date(today);
+    todayMorning.setHours(9, 0, 0, 0);
+    const todayAfternoon = new Date(today);
+    todayAfternoon.setHours(15, 30, 0, 0);
+
+    await Promise.all([
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: todayMorning.toISOString(),
+        payload: [{ contentString: 'Good morning!' }],
+      }),
+      createCommunication(medplum, {
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: todayAfternoon.toISOString(),
+        payload: [{ contentString: 'Good afternoon!' }],
+      }),
+    ]);
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(screen.getByText('Good morning!')).toBeInTheDocument();
+    expect(screen.getByText('Good afternoon!')).toBeInTheDocument();
+
+    const todayFormatted = today.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+
+    const daySections = screen.getAllByText(todayFormatted);
+    expect(daySections).toHaveLength(1);
+  });
 });
