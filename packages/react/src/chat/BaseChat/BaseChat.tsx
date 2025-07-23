@@ -57,7 +57,18 @@ function upsertCommunications(
   }
 
   if (foundNew) {
-    newCommunications.sort((a, b) => (a.sent as string).localeCompare(b.sent as string));
+    newCommunications.sort((a, b) => {
+      if (!a.sent && !b.sent) {
+        return 0;
+      }
+      if (!a.sent) {
+        return -1;
+      }
+      if (!b.sent) {
+        return 1;
+      }
+      return (a.sent as string).localeCompare(b.sent as string);
+    });
   }
 
   setCommunications(newCommunications);

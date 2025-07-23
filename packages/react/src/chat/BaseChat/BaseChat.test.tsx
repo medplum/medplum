@@ -679,4 +679,70 @@ describe('BaseChat', () => {
     expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
     expect(screen.queryByText('Hello, Medplum!')).not.toBeInTheDocument();
   });
+
+  test('BaseChat handles multiple communications with undefined sent date via subscription', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await createCommunication(medplum, {
+      sender: drAliceReference,
+      recipient: [homerReference],
+      payload: [{ contentString: 'Normal message' }],
+    });
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(await screen.findByText('Normal message')).toBeInTheDocument();
+
+    const communicationsWithUndefinedSent = [
+      {
+        id: generateId(),
+        resourceType: 'Communication',
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: undefined,
+        status: 'in-progress',
+        payload: [{ contentString: 'First message with no sent date' }],
+      },
+      {
+        id: generateId(),
+        resourceType: 'Communication',
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: undefined,
+        status: 'in-progress',
+        payload: [{ contentString: 'Second message with no sent date' }],
+      },
+      {
+        id: generateId(),
+        resourceType: 'Communication',
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: undefined,
+        status: 'in-progress',
+        payload: [{ contentString: 'Third message with no sent date' }],
+      },
+    ] as Communication[];
+
+    for (const communication of communicationsWithUndefinedSent) {
+      const bundle = await createCommunicationSubBundle(medplum, communication);
+      act(() => {
+        defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+          type: 'message',
+          payload: bundle,
+        });
+      });
+    }
+
+    expect(await screen.findByText('First message with no sent date')).toBeInTheDocument();
+    expect(screen.getByText('Second message with no sent date')).toBeInTheDocument();
+    expect(screen.getByText('Third message with no sent date')).toBeInTheDocument();
+  });
 });
