@@ -815,7 +815,7 @@ function buildCodingTable(result: SchemaDefinition): void {
           'system',
           'code',
           'display',
-          { expression: `COALESCE("synonymOf", ('-1'::integer))::bigint)`, name: 'synonymOf' },
+          { expression: `COALESCE("synonymOf", ('-1'::integer)::bigint)`, name: 'synonymOf' },
         ],
         indexType: 'btree',
         unique: true,
@@ -1198,6 +1198,7 @@ function generateIndexesActions(
 
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (!startIndex) {
+      console.log('MISSING:', targetIndex);
       ctx.postDeployAction(
         () => {
           const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex);
@@ -1212,6 +1213,7 @@ function generateIndexesActions(
 
   for (const startIndex of startTable.indexes) {
     if (!matchedIndexes.has(startIndex)) {
+      console.log('EXTRA:', startIndex);
       console.log(
         `[${startTable.name}] Existing index should not exist:`,
         startIndex.indexdef || JSON.stringify(startIndex)
@@ -1325,6 +1327,7 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
     return {
       ...d,
       unique: d.unique ?? false,
+      nulls: d.nulls, // Ensure `nulls` property is populated
       // don't care about indexNameSuffix, indexdef, nor expression names
       indexNameSuffix: undefined,
       indexdef: undefined,
