@@ -615,11 +615,14 @@ describe('BaseChat', () => {
       payload: [{ contentString: 'Initial message' }],
     });
 
-    await setup({
-      title: 'Test Chat',
-      query: HOMER_DR_ALICE_CHAT_QUERY,
-      sendMessage: () => undefined,
-    }, medplum);
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
 
     expect(await screen.findByText('Initial message')).toBeInTheDocument();
 
