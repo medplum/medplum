@@ -811,10 +811,14 @@ function buildCodingTable(result: SchemaDefinition): void {
         indexNameSuffix: 'primary_idx',
       },
       {
-        columns: ['system', 'code', 'display', 'synonymOf'],
+        columns: [
+          'system',
+          'code',
+          'display',
+          { expression: `COALESCE("synonymOf", ('-1'::integer))::bigint)`, name: 'synonymOf' },
+        ],
         indexType: 'btree',
         unique: true,
-        nulls: 'NOT DISTINCT',
       },
       { columns: ['system', { expression: 'display gin_trgm_ops', name: 'displayTrgm' }], indexType: 'gin' },
     ],

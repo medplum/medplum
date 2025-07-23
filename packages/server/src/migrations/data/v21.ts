@@ -21,7 +21,7 @@ export const migration: CustomPostDeployMigration = {
 
 // prettier-ignore
 async function run(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
-  await fns.idempotentCreateIndex(client, results, 'Coding_system_code_display_synonymOf_idx', `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "Coding_system_code_display_synonymOf_idx" ON "Coding" ("system", "code", "display", "synonymOf") NULLS NOT DISTINCT`);
+  await fns.idempotentCreateIndex(client, results, 'Coding_system_code_display_synonymOf_idx', `CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "Coding_system_code_display_synonymOf_idx" ON "Coding" ("system", "code", "display", COALESCE("synonymOf", ('-1'::integer)::bigint))`);
   await fns.query(client, results, `DROP INDEX CONCURRENTLY IF EXISTS "Coding_system_code_display_idx"`);
   await fns.query(client, results, `DROP INDEX CONCURRENTLY IF EXISTS "Coding_system_code_idx"`);
 }
