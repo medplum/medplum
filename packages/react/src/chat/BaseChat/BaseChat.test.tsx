@@ -593,4 +593,69 @@ describe('BaseChat', () => {
     const daySections = screen.getAllByText(todayFormatted);
     expect(daySections).toHaveLength(1);
   });
+
+  test('Scrolls to bottom when new messages arrive', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const mockScrollTo = jest.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
+      value: mockScrollTo,
+      writable: true,
+    });
+
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      value: 1000,
+      configurable: true,
+    });
+
+    await createCommunication(medplum, {
+      sender: drAliceReference,
+      recipient: [homerReference],
+      payload: [{ contentString: 'Initial message' }],
+    });
+
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+    }, medplum);
+
+    expect(await screen.findByText('Initial message')).toBeInTheDocument();
+
+    await act(async () => {
+      await sleep(100);
+    });
+
+    mockScrollTo.mockClear();
+
+    const newMessage = await createCommunication(medplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentString: 'New message triggers scroll!' }],
+    });
+
+    const bundle = await createCommunicationSubBundle(medplum, newMessage);
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle,
+      });
+    });
+
+    expect(await screen.findByText('New message triggers scroll!')).toBeInTheDocument();
+
+    await act(async () => {
+      await sleep(100);
+    });
+
+    expect(mockScrollTo).toHaveBeenCalled();
+
+    const lastCall = mockScrollTo.mock.calls[mockScrollTo.mock.calls.length - 1];
+    expect(lastCall[0]).toEqual(
+      expect.objectContaining({
+        top: expect.any(Number),
+      })
+    );
+  });
 });
