@@ -615,11 +615,14 @@ describe('BaseChat', () => {
       payload: [{ contentString: 'Initial message' }],
     });
 
-    await setup({
-      title: 'Test Chat',
-      query: HOMER_DR_ALICE_CHAT_QUERY,
-      sendMessage: () => undefined,
-    }, medplum);
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
 
     expect(await screen.findByText('Initial message')).toBeInTheDocument();
 
@@ -657,5 +660,23 @@ describe('BaseChat', () => {
         top: expect.any(Number),
       })
     );
+  });
+
+  test('BaseChat returns null when profile is null', async () => {
+    const medplum = new MockClient({ profile: null });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(screen.queryByRole('heading', { name: /test chat/i })).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+    expect(screen.queryByText('Hello, Medplum!')).not.toBeInTheDocument();
   });
 });
