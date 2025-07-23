@@ -159,12 +159,12 @@ function MyComponent(): JSX.Element {
 
 ### Usage within an `Expo` app
 
-Usage within `Expo` / `React Native` has some special considerations. See: [@medplum/expo-polyfills README](https://github.com/medplum/medplum/blob/main/packages/expo-polyfills/README.md)
+Usage within `Expo` / `React Native` has some special considerations. See: [@medplum/expo-polyfills README](https://github.com/medplum/medplum-expo-polyfills)
 
 ### Examples
 
 - [`BaseChat` component from `@medplum/react`](https://github.com/medplum/medplum/blob/9e836dc42cde80b533d9a3fd2254aaa5c8444136/packages/react/src/chat/BaseChat/BaseChat.tsx#L122)
-- [`NotificationWidget` from `medplum-react-native-example`](https://github.com/medplum/medplum/blob/main/examples/medplum-react-native-example/src/Home.tsx#L143)
+- [`NotificationWidget` from `medplum-react-native-example`](https://github.com/medplum/medplum-react-native-example/blob/main/src/Home.tsx#L143)
 
 ## Subscription Extensions
 

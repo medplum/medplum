@@ -9,7 +9,6 @@ import { GraphiQL } from 'graphiql';
 import 'graphiql/style.css';
 import { JSX, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import 'regenerator-runtime/runtime.js';
 import { getConfig } from './config';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL
