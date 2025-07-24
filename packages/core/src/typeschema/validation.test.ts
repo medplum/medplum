@@ -116,6 +116,14 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(invalidFormat)).toThrow();
   });
 
+  test('Invalid string size', () => {
+    const bigString: Patient = {
+      resourceType: 'Patient',
+      name: [{ text: 'John Jacob Jingleheimer-Schmidt'.repeat(50_000) }],
+    };
+    expect(() => validateResource(bigString)).toThrow('String cannot be larger than 1 MB (Patient.name[0].text)');
+  });
+
   test('Invalid numeric value', () => {
     const patientExtension: Patient = {
       resourceType: 'Patient',

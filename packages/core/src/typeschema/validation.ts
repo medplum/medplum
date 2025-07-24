@@ -514,6 +514,13 @@ class ResourceValidator implements CrawlerVisitor {
       return;
     }
 
+    // FHIR strings have a maximum length of 1 MB
+    // @see https://hl7.org/fhir/R4/datatypes.html#string
+    if (str.length > 1024 * 1024) {
+      this.issues.push(createStructureIssue(path, 'String cannot be larger than 1 MB'));
+      return;
+    }
+
     const regex = validationRegexes[type];
     if (regex && !regex.exec(str)) {
       this.issues.push(createStructureIssue(path, 'Invalid ' + type + ' format'));
