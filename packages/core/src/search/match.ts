@@ -1,4 +1,4 @@
-import { CodeableConcept, Coding, Identifier, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { CodeableConcept, Identifier, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPath } from '../fhirpath/parse';
 import { isPeriod } from '../fhirpath/utils';
 import { PropertyType, globalSchema } from '../types';
@@ -131,7 +131,13 @@ function matchesStringFilter(
       if (searchParamElementType === PropertyType.Identifier) {
         match = matchesTokenIdentifierValue(resourceValue as Identifier, filter.operator, filterValue);
       } else if (searchParamElementType === PropertyType.CodeableConcept) {
-        match = matchesTokenCodeableConceptValue(resourceValue as Coding, filter.operator, filterValue);
+        match = matchesTokenCodeableConceptValue(resourceValue as CodeableConcept, filter.operator, filterValue);
+      } else if (searchParamElementType === PropertyType.Coding) {
+        match = matchesTokenCodeableConceptValue(
+          { coding: [resourceValue] } as CodeableConcept,
+          filter.operator,
+          filterValue
+        );
       } else {
         match = matchesStringValue(resourceValue, filter.operator, filterValue, asToken);
       }
