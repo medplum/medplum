@@ -1077,6 +1077,9 @@ async function tryExternalAuthLogin(
   let searchRequest: SearchRequest<ProfileResource>;
   const queryIndex = profileString.indexOf('?');
   if (queryIndex) {
+    // Search string can be either relative (e.g. `Patient?identifier=foo`),
+    // or absolute (e.g. `https://idp.example.com/fhir/Patient?identifier=bar`)
+    // Isolate the resource type and query string from any preceding URL parts
     const startIndex = profileString.lastIndexOf('/', queryIndex);
     searchRequest = parseSearchRequest(profileString.substring(startIndex + 1));
   } else {
