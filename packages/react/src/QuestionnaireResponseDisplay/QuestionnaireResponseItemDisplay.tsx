@@ -1,10 +1,10 @@
-import { JSX } from "react";
-import { Stack, Title, Text, TitleOrder } from "@mantine/core";
-import { QuestionnaireResponseItem, QuestionnaireResponseItemAnswer } from "@medplum/fhirtypes";
-import { QuantityDisplay } from "../QuantityDisplay/QuantityDisplay";
-import { CodeableConceptDisplay } from "../CodeableConceptDisplay/CodeableConceptDisplay";
-import { RangeDisplay } from "../RangeDisplay/RangeDisplay";
-import { formatDate } from "@medplum/core";
+import { Stack, Text, Title, TitleOrder } from '@mantine/core';
+import { formatDate } from '@medplum/core';
+import { QuestionnaireResponseItem, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
+import { JSX } from 'react';
+import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
+import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
+import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 
 export interface QuestionnaireResponseItemDisplayProps {
   item: QuestionnaireResponseItem;
@@ -15,16 +15,19 @@ export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseIte
   const { item, order } = props;
   const { text: title, answer, item: nestedAnswers } = item;
 
-
   function renderContent(): JSX.Element {
     if (answer && answer.length > 0) {
       return <AnswerDisplay key={answer[0].id} answer={answer[0]} />;
     } else if (nestedAnswers && nestedAnswers.length > 0) {
       return (
         <>
-          {nestedAnswers.map((nestedAnswer) =>
-            <QuestionnaireResponseItemDisplay key={nestedAnswer.id} item={nestedAnswer} order={Math.min(order + 1, 6) as TitleOrder} />
-          )}
+          {nestedAnswers.map((nestedAnswer) => (
+            <QuestionnaireResponseItemDisplay
+              key={nestedAnswer.id}
+              item={nestedAnswer}
+              order={Math.min(order + 1, 6) as TitleOrder}
+            />
+          ))}
         </>
       );
     } else {
@@ -45,7 +48,6 @@ interface AnswerDisplayProps {
 }
 
 function AnswerDisplay({ answer }: AnswerDisplayProps): JSX.Element {
-
   console.log(answer);
   if (!answer) {
     throw new Error('No answer');
@@ -75,4 +77,3 @@ function AnswerDisplay({ answer }: AnswerDisplayProps): JSX.Element {
       return <Text>{value.toString()}</Text>;
   }
 }
-

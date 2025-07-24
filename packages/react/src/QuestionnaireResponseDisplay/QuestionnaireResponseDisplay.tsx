@@ -13,9 +13,9 @@ export function QuestionnaireResponseDisplay(props: QuestionnaireResponseDisplay
 
   return (
     <Stack>
-    {questionnaireResponse?.item?.map((item) => (
-      <QuestionnaireResponseItemDisplay key={item.id} item={item} order={4} />
-    ))}
+      {questionnaireResponse?.item?.map((item) => (
+        <QuestionnaireResponseItemDisplay key={item.id} item={item} order={4} />
+      ))}
     </Stack>
   );
 }

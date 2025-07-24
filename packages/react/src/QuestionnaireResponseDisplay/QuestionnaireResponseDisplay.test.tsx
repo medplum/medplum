@@ -18,7 +18,6 @@ function setup(questionnaireResponse: QuestionnaireResponse | { reference: strin
 }
 
 describe('QuestionnaireResponseDisplay', () => {
-
   test('Renders basic string and integer answers', () => {
     setup({
       resourceType: 'QuestionnaireResponse',
@@ -589,4 +588,4 @@ describe('QuestionnaireResponseDisplay', () => {
     expect(screen.getByText('Boolean False')).toBeInTheDocument();
     expect(screen.getByText('False')).toBeInTheDocument();
   });
-}); 
+});
