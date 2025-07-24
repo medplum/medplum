@@ -1008,4 +1008,102 @@ describe('Search matching', () => {
     };
     expect(matchesSearchRequest(resource, search2)).toBe(false);
   });
+
+  test('Meta.tag', () => {
+    // This test demonstrates the bug where partial matching is incorrectly allowed
+    // for meta.tag searches when only exact matches should be permitted
+    const resource: Patient = {
+      resourceType: 'Patient',
+      meta: {
+        tag: [
+          {
+            system: 'http://example.com/tags',
+            code: 'SENSITIVE',
+            display: 'Sensitive Patient Data',
+          },
+          {
+            system: 'http://example.com/tags',
+            code: 'VIP',
+            display: 'VIP Patient',
+          },
+          {
+            code: 'EMERGENCY', // tag without system
+          },
+        ],
+      },
+    };
+
+    // Should match exact code
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'SENSITIVE' }],
+      })
+    ).toBe(true);
+
+    // Should match exact system|code
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'http://example.com/tags|SENSITIVE' }],
+      })
+    ).toBe(true);
+
+    // Should match system only (system|)
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'http://example.com/tags|' }],
+      })
+    ).toBe(true);
+
+    // CURRENT BUG: This currently matches due to partial matching (SENS is substring of SENSITIVE)
+    // but should NOT match - only exact matches should be allowed for token searches
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'SENS' }],
+      })
+    ).toBe(false); // This test will currently FAIL due to the bug
+
+    // CURRENT BUG: This currently matches due to partial matching
+    // but should NOT match - only exact matches should be allowed
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'PATIENT' }],
+      })
+    ).toBe(false); // This test will currently FAIL due to the bug
+
+    // Should NOT match different exact code
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'RESTRICTED' }],
+      })
+    ).toBe(false);
+
+    // Should NOT match wrong system
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.EQUALS, value: 'http://other.com/tags|SENSITIVE' }],
+      })
+    ).toBe(false);
+
+    // NOT_EQUALS tests
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.NOT_EQUALS, value: 'SENSITIVE' }],
+      })
+    ).toBe(false);
+
+    expect(
+      matchesSearchRequest(resource, {
+        resourceType: 'Patient',
+        filters: [{ code: '_tag', operator: Operator.NOT_EQUALS, value: 'RESTRICTED' }],
+      })
+    ).toBe(true);
+  });
 });
