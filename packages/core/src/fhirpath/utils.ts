@@ -521,6 +521,14 @@ export function toPeriod(input: unknown): Period | undefined {
 }
 
 function dateStringToInstantString(input: string, fill: string): string {
+  // For any input with a time zone offset, we need to normalize it to "Z" time zone.
+  // The time zone offset is valid, but for this function to work as expected, we need to normalize.
+  // Note that the "+" or "-" comes after the seconds, so we must check after the "T" character.
+  if (input.includes('+', 10) || input.includes('-', 10)) {
+    const date = new Date(input);
+    return date.toISOString().replace('Z', 'T00:00:00.000Z');
+  }
+
   // Input can be any subset of YYYY-MM-DDThh:mm:ss.sssZ
   return input + fill.substring(input.length);
 }
