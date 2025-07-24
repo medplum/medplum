@@ -1075,8 +1075,10 @@ async function tryExternalAuthLogin(
 
   // Profile string can be either a reference or a search string
   let searchRequest: SearchRequest<ProfileResource>;
-  if (profileString.includes('?')) {
-    searchRequest = parseSearchRequest(profileString);
+  const queryIndex = profileString.indexOf('?');
+  if (queryIndex) {
+    const startIndex = profileString.lastIndexOf('/', queryIndex);
+    searchRequest = parseSearchRequest(profileString.substring(startIndex + 1));
   } else {
     const [resourceType, id] = profileString.split('/');
     searchRequest = {
