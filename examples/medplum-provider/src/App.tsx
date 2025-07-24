@@ -12,6 +12,7 @@ import {
   IconClipboardCheck,
   IconMail,
   IconPencil,
+  IconPill,
   IconTimeDuration0,
   IconTransformPoint,
   IconUser,
@@ -26,6 +27,7 @@ import { IntegrationsPage } from './pages/IntegrationsPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
+import { DoseSpotMedicationSelect } from './pages/integrations/DoseSpotMedicationSelect';
 import { EncounterChart } from './pages/encounter/EncounterChart';
 import { EncounterModal } from './pages/encounter/EncounterModal';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
@@ -84,7 +86,10 @@ export function App(): JSX.Element | null {
         },
         {
           title: 'Integrations',
-          links: [{ icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' }],
+          links: [
+            { icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' },
+            { icon: <IconPill />, label: 'DoseSpot', href: '/integrations/dosespot' },
+          ],
         },
       ]}
       resourceTypeSearchDisabled={true}
@@ -148,6 +153,7 @@ export function App(): JSX.Element | null {
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/dosespot" element={<DoseSpotTab />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
+              <Route path="/integrations/dosespot" element={<DoseSpotMedicationSelect />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>

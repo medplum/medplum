@@ -1,6 +1,6 @@
 import { Box, Button, Group, Modal, Stack, Text, TextInput, Divider } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getIdentifier, normalizeErrorString } from '@medplum/core';
+import { getIdentifier, normalizeErrorString, NDC, RXNORM } from '@medplum/core';
 import {
   DOSESPOT_MEDICATION_HISTORY_BOT,
   DOSESPOT_PRESCRIPTIONS_SYNC_BOT,
@@ -15,11 +15,15 @@ import { JSX, useCallback, useState } from 'react';
 interface FormValues {
   medication: any;
   dosageDirections: string;
+  ndcCode: string;
+  medispanCode: string;
 }
 
 interface FormErrors {
   medication?: string;
   dosageDirections?: string;
+  ndcCode?: string;
+  medispanCode?: string;
 }
 
 export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): JSX.Element {
@@ -38,11 +42,13 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
   const [isSyncingPrescriptions, setIsSyncingPrescriptions] = useState(false);
   const [isSyncingHistory, setIsSyncingHistory] = useState(false);
   const [isAddingFavorite, setIsAddingFavorite] = useState(false);
-
+  const [search, setSearch] = useState<string>('');
   // Form state
   const [formValues, setFormValues] = useState<FormValues>({
     medication: null,
     dosageDirections: '',
+    ndcCode: '',
+    medispanCode: '',
   });
 
   const [formErrors, setFormErrors] = useState<FormErrors>({});
@@ -51,6 +57,8 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
     setFormValues({
       medication: null,
       dosageDirections: '',
+      ndcCode: '',
+      medispanCode: '',
     });
     setFormErrors({});
   };
@@ -96,9 +104,6 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
     // Validate form
     const errors: FormErrors = {};
     
-    if (!formValues.medication) {
-      errors.medication = 'Medication is required';
-    }
     if (!formValues.dosageDirections) {
       errors.dosageDirections = 'Dosage directions are required';
     }
@@ -111,19 +116,42 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
     setIsAddingFavorite(true);
     try {
       // Create an ActivityDefinition for the selected medication
+      const coding = [];
+
+      // Add RxNorm coding if medication is selected
+      if (formValues.medication) {
+        coding.push({
+          system: RXNORM,
+          code: formValues.medication.code,
+          display: formValues.medication.display,
+        });
+      }
+
+      // Add NDC coding if provided
+      if (formValues.ndcCode.trim()) {
+        coding.push({
+          system: NDC,
+          code: formValues.ndcCode.trim(),
+          display: formValues.ndcCode.trim(),
+        });
+      }
+
+      // Add Medispan coding if provided
+      if (formValues.medispanCode.trim()) {
+        coding.push({
+          system: 'http://www.medispan.com/',
+          code: formValues.medispanCode.trim(),
+          display: formValues.medispanCode.trim(),
+        });
+      }
+
       const activityDefinition = await medplum.createResource({
         resourceType: 'ActivityDefinition',
         status: 'active',
         kind: 'MedicationRequest',
         productCodeableConcept: {
-          text: formValues.medication.display,
-          coding: [
-            {
-              system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
-              code: formValues.medication.code,
-              display: formValues.medication.display,
-            },
-          ],
+          text: formValues.medication?.display || 'Medication',
+          coding,
         },
         dosage: formValues.dosageDirections ? [
           {
@@ -147,6 +175,15 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
       setIsAddingFavorite(false);
     }
   }, [medplum, formValues]);
+
+  const searchDoseSpotMedications = useCallback(async () => {
+    const botIdentifier = {
+      system: 'https://www.medplum.com/bots',
+      value: 'dosespot-search-medication-bot',
+    }
+    const medications = await medplum.executeBot(botIdentifier, { name: search || '' });
+    console.log(medications);
+  }, [medplum, search]);
 
   return (
     <>
@@ -241,15 +278,32 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
                 <Box>
                   <ValueSetAutocomplete
                     name="medication-selector"
-                    label="Select Medication by RxNorm Code"
+                    label="Select Medication by RxNorm Code (Optional)"
                     binding="http://www.nlm.nih.gov/research/umls/rxnorm/vs"
                     placeholder="Search for medications..."
                     onChange={(values) => setFormValues(prev => ({ ...prev, medication: values[0] }))}
                     error={formErrors.medication}
-                    required
                     maxValues={1}
                   />
                 </Box>
+
+                <Group gap="md">
+                  <TextInput
+                    label="NDC Code (Optional)"
+                    placeholder="e.g., 00071-1010-01"
+                    value={formValues.ndcCode}
+                    onChange={(e) => setFormValues(prev => ({ ...prev, ndcCode: e.target.value }))}
+                    error={formErrors.ndcCode}
+                  />
+                  <TextInput
+                    label="Medispan Code (Optional)"
+                    placeholder="e.g., 12345"
+                    value={formValues.medispanCode}
+                    onChange={(e) => setFormValues(prev => ({ ...prev, medispanCode: e.target.value }))}
+                    error={formErrors.medispanCode}
+                  />
+                  
+                </Group>
                 
                 <TextInput
                   label="Dosage Directions"
@@ -271,6 +325,20 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
                   </Button>
                 </Group>
               </Stack>
+            </Box>
+
+            <Box>
+              <Text size="lg" fw={600} mb="sm">Search DoseSpot Medications</Text>
+              <Text c="dimmed" mb="md">
+                Search for medications in DoseSpot.
+              </Text>
+              <TextInput
+                label="Search"
+                placeholder="Search for medications..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <Button onClick={searchDoseSpotMedications}>Search</Button>
             </Box>
           </Stack>
         </Box>

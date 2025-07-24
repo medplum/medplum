@@ -15,6 +15,21 @@ export const DOSESPOT_ADD_FAVORITE_MEDICATION_BOT: Identifier = {
   value: 'dosespot-add-favorite-medication-bot',
 };
 
+export const DOSESPOT_GET_FAVORITE_MEDICATIONS_BOT: Identifier = {
+  system: MEDPLUM_BOT_SYSTEM,
+  value: 'dosespot-get-favorite-medications-bot',
+};
+
+export const DOSESPOT_SEARCH_MEDICATIONS_BOT: Identifier = {
+  system: MEDPLUM_BOT_SYSTEM,
+  value: 'dosespot-search-medication-bot',
+};
+
+export const DOSESPOT_CREATE_COMPOUND_BOT: Identifier = {
+  system: MEDPLUM_BOT_SYSTEM,
+  value: 'dosespot-create-compound-bot',
+};
+
 export const DOSESPOT_MEDICATION_HISTORY_BOT: Identifier = {
   system: MEDPLUM_BOT_SYSTEM,
   value: 'dosespot-medication-history-bot',
