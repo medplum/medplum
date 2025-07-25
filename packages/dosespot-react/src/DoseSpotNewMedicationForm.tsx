@@ -16,7 +16,7 @@ import { DOSESPOT_DISPENSABLE_DRUG_ID_SYSTEM, DOSESPOT_REFILLS_SYSTEM } from './
 
 export interface DoseSpotNewMedicationFormProps {
   readonly searchMedications: (term: string) => Promise<Bundle<MedicationKnowledge> | undefined>;
-  readonly addFavoriteMedication: (medication: MedicationKnowledge) => Promise<MedicationKnowledge>;
+  readonly addFavoriteMedication: (medication: MedicationKnowledge) => Promise<void>;
   readonly loading?: boolean;
 }
 

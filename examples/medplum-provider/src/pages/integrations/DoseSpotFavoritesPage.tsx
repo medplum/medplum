@@ -21,21 +21,23 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
   const [modalOpened, setModalOpened] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const { addFavoriteMedication, addFavoriteMedicationLoading, searchMedications } = useDoseSpotClinicFormulary();
-
+  
 
   const handleAddFavoriteMedication = async (medication: MedicationKnowledge): Promise<void> => {
     try {
-      await addFavoriteMedication(medication);
-      setModalOpened(false);
-      showNotification({
-        title: 'Medication added to favorites',
-        message: 'The medication has been added to your favorites',
-        color: 'green',
-      });
-      // Wait a second then refresh the search
-      setTimeout(() => {
-        setRefreshKey(prev => prev + 1);
-      }, 1000);
+      const result = await addFavoriteMedication(medication);
+      if (result) {
+        setModalOpened(false);
+        showNotification({
+          title: 'Medication added to favorites',
+          message: 'The medication has been added to your favorites',
+          color: 'green',
+        });
+        // Wait a second then refresh the search
+        setTimeout(() => {
+          setRefreshKey(prev => prev + 1);
+        }, 1000);
+      }
     } catch (error) {
       showNotification({
         title: 'Error adding medication to favorites',

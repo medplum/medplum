@@ -7,7 +7,7 @@ export interface DoseSpotClinicFormularyReturn {
   readonly searchResults: Bundle<MedicationKnowledge> | undefined;
   readonly searchLoading: boolean;
   readonly searchMedications: (searchTerm: string) => Promise<Bundle<MedicationKnowledge> | undefined>;
-  readonly addFavoriteMedication: (medication: MedicationKnowledge) => Promise<void>;
+  readonly addFavoriteMedication: (medication: MedicationKnowledge) => Promise<MedicationKnowledge>;
   readonly addFavoriteMedicationLoading: boolean;
 }
 
@@ -20,7 +20,7 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
   const addFavoriteMedication = useCallback(async (medicationKnowledge: MedicationKnowledge) => {
     setAddFavoriteMedicationLoading(true);
     try {
-      const response = await medplum.executeBot(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, medicationKnowledge);
+      const response = await medplum.executeBot(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, medicationKnowledge) as MedicationKnowledge;
       return response;
     } finally {
       setAddFavoriteMedicationLoading(false);
