@@ -18,7 +18,19 @@ const options = {
   minifyIdentifiers: false,
   minifySyntax: true,
   sourcemap: true,
-  external: ['@medplum/core', '@medplum/mock', '@medplum/react', '@medplum/react-hooks', 'react'],
+  external: [
+    '@medplum/core', 
+    '@medplum/mock', 
+    '@medplum/react', 
+    '@medplum/react-hooks',
+    '@medplum/fhirtypes',
+    '@mantine/core',
+    '@mantine/hooks',
+    '@mantine/notifications',
+    '@mantine/react',
+    'react',
+    'react-dom'
+  ],
 };
 
 esbuild

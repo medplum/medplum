@@ -6,6 +6,10 @@ export const DOSESPOT_PATIENT_ID_SYSTEM = 'https://dosespot.com/patient-id';
 
 export const DOSESPOT_CLINIC_FAVORITE_ID_SYSTEM = 'https://dosespot.com/clinic-favorite-medication-id';
 
+export const DOSESPOT_DISPENSABLE_DRUG_ID_SYSTEM = 'https://dosespot.com/dispensable-drug-id';
+
+export const DOSESPOT_REFILLS_SYSTEM = 'https://dosespot.com/refills';
+
 export const DOSESPOT_PATIENT_SYNC_BOT: Identifier = { system: MEDPLUM_BOT_SYSTEM, value: 'dosespot-patient-sync-bot' };
 
 export const DOSESPOT_IFRAME_BOT: Identifier = { system: MEDPLUM_BOT_SYSTEM, value: 'dosespot-iframe-bot' };

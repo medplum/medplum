@@ -27,7 +27,7 @@ import { IntegrationsPage } from './pages/IntegrationsPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
-import { DoseSpotMedicationSelect } from './pages/integrations/DoseSpotMedicationSelect';
+import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { EncounterChart } from './pages/encounter/EncounterChart';
 import { EncounterModal } from './pages/encounter/EncounterModal';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
@@ -88,7 +88,7 @@ export function App(): JSX.Element | null {
           title: 'Integrations',
           links: [
             { icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' },
-            { icon: <IconPill />, label: 'DoseSpot', href: '/integrations/dosespot' },
+            ...(hasDoseSpot ? [{ icon: <IconPill />, label: 'DoseSpot', href: '/integrations/dosespot' }] : []),
           ],
         },
       ]}
@@ -153,7 +153,6 @@ export function App(): JSX.Element | null {
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/dosespot" element={<DoseSpotTab />} />
               <Route path="/integrations" element={<IntegrationsPage />} />
-              <Route path="/integrations/dosespot" element={<DoseSpotMedicationSelect />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>
@@ -161,6 +160,8 @@ export function App(): JSX.Element | null {
                 <Route path="edit" element={<ResourceEditPage />} />
                 <Route path="history" element={<ResourceHistoryPage />} />
               </Route>
+              {hasDoseSpot && <Route path="/integrations/dosespot" element={<DoseSpotFavoritesPage />} />}
+
             </>
           ) : (
             <>
