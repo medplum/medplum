@@ -95,7 +95,6 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
     const conditionToMove = updatedConditions.splice(conditionIndex, 1)[0];
     updatedConditions.splice(validRank - 1, 0, conditionToMove);
     setConditions(updatedConditions);
-
     onDiagnosisChange(
       updatedConditions.map((c, index) => ({
         condition: { reference: `Condition/${c.id}` },
@@ -120,6 +119,7 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
         rank: index + 1,
       }));
 
+      setConditions(conditions?.filter((c) => c.id !== condition.id) || []);
       onDiagnosisChange(reindexedDiagnosis || []);
     } catch (err) {
       showErrorNotification(err);
@@ -130,13 +130,15 @@ export const ConditionList = (props: ConditionListProps): JSX.Element => {
     try {
       const newCondition = await medplum.createResource(condition);
       if (encounter) {
-        onDiagnosisChange([
+        const updatedDiagnosis = [
           ...(encounter.diagnosis || []),
           {
             condition: { reference: `Condition/${newCondition.id}` },
             rank: encounter.diagnosis?.length ? encounter.diagnosis.length + 1 : 1,
           },
-        ]);
+        ];
+        setConditions([...(conditions || []), newCondition]);
+        onDiagnosisChange(updatedDiagnosis);
       }
     } catch (err) {
       showErrorNotification(err);
