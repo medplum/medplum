@@ -72,7 +72,6 @@ export class Hl7Connection extends Hl7Base {
         return;
       }
       const origMsgCtrlId = event.message.getSegment('MSA')?.getField(2)?.toString();
-      console.log(origMsgCtrlId);
       // If there is no message control ID, just return
       if (!origMsgCtrlId) {
         return;
