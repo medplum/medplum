@@ -343,7 +343,7 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.Annotation:
       return <AnnotationInput {...getComplexInputProps()} />;
     case PropertyType.Attachment:
-      return <AttachmentInput {...getComplexInputProps()} securityContext={securityContext} />;
+      return <AttachmentInput {...getComplexInputProps()} />;
     case PropertyType.CodeableConcept:
       return <CodeableConceptInput binding={binding?.valueSet} {...getComplexInputProps()} />;
     case PropertyType.Coding:
