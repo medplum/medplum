@@ -1,3 +1,4 @@
+import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import { JSX } from 'react';
 import { CardContainer } from '../components/CardContainer';
@@ -31,25 +32,26 @@ export default function CaseStudiesPage(): JSX.Element {
           <FeatureGrid columns={2}>
             <Feature title="AI" imgSrc="/img/icons/code.svg">
               Medplum is a best of breed EHR for integrating AI. Our customers build sophisticated, high-fidelity{' '}
-              <a href="/blog/tags/ai">AI driven applications</a> on an open source platform with much attention to
+              <Link href="/blog/tags/ai">AI driven applications</Link> on an open source platform with much attention to
               detail.
             </Feature>
             <Feature title="Specialty EHR" imgSrc="/img/icons/clinical-logic.svg">
               Medplum powers many specialty electronic health record systems and other purpose-built healthcare apps.
-              Implmentations include solutions across specialties: <a href="/blog/tags/pediatrics">pediatrics</a>,
-              <a href="/blog/tags/radiology">radiology</a>, <a href="/blog/ensage-case-study">geriatrics</a>, cardiac
-              care and more.
+              Implmentations include solutions across specialties: <Link href="/blog/tags/pediatrics">pediatrics</Link>,
+              <Link href="/blog/tags/radiology">radiology</Link>, <Link href="/blog/ensage-case-study">geriatrics</Link>
+              , cardiac care and more.
             </Feature>
             <Feature title="Diagnostics" imgSrc="/img/icons/cog-icon.svg">
               Diagnostics providers need highly programmable system that can manage data securely at scale. Medplum
-              provides solutions for <a href="/blog/ro-case-study">laboratory</a>, medical device, imaging,{' '}
-              <a href="/blog/codex-and-the-power-of-g10">remote patient monitoring</a> and more.
+              provides solutions for <Link href="/blog/ro-case-study">laboratory</Link>, medical device, imaging,{' '}
+              <Link href="/blog/codex-and-the-power-of-g10">remote patient monitoring</Link> and more.
             </Feature>
             <Feature title="Interop" imgSrc="/img/icons/interoperability.svg">
-              Reliable and transparent <a href="/docs/integration">integrations</a> are built on Medplum. Integrate many
-              systems on the same unified platform. Medplum's <a href="/docs/bots">bot framework</a> and{' '}
-              <a href="/docs/auth">industry standard authentication</a> offering speed up development and ensure that
-              integrations really work.
+              Reliable and transparent <Link href="/docs/integration">integrations</Link> are built on Medplum.
+              Integrate many systems on the same unified platform. Medplum's{' '}
+              <Link href="/docs/bots">bot framework</Link> and{' '}
+              <Link href="/docs/auth">industry standard authentication</Link> offering speed up development and ensure
+              that integrations really work.
             </Feature>
           </FeatureGrid>
         </Section>
@@ -57,8 +59,8 @@ export default function CaseStudiesPage(): JSX.Element {
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>Summer Health</h1>
             <p className={styles.heroText}>
-              <a href="blog/summer-case-study">Pediatric care</a> 24 hours a day via SMS. Their custom EHR features
-              streamlined charting using AI which enhances the experience for patients and clinicians.
+              <Link href="blog/summer-case-study">Pediatric care</Link> 24 hours a day via SMS. Their custom EHR
+              features streamlined charting using AI which enhances the experience for patients and clinicians.
             </p>
           </div>
           <div className={styles.heroImage}>
@@ -102,7 +104,7 @@ export default function CaseStudiesPage(): JSX.Element {
           <div className={styles.heroContent}>
             <h1 className={styles.heroTitle}>Rad AI</h1>
             <p className={styles.heroText}>
-              <a href="blog/radai-case-study">Omni Reporting</a> is an AI powered application that saves time and
+              <Link href="blog/radai-case-study">Omni Reporting</Link> is an AI powered application that saves time and
               reduces burnout - allowing clinicians to speak less, say more.
             </p>
           </div>

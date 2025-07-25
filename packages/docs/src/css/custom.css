@@ -9,17 +9,24 @@
   --ifm-font-size-base: 16px;
   --ifm-code-font-size: 95%;
   --ifm-font-family-base: 'Poppins', sans-serif;
-  --ifm-color-primary: #946af9;
-  --ifm-color-primary-dark: #8762dd;
-  --ifm-color-primary-darker: #7857c5;
-  --ifm-color-primary-darkest: #684bab;
-  --ifm-color-primary-light: #ab8af8;
-  --ifm-color-primary-lighter: #cab6fa;
-  --ifm-color-primary-lightest: #f4f0fe;
+  --ifm-color-primary: #800080;
+  --ifm-color-primary-dark: #c00000;
+  --ifm-color-primary-darker: #800000;
+  --ifm-color-primary-darkest: #400000;
+  --ifm-color-primary-light: #ff8080;
+  --ifm-color-primary-lighter: #ffa0a0;
+  --ifm-color-primary-lightest: #eddeff;
   --ifm-heading-color: #000000;
   --code-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
   --img-block-shadow: rgba(0, 0, 0, 0.15) 0 2px 4px;
   --docusaurus-highlighted-code-line-bg: rgba(72, 77, 91, 0.2);
+
+  --ifm-footer-background-color: #181818;
+  --ifm-footer-color: #909090;
+  --ifm-footer-title-color: #909090;
+  --ifm-footer-link-color: #ffffff;
+  --ifm-footer-link-hover-color: #c67dff;
+  --ifm-footer-padding-vertical: 80px;
 }
 
 [data-theme='dark'] {
@@ -256,4 +263,8 @@ span.DocSearch-Button-Keys {
   left: 0;
   width: 100%;
   height: 100%;
+}
+
+svg {
+  fill: currentColor;
 }
