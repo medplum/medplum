@@ -3,10 +3,10 @@ import {
   AccessPolicyInteraction,
   applyDefaultValuesToResource,
   canWriteResourceType,
+  createReference,
   isPopulated,
   satisfiedAccessPolicy,
   tryGetProfile,
-  createReference,
 } from '@medplum/core';
 import { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
@@ -14,9 +14,9 @@ import { IconAlertCircle, IconChevronDown, IconEdit, IconTrash } from '@tabler/i
 import cx from 'clsx';
 import { FormEvent, JSX, useEffect, useMemo, useState } from 'react';
 import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
 import classes from './ResourceForm.module.css';
-import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 
 export interface ResourceFormProps {
   readonly defaultValue: Partial<Resource> | Reference;
@@ -120,17 +120,19 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
           <TextInput name="id" defaultValue={value.id} disabled={true} />
         </FormSection>
       </Stack>
-      <ElementsContext.Provider value={{
-        path: '',
-        profileUrl: undefined,
-        elements: Object.create(null),
-        elementsByPath: Object.create(null),
-        getExtendedProps: () => ({ readonly: false, hidden: false }),
-        accessPolicyResource: accessPolicyResource,
-        debugMode: false,
-        isDefaultContext: true,
-        securityContext: createReference(value),
-      }}>
+      <ElementsContext.Provider
+        value={{
+          path: '',
+          profileUrl: undefined,
+          elements: Object.create(null),
+          elementsByPath: Object.create(null),
+          getExtendedProps: () => ({ readonly: false, hidden: false }),
+          accessPolicyResource: accessPolicyResource,
+          debugMode: false,
+          isDefaultContext: true,
+          securityContext: createReference(value),
+        }}
+      >
         <BackboneElementInput
           path={value.resourceType}
           valuePath={value.resourceType}
