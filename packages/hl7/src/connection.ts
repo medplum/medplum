@@ -85,23 +85,16 @@ export class Hl7Connection extends Hl7Base {
       if (!ackCode) {
         return;
       }
-      switch (queueItem.returnAck) {
-        case ReturnAckCategory.ANY:
-          // Always resolve if return ack type is any
-          break;
-        case ReturnAckCategory.APPLICATION:
-          // We should return and skip resolving if the ACK type doesn't start with an A (application ACK codes)
-          if (!ackCode.startsWith('A')) {
-            return;
-          }
-          break;
-        case ReturnAckCategory.COMMIT:
-          // We should return and skip resolving if the ACK type doesn't start with a C (commit ACK codes)
-          if (!ackCode.startsWith('C')) {
-            return;
-          }
-          break;
+
+      // If application-level return ACK or commit-level return ACK categories are specified, and the ACK code doesn't match, return
+      // Otherwise if ReturnAckCategory matches or is ANY, then resolve the queueItem promise
+      if (
+        (queueItem.returnAck === ReturnAckCategory.APPLICATION && !ackCode.startsWith('A')) ||
+        (queueItem.returnAck === ReturnAckCategory.COMMIT && !ackCode.startsWith('C'))
+      ) {
+        return;
       }
+
       // Resolve the promise if there is one pending for this message and we didn't exit already because the ACK type matches
       queueItem.resolve(event.message);
       this.pendingMessages.delete(origMsgCtrlId);
