@@ -3,7 +3,7 @@ import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, CodeSystemProperty, Coding, OperationDefinition } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
 import { getAuthenticatedContext } from '../../context';
-import { InsertQuery, SelectQuery } from '../sql';
+import { Condition, InsertQuery, SelectQuery } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import { findTerminologyResource, parentProperty, selectCoding } from './utils/terminology';
 
@@ -100,7 +100,10 @@ export async function importCodeSystem(
       display: c.display,
       isSynonym: false,
     }));
-    const query = new InsertQuery('Coding', rows).mergeOnConflict(['system', 'code']);
+    const query = new InsertQuery('Coding', rows).mergeOnConflict(
+      ['system', 'code'],
+      new Condition('synonymOf', '=', null)
+    );
     await query.execute(db);
   }
 
@@ -143,6 +146,7 @@ async function processProperties(
   // Batch lookup all Codings with associated properties
   const codingIds = await selectCoding(codeSystem.id, ...lookupCodes).execute(db);
   const rows: Record<string, any>[] = [];
+  const syonyms: Record<string, any>[] = [];
   for (const imported of importedProperties) {
     const sourceCodingId = codingIds.find((r) => r.code === imported.code)?.id;
     if (!sourceCodingId) {
@@ -157,10 +161,25 @@ async function processProperties(
       value: imported.value,
       target: property.type === 'code' && targetCodingId ? targetCodingId : null,
     });
+
+    if (property.uri === 'http://hl7.org/fhir/concept-properties#synonym') {
+      syonyms.push({
+        system: codeSystem.id,
+        code: imported.code,
+        display: imported.value,
+        isSynonym: true,
+        synonymOf: sourceCodingId,
+      });
+    }
   }
 
   const query = new InsertQuery('Coding_Property', rows).ignoreOnConflict();
   await query.execute(db);
+
+  if (syonyms.length) {
+    const query = new InsertQuery('Coding', syonyms).ignoreOnConflict();
+    await query.execute(db);
+  }
 }
 
 async function resolveProperty(
