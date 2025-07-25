@@ -1,4 +1,4 @@
-import { Hl7Message } from '@medplum/core';
+import { Hl7Message, OperationOutcomeError, validationError } from '@medplum/core';
 import iconv from 'iconv-lite';
 import net from 'node:net';
 import { Hl7Base } from './base';
@@ -10,9 +10,17 @@ import { Hl7CloseEvent, Hl7ErrorEvent, Hl7MessageEvent } from './events';
 
 export type Hl7MessageQueueItem = {
   message: Hl7Message;
-  resolve?: (reply: Hl7Message) => void;
-  reject?: (err: Error) => void;
+  resolve: (reply: Hl7Message) => void;
+  reject: (err: Error) => void;
+  returnAck: ReturnAckCategory;
 };
+
+export const ReturnAckCategory = {
+  ANY: 'any',
+  COMMIT: 'commit',
+  APPLICATION: 'application',
+} as const;
+export type ReturnAckCategory = (typeof ReturnAckCategory)[keyof typeof ReturnAckCategory];
 
 export const DEFAULT_ENCODING = 'utf-8';
 
@@ -21,7 +29,7 @@ export class Hl7Connection extends Hl7Base {
   encoding: string;
   enhancedMode: boolean;
   private chunks: Buffer[] = [];
-  private readonly messageQueue: Hl7MessageQueueItem[] = [];
+  private readonly pendingMessages: Map<string, Hl7MessageQueueItem> = new Map<string, Hl7MessageQueueItem>();
 
   constructor(socket: net.Socket, encoding: string = DEFAULT_ENCODING, enhancedMode = false) {
     super();
@@ -59,24 +67,49 @@ export class Hl7Connection extends Hl7Base {
       if (this.enhancedMode) {
         this.send(event.message.buildAck({ ackCode: 'CA' }));
       }
-      // Get the queue item at the head of the queue
-      const next = this.messageQueue.shift();
-      // If there isn't an item, then throw an error
-      if (!next) {
-        this.dispatchEvent(
-          new Hl7ErrorEvent(
-            new Error(`Received a message when no pending messages were in the queue. Message: ${event.message}`)
-          )
-        );
+      // Check if we have messages pending a response in the pending messages map
+      if (!this.pendingMessages.size) {
         return;
       }
-      // Resolve the promise if there is one pending for this message
-      next.resolve?.(event.message);
+      const origMsgCtrlId = event.message.getSegment('MSA')?.getField(2)?.toString();
+      console.log(origMsgCtrlId);
+      // If there is no message control ID, just return
+      if (!origMsgCtrlId) {
+        return;
+      }
+      const queueItem = this.pendingMessages.get(origMsgCtrlId);
+      if (!queueItem) {
+        return;
+      }
+      // Check the ACK type we should return on
+      const ackCode = event.message.getSegment('MSA')?.getField(1)?.toString()?.toUpperCase();
+      if (!ackCode) {
+        return;
+      }
+      switch (queueItem.returnAck) {
+        case ReturnAckCategory.ANY:
+          // Always resolve if return ack type is any
+          break;
+        case ReturnAckCategory.APPLICATION:
+          // We should return and skip resolving if the ACK type doesn't start with an A (application ACK codes)
+          if (!ackCode.startsWith('A')) {
+            return;
+          }
+          break;
+        case ReturnAckCategory.COMMIT:
+          // We should return and skip resolving if the ACK type doesn't start with a C (commit ACK codes)
+          if (!ackCode.startsWith('C')) {
+            return;
+          }
+          break;
+      }
+      // Resolve the promise if there is one pending for this message and we didn't exit already because the ACK type matches
+      queueItem.resolve(event.message);
+      this.pendingMessages.delete(origMsgCtrlId);
     });
   }
 
-  private sendImpl(reply: Hl7Message, queueItem: Hl7MessageQueueItem): void {
-    this.messageQueue.push(queueItem);
+  private sendImpl(reply: Hl7Message): void {
     const replyString = reply.toString();
     const replyBuffer = iconv.encode(replyString, this.encoding);
     const outputBuffer = Buffer.alloc(replyBuffer.length + 3);
@@ -88,13 +121,23 @@ export class Hl7Connection extends Hl7Base {
   }
 
   send(reply: Hl7Message): void {
-    this.sendImpl(reply, { message: reply });
+    this.sendImpl(reply);
   }
 
-  async sendAndWait(msg: Hl7Message): Promise<Hl7Message> {
+  async sendAndWait(msg: Hl7Message, returnAck?: ReturnAckCategory): Promise<Hl7Message> {
     return new Promise<Hl7Message>((resolve, reject) => {
-      const queueItem = { message: msg, resolve, reject };
-      this.sendImpl(msg, queueItem);
+      const msgCtrlId = msg.getSegment('MSH')?.getField(10)?.toString();
+      if (!msgCtrlId) {
+        reject(new OperationOutcomeError(validationError('Required field missing: MSH.10')));
+        return;
+      }
+      this.pendingMessages.set(msgCtrlId, {
+        message: msg,
+        resolve,
+        reject,
+        returnAck: returnAck ?? ReturnAckCategory.ANY,
+      });
+      this.sendImpl(msg);
     });
   }
 
