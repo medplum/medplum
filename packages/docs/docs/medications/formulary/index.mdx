@@ -230,6 +230,21 @@ For compounded medications with multiple dose variations, it's common to model a
 
 This hierarchical structure allows for efficient management of compound families while maintaining specific dosing information for each variation.
 
+```mermaid
+graph TD
+    A[Parent: Base Formula with Ingredients<br/>Semaglutide 2.5 mg/mL + Glycine 5 mg/mL] --> B[Child: 2.5mg Dose<br/>4 mL Volume<br/>Weekly Administration]
+    A --> C[Child: 1.7mg Dose<br/>3 mL Volume<br/>Weekly Administration]
+    A --> D[Child: 1mg Dose<br/>1.6 mL Volume<br/>Weekly Administration]
+
+    
+    style A fill:#e1f5fe
+
+    style B fill:#e8f5e8
+    style C fill:#e8f5e8
+    style D fill:#e8f5e8
+
+```
+
 <details>
   <summary>Example: Parent Compound Medication</summary>
 
