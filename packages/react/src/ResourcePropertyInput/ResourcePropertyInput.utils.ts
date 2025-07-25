@@ -7,6 +7,8 @@ export interface BaseInputProps {
   readonly valuePath?: string;
   /** (optional) OperationOutcome from the last attempted system action*/
   readonly outcome?: OperationOutcome;
+  /** (optional) Security context reference for file uploads */
+  readonly securityContext?: any;
 }
 
 export interface ComplexTypeInputProps<ValueType> extends BaseInputProps {
@@ -14,6 +16,8 @@ export interface ComplexTypeInputProps<ValueType> extends BaseInputProps {
   readonly defaultValue?: ValueType;
   readonly onChange?: (value: ValueType, propName?: string) => void;
   readonly disabled?: boolean;
+  /** (optional) Security context reference for file uploads */
+  readonly securityContext?: any;
 }
 
 export interface PrimitiveTypeInputProps {
