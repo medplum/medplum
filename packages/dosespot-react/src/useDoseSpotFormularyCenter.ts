@@ -1,7 +1,7 @@
+import { Bundle, MedicationKnowledge } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
 import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT } from './common';
-import { Bundle, MedicationKnowledge } from '@medplum/fhirtypes';
 
 export interface DoseSpotClinicFormularyReturn {
   readonly searchResults: Bundle<MedicationKnowledge> | undefined;
@@ -17,26 +17,32 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
   const [searchLoading, setSearchLoading] = useState(false);
   const [addFavoriteMedicationLoading, setAddFavoriteMedicationLoading] = useState(false);
 
-  const addFavoriteMedication = useCallback(async (medicationKnowledge: MedicationKnowledge) => {
-    setAddFavoriteMedicationLoading(true);
-    try {
-      const response = await medplum.executeBot(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, medicationKnowledge) as MedicationKnowledge;
-      return response;
-    } finally {
-      setAddFavoriteMedicationLoading(false);
-    }
-  }, [medplum]);
+  const addFavoriteMedication = useCallback(
+    async (medicationKnowledge: MedicationKnowledge) => {
+      setAddFavoriteMedicationLoading(true);
+      try {
+        const response = await medplum.executeBot(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, medicationKnowledge);
+        return response;
+      } finally {
+        setAddFavoriteMedicationLoading(false);
+      }
+    },
+    [medplum]
+  );
 
-  const searchMedications = useCallback(async (searchTerm: string): Promise<Bundle<MedicationKnowledge> | undefined> => {
-    setSearchLoading(true);
-    try {
-      const results = await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm });
-      setSearchResults(results);
-      return results;
-    } finally {
-      setSearchLoading(false);
-    }
-  }, [medplum]);
+  const searchMedications = useCallback(
+    async (searchTerm: string): Promise<Bundle<MedicationKnowledge> | undefined> => {
+      setSearchLoading(true);
+      try {
+        const results = await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm });
+        setSearchResults(results);
+        return results;
+      } finally {
+        setSearchLoading(false);
+      }
+    },
+    [medplum]
+  );
 
   return {
     //Search
@@ -44,8 +50,8 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
     searchLoading,
     searchMedications,
 
-    //Add Favorite Medication 
+    //Add Favorite Medication
     addFavoriteMedication,
-    addFavoriteMedicationLoading
+    addFavoriteMedicationLoading,
   };
-} 
+}

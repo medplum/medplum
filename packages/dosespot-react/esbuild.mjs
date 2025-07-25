@@ -19,9 +19,9 @@ const options = {
   minifySyntax: true,
   sourcemap: true,
   external: [
-    '@medplum/core', 
-    '@medplum/mock', 
-    '@medplum/react', 
+    '@medplum/core',
+    '@medplum/mock',
+    '@medplum/react',
     '@medplum/react-hooks',
     '@medplum/fhirtypes',
     '@mantine/core',
@@ -29,7 +29,7 @@ const options = {
     '@mantine/notifications',
     '@mantine/react',
     'react',
-    'react-dom'
+    'react-dom',
   ],
 };
 

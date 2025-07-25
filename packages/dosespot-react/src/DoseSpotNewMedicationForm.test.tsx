@@ -1,13 +1,13 @@
+import { MedicationKnowledge } from '@medplum/fhirtypes';
 import { act, render, screen } from '@testing-library/react';
 import { vi } from 'vitest';
-import { MedicationKnowledge } from '@medplum/fhirtypes';
 import { DoseSpotNewMedicationForm } from './DoseSpotNewMedicationForm';
 
 // Mock DoseSpotMedicationSelect
 vi.mock('./DoseSpotMedicationSelect', () => ({
   DoseSpotMedicationSelect: ({ onMedicationSelect }: any) => (
     <div data-testid="medication-select">
-      <button 
+      <button
         data-testid="select-medication"
         onClick={() => {
           const mockMedication: MedicationKnowledge = {
@@ -19,10 +19,10 @@ vi.mock('./DoseSpotMedicationSelect', () => ({
                 {
                   system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
                   code: '1191',
-                  display: 'Aspirin 325mg tablet'
-                }
-              ]
-            }
+                  display: 'Aspirin 325mg tablet',
+                },
+              ],
+            },
           };
           onMedicationSelect(mockMedication);
         }}
@@ -30,7 +30,7 @@ vi.mock('./DoseSpotMedicationSelect', () => ({
         Select Medication
       </button>
     </div>
-  )
+  ),
 }));
 
 // Mock Mantine components
@@ -53,7 +53,7 @@ vi.mock('@mantine/core', () => ({
     </div>
   ),
   Divider: () => <hr />,
-  MantineProvider: ({ children }: any) => <div>{children}</div>
+  MantineProvider: ({ children }: any) => <div>{children}</div>,
 }));
 
 describe('DoseSpotNewMedicationForm', () => {
@@ -79,7 +79,7 @@ describe('DoseSpotNewMedicationForm', () => {
         />
       );
     });
-    
+
     expect(screen.getByTestId('medication-select')).toBeDefined();
   });
-}); 
+});

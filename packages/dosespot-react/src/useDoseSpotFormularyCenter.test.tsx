@@ -1,9 +1,9 @@
+import { MedicationKnowledge } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '@testing-library/react';
 import { JSX } from 'react';
 import { vi } from 'vitest';
-import { MedicationKnowledge } from '@medplum/fhirtypes';
 import { useDoseSpotClinicFormulary } from './useDoseSpotFormularyCenter';
 
 function TestComponent(): JSX.Element {
@@ -47,10 +47,10 @@ describe('useDoseSpotClinicFormulary', () => {
           resource: {
             resourceType: 'MedicationKnowledge',
             id: 'med-1',
-            code: { text: 'Test Medication' }
-          } as MedicationKnowledge
-        }
-      ]
+            code: { text: 'Test Medication' },
+          } as MedicationKnowledge,
+        },
+      ],
     };
 
     const executeBotMock = vi.fn().mockResolvedValue(mockBundle);
@@ -78,7 +78,7 @@ describe('useDoseSpotClinicFormulary', () => {
     expect(executeBotMock).toHaveBeenCalledWith(
       expect.objectContaining({
         system: 'https://www.medplum.com/bots',
-        value: 'dosespot-search-medication-bot'
+        value: 'dosespot-search-medication-bot',
       }),
       { name: 'aspirin' }
     );
@@ -89,7 +89,7 @@ describe('useDoseSpotClinicFormulary', () => {
     const mockMedication: MedicationKnowledge = {
       resourceType: 'MedicationKnowledge',
       id: 'med-1',
-      code: { text: 'Test Medication' }
+      code: { text: 'Test Medication' },
     };
 
     const executeBotMock = vi.fn().mockResolvedValue(mockMedication);
@@ -117,10 +117,9 @@ describe('useDoseSpotClinicFormulary', () => {
     expect(executeBotMock).toHaveBeenCalledWith(
       expect.objectContaining({
         system: 'https://www.medplum.com/bots',
-        value: 'dosespot-add-favorite-medication-bot'
+        value: 'dosespot-add-favorite-medication-bot',
       }),
       mockMedication
     );
   });
-
-}); 
+});

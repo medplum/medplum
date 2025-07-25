@@ -1,37 +1,43 @@
-import React, { useCallback } from 'react';
-import { 
-  Box, 
-  Group, 
-  Text, 
-} from '@mantine/core';
-import { MedicationKnowledge, Bundle } from '@medplum/fhirtypes';
+import { Box, Group, Text } from '@mantine/core';
+import { Bundle, MedicationKnowledge } from '@medplum/fhirtypes';
 import { AsyncAutocomplete } from '@medplum/react';
+import React, { useCallback } from 'react';
 
 export interface DoseSpotMedicationSelectProps {
   searchMedications: (term: string) => Promise<Bundle<MedicationKnowledge> | undefined>;
   onMedicationSelect: (medication: MedicationKnowledge) => void;
 }
 
-export function DoseSpotMedicationSelect({ searchMedications, onMedicationSelect }: DoseSpotMedicationSelectProps): React.JSX.Element {
-  const loadOptions = useCallback(async (input: string): Promise<MedicationKnowledge[]> => {
-    if (!input.trim() || input.trim().length < 3) {
-      return [];
-    }
-    const results = await (searchMedications as (term: string) => Promise<Bundle<MedicationKnowledge> | undefined>)(input.trim());
+export function DoseSpotMedicationSelect({
+  searchMedications,
+  onMedicationSelect,
+}: DoseSpotMedicationSelectProps): React.JSX.Element {
+  const loadOptions = useCallback(
+    async (input: string): Promise<MedicationKnowledge[]> => {
+      if (!input.trim() || input.trim().length < 3) {
+        return [];
+      }
+      const results = await (searchMedications as (term: string) => Promise<Bundle<MedicationKnowledge> | undefined>)(
+        input.trim()
+      );
 
-    if (!results) {
-      return [];
-    }
-    
-    return results.entry?.map(entry => entry.resource as MedicationKnowledge).filter(Boolean) || [];
-    
-  }, [searchMedications]);
+      if (!results) {
+        return [];
+      }
 
-  const toOption = useCallback((medication: MedicationKnowledge) => ({
-    value: medication.id || '0',
-    label: getMedicationName(medication),
-    resource: medication
-  }), []);
+      return results.entry?.map((entry) => entry.resource as MedicationKnowledge).filter(Boolean) || [];
+    },
+    [searchMedications]
+  );
+
+  const toOption = useCallback(
+    (medication: MedicationKnowledge) => ({
+      value: medication.id || '0',
+      label: getMedicationName(medication),
+      resource: medication,
+    }),
+    []
+  );
 
   const getMedicationName = (medication: MedicationKnowledge): string => {
     return medication.code?.text || 'Unknown Medication';
@@ -41,7 +47,11 @@ export function DoseSpotMedicationSelect({ searchMedications, onMedicationSelect
     onMedicationSelect(medication);
   };
 
-  const itemComponent = (props: { resource: MedicationKnowledge; label: string; active?: boolean }): React.JSX.Element => {
+  const itemComponent = (props: {
+    resource: MedicationKnowledge;
+    label: string;
+    active?: boolean;
+  }): React.JSX.Element => {
     return (
       <Group gap="md" align="center">
         <Box style={{ flex: 1 }}>
@@ -69,4 +79,4 @@ export function DoseSpotMedicationSelect({ searchMedications, onMedicationSelect
       maxValues={1} // Only allow single selection
     />
   );
-} 
+}

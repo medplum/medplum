@@ -161,7 +161,6 @@ export function App(): JSX.Element | null {
                 <Route path="history" element={<ResourceHistoryPage />} />
               </Route>
               {hasDoseSpot && <Route path="/integrations/dosespot" element={<DoseSpotFavoritesPage />} />}
-
             </>
           ) : (
             <>

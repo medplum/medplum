@@ -28,12 +28,12 @@ interface FormErrors {
 
 export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): JSX.Element {
   const medplum = useMedplum();
-  
+
   // Calculate one year ago date
   const oneYearAgo = new Date();
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
   const oneYearAgoString = oneYearAgo.toISOString().split('T')[0];
-  
+
   const [prescriptionStartDate, setPrescriptionStartDate] = useState<string>(oneYearAgoString);
   const [prescriptionEndDate, setPrescriptionEndDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [historyStartDate, setHistoryStartDate] = useState<string>(oneYearAgoString);
@@ -103,7 +103,7 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
   const addFavoriteMedication = useCallback(async () => {
     // Validate form
     const errors: FormErrors = {};
-    
+
     if (!formValues.dosageDirections) {
       errors.dosageDirections = 'Dosage directions are required';
     }
@@ -153,16 +153,21 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
           text: formValues.medication?.display || 'Medication',
           coding,
         },
-        dosage: formValues.dosageDirections ? [
-          {
-            text: formValues.dosageDirections,
-          },
-        ] : undefined,
+        dosage: formValues.dosageDirections
+          ? [
+              {
+                text: formValues.dosageDirections,
+              },
+            ]
+          : undefined,
       });
 
       // Execute the bot with the ActivityDefinition as the input
-      const activityDefinitionResponse = await medplum.executeBot(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, activityDefinition);
-      
+      const activityDefinitionResponse = await medplum.executeBot(
+        DOSESPOT_ADD_FAVORITE_MEDICATION_BOT,
+        activityDefinition
+      );
+
       if (getIdentifier(activityDefinitionResponse, DOSESPOT_CLINIC_FAVORITE_ID_SYSTEM)) {
         showNotification({ color: 'green', title: 'Success', message: 'Favorite medication added successfully' });
         resetForm();
@@ -180,7 +185,7 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
     const botIdentifier = {
       system: 'https://www.medplum.com/bots',
       value: 'dosespot-search-medication-bot',
-    }
+    };
     const medications = await medplum.executeBot(botIdentifier, { name: search || '' });
     console.log(medications);
   }, [medplum, search]);
@@ -209,9 +214,12 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
         <Box>
           <Stack>
             <Box>
-                <Text size="lg" fw={600} mb="sm">Prescriptions Sync</Text>
+              <Text size="lg" fw={600} mb="sm">
+                Prescriptions Sync
+              </Text>
               <Text c="dimmed" mb="md">
-                Fetches recently completed and active prescriptions from DoseSpot for the specified date range and patient.
+                Fetches recently completed and active prescriptions from DoseSpot for the specified date range and
+                patient.
               </Text>
               <Group align="flex-end" justify="flex-start" gap="md">
                 <TextInput
@@ -226,11 +234,7 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
                   value={prescriptionEndDate}
                   onChange={(e) => setPrescriptionEndDate(e.target.value)}
                 />
-                <Button 
-                  onClick={syncPrescriptions} 
-                  loading={isSyncingPrescriptions}
-                  disabled={isSyncingPrescriptions}
-                >
+                <Button onClick={syncPrescriptions} loading={isSyncingPrescriptions} disabled={isSyncingPrescriptions}>
                   Sync Prescriptions
                 </Button>
               </Group>
@@ -239,7 +243,9 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
             <Divider my="lg" />
 
             <Box>
-              <Text size="lg" fw={600} mb="sm">Medication History Sync</Text>
+              <Text size="lg" fw={600} mb="sm">
+                Medication History Sync
+              </Text>
               <Text c="dimmed" mb="md">
                 Retrieves medication history from DoseSpot for this patient.
               </Text>
@@ -256,11 +262,7 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
                   value={historyEndDate}
                   onChange={(e) => setHistoryEndDate(e.target.value)}
                 />
-                <Button 
-                  onClick={syncHistory} 
-                  loading={isSyncingHistory}
-                  disabled={isSyncingHistory}
-                >
+                <Button onClick={syncHistory} loading={isSyncingHistory} disabled={isSyncingHistory}>
                   Sync History
                 </Button>
               </Group>
@@ -269,9 +271,12 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
             <Divider my="lg" />
 
             <Box>
-              <Text size="lg" fw={600} mb="sm">Add Favorite Medication</Text>
+              <Text size="lg" fw={600} mb="sm">
+                Add Favorite Medication
+              </Text>
               <Text c="dimmed" mb="md">
-                Adds a favorite medication to your clinic wide defaults within DoseSpot. Favorites will show up when you add a new prescription.
+                Adds a favorite medication to your clinic wide defaults within DoseSpot. Favorites will show up when you
+                add a new prescription.
               </Text>
 
               <Stack gap="lg">
@@ -281,7 +286,7 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
                     label="Select Medication by RxNorm Code (Optional)"
                     binding="http://www.nlm.nih.gov/research/umls/rxnorm/vs"
                     placeholder="Search for medications..."
-                    onChange={(values) => setFormValues(prev => ({ ...prev, medication: values[0] }))}
+                    onChange={(values) => setFormValues((prev) => ({ ...prev, medication: values[0] }))}
                     error={formErrors.medication}
                     maxValues={1}
                   />
@@ -292,30 +297,29 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
                     label="NDC Code (Optional)"
                     placeholder="e.g., 00071-1010-01"
                     value={formValues.ndcCode}
-                    onChange={(e) => setFormValues(prev => ({ ...prev, ndcCode: e.target.value }))}
+                    onChange={(e) => setFormValues((prev) => ({ ...prev, ndcCode: e.target.value }))}
                     error={formErrors.ndcCode}
                   />
                   <TextInput
                     label="Medispan Code (Optional)"
                     placeholder="e.g., 12345"
                     value={formValues.medispanCode}
-                    onChange={(e) => setFormValues(prev => ({ ...prev, medispanCode: e.target.value }))}
+                    onChange={(e) => setFormValues((prev) => ({ ...prev, medispanCode: e.target.value }))}
                     error={formErrors.medispanCode}
                   />
-                  
                 </Group>
-                
+
                 <TextInput
                   label="Dosage Directions"
                   placeholder="e.g., Take 1 tablet twice daily with food"
                   value={formValues.dosageDirections}
-                  onChange={(e) => setFormValues(prev => ({ ...prev, dosageDirections: e.target.value }))}
+                  onChange={(e) => setFormValues((prev) => ({ ...prev, dosageDirections: e.target.value }))}
                   error={formErrors.dosageDirections}
                   required
                 />
-                
+
                 <Group justify="flex-end" mt="md">
-                  <Button 
+                  <Button
                     onClick={addFavoriteMedication}
                     loading={isAddingFavorite}
                     disabled={isAddingFavorite}
@@ -328,7 +332,9 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
             </Box>
 
             <Box>
-              <Text size="lg" fw={600} mb="sm">Search DoseSpot Medications</Text>
+              <Text size="lg" fw={600} mb="sm">
+                Search DoseSpot Medications
+              </Text>
               <Text c="dimmed" mb="md">
                 Search for medications in DoseSpot.
               </Text>
