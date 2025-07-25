@@ -1,27 +1,16 @@
 import React, { useState } from 'react';
-import { 
-  Container, 
-  Title, 
-  Paper, 
-  Button, 
-  Modal, 
-  Group,
-} from '@mantine/core';
+import { Container, Title, Paper, Button, Modal, Group } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { 
-  DoseSpotNewMedicationForm,
-  useDoseSpotClinicFormulary,
-} from '@medplum/dosespot-react';
+import { DoseSpotNewMedicationForm, useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
 import { MedicationKnowledge } from '@medplum/fhirtypes';
 import { IconPlus } from '@tabler/icons-react';
-import { normalizeErrorString  } from '@medplum/core';
-import { SearchControl } from '@medplum/react';        
+import { normalizeErrorString } from '@medplum/core';
+import { SearchControl } from '@medplum/react';
 
 export function DoseSpotFavoritesPage(): React.JSX.Element {
   const [modalOpened, setModalOpened] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const { addFavoriteMedication, addFavoriteMedicationLoading, searchMedications } = useDoseSpotClinicFormulary();
-
 
   const handleAddFavoriteMedication = async (medication: MedicationKnowledge): Promise<void> => {
     try {
@@ -34,7 +23,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
       });
       // Wait a second then refresh the search
       setTimeout(() => {
-        setRefreshKey(prev => prev + 1);
+        setRefreshKey((prev) => prev + 1);
       }, 1000);
     } catch (error) {
       showNotification({
@@ -45,39 +34,32 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
     }
   };
 
-
-
   return (
     <Container size="xl" py="xl">
       <Paper mb="lg" p="md" withBorder shadow="sm">
         <Group justify="space-between" mb="md">
-          <Title order={2}>
-            DoseSpot Medication Favorites
-          </Title>
-          <Button 
-            leftSection={<IconPlus size={16} />}
-            onClick={() => setModalOpened(true)}
-          >
+          <Title order={2}>DoseSpot Medication Favorites</Title>
+          <Button leftSection={<IconPlus size={16} />} onClick={() => setModalOpened(true)}>
             Add Favorite Medication
           </Button>
         </Group>
 
-        <SearchControl 
+        <SearchControl
           key={refreshKey}
           search={{
             resourceType: 'MedicationKnowledge',
             filters: [
-                { 
-                  code: 'code',              
-                  operator: 'eq',
-                  value: 'https://dosespot.com/clinic-favorite-medication-id|'
-                }
+              {
+                code: 'code',
+                operator: 'eq',
+                value: 'https://dosespot.com/clinic-favorite-medication-id|',
+              },
             ],
-            fields: [ 'code', 'amount']
+            fields: ['code', 'amount'],
           }}
-          hideFilters = {true}
-          hideToolbar = {true}
-        /> 
+          hideFilters={true}
+          hideToolbar={true}
+        />
       </Paper>
 
       <Modal

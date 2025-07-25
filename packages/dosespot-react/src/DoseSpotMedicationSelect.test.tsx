@@ -1,13 +1,13 @@
-import { act, render, screen, fireEvent } from '@testing-library/react';
-import { vi } from 'vitest';
 import { MedicationKnowledge } from '@medplum/fhirtypes';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { vi } from 'vitest';
 import { DoseSpotMedicationSelect } from './DoseSpotMedicationSelect';
 
 // Mock AsyncAutocomplete
 vi.mock('@medplum/react', () => ({
   AsyncAutocomplete: ({ onChange, placeholder, minInputLength }: any) => (
     <div data-testid="async-autocomplete">
-      <input 
+      <input
         data-testid="medication-input"
         placeholder={placeholder}
         minLength={minInputLength}
@@ -22,22 +22,22 @@ vi.mock('@medplum/react', () => ({
                   {
                     system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
                     code: '1191',
-                    display: 'Aspirin 325mg tablet'
-                  }
-                ]
-              }
+                    display: 'Aspirin 325mg tablet',
+                  },
+                ],
+              },
             };
             onChange([mockMedication]);
           }
         }}
       />
     </div>
-  )
+  ),
 }));
 
 // Mock notifications
 vi.mock('@mantine/notifications', () => ({
-  showNotification: vi.fn()
+  showNotification: vi.fn(),
 }));
 
 describe('DoseSpotMedicationSelect', () => {
@@ -57,7 +57,7 @@ describe('DoseSpotMedicationSelect', () => {
         />
       );
     });
-    
+
     expect(screen.getByTestId('async-autocomplete')).toBeDefined();
     expect(screen.getByTestId('medication-input')).toBeDefined();
   });
@@ -71,7 +71,7 @@ describe('DoseSpotMedicationSelect', () => {
         />
       );
     });
-    
+
     expect(screen.getByPlaceholderText('Search medications...')).toBeDefined();
   });
 
@@ -84,18 +84,18 @@ describe('DoseSpotMedicationSelect', () => {
         />
       );
     });
-    
+
     const input = screen.getByTestId('medication-input');
     fireEvent.change(input, { target: { value: 'aspirin' } });
-    
+
     expect(mockOnMedicationSelect).toHaveBeenCalledWith(
       expect.objectContaining({
         resourceType: 'MedicationKnowledge',
         id: 'med-1',
         code: expect.objectContaining({
-          text: 'Aspirin 325mg tablet'
-        })
+          text: 'Aspirin 325mg tablet',
+        }),
       })
     );
   });
-}); 
+});

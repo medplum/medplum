@@ -1,18 +1,9 @@
-import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  Group,
-  Stack,
-  Text,
-  TextInput,
-  NumberInput,
-  Divider
-} from '@mantine/core';
-import { Bundle, MedicationKnowledge } from '@medplum/fhirtypes';
-import {DoseSpotMedicationSelect} from './DoseSpotMedicationSelect';  
+import { Box, Button, Divider, Group, NumberInput, Stack, Text, TextInput } from '@mantine/core';
 import { NDC, RXNORM } from '@medplum/core';
+import { Bundle, MedicationKnowledge } from '@medplum/fhirtypes';
+import React, { useState } from 'react';
 import { DOSESPOT_DISPENSABLE_DRUG_ID_SYSTEM, DOSESPOT_REFILLS_SYSTEM } from './common';
+import { DoseSpotMedicationSelect } from './DoseSpotMedicationSelect';
 
 export interface DoseSpotNewMedicationFormProps {
   readonly searchMedications: (term: string) => Promise<Bundle<MedicationKnowledge> | undefined>;
@@ -35,12 +26,11 @@ export function DoseSpotNewMedicationForm(props: DoseSpotNewMedicationFormProps)
   });
   const [medication, setMedication] = useState<MedicationKnowledge | null>(null);
 
-  
   const handleAddFavorite = async (): Promise<void> => {
     // Create the updated medication with proper FHIR structure
     const completedMedication: MedicationKnowledge = {
       ...medication,
-      resourceType: "MedicationKnowledge",
+      resourceType: 'MedicationKnowledge',
       // Use amount field for quantity
       amount: {
         value: formData.quantity,
@@ -49,8 +39,8 @@ export function DoseSpotNewMedicationForm(props: DoseSpotNewMedicationFormProps)
       extension: [
         {
           url: DOSESPOT_REFILLS_SYSTEM,
-          valueString: formData.refills.toString()
-        }
+          valueString: formData.refills.toString(),
+        },
       ],
       // Add administration guidelines for directions
       administrationGuidelines: [
@@ -60,19 +50,19 @@ export function DoseSpotNewMedicationForm(props: DoseSpotNewMedicationFormProps)
               dosage: [
                 {
                   patientInstruction: formData.directions,
-                }
+                },
               ],
               type: {
                 coding: [
                   {
                     system: 'https://dosespot.com/patient-instructions',
-                  }
-                ]
-              }
-            }
-          ]
-        }
-      ]
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
     };
 
     await addFavoriteMedication(completedMedication);
@@ -80,7 +70,7 @@ export function DoseSpotNewMedicationForm(props: DoseSpotNewMedicationFormProps)
   };
 
   const getCodingValue = (medication: MedicationKnowledge, system: string): string | undefined => {
-    return medication.code?.coding?.find(coding => coding.system === system)?.code;
+    return medication.code?.coding?.find((coding) => coding.system === system)?.code;
   };
 
   const ndcCode = medication ? getCodingValue(medication, NDC) : undefined;
@@ -88,18 +78,18 @@ export function DoseSpotNewMedicationForm(props: DoseSpotNewMedicationFormProps)
   const dosespotId = medication ? getCodingValue(medication, DOSESPOT_DISPENSABLE_DRUG_ID_SYSTEM) : undefined;
 
   return (
-    <Box 
+    <Box
       onKeyDown={async (e) => {
         if (e.key === 'Enter' && formData.directions && medication && !loading) {
           e.preventDefault();
           await handleAddFavorite();
         }
       }}
-    > 
+    >
       <DoseSpotMedicationSelect searchMedications={searchMedications} onMedicationSelect={setMedication} />
       {/* Medication Info */}
 
-      {medication && (         
+      {medication && (
         <Stack gap="md" mt="lg">
           <Divider />
           <Box>
@@ -120,9 +110,9 @@ export function DoseSpotNewMedicationForm(props: DoseSpotNewMedicationFormProps)
                 </Text>
               )}
             </Group>
-          </Box>  
+          </Box>
 
-          {/* Prescription Form */}        
+          {/* Prescription Form */}
           <Group grow>
             <NumberInput
               label="Quantity"
@@ -130,7 +120,7 @@ export function DoseSpotNewMedicationForm(props: DoseSpotNewMedicationFormProps)
               min={1}
               max={999}
               value={formData.quantity}
-              onChange={(value) => setFormData(prev => ({ ...prev, quantity: Number(value) || 1 }))}
+              onChange={(value) => setFormData((prev) => ({ ...prev, quantity: Number(value) || 1 }))}
               required
             />
             <NumberInput
@@ -139,7 +129,7 @@ export function DoseSpotNewMedicationForm(props: DoseSpotNewMedicationFormProps)
               min={0}
               max={12}
               value={formData.refills}
-              onChange={(value) => setFormData(prev => ({ ...prev, refills: Number(value) || 0 }))}
+              onChange={(value) => setFormData((prev) => ({ ...prev, refills: Number(value) || 0 }))}
             />
           </Group>
 
@@ -147,7 +137,7 @@ export function DoseSpotNewMedicationForm(props: DoseSpotNewMedicationFormProps)
             label="Directions"
             placeholder="e.g., Take 1 tablet by mouth daily"
             value={formData.directions}
-            onChange={(e) => setFormData(prev => ({ ...prev, directions: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, directions: e.target.value }))}
             required
           />
         </Stack>
@@ -155,15 +145,10 @@ export function DoseSpotNewMedicationForm(props: DoseSpotNewMedicationFormProps)
 
       {/* Action Buttons */}
       <Group justify="flex-end" gap="md" mt="md">
-        <Button 
-          onClick={handleAddFavorite}
-          disabled={!formData.directions || !medication || loading}
-          loading={loading}
-          
-        >
+        <Button onClick={handleAddFavorite} disabled={!formData.directions || !medication || loading} loading={loading}>
           Add Favorite
         </Button>
       </Group>
     </Box>
   );
-} 
+}
