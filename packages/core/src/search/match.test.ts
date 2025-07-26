@@ -3,6 +3,7 @@ import {
   ActivityDefinition,
   Bundle,
   DiagnosticReport,
+  Location,
   Observation,
   Patient,
   Practitioner,
@@ -839,7 +840,12 @@ describe('Search matching', () => {
         resourceType: 'Task',
         status: 'accepted',
         intent: 'order',
-        restriction: { period: { start: '2025-05-15T12:00:00.000Z' } },
+        restriction: {
+          period: {
+            start: '2025-05-15T12:00:00.000Z',
+            end: '2025-05-15T13:00:00.000Z',
+          },
+        },
       };
 
       test('true', () => {
@@ -1105,5 +1111,17 @@ describe('Search matching', () => {
         filters: [{ code: '_tag', operator: Operator.NOT_EQUALS, value: 'RESTRICTED' }],
       })
     ).toBe(true);
+  });
+
+  test('Special not implemented', () => {
+    const resource: Location = {
+      resourceType: 'Location',
+    };
+
+    const search1: SearchRequest = {
+      resourceType: 'Location',
+      filters: [{ code: 'near', operator: Operator.EQUALS, value: 'foo' }],
+    };
+    expect(matchesSearchRequest(resource, search1)).toBe(false);
   });
 });

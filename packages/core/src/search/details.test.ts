@@ -257,6 +257,9 @@ describe('SearchParameterDetails', () => {
     const details = getSearchParameterDetails('Condition', searchParam);
     expect(details).toBeDefined();
     expect(details.array).toBe(false);
+    expect(details.elementDefinitions).toHaveLength(1);
+    expect(details.elementDefinitions?.[0]?.type).toHaveLength(1);
+    expect(details.elementDefinitions?.[0]?.type?.[0]?.code).toBe('dateTime');
   });
 
   test('us-core-ethnicity', () => {

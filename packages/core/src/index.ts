@@ -34,6 +34,7 @@ export * from './outcomes';
 export * from './readablepromise';
 export * from './schema';
 export * from './search/details';
+export * from './search/ir';
 export * from './search/match';
 export * from './search/search';
 export * from './sftp';
