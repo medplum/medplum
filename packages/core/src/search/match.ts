@@ -1,15 +1,13 @@
-import { Resource } from '@medplum/fhirtypes';
+import { Period, Resource } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toPeriod, toTypedValue } from '../fhirpath/utils';
 import { TypedValue, globalSchema } from '../types';
 import {
-  DateSearchIR,
-  StringSearchIR,
-  TokenSearchIR,
-  convertToDateSearchIR,
-  convertToReferenceSearchIR,
-  convertToStringSearchIR,
-  convertToTokenSearchIR,
+  SearchableToken,
+  convertToSearchableDates,
+  convertToSearchableReferences,
+  convertToSearchableStrings,
+  convertToSearchableTokens,
 } from './ir';
 import { Filter, Operator, SearchRequest, splitSearchOnComma } from './search';
 
@@ -84,7 +82,7 @@ function matchesReferenceFilter(typedValues: TypedValue[], filter: Filter): bool
   }
 
   // Normalize the values array into reference strings
-  const references = convertToReferenceSearchIR(typedValues);
+  const references = convertToSearchableReferences(typedValues);
 
   for (const filterValue of splitSearchOnComma(filter.value)) {
     let match = references.includes(filterValue);
@@ -105,7 +103,7 @@ function matchesReferenceFilter(typedValues: TypedValue[], filter: Filter): bool
 }
 
 function matchesTokenFilter(typedValues: TypedValue[], filter: Filter): boolean {
-  const resourceValues = convertToTokenSearchIR(typedValues);
+  const resourceValues = convertToSearchableTokens(typedValues);
   const filterValues = splitSearchOnComma(filter.value);
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
@@ -121,7 +119,7 @@ function matchesTokenFilter(typedValues: TypedValue[], filter: Filter): boolean 
   return negated;
 }
 
-function matchesTokenValue(resourceValue: TokenSearchIR, filterValue: string): boolean {
+function matchesTokenValue(resourceValue: SearchableToken, filterValue: string): boolean {
   if (filterValue.includes('|')) {
     const [system, value] = filterValue.split('|').map((s) => s.toLowerCase());
     if (!system && !value) {
@@ -141,7 +139,7 @@ function matchesTokenValue(resourceValue: TokenSearchIR, filterValue: string): b
 }
 
 function matchesStringFilter(typedValues: TypedValue[], filter: Filter): boolean {
-  const resourceValues = convertToStringSearchIR(typedValues);
+  const resourceValues = convertToSearchableStrings(typedValues);
   const filterValues = splitSearchOnComma(filter.value);
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
@@ -157,12 +155,12 @@ function matchesStringFilter(typedValues: TypedValue[], filter: Filter): boolean
   return negated;
 }
 
-function matchesStringValue(resourceValue: StringSearchIR, filterValue: string): boolean {
+function matchesStringValue(resourceValue: string, filterValue: string): boolean {
   return resourceValue.toLowerCase().includes(filterValue.toLowerCase());
 }
 
 function matchesDateFilter(typedValues: TypedValue[], filter: Filter): boolean {
-  const resourceValues = convertToDateSearchIR(typedValues);
+  const resourceValues = convertToSearchableDates(typedValues);
   const filterValues = splitSearchOnComma(filter.value);
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
@@ -178,7 +176,7 @@ function matchesDateFilter(typedValues: TypedValue[], filter: Filter): boolean {
   return negated;
 }
 
-function matchesDateValue(resourceValue: DateSearchIR, operator: Operator, filterValue: string): boolean {
+function matchesDateValue(resourceValue: Period, operator: Operator, filterValue: string): boolean {
   if (!resourceValue) {
     return false;
   }

@@ -25,20 +25,13 @@ import { typedValueToString } from '../format';
 import { isReference, PropertyType, TypedValue } from '../types';
 import { getReferenceString, isResourceWithId, isString } from '../utils';
 
-export interface TokenSearchIR {
+export interface SearchableToken {
   readonly system: string | undefined;
   readonly value: string | undefined;
 }
 
-export type NumberSearchIR = number;
-export type DateSearchIR = Period;
-export type StringSearchIR = string;
-export type ReferenceSearchIR = string;
-export type QuantitySearchIR = Quantity;
-export type UriSearchIR = string;
-
-export function convertToNumberSearchIR(typedValues: TypedValue[]): NumberSearchIR[] {
-  const result: NumberSearchIR[] = [];
+export function convertToSearchableNumbers(typedValues: TypedValue[]): number[] {
+  const result: number[] = [];
   for (const typedValue of typedValues) {
     if (typeof typedValue.value === 'number') {
       result.push(typedValue.value);
@@ -47,8 +40,8 @@ export function convertToNumberSearchIR(typedValues: TypedValue[]): NumberSearch
   return result;
 }
 
-export function convertToDateSearchIR(typedValues: TypedValue[]): DateSearchIR[] {
-  const result: DateSearchIR[] = [];
+export function convertToSearchableDates(typedValues: TypedValue[]): Period[] {
+  const result: Period[] = [];
   for (const typedValue of typedValues) {
     const period = toPeriod(typedValue.value);
     if (period) {
@@ -58,8 +51,8 @@ export function convertToDateSearchIR(typedValues: TypedValue[]): DateSearchIR[]
   return result;
 }
 
-export function convertToStringSearchIR(typedValues: TypedValue[]): StringSearchIR[] {
-  const result: StringSearchIR[] = [];
+export function convertToSearchableStrings(typedValues: TypedValue[]): string[] {
+  const result: string[] = [];
   for (const typedValue of typedValues) {
     const str = typedValueToString(typedValue);
     if (str) {
@@ -69,8 +62,8 @@ export function convertToStringSearchIR(typedValues: TypedValue[]): StringSearch
   return result;
 }
 
-export function convertToReferenceSearchIR(typedValues: TypedValue[]): ReferenceSearchIR[] {
-  const result: ReferenceSearchIR[] = [];
+export function convertToSearchableReferences(typedValues: TypedValue[]): string[] {
+  const result: string[] = [];
   for (const typedValue of typedValues) {
     const { value } = typedValue;
     if (!value) {
@@ -96,21 +89,21 @@ export function convertToReferenceSearchIR(typedValues: TypedValue[]): Reference
   return result;
 }
 
-export function convertToQuantitySearchIR(typedValues: TypedValue[]): QuantitySearchIR[] {
-  const result: QuantitySearchIR[] = [];
+export function convertToSearchableQuantities(typedValues: TypedValue[]): Quantity[] {
+  const result: Quantity[] = [];
   for (const typedValue of typedValues) {
     const { value } = typedValue;
     if (typeof value === 'number') {
-      result.push({ value, unit: '', system: '', code: '' });
-    } else if (isQuantity(typedValue.value)) {
-      result.push(typedValue.value as Quantity);
+      result.push({ value });
+    } else if (isQuantity(value)) {
+      result.push(value);
     }
   }
   return result;
 }
 
-export function convertToUriSearchIR(typedValues: TypedValue[]): UriSearchIR[] {
-  const result: UriSearchIR[] = [];
+export function convertToSearchableUris(typedValues: TypedValue[]): string[] {
+  const result: string[] = [];
   for (const typedValue of typedValues) {
     if (isString(typedValue.value)) {
       result.push(typedValue.value);
@@ -124,8 +117,8 @@ export interface TokensContext {
   textSearchSystem?: string;
 }
 
-export function convertToTokenSearchIR(typedValues: TypedValue[], context: TokensContext = {}): TokenSearchIR[] {
-  const result: TokenSearchIR[] = [];
+export function convertToSearchableTokens(typedValues: TypedValue[], context: TokensContext = {}): SearchableToken[] {
+  const result: SearchableToken[] = [];
   for (const typedValue of typedValues) {
     buildTokens(context, result, typedValue);
   }
@@ -138,7 +131,7 @@ export function convertToTokenSearchIR(typedValues: TypedValue[], context: Token
  * @param result - The result array where tokens will be added.
  * @param typedValue - A typed value to be indexed for the search parameter.
  */
-function buildTokens(context: TokensContext, result: TokenSearchIR[], typedValue: TypedValue): void {
+function buildTokens(context: TokensContext, result: SearchableToken[], typedValue: TypedValue): void {
   const { type, value } = typedValue;
 
   switch (type) {
@@ -166,7 +159,7 @@ function buildTokens(context: TokensContext, result: TokenSearchIR[], typedValue
  * @param identifier - The Identifier object to be indexed.
  */
 function buildIdentifierToken(
-  result: TokenSearchIR[],
+  result: SearchableToken[],
   context: TokensContext,
   identifier: Identifier | undefined
 ): void {
@@ -183,7 +176,7 @@ function buildIdentifierToken(
  * @param codeableConcept - The CodeableConcept object to be indexed.
  */
 function buildCodeableConceptToken(
-  result: TokenSearchIR[],
+  result: SearchableToken[],
   context: TokensContext,
   codeableConcept: CodeableConcept | undefined
 ): void {
@@ -203,7 +196,7 @@ function buildCodeableConceptToken(
  * @param context - Context for building tokens.
  * @param coding - The Coding object to be indexed.
  */
-function buildCodingToken(result: TokenSearchIR[], context: TokensContext, coding: Coding | undefined): void {
+function buildCodingToken(result: SearchableToken[], context: TokensContext, coding: Coding | undefined): void {
   if (coding) {
     if (coding.display) {
       buildSimpleToken(result, context, context.textSearchSystem, coding.display);
@@ -219,7 +212,7 @@ function buildCodingToken(result: TokenSearchIR[], context: TokensContext, codin
  * @param contactPoint - The ContactPoint object to be indexed.
  */
 function buildContactPointToken(
-  result: TokenSearchIR[],
+  result: SearchableToken[],
   context: TokensContext,
   contactPoint: ContactPoint | undefined
 ): void {
@@ -236,7 +229,7 @@ function buildContactPointToken(
  * @param value - The token value.
  */
 function buildSimpleToken(
-  result: TokenSearchIR[],
+  result: SearchableToken[],
   context: TokensContext,
   system: string | undefined,
   value: string | undefined

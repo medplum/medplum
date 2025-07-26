@@ -1,6 +1,6 @@
 import {
   badRequest,
-  convertToTokenSearchIR,
+  convertToSearchableTokens,
   evalFhirPathTyped,
   getSearchParameterDetails,
   OperationOutcomeError,
@@ -102,7 +102,7 @@ export function buildTokensForSearchParameter(
     textSearchSystem,
   };
 
-  const tokens = convertToTokenSearchIR(typedValues, context);
+  const tokens = convertToSearchableTokens(typedValues, context);
   for (const token of tokens) {
     result.push({
       code: searchParam.code,

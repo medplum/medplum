@@ -5,13 +5,13 @@ import {
   arrayify,
   BackgroundJobInteraction,
   badRequest,
-  convertToDateSearchIR,
-  convertToNumberSearchIR,
-  convertToQuantitySearchIR,
-  convertToReferenceSearchIR,
-  convertToStringSearchIR,
-  convertToTokenSearchIR,
-  convertToUriSearchIR,
+  convertToSearchableDates,
+  convertToSearchableNumbers,
+  convertToSearchableQuantities,
+  convertToSearchableReferences,
+  convertToSearchableStrings,
+  convertToSearchableTokens,
+  convertToSearchableUris,
   createReference,
   deepClone,
   deepEquals,
@@ -1688,43 +1688,43 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // "Date" column is a special case that only applies when the following conditions are true:
       // 1. The search parameter is a date type.
       // 2. The underlying FHIR ElementDefinition referred to by the search parameter has a type of "date".
-      return convertToDateSearchIR(typedValues)
+      return convertToSearchableDates(typedValues)
         .map((p) => (p.start ?? p.end)?.substring(0, 10))
         .filter(Boolean) as string[];
     }
 
     if (details.type === SearchParameterType.DATETIME) {
-      return convertToDateSearchIR(typedValues)
+      return convertToSearchableDates(typedValues)
         .map((p) => p.start ?? p.end)
         .filter(Boolean) as string[];
     }
 
     if (searchParam.type === 'number') {
-      return convertToNumberSearchIR(typedValues).filter((n) => n !== undefined);
+      return convertToSearchableNumbers(typedValues).filter((n) => n !== undefined);
     }
 
     if (searchParam.type === 'quantity') {
-      return convertToQuantitySearchIR(typedValues)
+      return convertToSearchableQuantities(typedValues)
         .map((q) => q.value)
         .filter((q) => q !== undefined);
     }
 
     if (searchParam.type === 'reference') {
-      return convertToReferenceSearchIR(typedValues).map(truncateTextColumn).filter(Boolean);
+      return convertToSearchableReferences(typedValues).map(truncateTextColumn).filter(Boolean);
     }
 
     if (searchParam.type === 'token') {
-      return convertToTokenSearchIR(typedValues)
+      return convertToSearchableTokens(typedValues)
         .map((t) => truncateTextColumn(t.value))
         .filter(Boolean);
     }
 
     if (searchParam.type === 'string') {
-      return convertToStringSearchIR(typedValues).map(truncateTextColumn).filter(Boolean);
+      return convertToSearchableStrings(typedValues).map(truncateTextColumn).filter(Boolean);
     }
 
     if (searchParam.type === 'uri') {
-      return convertToUriSearchIR(typedValues).map(truncateTextColumn).filter(Boolean);
+      return convertToSearchableUris(typedValues).map(truncateTextColumn).filter(Boolean);
     }
 
     if (searchParam.type === 'special' || searchParam.type === 'composite') {

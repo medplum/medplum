@@ -1,104 +1,102 @@
 import { CodeableConcept, Coding, ContactPoint, Identifier } from '@medplum/fhirtypes';
 import { toTypedValue } from '../fhirpath/utils';
 import {
-  convertToDateSearchIR,
-  convertToNumberSearchIR,
-  convertToQuantitySearchIR,
-  convertToReferenceSearchIR,
-  convertToStringSearchIR,
-  convertToTokenSearchIR,
-  convertToUriSearchIR,
+  convertToSearchableDates,
+  convertToSearchableNumbers,
+  convertToSearchableQuantities,
+  convertToSearchableReferences,
+  convertToSearchableStrings,
+  convertToSearchableTokens,
+  convertToSearchableUris,
 } from './ir';
 
 describe('Search IR', () => {
-  test('convertToNumberSearchIR', () => {
-    expect(convertToNumberSearchIR([])).toStrictEqual([]);
-    expect(convertToNumberSearchIR([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
-    expect(convertToNumberSearchIR([toTypedValue('foo')])).toStrictEqual([]);
-    expect(convertToNumberSearchIR([toTypedValue(42)])).toStrictEqual([42]);
+  test('convertToSearchableNumbers', () => {
+    expect(convertToSearchableNumbers([])).toStrictEqual([]);
+    expect(convertToSearchableNumbers([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
+    expect(convertToSearchableNumbers([toTypedValue('foo')])).toStrictEqual([]);
+    expect(convertToSearchableNumbers([toTypedValue(42)])).toStrictEqual([42]);
   });
 
-  test('convertToDateSearchIR', () => {
-    expect(convertToDateSearchIR([])).toStrictEqual([]);
-    expect(convertToDateSearchIR([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
-    expect(convertToDateSearchIR([toTypedValue('foo')])).toStrictEqual([]);
-    expect(convertToDateSearchIR([{ type: 'date', value: '2020-01-01' }])).toStrictEqual([
+  test('convertToSearchableDates', () => {
+    expect(convertToSearchableDates([])).toStrictEqual([]);
+    expect(convertToSearchableDates([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
+    expect(convertToSearchableDates([toTypedValue('foo')])).toStrictEqual([]);
+    expect(convertToSearchableDates([{ type: 'date', value: '2020-01-01' }])).toStrictEqual([
       { start: '2020-01-01T00:00:00.000Z', end: '2020-01-01T23:59:59.999Z' },
     ]);
   });
 
-  test('convertToStringSearchIR', () => {
-    expect(convertToStringSearchIR([])).toStrictEqual([]);
-    expect(convertToStringSearchIR([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
-    expect(convertToStringSearchIR([toTypedValue('foo')])).toStrictEqual(['foo']);
-    expect(convertToStringSearchIR([toTypedValue(42)])).toStrictEqual(['42']);
+  test('convertToSearchableStrings', () => {
+    expect(convertToSearchableStrings([])).toStrictEqual([]);
+    expect(convertToSearchableStrings([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
+    expect(convertToSearchableStrings([toTypedValue('foo')])).toStrictEqual(['foo']);
+    expect(convertToSearchableStrings([toTypedValue(42)])).toStrictEqual(['42']);
   });
 
-  test('convertToReferenceSearchIR', () => {
-    expect(convertToReferenceSearchIR([])).toStrictEqual([]);
-    expect(convertToReferenceSearchIR([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
-    expect(convertToReferenceSearchIR([toTypedValue(42)])).toStrictEqual([]);
+  test('convertToSearchableReferences', () => {
+    expect(convertToSearchableReferences([])).toStrictEqual([]);
+    expect(convertToSearchableReferences([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
+    expect(convertToSearchableReferences([toTypedValue(42)])).toStrictEqual([]);
 
     // canonical string
-    expect(convertToReferenceSearchIR([{ type: 'canonical', value: 'foo' }])).toStrictEqual(['foo']);
+    expect(convertToSearchableReferences([{ type: 'canonical', value: 'foo' }])).toStrictEqual(['foo']);
 
     // normal reference
-    expect(convertToReferenceSearchIR([{ type: 'Reference', value: { reference: 'Patient/123' } }])).toStrictEqual([
+    expect(convertToSearchableReferences([{ type: 'Reference', value: { reference: 'Patient/123' } }])).toStrictEqual([
       'Patient/123',
     ]);
 
     // inline resource
     expect(
-      convertToReferenceSearchIR([{ type: 'Patient', value: { resourceType: 'Patient', id: '456' } }])
+      convertToSearchableReferences([{ type: 'Patient', value: { resourceType: 'Patient', id: '456' } }])
     ).toStrictEqual(['Patient/456']);
 
     // identifier
     expect(
-      convertToReferenceSearchIR([
+      convertToSearchableReferences([
         { type: 'Reference', value: { identifier: { system: 'https://example.com', value: '789' } } },
       ])
     ).toStrictEqual(['identifier:https://example.com|789']);
   });
 
-  test('convertToQuantitySearchIR', () => {
-    expect(convertToQuantitySearchIR([])).toStrictEqual([]);
-    expect(convertToQuantitySearchIR([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
-    expect(convertToQuantitySearchIR([toTypedValue(42)])).toStrictEqual([
-      { value: 42, unit: '', system: '', code: '' },
-    ]);
-    expect(convertToQuantitySearchIR([{ type: 'Quantity', value: { value: 56, unit: 'kg' } }])).toStrictEqual([
+  test('convertToSearchableQuantities', () => {
+    expect(convertToSearchableQuantities([])).toStrictEqual([]);
+    expect(convertToSearchableQuantities([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
+    expect(convertToSearchableQuantities([toTypedValue(42)])).toStrictEqual([{ value: 42 }]);
+    expect(convertToSearchableQuantities([{ type: 'Quantity', value: { value: 56, unit: 'kg' } }])).toStrictEqual([
       { value: 56, unit: 'kg' },
     ]);
   });
 
-  test('convertToUriSearchIR', () => {
-    expect(convertToUriSearchIR([])).toStrictEqual([]);
-    expect(convertToUriSearchIR([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
-    expect(convertToUriSearchIR([toTypedValue(42)])).toStrictEqual([]);
-    expect(convertToUriSearchIR([toTypedValue('foo')])).toStrictEqual(['foo']);
+  test('convertToSearchableUris', () => {
+    expect(convertToSearchableUris([])).toStrictEqual([]);
+    expect(convertToSearchableUris([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
+    expect(convertToSearchableUris([toTypedValue(42)])).toStrictEqual([]);
+    expect(convertToSearchableUris([toTypedValue('foo')])).toStrictEqual(['foo']);
   });
 
-  test('convertToTokenSearchIR', () => {
-    expect(convertToTokenSearchIR([])).toStrictEqual([]);
-    expect(convertToTokenSearchIR([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
+  test('convertToSearchableTokens', () => {
+    expect(convertToSearchableTokens([])).toStrictEqual([]);
+    expect(convertToSearchableTokens([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
 
     // string
-    expect(convertToTokenSearchIR([toTypedValue('foo')])).toStrictEqual([{ system: undefined, value: 'foo' }]);
+    expect(convertToSearchableTokens([toTypedValue('foo')])).toStrictEqual([{ system: undefined, value: 'foo' }]);
     expect(
-      convertToTokenSearchIR([toTypedValue('foo'), toTypedValue('foo'), toTypedValue('foo'), toTypedValue('foo')])
+      convertToSearchableTokens([toTypedValue('foo'), toTypedValue('foo'), toTypedValue('foo'), toTypedValue('foo')])
     ).toStrictEqual([{ system: undefined, value: 'foo' }]);
-    expect(convertToTokenSearchIR([toTypedValue(42)])).toStrictEqual([{ system: undefined, value: '42' }]);
+    expect(convertToSearchableTokens([toTypedValue(42)])).toStrictEqual([{ system: undefined, value: '42' }]);
 
     // Identifier
     expect(
-      convertToTokenSearchIR([
+      convertToSearchableTokens([
         { type: 'Identifier', value: { system: 'https://example.com', value: '789' } satisfies Identifier },
       ])
     ).toStrictEqual([{ system: 'https://example.com', value: '789' }]);
 
     // Identifier type text
     expect(
-      convertToTokenSearchIR([
+      convertToSearchableTokens([
         {
           type: 'Identifier',
           value: { system: 'https://example.com', value: '789', type: { text: 'foo' } } satisfies Identifier,
@@ -111,7 +109,7 @@ describe('Search IR', () => {
 
     // CodeableConcept
     expect(
-      convertToTokenSearchIR([
+      convertToSearchableTokens([
         {
           type: 'CodeableConcept',
           value: { coding: [{ system: 'https://example.com', code: '789' }] } satisfies CodeableConcept,
@@ -121,7 +119,7 @@ describe('Search IR', () => {
 
     // CodeableConcept with text
     expect(
-      convertToTokenSearchIR([
+      convertToSearchableTokens([
         {
           type: 'CodeableConcept',
           value: { coding: [{ system: 'https://example.com', code: '789' }], text: 'foo' } satisfies CodeableConcept,
@@ -134,7 +132,7 @@ describe('Search IR', () => {
 
     // CodeableConcept only text
     expect(
-      convertToTokenSearchIR([
+      convertToSearchableTokens([
         {
           type: 'CodeableConcept',
           value: { text: 'foo' } satisfies CodeableConcept,
@@ -142,16 +140,26 @@ describe('Search IR', () => {
       ])
     ).toStrictEqual([{ system: undefined, value: 'foo' }]);
 
+    // CodeableConcept empty
+    expect(
+      convertToSearchableTokens([
+        {
+          type: 'CodeableConcept',
+          value: {} satisfies CodeableConcept,
+        },
+      ])
+    ).toStrictEqual([]);
+
     // Coding
     expect(
-      convertToTokenSearchIR([
+      convertToSearchableTokens([
         { type: 'Coding', value: { system: 'https://example.com', code: '789' } satisfies Coding },
       ])
     ).toStrictEqual([{ system: 'https://example.com', value: '789' }]);
 
     // Coding with display
     expect(
-      convertToTokenSearchIR([
+      convertToSearchableTokens([
         { type: 'Coding', value: { system: 'https://example.com', code: '789', display: 'foo' } satisfies Coding },
       ])
     ).toStrictEqual([
@@ -161,7 +169,7 @@ describe('Search IR', () => {
 
     // ContactPoint
     expect(
-      convertToTokenSearchIR([
+      convertToSearchableTokens([
         { type: 'ContactPoint', value: { system: 'phone', value: '789' } satisfies ContactPoint },
       ])
     ).toStrictEqual([{ system: 'phone', value: '789' }]);
