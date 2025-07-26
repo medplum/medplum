@@ -502,19 +502,18 @@ export function toPeriod(input: unknown): Period | undefined {
     return undefined;
   }
 
-  if (isDateString(input)) {
+  if (isDateString(input) || isDateTimeString(input)) {
     return {
       start: dateStringToInstantString(input, '0000-00-00T00:00:00.000Z'),
       end: dateStringToInstantString(input, 'xxxx-12-31T23:59:59.999Z'),
     };
   }
 
-  if (isDateTimeString(input)) {
-    return { start: input, end: input };
-  }
-
   if (isPeriod(input)) {
-    return input;
+    return {
+      start: input.start ? dateStringToInstantString(input.start, '0000-00-00T00:00:00.000Z') : undefined,
+      end: input.end ? dateStringToInstantString(input.end, 'xxxx-12-31T23:59:59.999Z') : undefined,
+    };
   }
 
   return undefined;
@@ -525,8 +524,7 @@ function dateStringToInstantString(input: string, fill: string): string {
   // The time zone offset is valid, but for this function to work as expected, we need to normalize.
   // Note that the "+" or "-" comes after the seconds, so we must check after the "T" character.
   if (input.includes('+', 10) || input.includes('-', 10)) {
-    const date = new Date(input);
-    return date.toISOString().replace('Z', 'T00:00:00.000Z');
+    return new Date(input).toISOString();
   }
 
   // Input can be any subset of YYYY-MM-DDThh:mm:ss.sssZ

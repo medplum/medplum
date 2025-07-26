@@ -73,6 +73,9 @@ export function convertToReferenceSearchIR(typedValues: TypedValue[]): Reference
   const result: ReferenceSearchIR[] = [];
   for (const typedValue of typedValues) {
     const { value } = typedValue;
+    if (!value) {
+      continue;
+    }
     if (isString(value)) {
       // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
       // This is a reference string that is not a FHIR reference
@@ -107,7 +110,7 @@ export function convertToQuantitySearchIR(typedValues: TypedValue[]): QuantitySe
 }
 
 export function convertToUriSearchIR(typedValues: TypedValue[]): UriSearchIR[] {
-  const result: StringSearchIR[] = [];
+  const result: UriSearchIR[] = [];
   for (const typedValue of typedValues) {
     if (isString(typedValue.value)) {
       result.push(typedValue.value);
