@@ -128,16 +128,16 @@ function matchesTokenValue(resourceValue: TokenSearchIR, filterValue: string): b
       return false;
     } else if (!system) {
       // [parameter]=|[code]: the value of [code] matches a Coding.code or Identifier.value, and the Coding/Identifier has no system property
-      return !resourceValue.system && resourceValue.code?.toLowerCase() === value;
+      return !resourceValue.system && resourceValue.value?.toLowerCase() === value;
     }
 
     // [parameter]=[system]|: any element where the value of [system] matches the system property of the Identifier or Coding
     // [parameter]=[system]|[code]: the value of [code] matches a Coding.code or Identifier.value, and the value of [system] matches the system property of the Identifier or Coding
-    return resourceValue.system?.toLowerCase() === system && (!value || resourceValue.code?.toLowerCase() === value);
+    return resourceValue.system?.toLowerCase() === system && (!value || resourceValue.value?.toLowerCase() === value);
   }
 
   // [parameter]=[code]: the value of [code] matches a Coding.code or Identifier.value irrespective of the value of the system property
-  return resourceValue.code?.toLowerCase() === filterValue.toLowerCase();
+  return resourceValue.value?.toLowerCase() === filterValue.toLowerCase();
 }
 
 function matchesStringFilter(typedValues: TypedValue[], filter: Filter): boolean {

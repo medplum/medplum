@@ -5,11 +5,17 @@ import {
   arrayify,
   BackgroundJobInteraction,
   badRequest,
+  convertToDateSearchIR,
+  convertToNumberSearchIR,
+  convertToQuantitySearchIR,
+  convertToReferenceSearchIR,
+  convertToStringSearchIR,
+  convertToTokenSearchIR,
+  convertToUriSearchIR,
   createReference,
   deepClone,
   deepEquals,
   DEFAULT_MAX_SEARCH_COUNT,
-  evalFhirPath,
   evalFhirPathTyped,
   Filter,
   forbidden,
@@ -21,7 +27,6 @@ import {
   isNotFound,
   isObject,
   isOk,
-  isReference,
   isResource,
   isResourceWithId,
   isUUID,
@@ -45,6 +50,7 @@ import {
   sleep,
   stringify,
   toPeriod,
+  toTypedValue,
   TypedValue,
   validateResource,
   validateResourceType,
@@ -1632,7 +1638,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    const values = evalFhirPath(impl.parsedExpression, resource);
+    const typedValues = evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
 
     let columnImpl: ColumnSearchParameterImplementation | undefined;
     if (impl.searchStrategy === 'token-column') {
@@ -1643,22 +1649,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     if (columnImpl) {
-      let columnValue = undefined;
-      if (values.length > 0) {
-        if (columnImpl.array) {
-          columnValue = values.map((v) => this.buildColumnValue(searchParam, columnImpl, v));
-        } else {
-          columnValue = this.buildColumnValue(searchParam, columnImpl, values[0]);
-        }
+      const columnValues = this.buildColumnValues(searchParam, columnImpl, typedValues);
+      if (columnImpl.array) {
+        columns[columnImpl.columnName] = columnValues.length > 0 ? columnValues : undefined;
+      } else {
+        columns[columnImpl.columnName] = columnValues[0];
       }
-      columns[columnImpl.columnName] = columnValue;
     }
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
     // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
     if (searchParam.id === 'MeasureReport-period') {
-      columns['period_range'] = this.buildPeriodColumn(values[0]);
+      columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
     }
   }
 
@@ -1668,90 +1671,68 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * If the search parameter is not an array, then this method will be called for the value.
    * @param searchParam - The search parameter definition.
    * @param details - The extra search parameter details.
-   * @param value - The FHIR resource value.
+   * @param typedValues - The FHIR resource value.
    * @returns The column value.
    */
-  private buildColumnValue(searchParam: SearchParameter, details: SearchParameterDetails, value: any): any {
+  private buildColumnValues(
+    searchParam: SearchParameter,
+    details: SearchParameterDetails,
+    typedValues: TypedValue[]
+  ): (boolean | number | string | undefined)[] {
     if (details.type === SearchParameterType.BOOLEAN) {
-      return value === true || value === 'true';
+      const value = typedValues[0]?.value;
+      return [value === true || value === 'true'];
     }
 
     if (details.type === SearchParameterType.DATE) {
-      return this.buildDateColumn(value);
+      // "Date" column is a special case that only applies when the following conditions are true:
+      // 1. The search parameter is a date type.
+      // 2. The underlying FHIR ElementDefinition referred to by the search parameter has a type of "date".
+      return convertToDateSearchIR(typedValues)
+        .map((p) => (p.start ?? p.end)?.substring(0, 10))
+        .filter(Boolean) as string[];
     }
 
     if (details.type === SearchParameterType.DATETIME) {
-      return this.buildDateTimeColumn(value);
+      return convertToDateSearchIR(typedValues)
+        .map((p) => p.start ?? p.end)
+        .filter(Boolean) as string[];
+    }
+
+    if (searchParam.type === 'number') {
+      return convertToNumberSearchIR(typedValues).filter((n) => n !== undefined);
     }
 
     if (searchParam.type === 'quantity') {
-      return this.buildQuantityColumn(value);
+      return convertToQuantitySearchIR(typedValues)
+        .map((q) => q.value)
+        .filter((q) => q !== undefined);
     }
 
-    // Handle all string values specially to ensure they are truncated to the correct length
-    let stringValue: string | undefined;
     if (searchParam.type === 'reference') {
-      stringValue = this.buildReferenceColumns(value);
-    } else if (searchParam.type === 'token') {
-      stringValue = this.buildTokenColumn(value);
-    } else {
-      stringValue = typeof value === 'string' ? value : stringify(value);
+      return convertToReferenceSearchIR(typedValues).map(truncateTextColumn).filter(Boolean);
     }
 
-    if (!stringValue) {
-      return undefined;
+    if (searchParam.type === 'token') {
+      return convertToTokenSearchIR(typedValues)
+        .map((t) => truncateTextColumn(t.value))
+        .filter(Boolean);
     }
 
-    return truncateTextColumn(stringValue);
-  }
-
-  /**
-   * Builds the column value for a date parameter.
-   * Tries to parse the date string.
-   * Silently ignores failure.
-   * @param value - The FHIRPath result.
-   * @returns The date string if parsed; undefined otherwise.
-   */
-  private buildDateColumn(value: any): string | undefined {
-    // "Date" column is a special case that only applies when the following conditions are true:
-    // 1. The search parameter is a date type.
-    // 2. The underlying FHIR ElementDefinition referred to by the search parameter has a type of "date".
-    if (typeof value === 'string') {
-      try {
-        const date = new Date(value);
-        return date.toISOString().substring(0, 10);
-      } catch (_err) {
-        // Silent ignore
-      }
+    if (searchParam.type === 'string') {
+      return convertToStringSearchIR(typedValues).map(truncateTextColumn).filter(Boolean);
     }
-    return undefined;
-  }
 
-  /**
-   * Builds the column value for a date/time parameter.
-   * Tries to parse the date string.
-   * Silently ignores failure.
-   * @param value - The FHIRPath result.
-   * @returns The date/time string if parsed; undefined otherwise.
-   */
-  private buildDateTimeColumn(value: any): string | undefined {
-    if (typeof value === 'string') {
-      try {
-        const date = new Date(value);
-        return date.toISOString();
-      } catch (_err) {
-        // Silent ignore
-      }
-    } else if (typeof value === 'object') {
-      // Can be a Period
-      if ('start' in value) {
-        return this.buildDateTimeColumn(value.start);
-      }
-      if ('end' in value) {
-        return this.buildDateTimeColumn(value.end);
-      }
+    if (searchParam.type === 'uri') {
+      return convertToUriSearchIR(typedValues).map(truncateTextColumn).filter(Boolean);
     }
-    return undefined;
+
+    if (searchParam.type === 'special' || searchParam.type === 'composite') {
+      // Special and composite search parameters are not supported in the database.
+      return [];
+    }
+
+    throw new Error('Unrecognized search parameter type: ' + searchParam.type);
   }
 
   /**
@@ -1764,117 +1745,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const period = toPeriod(value);
     if (period) {
       return periodToRangeString(period);
-    }
-    return undefined;
-  }
-
-  /**
-   * Builds the columns to write for a Reference value.
-   * @param value - The property value of the reference.
-   * @returns The reference column value.
-   */
-  private buildReferenceColumns(value: any): string | undefined {
-    if (!value) {
-      return undefined;
-    }
-    if (typeof value === 'string') {
-      // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
-      // This is a reference string that is not a FHIR reference
-      return value;
-    }
-    if (typeof value === 'object') {
-      if (isReference(value)) {
-        // Handle normal "reference" properties
-        return value.reference;
-      }
-      if (isResource(value) && value.id) {
-        // Handle inline references
-        return getReferenceString(value);
-      }
-      if (typeof value.identifier === 'object') {
-        // Handle logical (identifier-only) references by putting a placeholder in the column
-        // NOTE(mattwiller 2023-11-01): This is done to enable searches using the :missing modifier;
-        // actual identifier search matching is handled by the `<ResourceType>_Token` lookup tables
-        return `identifier:${value.identifier.system}|${value.identifier.value}`;
-      }
-    }
-    return undefined;
-  }
-
-  /**
-   * Builds the column value to write a "code" search parameter.
-   * The common cases are:
-   *  1) The property value is a string, so return directly.
-   *  2) The property value is a CodeableConcept.
-   *  3) Otherwise fallback to stringify.
-   * @param value - The property value of the code.
-   * @returns The value to write to the database column.
-   */
-  private buildTokenColumn(value: any): string | undefined {
-    if (!value) {
-      return undefined;
-    }
-
-    if (typeof value === 'string') {
-      // If the value is a string, return the value directly
-      return value;
-    }
-
-    if (typeof value === 'object') {
-      const codeableConceptValue = this.buildCodeableConceptColumn(value);
-      if (codeableConceptValue) {
-        return codeableConceptValue;
-      }
-    }
-
-    // Otherwise, return a stringified version of the value
-    return stringify(value);
-  }
-
-  /**
-   * Builds a CodeableConcept column value.
-   * @param value - The property value of the code.
-   * @returns The value to write to the database column.
-   */
-  private buildCodeableConceptColumn(value: any): string | undefined {
-    // If the value is a CodeableConcept,
-    // then use the following logic to determine the code:
-    // 1) value.coding[0].code
-    // 2) value.coding[0].display
-    // 3) value.text
-    if ('coding' in value) {
-      const coding = value.coding;
-      if (Array.isArray(coding) && coding.length > 0) {
-        if (coding[0].code) {
-          return coding[0].code;
-        }
-
-        if (coding[0].display) {
-          return coding[0].display;
-        }
-      }
-    }
-
-    if ('text' in value) {
-      return value.text as string;
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Builds a Quantity column value.
-   * @param value - The property value of the quantity.
-   * @returns The numeric value if available; undefined otherwise.
-   */
-  private buildQuantityColumn(value: any): number | undefined {
-    if (typeof value === 'object') {
-      if ('value' in value) {
-        const num = value.value;
-        if (typeof num === 'number') {
-          return num;
-        }
-      }
     }
     return undefined;
   }
@@ -2850,7 +2720,11 @@ const textEncoder = new TextEncoder();
  * @param value - The column value to truncate.
  * @returns The possibly truncated column value.
  */
-function truncateTextColumn(value: string): string {
+function truncateTextColumn(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
   if (textEncoder.encode(value).length <= 2704) {
     return value;
   }

@@ -22,13 +22,17 @@
 import { CodeableConcept, Coding, ContactPoint, Identifier, Period, Quantity } from '@medplum/fhirtypes';
 import { isQuantity, toPeriod } from '../fhirpath/utils';
 import { typedValueToString } from '../format';
-import { isReference, TypedValue } from '../types';
-import { isString } from '../utils';
+import { isReference, PropertyType, TypedValue } from '../types';
+import { getReferenceString, isResourceWithId, isString } from '../utils';
+
+export interface TokenSearchIR {
+  readonly system: string | undefined;
+  readonly value: string | undefined;
+}
 
 export type NumberSearchIR = number;
 export type DateSearchIR = Period;
 export type StringSearchIR = string;
-export type TokenSearchIR = Coding;
 export type ReferenceSearchIR = string;
 export type QuantitySearchIR = Quantity;
 export type UriSearchIR = string;
@@ -65,65 +69,25 @@ export function convertToStringSearchIR(typedValues: TypedValue[]): StringSearch
   return result;
 }
 
-export function convertToTokenSearchIR(typedValues: TypedValue[]): TokenSearchIR[] {
-  const result: TokenSearchIR[] = [];
-  for (const typedValue of typedValues) {
-    switch (typedValue.type) {
-      case 'boolean':
-        result.push({ code: typedValue.value.toString() });
-        break;
-      case 'code':
-      case 'id':
-      case 'string':
-      case 'uri':
-        result.push({ code: typedValue.value });
-        break;
-      case 'Coding':
-        result.push(typedValue.value as Coding);
-        break;
-      case 'CodeableConcept':
-        {
-          const cc = typedValue.value as CodeableConcept;
-          if (cc.coding) {
-            for (const coding of cc.coding) {
-              result.push(coding);
-            }
-          }
-          if (cc.text) {
-            result.push({ code: cc.text });
-          }
-        }
-        break;
-      case 'ContactPoint':
-        {
-          const contactPoint = typedValue.value as ContactPoint;
-          result.push({
-            system: contactPoint.system,
-            code: contactPoint.value,
-          });
-        }
-        break;
-      case 'Identifier':
-        {
-          const identifier = typedValue.value as Identifier;
-          result.push({
-            system: identifier.system,
-            code: identifier.value,
-          });
-        }
-        break;
-    }
-  }
-  return result;
-}
-
 export function convertToReferenceSearchIR(typedValues: TypedValue[]): ReferenceSearchIR[] {
   const result: ReferenceSearchIR[] = [];
   for (const typedValue of typedValues) {
-    if (isString(typedValue.value)) {
-      result.push(typedValue.value);
-    } else if (isReference(typedValue.value)) {
-      result.push(typedValue.value.reference);
+    const { value } = typedValue;
+    if (isString(value)) {
+      // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
+      // This is a reference string that is not a FHIR reference
+      result.push(value);
+    } else if (isReference(value)) {
+      // Handle normal "reference" properties
+      result.push(value.reference);
+    } else if (isResourceWithId(value)) {
+      // Handle inline references
+      result.push(getReferenceString(value));
+    } else if (typeof value.identifier === 'object') {
+      // Handle logical (identifier-only) references by putting a placeholder in the column
+      // NOTE(mattwiller 2023-11-01): This is done to enable searches using the :missing modifier;
+      // actual identifier search matching is handled by the `<ResourceType>_Token` lookup tables
+      result.push(`identifier:${value.identifier.system}|${value.identifier.value}`);
     }
   }
   return result;
@@ -132,7 +96,10 @@ export function convertToReferenceSearchIR(typedValues: TypedValue[]): Reference
 export function convertToQuantitySearchIR(typedValues: TypedValue[]): QuantitySearchIR[] {
   const result: QuantitySearchIR[] = [];
   for (const typedValue of typedValues) {
-    if (isQuantity(typedValue.value)) {
+    const { value } = typedValue;
+    if (typeof value === 'number') {
+      result.push({ value, unit: '', system: '', code: '' });
+    } else if (isQuantity(typedValue.value)) {
       result.push(typedValue.value as Quantity);
     }
   }
@@ -147,4 +114,135 @@ export function convertToUriSearchIR(typedValues: TypedValue[]): UriSearchIR[] {
     }
   }
   return result;
+}
+
+export interface TokensContext {
+  caseInsensitive?: boolean;
+  textSearchSystem?: string;
+}
+
+export function convertToTokenSearchIR(typedValues: TypedValue[], context: TokensContext = {}): TokenSearchIR[] {
+  const result: TokenSearchIR[] = [];
+  for (const typedValue of typedValues) {
+    buildTokens(context, result, typedValue);
+  }
+  return result;
+}
+
+/**
+ * Builds a list of zero or more tokens for a search parameter and value.
+ * @param context - The context for building tokens.
+ * @param result - The result array where tokens will be added.
+ * @param typedValue - A typed value to be indexed for the search parameter.
+ */
+function buildTokens(context: TokensContext, result: TokenSearchIR[], typedValue: TypedValue): void {
+  const { type, value } = typedValue;
+
+  switch (type) {
+    case PropertyType.Identifier:
+      buildIdentifierToken(result, context, value as Identifier);
+      break;
+    case PropertyType.CodeableConcept:
+      buildCodeableConceptToken(result, context, value as CodeableConcept);
+      break;
+    case PropertyType.Coding:
+      buildCodingToken(result, context, value as Coding);
+      break;
+    case PropertyType.ContactPoint:
+      buildContactPointToken(result, context, value as ContactPoint);
+      break;
+    default:
+      buildSimpleToken(result, context, undefined, value?.toString() as string | undefined);
+  }
+}
+
+/**
+ * Builds an identifier token.
+ * @param result - The result array where tokens will be added.
+ * @param context - Context for building tokens.
+ * @param identifier - The Identifier object to be indexed.
+ */
+function buildIdentifierToken(
+  result: TokenSearchIR[],
+  context: TokensContext,
+  identifier: Identifier | undefined
+): void {
+  if (identifier?.type?.text) {
+    buildSimpleToken(result, context, context.textSearchSystem, identifier.type.text);
+  }
+  buildSimpleToken(result, context, identifier?.system, identifier?.value);
+}
+
+/**
+ * Builds zero or more CodeableConcept tokens.
+ * @param result - The result array where tokens will be added.
+ * @param context - Context for building tokens.
+ * @param codeableConcept - The CodeableConcept object to be indexed.
+ */
+function buildCodeableConceptToken(
+  result: TokenSearchIR[],
+  context: TokensContext,
+  codeableConcept: CodeableConcept | undefined
+): void {
+  if (codeableConcept?.text) {
+    buildSimpleToken(result, context, context.textSearchSystem, codeableConcept.text);
+  }
+  if (codeableConcept?.coding) {
+    for (const coding of codeableConcept.coding) {
+      buildCodingToken(result, context, coding);
+    }
+  }
+}
+
+/**
+ * Builds a Coding token.
+ * @param result - The result array where tokens will be added.
+ * @param context - Context for building tokens.
+ * @param coding - The Coding object to be indexed.
+ */
+function buildCodingToken(result: TokenSearchIR[], context: TokensContext, coding: Coding | undefined): void {
+  if (coding) {
+    if (coding.display) {
+      buildSimpleToken(result, context, context.textSearchSystem, coding.display);
+    }
+    buildSimpleToken(result, context, coding.system, coding.code);
+  }
+}
+
+/**
+ * Builds a ContactPoint token.
+ * @param result - The result array where tokens will be added.
+ * @param context - Context for building tokens.
+ * @param contactPoint - The ContactPoint object to be indexed.
+ */
+function buildContactPointToken(
+  result: TokenSearchIR[],
+  context: TokensContext,
+  contactPoint: ContactPoint | undefined
+): void {
+  if (contactPoint) {
+    buildSimpleToken(result, context, contactPoint.system, contactPoint.value?.toLocaleLowerCase());
+  }
+}
+
+/**
+ * Builds a simple token.
+ * @param result - The result array where tokens will be added.
+ * @param context - Context for building tokens.
+ * @param system - The token system.
+ * @param value - The token value.
+ */
+function buildSimpleToken(
+  result: TokenSearchIR[],
+  context: TokensContext,
+  system: string | undefined,
+  value: string | undefined
+): void {
+  // Only add the token if there is a system or a value, and if it is not already in the list.
+  if ((system || value) && !result.some((token) => token.system === system && token.value === value)) {
+    result.push({
+      system,
+      value: value && context.caseInsensitive ? value.toLocaleLowerCase() : value,
+    });
+  }
 }
