@@ -9,9 +9,14 @@ on:
       - completed
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   update-versions:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
 
     steps:
       - name: Verify AWS CLI Installation

@@ -10,10 +10,15 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build_deb:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      id-token: write
     env:
       NODE_VERSION: '20'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}

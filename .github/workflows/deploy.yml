@@ -1,17 +1,25 @@
 name: Deploy
+
 concurrency:
   group: ci-deploy-${{ github.sha }}
   cancel-in-progress: false
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Deploy
     runs-on: ubuntu-latest
     timeout-minutes: 45
     if: github.repository == 'medplum/medplum'
+    permissions:
+      id-token: write
     env:
       NODE_VERSION: '20'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
