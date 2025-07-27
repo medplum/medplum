@@ -11,20 +11,6 @@ import { App } from './App';
 import { getConfig } from './config';
 import './index.css';
 
-if ('serviceWorker' in navigator) {
-  // Clear all server workers
-  // Once upon a time, we used a service worker to cache static assets.
-  // We don't do that anymore, but the old service worker is still there.
-  // This code removes it.
-  // Someday we can remove this code.
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .getRegistrations()
-      .then((regs) => Promise.all(regs.map((r) => r.unregister())))
-      .catch((regError) => console.error('SW registration failed: ', regError));
-  });
-}
-
 export async function initApp(): Promise<void> {
   const config = getConfig();
 
