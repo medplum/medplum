@@ -3713,11 +3713,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const codeVerifier = getRandomString().slice(0, 128);
     sessionStorage.setItem('codeVerifier', codeVerifier);
 
-    const arrayHash = await encryptSHA256(codeVerifier);
-    const codeChallenge = arrayBufferToBase64(arrayHash).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-    sessionStorage.setItem('codeChallenge', codeChallenge);
-
-    return { codeChallengeMethod: 'S256', codeChallenge };
+    try {
+      const arrayHash = await encryptSHA256(codeVerifier);
+      const codeChallenge = arrayBufferToBase64(arrayHash)
+        .replaceAll('+', '-')
+        .replaceAll('/', '_')
+        .replaceAll('=', '');
+      return { codeChallengeMethod: 'S256', codeChallenge };
+    } catch (err) {
+      console.warn("Failed to hash code verifier. Falling back to 'plain' code challenge method", err);
+      return { codeChallengeMethod: 'plain', codeChallenge: codeVerifier };
+    }
   }
 
   /**
