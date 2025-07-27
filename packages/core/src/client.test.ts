@@ -534,6 +534,7 @@ describe('Client', () => {
   });
 
   test('Sign in with external auth -- no crypto.subtle', async () => {
+    const originalAssign = window.location.assign;
     const assign = jest.fn();
     Object.defineProperty(window, 'location', {
       value: { assign },
@@ -563,6 +564,11 @@ describe('Client', () => {
 
     Object.defineProperty(crypto, 'subtle', {
       value: originalSubtle,
+      writable: true,
+    });
+
+    Object.defineProperty(window, 'location', {
+      value: { assign: originalAssign },
       writable: true,
     });
   });

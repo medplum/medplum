@@ -3720,7 +3720,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         .replaceAll('=', '');
       return { codeChallengeMethod: 'S256', codeChallenge };
     } catch (err) {
-      console.warn('Failed to generate code challenge', err);
+      console.warn("Failed to hash code verifier. Falling back to 'plain' code challenge method", err);
       return { codeChallengeMethod: 'plain', codeChallenge: codeVerifier };
     }
   }
