@@ -26,7 +26,7 @@ You have a [highly compelling technical reason](/blog/so-youre-thinking-about-fo
 
 Before choosing self-hosting, it's important to thoroughly assess the ongoing operational responsibilities and resource commitments involved:
 
-**Ongoing Maintenance Burden**
+**Ongoing Maintenance**
 From our experience, you'll need at least 0.5 FTE (full-time equivalent) dedicated to maintaining your Medplum instance during normal quarters. This includes general maintenance for system stability and ensuring you stay current with version upgrades—an area where many self-hosting customers struggle due to competing priorities and loss of organizational knowledge. 
 
 During quarters requiring *large-scale maintenance projects* like PostgreSQL version upgrades or major Medplum version upgrades, resource requirements can scale to 3+ FTEs.
