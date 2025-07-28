@@ -34,7 +34,7 @@ During quarters requiring *large-scale maintenance projects* like PostgreSQL ver
 **Operational Responsibilities**
 Your team will take on 24/7 pager duty for outages and need to build incident response protocols, implement observability in your cluster, and maintain all the supporting infrastructure that comes with production systems.
 
-## What Medplum Cloud-Hhosting Provides
+## What Medplum Cloud-Hosting Provides
 
 **Managed Operations**
 We handle all system maintenance, security updates, and infrastructure scaling so your team can focus on building your healthcare application.
