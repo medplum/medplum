@@ -22,7 +22,7 @@ You want to gain experience with self-hosting infrastructure, and your Medplum i
 **Fork Requirements**
 You have a [highly compelling technical reason](/blog/so-youre-thinking-about-forking) to fork the Medplum codebase that cannot be addressed through configuration or our extension points.
 
-## Hidden Costs of Self-hosting
+## Operational Considerations for Self-Hosting
 
 Before choosing self-hosting, carefully consider these often-overlooked operational costs:
 
