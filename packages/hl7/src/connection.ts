@@ -22,6 +22,11 @@ export const ReturnAckCategory = {
 } as const;
 export type ReturnAckCategory = (typeof ReturnAckCategory)[keyof typeof ReturnAckCategory];
 
+export interface SendAndWaitOptions {
+  /** The ACK-level that the Promise should resolve on. The default is `ReturnAckCategory.ANY` (returns on the first ACK of any type). */
+  returnAck?: ReturnAckCategory;
+}
+
 export const DEFAULT_ENCODING = 'utf-8';
 
 export class Hl7Connection extends Hl7Base {
@@ -116,7 +121,7 @@ export class Hl7Connection extends Hl7Base {
     this.sendImpl(reply);
   }
 
-  async sendAndWait(msg: Hl7Message, returnAck?: ReturnAckCategory): Promise<Hl7Message> {
+  async sendAndWait(msg: Hl7Message, options?: SendAndWaitOptions): Promise<Hl7Message> {
     return new Promise<Hl7Message>((resolve, reject) => {
       const msgCtrlId = msg.getSegment('MSH')?.getField(10)?.toString();
       if (!msgCtrlId) {
@@ -127,7 +132,7 @@ export class Hl7Connection extends Hl7Base {
         message: msg,
         resolve,
         reject,
-        returnAck: returnAck ?? ReturnAckCategory.ANY,
+        returnAck: options?.returnAck ?? ReturnAckCategory.ANY,
       });
       this.sendImpl(msg);
     });
