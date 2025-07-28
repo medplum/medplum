@@ -22,7 +22,7 @@ Medplum is a **headless EHR**. Using [Medplum products](./products) you can buil
 
 ## Get Started
 
-1. [Register an account](https://www.medplum.com/docs/tutorials/register) to get a project provisioned. 
+1. [Register a project](https://www.medplum.com/docs/tutorials/register) for your data. 
     1. [Optional]: [Import sample data](https://www.medplum.com/docs/tutorials/importing-sample-data). 
 2. Use our [provider app](https://www.medplum.com/docs/provider) by logging in to our [out-of-the-box EHR experience](https://provider.medplum.com/) . 
 3. [Build your own application](https://www.medplum.com/docs/tutorials/medplum-hello-world) against our APIs. 
