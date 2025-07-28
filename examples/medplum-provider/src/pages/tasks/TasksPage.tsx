@@ -1,12 +1,26 @@
-import { Box, Divider, Flex, Paper, SegmentedControl, Skeleton, Stack } from '@mantine/core';
+import {
+  Box,
+  Divider,
+  Flex,
+  Paper,
+  SegmentedControl,
+  Skeleton,
+  Stack, 
+} from '@mantine/core';
 import React, { JSX, useEffect, useMemo, useState } from 'react';
 import styles from './TasksPage.module.css';
-import { Task } from '@medplum/fhirtypes';
-import { PatientSummary, PatientTimeline, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
+import { ResourceType, Task } from '@medplum/fhirtypes';
+import { PatientSummary, ResourceTimeline, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { showErrorNotification } from '../../utils/notifications';
-import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
+import {
+  createReference,
+  getReferenceString,
+  MedplumClient,
+  ProfileResource,
+} from '@medplum/core';
 import { TaskListItem } from '../../components/tasks/TaskListItem';
 import { TaskInfo } from '../../components/tasks/TaskInfo';
+import { TasksInputNote } from '../../components/tasks/TasksInputNote';
 
 export function TasksPage(): JSX.Element {
   const medplum = useMedplum();
@@ -14,7 +28,7 @@ export function TasksPage(): JSX.Element {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
   const selectedPatient = useResource(selectedTask?.for);
-  const [activeTab, setActiveTab] = useState<string>('patient-summary');
+  const [activeTab, setActiveTab] = useState<string>('properties');
   const [loading, setLoading] = useState<boolean>(false);
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
 
@@ -67,21 +81,22 @@ export function TasksPage(): JSX.Element {
           </Paper>
         </Flex>
 
-        <Flex direction="column" w="40%" h="100%" className={styles.borderRight}>
-          <Paper h="100%" p="md" style={{ overflow: 'auto' }}>
-            {selectedTask && <TaskInfo key={selectedTask.id} task={selectedTask} onTaskChange={handleTaskChange} />}
-          </Paper>
+        <Flex direction="column" w="45%" h="100%" className={styles.borderRight}>
+          {selectedTask && (
+            <TasksInputNote task={selectedTask} />
+          )}
         </Flex>
 
-        <Flex direction="column" w="35%" h="100%">
+        <Flex direction="column" w="30%" h="100%">
           <Paper h="100%" p="xs">
             <Box px="md" pb="md">
               <SegmentedControl
                 value={activeTab}
                 onChange={(value: string) => handleTabChange(value)}
                 data={[
-                  { label: 'Patient Summary', value: 'patient-summary' },
+                  { label: 'Properties', value: 'properties' },
                   { label: 'Activity Log', value: 'activity-log' },
+                  { label: 'Patient Summary', value: 'patient-summary' },
                 ]}
                 fullWidth
                 radius="md"
@@ -91,10 +106,20 @@ export function TasksPage(): JSX.Element {
               />
             </Box>
 
-            {selectedPatient?.resourceType === 'Patient' && (
+            {selectedPatient?.resourceType === 'Patient' && selectedTask && (
               <>
+                {activeTab === 'properties' && (
+                  <TaskInfo p="md" key={selectedTask.id} task={selectedTask} onTaskChange={handleTaskChange} />
+                )}
+                {activeTab === 'activity-log' && (
+                  <ResourceTimeline
+                    value={selectedTask}
+                    loadTimelineResources={async (medplum: MedplumClient, _resourceType: ResourceType, id: string) => {
+                      return Promise.allSettled([medplum.readHistory('Task', id)]);
+                    }}
+                  />
+                )}
                 {activeTab === 'patient-summary' && <PatientSummary patient={selectedPatient} />}
-                {activeTab === 'activity-log' && <PatientTimeline patient={selectedPatient} />}
               </>
             )}
           </Paper>
