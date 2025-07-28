@@ -8,7 +8,7 @@ Self-hosting Medplum can be the right choice for certain use cases, but it comes
 
 ## When Self-hosting Makes Sense
 
-Self-hosting may be appropriate if you have one of these compelling reasons:
+Self-hosting may be compelling for the following reasons:
 
 **Compliance Requirements**
 Your implementation includes data sovereignty or contractual obligations that require on-premises deployment, such as EU regulations or US federal government work. 
