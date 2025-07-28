@@ -41,7 +41,7 @@ Medplum is a **headless EHR**. Using [Medplum products](./products) you can buil
 
 1. [CRUD using our FHIR datastore](./docs/fhir-datastore), and learn to [search your data](./docs/search).
 2. Explore our [React components](./docs/api/react), pre-built to support Medplum data.  
-3. [Run the Medplum stack locally](./docs/self-hosting/running-full-medplum-stack-in-docker), or [self-host](./docs/self-hosting) your own Medplum server with our [source code](https://github.com/medplum/medplum) on Github.
+3. [Run the Medplum stack locally](./docs/self-hosting/running-full-medplum-stack-in-docker) to set up your developer environment.
 
 ## Connect to the Healthcare Ecosystem
 
