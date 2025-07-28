@@ -141,6 +141,12 @@ export class Hl7Connection extends Hl7Base {
   close(): void {
     this.socket.end();
     this.socket.destroy();
+    // Before clearing out messages, we should propagate a message to the consumer that we are closing the connection while some messages were still pending a response
+    this.dispatchEvent(
+      new Hl7ErrorEvent(new Error(`Hl7Connection closed while ${this.pendingMessages.size} messages were pending`))
+    );
+    // Clear out any pending messages
+    this.pendingMessages.clear();
     this.dispatchEvent(new Hl7CloseEvent());
   }
 
