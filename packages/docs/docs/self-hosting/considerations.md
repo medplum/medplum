@@ -24,7 +24,7 @@ You have a [highly compelling technical reason](/blog/so-youre-thinking-about-fo
 
 ## Operational Considerations for Self-Hosting
 
-Before choosing self-hosting, carefully consider these often-overlooked operational costs:
+Before choosing self-hosting, it's important to thoroughly assess the ongoing operational responsibilities and resource commitments involved:
 
 **Ongoing Maintenance Burden**
 From our experience, you'll need at least 0.5 FTE (full-time equivalent) dedicated to maintaining your Medplum instance during normal quarters. This includes general maintenance for system stability and ensuring you stay current with version upgrades—an area where many self-hosting customers struggle due to competing priorities and loss of organizational knowledge. 
