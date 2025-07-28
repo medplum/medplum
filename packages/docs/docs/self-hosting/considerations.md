@@ -16,7 +16,7 @@ Your implementation includes data sovereignty or contractual obligations that re
 **Low connectivity environments**
 You might need to run a FHIR server on a medical device you are developing, or on a small machine for a rural clinic, and a lightweight Medplum instance with minimal interactions is sufficient. 
 
-**Learning Project**
+**Personal Education**
 You want to gain experience with self-hosting infrastructure, and your Medplum instance will only be used for personal projects without scale requirements.
 
 **Fork Requirements**
