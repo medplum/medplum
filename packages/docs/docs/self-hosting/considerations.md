@@ -32,7 +32,7 @@ From our experience, you'll need at least 0.5 FTE (full-time equivalent) dedicat
 During quarters requiring *large-scale maintenance projects* like PostgreSQL version upgrades or major Medplum version upgrades, resource requirements can scale to 3+ FTEs.
 
 **Operational Responsibilities**
-Your team will take on 24/7 pager duty for outages and need to build incident response protocols, implement observability in your cluster, and maintain all the supporting infrastructure that comes with production systems.
+Your team will take on 24/7 on-call responsibility for outages and need to build incident response protocols, implement observability systems, and maintain all the supporting infrastructure that comes with production systems.
 
 ## What Medplum Cloud-Hosting Provides
 
