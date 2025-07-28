@@ -40,7 +40,7 @@ Your team will take on 24/7 pager duty for outages and need to build incident re
 We handle all system maintenance, security updates, and infrastructure scaling so your team can focus on building your healthcare application.
 
 **Log Streaming**
-On our cloud-hosted Premium and Enterprise plans, seamless log streaming integration with common observability tools like SumoLogic and DataDog, giving you visibility into your application without managing the underlying infrastructure.
+On our cloud-hosted Premium and Enterprise plans, seamless log streaming integration with common observability tools such as SumoLogic and DataDog, providing visibility into your application without managing the underlying infrastructure.
 
 ## Already Self-hosting at Scale?
 
