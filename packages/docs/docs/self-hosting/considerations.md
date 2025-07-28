@@ -4,7 +4,7 @@ sidebar_position: 1
 
 # Self-hosting vs Cloud
 
-Self-hosting Medplum can be the right choice for certain use cases, but it comes with significant operational overhead that many organizations underestimate. This guide helps you evaluate whether self-hosting aligns with your needs and resources.
+Self-hosting Medplum can be the right choice for certain use cases, but it comes with significant operational considerations that organizations may overlook. This guide helps you evaluate whether self-hosting aligns with your goals and resources.
 
 ## When Self-hosting Makes Sense
 
