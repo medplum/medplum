@@ -1,0 +1,271 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/foomedical
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-chart-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-chat-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-client-external-idp-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-demo-bots
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-eligibility-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-fhircast-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-fsh-profiles
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-health-gorilla-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-healthie-importer
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-hello-world
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-live-chat-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-mso-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-nextauth-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-nextjs-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-patient-intake-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-photon-integration
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-provider
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-questionnaire-hooks
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-scheduling-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-task-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-valueset-selector
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /examples/medplum-websocket-subscriptions-demo
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /packages/agent
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/agent
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /packages/app
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/app
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/bot-layer
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/ccda
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/cdk
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/cli-wrapper
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/cli
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/core
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/create-medplum
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/definitions
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/docs
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/dosespot-react
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/e2e
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/eslint-config
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/examples
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/fhir-router
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/fhirtypes
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/generator
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/graphiql
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/health-gorilla-core
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/health-gorilla-react
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/hl7
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/mock
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/react-hooks
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/react
+    schedule:
+      interval: daily
+
+  - package-ecosystem: npm
+    directory: /packages/server
+    schedule:
+      interval: daily
