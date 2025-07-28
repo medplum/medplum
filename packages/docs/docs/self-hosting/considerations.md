@@ -37,7 +37,7 @@ Your team will take on 24/7 on-call responsibility for outages and need to build
 ## What Medplum Cloud-Hosting Provides
 
 **Managed Operations**
-We handle all system maintenance, security updates, and infrastructure scaling so your team can focus on building your healthcare application.
+Medplum handles all system maintenance, security updates, and infrastructure scaling so your team can focus on building your healthcare application.
 
 **Log Streaming**
 On our cloud-hosted Premium and Enterprise plans, seamless log streaming integration with common observability tools such as SumoLogic and DataDog, providing visibility into your application without managing the underlying infrastructure.
