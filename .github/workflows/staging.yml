@@ -6,11 +6,16 @@ concurrency:
 
 on: workflow_dispatch
 
+permissions:
+  contents: read
+
 jobs:
   build:
     name: Staging
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      id-token: write
     env:
       NODE_VERSION: '20'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
@@ -49,10 +54,9 @@ jobs:
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
         with:
-          aws-access-key-id: ${{ secrets.STAGING_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.STAGING_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.STAGING_AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.STAGING_AWS_REGION }}
       - name: Login to Docker Hub
         uses: docker/login-action@v2
