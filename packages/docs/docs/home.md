@@ -24,7 +24,7 @@ Medplum is a **headless EHR**. Using [Medplum products](./products) you can buil
 
 1. [Register a project](https://www.medplum.com/docs/tutorials/register) for your data. 
     1. [Optional]: [Import sample data](https://www.medplum.com/docs/tutorials/importing-sample-data). 
-2. Use our [provider app](https://www.medplum.com/docs/provider) by logging in to our [out-of-the-box EHR experience](https://provider.medplum.com/) . 
+2. Use our [provider app](https://www.medplum.com/docs/provider) by logging in to our [out-of-the-box EHR experience](https://provider.medplum.com/). 
 3. [Build your own application](https://www.medplum.com/docs/tutorials/medplum-hello-world) against our APIs. 
 
 ## Plan your Workflows
@@ -36,6 +36,7 @@ Medplum is a **headless EHR**. Using [Medplum products](./products) you can buil
     2. [Creating and automating clinical operations](/docs/careplans/tasks)
     3. [Recording asynchronous encounters and messaging](./docs/communications/async-encounters)
     4. [Billing your services](./docs/billing)
+4. [Migrate your data](./docs/migration) to Medplum. 
 
 ## Build in Medplum
 
@@ -46,7 +47,7 @@ Medplum is a **headless EHR**. Using [Medplum products](./products) you can buil
 ## Connect to the Healthcare Ecosystem
 
 - Get on-prem connectivity with our [Medplum Agent](./docs/agent), connecting to devices over HL7/MLLP, ASTM, and DICOM and surfacing them securely to the cloud. 
-    - We also support [FHIRcast](./docs/fhircast) for real-time synchronization. 
+- Use [FHIRcast](./docs/fhircast) for real-time synchronization. 
 - Use our out-of-the-box [labs](./docs/integration/health-gorilla), [prescribing](./docs/integration/dosespot), and [RCM](./docs/integration/stedi) integrations. 
 - Explore our [full menu of integrations](./docs/integration).
 
