@@ -30,7 +30,7 @@ Medplum is a **headless EHR**. Using [Medplum products](./products) you can buil
 ## Plan your Workflows
 
 1. [Learn FHIR basics](./docs/fhir-basics) to understand the structure of FHIR resources, the healthcare standard on which Medplum is built. 
-2. [Learn workflow patterns](./blog/fhir-workflow-patterns-to-simplify-your-life) to understand how resources are used to request actions, record events, and store information. 
+2. [Learn workflow patterns](./blog/fhir-workflow-patterns-to-simplify-your-life) to understand how resources are used to place requests, record events, and store information. 
 3. Explore our docs on workflows under "Model in FHIR"! Popular workflows are included below. Step through specific use cases. Don't see a how-to guide you need? Reach out on our [Discord](https://discord.gg/medplum) or send us an email at [support@medplum.com](mailto:support@medplum.com). 
     1. [Charting patient data](./docs/charting)
     2. [Creating and automating clinical operations](/docs/careplans/tasks)
