@@ -64,7 +64,7 @@
     "@medplum/health-gorilla-core": "4.3.6",
     "@medplum/mock": "4.3.6",
     "@medplum/react": "4.3.6",
-    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/jest-dom": "6.6.4",
     "@testing-library/react": "16.3.0",
     "@types/node": "20.19.9",
     "@types/react": "19.1.8",
@@ -73,7 +73,7 @@
     "jsdom": "26.1.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-router": "7.7.0",
+    "react-router": "7.7.1",
     "vitest": "3.2.4"
   },
   "peerDependencies": {
