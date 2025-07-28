@@ -13,7 +13,7 @@ Self-hosting may be appropriate if you have one of these compelling reasons:
 **Compliance Requirements**
 You need data sovereignty or have contractual obligations that require on-premises deployment, such as EU regulations or US federal government work. 
 
-**On-Device or Small On-Prem FHIR Server**
+**Low connectivity environments**
 You might need to run a FHIR server on a medical device you are developing, or on a small machine for a rural clinic, and a lightweight Medplum instance with minimal interactions is sufficient. 
 
 **Learning Project**
