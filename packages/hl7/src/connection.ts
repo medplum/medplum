@@ -83,6 +83,23 @@ export class Hl7Connection extends Hl7Base {
       }
       const queueItem = this.pendingMessages.get(origMsgCtrlId);
       if (!queueItem) {
+        this.dispatchEvent(
+          new Hl7ErrorEvent(
+            new OperationOutcomeError({
+              resourceType: 'OperationOutcome',
+              issue: [
+                {
+                  severity: 'warning',
+                  code: 'not-found',
+                  details: {
+                    text: 'Response received for unknown message control ID',
+                  },
+                  diagnostics: `Received ACK for message control ID '${origMsgCtrlId}' but there was no pending message with this control ID`,
+                },
+              ],
+            })
+          )
+        );
         return;
       }
       // Check the ACK type we should return on
@@ -142,11 +159,27 @@ export class Hl7Connection extends Hl7Base {
     this.socket.end();
     this.socket.destroy();
     // Before clearing out messages, we should propagate a message to the consumer that we are closing the connection while some messages were still pending a response
-    this.dispatchEvent(
-      new Hl7ErrorEvent(new Error(`Hl7Connection closed while ${this.pendingMessages.size} messages were pending`))
-    );
-    // Clear out any pending messages
-    this.pendingMessages.clear();
+    if (this.pendingMessages.size) {
+      this.dispatchEvent(
+        new Hl7ErrorEvent(
+          new OperationOutcomeError({
+            resourceType: 'OperationOutcome',
+            issue: [
+              {
+                severity: 'warning',
+                code: 'incomplete',
+                details: {
+                  text: 'Messages incomplete',
+                },
+                diagnostics: `Hl7Connection closed while ${this.pendingMessages.size} messages were pending`,
+              },
+            ],
+          })
+        )
+      );
+      // Clear out any pending messages
+      this.pendingMessages.clear();
+    }
     this.dispatchEvent(new Hl7CloseEvent());
   }
 
