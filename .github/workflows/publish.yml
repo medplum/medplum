@@ -1,14 +1,21 @@
 name: Publish
+
 # Based on: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 on:
   push:
     tags:
       - 'v*'
+
+permissions:
+  contents: read
+
 jobs:
   build_and_check:
     name: publish
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      id-token: write
     env:
       GITHUB_TOKEN: ${{ github.token }}
       NODE_VERSION: '20'
@@ -121,10 +128,9 @@ jobs:
           APP_DOCKERHUB_REPOSITORY: ${{ secrets.APP_DOCKERHUB_REPOSITORY }}
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy bot layer
