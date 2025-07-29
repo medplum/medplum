@@ -19,17 +19,14 @@ Your project has limited data storage / bandwidth requirements and operates in a
 **Personal Education**
 You want to gain experience with self-hosting infrastructure, and your Medplum instance will only be used for personal projects without production requirements.
 
-**Fork Requirements**
-You have a [highly compelling technical reason](/blog/so-youre-thinking-about-forking) to fork the Medplum codebase that cannot be addressed through configuration or our extension points.
-
 ## Operational Considerations for Self-Hosting
 
 Before choosing self-hosting, it's important to thoroughly assess the ongoing operational responsibilities and resource commitments involved:
 
 **Ongoing Maintenance**
-From our experience, you'll need at least 0.5 FTE (full-time equivalent) dedicated to maintaining your Medplum instance during normal quarters. This includes general maintenance for system stability and ensuring you stay current with version upgrades—an area where many self-hosting customers struggle due to competing priorities and loss of organizational knowledge. 
+Maintaining any self-hosted system requires dedicated attention to ensure stability and keep up with updates. For Medplum, we recommend designating internal resources to manage ongoing operations and version upgrades, as this proactive approach helps prevent common challenges and ensures you can fully leverage new features.
 
-During quarters requiring *large-scale maintenance projects* like PostgreSQL version upgrades or major Medplum version upgrades, resource requirements can scale to 3+ FTEs.
+We estimate that organizations need approximately 0.5 FTE (full-time equivalent) dedicated to maintaining your Medplum instance during normal quarters. During *large-scale maintenance projects* like PostgreSQL version upgrades or major Medplum version upgrades, resource requirements may increase. 
 
 **Operational Responsibilities**
 Your team will take on 24/7 on-call responsibility for outages and need to build incident response protocols, implement observability systems, and maintain all the supporting infrastructure that comes with production systems.
@@ -44,6 +41,6 @@ On our cloud-hosted Premium and Enterprise plans, seamless log streaming integra
 
 ## Already Self-hosting at Scale?
 
-If you're reading this after already hitting scale and struggling under the operational weight of maintaining your servers, we're here to help. 
+If you're a current self-hosting user that would like to transition to cloud hosting, we're here to help!
 
 **Need assistance?** Contact the medplum team ([support@medplum.com](mailto:support@medplum.com) or [Discord](https://discord.gg/medplum])) with any questions.
