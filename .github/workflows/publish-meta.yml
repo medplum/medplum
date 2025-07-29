@@ -1,0 +1,86 @@
+name: Publish meta
+
+on:
+  # We publish meta on workflow run since the release manifest requires artifacts of agent build steps
+  # to be present in the GitHub release manifest that are built and only present after the Publish step runs
+  workflow_run:
+    workflows: [Publish]
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-versions:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+
+    steps:
+      - name: Verify AWS CLI Installation
+        run: aws --version
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Download releases and create versions.json
+        run: |
+          # Download releases data
+          curl -s "https://api.github.com/repos/medplum/medplum/releases?per_page=100" > releases.json
+
+          # Process JSON with jq to create the desired structure
+          # including assets array with specified properties
+          jq '{
+            versions: [
+              .[] | {
+                tag_name,
+                version: (.tag_name | ltrimstr("v")),
+                published_at,
+                assets: [
+                  .assets[] | {
+                    name,
+                    browser_download_url
+                  }
+                ]
+              }
+            ]
+          }' releases.json > all.json
+
+          # Create latest release file
+          jq '.[0] | {
+            tag_name,
+            version: (.tag_name | ltrimstr("v")),
+            published_at,
+            assets: [
+              .assets[] | {
+                name,
+                browser_download_url
+              }
+            ]
+          }' releases.json > latest.json
+
+          # Extract version tag for versioned filename
+          VERSION_TAG=$(jq -r '.[0].tag_name' releases.json)
+          echo "VERSION_TAG=${VERSION_TAG}" >> $GITHUB_ENV
+
+      - name: Upload to S3
+        run: |
+          # Upload all versions JSON
+          aws s3 cp all.json s3://meta.medplum.com/releases/all.json \
+            --content-type "application/json" \
+            --cache-control "no-cache"
+
+          # Upload latest.json
+          aws s3 cp latest.json s3://meta.medplum.com/releases/latest.json \
+            --content-type "application/json" \
+            --cache-control "no-cache"
+
+          # Upload versioned copy
+          aws s3 cp latest.json "s3://meta.medplum.com/releases/${VERSION_TAG}.json" \
+            --content-type "application/json" \
+            --cache-control "no-cache"

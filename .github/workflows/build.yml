@@ -1,0 +1,424 @@
+name: Build
+# Limit a single job to run at a time for a given branch/PR to save resources and speed up CI
+# see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
+concurrency:
+  group: ci-build-${{ github.ref_name == 'main' && github.sha || github.ref }}
+  cancel-in-progress: true
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  merge_group:
+    types: [checks_requested]
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      pull-requests: write
+    strategy:
+      matrix:
+        node-version: [20, 22]
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_VERSION: ${{ matrix.node-version }}
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
+      - name: Log npm stats
+        run: |
+          echo "node version: $(node --version)"
+          echo "npm version: $(npm --version)"
+      - name: Install
+        run: npm ci
+      - name: Build Project
+        run: npm run build
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+
+  eslint:
+    name: Run eslint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [build]
+    env:
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+    outputs:
+      eslint_errs: ${{ steps.fmt.outputs.eslint_errs }}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - id: install
+        name: Install eslint
+        run: npm ci
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
+      - id: build
+        name: Build
+        run: npm run build
+      - name: Run eslint
+        id: fmt
+        run: |
+          rm -f .failed
+          npm run lint 2> eslint.err > eslint1.err || echo 'failed' > .failed 
+
+          if [ -s .failed ]; then
+            delimiter="$(openssl rand -hex 8)"
+            echo "eslint_errs<<${delimiter}" >> "${GITHUB_OUTPUT}"
+            cat eslint.err >> "${GITHUB_OUTPUT}"
+            cat eslint1.err >> "${GITHUB_OUTPUT}"
+            echo "${delimiter}" >> "${GITHUB_OUTPUT}"
+          fi
+      - name: Fail the job
+        if: steps.fmt.outputs.eslint_errs != ''
+        run: |
+          echo "❌ \"eslint\" reported errors"
+          echo ""
+          echo "${{ steps.fmt.outputs.eslint_errs }}"
+          echo ""
+          echo ""
+          echo "To one-off fix this manually, run:"
+          echo ""
+          echo "npm run lint"
+          echo ""
+          echo ""
+          echo "You might need to run \"npm install\" locally and configure your text editor to run ESLint in your editor."
+          echo "See: https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint"
+          echo ""
+          echo "https://github.com/medplum/medplum/commits/${{github.sha}}"
+
+          exit 1
+
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: [build]
+    strategy:
+      matrix:
+        node-version: [20, 22]
+        pg-version: [13, 17]
+        redis-version: [6, 7]
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_VERSION: ${{ matrix.node-version }}
+      PG_VERSION: ${{ matrix.pg-version }}
+      REDIS_VERSION: ${{ matrix.redis-version }}
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+    services:
+      postgres:
+        image: postgres:${{ matrix.pg-version }}
+        env:
+          POSTGRES_DB: medplum
+          POSTGRES_USER: medplum
+          POSTGRES_PASSWORD: medplum
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:${{ matrix.redis-version }}
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - id: install
+        name: Install deps
+        run: npm ci
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+      - name: Run additional setup SQL
+        run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
+        env:
+          PGPASSWORD: medplum
+      - name: Test
+        run: ./scripts/test.sh
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
+      - name: Upload code coverage
+        if: ${{ matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7 }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: medplum-code-coverage
+          path: coverage/lcov.info
+
+  e2e:
+    name: Run e2e tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    strategy:
+      matrix:
+        node-version: [20, 22]
+        pg-version: [13, 17]
+        redis-version: [6, 7]
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_VERSION: ${{ matrix.node-version }}
+      PG_VERSION: ${{ matrix.pg-version }}
+      REDIS_VERSION: ${{ matrix.redis-version }}
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+    services:
+      postgres:
+        image: postgres:${{ matrix.pg-version }}
+        env:
+          POSTGRES_DB: medplum
+          POSTGRES_USER: medplum
+          POSTGRES_PASSWORD: medplum
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:${{ matrix.redis-version }}
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - id: install
+        name: Install deps
+        run: npm ci
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+      - name: Run additional setup SQL
+        run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
+        env:
+          PGPASSWORD: medplum
+      - name: Install playwright
+        run: npx playwright install --with-deps chromium
+      - name: Build Medplum
+        run: npm run build:fast
+      - name: Start server and app
+        run: |
+          pushd packages/server
+          npm run start &
+          popd
+          pushd packages/app
+          npm run preview &
+          popd
+        env:
+          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
+      - name: Wait for deployment to be ready
+        run: |
+          # Add retry mechanism for deployment readiness check
+          MAX_RETRIES=10
+          RETRY_COUNT=0
+
+          until curl -s -f http://localhost:8103/healthcheck > /dev/null; do
+            if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+              echo "Max retries reached. Deployment not ready."
+              exit 1
+            fi
+            
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "Waiting for deployment to be ready... (Attempt $RETRY_COUNT/$MAX_RETRIES)"
+            sleep 30
+          done
+      - name: Run e2e tests
+        # TODO: Later on, we can change this to test:e2e to run all e2e tests, when we have more
+        run: |
+          pushd packages/e2e
+          npm run test:smoke
+          popd
+      - name: Upload test results
+        if: ${{ failure() || (matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7) }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-test-results-node-${{ matrix.node-version }}-pg-${{ matrix.pg-version }}-redis-${{ matrix.redis-version }}
+          path: |
+            packages/e2e/playwright-report/
+            packages/e2e/test-results/
+          retention-days: 30
+
+  build-docs:
+    name: Build the docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      pull-requests: write
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_VERSION: 20
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
+      - name: Build Project
+        run: ./scripts/build-docs.sh
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
