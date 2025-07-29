@@ -99,14 +99,6 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
             <Flex justify="flex-end">
               <Button
                 type="submit"
-                style={{
-                  background: '#228be6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: 4,
-                  padding: '6px 16px',
-                  cursor: 'pointer',
-                }}
                 disabled={!note || note.trim() === ''}
                 onClick={handleAddComment}
               >
