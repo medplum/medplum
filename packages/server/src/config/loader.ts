@@ -4,7 +4,7 @@ import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { loadAwsConfig } from '../cloud/aws/config';
 import { loadAzureConfig } from '../cloud/azure/config';
-import { loadGcpConfig } from '../cloud/gcp/config';
+// import { loadGcpConfig } from '../cloud/gcp/config';
 import { MedplumServerConfig } from './types';
 import { addDefaults, isBooleanConfig, isFloatConfig, isIntegerConfig, isObjectConfig, ServerConfig } from './utils';
 
@@ -42,9 +42,9 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     case 'aws':
       config = await loadAwsConfig(configPath);
       break;
-    case 'gcp':
-      config = await loadGcpConfig(configPath);
-      break;
+    // case 'gcp':
+    //   config = await loadGcpConfig(configPath);
+    //   break;
     case 'azure':
       config = await loadAzureConfig(configPath);
       break;
