@@ -18,19 +18,19 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
   const [task, setTask] = useState<Task>(initialTask);
   const [note, setNote] = useState<string>('');
 
-    const handleAddComment = async (): Promise<void> => {
+  const handleAddComment = async (): Promise<void> => {
     console.log('handleAddComment', note);
     const taskId = task.id as string;
     const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
     const comment: Annotation = {
-      text: note, 
+      text: note,
       authorReference: author && createReference(author),
       time: new Date().toISOString(),
     };
 
     const taskNotes = [...(task.note || []), comment];
     const op: PatchOperation['op'] = task.note ? 'replace' : 'add';
-    ops.push({ op, path: '/note', value: taskNotes }); 
+    ops.push({ op, path: '/note', value: taskNotes });
 
     console.log('ops', ops);
     try {
@@ -45,7 +45,7 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
   return (
     <Paper h="100%">
       <Flex justify="space-between" align="flex-start" p="lg" h={70}>
-        <Flex justify="left" align="center" direction="row" >
+        <Flex justify="left" align="center" direction="row">
           <Text size="xl" fw={600}>
             {getDisplayString(task)}
             {task?.authoredOn && ` from ${formatDate(task?.authoredOn)}`}
@@ -97,11 +97,7 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
               autosize
             />
             <Flex justify="flex-end">
-              <Button
-                type="submit"
-                disabled={!note || note.trim() === ''}
-                onClick={handleAddComment}
-              >
+              <Button type="submit" disabled={!note || note.trim() === ''} onClick={handleAddComment}>
                 Submit
               </Button>
             </Flex>

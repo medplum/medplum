@@ -1,23 +1,10 @@
-import {
-  Box,
-  Divider,
-  Flex,
-  Paper,
-  SegmentedControl,
-  Skeleton,
-  Stack, 
-} from '@mantine/core';
+import { Box, Divider, Flex, Paper, SegmentedControl, Skeleton, Stack } from '@mantine/core';
 import React, { JSX, useEffect, useMemo, useState } from 'react';
 import styles from './TasksPage.module.css';
 import { ResourceType, Task } from '@medplum/fhirtypes';
 import { PatientSummary, ResourceTimeline, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
 import { showErrorNotification } from '../../utils/notifications';
-import {
-  createReference,
-  getReferenceString,
-  MedplumClient,
-  ProfileResource,
-} from '@medplum/core';
+import { createReference, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
 import { TaskListItem } from '../../components/tasks/TaskListItem';
 import { TaskInfo } from '../../components/tasks/TaskInfo';
 import { TasksInputNote } from '../../components/tasks/TasksInputNote';
@@ -82,9 +69,7 @@ export function TasksPage(): JSX.Element {
         </Flex>
 
         <Flex direction="column" w="45%" h="100%" className={styles.borderRight}>
-          {selectedTask && (
-            <TasksInputNote key={selectedTask.id} task={selectedTask} />
-          )}
+          {selectedTask && <TasksInputNote key={selectedTask.id} task={selectedTask} />}
         </Flex>
 
         <Flex direction="column" w="30%" h="100%">

@@ -53,7 +53,6 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
   return (
     <Paper {...paperProps}>
       <Flex direction="column" gap="lg">
-      
         <Stack gap="xs">
           <DateTimeInput
             name="Due Date"
@@ -133,12 +132,7 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
           />
 
           {task?.encounter && (
-            <ResourceInput
-              label="Encounter"
-              resourceType="Encounter"
-              name="encounter"
-              defaultValue={task.encounter}
-            />
+            <ResourceInput label="Encounter" resourceType="Encounter" name="encounter" defaultValue={task.encounter} />
           )}
         </Stack>
       </Flex>
