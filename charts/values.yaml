@@ -24,7 +24,6 @@ deployment:
   image:
     repository: medplum/medplum-server
     tag: latest
-    pullPolicy: Always
   env:
     # - name: SQL_DEBUG
     #   value: '*'
