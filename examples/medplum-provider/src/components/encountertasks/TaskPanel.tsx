@@ -24,13 +24,7 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   const medplum = useMedplum();
 
   const onActionButtonClicked = async (): Promise<void> => {
-    if (task.status === 'ready' || task.status === 'requested') {
-      // Task status is Ready or Requested. Action will mark as complete.
-      await updateTaskStatus({ ...task, status: 'completed' }, medplum, onUpdateTask);
-    } else {
-      // Fallback navigation to Task details.
-      navigate(`Task/${task.id}`)?.catch(console.error);
-    }
+    navigate(`Task/${task.id}`)?.catch(console.error);
   };
 
   const onChangeResponse = (response: QuestionnaireResponse): void => {

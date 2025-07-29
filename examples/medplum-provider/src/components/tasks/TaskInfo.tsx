@@ -1,23 +1,20 @@
-import { Badge, Divider, Flex, Menu, Stack, Text, Textarea } from '@mantine/core';
-import { formatDate, formatHumanName, getDisplayString, getReferenceString } from '@medplum/core';
-import { HumanName, Patient, Practitioner, Reference, Task } from '@medplum/fhirtypes';
-import { CodeInput, DateTimeInput, ResourceInput, useMedplum, useResource } from '@medplum/react';
+import { Divider, Flex, Paper, PaperProps, Stack, Text } from '@mantine/core';
+import { getReferenceString } from '@medplum/core';
+import { Patient, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
+import { CodeInput, DateTimeInput, ReferenceInput, ResourceInput, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
-import { IconCheck, IconChevronDown } from '@tabler/icons-react';
 import { showErrorNotification } from '../../utils/notifications';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 
-interface TaskInfoProps {
+interface TaskInfoProps extends PaperProps {
   task: Task;
   onTaskChange: (task: Task) => void;
 }
 
 export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
-  const { task, onTaskChange } = props;
+  const { task, onTaskChange, ...paperProps } = props;
   const medplum = useMedplum();
-  const practitioner = useResource(task?.requester);
-  const [description, setDescription] = useState<string | undefined>(task?.description);
   const [dueDate, setDueDate] = useState<string | undefined>(task?.restriction?.period?.end);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
 
@@ -30,11 +27,6 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
     await handleTaskUpdate({ ...task, for: value });
   };
 
-  const handleDescriptionChange = async (value: string): Promise<void> => {
-    setDescription(value);
-    await handleTaskUpdate({ ...task, description: value });
-  };
-
   const handlePriorityChange = async (value: string): Promise<void> => {
     await handleTaskUpdate({ ...task, priority: value as Task['priority'] });
   };
@@ -43,8 +35,8 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
     await handleTaskUpdate({ ...task, owner: value });
   };
 
-  const handleStatusChange = async (value: Task['status']): Promise<void> => {
-    await handleTaskUpdate({ ...task, status: value });
+  const handleStatusChange = async (value: string | undefined): Promise<void> => {
+    await handleTaskUpdate({ ...task, status: value as Task['status'] });
   };
 
   const handleTaskUpdate = async (value: Task): Promise<void> => {
@@ -57,112 +49,92 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
   };
 
   return (
-    <Flex direction="column" gap="lg">
-      <Flex justify="space-between" align="flex-start">
-        <Stack gap={0}>
-          <Text size="xl" fw={600}>
-            {getDisplayString(task)}
-          </Text>
-          <Text size="sm" c="dimmed">
-            Created {formatDate(task?.authoredOn)}{' '}
-            {practitioner?.resourceType === 'Practitioner' &&
-              `by ${formatHumanName(practitioner.name?.[0] as HumanName)}`}
-          </Text>
+    <Paper {...paperProps}>
+      <Flex direction="column" gap="lg">
+        <Stack gap="xs">
+          <CodeInput
+            name="status"
+            label="Status"
+            binding="http://hl7.org/fhir/ValueSet/task-status"
+            maxValues={1}
+            defaultValue={task?.status}
+            onChange={handleStatusChange}
+          />
+
+          <DateTimeInput
+            name="Due Date"
+            placeholder="End"
+            label="Due Date"
+            defaultValue={dueDate}
+            onChange={handleDueDateChange}
+          />
+
+          <ResourceInput
+            label="Assignee"
+            resourceType="Practitioner"
+            name="practitioner"
+            defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
+            onChange={async (practitioner: Practitioner | undefined) => {
+              await handlePractitionerChange(
+                practitioner ? { reference: getReferenceString(practitioner) } : undefined
+              );
+            }}
+          />
+
+          <CodeInput
+            name="priority"
+            label="Priority"
+            binding="http://hl7.org/fhir/ValueSet/request-priority"
+            maxValues={1}
+            defaultValue={task?.priority?.toString()}
+            onChange={(value: string | undefined) => handlePriorityChange(value ?? '')}
+          />
+
+          {task?.basedOn && task.basedOn.length > 0 ? (
+            <ResourceInput
+              label="Based On"
+              resourceType={task.basedOn[0].reference?.split('/').pop() as ResourceType}
+              name="basedOn-0"
+              defaultValue={task.basedOn[0]}
+              disabled
+            />
+          ) : (
+            <Stack gap={0}>
+              <Text size="sm" fw={500}>
+                Based On
+              </Text>
+              <ReferenceInput
+                name="basedOn"
+                placeholder="Select any resource..."
+                onChange={async (value: Reference | undefined) => {
+                  if (value?.reference) {
+                    const newBasedOn = [...(task.basedOn || []), value];
+                    await handleTaskUpdate({ ...task, basedOn: newBasedOn });
+                  }
+                }}
+              />
+            </Stack>
+          )}
         </Stack>
 
-        <Menu position="bottom-start">
-          <Menu.Target>
-            <Badge
-              variant="light"
-              color={getBadgeColor(task.status)}
-              size="lg"
-              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 0 }}
-              rightSection={<IconChevronDown size={16} />}
-            >
-              {task.status.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}
-            </Badge>
-          </Menu.Target>
-          <Menu.Dropdown style={{ width: 140 }}>
-            {statuses.map((status) => (
-              <Menu.Item
-                key={status.value}
-                rightSection={
-                  task.status === status.value ? (
-                    <div style={{ marginLeft: 4, display: 'flex', alignItems: 'center' }}>
-                      <IconCheck size={16} color="gray" />
-                    </div>
-                  ) : null
-                }
-                onClick={() => handleStatusChange(status.value as Task['status'])}
-              >
-                {status.label}
-              </Menu.Item>
-            ))}
-          </Menu.Dropdown>
-        </Menu>
+        <Divider />
+
+        <Stack gap="xs" pt="md">
+          <ResourceInput
+            label="Patient"
+            resourceType="Patient"
+            name="patient"
+            defaultValue={task?.for as Reference<Patient>}
+            onChange={async (patient: Patient | undefined) => {
+              await handlePatientChange(patient ? { reference: getReferenceString(patient) } : undefined);
+            }}
+          />
+
+          {task?.encounter && (
+            <ResourceInput label="Encounter" resourceType="Encounter" name="encounter" defaultValue={task.encounter} />
+          )}
+        </Stack>
       </Flex>
-
-      <Divider />
-
-      <Stack gap="xs">
-        <ResourceInput
-          label="Patient"
-          resourceType="Patient"
-          name="patient"
-          defaultValue={task?.for as Reference<Patient>}
-          onChange={async (patient: Patient | undefined) => {
-            await handlePatientChange(patient ? { reference: getReferenceString(patient) } : undefined);
-          }}
-        />
-
-        <DateTimeInput
-          name="Due Date"
-          placeholder="End"
-          label="Due Date"
-          defaultValue={dueDate}
-          onChange={handleDueDateChange}
-        />
-
-        <Textarea
-          label="Description"
-          value={description}
-          minRows={3}
-          autosize
-          onChange={(event) => handleDescriptionChange(event.currentTarget.value)}
-        />
-
-        <CodeInput
-          name="priority"
-          label="Priority"
-          binding="http://hl7.org/fhir/ValueSet/request-priority"
-          maxValues={1}
-          defaultValue={task?.priority?.toString()}
-          onChange={(value: string | undefined) => handlePriorityChange(value ?? '')}
-        />
-
-        <ResourceInput
-          label="Assignee"
-          resourceType="Practitioner"
-          name="practitioner"
-          defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
-          onChange={async (practitioner: Practitioner | undefined) => {
-            await handlePractitionerChange(practitioner ? { reference: getReferenceString(practitioner) } : undefined);
-          }}
-        />
-      </Stack>
-    </Flex>
+    </Paper>
   );
 }
-
-const statuses = [
-  { value: 'completed', label: 'Completed' },
-  { value: 'ready', label: 'Ready' },
-  { value: 'in-progress', label: 'In Progress' },
-  { value: 'on-hold', label: 'On Hold' },
-  { value: 'cancelled', label: 'Cancelled' },
-];
-
-const getBadgeColor = (status: Task['status']): string => {
-  const colors = { completed: 'green', cancelled: 'red' };
-  return colors[status as keyof typeof colors] ?? 'blue';
-};

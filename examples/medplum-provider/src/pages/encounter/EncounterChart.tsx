@@ -2,7 +2,7 @@ import { Box, Card, Stack, Textarea, Title } from '@mantine/core';
 import { ClinicalImpression, Encounter, Task } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import { JSX, useCallback, useState } from 'react';
-import { useParams } from 'react-router';
+import { Outlet, useParams } from 'react-router';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
 import { useEncounterChart } from '../../hooks/useEncounterChart';
 import { usePatient } from '../../hooks/usePatient';
@@ -137,6 +137,7 @@ export const EncounterChart = (): JSX.Element => {
           )}
         </Box>
       </Stack>
+      <Outlet />
     </>
   );
 };
