@@ -34,7 +34,7 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
 
     try {
       const result = await medplum.patchResource('Task', taskId, ops);
-      setTask(result); 
+      setTask(result);
       setNote('');
     } catch (error) {
       showErrorNotification(error);

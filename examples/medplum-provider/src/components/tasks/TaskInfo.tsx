@@ -52,7 +52,6 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
     <Paper {...paperProps}>
       <Flex direction="column" gap="lg">
         <Stack gap="xs">
-
           <CodeInput
             name="status"
             label="Status"
@@ -61,7 +60,6 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
             defaultValue={task?.status}
             onChange={handleStatusChange}
           />
-
 
           <DateTimeInput
             name="Due Date"
