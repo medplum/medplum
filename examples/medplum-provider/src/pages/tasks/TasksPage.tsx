@@ -7,7 +7,7 @@ import { showErrorNotification } from '../../utils/notifications';
 import { createReference, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
 import { TaskListItem } from '../../components/tasks/TaskListItem';
 import { TaskInfo } from '../../components/tasks/TaskInfo';
-import { TasksInputNote } from '../../components/tasks/TasksInputNote';
+import { TasksInputNote } from '../../components/tasks/TaskInputNote';
 
 export function TasksPage(): JSX.Element {
   const medplum = useMedplum();
