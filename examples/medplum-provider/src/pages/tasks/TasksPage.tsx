@@ -1,4 +1,4 @@
-import { Box, Divider, Flex, Paper, SegmentedControl, Skeleton, Stack } from '@mantine/core';
+import { Box, Divider, Flex, Paper, ScrollArea, SegmentedControl, Skeleton, Stack } from '@mantine/core';
 import React, { JSX, useEffect, useMemo, useState } from 'react';
 import styles from './TasksPage.module.css';
 import { ResourceType, Task } from '@medplum/fhirtypes';
@@ -102,12 +102,18 @@ export function TasksPage(): JSX.Element {
                   <TaskInfo p="md" key={selectedTask.id} task={selectedTask} onTaskChange={handleTaskChange} />
                 )}
                 {activeTab === 'activity-log' && (
-                  <ResourceTimeline
-                    value={selectedTask}
-                    loadTimelineResources={async (medplum: MedplumClient, _resourceType: ResourceType, id: string) => {
-                      return Promise.allSettled([medplum.readHistory('Task', id)]);
-                    }}
-                  />
+                  <ScrollArea h="calc(100% - 50px)">
+                    <ResourceTimeline
+                      value={selectedTask}
+                      loadTimelineResources={async (
+                        medplum: MedplumClient,
+                        _resourceType: ResourceType,
+                        id: string
+                      ) => {
+                        return Promise.allSettled([medplum.readHistory('Task', id)]);
+                      }}
+                    />
+                  </ScrollArea>
                 )}
                 {activeTab === 'patient-summary' && <PatientSummary patient={selectedPatient} />}
               </>
