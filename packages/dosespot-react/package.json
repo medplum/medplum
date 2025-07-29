@@ -63,7 +63,7 @@
     "@medplum/fhirtypes": "4.3.6",
     "@medplum/mock": "4.3.6",
     "@medplum/react": "4.3.6",
-    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/jest-dom": "6.6.4",
     "@testing-library/react": "16.3.0",
     "@types/node": "20.19.9",
     "@types/react": "19.1.8",
