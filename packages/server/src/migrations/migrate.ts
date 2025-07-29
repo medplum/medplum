@@ -1198,7 +1198,6 @@ function generateIndexesActions(
 
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (!startIndex) {
-      console.log('MISSING:', targetIndex);
       ctx.postDeployAction(
         () => {
           const createIndexSql = buildIndexSql(targetTable.name, indexName, targetIndex);
@@ -1213,7 +1212,6 @@ function generateIndexesActions(
 
   for (const startIndex of startTable.indexes) {
     if (!matchedIndexes.has(startIndex)) {
-      console.log('EXTRA:', startIndex);
       console.log(
         `[${startTable.name}] Existing index should not exist:`,
         startIndex.indexdef || JSON.stringify(startIndex)
