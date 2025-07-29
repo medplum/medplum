@@ -43,9 +43,9 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
   };
 
   return (
-    <Paper h="100%" p="lg">
-      <Flex justify="space-between" align="flex-start" pb="md">
-        <Flex justify="left" align="center" direction="row">
+    <Paper h="100%">
+      <Flex justify="space-between" align="flex-start" p="lg" h={70}>
+        <Flex justify="left" align="center" direction="row" >
           <Text size="xl" fw={600}>
             {getDisplayString(task)}
             {task?.authoredOn && ` from ${formatDate(task?.authoredOn)}`}
@@ -72,7 +72,7 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
       </Flex>
       <Divider />
 
-      <ScrollArea>
+      <ScrollArea h="calc(100% - 70px)" p="lg">
         <Stack>
           {task?.focus?.reference?.startsWith('Questionnaire/') && (
             <>
