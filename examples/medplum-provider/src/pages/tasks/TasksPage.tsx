@@ -50,6 +50,11 @@ export function TasksPage(): JSX.Element {
     setActiveTab(value);
   };
 
+  const handleDeleteTask = (task: Task): void => {
+    setTasks(tasks.filter((t) => t.id !== task.id));
+    setSelectedTask(undefined);
+  };
+
   return (
     <div className={styles.container}>
       <Flex h="100%" w="100%">
@@ -69,7 +74,7 @@ export function TasksPage(): JSX.Element {
         </Flex>
 
         <Flex direction="column" w="45%" h="100%" className={styles.borderRight}>
-          {selectedTask && <TasksInputNote key={selectedTask.id} task={selectedTask} />}
+          {selectedTask && <TasksInputNote key={selectedTask.id} task={selectedTask} onDeleteTask={handleDeleteTask} />}
         </Flex>
 
         <Flex direction="column" w="30%" h="100%">

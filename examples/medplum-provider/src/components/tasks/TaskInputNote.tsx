@@ -9,17 +9,17 @@ import { showErrorNotification } from '../../utils/notifications';
 
 interface TasksInputNoteProps {
   task: Task;
+  onDeleteTask: (task: Task) => void;
 }
 
 export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
-  const { task: initialTask } = props;
+  const { task: initialTask, onDeleteTask } = props;
   const medplum = useMedplum();
   const author = useMedplumProfile();
   const [task, setTask] = useState<Task>(initialTask);
   const [note, setNote] = useState<string>('');
 
   const handleAddComment = async (): Promise<void> => {
-    console.log('handleAddComment', note);
     const taskId = task.id as string;
     const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
     const comment: Annotation = {
@@ -32,11 +32,27 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
     const op: PatchOperation['op'] = task.note ? 'replace' : 'add';
     ops.push({ op, path: '/note', value: taskNotes });
 
-    console.log('ops', ops);
     try {
       const result = await medplum.patchResource('Task', taskId, ops);
       setTask(result); // Update local task state
       setNote(''); // Clear the input after successful submission
+    } catch (error) {
+      showErrorNotification(error);
+    }
+  };
+
+  const handleDeleteTask = async (): Promise<void> => {
+    await medplum.deleteResource('Task', task.id as string);
+    onDeleteTask(task);
+  };
+
+  const handleMarkAsCompleted = async (): Promise<void> => {
+    const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
+    ops.push({ op: 'replace', path: '/status', value: 'completed' });
+
+    try {
+      const result = await medplum.patchResource('Task', task.id as string, ops);
+      setTask(result);
     } catch (error) {
       showErrorNotification(error);
     }
@@ -53,18 +69,28 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
         </Flex>
 
         <Flex align="center" gap="md">
-          <ActionIcon variant="outline" c="dimmed" color="gray" aria-label="Delete Task" radius="xl" w={36} h={36}>
+          <ActionIcon 
+          variant="outline" 
+          c="dimmed" 
+          color="gray" 
+          aria-label="Delete Task" 
+          radius="xl" 
+          w={36} 
+          h={36}
+          onClick={() => handleDeleteTask()}
+          >
             <IconTrash size={24} />
           </ActionIcon>
 
           <ActionIcon
             variant="outline"
-            c="dimmed"
-            color="gray"
+            c={task.status === 'completed' ? 'filled' : "dimmed"}
+            color={task.status === 'completed' ? undefined : "gray"}
             aria-label="Mark as Completed"
             radius="xl"
             w={36}
             h={36}
+            onClick={() => handleMarkAsCompleted()}
           >
             <IconCheck size={24} />
           </ActionIcon>
@@ -82,10 +108,10 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
           )}
 
           {task.note?.map((note) => (
-            <>
-              <Text key={note.id}>{note.text}</Text>
+            <div key={note.id}>
+              <Text>{note.text}</Text>
               <Divider />
-            </>
+            </div>
           ))}
 
           <Stack gap="xs">
