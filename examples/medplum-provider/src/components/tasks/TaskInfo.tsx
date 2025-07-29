@@ -1,6 +1,6 @@
-import { Divider, Flex, Paper, PaperProps, Stack, Text, Textarea } from '@mantine/core';
+import { Divider, Flex, Paper, PaperProps, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
-import { Patient, Practitioner, Reference, Task } from '@medplum/fhirtypes';
+import { Patient, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import { CodeInput, DateTimeInput, ReferenceInput, ResourceInput, useMedplum } from '@medplum/react';
 import React, { useState } from 'react';
 import { SAVE_TIMEOUT_MS } from '../../config/constants';
@@ -15,7 +15,6 @@ interface TaskInfoProps extends PaperProps {
 export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
   const { task, onTaskChange, ...paperProps } = props;
   const medplum = useMedplum();
-  const [description, setDescription] = useState<string | undefined>(task?.description);
   const [dueDate, setDueDate] = useState<string | undefined>(task?.restriction?.period?.end);
   const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
 
@@ -28,17 +27,16 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
     await handleTaskUpdate({ ...task, for: value });
   };
 
-  const handleDescriptionChange = async (value: string): Promise<void> => {
-    setDescription(value);
-    await handleTaskUpdate({ ...task, description: value });
-  };
-
   const handlePriorityChange = async (value: string): Promise<void> => {
     await handleTaskUpdate({ ...task, priority: value as Task['priority'] });
   };
 
   const handlePractitionerChange = async (value: Reference<Practitioner> | undefined): Promise<void> => {
     await handleTaskUpdate({ ...task, owner: value });
+  };
+
+  const handleStatusChange = async (value: string | undefined): Promise<void> => {
+    await handleTaskUpdate({ ...task, status: value as Task['status'] });
   };
 
   const handleTaskUpdate = async (value: Task): Promise<void> => {
@@ -54,29 +52,23 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
     <Paper {...paperProps}>
       <Flex direction="column" gap="lg">
         <Stack gap="xs">
+
+          <CodeInput
+            name="status"
+            label="Status"
+            binding="http://hl7.org/fhir/ValueSet/task-status"
+            maxValues={1}
+            defaultValue={task?.status}
+            onChange={handleStatusChange}
+          />
+
+
           <DateTimeInput
             name="Due Date"
             placeholder="End"
             label="Due Date"
             defaultValue={dueDate}
             onChange={handleDueDateChange}
-          />
-
-          <Textarea
-            label="Description"
-            value={description}
-            minRows={3}
-            autosize
-            onChange={(event) => handleDescriptionChange(event.currentTarget.value)}
-          />
-
-          <CodeInput
-            name="priority"
-            label="Priority"
-            binding="http://hl7.org/fhir/ValueSet/request-priority"
-            maxValues={1}
-            defaultValue={task?.priority?.toString()}
-            onChange={(value: string | undefined) => handlePriorityChange(value ?? '')}
           />
 
           <ResourceInput
@@ -91,10 +83,19 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
             }}
           />
 
+          <CodeInput
+            name="priority"
+            label="Priority"
+            binding="http://hl7.org/fhir/ValueSet/request-priority"
+            maxValues={1}
+            defaultValue={task?.priority?.toString()}
+            onChange={(value: string | undefined) => handlePriorityChange(value ?? '')}
+          />
+
           {task?.basedOn && task.basedOn.length > 0 ? (
             <ResourceInput
               label="Based On"
-              resourceType={task.basedOn[0].reference?.split('/')[0] as any}
+              resourceType={task.basedOn[0].reference?.split('/').pop() as ResourceType}
               name="basedOn-0"
               defaultValue={task.basedOn[0]}
               disabled

@@ -34,8 +34,8 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
 
     try {
       const result = await medplum.patchResource('Task', taskId, ops);
-      setTask(result); // Update local task state
-      setNote(''); // Clear the input after successful submission
+      setTask(result); 
+      setNote('');
     } catch (error) {
       showErrorNotification(error);
     }
