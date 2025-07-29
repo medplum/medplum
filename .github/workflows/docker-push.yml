@@ -81,6 +81,9 @@ jobs:
         uses: docker/setup-buildx-action@v3
         id: builder
       
+      - name: Install dependencies
+        run: npm ci
+      
       - name: Build
         run: npm run build:all
 
