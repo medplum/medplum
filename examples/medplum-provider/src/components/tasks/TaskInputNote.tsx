@@ -69,23 +69,23 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
         </Flex>
 
         <Flex align="center" gap="md">
-          <ActionIcon 
-          variant="outline" 
-          c="dimmed" 
-          color="gray" 
-          aria-label="Delete Task" 
-          radius="xl" 
-          w={36} 
-          h={36}
-          onClick={() => handleDeleteTask()}
+          <ActionIcon
+            variant="outline"
+            c="dimmed"
+            color="gray"
+            aria-label="Delete Task"
+            radius="xl"
+            w={36}
+            h={36}
+            onClick={() => handleDeleteTask()}
           >
             <IconTrash size={24} />
           </ActionIcon>
 
           <ActionIcon
             variant="outline"
-            c={task.status === 'completed' ? 'filled' : "dimmed"}
-            color={task.status === 'completed' ? undefined : "gray"}
+            c={task.status === 'completed' ? 'filled' : 'dimmed'}
+            color={task.status === 'completed' ? undefined : 'gray'}
             aria-label="Mark as Completed"
             radius="xl"
             w={36}
