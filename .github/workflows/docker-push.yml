@@ -87,9 +87,11 @@ jobs:
           registry: ghcr.io
           username: ${{github.actor}}
           password: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Run build script
+        run: ./scripts/build-docker-server.sh --release
           
       - name: Build and push
-        run: ./scripts/build-docker-server.sh --release
         id: build-push2
         uses: docker/build-push-action@v6
         with:
