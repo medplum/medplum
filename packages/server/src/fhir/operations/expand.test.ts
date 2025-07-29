@@ -1052,4 +1052,56 @@ describe('Expand', () => {
       ])
     );
   });
+
+  test('Resolve synonyms', async () => {
+    const codeSystem: CodeSystem = {
+      resourceType: 'CodeSystem',
+      url: 'http://example.com/CodeSystem/' + randomUUID(),
+      property: [
+        {
+          code: 'SY',
+          uri: 'http://hl7.org/fhir/concept-properties#synonym',
+          type: 'string',
+        },
+      ],
+      content: 'example',
+      status: 'draft',
+      concept: [
+        {
+          code: 'UTIC',
+          display: 'Uticarial rash',
+          property: [
+            {
+              code: 'SY',
+              valueString: 'Hives',
+            },
+          ],
+        },
+      ],
+    };
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'https://example.com/ValueSet/' + randomUUID(),
+      compose: { include: [{ system: codeSystem.url }] },
+    };
+    const csRes = await request(app)
+      .post('/fhir/R4/CodeSystem')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(codeSystem);
+    expect(csRes.status).toStrictEqual(201);
+    const vsRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSet);
+    expect(vsRes.status).toStrictEqual(201);
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=hives`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([{ code: 'UTIC', display: 'Hives' }]);
+  });
 });

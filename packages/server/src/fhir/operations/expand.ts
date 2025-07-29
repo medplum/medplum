@@ -284,6 +284,7 @@ export function expansionQuery(
               .column('id')
               .column('code')
               .column('display')
+              .column('synonymOf')
               .where(new Column('origin', 'system'), '=', codeSystem.id)
               .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
             const ancestorQuery = findAncestor(base, codeSystem, condition.value);

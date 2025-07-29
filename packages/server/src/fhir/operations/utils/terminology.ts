@@ -2,7 +2,16 @@ import { OperationOutcomeError, Operator, WithId, badRequest, createReference, r
 import { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../../context';
 import { getSystemRepo } from '../../repo';
-import { Column, Condition, Conjunction, SelectQuery, SqlFunction, Operator as SqlOperator, Union } from '../../sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  Disjunction,
+  SelectQuery,
+  SqlFunction,
+  Operator as SqlOperator,
+  Union,
+} from '../../sql';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
 export const childProperty = 'http://hl7.org/fhir/concept-properties#child';
@@ -123,11 +132,7 @@ export function addPropertyFilter(
 export function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestorCode: string): SelectQuery {
   const property = getParentProperty(codeSystem);
 
-  const query = new SelectQuery('Coding')
-    .column('id')
-    .column('code')
-    .column('display')
-    .where('system', '=', codeSystem.id);
+  const query = new SelectQuery('Coding').addColumns(base.columns).where('system', '=', codeSystem.id);
   const propertyTable = query.getNextJoinAlias();
   query.join(
     'INNER JOIN',
@@ -153,7 +158,10 @@ export function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestor
     'INNER JOIN',
     recursiveCTE,
     recursiveTable,
-    new Condition(new Column(propertyTable, 'coding'), '=', new Column(recursiveTable, 'id'))
+    new Disjunction([
+      new Condition(new Column(propertyTable, 'coding'), '=', new Column(recursiveTable, 'id')),
+      new Condition(new Column(propertyTable, 'coding'), '=', new Column(recursiveTable, 'synonymOf')),
+    ])
   );
 
   return new SelectQuery(recursiveCTE)
