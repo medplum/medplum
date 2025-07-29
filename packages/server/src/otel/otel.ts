@@ -1,6 +1,6 @@
 import opentelemetry, { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions } from '@opentelemetry/api';
 import os from 'node:os';
-import v8 from 'node:v8';
+// import v8 from 'node:v8';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { heartbeat } from '../heartbeat';
 import { getCronQueue } from '../workers/cron';
@@ -115,20 +115,20 @@ export function initOtelHeartbeat(): void {
       });
     }
 
-    const heapStats = v8.getHeapStatistics();
-    setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size, BASE_METRIC_OPTIONS);
+    // const heapStats = v8.getHeapStatistics();
+    // setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size, BASE_METRIC_OPTIONS);
 
-    const heapSpaceStats = v8.getHeapSpaceStatistics();
-    setGauge(
-      'medplum.node.oldSpaceUsedSize',
-      heapSpaceStats.find((entry) => entry.space_name === 'old_space')?.space_used_size ?? -1,
-      BASE_METRIC_OPTIONS
-    );
-    setGauge(
-      'medplum.node.newSpaceUsedSize',
-      heapSpaceStats.find((entry) => entry.space_name === 'new_space')?.space_used_size ?? -1,
-      BASE_METRIC_OPTIONS
-    );
+    // const heapSpaceStats = v8.getHeapSpaceStatistics();
+    // setGauge(
+    //   'medplum.node.oldSpaceUsedSize',
+    //   heapSpaceStats.find((entry) => entry.space_name === 'old_space')?.space_used_size ?? -1,
+    //   BASE_METRIC_OPTIONS
+    // );
+    // setGauge(
+    //   'medplum.node.newSpaceUsedSize',
+    //   heapSpaceStats.find((entry) => entry.space_name === 'new_space')?.space_used_size ?? -1,
+    //   BASE_METRIC_OPTIONS
+    // );
 
     const subscriptionQueue = getSubscriptionQueue();
     if (subscriptionQueue) {
