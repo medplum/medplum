@@ -1,0 +1,53 @@
+{
+  "name": "medplum-ci-cd-bots",
+  "version": "1.0.0",
+  "description": "Medplum CI/CD Bots Example - Demonstrating Code Reuse and Subscription Management",
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "type": "module",
+  "scripts": {
+    "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
+    "clean": "rimraf dist",
+    "lint": "eslint src/",
+    "prettier": "prettier --write .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest watch",
+    "install:subscriptions": "node scripts/install-subscriptions.mjs",
+    "deploy": "npm run build && medplum deploy"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "parserOptions": {
+      "project": "./tsconfig.json"
+    },
+    "extends": [
+      "@medplum/eslint-config"
+    ],
+    "root": true
+  },
+  "devDependencies": {
+    "@medplum/bot-layer": "4.3.6",
+    "@medplum/cli": "4.3.6",
+    "@medplum/core": "4.3.6",
+    "@medplum/eslint-config": "4.3.6",
+    "@medplum/fhirtypes": "4.3.6",
+    "@medplum/mock": "4.3.6",
+    "@types/node": "20.19.9",
+    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/ui": "3.2.4",
+    "esbuild": "0.25.8",
+    "rimraf": "6.0.1",
+    "typescript": "5.8.3",
+    "vitest": "3.2.4"
+  },
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+} 

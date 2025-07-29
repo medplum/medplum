@@ -1,0 +1,34 @@
+{
+  "bots": [
+    {
+      "name": "patient-validation-bot",
+      "id": "",
+      "source": "src/bots/patient-validation-bot.ts",
+      "dist": "dist/bots/patient-validation-bot.js"
+    },
+    {
+      "name": "patient-audit-bot",
+      "id": "",
+      "source": "src/bots/patient-audit-bot.ts",
+      "dist": "dist/bots/patient-audit-bot.js"
+    },
+    {
+      "name": "patient-notification-bot",
+      "id": "",
+      "source": "src/bots/patient-notification-bot.ts",
+      "dist": "dist/bots/patient-notification-bot.js"
+    },
+    {
+      "name": "resource-sync-bot",
+      "id": "",
+      "source": "src/bots/resource-sync-bot.ts",
+      "dist": "dist/bots/resource-sync-bot.js"
+    },
+    {
+      "name": "data-quality-bot",
+      "id": "",
+      "source": "src/bots/data-quality-bot.ts",
+      "dist": "dist/bots/data-quality-bot.js"
+    }
+  ]
+} 
