@@ -102,7 +102,7 @@ fi
 
 # Step 8: Deploy Medplum server
 echo "🏥 Deploying Medplum server..."
-helm install medplum ../../charts -n medplum -f ../../charts/values-local.yaml
+helm install medplum ../../charts -n medplum -f ./values-local.yaml
 
 # Step 9: Wait for Medplum server to be ready
 echo "⏳ Waiting for Medplum server to be ready..."
