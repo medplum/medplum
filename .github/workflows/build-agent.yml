@@ -1,283 +1,283 @@
-# name: Build agent
+name: Build agent
 
-# concurrency:
-#   group: ci-build-agent-${{ github.sha }}
-#   cancel-in-progress: true
+concurrency:
+  group: ci-build-agent-${{ github.sha }}
+  cancel-in-progress: true
 
-# on: workflow_dispatch
+on: workflow_dispatch
 
-# permissions:
-#   contents: read
+permissions:
+  contents: read
 
-# jobs:
-#   build_agent_win64:
-#     runs-on: windows-latest
-#     timeout-minutes: 45
-#     env:
-#       NODE_VERSION: '20'
-#       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-#       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-#       TURBO_CACHE: 'remote:rw'
-#     permissions:
-#       actions: read
-#       contents: write
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+jobs:
+  build_agent_win64:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '20'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_CACHE: 'remote:rw'
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-#       - name: Install NSIS
-#         run: choco install nsis
+      - name: Install NSIS
+        run: choco install nsis
 
-#       - name: Install Wget
-#         run: choco install wget
+      - name: Install Wget
+        run: choco install wget
 
-#       - name: Setup Node.js
-#         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-#         with:
-#           node-version: 20
-#           registry-url: 'https://registry.npmjs.org'
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
 
-#       # See: https://github.com/actions/cache/blob/5a3ec84eff668545956fd18022155c47e93e2684/examples.md#node---npm
-#       - name: Get npm cache directory
-#         id: npm-cache-dir
-#         shell: pwsh
-#         run: echo "dir=$(npm config get cache)" >> ${env:GITHUB_OUTPUT}
+      # See: https://github.com/actions/cache/blob/5a3ec84eff668545956fd18022155c47e93e2684/examples.md#node---npm
+      - name: Get npm cache directory
+        id: npm-cache-dir
+        shell: pwsh
+        run: echo "dir=$(npm config get cache)" >> ${env:GITHUB_OUTPUT}
 
-#       - name: Cache node modules
-#         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-#         env:
-#           cache-name: cache-node-modules
-#         with:
-#           path: ${{ steps.npm-cache-dir.outputs.dir }}
-#           key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-#           restore-keys: |
-#             ${{ runner.os }}-build-agent-${{ env.cache-name }}-
-#             ${{ runner.os }}-build-agent
-#             ${{ runner.os }}-
+      - name: Cache node modules
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ${{ steps.npm-cache-dir.outputs.dir }}
+          key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-agent-${{ env.cache-name }}-
+            ${{ runner.os }}-build-agent
+            ${{ runner.os }}-
 
-#       - name: Install dependencies
-#         run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-#       - name: Set repo hash
-#         shell: bash
-#         # This forces git shorthash to match between @medplum/agent and @medplum/core
-#         run: |
-#           set -e
-#           echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Set repo hash
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-#       - name: Build
-#         run: npm run build -- --filter=@medplum/agent
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
 
-#       - name: Find signtool
-#         uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
-#         id: find-signtool
-#         with:
-#           result-encoding: string
-#           script: |
-#             const fs = require('node:fs/promises');
+      - name: Find signtool
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
+        id: find-signtool
+        with:
+          result-encoding: string
+          script: |
+            const fs = require('node:fs/promises');
 
-#             /**
-#             * Searches the installed Windows SDKs for the most recent signtool.exe version
-#             * Taken from https://github.com/dlemstra/code-sign-action
-#             * @returns Path to most recent signtool.exe (x86 version)
-#             */
-#             async function getSigntoolLocation() {
-#                 const windowsKitsFolder = 'C:/Program Files (x86)/Windows Kits/10/bin/';
-#                 const folders = await fs.readdir(windowsKitsFolder);
-#                 let fileName = '';
-#                 let maxVersion = 0;
-#                 for (const folder of folders) {
-#                     if (!folder.endsWith('.0')) {
-#                         continue;
-#                     }
-#                     const folderVersion = parseInt(folder.replace(/\./g,''));
-#                     if (folderVersion > maxVersion) {
-#                         const signtoolFilename = `${windowsKitsFolder}${folder}/x64/signtool.exe`;
-#                         try {
-#                             const stat = await fs.stat(signtoolFilename);
-#                             if (stat.isFile()) {
-#                                 fileName = signtoolFilename;
-#                                 maxVersion = folderVersion;
-#                             }
-#                         } catch {
-#                             console.warn('Skipping %s due to error.', signtoolFilename);
-#                         }
-#                     }
-#                 }
-#                 if(fileName == '') {
-#                     throw new Error('Unable to find signtool.exe in ' + windowsKitsFolder);
-#                 }
+            /**
+            * Searches the installed Windows SDKs for the most recent signtool.exe version
+            * Taken from https://github.com/dlemstra/code-sign-action
+            * @returns Path to most recent signtool.exe (x86 version)
+            */
+            async function getSigntoolLocation() {
+                const windowsKitsFolder = 'C:/Program Files (x86)/Windows Kits/10/bin/';
+                const folders = await fs.readdir(windowsKitsFolder);
+                let fileName = '';
+                let maxVersion = 0;
+                for (const folder of folders) {
+                    if (!folder.endsWith('.0')) {
+                        continue;
+                    }
+                    const folderVersion = parseInt(folder.replace(/\./g,''));
+                    if (folderVersion > maxVersion) {
+                        const signtoolFilename = `${windowsKitsFolder}${folder}/x64/signtool.exe`;
+                        try {
+                            const stat = await fs.stat(signtoolFilename);
+                            if (stat.isFile()) {
+                                fileName = signtoolFilename;
+                                maxVersion = folderVersion;
+                            }
+                        } catch {
+                            console.warn('Skipping %s due to error.', signtoolFilename);
+                        }
+                    }
+                }
+                if(fileName == '') {
+                    throw new Error('Unable to find signtool.exe in ' + windowsKitsFolder);
+                }
                 
-#                 console.log(fileName);
-#                 return fileName;
-#             }
+                console.log(fileName);
+                return fileName;
+            }
 
-#             const path = await getSigntoolLocation();
-#             return path.replace(' ', '\ ');
+            const path = await getSigntoolLocation();
+            return path.replace(' ', '\ ');
 
-#       - name: Build Agent installer
-#         shell: bash
-#         run: ./scripts/build-agent-installer-win64.sh
-#         env:
-#           SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
-#           SKIP_SIGNING: 1
+      - name: Build Agent installer
+        shell: bash
+        run: ./scripts/build-agent-installer-win64.sh
+        env:
+          SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
+          SKIP_SIGNING: 1
 
-#       - name: Set Medplum version
-#         shell: bash
-#         run: |
-#           set -e
-#           echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+      - name: Set Medplum version
+        shell: bash
+        run: |
+          set -e
+          echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
-#       - name: Upload agent installer
-#         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-#         with:
-#           name: medplum-agent-installer-${{ env.MEDPLUM_VERSION }}-windows
-#           path: packages/agent/medplum-agent-installer-*
+      - name: Upload agent installer
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: medplum-agent-installer-${{ env.MEDPLUM_VERSION }}-windows
+          path: packages/agent/medplum-agent-installer-*
 
-#   build_agent_linux-x64:
-#     runs-on: ubuntu-latest
-#     timeout-minutes: 45
-#     env:
-#       NODE_VERSION: '20'
-#       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-#       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-#       TURBO_CACHE: 'remote:rw'
-#     permissions:
-#       actions: read
-#       contents: write
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+  build_agent_linux-x64:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '20'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_CACHE: 'remote:rw'
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-#       - name: Setup Node.js
-#         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-#         with:
-#           node-version: 20
-#           registry-url: 'https://registry.npmjs.org'
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
 
-#       - name: Cache node modules
-#         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-#         env:
-#           cache-name: cache-node-modules
-#         with:
-#           path: ~/.npm
-#           key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-#           restore-keys: |
-#             ${{ runner.os }}-build-agent-${{ env.cache-name }}-
-#             ${{ runner.os }}-build-agent
-#             ${{ runner.os }}-
+      - name: Cache node modules
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-agent-${{ env.cache-name }}-
+            ${{ runner.os }}-build-agent
+            ${{ runner.os }}-
 
-#       - name: Install dependencies
-#         run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-#       - name: Set repo hash
-#         shell: bash
-#         # This forces git shorthash to match between @medplum/agent and @medplum/core
-#         run: |
-#           set -e
-#           echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Set repo hash
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-#       - name: Build
-#         run: npm run build -- --filter=@medplum/agent
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
 
-#       - name: Build Agent
-#         shell: bash
-#         run: ./scripts/build-agent-installer-linux.sh
+      - name: Build Agent
+        shell: bash
+        run: ./scripts/build-agent-installer-linux.sh
 
-#       - name: Set Medplum version
-#         shell: bash
-#         run: |
-#           set -e
-#           echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+      - name: Set Medplum version
+        shell: bash
+        run: |
+          set -e
+          echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
-#       - name: Make tarball
-#         shell: bash
-#         run: |
-#           set -e
+      - name: Make tarball
+        shell: bash
+        run: |
+          set -e
 
-#           mkdir medplum-agent-$MEDPLUM_VERSION-linux-x64
+          mkdir medplum-agent-$MEDPLUM_VERSION-linux-x64
 
-#           cp packages/agent/medplum-agent-$MEDPLUM_VERSION-linux ./medplum-agent-$MEDPLUM_VERSION-linux-x64/medplum-agent-$MEDPLUM_VERSION-linux-x64
-#           cp packages/agent/medplum-agent-$MEDPLUM_VERSION-linux.sha256 ./medplum-agent-$MEDPLUM_VERSION-linux-x64/medplum-agent-$MEDPLUM_VERSION-linux-x64.sha256
+          cp packages/agent/medplum-agent-$MEDPLUM_VERSION-linux ./medplum-agent-$MEDPLUM_VERSION-linux-x64/medplum-agent-$MEDPLUM_VERSION-linux-x64
+          cp packages/agent/medplum-agent-$MEDPLUM_VERSION-linux.sha256 ./medplum-agent-$MEDPLUM_VERSION-linux-x64/medplum-agent-$MEDPLUM_VERSION-linux-x64.sha256
 
-#           tar -czvf ./medplum-agent-$MEDPLUM_VERSION-linux-x64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-linux-x64
+          tar -czvf ./medplum-agent-$MEDPLUM_VERSION-linux-x64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-linux-x64
 
-#       - name: Upload agent installer
-#         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-#         with:
-#           name: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-x64
-#           path: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-x64.tar.gz
+      - name: Upload agent installer
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-x64
+          path: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-x64.tar.gz
 
-#   build_agent_linux-arm64:
-#     runs-on: ubuntu-24.04-arm
-#     timeout-minutes: 45
-#     env:
-#       NODE_VERSION: '20'
-#       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-#       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-#       TURBO_CACHE: 'remote:rw'
-#     permissions:
-#       actions: read
-#       contents: write
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+  build_agent_linux-arm64:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '20'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_CACHE: 'remote:rw'
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-#       - name: Setup Node.js
-#         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
-#         with:
-#           node-version: 20
-#           registry-url: 'https://registry.npmjs.org'
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
 
-#       - name: Cache node modules
-#         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
-#         env:
-#           cache-name: cache-node-modules
-#         with:
-#           path: ~/.npm
-#           key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-#           restore-keys: |
-#             ${{ runner.os }}-build-agent-${{ env.cache-name }}-
-#             ${{ runner.os }}-build-agent
-#             ${{ runner.os }}-
+      - name: Cache node modules
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-agent-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-agent-${{ env.cache-name }}-
+            ${{ runner.os }}-build-agent
+            ${{ runner.os }}-
 
-#       - name: Install dependencies
-#         run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-#       - name: Set repo hash
-#         shell: bash
-#         # This forces git shorthash to match between @medplum/agent and @medplum/core
-#         run: |
-#           set -e
-#           echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+      - name: Set repo hash
+        shell: bash
+        # This forces git shorthash to match between @medplum/agent and @medplum/core
+        run: |
+          set -e
+          echo "MEDPLUM_GIT_SHORTHASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
-#       - name: Build
-#         run: npm run build -- --filter=@medplum/agent
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
 
-#       - name: Build Agent
-#         shell: bash
-#         run: ./scripts/build-agent-installer-linux.sh
+      - name: Build Agent
+        shell: bash
+        run: ./scripts/build-agent-installer-linux.sh
 
-#       - name: Set Medplum version
-#         shell: bash
-#         run: |
-#           set -e
-#           echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+      - name: Set Medplum version
+        shell: bash
+        run: |
+          set -e
+          echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
 
-#       - name: Make tarball
-#         shell: bash
-#         run: |
-#           set -e
+      - name: Make tarball
+        shell: bash
+        run: |
+          set -e
 
-#           mkdir medplum-agent-$MEDPLUM_VERSION-linux-arm64
+          mkdir medplum-agent-$MEDPLUM_VERSION-linux-arm64
 
-#           cp packages/agent/medplum-agent-$MEDPLUM_VERSION-linux ./medplum-agent-$MEDPLUM_VERSION-linux-arm64/medplum-agent-$MEDPLUM_VERSION-linux-arm64
-#           cp packages/agent/medplum-agent-$MEDPLUM_VERSION-linux.sha256 ./medplum-agent-$MEDPLUM_VERSION-linux-arm64/medplum-agent-$MEDPLUM_VERSION-linux-arm64.sha256
+          cp packages/agent/medplum-agent-$MEDPLUM_VERSION-linux ./medplum-agent-$MEDPLUM_VERSION-linux-arm64/medplum-agent-$MEDPLUM_VERSION-linux-arm64
+          cp packages/agent/medplum-agent-$MEDPLUM_VERSION-linux.sha256 ./medplum-agent-$MEDPLUM_VERSION-linux-arm64/medplum-agent-$MEDPLUM_VERSION-linux-arm64.sha256
 
-#           tar -czvf ./medplum-agent-$MEDPLUM_VERSION-linux-arm64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-linux-arm64
+          tar -czvf ./medplum-agent-$MEDPLUM_VERSION-linux-arm64.tar.gz ./medplum-agent-$MEDPLUM_VERSION-linux-arm64
 
-#       - name: Upload agent installer
-#         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-#         with:
-#           name: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-arm64
-#           path: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-arm64.tar.gz
+      - name: Upload agent installer
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-arm64
+          path: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux-arm64.tar.gz
