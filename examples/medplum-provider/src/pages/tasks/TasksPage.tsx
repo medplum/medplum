@@ -83,7 +83,7 @@ export function TasksPage(): JSX.Element {
 
         <Flex direction="column" w="45%" h="100%" className={styles.borderRight}>
           {selectedTask && (
-            <TasksInputNote task={selectedTask} />
+            <TasksInputNote key={selectedTask.id} task={selectedTask} />
           )}
         </Flex>
 
