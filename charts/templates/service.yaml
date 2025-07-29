@@ -11,11 +11,14 @@ metadata:
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
 spec:
-  type: ClusterIP
+  type: {{ .Values.service.type | default "ClusterIP" }}
   ports:
     - name: http
       protocol: TCP
       port: {{ .Values.service.port | default 80 }}
       targetPort: {{ .Values.service.targetPort | default 8103 }}
+      {{- if and (eq (.Values.service.type | default "ClusterIP") "NodePort") .Values.service.nodePort }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- end }}
   selector:
     {{- include "medplum.selectorLabels" . | nindent 4 }}
