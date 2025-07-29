@@ -1,7 +1,7 @@
 import { Binary } from '@medplum/fhirtypes';
 import { S3Storage } from '../cloud/aws/storage';
 import { AzureBlobStorage } from '../cloud/azure/storage';
-import { GoogleCloudStorage } from '../cloud/gcp/storage';
+// import { GoogleCloudStorage } from '../cloud/gcp/storage';
 import { getConfig } from '../config/loader';
 import { FileSystemStorage } from './filesystem';
 import { generatePresignedUrl } from './presign';
@@ -16,8 +16,8 @@ export function initBinaryStorage(type?: string): void {
     binaryStorage = new AzureBlobStorage(type.replace('azure:', ''));
   } else if (type?.startsWith('file:')) {
     binaryStorage = new FileSystemStorage(type.replace('file:', ''));
-  } else if (type?.startsWith('gs:')) {
-    binaryStorage = new GoogleCloudStorage(type.replace('gs:', ''));
+  // } else if (type?.startsWith('gs:')) {
+  //   binaryStorage = new GoogleCloudStorage(type.replace('gs:', ''));
   } else {
     binaryStorage = undefined;
   }
