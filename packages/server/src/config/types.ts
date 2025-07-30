@@ -132,7 +132,6 @@ export interface MedplumDatabaseConfig {
   dbname?: string;
   username?: string;
   password?: string;
-  schema?: string;
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
   runMigrations?: boolean;

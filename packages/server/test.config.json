@@ -30,7 +30,6 @@
     "dbname": "medplum_test",
     "username": "medplum",
     "password": "medplum",
-    "schema": "public",
     "disableRunPostDeployMigrations": true
   },
   "redis": {

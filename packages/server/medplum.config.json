@@ -26,8 +26,7 @@
     "port": 5432,
     "dbname": "medplum",
     "username": "medplum",
-    "password": "medplum",
-    "schema": "public"
+    "password": "medplum"
   },
   "redis": {
     "host": "localhost",
