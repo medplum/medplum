@@ -106,4 +106,4 @@ jobs:
           file: ${{ matrix.DOCKER_BUILD_FILE_PATH }}
           platforms: ${{ steps.setup.outputs.DOCKER_BUILD_PLATFORMS }}
           push: ${{ steps.setup.outputs.ACR_IMAGE_PUSH }}
-          tags: ghcr.io/data2evidence/${{ env.AZ_REG_REPOSITORY }}:${{ env.DOCKER_IMG_TAG_NAME }}
+          tags: ghcr.io/data2evidence/${{ matrix.AZ_REG_REPOSITORY }}:${{ env.DOCKER_IMG_TAG_NAME }}
