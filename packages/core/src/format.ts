@@ -35,7 +35,7 @@ export interface HumanNameFormatOptions {
  * @returns The string representation of the typed value.
  */
 export function typedValueToString(typedValue: TypedValue | undefined): string {
-  if (!typedValue?.value) {
+  if (!typedValue) {
     return '';
   }
   switch (typedValue.type) {
@@ -54,7 +54,7 @@ export function typedValueToString(typedValue: TypedValue | undefined): string {
     case 'Reference':
       return formatReferenceString(typedValue.value);
     default:
-      return typedValue.value.toString();
+      return typedValue.value?.toString() ?? '';
   }
 }
 

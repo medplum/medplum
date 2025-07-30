@@ -30,11 +30,13 @@ export interface SearchableToken {
   readonly value: string | undefined;
 }
 
-export function convertToSearchableNumbers(typedValues: TypedValue[]): number[] {
-  const result: number[] = [];
+export function convertToSearchableNumbers(typedValues: TypedValue[]): [number | undefined, number | undefined][] {
+  const result: [number | undefined, number | undefined][] = [];
   for (const typedValue of typedValues) {
-    if (typeof typedValue.value === 'number') {
-      result.push(typedValue.value);
+    if (typedValue.type === PropertyType.Range) {
+      result.push([typedValue.value?.low?.value, typedValue.value?.high?.value]);
+    } else if (typeof typedValue.value === 'number') {
+      result.push([typedValue.value, typedValue.value]);
     }
   }
   return result;

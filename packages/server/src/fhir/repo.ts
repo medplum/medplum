@@ -18,6 +18,7 @@ import {
   DEFAULT_MAX_SEARCH_COUNT,
   evalFhirPathTyped,
   Filter,
+  flatMapFilter,
   forbidden,
   formatSearchQuery,
   getReferenceString,
@@ -1688,43 +1689,38 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // "Date" column is a special case that only applies when the following conditions are true:
       // 1. The search parameter is a date type.
       // 2. The underlying FHIR ElementDefinition referred to by the search parameter has a type of "date".
-      return convertToSearchableDates(typedValues)
-        .map((p) => (p.start ?? p.end)?.substring(0, 10))
-        .filter(Boolean) as string[];
+      return flatMapFilter(convertToSearchableDates(typedValues), (p) => (p.start ?? p.end)?.substring(0, 10));
     }
 
     if (details.type === SearchParameterType.DATETIME) {
-      return convertToSearchableDates(typedValues)
-        .map((p) => p.start ?? p.end)
-        .filter(Boolean) as string[];
+      // Future work: write the whole period to the DB after migrating all "date" search parameters to use a tstzrange.
+      return flatMapFilter(convertToSearchableDates(typedValues), (p) => p.start ?? p.end);
     }
 
     if (searchParam.type === 'number') {
-      return convertToSearchableNumbers(typedValues).filter((n) => n !== undefined);
+      // Future work: write the whole range to the DB after migrating all "number" search parameters to use a range.
+      return flatMapFilter(convertToSearchableNumbers(typedValues), ([low, high]) => low ?? high);
     }
 
     if (searchParam.type === 'quantity') {
-      return convertToSearchableQuantities(typedValues)
-        .map((q) => q.value)
-        .filter((q) => q !== undefined);
+      // Future work: write the whole range to the DB after migrating all "quantity" search parameters to use a range.
+      return flatMapFilter(convertToSearchableQuantities(typedValues), (q) => q.value);
     }
 
     if (searchParam.type === 'reference') {
-      return convertToSearchableReferences(typedValues).map(truncateTextColumn).filter(Boolean);
+      return flatMapFilter(convertToSearchableReferences(typedValues), truncateTextColumn);
     }
 
     if (searchParam.type === 'token') {
-      return convertToSearchableTokens(typedValues)
-        .map((t) => truncateTextColumn(t.value))
-        .filter(Boolean);
+      return flatMapFilter(convertToSearchableTokens(typedValues), (t) => truncateTextColumn(t.value));
     }
 
     if (searchParam.type === 'string') {
-      return convertToSearchableStrings(typedValues).map(truncateTextColumn).filter(Boolean);
+      return flatMapFilter(convertToSearchableStrings(typedValues), truncateTextColumn);
     }
 
     if (searchParam.type === 'uri') {
-      return convertToSearchableUris(typedValues).map(truncateTextColumn).filter(Boolean);
+      return flatMapFilter(convertToSearchableUris(typedValues), truncateTextColumn);
     }
 
     if (searchParam.type === 'special' || searchParam.type === 'composite') {

@@ -14,8 +14,11 @@ describe('Search IR', () => {
   test('convertToSearchableNumbers', () => {
     expect(convertToSearchableNumbers([])).toStrictEqual([]);
     expect(convertToSearchableNumbers([{ type: 'undefined', value: undefined }])).toStrictEqual([]);
+    expect(
+      convertToSearchableNumbers([{ type: 'Range', value: { low: { value: 10 }, high: { value: 20 } } }])
+    ).toStrictEqual([[10, 20]]);
     expect(convertToSearchableNumbers([toTypedValue('foo')])).toStrictEqual([]);
-    expect(convertToSearchableNumbers([toTypedValue(42)])).toStrictEqual([42]);
+    expect(convertToSearchableNumbers([toTypedValue(42)])).toStrictEqual([[42, 42]]);
   });
 
   test('convertToSearchableDates', () => {
