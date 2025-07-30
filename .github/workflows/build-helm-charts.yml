@@ -14,7 +14,7 @@ permissions:
   contents: read
 
 jobs:
-  build_deb:
+  build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -31,7 +31,7 @@ jobs:
         uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
 
       - name: Setup Helm S3
-        run: helm plugin install https://github.com/hypnoglow/helm-s3.git
+        run: helm plugin install https://github.com/hypnoglow/helm-s3.git --version 0.17.0
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
