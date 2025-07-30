@@ -378,5 +378,17 @@ describe('FHIRPath utils', () => {
       start: '2020-01-01T12:34:56.000Z',
       end: '2020-01-01T12:34:56.999Z',
     });
+
+    // Normalize date strings with time zone offsets
+    expect(toPeriod('2020-01-01T12:34:56.000+01:00')).toMatchObject({
+      start: '2020-01-01T11:34:56.000Z',
+      end: '2020-01-01T11:34:56.000Z',
+    });
+
+    // Normalize periods with time zone offsets
+    expect(toPeriod({ start: '2020-01-01T12:34:56.000+01:00', end: '2020-01-01T12:34:56.999+01:00' })).toMatchObject({
+      start: '2020-01-01T11:34:56.000Z',
+      end: '2020-01-01T11:34:56.999Z',
+    });
   });
 });
