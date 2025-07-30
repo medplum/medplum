@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { createReference, WithId } from '@medplum/core';
 import {
   AccessPolicy,
   ClientApplication,
@@ -10,7 +10,7 @@ import {
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { getAuthenticatedContext } from '../context';
-import { Repository, getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { makeValidationMiddleware } from '../util/validator';
 
@@ -42,13 +42,16 @@ export interface CreateClientRequest {
   readonly redirectUri?: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
   readonly identityProvider?: IdentityProvider;
+  readonly accessTokenLifetime?: string;
   readonly refreshTokenLifetime?: string;
 }
 
-export async function createClient(repo: Repository, request: CreateClientRequest): Promise<ClientApplication> {
-  const client = await repo.createResource<ClientApplication>({
+export async function createClient(repo: Repository, request: CreateClientRequest): Promise<WithId<ClientApplication>> {
+  const systemRepo = getSystemRepo();
+  const client = await systemRepo.createResource<ClientApplication>({
     meta: {
       project: request.project.id,
+      author: repo.getConfig().author,
     },
     resourceType: 'ClientApplication',
     name: request.name,
@@ -56,10 +59,10 @@ export async function createClient(repo: Repository, request: CreateClientReques
     description: request.description,
     redirectUri: request.redirectUri,
     identityProvider: request.identityProvider,
+    accessTokenLifetime: request.accessTokenLifetime,
     refreshTokenLifetime: request.refreshTokenLifetime,
   });
 
-  const systemRepo = getSystemRepo();
   await systemRepo.createResource<ProjectMembership>({
     meta: {
       project: request.project.id,

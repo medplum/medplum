@@ -3,6 +3,8 @@ import {
   Bundle,
   Coverage,
   Extension,
+  Location,
+  Organization,
   Patient,
   Practitioner,
   QuestionnaireResponse,
@@ -14,6 +16,7 @@ import {
 } from '@medplum/fhirtypes';
 import { getMissingRequiredQuestionnaireItems } from './aoe';
 import {
+  HEALTH_GORILLA_AUTHORIZED_BY_EXT,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
@@ -36,6 +39,8 @@ export type LabOrderInputs = {
   patient: Patient | (Reference<Patient> & { reference: string });
   /** The physician who requests diagnostic procedures for the patient and responsible for the order.  */
   requester: Practitioner | (Reference<Practitioner> & { reference: string });
+  /** For multi-location practices, optionally specify the location from which the order is being placed */
+  requestingLocation?: Location | Organization | (Reference<Location | Organization> & { reference: string });
   /** The desired performer for doing the diagnostic testing - laboratory, radiology imaging center, etc. */
   performingLab: LabOrganization;
   /**
@@ -182,8 +187,11 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
 }
 
 export class LabOrderValidationError extends Error {
-  constructor(readonly errors: LabOrderInputErrors) {
+  readonly errors: LabOrderInputErrors;
+
+  constructor(errors: LabOrderInputErrors) {
     super(`Invalid lab order inputs: ${JSON.stringify(errors)}`);
+    this.errors = errors;
   }
 }
 
@@ -209,6 +217,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
   const {
     patient,
     requester,
+    requestingLocation,
     performingLab,
     performingLabAccountNumber,
     selectedTests,
@@ -258,7 +267,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
       performer: [performerReference],
       category: [{ coding: [{ system: SNOMED, code: '103693007', display: 'Diagnostic procedure' }] }],
       code: { coding: [test] },
-      priority: metadata?.priority || 'routine',
+      priority: metadata?.priority ?? 'routine',
       note: metadata?.notes
         ? [{ authorReference: requesterReference, time: new Date().toISOString(), text: metadata.notes }]
         : undefined,
@@ -296,6 +305,17 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
     labOrderExtension.push({
       url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
       valueString: performingLabAccountNumber,
+    });
+  }
+
+  if (requestingLocation) {
+    const requestingLocationRef = isReference(requestingLocation)
+      ? requestingLocation
+      : createReference(requestingLocation);
+
+    labOrderExtension.push({
+      url: HEALTH_GORILLA_AUTHORIZED_BY_EXT,
+      valueReference: requestingLocationRef,
     });
   }
 

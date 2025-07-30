@@ -94,12 +94,6 @@ You can include more than one link in your chained search. In the below example,
   </Tabs>
 </details>
 
-:::note Filtering Chained Searches
-
-The [`_filter` search parameter](/docs/search/filter-search-parameter) is not currently supported when using chained search. This is on the Medplum road map, but there is no firm date when it is expected to be implemented. You can follow [this issue](https://github.com/medplum/medplum/issues/3224) for updates.
-
-:::
-
 ## Reverse Chained Search
 
 Chained references can also be constructed in reverse, filtering on other resources that reference your target search resource. This is done using the `_has` parameter, which has a special syntax: `_has:<next resource type>:<link parameter>:<next parameter>`.

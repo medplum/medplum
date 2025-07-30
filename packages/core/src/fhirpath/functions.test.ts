@@ -572,7 +572,7 @@ describe('FHIRPath functions', () => {
       functions.replaceMatches(
         context,
         [toTypedValue('banana')],
-        new LiteralAtom(toTypedValue('nana')),
+        new LiteralAtom(toTypedValue('(na)+')),
         new LiteralAtom(toTypedValue('tman'))
       )
     ).toStrictEqual([toTypedValue('batman')]);

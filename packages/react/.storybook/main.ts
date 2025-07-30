@@ -1,7 +1,7 @@
-import turbosnap from 'vite-plugin-turbosnap';
 import type { StorybookConfig } from '@storybook/react-vite';
-import { mergeConfig } from 'vite';
 import path from 'path';
+import { mergeConfig } from 'vite';
+import turbosnap from 'vite-plugin-turbosnap';
 
 const config: StorybookConfig = {
   stories: ['../src/stories/Introduction.mdx', '../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
@@ -38,6 +38,7 @@ const config: StorybookConfig = {
         resolve: {
           alias: {
             '@medplum/core': path.resolve(__dirname, '../../core/src'),
+            '@medplum/react-hooks': path.resolve(__dirname, '../../react-hooks/src'),
           },
         },
       });

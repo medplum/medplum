@@ -25,7 +25,6 @@ describe('FhirPathDisplay', () => {
   });
 
   test('Error on multiple values', () => {
-    console.error = jest.fn();
     const patient: Patient = {
       resourceType: 'Patient',
       name: [
@@ -38,7 +37,6 @@ describe('FhirPathDisplay', () => {
     expect(() =>
       render(<FhirPathDisplay resource={patient} path="Patient.name.given" propertyType={PropertyType.string} />)
     ).toThrow('must resolve to a single element');
-    expect(console.error).toHaveBeenCalled();
   });
 
   test('Handles null name', () => {

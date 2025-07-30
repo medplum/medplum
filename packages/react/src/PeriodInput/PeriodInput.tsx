@@ -1,6 +1,6 @@
 import { Group } from '@mantine/core';
 import { Period } from '@medplum/fhirtypes';
-import { useContext, useMemo, useState } from 'react';
+import { JSX, useContext, useMemo, useState } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';

@@ -1,7 +1,28 @@
-import { formatFamilyName, formatGivenName, formatHumanName } from '@medplum/core';
-import { HumanName, Resource, SearchParameter } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
-import { LookupTable } from './lookuptable';
+import { formatFamilyName, formatGivenName, formatHumanName, WithId } from '@medplum/core';
+import {
+  HumanName,
+  Patient,
+  Person,
+  Practitioner,
+  RelatedPerson,
+  Resource,
+  ResourceType,
+  SearchParameter,
+} from '@medplum/fhirtypes';
+import { Pool, PoolClient } from 'pg';
+import { Column, DeleteQuery } from '../sql';
+import { LookupTable, LookupTableRow } from './lookuptable';
+
+const resourceTypes = ['Patient', 'Person', 'Practitioner', 'RelatedPerson'] as const;
+const resourceTypeSet = new Set(resourceTypes);
+type HumanNameResourceType = (typeof resourceTypes)[number];
+type HumanNameResource = Patient | Person | Practitioner | RelatedPerson;
+
+export interface HumanNameTableRow extends LookupTableRow {
+  name: string | undefined;
+  given: string | undefined;
+  family: string | undefined;
+}
 
 /**
  * The HumanNameTable class is used to index and search "name" properties on "Person" resources.
@@ -16,6 +37,12 @@ export class HumanNameTable extends LookupTable {
     'Practitioner-name',
     'RelatedPerson-name',
   ]);
+
+  private static hasHumanName(resourceType: ResourceType): resourceType is HumanNameResourceType {
+    return resourceTypeSet.has(resourceType as any);
+  }
+
+  protected readonly CONTAINS_SQL_OPERATOR: LookupTable['CONTAINS_SQL_OPERATOR'] = 'ILIKE';
 
   /**
    * Returns the table name.
@@ -43,43 +70,88 @@ export class HumanNameTable extends LookupTable {
     return HumanNameTable.knownParams.has(searchParam.id as string);
   }
 
+  extractValues(result: HumanNameTableRow[], resource: WithId<Resource>): void {
+    if (!HumanNameTable.hasHumanName(resource.resourceType)) {
+      return;
+    }
+
+    const names: (HumanName | undefined | null)[] | undefined = (resource as HumanNameResource).name;
+    if (!Array.isArray(names)) {
+      return;
+    }
+    for (const name of names) {
+      if (!name) {
+        continue;
+      }
+
+      const extracted = {
+        resourceId: resource.id,
+        // logical OR coalesce to ensure that empty strings are inserted as NULL
+        name: getNameString(name) || undefined,
+        given: formatGivenName(name) || undefined,
+        family: formatFamilyName(name) || undefined,
+      };
+
+      if (
+        (extracted.name || extracted.given || extracted.family) &&
+        !result.some(
+          (n) =>
+            n.resourceId === extracted.resourceId &&
+            n.name === extracted.name &&
+            n.given === extracted.given &&
+            n.family === extracted.family
+        )
+      ) {
+        result.push(extracted);
+      }
+    }
+  }
+
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    if (!resources[0] || !HumanNameTable.hasHumanName(resources[0].resourceType)) {
+      return;
+    }
+
+    await super.batchIndexResources(client, resources, create);
+  }
+
   /**
-   * Indexes a resource HumanName values.
-   * Attempts to reuse existing identifiers if they are correct.
+   * Deletes the resource from the lookup table.
    * @param client - The database client.
-   * @param resource - The resource to index.
-   * @param create - True if the resource should be created (vs updated).
-   * @returns Promise on completion.
+   * @param resource - The resource to delete.
    */
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (
-      resource.resourceType !== 'Patient' &&
-      resource.resourceType !== 'Person' &&
-      resource.resourceType !== 'Practitioner' &&
-      resource.resourceType !== 'RelatedPerson'
-    ) {
+  async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
+    if (!HumanNameTable.hasHumanName(resource.resourceType)) {
       return;
     }
 
-    if (!create) {
-      await this.deleteValuesForResource(client, resource);
-    }
+    const tableName = this.getTableName();
+    const resourceId = resource.id;
+    await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
+  }
 
-    const names: HumanName[] | undefined = resource.name;
-    if (!names || !Array.isArray(names)) {
+  /**
+   * Purges resources of the specified type that were last updated before the specified date.
+   * This is only available to the system and super admin accounts.
+   * @param client - The database client.
+   * @param resourceType - The FHIR resource type.
+   * @param before - The date before which resources should be purged.
+   */
+  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+    if (!HumanNameTable.hasHumanName(resourceType)) {
       return;
     }
 
-    const resourceType = resource.resourceType;
-    const resourceId = resource.id as string;
-    const values = names.map((name) => ({
-      resourceId,
-      name: getNameString(name),
-      given: formatGivenName(name),
-      family: formatFamilyName(name),
-    }));
-
-    await this.insertValuesForResource(client, resourceType, values);
+    const lookupTableName = this.getTableName();
+    await new DeleteQuery(lookupTableName)
+      .using(resourceType)
+      .where(new Column(lookupTableName, 'resourceId'), '=', new Column(resourceType, 'id'))
+      .where(new Column(resourceType, 'lastUpdated'), '<', before)
+      .execute(client);
   }
 }
 

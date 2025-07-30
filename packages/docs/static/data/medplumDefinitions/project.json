@@ -616,6 +616,22 @@
       "definition": "The profiles to add by default",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "exportedResourceType",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "Project.exportedResourceType",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "The resource types exported by the project when linked",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [

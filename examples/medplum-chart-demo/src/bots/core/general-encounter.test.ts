@@ -2,6 +2,7 @@ import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitio
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { vi } from 'vitest';
 import { handler } from './general-encounter-note';
 import {
   encounter,
@@ -14,7 +15,6 @@ import {
   selfReportedHistoryBreastCancer,
   selfReportedHistoryEndometrialCancer,
 } from './test-data/general-encounter-test-data';
-import { vi } from 'vitest';
 
 describe('General Encounter Note', async () => {
   const bot = { reference: 'Bot/123' };

@@ -1,8 +1,8 @@
 import { ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
-import { MemoryRouter } from 'react-router-dom';
 import { AssaysPage } from './AssaysPage';
 
 const medplum = new MockClient();

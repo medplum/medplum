@@ -1,11 +1,11 @@
 import { Button, Chip, Group, Modal, NativeSelect, Stack, Switch, TextInput } from '@mantine/core';
 import { formatTiming } from '@medplum/core';
 import { Timing, TimingRepeat } from '@medplum/fhirtypes';
-import { useContext, useMemo, useRef, useState } from 'react';
+import { JSX, useContext, useMemo, useRef, useState } from 'react';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { FormSection } from '../FormSection/FormSection';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
-import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 
 const daysOfWeek = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
@@ -21,7 +21,7 @@ export function TimingInput(props: TimingInputProps): JSX.Element {
   const [value, setValue] = useState<Timing | undefined>(props.defaultValue);
   const [open, setOpen] = useState(!props.disabled && (props.defaultModalOpen ?? false));
 
-  const valueRef = useRef<Timing>();
+  const valueRef = useRef<Timing>(value);
   valueRef.current = value;
 
   return (
@@ -77,7 +77,7 @@ function TimingEditorDialog(props: TimingEditorDialogProps): JSX.Element {
     [getExtendedProps, props.path]
   );
 
-  const valueRef = useRef<Timing>();
+  const valueRef = useRef<Timing>(value);
   valueRef.current = value;
 
   function setStart(newStart: string): void {

@@ -21,16 +21,13 @@ describe('CLI utils', () => {
       return writable;
     });
 
-    try {
-      const extractor = safeTarExtractor('/tmp/');
+    const extractor = safeTarExtractor('/tmp/');
+    expect(() => {
       for (let i = 0; i < 101; i++) {
         extractor.write(`file-${i}.txt`);
       }
       extractor.end();
-      throw new Error('Expected error');
-    } catch (err) {
-      expect((err as Error).message).toStrictEqual('Tar extractor reached max number of files');
-    }
+    }).toThrow('Tar extractor reached max number of files');
   });
 
   test('safeTarExtractor throws an error when size > MAX_SIZE', async () => {
@@ -44,16 +41,13 @@ describe('CLI utils', () => {
       return writable;
     });
 
-    try {
+    expect(() => {
       const extractor = safeTarExtractor('/tmp/');
       for (let i = 0; i < 11; i++) {
         extractor.write(`file-${i}.txt`);
       }
       extractor.end();
-      throw new Error('Expected error');
-    } catch (err) {
-      expect((err as Error).message).toStrictEqual('Tar extractor reached max size');
-    }
+    }).toThrow('Tar extractor reached max size');
   });
 
   test('getCodeContentType', () => {

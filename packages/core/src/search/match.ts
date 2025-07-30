@@ -1,6 +1,8 @@
-import { CodeableConcept, Coding, Identifier, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { CodeableConcept, Identifier, Reference, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPath } from '../fhirpath/parse';
+import { isPeriod } from '../fhirpath/utils';
 import { PropertyType, globalSchema } from '../types';
+import { isString } from '../utils';
 import { SearchParameterType, getSearchParameterDetails } from './details';
 import { Filter, Operator, SearchRequest, splitSearchOnComma } from './search';
 
@@ -129,7 +131,13 @@ function matchesStringFilter(
       if (searchParamElementType === PropertyType.Identifier) {
         match = matchesTokenIdentifierValue(resourceValue as Identifier, filter.operator, filterValue);
       } else if (searchParamElementType === PropertyType.CodeableConcept) {
-        match = matchesTokenCodeableConceptValue(resourceValue as Coding, filter.operator, filterValue);
+        match = matchesTokenCodeableConceptValue(resourceValue as CodeableConcept, filter.operator, filterValue);
+      } else if (searchParamElementType === PropertyType.Coding) {
+        match = matchesTokenCodeableConceptValue(
+          { coding: [resourceValue] } as CodeableConcept,
+          filter.operator,
+          filterValue
+        );
       } else {
         match = matchesStringValue(resourceValue, filter.operator, filterValue, asToken);
       }
@@ -222,7 +230,11 @@ function matchesDateFilter(resource: Resource, filter: Filter, searchParam: Sear
   const negated = isNegated(filter.operator);
   for (const resourceValue of resourceValues) {
     for (const filterValue of filterValues) {
-      const match = matchesDateValue(resourceValue as string, filter.operator, filterValue);
+      const match = matchesDateValue(
+        buildDateTimeColumn(resourceValue),
+        filter.operator,
+        buildDateTimeColumn(filterValue) as string
+      );
       if (match) {
         return !negated;
       }
@@ -233,7 +245,10 @@ function matchesDateFilter(resource: Resource, filter: Filter, searchParam: Sear
   return negated;
 }
 
-function matchesDateValue(resourceValue: string, operator: Operator, filterValue: string): boolean {
+function matchesDateValue(resourceValue: string | undefined, operator: Operator, filterValue: string): boolean {
+  if (!resourceValue) {
+    return false;
+  }
   switch (operator) {
     case Operator.STARTS_AFTER:
     case Operator.GREATER_THAN:
@@ -251,6 +266,33 @@ function matchesDateValue(resourceValue: string, operator: Operator, filterValue
     default:
       return false;
   }
+}
+
+/**
+ * Builds the column value for a date/time parameter.
+ * Tries to parse the date string.
+ * Silently ignores failure.
+ * @param value - The FHIRPath result.
+ * @returns The date/time string if parsed; undefined otherwise.
+ */
+function buildDateTimeColumn(value: unknown): string | undefined {
+  if (isString(value)) {
+    try {
+      const date = new Date(value);
+      return date.toISOString();
+    } catch (err) {
+      console.debug('Failed to parse date', value, err);
+    }
+  } else if (isPeriod(value)) {
+    // Can be a Period
+    if ('start' in value) {
+      return buildDateTimeColumn(value.start);
+    }
+    if ('end' in value) {
+      return buildDateTimeColumn(value.end);
+    }
+  }
+  return undefined;
 }
 
 function isNegated(operator: Operator): boolean {

@@ -1,9 +1,10 @@
-import { Anchor, Button, Center, Group, Stack, Text, TextInput, Title } from '@mantine/core';
+import { Anchor, Center, Group, Stack, Text, TextInput, Title } from '@mantine/core';
 import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { Logo } from '../Logo/Logo';
 import { getErrorsForInput } from '../utils/outcomes';
 
@@ -51,7 +52,7 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
         </Text>
       </Stack>
       <Group justify="flex-end" mt="xl" wrap="nowrap">
-        <Button type="submit">Create project</Button>
+        <SubmitButton>Create project</SubmitButton>
       </Group>
     </Form>
   );

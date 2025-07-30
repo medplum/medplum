@@ -5,6 +5,9 @@ Medplum is an open source implementation of [SMART App Launch 2.0.0](https://www
 ## Configuring your application
 
 - Create your [Client Application](https://app.medplum.com/admin/clients) in your Medplum project
+- Navigate to the [ClientApplication List](https://app.medplum.com/ClientApplication)
+- Select your new `ClientApplication`
+- Navigate to the "Edit" tab
 - Add the `JWKS URI`, `Redirect URI` and `Launch URI` to the Client Application and save
 
 In the example below, this application is configured to launch Inferno, the testing tool for SMART App Launch.
@@ -43,6 +46,7 @@ In addition to supporting Smart app launch from the [Medplum app](/docs/app), im
 ## Related Reading
 
 - [SMART Scopes](/docs/access/smart-scopes) access control guide
+- [SMART-on-FHIR sample application](https://github.com/medplum/medplum/tree/main/examples/medplum-smart-on-fhir-demo) on GitHub
 - [Inferno](https://inferno.healthit.gov/) reference application with [source](https://github.com/onc-healthit/inferno-program)
 - [ONC Compliance Documentation](/docs/compliance/onc)
 - [Smart App Launch Link](https://storybook.medplum.com/?path=/story/medplum-smartapplaunchlink--basic) on Storybook

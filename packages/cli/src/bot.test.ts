@@ -126,7 +126,7 @@ describe('CLI Bots', () => {
 
     await main(['node', 'index.js', 'bot', 'save', 'hello-world']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
   });
@@ -155,7 +155,7 @@ describe('CLI Bots', () => {
 
     await main(['node', 'index.js', 'bot', 'deploy', 'hello-world']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
   });
@@ -183,7 +183,7 @@ describe('CLI Bots', () => {
 
     await main(['node', 'index.js', 'bot', 'deploy', 'hello-world']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
   });
@@ -419,7 +419,7 @@ describe('CLI Bots', () => {
 
     await main(['node', 'index.js', 'save-bot', 'hello-world']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
   });
@@ -448,7 +448,7 @@ describe('CLI Bots', () => {
 
     await main(['node', 'index.js', 'deploy-bot', 'hello-world']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching(/Success/));
-    const check = await medplum.readResource('Bot', bot.id as string);
+    const check = await medplum.readResource('Bot', bot.id);
     expect(check.code).toBeUndefined();
     expect(check.sourceCode).toBeDefined();
   });

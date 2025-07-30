@@ -1,11 +1,11 @@
-import { Button, Group, JsonInput, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
+import { Anchor, Button, Group, JsonInput, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
 import { Dropzone, FileWithPath } from '@mantine/dropzone';
 import { notifications } from '@mantine/notifications';
 import { convertToTransactionBundle, normalizeErrorString } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconCheck, IconUpload, IconX } from '@tabler/icons-react';
-import { useCallback, useState } from 'react';
+import { JSX, useCallback, useState } from 'react';
 
 const DEFAULT_VALUE = `{"resourceType": "Bundle"}`;
 
@@ -114,10 +114,10 @@ export function BatchPage(): JSX.Element {
   return (
     <Document>
       <Title>Batch Create</Title>
-      <p>
-        Use this page to create, read, or update multiple resources. For more details, see&nbsp;
-        <a href="https://www.hl7.org/fhir/http.html#transaction">FHIR Batch and Transaction</a>.
-      </p>
+      <Text>
+        Use this page to create, read, or update multiple resources. For more details, see{' '}
+        <Anchor href="https://www.hl7.org/fhir/http.html#transaction">FHIR Batch and Transaction</Anchor>.
+      </Text>
       {Object.keys(output).length === 0 && (
         <>
           <h3>Input</h3>

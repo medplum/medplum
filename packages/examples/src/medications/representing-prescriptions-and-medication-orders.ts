@@ -12,6 +12,7 @@ const instructions: MedicationRequest =
     subject: {
       reference: 'Patient/homer-simpson',
     },
+    authoredOn: '2023-09-04',
     medicationCodeableConcept: {
       coding: [
         {
@@ -47,9 +48,6 @@ const instructions: MedicationRequest =
       expectedSupplyDuration: {
         value: 30,
         unit: 'days',
-      },
-      performer: {
-        reference: 'Organization/example-pharmacy',
       },
     },
   };

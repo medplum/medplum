@@ -1,6 +1,7 @@
 import { createReference, isResource } from '@medplum/core';
 import { Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { ResourceInput } from '@medplum/react';
+import { JSX } from 'react';
 
 export interface UserConfigurationInputProps {
   readonly name: string;
@@ -12,7 +13,7 @@ export function UserConfigurationInput(props: UserConfigurationInputProps): JSX.
   return (
     <ResourceInput
       resourceType="UserConfiguration"
-      name="userConfiguration"
+      name={props.name}
       defaultValue={props.defaultValue}
       placeholder="User Configuration"
       onChange={(newValue) => {

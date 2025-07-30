@@ -2,11 +2,10 @@ import { Button, Grid, Group, JsonInput, NativeSelect, Paper } from '@mantine/co
 import { showNotification } from '@mantine/notifications';
 import { ContentType, MedplumClient, PatchOperation, isUUID, normalizeErrorString } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { sendCommand, useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
-import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { sendCommand } from '../utils';
+import { JSX, SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router';
 import classes from './BotEditor.module.css';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';
@@ -52,13 +51,13 @@ export function BotEditor(): JSX.Element | null {
   }, [medplum, id]);
 
   // Gets the uncompiled TS code
-  const getCode = useCallback(() => {
-    return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getValue' });
+  const getCode = useCallback(async () => {
+    return sendCommand<undefined, string>(codeFrameRef.current as HTMLIFrameElement, { command: 'getValue' });
   }, []);
 
   // Gets the compiled JS output
-  const getCodeOutput = useCallback(() => {
-    return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getOutput' });
+  const getCodeOutput = useCallback(async () => {
+    return sendCommand<undefined, string>(codeFrameRef.current as HTMLIFrameElement, { command: 'getOutput' });
   }, []);
 
   const getSampleInput = useCallback(async () => {
@@ -77,8 +76,16 @@ export function BotEditor(): JSX.Element | null {
       try {
         const code = await getCode();
         const codeOutput = await getCodeOutput();
-        const sourceCode = await medplum.createAttachment(code, 'index.ts', 'text/typescript');
-        const executableCode = await medplum.createAttachment(codeOutput, 'index.js', 'text/typescript');
+        const sourceCode = await medplum.createAttachment({
+          data: code,
+          filename: 'index.ts',
+          contentType: 'text/typescript',
+        });
+        const executableCode = await medplum.createAttachment({
+          data: codeOutput,
+          filename: 'index.js',
+          contentType: 'text/typescript',
+        });
         const operations: PatchOperation[] = [
           {
             op: 'add',

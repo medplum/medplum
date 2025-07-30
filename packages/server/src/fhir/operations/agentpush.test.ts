@@ -5,6 +5,7 @@ import {
   ContentType,
   getReferenceString,
   sleep,
+  WithId,
 } from '@medplum/core';
 import {
   Agent,
@@ -21,7 +22,7 @@ import { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { getRedis } from '../../redis';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import { AgentPushParameters } from './agentpush';
@@ -30,8 +31,8 @@ import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/
 describe('Agent Push', () => {
   const app = express();
   let accessToken: string;
-  let agent: Agent;
-  let device: Device;
+  let agent: WithId<Agent>;
+  let device: WithId<Device>;
   let server: Server;
   let port: number;
 
@@ -59,7 +60,7 @@ describe('Agent Push', () => {
         status: 'active',
       });
     expect(res1.status).toBe(201);
-    agent = res1.body as Agent;
+    agent = res1.body as WithId<Agent>;
 
     const res2 = await request(app)
       .post(`/fhir/R4/Device`)
@@ -71,7 +72,7 @@ describe('Agent Push', () => {
         url: 'mllp://192.168.50.10:56001',
       });
     expect(res2.status).toBe(201);
-    device = res2.body as Device;
+    device = res2.body as WithId<Device>;
 
     configMockAgents(port);
   });
@@ -252,7 +253,7 @@ describe('Agent Push', () => {
       .send({ resourceType: 'Device' });
     expect(res1.status).toBe(201);
 
-    const device2 = res1.body as Device;
+    const device2 = res1.body as WithId<Device>;
 
     const res2 = await request(app)
       .post(`/fhir/R4/Agent/${agent.id}/$push`)
@@ -579,7 +580,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
       } satisfies Agent);
     expect(res1.status).toBe(201);
 
-    const agent = res1.body as Agent;
+    const agent = res1.body as WithId<Agent>;
 
     const { cleanup } = await mockAgentResponse<AgentTransmitRequest, AgentTransmitResponse>(
       agent,
@@ -593,7 +594,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
       'MSA|AA|9B38584D|Everything was okay dokay!|';
 
     const res = await request(app)
-      .post(`/fhir/R4/Agent/${agent.id as string}/$push`)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         contentType: ContentType.HL7_V2,
@@ -633,7 +634,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
       } satisfies Agent);
     expect(res1.status).toBe(201);
 
-    const agent = res1.body as Agent;
+    const agent = res1.body as WithId<Agent>;
 
     const { cleanup } = await mockAgentResponse<AgentTransmitRequest, AgentTransmitResponse>(
       agent,
@@ -648,7 +649,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     );
 
     const res = await request(app)
-      .post(`/fhir/R4/Agent/${agent.id as string}/$push`)
+      .post(`/fhir/R4/Agent/${agent.id}/$push`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         contentType: ContentType.PING,

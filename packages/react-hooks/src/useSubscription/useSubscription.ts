@@ -28,7 +28,7 @@ export type UseSubscriptionOptions = {
  * `options` contains the following properties, all of which are optional:
  * - `subscriptionProps` - Allows the caller to pass a `Partial<Subscription>` to use as part of the creation
  * of the `Subscription` resource for this subscription. It enables the user namely to pass things like the `extension` property and to create
- * the `Subscription` with extensions such the {@link https://www.medplum.com/docs/subscriptions/subscription-extensions#interactions "Supported Interaction"} extension which would enable to listen for `create` or `update` only events.
+ * the `Subscription` with extensions such the {@link https://www.medplum.com/docs/subscriptions/subscription-extensions#interactions | Supported Interaction} extension which would enable to listen for `create` or `update` only events.
  * - `onWebsocketOpen` - Called when the WebSocket connection is established with Medplum server.
  * - `onWebsocketClose` - Called when the WebSocket connection disconnects.
  * - `onSubscriptionConnect` - Called when the corresponding subscription starts to receive updates after the subscription has been initialized and connected to.
@@ -46,27 +46,31 @@ export function useSubscription(
   const [memoizedSubProps, setMemoizedSubProps] = useState(options?.subscriptionProps);
 
   const listeningRef = useRef(false);
-  const unsubTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const unsubTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const prevCriteriaRef = useRef<string | undefined>();
-  const prevMemoizedSubPropsRef = useRef<UseSubscriptionOptions['subscriptionProps']>();
+  const prevCriteriaRef = useRef<string | undefined>(undefined);
+  const prevMemoizedSubPropsRef = useRef<UseSubscriptionOptions['subscriptionProps']>(undefined);
 
-  const callbackRef = useRef<typeof callback>();
+  const callbackRef = useRef<typeof callback>(callback);
   callbackRef.current = callback;
 
-  const onWebSocketOpenRef = useRef<UseSubscriptionOptions['onWebSocketOpen']>();
+  const onWebSocketOpenRef = useRef<UseSubscriptionOptions['onWebSocketOpen']>(options?.onWebSocketOpen);
   onWebSocketOpenRef.current = options?.onWebSocketOpen;
 
-  const onWebSocketCloseRef = useRef<UseSubscriptionOptions['onWebSocketClose']>();
+  const onWebSocketCloseRef = useRef<UseSubscriptionOptions['onWebSocketClose']>(options?.onWebSocketClose);
   onWebSocketCloseRef.current = options?.onWebSocketClose;
 
-  const onSubscriptionConnectRef = useRef<UseSubscriptionOptions['onSubscriptionConnect']>();
+  const onSubscriptionConnectRef = useRef<UseSubscriptionOptions['onSubscriptionConnect']>(
+    options?.onSubscriptionConnect
+  );
   onSubscriptionConnectRef.current = options?.onSubscriptionConnect;
 
-  const onSubscriptionDisconnectRef = useRef<UseSubscriptionOptions['onSubscriptionDisconnect']>();
+  const onSubscriptionDisconnectRef = useRef<UseSubscriptionOptions['onSubscriptionDisconnect']>(
+    options?.onSubscriptionDisconnect
+  );
   onSubscriptionDisconnectRef.current = options?.onSubscriptionDisconnect;
 
-  const onErrorRef = useRef<UseSubscriptionOptions['onError']>();
+  const onErrorRef = useRef<UseSubscriptionOptions['onError']>(options?.onError);
   onErrorRef.current = options?.onError;
 
   useEffect(() => {

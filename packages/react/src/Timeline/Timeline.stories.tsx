@@ -1,6 +1,7 @@
 import { createReference } from '@medplum/core';
 import { DrAliceSmith } from '@medplum/mock';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Timeline, TimelineItem } from './Timeline';
 
 export default {

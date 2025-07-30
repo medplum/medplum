@@ -135,7 +135,7 @@ function writeErrorToStderr(err: unknown, verbose = false): void {
 }
 
 export async function run(): Promise<void> {
-  dotenv.config();
+  dotenv.config({ quiet: true });
   await main(process.argv);
 }
 

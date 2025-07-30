@@ -11,6 +11,7 @@ import {
   gone,
   isAccepted,
   isCreated,
+  isError,
   isGone,
   isNotFound,
   isOk,
@@ -21,6 +22,7 @@ import {
   notModified,
   operationOutcomeToString,
   preconditionFailed,
+  redirect,
   serverError,
   serverTimeout,
   tooManyRequests,
@@ -89,6 +91,7 @@ describe('Outcomes', () => {
     [allOk, 200],
     [created, 201],
     [accepted('https://example.com'), 202],
+    [redirect(new URL('http://example.com')), 302],
     [notModified, 304],
     [badRequest('bad'), 400],
     [unauthorized, 401],
@@ -120,6 +123,15 @@ describe('Outcomes', () => {
     expect(normalizeErrorString({ resourceType: 'OperationOutcome' })).toBe('Unknown error');
     expect(normalizeErrorString({ foo: 'bar' })).toBe('{"foo":"bar"}');
     expect(normalizeErrorString({ code: 'ERR_INVALID_ARG_TYPE' })).toBe('ERR_INVALID_ARG_TYPE');
+  });
+
+  test('isError', () => {
+    expect(isError(undefined)).toBe(false);
+    expect(isError(null)).toBe(false);
+    expect(isError('foo')).toBe(false);
+    expect(isError({ resourceType: 'Patient' })).toBe(false);
+    expect(isError(new Error('foo'))).toBe(true);
+    expect(isError(new DOMException('foo'))).toBe(true);
   });
 
   test('isOperationOutcome', () => {

@@ -1,19 +1,17 @@
 import { LOINC, UCUM, createReference } from '@medplum/core';
 import { CodeableConcept, Encounter, Observation, ObservationComponent, Patient, Quantity } from '@medplum/fhirtypes';
 
-export function getObservationValue(observations: Observation[], code: string): Quantity | undefined {
-  const observation = observations.find((o) => o.code?.coding?.[0].code === code);
-  return observation?.valueQuantity;
-}
-
-export function getCompoundObservationValue(
-  observations: Observation[],
-  code: string,
-  innerCode: string
-): Quantity | undefined {
-  const observation = observations.find((o) => o.code?.coding?.[0].code === code);
-  const component = observation?.component?.find((c) => c.code?.coding?.[0].code === innerCode);
-  return component?.valueQuantity;
+/**
+ * Tries to get the observation quantity value.
+ * @param obs - The observation to check.
+ * @param component - Optional sub-component code to check.
+ * @returns The observation quantity value, if available. Otherwise, undefined.
+ */
+export function getObservationValue(obs: Observation, component?: string): Quantity | undefined {
+  if (component) {
+    return obs.component?.find((c) => c.code?.coding?.[0].code === component)?.valueQuantity;
+  }
+  return obs.valueQuantity;
 }
 
 export function createObservation(

@@ -93,12 +93,8 @@ export class Tokenizer {
       return this.consumeSingleLineComment();
     }
 
-    if (c === "'" || c === '"') {
+    if (c === "'" || c === '"' || c === '`') {
       return this.consumeString(c);
-    }
-
-    if (c === '`') {
-      return this.consumeBacktickSymbol();
     }
 
     if (c === '@') {
@@ -115,6 +111,10 @@ export class Tokenizer {
 
     if ((c === '$' || c === '%') && /\w/.exec(next)) {
       return this.consumeSymbol();
+    }
+
+    if ((c === '$' || c === '%') && (next === "'" || next === '"' || next === '`')) {
+      return this.consumeQuotedSymbol(next);
     }
 
     return this.consumeOperator();
@@ -141,22 +141,20 @@ export class Tokenizer {
 
   private consumeString(endChar: string): Token {
     this.advance();
-    const result = this.buildToken(
-      'String',
-      this.consumeWhile(() => this.prev() === '\\' || this.curr() !== endChar)
-    );
+    const str = this.consumeWhile(() => this.prev() === '\\' || this.curr() !== endChar);
+    const unescaped = str.replace(/\\u([0-9a-fA-F]{4})/g, (match, hex) => String.fromCodePoint(parseInt(hex, 16)));
+    const result = this.buildToken(endChar === '`' ? 'Symbol' : 'String', unescaped);
     this.advance();
     return result;
   }
 
-  private consumeBacktickSymbol(): Token {
-    this.advance();
-    const result = this.buildToken(
-      'Symbol',
-      this.consumeWhile(() => this.curr() !== '`')
-    );
-    this.advance();
-    return result;
+  private consumeQuotedSymbol(endChar: string): Token {
+    this.mark();
+    const start = this.pos.index;
+    this.advance(); // Consume "$" or "%"
+    this.consumeString(endChar);
+    const value = this.str.substring(start, this.pos.index);
+    return this.buildToken('Symbol', value);
   }
 
   private consumeDateTime(): Token {

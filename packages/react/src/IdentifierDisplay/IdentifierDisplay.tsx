@@ -1,4 +1,5 @@
 import { Identifier } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 
 export interface IdentifierDisplayProps {
   readonly value?: Identifier;

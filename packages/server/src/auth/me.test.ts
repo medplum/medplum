@@ -4,9 +4,10 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
+import { getUserConfigurationMenu } from './me';
 import { registerNew } from './register';
 
 const app = express();
@@ -108,6 +109,70 @@ describe('Me', () => {
     expect(res6.body.user.identifier).toBeDefined();
     expect(res6.body.user.identifier.length).toBe(1);
     expect(res6.body.user.identifier[0]).toMatchObject({ system: 'http://example.com', value: '12345' });
+  });
+
+  test('Set default menu', async () => {
+    const { project, membership, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alexander',
+        lastName: 'Hamilton',
+        projectName: 'Hamilton Project',
+        email: `alex${randomUUID()}@example.com`,
+        password: 'password!@#',
+        remoteAddress: '5.5.5.5',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/107.0.0.0',
+      })
+    );
+
+    // Get the user profile with default user configuration
+    const res2 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res2.status).toBe(200);
+    expect(res2.body).toBeDefined();
+    expect(res2.body.profile).toBeDefined();
+    expect(res2.body.profile.resourceType).toBe('Practitioner');
+    expect(res2.body.config).toBeDefined();
+    expect(res2.body.config.resourceType).toBe('UserConfiguration');
+    expect(res2.body.config.menu).toMatchObject(getUserConfigurationMenu(project, membership));
+
+    // Create a new user configuration
+    const config: UserConfiguration = {
+      resourceType: 'UserConfiguration',
+      option: [{ id: 'fhirQuota', valueInteger: 1000 }],
+    };
+    const res3 = await request(app)
+      .post('/fhir/R4/UserConfiguration')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .type('json')
+      .send(config);
+    expect(res3.status).toBe(201);
+    expect(res3.body.resourceType).toBe('UserConfiguration');
+    expect(res3.body.id).toBeDefined();
+    expect(res3.body).toMatchObject(config);
+
+    // Read the project membership
+    const res4 = await request(app)
+      .get(`/admin/projects/${project.id}/members/${membership.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4.status).toBe(200);
+    expect(res4.body.resourceType).toBe('ProjectMembership');
+
+    // Update the project membership
+    const res5 = await request(app)
+      .post(`/admin/projects/${project.id}/members/${membership.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .type('json')
+      .send({
+        ...res4.body,
+        userConfiguration: createReference(res3.body),
+      });
+    expect(res5.status).toBe(200);
+
+    // Reload the user profile with the new user configuration
+    const res6 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
+    expect(res6.status).toBe(200);
+    expect(res6.body).toBeDefined();
+    expect(res6.body.config.menu).toBeDefined();
+    expect(res2.body.config.menu).toMatchObject(getUserConfigurationMenu(project, membership));
   });
 
   test('Get me as ClientApplication', async () => {

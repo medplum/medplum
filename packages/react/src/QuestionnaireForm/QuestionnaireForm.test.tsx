@@ -1,15 +1,24 @@
-import { getQuestionnaireAnswers } from '@medplum/core';
+import { getAllQuestionnaireAnswers, getQuestionnaireAnswers } from '@medplum/core';
 import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { MedplumProvider, QUESTIONNAIRE_SIGNATURE_REQUIRED_URL, QuestionnaireItemType } from '@medplum/react-hooks';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
-import { MemoryRouter } from 'react-router-dom';
-import { QuestionnaireItemType } from '../utils/questionnaire';
+import { MemoryRouter } from 'react-router';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
 const medplum = new MockClient();
+
+jest.mock('signature_pad', () => {
+  return jest.fn().mockImplementation(() => ({
+    fromDataURL: jest.fn().mockResolvedValue(undefined),
+    clear: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    toDataURL: jest.fn(() => 'data:image/png;base64,signature-data'),
+  }));
+});
 
 const pageExtension: Extension[] = [
   {
@@ -79,6 +88,7 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Groups', async () => {
+    const onChange = jest.fn();
     const onSubmit = jest.fn();
 
     await setup({
@@ -127,6 +137,7 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
+      onChange,
       onSubmit,
     });
 
@@ -134,9 +145,11 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByText('Group 1')).toBeDefined();
     expect(screen.getByText('Group 2')).toBeDefined();
 
+    onChange.mockClear();
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'a1' } });
     });
+    expect(onChange).toHaveBeenCalledTimes(1);
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Question 2'), { target: { value: 'a2' } });
@@ -178,12 +191,191 @@ describe('QuestionnaireForm', () => {
     expect(answers['question5']).toMatchObject({ valueBoolean: true });
   });
 
+  test('Groups with QuestionnaireResponse', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'group1',
+            text: 'Group 1',
+            type: QuestionnaireItemType.group,
+            item: [
+              {
+                linkId: 'question1',
+                text: 'Question 1',
+                type: QuestionnaireItemType.string,
+              },
+              {
+                linkId: 'question2',
+                text: 'Question 2',
+                type: QuestionnaireItemType.string,
+              },
+            ],
+          },
+          {
+            linkId: 'group2',
+            text: 'Group 2',
+            type: QuestionnaireItemType.group,
+            item: [
+              {
+                linkId: 'question3',
+                text: 'Question 3',
+                type: QuestionnaireItemType.string,
+              },
+              {
+                linkId: 'question4',
+                text: 'Question 4',
+                type: QuestionnaireItemType.string,
+              },
+              {
+                linkId: 'question5',
+                text: 'Question 5',
+                type: QuestionnaireItemType.boolean,
+              },
+            ],
+          },
+        ],
+      },
+      questionnaireResponse: {
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
+        item: [
+          {
+            id: 'id-2',
+            linkId: 'group1',
+            text: 'Group 1',
+            item: [
+              {
+                id: 'id-3',
+                linkId: 'question1',
+                text: 'Question 1',
+                answer: [
+                  {
+                    valueString: 'a1',
+                  },
+                ],
+              },
+              {
+                id: 'id-4',
+                linkId: 'question2',
+                text: 'Question 2',
+                answer: [
+                  {
+                    valueString: 'a2',
+                  },
+                ],
+              },
+            ],
+            answer: [],
+          },
+          {
+            id: 'id-5',
+            linkId: 'group2',
+            text: 'Group 2',
+            item: [
+              {
+                id: 'id-6',
+                linkId: 'question3',
+                text: 'Question 3',
+                answer: [
+                  {
+                    valueString: 'a3',
+                  },
+                ],
+              },
+              {
+                id: 'id-7',
+                linkId: 'question4',
+                text: 'Question 4',
+                answer: [
+                  {
+                    valueString: 'a4',
+                  },
+                ],
+              },
+              {
+                id: 'id-8',
+                linkId: 'question5',
+                text: 'Question 5',
+                answer: [
+                  {
+                    valueBoolean: true,
+                  },
+                ],
+              },
+            ],
+            answer: [],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
+    expect(screen.getByText('Group 1')).toBeDefined();
+    expect(screen.getByText('Group 2')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+
+    const responseAuto = onSubmit.mock.calls[0][0];
+    expect(responseAuto.resourceType).toBe('QuestionnaireResponse');
+    expect(responseAuto.status).toBe('completed');
+
+    const answersAuto = getQuestionnaireAnswers(responseAuto);
+    expect(answersAuto['question1']).toMatchObject({ valueString: 'a1' });
+    expect(answersAuto['question2']).toMatchObject({ valueString: 'a2' });
+    expect(answersAuto['question3']).toMatchObject({ valueString: 'a3' });
+    expect(answersAuto['question4']).toMatchObject({ valueString: 'a4' });
+    expect(answersAuto['question5']).toMatchObject({ valueBoolean: true });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'a11' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 2'), { target: { value: 'a22' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 3'), { target: { value: 'a33' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 4'), { target: { value: 'a44' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Question 5'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    const responseManual = onSubmit.mock.calls[1][0];
+    const answersManual = getQuestionnaireAnswers(responseManual);
+    expect(answersManual['question1']).toMatchObject({ valueString: 'a11' });
+    expect(answersManual['question2']).toMatchObject({ valueString: 'a22' });
+    expect(answersManual['question3']).toMatchObject({ valueString: 'a33' });
+    expect(answersManual['question4']).toMatchObject({ valueString: 'a44' });
+    expect(answersManual['question5']).toMatchObject({ valueBoolean: false });
+  });
+
   test('Handles submit', async () => {
     const onSubmit = jest.fn();
 
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        url: 'https://example.com/Questionnaire/123',
         status: 'active',
         item: [
           {
@@ -267,6 +459,9 @@ describe('QuestionnaireForm', () => {
 
     const response = onSubmit.mock.calls[0][0];
     const answers = getQuestionnaireAnswers(response);
+    expect(response.resourceType).toBe('QuestionnaireResponse');
+    expect(response.status).toBe('completed');
+    expect(response.questionnaire).toBe('https://example.com/Questionnaire/123');
     expect(answers['q1']).toMatchObject({ valueString: 'a1' });
     expect(answers['q2']).toMatchObject({ valueInteger: 2 });
     expect(answers['q3']).toMatchObject({ valueDate: '2023-03-03' });
@@ -279,6 +474,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        id: '456',
         status: 'active',
       },
       onSubmit,
@@ -295,6 +491,7 @@ describe('QuestionnaireForm', () => {
     const response = onSubmit.mock.calls[0][0];
     expect(response.resourceType).toBe('QuestionnaireResponse');
     expect(response.status).toBe('completed');
+    expect(response.questionnaire).toBe('Questionnaire/456');
     expect(response.authored).toBeDefined();
     expect(response.source).toBeDefined();
   });
@@ -584,7 +781,7 @@ describe('QuestionnaireForm', () => {
               valueAttachment: {
                 title: 'hello.txt',
                 contentType: 'text/plain',
-                url: 'https://example.com/binary/123',
+                url: expect.stringContaining('https://example.com/binary/'),
               },
             },
           ],
@@ -1143,6 +1340,465 @@ describe('QuestionnaireForm', () => {
     });
   });
 
+  test('Dropdown with no value set or options', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'no-options-dropdown',
+        title: 'No Options Dropdown Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
+  });
+
+  test('Value Set Checkbox', async () => {
+    const onSubmit = jest.fn();
+
+    // Mock the value set expansion to return more than 30 items
+    const mockValueSet = {
+      resourceType: 'ValueSet',
+      expansion: {
+        contains: Array.from({ length: 35 }, (_, i) => ({
+          system: 'x',
+          code: `test-code-${i}`,
+          display: `Test Display ${i}`,
+        })),
+      },
+    };
+
+    // Mock the medplum client's valueSetExpand method
+    medplum.valueSetExpand = jest.fn().mockResolvedValue(mockValueSet);
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'value-set-checkbox',
+        title: 'Value Set Checkbox',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Value Set Checkbox',
+            type: 'choice',
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check Box',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Wait for value set to load
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Check that checkboxes are rendered
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBeGreaterThan(0);
+
+    // Verify that the cutoff message is shown
+    const cutoffMessage = screen.getByText(/Showing first 30 options/);
+    expect(cutoffMessage).toBeInTheDocument();
+
+    // Click the first checkbox
+    await act(async () => {
+      fireEvent.click(checkboxes[0]);
+    });
+
+    // Click the second checkbox
+    await act(async () => {
+      fireEvent.click(checkboxes[1]);
+    });
+
+    // Click the third checkbox
+    await act(async () => {
+      fireEvent.click(checkboxes[2]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    const answer = getAllQuestionnaireAnswers(response);
+    expect(answer['q1']).toBeDefined();
+    expect(answer['q1'][0]).toMatchObject({
+      valueCoding: { code: 'test-code-0', display: 'Test Display 0', system: 'x' },
+    });
+    expect(answer['q1'][2]).toMatchObject({
+      valueCoding: { code: 'test-code-2', display: 'Test Display 2', system: 'x' },
+    });
+  });
+
+  test('Value Set Radio Button', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'value-set-radio',
+        title: 'Value Set Radio',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Value Set Radio',
+            type: 'choice',
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'radio-button',
+                      display: 'Radio Button',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Wait for value set to load
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Check that radio buttons are rendered
+    const radioButtons = screen.getAllByRole('radio');
+    expect(radioButtons.length).toBeGreaterThan(0);
+
+    // Click the first radio button
+    await act(async () => {
+      fireEvent.click(radioButtons[0]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    const answer = getQuestionnaireAnswers(response);
+    expect(answer['q1']).toMatchObject({
+      valueCoding: { code: 'test-code-0', display: 'Test Display 0', system: 'x' },
+    });
+  });
+
+  test('Non-Value Set Checkbox', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'non-valueset-checkbox',
+        title: 'Non-Value Set Checkbox',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Non-Value Set Checkbox',
+            type: 'choice',
+            repeats: true,
+            answerOption: [
+              {
+                valueString: 'Option 1',
+              },
+              {
+                valueString: 'Option 2',
+              },
+              {
+                valueString: 'Option 3',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check Box',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Check that checkboxes are rendered
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBe(3);
+
+    // Select multiple options
+    await act(async () => {
+      fireEvent.click(checkboxes[0]); // Option 1
+      fireEvent.click(checkboxes[2]); // Option 3
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer).toHaveLength(2);
+    expect(response.item[0].answer[0]).toMatchObject({ valueString: 'Option 1' });
+    expect(response.item[0].answer[1]).toMatchObject({ valueString: 'Option 3' });
+  });
+
+  test('Checkbox Selection and Deselection', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'checkbox-selection-deselection',
+        title: 'Checkbox Selection and Deselection',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Select Options',
+            type: 'choice',
+            repeats: true,
+            answerOption: [
+              {
+                valueString: 'Option 1',
+              },
+              {
+                valueString: 'Option 2',
+              },
+              {
+                valueString: 'Option 3',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'check-box',
+                      display: 'Check Box',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Check that checkboxes are rendered
+    const checkboxes = screen.getAllByRole('checkbox');
+    expect(checkboxes.length).toBe(3);
+
+    // Select all options
+    await act(async () => {
+      checkboxes.forEach((checkbox) => {
+        fireEvent.click(checkbox);
+      });
+    });
+
+    // Submit with all options selected
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    // Verify all options are selected in the response
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    const response1 = onSubmit.mock.calls[0][0];
+    expect(response1.item[0].answer).toHaveLength(3);
+    expect(response1.item[0].answer).toEqual(
+      expect.arrayContaining([{ valueString: 'Option 1' }, { valueString: 'Option 2' }, { valueString: 'Option 3' }])
+    );
+
+    // Deselect all options
+    await act(async () => {
+      checkboxes.forEach((checkbox) => {
+        fireEvent.click(checkbox);
+      });
+    });
+
+    // Submit with no options selected
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    // Verify no options are selected in the response
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+    const response2 = onSubmit.mock.calls[1][0];
+    expect(response2.item[0].answer).toHaveLength(1);
+    expect(response2.item[0].answer).toEqual(expect.arrayContaining([{}]));
+  });
+
+  test('Multi-Select Dropdown Value Set', async () => {
+    const onSubmit = jest.fn();
+
+    // Mock the value set expansion to return multiple items
+    const mockValueSet = {
+      resourceType: 'ValueSet',
+      expansion: {
+        contains: Array.from({ length: 5 }, (_, i) => ({
+          system: 'x',
+          code: `test-code-${i}`,
+          display: `Test Display ${i}`,
+        })),
+      },
+    };
+
+    // Mock the medplum client's valueSetExpand method
+    medplum.valueSetExpand = jest.fn().mockResolvedValue(mockValueSet);
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'multi-select-dropdown-valueset',
+        title: 'Multi-Select Dropdown Value Set',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Multi-Select Dropdown Value Set',
+            type: 'choice',
+            repeats: true,
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    // Wait for value set to load
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    const searchInput = screen.getByPlaceholderText('Select items');
+    expect(searchInput).toBeInTheDocument();
+
+    // Select first option
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'Test Display 0' } });
+    });
+
+    // Wait for options to load
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Select the first option
+    await act(async () => {
+      fireEvent.keyDown(searchInput, { key: 'ArrowDown', code: 'ArrowDown' });
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+    });
+
+    // Clear input for second selection
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: '' } });
+    });
+
+    // Select second option
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'Test Display 2' } });
+    });
+
+    // Wait for options to load
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Select the second option (press ArrowDown twice to get to the third option)
+    await act(async () => {
+      fireEvent.keyDown(searchInput, { key: 'ArrowDown', code: 'ArrowDown' });
+      fireEvent.keyDown(searchInput, { key: 'ArrowDown', code: 'ArrowDown' });
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+    });
+
+    // Submit the form
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer).toHaveLength(2);
+    expect(response.item[0].answer[0]).toMatchObject({
+      valueCoding: { code: 'test-code-0', display: 'Test Display 0', system: 'x' },
+    });
+    expect(response.item[0].answer[1]).toMatchObject({
+      valueCoding: { code: 'test-code-2', display: 'Test Display 2', system: 'x' },
+    });
+  });
+
   test('Repeated Choice Dropdown', async () => {
     await setup({
       questionnaire: {
@@ -1369,6 +2025,102 @@ describe('QuestionnaireForm', () => {
                     },
                   ],
                   text: 'Drop down',
+                },
+              },
+            ],
+            text: 'q1',
+            answerOption: [],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText('No Answers Defined');
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toBeInstanceOf(HTMLInputElement);
+  });
+
+  test('Multi Select Code', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'default-values',
+        title: 'Default Values Example',
+        item: [
+          {
+            id: 'choice',
+            linkId: 'choice',
+            text: 'choice',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'multi-select',
+                      display: 'Multi Select',
+                    },
+                  ],
+                  text: 'Multi Select',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    const dropDown = screen.getByText('choice');
+
+    await act(async () => {
+      fireEvent.click(dropDown);
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'Yes' });
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'No' });
+    });
+  });
+
+  test('Multi Select Code shows with no data', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'multi-select',
+                      display: 'Multi Select',
+                    },
+                  ],
+                  text: 'Multi Select',
                 },
               },
             ],
@@ -1646,5 +2398,636 @@ describe('QuestionnaireForm', () => {
     const params = searchResources.mock.calls[0][1] as URLSearchParams;
     expect(params.get('subject')).toBe('Patient/123');
     expect(params.get('code')).toBe('Test');
+  });
+
+  test('Questionnaire CalculatedExpression with boolean field', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'temperature-threshold',
+        title: 'Temperature Threshold Check',
+        item: [
+          {
+            id: 'id-1',
+            linkId: 'q1',
+            type: 'string',
+            text: 'Fahrenheit',
+          },
+          {
+            id: 'id-2',
+            linkId: 'q2',
+            type: 'boolean',
+            text: 'Is temperature over 120?',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                valueExpression: {
+                  language: 'text/fhirpath',
+                  expression:
+                    "iif(%resource.item.where(linkId='q1').answer.value.empty(), false, (%resource.item.where(linkId='q1').answer.value.toDecimal() > 120))",
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '125' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    const answers = getQuestionnaireAnswers(response);
+
+    expect(answers['q1']).toMatchObject({ valueString: '125' });
+    expect(answers['q2']).toMatchObject({ valueBoolean: true });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '100' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    const response2 = onSubmit.mock.calls[1][0];
+    const answers2 = getQuestionnaireAnswers(response2);
+
+    expect(answers2['q1']).toMatchObject({ valueString: '100' });
+    expect(answers2['q2']).toMatchObject({ valueBoolean: false });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    const response3 = onSubmit.mock.calls[2][0];
+    const answers3 = getQuestionnaireAnswers(response3);
+
+    expect(answers3['q1']).toMatchObject({ valueString: undefined });
+    expect(answers3['q2']).toMatchObject({ valueBoolean: false });
+  });
+
+  test('Questionnaire CalculatedExpression failed to evaluate expression', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'temperature-threshold',
+        title: 'Temperature Threshold Check',
+        item: [
+          {
+            id: 'id-1',
+            linkId: 'q1',
+            type: 'string',
+            text: 'Fahrenheit',
+          },
+          {
+            id: 'id-2',
+            linkId: 'q2',
+            type: 'boolean',
+            text: 'Is temperature over 120?',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                valueExpression: {
+                  language: 'text/fhirpath',
+                  expression: '%fail',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '125' } });
+    });
+
+    expect(
+      screen.getByText('Expression evaluation failed: FhirPathError on "%fail": Error: Undefined variable %fail')
+    ).toBeInTheDocument();
+  });
+
+  test('Questionnaire CalculatedExpression with nested groups', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'temperature-conversion',
+        title: 'Temperature Conversion',
+        item: [
+          {
+            id: 'id-6',
+            linkId: 'g6',
+            type: 'group',
+            text: 'Temperature Group',
+            item: [
+              {
+                id: 'id-1',
+                linkId: 'q1',
+                type: 'decimal',
+                text: 'Fahrenheit',
+              },
+              {
+                id: 'id-2',
+                linkId: 'q2',
+                type: 'decimal',
+                text: 'Celsius',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                    valueExpression: {
+                      language: 'text/fhirpath',
+                      expression:
+                        "iif(%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value.empty(), '', ((%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value - 32) * 5 / 9).round(2))",
+                    },
+                  },
+                ],
+              },
+              {
+                id: 'id-3',
+                linkId: 'q3',
+                type: 'decimal',
+                text: 'Kelvin',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                    valueExpression: {
+                      language: 'text/fhirpath',
+                      expression:
+                        "iif(%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value.empty(), '', (((%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value - 32) * 5 / 9) + 273.15).round(2))",
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '100' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    const answers = getQuestionnaireAnswers(response);
+
+    expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
+    expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
+    expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
+  });
+
+  test('Questionnaire CalculatedExpression with nested groups and QuestionnaireResponse', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'temperature-conversion',
+        title: 'Temperature Conversion',
+        item: [
+          {
+            id: 'id-6',
+            linkId: 'g6',
+            type: 'group',
+            text: 'Temperature Group',
+            item: [
+              {
+                id: 'id-1',
+                linkId: 'q1',
+                type: 'decimal',
+                text: 'Fahrenheit',
+              },
+              {
+                id: 'id-2',
+                linkId: 'q2',
+                type: 'decimal',
+                text: 'Celsius',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                    valueExpression: {
+                      language: 'text/fhirpath',
+                      expression:
+                        "iif(%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value.empty(), '', ((%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value - 32) * 5 / 9).round(2))",
+                    },
+                  },
+                ],
+              },
+              {
+                id: 'id-3',
+                linkId: 'q3',
+                type: 'decimal',
+                text: 'Kelvin',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                    valueExpression: {
+                      language: 'text/fhirpath',
+                      expression:
+                        "iif(%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value.empty(), '', (((%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value - 32) * 5 / 9) + 273.15).round(2))",
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      questionnaireResponse: {
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
+        item: [
+          {
+            id: 'id-76',
+            linkId: 'g6',
+            text: 'Temperature Group',
+            item: [
+              {
+                id: 'id-77',
+                linkId: 'q1',
+                text: 'Fahrenheit',
+                answer: [
+                  {
+                    valueDecimal: 100,
+                  },
+                ],
+              },
+            ],
+            answer: [],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    const answers = getQuestionnaireAnswers(response);
+
+    expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
+    expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
+    expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
+  });
+
+  test('Required radio button choice validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-radio',
+            text: 'Required Radio Choice',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerOption: [{ valueString: 'Option 1' }, { valueString: 'Option 2' }, { valueString: 'Option 3' }],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const radioGroup = screen.getByRole('radiogroup');
+    expect(radioGroup).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    const radioOption = screen.getByLabelText('Option 1');
+    await act(async () => {
+      fireEvent.click(radioOption);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer[0].valueString).toBe('Option 1');
+  });
+
+  test('Required dropdown choice validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-dropdown',
+            text: 'Required Dropdown Choice',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerOption: [{ valueString: 'Option A' }, { valueString: 'Option B' }, { valueString: 'Option C' }],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const dropdown = screen.getByLabelText('Required Dropdown Choice *');
+    expect(dropdown).toBeInTheDocument();
+    expect(dropdown).toHaveAttribute('required');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.change(dropdown, { target: { value: 'Option A' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer[0].valueString).toBe('Option A');
+  });
+
+  test('Required value set dropdown validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-valueset-dropdown',
+            text: 'Required Value Set Dropdown',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const autocomplete = screen.getByRole('searchbox');
+    expect(autocomplete).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    await act(async () => {
+      fireEvent.change(autocomplete, { target: { value: 'Test' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  test('Required value set radio button validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-valueset-radio',
+            text: 'Required Value Set Radio',
+            type: QuestionnaireItemType.choice,
+            required: true,
+            answerValueSet: 'http://example.com/valueset',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'radio-button',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      jest.runAllTimers();
+    });
+
+    const radioButtons = screen.getAllByRole('radio');
+    expect(radioButtons.length).toBeGreaterThan(0);
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(radioButtons[0]);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  test('Required boolean field validation', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'required-boolean',
+            text: 'Required Boolean Field',
+            type: QuestionnaireItemType.boolean,
+            required: true,
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const checkbox = screen.getByRole('checkbox');
+    expect(checkbox).toBeInTheDocument();
+    expect(checkbox).toHaveAttribute('required');
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    await act(async () => {
+      fireEvent.click(checkbox);
+    });
+
+    expect(checkbox).toBeChecked();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].answer[0].valueBoolean).toBe(true);
+  });
+
+  describe('Signature validation', () => {
+    const signatureRequiredQuestionnaire: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'active',
+      extension: [
+        {
+          url: QUESTIONNAIRE_SIGNATURE_REQUIRED_URL,
+          valueCodeableConcept: {
+            coding: [
+              {
+                system: 'urn:iso-astm:E1762-95:2013',
+                code: '1.2.840.10065.1.12.1.1',
+                display: "Author's Signature",
+              },
+            ],
+          },
+        },
+      ],
+      item: [
+        {
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string',
+        },
+      ],
+    };
+
+    test('Renders signature input when signature is required', async () => {
+      await setup({
+        questionnaire: signatureRequiredQuestionnaire,
+        onSubmit: jest.fn(),
+      });
+
+      expect(screen.getByLabelText('Signature input area')).toBeInTheDocument();
+      expect(screen.queryByText('Signature is required.')).not.toBeInTheDocument();
+    });
+
+    test('Does not render signature input when signature is not required', async () => {
+      await setup({
+        questionnaire: {
+          resourceType: 'Questionnaire',
+          status: 'active',
+          item: [
+            {
+              linkId: 'question1',
+              text: 'Question 1',
+              type: 'string',
+            },
+          ],
+        },
+        onSubmit: jest.fn(),
+      });
+
+      expect(screen.queryByLabelText('Signature input area')).not.toBeInTheDocument();
+    });
+
+    test('Shows error message when submit is attempted without signature', async () => {
+      const onSubmit = jest.fn();
+
+      await setup({
+        questionnaire: signatureRequiredQuestionnaire,
+        onSubmit,
+      });
+
+      expect(screen.queryByText('Signature is required.')).not.toBeInTheDocument();
+
+      await act(async () => {
+        fireEvent.click(screen.getByText('Submit'));
+      });
+
+      expect(screen.getByText('Signature is required.')).toBeInTheDocument();
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
   });
 });

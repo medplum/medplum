@@ -1,8 +1,8 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { SearchControl, useMedplum } from '@medplum/react';
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { JSX, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { getProjectId } from '../utils';
 
 export interface MemberTableProps {
@@ -27,7 +27,7 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   return (
     <SearchControl
       search={search}
-      onClick={(e) => navigate(`/admin/members/${e.resource.id}`)}
+      onClick={(e) => navigate(`/admin/members/${e.resource.id}`)?.catch(console.error)}
       onChange={(e) => setSearch(e.definition)}
       hideFilters
       hideToolbar

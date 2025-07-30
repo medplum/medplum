@@ -10,6 +10,7 @@ test('Success', async () => {
   const medplum = new MockClient();
   const quesionnaire: Questionnaire = {
     resourceType: 'Questionnaire',
+    url: 'https://medplum.com/Questionnaire/common-medications-questionnaire',
     name: 'Common Medications Questionnaire',
     title: 'A Questionnaire for Patients to fill out pre-visit',
     status: 'active',
@@ -127,7 +128,7 @@ test('Success', async () => {
         ],
       },
     ],
-    questionnaire: createReference(questionnaire).reference,
+    questionnaire: questionnaire.url,
     subject: createReference(HomerSimpson),
     source: createReference(DrAliceSmith),
     authored: '2023-03-19T18:07:45.750Z',

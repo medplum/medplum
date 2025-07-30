@@ -112,7 +112,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.check).toStrictEqual("type = 'reference'");
+    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.check).toStrictEqual("(type = 'reference')");
   });
 
   test('Rule source list mode', () => {
@@ -599,7 +599,7 @@ describe('FHIR Mapping Language parser', () => {
                   context: 'src',
                   element: 'extension',
                   variable: 'ext',
-                  condition: "url = 'http://hl7.org/fhir/3.0/StructureDefinition/extension-ValueSet.extensible'",
+                  condition: "(url = 'http://hl7.org/fhir/3.0/StructureDefinition/extension-ValueSet.extensible')",
                 },
               ],
               rule: [
@@ -1663,7 +1663,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
     const result = parseMappingLanguage(input);
     expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.transform).toBe('evaluate');
-    expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.parameter?.[0]?.valueString).toBe("src.value + '_test'");
+    expect(result.group?.[0]?.rule?.[0]?.target?.[0]?.parameter?.[0]?.valueString).toBe("(src.value + '_test')");
   });
 
   test('CCDA ConceptMaps', () => {

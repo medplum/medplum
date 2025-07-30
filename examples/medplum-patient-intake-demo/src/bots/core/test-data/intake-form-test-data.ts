@@ -25,7 +25,7 @@ intakeQuestionnaire.id = 'intake-questionnaire-id';
 
 export const intakeResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
-  questionnaire: getReferenceString(intakeQuestionnaire),
+  questionnaire: intakeQuestionnaire.url,
   status: 'completed',
   item: [
     {

@@ -1,7 +1,7 @@
 import { AppShell as MantineAppShell } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
-import { ReactNode, Suspense, useEffect, useState } from 'react';
+import { JSX, ReactNode, Suspense, useEffect, useState } from 'react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { Loading } from '../Loading/Loading';
 import classes from './AppShell.module.css';

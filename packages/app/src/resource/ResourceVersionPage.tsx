@@ -1,8 +1,8 @@
 import { Paper, Tabs, Text, Title } from '@mantine/core';
 import { Bundle, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Container, Document, Loading, MedplumLink, ResourceDiff, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { JSX, useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router';
 
 export function ResourceVersionPage(): JSX.Element {
   const navigate = useNavigate();
@@ -60,7 +60,9 @@ export function ResourceVersionPage(): JSX.Element {
   return (
     <Tabs
       value={tab || defaultTab}
-      onChange={(name) => navigate(`/${resourceType}/${id}/_history/${versionId}/${name || defaultTab}`)}
+      onChange={(name) =>
+        navigate(`/${resourceType}/${id}/_history/${versionId}/${name || defaultTab}`)?.catch(console.error)
+      }
     >
       <Paper>
         <Container fluid p="md">

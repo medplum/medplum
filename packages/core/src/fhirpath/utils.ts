@@ -222,7 +222,6 @@ export function getTypedPropertyValueWithoutSchema(
     // value + valueDecimal = ok, because "decimal" is valid
     // id + identifier = not ok, because "entifier" is not a valid type
     // resource + resourceType = not ok, because "type" is not a valid type
-    //eslint-disable-next-line guard-for-in
     const trimmedPath = path.endsWith('[x]') ? path.substring(0, path.length - 3) : path;
     for (const propertyType of Object.values(PropertyType)) {
       const propertyName = trimmedPath + capitalize(propertyType);
@@ -430,7 +429,17 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     return false;
   }
 
-  switch (desiredType) {
+  let cleanType = desiredType;
+
+  if (cleanType.startsWith('System.')) {
+    cleanType = cleanType.substring('System.'.length);
+  }
+
+  if (cleanType.startsWith('FHIR.')) {
+    cleanType = cleanType.substring('FHIR.'.length);
+  }
+
+  switch (cleanType) {
     case 'Boolean':
       return typeof value === 'boolean';
     case 'Decimal':
@@ -447,7 +456,7 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     case 'Quantity':
       return isQuantity(value);
     default:
-      return typeof value === 'object' && value?.resourceType === desiredType;
+      return typedValue.type === cleanType || (typeof value === 'object' && value?.resourceType === cleanType);
   }
 }
 

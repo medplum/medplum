@@ -2,8 +2,7 @@ import { createReference } from '@medplum/core';
 import { DiagnosticReport, Observation } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen } from '../test-utils/render';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import {
   HealthGorillaDiagnosticReport,
   HealthGorillaObservation1,
@@ -12,6 +11,7 @@ import {
   HealthGorillaObservationGroup2,
 } from '../stories/healthgorilla';
 import { CreatinineObservation, ExampleReport } from '../stories/referenceLab';
+import { act, render, screen } from '../test-utils/render';
 import { DiagnosticReportDisplay, DiagnosticReportDisplayProps } from './DiagnosticReportDisplay';
 
 const syntheaReport: DiagnosticReport = {
@@ -90,6 +90,7 @@ describe('DiagnosticReportDisplay', () => {
     });
 
     // See packages/mock/src/mocks/simpsons.ts
+    expect(screen.getByText('Homer Simpson')).toBeDefined();
     expect(screen.getByText('Diagnostic Report')).toBeDefined();
     expect(screen.getByText('110 mmHg / 75 mmHg')).toBeDefined();
     expect(screen.getByText('> 50 x')).toBeDefined();
@@ -97,7 +98,26 @@ describe('DiagnosticReportDisplay', () => {
     expect(screen.getByText('Specimen lipemic. Results may be affected.', { exact: false })).toBeDefined();
     expect(screen.getByText('Critical high')).toBeInTheDocument();
     expect(screen.getByText('Critical high')).toHaveStyle('background:');
-    expect(screen.getAllByText('final')).toHaveLength(7);
+    expect(screen.getAllByText('final')).toHaveLength(8);
+    expect(screen.getAllByText('corrected')).toHaveLength(1);
+    screen.getAllByText('final').forEach((badge) => expect(badge).toHaveClass('mantine-Badge-label'));
+  });
+
+  test('Renders by value with hideSubject', async () => {
+    await act(async () => {
+      setup({ value: HomerDiagnosticReport, hideSubject: true });
+    });
+
+    // See packages/mock/src/mocks/simpsons.ts
+    expect(screen.queryByText('Homer Simpson')).toBeNull();
+    expect(screen.getByText('Diagnostic Report')).toBeDefined();
+    expect(screen.getByText('110 mmHg / 75 mmHg')).toBeDefined();
+    expect(screen.getByText('> 50 x')).toBeDefined();
+    expect(screen.getByText('Specimen hemolyzed. Results may be affected.', { exact: false })).toBeDefined();
+    expect(screen.getByText('Specimen lipemic. Results may be affected.', { exact: false })).toBeDefined();
+    expect(screen.getByText('Critical high')).toBeInTheDocument();
+    expect(screen.getByText('Critical high')).toHaveStyle('background:');
+    expect(screen.getAllByText('final')).toHaveLength(8);
     expect(screen.getAllByText('corrected')).toHaveLength(1);
     screen.getAllByText('final').forEach((badge) => expect(badge).toHaveClass('mantine-Badge-label'));
   });

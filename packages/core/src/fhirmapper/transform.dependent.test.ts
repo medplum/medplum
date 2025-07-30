@@ -54,12 +54,9 @@ describe('FHIR Mapper transform - dependent', () => {
       src.name as vn -> tgt.name as tn then doesNotExist(vn, tn);
     }`;
 
-    try {
-      structureMapTransform(parseMappingLanguage(map), [toTypedValue({ status: 'x', name: 'y' })]);
-      throw new Error('Expected error');
-    } catch (err: any) {
-      expect(err.message).toBe('Dependent group not found: doesNotExist');
-    }
+    expect(() => structureMapTransform(parseMappingLanguage(map), [toTypedValue({ status: 'x', name: 'y' })])).toThrow(
+      'Dependent group not found: doesNotExist'
+    );
   });
 
   test('Recursion', () => {

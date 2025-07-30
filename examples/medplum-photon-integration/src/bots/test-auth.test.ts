@@ -1,6 +1,6 @@
-import { handler } from './test-auth';
 import { allOk } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
+import { handler } from './test-auth';
 
 test.skip('Success', async () => {
   const medplum = new MockClient();

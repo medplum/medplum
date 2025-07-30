@@ -1,6 +1,6 @@
 import { Button, Group } from '@mantine/core';
 import { Slot } from '@medplum/fhirtypes';
-import { useMemo, useState } from 'react';
+import { JSX, useMemo, useState } from 'react';
 import classes from './CalendarInput.module.css';
 import { getMonthString, getStartMonth } from './CalendarInput.utils';
 

@@ -2,6 +2,7 @@ import { Avatar, AvatarProps } from '@mantine/core';
 import { getDisplayString, getImageSrc } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { useCachedBinaryUrl, useResource } from '@medplum/react-hooks';
+import { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { getInitials } from './ResourceAvatar.utils';
 

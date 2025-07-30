@@ -1,7 +1,8 @@
-import { AgentUpgradeResponse, OperationOutcomeError, badRequest, serverError, singularize } from '@medplum/core';
+import { AgentUpgradeResponse, OperationOutcomeError, WithId, badRequest, serverError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, OperationDefinition } from '@medplum/fhirtypes';
 import { handleBulkAgentOperation, publishAgentRequest } from './utils/agentutils';
+import { parseInputParameters } from './utils/parameters';
 
 const DEFAULT_UPGRADE_TIMEOUT = 45000;
 const MAX_UPGRADE_TIMEOUT = 56000;
@@ -20,6 +21,7 @@ export const operation: OperationDefinition = {
   parameter: [
     { use: 'in', name: 'version', type: 'string', min: 0, max: '1' },
     { use: 'in', name: 'timeout', type: 'integer', min: 0, max: '1' },
+    { use: 'in', name: 'force', type: 'boolean', min: 0, max: '1' },
     { use: 'out', name: 'return', type: 'Bundle', min: 1, max: '1' },
   ],
 };
@@ -35,30 +37,20 @@ export const operation: OperationDefinition = {
  * @returns The FHIR response.
  */
 export async function agentUpgradeHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { version, timeout: _timeout, ...rest } = req.query;
+  const { version: _version, timeout: _timeout, force: _force, ...rest } = req.query;
+  const params = parseInputParameters<AgentUpgradeOptions>(operation, req);
   req.query = rest;
 
-  let timeout: number | undefined;
-  if (_timeout) {
-    timeout = Number.parseInt(singularize(_timeout) as string, 10);
-    if (Number.isNaN(timeout)) {
-      throw new OperationOutcomeError(
-        badRequest("'timeout' must be an integer representing a duration in milliseconds, if defined")
-      );
-    }
-  }
-
-  return handleBulkAgentOperation(req, async (agent: Agent) =>
-    upgradeAgent(agent, { version: singularize(version), timeout })
-  );
+  return handleBulkAgentOperation(req, async (agent) => upgradeAgent(agent, params));
 }
 
 export type AgentUpgradeOptions = {
   version?: string;
   timeout?: number;
+  force?: boolean;
 };
 
-async function upgradeAgent(agent: Agent, options?: AgentUpgradeOptions): Promise<FhirResponse> {
+async function upgradeAgent(agent: WithId<Agent>, options?: AgentUpgradeOptions): Promise<FhirResponse> {
   let timeout = options?.timeout ?? DEFAULT_UPGRADE_TIMEOUT;
   if (timeout > MAX_UPGRADE_TIMEOUT) {
     timeout = MAX_UPGRADE_TIMEOUT;
@@ -67,7 +59,11 @@ async function upgradeAgent(agent: Agent, options?: AgentUpgradeOptions): Promis
   // Send agent message
   const [outcome, result] = await publishAgentRequest<AgentUpgradeResponse>(
     agent,
-    { type: 'agent:upgrade:request', ...(options?.version ? { version: options.version } : undefined) },
+    {
+      type: 'agent:upgrade:request',
+      ...(options?.version ? { version: options.version } : undefined),
+      ...(options?.force ? { force: true } : undefined),
+    },
     { waitForResponse: true, timeout }
   );
 

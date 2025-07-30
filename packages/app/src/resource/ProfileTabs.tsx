@@ -2,7 +2,7 @@ import { Tabs, ThemeIcon } from '@mantine/core';
 import { Resource } from '@medplum/fhirtypes';
 import { SupportedProfileStructureDefinition, isSupportedProfileStructureDefinition, useMedplum } from '@medplum/react';
 import { IconCircleFilled } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 export interface ProfileTabsProps {
   readonly resource: Resource;
   readonly currentProfile: SupportedProfileStructureDefinition | undefined;

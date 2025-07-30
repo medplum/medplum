@@ -13,9 +13,6 @@ import {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 
-declare const __brand: unique symbol;
-export type Branded<T, B> = T & { [__brand]: B };
-
 export type LabOrderServiceRequest = ServiceRequest & {
   performer: [Reference<LabOrganization>];
   code: CodeableConcept;
@@ -49,12 +46,11 @@ export function isBillTo(value: unknown): value is BillTo {
 
 export type LabOrganization = Organization & { id: string };
 
-export type TestCoding = Branded<Coding & { code: string }, 'TestCoding'>;
+export type TestCoding = Coding & { code: string };
 
-export type DiagnosisCodeableConcept = Branded<
-  CodeableConcept & { coding: (Coding & Required<Pick<Coding, 'system' | 'code'>>)[] },
-  'DiagnosisCodeableConcept'
->;
+export type DiagnosisCodeableConcept = CodeableConcept & {
+  coding: (Coding & Required<Pick<Coding, 'system' | 'code'>>)[];
+};
 
 export type BillingInformation = {
   billTo?: BillTo;

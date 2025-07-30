@@ -1,10 +1,11 @@
-import { Alert, Button, Group, Radio, Stack } from '@mantine/core';
+import { Alert, Group, Radio, Stack } from '@mantine/core';
 import { HTTP_HL7_ORG, addProfileToResource, createReference } from '@medplum/core';
 import { CodeableConcept, Encounter, MedicationRequest, Patient } from '@medplum/fhirtypes';
-import { useCallback, useState } from 'react';
+import { useMedplumProfile } from '@medplum/react-hooks';
+import { JSX, useCallback, useState } from 'react';
 import { CodeableConceptInput } from '../CodeableConceptInput/CodeableConceptInput';
 import { Form } from '../Form/Form';
-import { useMedplumProfile } from '@medplum/react-hooks';
+import { SubmitButton } from '../Form/SubmitButton';
 
 export interface MedicationDialogProps {
   readonly patient: Patient;
@@ -79,7 +80,7 @@ export function MedicationDialog(props: MedicationDialogProps): JSX.Element {
           ))}
         </Radio.Group>
         <Group justify="flex-end" gap={4}>
-          <Button type="submit">Save</Button>
+          <SubmitButton>Save</SubmitButton>
         </Group>
       </Stack>
     </Form>

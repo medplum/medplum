@@ -7,6 +7,7 @@ import {
   QuestionnaireResponseItemAnswer,
 } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, QuantityDisplay, RangeDisplay } from '@medplum/react';
+import { JSX } from 'react';
 
 interface EncounterNoteDisplayProps {
   response: QuestionnaireResponse;

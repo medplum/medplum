@@ -1,22 +1,31 @@
 ---
-sidebar_position: 2
+sidebar_position: 3
 ---
 
 # Install on Ubuntu
 
-This guide was last updated for Ubuntu 24.04, although it should work for most recent versions.
+This guide provides step-by-step instructions for deploying Medplum on Ubuntu using our official APT repository. The installation process is streamlined through package management while maintaining the robustness and security required for production environments. This guide was tested on Ubuntu 24.04 but is compatible with most recent Ubuntu versions.
+
+Using Medplum's APT repository offers several advantages: automated dependency management, simplified updates, and a standardized installation process. The guide covers all essential components including PostgreSQL database configuration, Redis setup, Node.js installation, and Nginx configuration with SSL/TLS support through Let's Encrypt.
+
+This installation method is well-suited for production deployments where you want to maintain direct control over your infrastructure while benefiting from streamlined package management. It provides a balance between ease of deployment and system control, making it an excellent choice for organizations that prefer traditional Linux server architectures.
 
 ## Prerequisites
 
-First, update and upgrade the system.
+- Ubuntu 24.04
+- Allow SSH access
+- Allow HTTP and HTTPS access
+- Public IP address for Lets Encrypt SSL certificate
+- At least 4 GB of RAM
+- At least 4 GB of disk space
 
-```bash
-sudo apt-get update
-sudo apt-get upgrade
-sudo reboot
-```
+## Install PostgreSQL
 
-## Install postgres
+:::note
+
+These Postgres installation steps can be skipped if you've already installed Postgres, or are using a database hosted elsewhere. Medplum server can be configured to connect to remote databases. We'll discuss how to connect to a remote Postgres server below.
+
+:::
 
 Add the PostgreSQL Apt Repository (see [PostgreSQL Apt Repository docs](https://www.postgresql.org/download/linux/ubuntu/))
 
@@ -29,13 +38,13 @@ sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
 sudo apt install postgresql-16 postgresql-client-16
 ```
 
-Start postgres
+Start Postgres
 
 ```bash
 sudo pg_ctlcluster 16 main start
 ```
 
-Start postgres client
+Start Postgres client
 
 ```bash
 sudo -u postgres psql
@@ -57,29 +66,19 @@ GRANT ALL ON SCHEMA public TO medplum;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO medplum;
 ```
 
-Create a "medplum_test" database:
-
-```PLpgSQL
-CREATE DATABASE medplum_test;
-GRANT ALL PRIVILEGES ON DATABASE medplum_test TO medplum;
-\c medplum_test
-GRANT ALL ON SCHEMA public TO medplum;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO medplum;
-```
-
 Exit psql
 
 ```PLpgSQL
 exit
 ```
 
-## Install redis
+## Install Redis
 
 ```bash
 sudo apt-get install redis-server
 ```
 
-Open the redis config file
+Open the Redis config file
 
 ```bash
 sudo vi /etc/redis/redis.conf
@@ -91,7 +90,7 @@ Uncomment the "requirepass" line and set a password
 requirepass medplum
 ```
 
-Restart redis
+Restart Redis
 
 ```bash
 sudo systemctl restart redis-server
@@ -111,148 +110,22 @@ Install Node.js
 sudo apt-get install nodejs
 ```
 
-## Build Medplum
+## Install Nginx
 
-Clone the Medplum repository
-
-```bash
-git clone https://github.com/medplum/medplum.git
-cd medplum
-```
-
-Install dependencies
-
-```bash
-npm ci
-```
-
-Build the server, app, and necessary dependencies
-
-```bash
-npm run build:fast
-```
-
-## Start Medplum server
-
-:::info
-
-These are abbreviated instructions. For full details, see [Run the stack](/docs/contributing/run-the-stack)
-
-:::
-
-Start the `server` in development mode:
-
-```bash
-cd packages/server
-npm run dev
-```
-
-You should now be able to access the Medplum server at [http://localhost:8103/healthcheck](http://localhost:8103/healthcheck).
-
-## Start Medplum app
-
-:::warning[Important: Development Server vs Production Setup]
-
-This command runs Medplum app using the Vite Dev server. While this is convenient for development and testing, it has two significant limitations:
-
-1. The Vite dev server is designed for development, not production use. It serves files inefficiently and will provide an inferior experience for end users.
-2. The Medplum app requires several modern browser features that are only available in a 'secure context' (HTTPS), including essential cryptography features. These features will not be available when accessing the app via plain HTTP.
-
-If you plan to access the app and API from other devices on your network, we recommend proceeding to the optional SSL/nginx setup instructions below. This will provide the secure context required for all Medplum features to function correctly.
-
-:::
-
-In another terminal, start the `app` in development mode:
-
-```bash
-cd packages/app
-npm run dev
-```
-
-You should now be able to access the Medplum app at [http://localhost:3000](http://localhost:3000).
-
-## Optional: Nginx
-
-:::info
-
-While these instructions demonstrate a basic nginx setup, our primary recommendation is deploying Medplum to AWS using CDK or other infrastructure-as-code tools for production environments. This guide serves as an educational example of how the components work together and could be a viable solution for some deployments.
-
-While this configuration is not officially supported at present, we welcome community interest - if you would like to sponsor work on publishing an official deb image and APT repository, we would love to work with you!
-
-:::
-
-### Overview
-
-To run Medplum securely, you should use SSL/TLS via reverse proxy such as nginx.
-
-To do this, you will need to:
-
-- Install Nginx
-- Install Certbot
-- Setup SSL
-- Add Nginx sites
-
-Before you begin, please identify the domain names you will use for the app and api. For this example, we will use `app.example.com` and `api.example.com`.
-
-### Update Medplum server settings
-
-Navigate to your `server` directory:
-
-```bash
-cd medplum/packages/server
-```
-
-Update the `medplum.config.json` file with your new domain:
-
-```js
-{
-  "baseUrl": "https://api.example.com"
-  // ...
-}
-```
-
-Restart the server. If you intend to run the server continuously and survive SSH disconnects, you may consider using `nohup`:
-
-```bash
-nohup npm run dev > server.log 2>&1 &
-```
-
-### Update Medplum app settings
-
-In the terminal that is running `app`, you now must update the `.env` file with your new domain:
-
-```bash
-echo "MEDPLUM_BASE_URL=https://api.example.com" > .env
-```
-
-Build the app. This will generate a new version of the app in the `dist` directory:
-
-```bash
-npm run build
-```
-
-Start the "preview" server:
-
-```bash
-nohup npx vite preview > app.log 2>&1 &
-```
-
-### Install Nginx and Certbot
-
-Install nginx and Certbot:
+Install Nginx and Certbot:
 
 ```bash
 sudo apt-get install nginx certbot python3-certbot-nginx
 ```
 
-### Setup SSL
-
-Before setting up SSL, make sure your domains point to your server and Nginx is running:
+Start Nginx:
 
 ```bash
 sudo systemctl start nginx
 sudo systemctl enable nginx
 ```
+
+Before setting up SSL, make sure your domains point to your server's IP address. There should be two DNS entries, one for `app` and one for `api`. For example, `app.example.com` and `api.example.com`. Please refer to your DNS provider's documentation for more information.
 
 Get SSL certificates from Let's Encrypt for both domains:
 
@@ -261,99 +134,34 @@ sudo certbot --nginx -d app.example.com
 sudo certbot --nginx -d api.example.com
 ```
 
-### Add Nginx site for `app`
+## Install Medplum
 
-For the app, we will proxy requests to the Vite preview server running on port 4173.
+Add the Medplum Ubuntu repository:
 
-Create an `app` config file such as `/etc/nginx/sites-available/app.example.com`:
-
-```nginx
-# /etc/nginx/sites-available/app.example.com
-server {
-    listen 80;
-    listen [::]:80;
-    server_name app.example.com;
-
-    # Redirect HTTP to HTTPS
-    location / {
-        return 301 https://$server_name$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl;
-    listen [::]:443 ssl;
-    server_name app.example.com;
-
-    ssl_certificate /etc/letsencrypt/live/app.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/app.example.com/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-    location / {
-        proxy_pass http://localhost:4173;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
+```bash
+curl -fsSL https://apt.medplum.com/setup.sh | sudo bash -
+sudo apt-get update
 ```
 
-### Add Nginx site for `api`
+Install Medplum:
 
-For the API server, we will proxy requests to the Node.js server running on port 8103.
-
-Create a `api` config file such as `/etc/nginx/sites-available/api.example.com`:
-
-```nginx
-# /etc/nginx/sites-available/api.example.com
-server {
-    listen 80;
-    listen [::]:80;
-    server_name api.example.com;
-
-    # Redirect HTTP to HTTPS
-    location / {
-        return 301 https://$server_name$request_uri;
-    }
-}
-
-server {
-    listen 443 ssl;
-    listen [::]:443 ssl;
-    server_name api.example.com;
-
-    ssl_certificate /etc/letsencrypt/live/api.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/api.example.com/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-    location / {
-        proxy_pass http://localhost:8103;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
+```bash
+sudo apt-get install medplum
 ```
 
-### Enable the sites
+Start Medplum:
+
+```bash
+sudo systemctl start medplum
+```
+
+## Enable the sites
 
 Enable the site:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/app.example.com /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/api.example.com /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/medplum-app /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/medplum-server /etc/nginx/sites-enabled/
 ```
 
 Remove the default site:
@@ -374,8 +182,71 @@ If the test is successful, reload Nginx:
 sudo systemctl reload nginx
 ```
 
-### Verify the setup
+## Verify the setup
 
 You should now be able to view the API server healthcheck at [https://api.example.com/healthcheck](https://api.example.com/healthcheck)
 
 And the app at [https://app.example.com](https://app.example.com)
+
+## Admin Commands
+
+Check service status:
+
+```bash
+systemctl status medplum
+```
+
+Start service:
+
+```bash
+sudo systemctl start medplum
+```
+
+Stop service:
+
+```bash
+sudo systemctl stop medplum
+```
+
+Restart service:
+
+```bash
+sudo systemctl restart medplum
+```
+
+Check logs:
+
+```bash
+journalctl -u medplum
+```
+
+Force reinstall:
+
+```bash
+sudo apt-get install --reinstall medplum
+```
+
+Reconfigure Medplum:
+
+:::caution
+
+During the installation of Medplum, you will be asked for general configuration (app domain, api domain, database host). This is used to generate the correct nginx configurations and the medplum.config.json file. 
+If you've missed these configuration you can reconfigure with the following command line 
+
+:::
+
+```bash
+sudo dpkg-reconfigure medplum
+```
+
+Then force a reinstallation of Medplum.
+
+## Additional Configuration
+
+The Medplum server configuration is located at `/etc/medplum/medplum.config.json`. You can edit this file to change the server configuration. After editing the file, restart the Medplum service:
+
+```bash
+sudo systemctl restart medplum
+```
+
+See [Config Settings](/docs/self-hosting/config-settings) for full details on Medplum configuration settings.

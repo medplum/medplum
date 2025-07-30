@@ -1,4 +1,4 @@
-import { Bundle, Parameters, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
+import { Bundle, Parameters, Project, Resource, Subscription, SubscriptionStatus } from '@medplum/fhirtypes';
 import { MedplumClient } from '../client';
 import { TypedEventTarget } from '../eventtarget';
 import { evalFhirPathTyped } from '../fhirpath/parse';
@@ -7,7 +7,7 @@ import { Logger } from '../logger';
 import { normalizeErrorString, OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
-import { deepEquals, getExtension, getReferenceString, ProfileResource, resolveId } from '../utils';
+import { deepEquals, getExtension, getReferenceString, ProfileResource, resolveId, WithId } from '../utils';
 import {
   IReconnectingWebSocket,
   IReconnectingWebSocketCtor,
@@ -42,7 +42,7 @@ export type SubscriptionEventMap = {
  * - `heartbeat` - A `heartbeat` message has been received.
  */
 export class SubscriptionEmitter extends TypedEventTarget<SubscriptionEventMap> {
-  private criteria: Set<string>;
+  private readonly criteria: Set<string>;
   constructor(...criteria: string[]) {
     super();
     this.criteria = new Set(criteria);
@@ -103,13 +103,13 @@ export interface SubManagerOptions {
 
 export class SubscriptionManager {
   private readonly medplum: MedplumClient;
-  private ws: IReconnectingWebSocket;
+  private readonly ws: IReconnectingWebSocket;
   private masterSubEmitter?: SubscriptionEmitter;
-  private criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
-  private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
+  private readonly criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
+  private readonly criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
   private wsClosed: boolean;
   private pingTimer: ReturnType<typeof setInterval> | undefined = undefined;
-  private pingIntervalMs: number;
+  private readonly pingIntervalMs: number;
   private waitingForPong = false;
   private currentProfile: ProfileResource | undefined;
 
@@ -295,7 +295,7 @@ export class SubscriptionManager {
         channel: { type: 'websocket' },
         criteria: criteriaEntry.criteria,
       });
-      subscriptionId = subscription.id as string;
+      subscriptionId = subscription.id;
     }
 
     // Get binding token
@@ -494,6 +494,7 @@ export class SubscriptionManager {
 export type BackgroundJobInteraction = 'create' | 'update' | 'delete';
 
 export interface BackgroundJobContext {
+  project?: WithId<Project>;
   interaction: BackgroundJobInteraction;
 }
 

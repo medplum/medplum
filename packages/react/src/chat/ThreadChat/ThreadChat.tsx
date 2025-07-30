@@ -1,7 +1,7 @@
 import { ProfileResource, createReference, formatCodeableConcept, getReferenceString } from '@medplum/core';
 import { Communication } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile, usePrevious } from '@medplum/react-hooks';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { JSX, useCallback, useEffect, useMemo, useState } from 'react';
 import { BaseChat } from '../BaseChat/BaseChat';
 
 export interface ThreadChatProps {
@@ -9,11 +9,12 @@ export interface ThreadChatProps {
   readonly title?: string;
   readonly onMessageSent?: (message: Communication) => void;
   readonly inputDisabled?: boolean;
+  readonly excludeHeader?: boolean;
   readonly onError?: (err: Error) => void;
 }
 
 export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
-  const { thread, title, onMessageSent, inputDisabled, onError } = props;
+  const { thread, title, onMessageSent, inputDisabled, excludeHeader, onError } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const prevThreadId = usePrevious<string | undefined>(thread?.id);
@@ -63,7 +64,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
         ? (message: Communication): void => {
             if (!(message.received && message.status === 'completed')) {
               medplum
-                .updateResource<Communication>({
+                .updateResource({
                   ...message,
                   received: message.received ?? new Date().toISOString(), // Mark as received if needed
                   status: 'completed', // Mark as 'read'
@@ -90,6 +91,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
       sendMessage={sendMessage}
       onMessageReceived={onMessageReceived}
       inputDisabled={inputDisabled}
+      excludeHeader={excludeHeader}
       onError={onError}
     />
   );

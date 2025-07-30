@@ -219,6 +219,34 @@ describe('Bundle tests', () => {
       });
     });
 
+    test('Remove empty resource.meta', () => {
+      const patient: Patient = {
+        resourceType: 'Patient',
+        meta: {
+          project: '11111111-2222-3333-4444-555555555555',
+        },
+        active: true,
+      };
+
+      const inputBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'searchset',
+        entry: [
+          {
+            fullUrl: 'https://example.com/Patient/00000000-0000-0000-0000-000000000000',
+            resource: patient,
+          },
+        ],
+      };
+
+      const result = convertToTransactionBundle(inputBundle);
+
+      // meta.project will be removed
+      // so meta will be empty
+      // and therefore should be removed
+      expect(result?.entry?.[0]?.resource?.meta).toBeUndefined();
+    });
+
     test('Preserve resource.meta', () => {
       const patient: Patient = {
         resourceType: 'Patient',

@@ -1,5 +1,6 @@
 import { evalFhirPath } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 
 export interface FhirPathDisplayProps {

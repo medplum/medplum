@@ -5,6 +5,7 @@ import { createReference, normalizeErrorString, PatchOperation } from '@medplum/
 import { Practitioner, Task } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 
 interface ClaimTaskProps {
   readonly task: Task;

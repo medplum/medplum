@@ -1,4 +1,4 @@
-import { badRequest, createReference, OperationOutcomeError } from '@medplum/core';
+import { badRequest, createReference, OperationOutcomeError, WithId } from '@medplum/core';
 import { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
@@ -40,7 +40,7 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
   const membership = await createPatient(login, projectId, firstName as string, lastName as string);
 
   // Update the login
-  const updated = await setLoginMembership(login, membership.id as string);
+  const updated = await setLoginMembership(login, membership.id);
 
   res.status(200).json({
     login: updated.id,
@@ -61,7 +61,7 @@ export async function createPatient(
   projectId: string,
   firstName: string,
   lastName: string
-): Promise<ProjectMembership> {
+): Promise<WithId<ProjectMembership>> {
   const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const project = await systemRepo.readResource<Project>('Project', projectId);
@@ -72,7 +72,7 @@ export async function createPatient(
 
   const profile = (await createProfile(project, 'Patient', firstName, lastName, user.email as string)) as Patient;
   const policy = await systemRepo.readReference(project.defaultPatientAccessPolicy);
-  const membership = await createProjectMembership(user, project, profile, {
+  const membership = await createProjectMembership(systemRepo, user, project, profile, {
     accessPolicy: createReference(policy),
   });
 

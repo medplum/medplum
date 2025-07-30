@@ -1,14 +1,24 @@
-import { arrayify, crawlResource, isGone, normalizeOperationOutcome, TypedValue } from '@medplum/core';
+import {
+  arrayify,
+  BackgroundJobContext,
+  crawlTypedValue,
+  isGone,
+  normalizeOperationOutcome,
+  toTypedValue,
+  TypedValue,
+  WithId,
+} from '@medplum/core';
 import { Attachment, Binary, Meta, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
-import { getConfig, MedplumServerConfig } from '../config';
-import { getLogger, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { getConfig } from '../config/loader';
+import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
-import { getBinaryStorage } from '../fhir/storage';
-import { globalLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
+import { getBinaryStorage } from '../storage/loader';
 import { parseTraceparent } from '../traceparent';
+import { queueRegistry, WorkerInitializer } from './utils';
 
 /*
  * The download worker inspects resources,
@@ -31,21 +41,13 @@ export interface DownloadJobData {
 
 const queueName = 'DownloadQueue';
 const jobName = 'DownloadJobData';
-let queue: Queue<DownloadJobData> | undefined = undefined;
-let worker: Worker<DownloadJobData> | undefined = undefined;
 
-/**
- * Initializes the download worker.
- * Sets up the BullMQ job queue.
- * Sets up the BullMQ worker.
- * @param config - The Medplum server config to use.
- */
-export function initDownloadWorker(config: MedplumServerConfig): void {
+export const initDownloadWorker: WorkerInitializer = (config) => {
   const defaultOptions: QueueBaseOptions = {
     connection: config.redis,
   };
 
-  queue = new Queue<DownloadJobData>(queueName, {
+  const queue = new Queue<DownloadJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
       attempts: 3,
@@ -56,7 +58,7 @@ export function initDownloadWorker(config: MedplumServerConfig): void {
     },
   });
 
-  worker = new Worker<DownloadJobData>(
+  const worker = new Worker<DownloadJobData>(
     queueName,
     (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job)),
     {
@@ -66,24 +68,9 @@ export function initDownloadWorker(config: MedplumServerConfig): void {
   );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
-}
 
-/**
- * Shuts down the download worker.
- * Closes the BullMQ job queue.
- * Closes the BullMQ worker.
- */
-export async function closeDownloadWorker(): Promise<void> {
-  if (worker) {
-    await worker.close();
-    worker = undefined;
-  }
-
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-}
+  return { queue, worker, name: queueName };
+};
 
 /**
  * Returns the download queue instance.
@@ -91,7 +78,7 @@ export async function closeDownloadWorker(): Promise<void> {
  * @returns The download queue (if available).
  */
 export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
-  return queue;
+  return queueRegistry.get(queueName);
 }
 
 /**
@@ -107,14 +94,26 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the download.
  * @param resource - The resource that was created or updated.
+ * @param context - The background job context.
  */
-export async function addDownloadJobs(resource: Resource): Promise<void> {
+export async function addDownloadJobs(resource: WithId<Resource>, context: BackgroundJobContext): Promise<void> {
+  if (!getConfig().autoDownloadEnabled) {
+    return;
+  }
+
+  // Check if the project has a setting for "autoDownloadEnabled" and if it is set to false.
+  // Auto-download is enabled by default, but can be disabled per project.
+  const project = context?.project;
+  if (project?.setting?.find((s) => s.name === 'autoDownloadEnabled')?.valueBoolean === false) {
+    return;
+  }
+
   const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
     if (isExternalUrl(attachment.url)) {
       await addDownloadJobData({
         resourceType: resource.resourceType,
-        id: resource.id as string,
+        id: resource.id,
         url: attachment.url,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
@@ -147,6 +146,7 @@ function isExternalUrl(url: string | undefined): url is string {
  * @param job - The download job details.
  */
 async function addDownloadJobData(job: DownloadJobData): Promise<void> {
+  const queue = getDownloadQueue();
   if (queue) {
     await queue.add(jobName, job);
   }
@@ -230,7 +230,7 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
 
 function getAttachments(resource: Resource): Attachment[] {
   const attachments: Attachment[] = [];
-  crawlResource(resource, {
+  crawlTypedValue(toTypedValue(resource), {
     visitProperty: (_parent, _key, _path, propertyValues) => {
       for (const propertyValue of propertyValues) {
         if (propertyValue) {

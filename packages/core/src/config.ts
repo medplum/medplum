@@ -64,6 +64,8 @@ export interface MedplumSourceInfraConfig {
   clamscanLoggingPrefix: ValueOrExternalSecret<string>;
   skipDns?: ValueOrExternalSecret<boolean>;
   hostedZoneName?: ValueOrExternalSecret<string>;
+  wafLogGroupName?: ValueOrExternalSecret<string>;
+  wafLogGroupCreate?: ValueOrExternalSecret<boolean>;
   additionalContainers?: {
     name: ValueOrExternalSecret<string>;
     image: ValueOrExternalSecret<string>;
@@ -90,6 +92,28 @@ export interface MedplumSourceInfraConfig {
     scaleOutCooldown: ValueOrExternalSecret<number>;
   };
   environment?: StringMap;
+
+  rdsIdsMajorVersionSuffix?: boolean;
+  rdsPersistentParameterGroups?: boolean;
+
+  fireLens?: {
+    enabled: true;
+    logDriverConfig?: {
+      options?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+      secretOptions?: {
+        [key: string]: ValueOrExternalSecret<string>;
+      };
+    };
+    logRouterConfig: {
+      type: 'fluentbit' | 'fluentd';
+      options?: Record<string, unknown>;
+    };
+    environment?: {
+      [key: string]: ValueOrExternalSecret<string>;
+    };
+  };
 }
 
 export interface MedplumInfraConfig {
@@ -141,6 +165,8 @@ export interface MedplumInfraConfig {
   clamscanLoggingPrefix: string;
   skipDns?: boolean;
   hostedZoneName?: string;
+  wafLogGroupName?: string;
+  wafLogGroupCreate?: boolean;
   additionalContainers?: {
     name: string;
     image: string;
@@ -167,4 +193,26 @@ export interface MedplumInfraConfig {
     scaleOutCooldown: number;
   };
   environment?: StringMap;
+
+  rdsIdsMajorVersionSuffix?: boolean;
+  rdsPersistentParameterGroups?: boolean;
+
+  fireLens?: {
+    enabled: true;
+    logDriverConfig?: {
+      options?: {
+        [key: string]: string;
+      };
+      secretOptions?: {
+        [key: string]: string;
+      };
+    };
+    logRouterConfig: {
+      type: 'fluentbit' | 'fluentd';
+      options?: Record<string, unknown>;
+    };
+    environment?: {
+      [key: string]: string;
+    };
+  };
 }

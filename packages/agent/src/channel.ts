@@ -13,14 +13,12 @@ export interface Channel {
 }
 
 export abstract class BaseChannel implements Channel {
-  private definition: AgentChannel;
-  private endpoint: Endpoint;
+  readonly app: App;
+  protected definition: AgentChannel;
+  protected endpoint: Endpoint;
 
-  constructor(
-    readonly app: App,
-    definition: AgentChannel,
-    endpoint: Endpoint
-  ) {
+  constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
+    this.app = app;
     this.definition = definition;
     this.endpoint = endpoint;
   }
@@ -29,22 +27,7 @@ export abstract class BaseChannel implements Channel {
   abstract start(): void;
   abstract stop(): Promise<void>;
   abstract sendToRemote(message: AgentTransmitResponse): void;
-
-  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
-    const previousEndpoint = this.endpoint;
-    this.definition = definition;
-    this.endpoint = endpoint;
-
-    this.log.info('Reloading config... Evaluating if channel needs to change address...');
-
-    if (needToRebindToPort(previousEndpoint, endpoint)) {
-      await this.stop();
-      this.start();
-      this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
-    } else {
-      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
-    }
-  }
+  abstract reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void>;
 
   getDefinition(): AgentChannel {
     return this.definition;
@@ -55,20 +38,11 @@ export abstract class BaseChannel implements Channel {
   }
 }
 
-export function needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
-  if (
-    firstEndpoint.address === secondEndpoint.address ||
-    new URL(firstEndpoint.address).port === new URL(secondEndpoint.address).port
-  ) {
-    return false;
-  }
-  return true;
-}
-
-export enum ChannelType {
-  HL7_V2 = 'HL7_V2',
-  DICOM = 'DICOM',
-}
+export const ChannelType = {
+  HL7_V2: 'HL7_V2',
+  DICOM: 'DICOM',
+} as const;
+export type ChannelType = (typeof ChannelType)[keyof typeof ChannelType];
 
 export function getChannelType(endpoint: Endpoint): ChannelType {
   if (endpoint.address.startsWith('dicom')) {

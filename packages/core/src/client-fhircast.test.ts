@@ -7,11 +7,11 @@ import {
   CurrentContext,
   FhircastConnection,
   FhircastEventName,
+  FhircastPatientOpenContext,
   PendingSubscriptionRequest,
   SubscriptionRequest,
   serializeFhircastSubscriptionRequest,
 } from './fhircast';
-import { createFhircastMessageContext } from './fhircast/test-utils';
 import { OperationOutcomeError } from './outcomes';
 
 describe('FHIRcast', () => {
@@ -37,6 +37,7 @@ describe('FHIRcast', () => {
           method: 'POST',
           body: serializedSubRequest,
           headers: expect.objectContaining({ 'Content-Type': ContentType.FORM_URL_ENCODED }),
+          cache: 'no-cache',
         })
       );
       expect(subRequest).toStrictEqual(expect.objectContaining<PendingSubscriptionRequest>(expectedSubRequest));
@@ -164,7 +165,10 @@ describe('FHIRcast', () => {
 
   describe('fhircastPublish', () => {
     test('Valid context published', async () => {
-      const context = createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123');
+      const context = {
+        key: 'patient',
+        resource: { id: '123', resourceType: 'Patient' },
+      } satisfies FhircastPatientOpenContext;
       const fetch = mockFetch(201, { success: true, event: context });
       const client = new MedplumClient({ fetch });
       await expect(client.fhircastPublish('abc123', 'Patient-open', context)).resolves.toBeDefined();
@@ -180,8 +184,16 @@ describe('FHIRcast', () => {
       // Multiple contexts
       await expect(
         client.fhircastPublish('def456', 'ImagingStudy-open', [
-          createFhircastMessageContext<'ImagingStudy-open'>('patient', 'Patient', 'patient-123'),
-          createFhircastMessageContext<'ImagingStudy-open'>('study', 'ImagingStudy', 'imagingstudy-456'),
+          { key: 'patient', resource: { id: '123', resourceType: 'Patient' } },
+          {
+            key: 'study',
+            resource: {
+              id: '456',
+              resourceType: 'ImagingStudy',
+              status: 'available',
+              subject: { reference: 'Patient/123' },
+            },
+          },
         ])
       ).resolves.toBeDefined();
       expect(fetch).toHaveBeenCalledWith(
@@ -196,8 +208,22 @@ describe('FHIRcast', () => {
       // 'DiagnosticReport-open' requires both a report and a patient
       await expect(
         client.fhircastPublish('xyz-789', 'DiagnosticReport-open', [
-          createFhircastMessageContext<'DiagnosticReport-open'>('report', 'DiagnosticReport', 'report-987'),
-          createFhircastMessageContext<'DiagnosticReport-open'>('patient', 'Patient', 'patient-123'),
+          {
+            key: 'report',
+            resource: {
+              id: '987',
+              resourceType: 'DiagnosticReport',
+              status: 'partial',
+              code: { coding: [{ code: 'test-code' }] },
+            },
+          },
+          {
+            key: 'patient',
+            resource: {
+              id: '123',
+              resourceType: 'Patient',
+            },
+          },
         ])
       ).resolves.toBeDefined();
       expect(fetch).toHaveBeenCalledWith(
@@ -215,11 +241,10 @@ describe('FHIRcast', () => {
       const client = new MedplumClient({ fetch });
       await expect(
         // Topic needs to be a string with a length
-        client.fhircastPublish(
-          '',
-          'Patient-open',
-          createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123')
-        )
+        client.fhircastPublish('', 'Patient-open', {
+          key: 'patient',
+          resource: { id: '123', resourceType: 'Patient' },
+        })
       ).rejects.toBeInstanceOf(OperationOutcomeError);
       await expect(
         // @ts-expect-error Invalid context object
@@ -230,22 +255,32 @@ describe('FHIRcast', () => {
           'abc123',
           // @ts-expect-error Invalid event
           'random-event',
-          createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123')
+          { key: 'patient', resource: { id: '123', resourceType: 'Patient' } }
         )
       ).rejects.toBeInstanceOf(OperationOutcomeError);
 
       // 'DiagnosticReport-open' requires both a report and a patient
       await expect(
-        client.fhircastPublish(
-          'xyz-789',
-          'DiagnosticReport-open',
-          createFhircastMessageContext<'DiagnosticReport-open'>('report', 'DiagnosticReport', 'report-987')
-        )
+        client.fhircastPublish('xyz-789', 'DiagnosticReport-open', {
+          key: 'report',
+          resource: {
+            id: '987',
+            resourceType: 'DiagnosticReport',
+            status: 'partial',
+            code: { coding: [{ code: 'test-code' }] },
+          },
+        })
       ).rejects.toBeInstanceOf(OperationOutcomeError);
     });
 
     test('Setting `fhircastHubUrl`', async () => {
-      const context = createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123');
+      const context = {
+        key: 'patient',
+        resource: {
+          id: '123',
+          resourceType: 'Patient',
+        },
+      } satisfies FhircastPatientOpenContext;
       const fetch = mockFetch(201, { success: true, event: context });
       const client = new MedplumClient({ fetch, fhircastHubUrl: 'http://example.com/foo/hub' });
       await expect(client.fhircastPublish('abc123', 'Patient-open', context)).resolves.toBeDefined();
@@ -263,7 +298,7 @@ describe('FHIRcast', () => {
   describe('fhircastGetContext', () => {
     let client: MedplumClient;
     let topic: string;
-    let topicContext: CurrentContext<'DiagnosticReport-open'>;
+    let topicContext: CurrentContext<'DiagnosticReport'>;
     let medplumGetSpy: jest.SpyInstance;
 
     beforeAll(() => {
@@ -271,14 +306,23 @@ describe('FHIRcast', () => {
       topicContext = {
         'context.type': 'DiagnosticReport',
         'context.versionId': generateId(),
-        context: [createFhircastMessageContext<'DiagnosticReport-open'>('report', 'DiagnosticReport', generateId())],
+        context: [
+          {
+            key: 'report',
+            resource: {
+              id: generateId(),
+              resourceType: 'DiagnosticReport',
+              status: 'partial',
+              code: { coding: [{ code: 'test-code' }] },
+            },
+          },
+        ],
       };
       const fetch = mockFetch(200, (url: string) => {
         if (url.endsWith(`/${topic}`)) {
           return topicContext;
-        } else {
-          return { 'context.type': '', context: [] };
         }
+        return { 'context.type': '', context: [] };
       });
       client = new MedplumClient({ fetch });
       medplumGetSpy = jest.spyOn(client, 'get');
@@ -286,12 +330,22 @@ describe('FHIRcast', () => {
 
     test('Get context for topic with context', async () => {
       await expect(client.fhircastGetContext(topic)).resolves.toStrictEqual(topicContext);
-      expect(medplumGetSpy).toHaveBeenCalledWith(`https://api.medplum.com/fhircast/STU3/${topic}`);
+      expect(medplumGetSpy).toHaveBeenCalledWith(
+        `https://api.medplum.com/fhircast/STU3/${topic}`,
+        expect.objectContaining({
+          cache: 'no-cache',
+        })
+      );
     });
 
     test('Get context for topic without context', async () => {
       await expect(client.fhircastGetContext('abc-123')).resolves.toStrictEqual({ 'context.type': '', context: [] });
-      expect(medplumGetSpy).toHaveBeenCalledWith('https://api.medplum.com/fhircast/STU3/abc-123');
+      expect(medplumGetSpy).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhircast/STU3/abc-123',
+        expect.objectContaining({
+          cache: 'no-cache',
+        })
+      );
     });
   });
 });

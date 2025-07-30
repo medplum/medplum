@@ -1,18 +1,20 @@
 import {
   buildTypeName,
   capitalize,
+  escapeHtml,
+  FileBuilder,
   getAllDataTypes,
   indexStructureDefinitionBundle,
   InternalSchemaElement,
   InternalTypeSchema,
   isLowerCase,
   isResourceTypeSchema,
+  wordWrap,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, ElementDefinitionType } from '@medplum/fhirtypes';
 import { mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { FileBuilder, wordWrap } from './filebuilder';
 import { getValueSetValues } from './valuesets';
 
 export function main(): void {
@@ -368,19 +370,6 @@ function getTypeScriptTypeForProperty(
     return baseType + '[]';
   }
   return baseType;
-}
-
-function escapeHtml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/“/g, '&ldquo;')
-    .replace(/”/g, '&rdquo;')
-    .replace(/‘/g, '&lsquo;')
-    .replace(/’/g, '&rsquo;')
-    .replace(/…/g, '&hellip;');
 }
 
 if (process.argv[1].endsWith('index.ts')) {

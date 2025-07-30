@@ -2,7 +2,8 @@ import { createReference, getReferenceString, Operator } from '@medplum/core';
 import { Appointment, DiagnosticReport, Flag, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig, MedplumServerConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { createTestProject, withTestContext } from '../test.setup';
 import { Repository } from './repo';
 
@@ -19,7 +20,7 @@ describe('Medplum Custom Search Parameters', () => {
     const { project } = await createTestProject();
     repo = new Repository({
       strictMode: true,
-      projects: [project.id as string],
+      projects: [project],
       author: { reference: 'User/' + randomUUID() },
     });
   });
@@ -293,6 +294,78 @@ describe('Medplum Custom Search Parameters', () => {
 
       expect(results.entry).toHaveLength(1);
       expect(results.entry?.[0].resource?.resourceType).toStrictEqual('Flag');
-      expect(results.entry?.[0].resource?.id as string).toStrictEqual(flag1.id as string);
+      expect(results.entry?.[0].resource?.id).toStrictEqual(flag1.id);
+    }));
+
+  test('Search by AsyncJob.type and AsyncJob.status', () =>
+    withTestContext(async () => {
+      const dataMigrationJob = await repo.createResource({
+        resourceType: 'AsyncJob',
+        type: 'data-migration',
+        status: 'accepted',
+        request: 'data-migration',
+        requestTime: new Date().toISOString(),
+        dataVersion: 1,
+        minServerVersion: '3.3.0',
+      });
+      expect(dataMigrationJob).toBeDefined();
+
+      await repo.createResource({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        request: 'not-data-migration',
+        requestTime: new Date().toISOString(),
+      });
+
+      const result = await repo.search({
+        resourceType: 'AsyncJob',
+        filters: [
+          { code: 'type', operator: Operator.EQUALS, value: 'data-migration' },
+          { code: 'status', operator: Operator.EQUALS, value: 'accepted' },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(1);
+    }));
+
+  test('Search for Practitioner by qualification-code', () =>
+    withTestContext(async () => {
+      const practitioner1 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Alice'], family: 'A' }],
+        qualification: [
+          {
+            code: {
+              coding: [
+                { code: 'MD', system: 'http://terminology.hl7.org/CodeSystem/v2-0360', display: 'Doctor of Medicine' },
+              ],
+            },
+          },
+        ],
+      });
+      expect(practitioner1).toBeDefined();
+
+      const practitioner2 = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ given: ['Bob'], family: 'B' }],
+        qualification: [
+          {
+            code: {
+              coding: [
+                { code: 'RN', system: 'http://terminology.hl7.org/CodeSystem/v2-0360', display: 'Registered Nurse' },
+              ],
+            },
+          },
+        ],
+      });
+      expect(practitioner2).toBeDefined();
+
+      const result = await repo.search({
+        resourceType: 'Practitioner',
+        filters: [{ code: 'qualification-code', operator: Operator.EQUALS, value: 'MD' }],
+      });
+
+      expect(result.entry).toHaveLength(1);
+      expect(result.entry?.[0]?.resource).toMatchObject(practitioner1);
     }));
 });

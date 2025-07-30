@@ -1,4 +1,4 @@
-import { ContentType, encodeBase64, MedplumClient } from '@medplum/core';
+import { ContentType, encodeBase64, MedplumClient, WithId } from '@medplum/core';
 import { Bot, Extension, OperationOutcome } from '@medplum/fhirtypes';
 import { Command } from 'commander';
 import { SignJWT } from 'jose';
@@ -55,7 +55,11 @@ export async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfi
   }
 
   console.log('Saving source code...');
-  const sourceCode = await medplum.createAttachment(code, basename(codePath), getCodeContentType(codePath));
+  const sourceCode = await medplum.createAttachment({
+    data: code,
+    filename: basename(codePath),
+    contentType: getCodeContentType(codePath),
+  });
 
   console.log('Updating bot...');
   const updateResult = await medplum.updateResource({
@@ -65,7 +69,7 @@ export async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfi
   console.log('Success! New bot version: ' + updateResult.meta?.versionId);
 }
 
-export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: Bot): Promise<void> {
+export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotConfig, bot: WithId<Bot>): Promise<void> {
   const codePath = botConfig.dist ?? botConfig.source;
   const code = readFileContents(codePath);
   if (!code) {
@@ -73,7 +77,7 @@ export async function deployBot(medplum: MedplumClient, botConfig: MedplumBotCon
   }
 
   console.log('Deploying bot...');
-  const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id as string, '$deploy'), {
+  const deployResult = (await medplum.post(medplum.fhirUrl('Bot', bot.id, '$deploy'), {
     code,
     filename: basename(codePath),
   })) as OperationOutcome;
@@ -223,9 +227,7 @@ export function safeTarExtractor(destinationDir: string): NodeJS.WritableStream 
 
       return true;
     },
-
-    // Temporary cast for tar issue: https://github.com/isaacs/node-tar/issues/409
-  }) as ReturnType<typeof extract> & NodeJS.WritableStream;
+  });
 }
 
 export function getUnsupportedExtension(): Extension {

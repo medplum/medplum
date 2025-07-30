@@ -1,4 +1,4 @@
-import { createReference, ProfileResource } from '@medplum/core';
+import { createReference, ProfileResource, WithId } from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { createProject } from '../fhir/operations/projectinit';
@@ -25,12 +25,12 @@ export interface RegisterRequest {
 
 export interface RegisterResponse {
   readonly accessToken: string;
-  readonly user: User;
-  readonly project: Project;
-  readonly login: Login;
-  readonly membership: ProjectMembership;
-  readonly profile: ProfileResource;
-  readonly client: ClientApplication;
+  readonly user: WithId<User>;
+  readonly project: WithId<Project>;
+  readonly login: WithId<Login>;
+  readonly membership: WithId<ProjectMembership>;
+  readonly profile: WithId<ProfileResource>;
+  readonly client: WithId<ClientApplication>;
 }
 
 /**
@@ -72,10 +72,10 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     {
       ...login,
-      membership: createReference(membership as ProjectMembership),
+      membership: createReference(membership as WithId<ProjectMembership>),
     },
     createReference(profile as ProfileResource),
-    client.refreshTokenLifetime
+    { accessLifetime: client.accessTokenLifetime, refreshLifetime: client.refreshTokenLifetime }
   );
 
   return {
@@ -83,8 +83,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     project,
     login,
-    membership: membership as ProjectMembership,
-    profile: profile as ProfileResource,
+    membership: membership as WithId<ProjectMembership>,
+    profile: profile as WithId<ProfileResource>,
     client,
   };
 }

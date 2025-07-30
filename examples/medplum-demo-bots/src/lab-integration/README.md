@@ -12,4 +12,8 @@ For our purposes, we'll be focusing on two specific types of messages, the ORM a
 
 1. **send-orm-message.ts**: This bot demonstrates how to send an HL7 ORM message to a third-party lab using Medplum and SFTP. This can be triggered when a new `ServiceRequest` resource is created in Medplum.
 
-2. **read-oru-message.ts**: This bot demonstrates how to read results from an HL7 ORU message using Medplum and SFTP. This can be triggered to be [run on a timer](https://www.medplum.com/docs/bots/bot-cron-job) to poll for results periodically.
+2. **receive-oru-message.ts**: This bot demonstrates how to read results from an HL7 ORU message using Medplum and SFTP. This can be triggered to be [run on a timer](https://www.medplum.com/docs/bots/bot-cron-job) to poll for results periodically.
+
+3. **send-oru-message.ts**: This bot demonstrates how to send an HL7 ORU message from a DiagnosticReport and associated resources. 
+
+4. **receive-orm-message.ts**: This bot demonstrates how to parse an HL7 ORM message into ServiceRequest and associated Encounter, Practitioner, and Patient resources. 

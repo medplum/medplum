@@ -1,4 +1,4 @@
-import { ContentType, IssueSeverity, MedplumClient, MedplumClientOptions, isOk, isUUID } from '@medplum/core';
+import { ContentType, IssueSeverity, MedplumClient, MedplumClientOptions, WithId, isOk, isUUID } from '@medplum/core';
 import { Agent, Bundle, OperationOutcome, Parameters, ParametersParameter, Reference } from '@medplum/fhirtypes';
 import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
@@ -15,7 +15,7 @@ export type ParamNames<R extends string[], O extends string[] = []> = {
 };
 
 export type AgentBulkOpResponse<T extends Parameters | OperationOutcome = Parameters | OperationOutcome> = {
-  agent: Agent;
+  agent: WithId<Agent>;
   result: T;
 };
 
@@ -23,6 +23,7 @@ export type CallAgentBulkOperationArgs<T extends Record<string, string>, R exten
   operation: string;
   agentIds: string[];
   options: MedplumClientOptions & { criteria: string; output?: 'json' };
+  params?: Record<string, string | boolean | number>;
   parseSuccessfulResponse: (response: AgentBulkOpResponse<R>) => T;
 };
 
@@ -80,7 +81,7 @@ agentStatusCommand
         });
 
         return {
-          id: response.agent.id as string,
+          id: response.agent.id,
           name: response.agent.name,
           enabledStatus: response.agent.status,
           version: statusEntry.version,
@@ -179,7 +180,7 @@ agentReloadConfigCommand
       options,
       parseSuccessfulResponse: (response: AgentBulkOpResponse<OperationOutcome>) => {
         return {
-          id: response.agent.id as string,
+          id: response.agent.id,
           name: response.agent.name,
         };
       },
@@ -197,24 +198,34 @@ agentUpgradeCommand
     'An optional FHIR search criteria to resolve the agent(s) to upgrade. Mutually exclusive with [agentIds...] arg'
   )
   .option(
-    '--version <version>',
-    'An optional version to upgrade to. Defaults to the latest version if flag not included'
+    '--agentVersion <version>',
+    'An optional agent version to upgrade to. Defaults to the latest version if flag not included'
   )
+  .option('--force', 'Forces an upgrade when a pending upgrade is in an inconsistent state. Use with caution.')
   .addOption(
     new Option('--output <format>', 'An optional output format, defaults to table')
       .choices(['table', 'json'])
       .default('table')
   )
   .action(async (agentIds, options) => {
+    const params: Record<string, string | boolean | number> = {};
+    if (options.agentVersion) {
+      params.version = options.agentVersion;
+    }
+    if (options.force) {
+      params.force = true;
+    }
+
     await callAgentBulkOperation({
       operation: '$upgrade',
       agentIds,
       options,
+      params,
       parseSuccessfulResponse: (response: AgentBulkOpResponse<OperationOutcome>) => {
         return {
-          id: response.agent.id as string,
+          id: response.agent.id,
           name: response.agent.name,
-          version: options.version ?? 'latest',
+          version: options.agentVersion ?? 'latest',
         };
       },
     });
@@ -223,11 +234,20 @@ agentUpgradeCommand
 export async function callAgentBulkOperation<
   T extends Record<string, string>,
   R extends Parameters | OperationOutcome,
->({ operation, agentIds, options, parseSuccessfulResponse }: CallAgentBulkOperationArgs<T, R>): Promise<void> {
+>({
+  operation,
+  agentIds,
+  options,
+  params = {},
+  parseSuccessfulResponse,
+}: CallAgentBulkOperationArgs<T, R>): Promise<void> {
   const normalized = parseEitherIdsOrCriteria(agentIds, options);
   const medplum = await createMedplumClient(options);
   const usedCriteria = normalized.type === 'criteria' ? normalized.criteria : `Agent?_id=${normalized.ids.join(',')}`;
   const searchParams = new URLSearchParams(usedCriteria.split('?')[1]);
+  for (const [paramName, paramVal] of Object.entries(params)) {
+    searchParams.append(paramName, paramVal.toString());
+  }
 
   let result: Bundle<Parameters> | Parameters | OperationOutcome;
   try {
@@ -288,7 +308,7 @@ export async function callAgentBulkOperation<
     const outcome = response.result;
     const issue = outcome.issue?.[0];
     const row = {
-      id: response.agent.id as string,
+      id: response.agent.id,
       name: response.agent.name,
       severity: issue.severity,
       code: issue.code,
@@ -354,7 +374,7 @@ export function parseAgentBulkOpBundle(bundle: Bundle<Parameters>): AgentBulkOpR
 }
 
 export function parseAgentBulkOpParameters(params: Parameters): AgentBulkOpResponse {
-  const agent = params.parameter?.find((p) => p.name === 'agent')?.resource;
+  const agent = params.parameter?.find((p) => p.name === 'agent')?.resource as WithId<Agent>;
   if (!agent) {
     throw new Error("Agent bulk operation response missing 'agent'");
   }

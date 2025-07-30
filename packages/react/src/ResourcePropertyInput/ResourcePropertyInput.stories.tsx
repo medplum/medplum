@@ -1,10 +1,10 @@
 import { InternalSchemaElement, PropertyType } from '@medplum/core';
+import { Extension } from '@medplum/fhirtypes';
 import { HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
+import { JSX, useCallback } from 'react';
 import { Document } from '../Document/Document';
 import { ResourcePropertyInput } from './ResourcePropertyInput';
-import { Extension } from '@medplum/fhirtypes';
-import { useCallback } from 'react';
 
 export default {
   title: 'Medplum/ResourcePropertyInput',

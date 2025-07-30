@@ -2,10 +2,11 @@ import { Binary } from '@medplum/fhirtypes';
 import { createTransport } from 'nodemailer';
 import Mail from 'nodemailer/lib/mailer';
 import { sendEmailViaSes } from '../cloud/aws/email';
-import { getConfig, MedplumSmtpConfig } from '../config';
+import { getConfig } from '../config/loader';
+import { MedplumSmtpConfig } from '../config/types';
 import { Repository } from '../fhir/repo';
-import { getBinaryStorage } from '../fhir/storage';
 import { globalLogger } from '../logger';
+import { getBinaryStorage } from '../storage/loader';
 import { getFromAddress } from './utils';
 
 /**
@@ -63,8 +64,8 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
   // We only support HTTPS URLs and embedded content.
   // The most risky case is when the attachment is a file path,
   // because nodemailer will attempt to read the file from disk.
-  const path = attachment.path?.toString();
-  if (!path) {
+  const path = attachment.path;
+  if (!path || typeof path !== 'string') {
     // No path is specified, so this is probably embedded content.
     return;
   }

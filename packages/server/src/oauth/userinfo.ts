@@ -7,7 +7,7 @@ import {
   getReferenceString,
   ProfileResource,
 } from '@medplum/core';
-import { Reference, User } from '@medplum/fhirtypes';
+import { Bot, ClientApplication, Reference, User } from '@medplum/fhirtypes';
 import { Request, RequestHandler, Response } from 'express';
 import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
@@ -43,17 +43,17 @@ export const userInfoHandler: RequestHandler = asyncWrap(async (_req: Request, r
   res.status(200).json(userInfo);
 });
 
-function buildProfile(userInfo: Record<string, any>, profile: ProfileResource): void {
+function buildProfile(userInfo: Record<string, any>, profile: ProfileResource | Bot | ClientApplication): void {
   userInfo.profile = getReferenceString(profile);
   userInfo.locale = 'en-US';
-  userInfo.birthdate = profile.birthDate;
+  userInfo.birthdate = 'birthDate' in profile ? profile.birthDate : '';
 
   const lastUpdated = getDateProperty(profile.meta?.lastUpdated);
   if (lastUpdated) {
     userInfo.updated_at = lastUpdated.getTime() / 1000;
   }
 
-  const humanName = profile.name?.[0];
+  const humanName = typeof profile.name === 'object' ? profile.name?.[0] : undefined;
   if (humanName) {
     userInfo.name = formatHumanName(humanName);
     userInfo.given_name = formatGivenName(humanName);
@@ -69,24 +69,33 @@ function buildProfile(userInfo: Record<string, any>, profile: ProfileResource): 
   userInfo.nickname = '';
 }
 
-function buildEmail(userInfo: Record<string, any>, profile: ProfileResource, user: User): void {
-  const contactPoint = profile.telecom?.find((cp) => cp.system === 'email');
-  if (contactPoint) {
-    userInfo.email = contactPoint.value;
-    userInfo.email_verified = !!(userInfo.email === user.email && user.emailVerified);
+function buildEmail(
+  userInfo: Record<string, any>,
+  profile: ProfileResource | Bot | ClientApplication,
+  user: User
+): void {
+  if (user.email) {
+    userInfo.email = user.email;
+    userInfo.email_verified = Boolean(user.emailVerified);
+  } else {
+    const contactPoint = 'telecom' in profile ? profile.telecom?.find((cp) => cp.system === 'email') : undefined;
+    if (contactPoint) {
+      userInfo.email = contactPoint.value;
+      userInfo.email_verified = false;
+    }
   }
 }
 
-function buildPhone(userInfo: Record<string, any>, profile: ProfileResource): void {
-  const contactPoint = profile.telecom?.find((cp) => cp.system === 'phone');
+function buildPhone(userInfo: Record<string, any>, profile: ProfileResource | Bot | ClientApplication): void {
+  const contactPoint = 'telecom' in profile ? profile.telecom?.find((cp) => cp.system === 'phone') : undefined;
   if (contactPoint) {
     userInfo.phone_number = contactPoint.value;
     userInfo.phone_number_verified = false;
   }
 }
 
-function buildAddress(userInfo: Record<string, any>, profile: ProfileResource): void {
-  const address = profile.address?.[0];
+function buildAddress(userInfo: Record<string, any>, profile: ProfileResource | Bot | ClientApplication): void {
+  const address = 'address' in profile ? profile.address?.[0] : undefined;
   if (address) {
     userInfo.address = {
       formatted: formatAddress(address),

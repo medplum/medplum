@@ -1,4 +1,4 @@
-import { isCheckboxCell, killEvent } from './dom';
+import { exportJsonFile, isCheckboxCell, killEvent } from './dom';
 
 describe('DOM utils', () => {
   test('killEvent', () => {
@@ -37,5 +37,43 @@ describe('DOM utils', () => {
 
     expect(isCheckboxCell(div.querySelector('#input1') as Element)).toBe(true);
     expect(isCheckboxCell(div.querySelector('#input2') as Element)).toBe(false);
+  });
+
+  describe('JSON File Download', () => {
+    let jsonFile: any;
+
+    beforeEach(() => {
+      jsonFile = {
+        entry: [
+          {
+            fullUrl: 'medplum.com',
+            resource: {
+              meta: {},
+              id: '123',
+              resourceType: 'Patient',
+            },
+          },
+          {
+            fullUrl: 'app.medplum.com/123',
+            resource: {
+              meta: {
+                id: '123',
+              },
+              id: '456',
+              resourceType: 'Patient',
+            },
+          },
+        ],
+      };
+    });
+
+    test('download a JSON file', () => {
+      URL.createObjectURL = jest.fn(() => 'blob:http://localhost/blob');
+      URL.revokeObjectURL = jest.fn();
+
+      exportJsonFile(jsonFile.entry);
+
+      expect(URL.revokeObjectURL).toHaveBeenCalled();
+    });
   });
 });

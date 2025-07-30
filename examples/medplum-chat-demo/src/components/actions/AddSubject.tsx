@@ -5,6 +5,7 @@ import { getQuestionnaireAnswers, normalizeErrorString, PatchOperation } from '@
 import { Communication, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { JSX } from 'react';
 
 interface AddSubjectProps {
   readonly communication: Communication;

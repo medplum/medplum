@@ -5,9 +5,10 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
-import { AuthenticatedRequestContext, requestContextStore } from '../context';
+import { loadTestConfig } from '../config/loader';
+import { AuthenticatedRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
+import { requestContextStore } from '../request-context-store';
 
 // Based on: https://developer.okta.com/docs/guides/scim-provisioning-integration-prepare/main/
 

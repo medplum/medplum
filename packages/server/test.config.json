@@ -27,9 +27,10 @@
   "database": {
     "host": "localhost",
     "port": 5432,
-    "dbname": "medplum",
+    "dbname": "medplum_test",
     "username": "medplum",
-    "password": "medplum"
+    "password": "medplum",
+    "disableRunPostDeployMigrations": true
   },
   "redis": {
     "host": "localhost",

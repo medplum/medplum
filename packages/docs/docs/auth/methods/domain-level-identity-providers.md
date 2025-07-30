@@ -78,11 +78,11 @@ Okta uses separate domains per organization. You will need your organization's O
 
 ![Okta Find URL](/img/auth/okta-find-url.png)
 
-The "baseUrl" could look something like this `https://dev-71569655.okta.com` or could be a named subdomain like `https://mydomain.okta.com`. Once you have obtained it, construct the Authorize, Token and UserInfo URLs as follows:
+The "baseUrl" could look something like this `https://dev-12345678.okta.com` or could be a named subdomain like `https://mydomain.okta.com`. Once you have obtained it, construct the Authorize, Token and UserInfo URLs as follows:
 
-- Authorize URL = $\{baseUrl\}/v1/authorize (e.g., "https://dev-71569655.okta.com/oauth2/v1/authorize")
-- Token URL = $\{baseUrl\}/oauth2/v1/token (e.g., "https://dev-71569655.okta.com/oauth2/v1/token")
-- UserInfo URL = $\{baseUrl\}/oauth2/v1/userinfo (e.g., "https://dev-71569655.okta.com/oauth2/v1/userinfo")
+- Authorize URL = $\{baseUrl\}/v1/authorize (e.g., "https://dev-12345678.okta.com/oauth2/v1/authorize")
+- Token URL = $\{baseUrl\}/oauth2/v1/token (e.g., "https://dev-12345678.okta.com/oauth2/v1/token")
+- UserInfo URL = $\{baseUrl\}/oauth2/v1/userinfo (e.g., "https://dev-12345678.okta.com/oauth2/v1/userinfo")
 
 Client ID and Client secret will be the same as those obtained at the end of the previous section.
 

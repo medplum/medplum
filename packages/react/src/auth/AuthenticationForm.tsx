@@ -1,4 +1,4 @@
-import { Anchor, Button, Center, Checkbox, Divider, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
+import { Anchor, Center, Checkbox, Divider, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
 import {
   BaseLoginRequest,
   GoogleCredentialResponse,
@@ -8,8 +8,9 @@ import {
 } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ReactNode, useCallback, useState } from 'react';
+import { JSX, ReactNode, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { GoogleButton } from '../GoogleButton/GoogleButton';
 import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
@@ -121,12 +122,22 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
       <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
         <div>
           {onRegister && (
-            <Anchor component="button" type="button" color="dimmed" onClick={onRegister} size="xs">
+            <Anchor
+              component="button"
+              type="button"
+              c="dimmed"
+              onClick={onRegister}
+              size="xs"
+              data-dashlane-ignore="true"
+              data-lp-ignore="true"
+              data-no-autofill="true"
+              data-form-type="navigation"
+            >
               Register
             </Anchor>
           )}
         </div>
-        {!disableEmailAuth && <Button type="submit">Next</Button>}
+        {!disableEmailAuth && <SubmitButton>Next</SubmitButton>}
       </Group>
     </Form>
   );
@@ -180,7 +191,7 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           </Anchor>
         )}
         <Checkbox id="remember" name="remember" label="Remember me" size="xs" style={{ lineHeight: 1 }} />
-        <Button type="submit">Sign in</Button>
+        <SubmitButton>Sign in</SubmitButton>
       </Group>
     </Form>
   );

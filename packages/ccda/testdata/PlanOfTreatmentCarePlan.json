@@ -1,0 +1,100 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "CARE PLAN",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "18776-5",
+                  "display": "Treatment plan"
+                }
+              ],
+              "text": "Treatment plan"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\" width=\"100%\"><thead><tr><th>Planned Activity</th><th>Planned Date</th></tr></thead><tbody><tr><td>Admit Yourself to Community Health and Hospitals for Pnuemonia</td><td>20120806</td></tr></tbody></table></div>"
+            },
+            "entry": [
+              {
+                "reference": "CarePlan/3f8b4e4c-7abc-40eb-b8d0-df32e46c086a"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "ce862cfe-6559-411e-92e9-e8d005b1c226",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": ["Katherine"]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "CarePlan",
+        "id": "3f8b4e4c-7abc-40eb-b8d0-df32e46c086a",
+        "status": "completed",
+        "intent": "plan",
+        "title": "CARE PLAN",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "409073007",
+                "display": "instruction"
+              }
+            ],
+            "text": "instruction"
+          }
+        ],
+        "subject": {
+          "reference": "Patient/ce862cfe-6559-411e-92e9-e8d005b1c226",
+          "display": "Katherine Madison"
+        },
+        "description": "Admit Yourself to Community Health and Hospitals for Pnuemonia"
+      }
+    }
+  ]
+}

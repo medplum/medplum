@@ -1,5 +1,5 @@
 import { createFakeJwt } from './client-test-utils';
-import { isJwt, isMedplumAccessToken, tryGetJwtExpiration } from './jwt';
+import { isJwt, isMedplumAccessToken, parseJWTPayload, tryGetJwtExpiration } from './jwt';
 
 describe('JWT utils', () => {
   test('isJwt', () => {
@@ -18,5 +18,11 @@ describe('JWT utils', () => {
     expect(tryGetJwtExpiration('')).toBe(undefined);
     expect(tryGetJwtExpiration(createFakeJwt({}))).toBe(undefined);
     expect(tryGetJwtExpiration(createFakeJwt({ exp: 0 }))).toBe(0);
+  });
+
+  test('parseJWTPayload', () => {
+    const claims = { exp: 1234567890, login_id: 'test-login-id' };
+    const payload = parseJWTPayload(createFakeJwt(claims));
+    expect(payload).toMatchObject(claims);
   });
 });

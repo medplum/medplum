@@ -2,13 +2,13 @@ import { MedplumClient, indexSearchParameterBundle, indexStructureDefinitionBund
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import {
   Bundle,
-  QuestionnaireItem,
-  SearchParameter,
   Questionnaire,
+  QuestionnaireItem,
   QuestionnaireItemAnswerOption,
+  SearchParameter,
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { afterEach, beforeEach, MockedFunction, beforeAll, describe, test, vi, expect } from 'vitest';
+import { MockedFunction, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { Marker, handler } from './vital';
 
 global.fetch = vi.fn();

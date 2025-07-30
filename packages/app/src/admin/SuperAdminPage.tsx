@@ -1,7 +1,18 @@
-import { Button, Divider, Modal, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import {
+  Button,
+  Divider,
+  Grid,
+  Modal,
+  NativeSelect,
+  NumberInput,
+  PasswordInput,
+  Stack,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { notifications, showNotification } from '@mantine/notifications';
-import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import { forbidden, normalizeErrorString } from '@medplum/core';
 import { Parameters } from '@medplum/fhirtypes';
 import {
   DateTimeInput,
@@ -12,8 +23,8 @@ import {
   convertLocalToIso,
   useMedplum,
 } from '@medplum/react';
-import { IconCheck, IconX } from '@tabler/icons-react';
-import { ReactNode, useState } from 'react';
+import { JSX, ReactNode, useState } from 'react';
+import { startAsyncJob } from './SuperAdminStartAsyncJob';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
@@ -41,6 +52,14 @@ export function SuperAdminPage(): JSX.Element {
     startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
   }
 
+  function reloadCron(): void {
+    startAsyncJob(medplum, 'Reload Cron Resources', 'admin/super/reloadcron');
+  }
+
+  function runPendingDataMigration(): void {
+    startAsyncJob(medplum, 'Run Pending Data Migration', 'admin/super/migrate');
+  }
+
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
     medplum
       .post('admin/super/removebotidjobsfromqueue', formData)
@@ -62,15 +81,56 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
-  function getDatabaseStats(): void {
+  function getDatabaseStats(formData: Record<string, string>): void {
     medplum
-      .post('fhir/R4/$db-stats', {})
+      .post(
+        'fhir/R4/$db-stats',
+        formData.tableNames
+          ? {
+              resourceType: 'Parameters',
+              parameter: [{ name: 'tableNames', valueString: formData.tableNames }],
+            }
+          : undefined
+      )
       .then((params: Parameters) => {
         setModalTitle('Database Stats');
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
         open();
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function getDatabaseInvalidIndexes(): void {
+    medplum
+      .post('fhir/R4/$db-invalid-indexes')
+      .then((params: Parameters) => {
+        setModalTitle('Database Invalid Indexes');
+        setModalContent(
+          <pre>
+            {params.parameter
+              ?.filter((p) => p.name === 'invalidIndex')
+              .map((p) => p.valueString)
+              .join('\n')}
+          </pre>
+        );
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function getSchemaDiff(): void {
+    medplum
+      .post('fhir/R4/$db-schema-diff')
+      .then((params: Parameters) => {
+        setModalTitle('Schema Diff');
+        setModalContent(<pre>{params.parameter?.find((p) => p.name === 'migrationString')?.valueString}</pre>);
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function reconcileSchemaDiff(): void {
+    startAsyncJob(medplum, 'Reconcile Schema Diff', 'admin/super/reconcile-db-schema-drift');
   }
 
   return (
@@ -106,6 +166,17 @@ export function SuperAdminPage(): JSX.Element {
         <Button onClick={rebuildValueSets}>Rebuild ValueSets</Button>
       </Form>
       <Divider my="lg" />
+      <Title order={2}>Run Pending Data Migration</Title>
+      <p>
+        When a Medplum version releases with data migrations to apply, you can run them here. Press this button to kick
+        off the background data migration process.
+      </p>
+      <Form onSubmit={runPendingDataMigration}>
+        <Stack>
+          <Button type="submit">Start Migration</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
       <Title order={2}>Reindex Resources</Title>
       <p>
         When Medplum changes how resources are indexed, the system may require a reindex for old resources to be indexed
@@ -118,6 +189,9 @@ export function SuperAdminPage(): JSX.Element {
           </FormSection>
           <FormSection title="Search Filter" htmlFor="filter">
             <TextInput id="filter" name="filter" placeholder="e.g. name=Sam&birthdate=lt2000-01-01" />
+          </FormSection>
+          <FormSection title="Max Resource Version" htmlFor="maxResourceVersion">
+            <MaxResourceVersionInput />
           </FormSection>
           <Button type="submit">Reindex</Button>
         </Stack>
@@ -165,54 +239,74 @@ export function SuperAdminPage(): JSX.Element {
       <Title order={2}>Database Stats</Title>
       <p>Query current table statistics from the database.</p>
       <Form onSubmit={getDatabaseStats}>
-        <Button type="submit">Get Database Stats</Button>
+        <Stack>
+          <FormSection title="Table Names (comma-delimited)" htmlFor="tableNames">
+            <TextInput id="tableNames" name="tableNames" placeholder="Observation,Observation_History" />
+          </FormSection>
+          <Button type="submit">Get Database Stats</Button>
+        </Stack>
       </Form>
-      <Modal opened={opened} onClose={close} title={modalTitle} centered>
+      <Divider my="lg" />
+      <Title order={2}>Database Invalid Indexes</Title>
+      <p>Query invalid indexes from the database.</p>
+      <Form onSubmit={getDatabaseInvalidIndexes}>
+        <Stack>
+          <Button type="submit">Get Database Invalid Indexes</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Database Schema Drift</Title>
+      <p>Show the schema migration needed to match the expected database schema.</p>
+      <Grid>
+        <Grid.Col span={6}>
+          <Form onSubmit={getSchemaDiff}>
+            <Stack>
+              <Button type="submit">Get Schema Drift</Button>
+            </Stack>
+          </Form>
+        </Grid.Col>
+        <Grid.Col span={6}>
+          <Form onSubmit={reconcileSchemaDiff}>
+            <Stack>
+              <Button type="submit">Reconcile Schema Drift</Button>
+            </Stack>
+          </Form>
+        </Grid.Col>
+      </Grid>
+      <Divider my="lg" />
+      <Title order={2}>Reload Cron Resources</Title>
+      <p>Obliterates the cron queue and rebuilds all the cron job schedulers for cron resources (eg. cron bots).</p>
+      <Form onSubmit={reloadCron}>
+        <Stack>
+          <Button type="submit">Reload Cron Resources</Button>
+        </Stack>
+      </Form>
+
+      <Modal opened={opened} onClose={close} title={modalTitle} centered size="auto">
         {modalContent}
       </Modal>
     </Document>
   );
 }
 
-function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: Record<string, string>): void {
-  notifications.show({
-    id: url,
-    loading: true,
-    title,
-    message: 'Running...',
-    autoClose: false,
-    withCloseButton: false,
-  });
-
-  const options: MedplumRequestOptions = { method: 'POST', pollStatusOnAccepted: true };
-  if (body) {
-    options.body = JSON.stringify(body);
-  }
-
-  medplum
-    .startAsyncRequest(url, options)
-    .then(() => {
-      notifications.update({
-        id: url,
-        color: 'green',
-        title,
-        message: 'Done',
-        icon: <IconCheck size="1rem" />,
-        loading: false,
-        autoClose: false,
-        withCloseButton: true,
-      });
-    })
-    .catch((err) => {
-      notifications.update({
-        id: url,
-        color: 'red',
-        title,
-        message: normalizeErrorString(err),
-        icon: <IconX size="1rem" />,
-        loading: false,
-        autoClose: false,
-        withCloseButton: true,
-      });
-    });
+function MaxResourceVersionInput(): JSX.Element {
+  const [value, setValue] = useState<'outdated' | 'all' | 'specific'>('outdated');
+  return (
+    <>
+      <NativeSelect
+        id="reindexType"
+        name="reindexType"
+        value={value}
+        onChange={(e) => setValue(e.target.value as 'outdated' | 'all' | 'specific')}
+        data={[
+          { label: 'Outdated resources', value: 'outdated' },
+          { label: 'All resources', value: 'all' },
+          { label: 'Less than or equal to a specific version', value: 'specific' },
+        ]}
+      />
+      {value === 'specific' && (
+        <NumberInput required name="maxResourceVersion" placeholder="Max Resource Version" min={0} />
+      )}
+    </>
+  );
 }

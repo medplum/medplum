@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import styles from './TestimonialHeader.module.css';
 
 export interface TestimonialHeaderProps {

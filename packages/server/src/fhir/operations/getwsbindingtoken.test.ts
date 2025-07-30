@@ -3,7 +3,7 @@ import { OperationOutcome, Parameters, Subscription } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { verifyJwt } from '../../oauth/keys';
 import { initTestAuth, withTestContext } from '../../test.setup';
 
@@ -103,7 +103,7 @@ describe('Get WebSocket binding token', () => {
       expect(createdSub.id).toBeDefined();
 
       const res2 = await request(app)
-        .delete(`/fhir/R4/Subscription/${createdSub.id as string}`)
+        .delete(`/fhir/R4/Subscription/${createdSub.id}`)
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res2.body).toMatchObject<OperationOutcome>({

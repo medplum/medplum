@@ -2,7 +2,7 @@ import { Accordion, Center, Divider, Group, Stack, Text, Title } from '@mantine/
 import { FhircastMessagePayload, SubscriptionRequest } from '@medplum/core';
 import { Document, useMedplum, usePrevious } from '@medplum/react';
 import { IconMessage2Exclamation } from '@tabler/icons-react';
-import { useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useState } from 'react';
 import { useClientId } from '../hooks';
 import ConnectionHandler from './ConnectionHandler';
 import TopicLoader from './TopicLoader';

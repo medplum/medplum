@@ -12,10 +12,10 @@ import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
-import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
-import { SelectQuery } from '../fhir/sql';
+import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { SelectQuery } from '../fhir/sql';
+import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
@@ -759,5 +759,87 @@ describe('Admin Invite', () => {
     expect(normalizeErrorString(res5.body)).toStrictEqual(
       'User is already a member of this project with a different profile'
     );
+
+    // Invite Bob third time with "forceNewMembership = true" - should succeed
+    const res6 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        forceNewMembership: true,
+      });
+    expect(res6.status).toBe(200);
+    expect(res6.body.resourceType).toBe('ProjectMembership');
+    expect(res6.body.id).not.toStrictEqual(res2.body.id);
+  });
+
+  test('Invite project scoped user', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Second, Alice invites Bob to the project
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        scope: 'project',
+      });
+
+    expect(res.status).toBe(200);
+    const res2 = await request(app)
+      .get('/fhir/R4/User?email=' + bobEmail)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    const user = res2.body.entry[0].resource;
+    expect(user.resourceType).toBe('User');
+    expect(user.project.reference).toBe(getReferenceString(project));
+  });
+
+  test('Invite server scoped User, and check that the User is not accessible from the project', async () => {
+    const { project, accessToken } = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+
+    // Second, Alice invites Bob to the project
+    const bobEmail = `bob${randomUUID()}@example.com`;
+    const res = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        scope: 'server',
+      });
+
+    expect(res.status).toBe(200);
+    const res2 = await request(app)
+      .get('/fhir/R4/User?email=' + bobEmail)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toBe('Bundle');
+    expect(res2.body.entry).toBeUndefined();
   });
 });

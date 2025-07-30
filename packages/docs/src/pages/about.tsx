@@ -1,4 +1,5 @@
 import Layout from '@theme/Layout';
+import { JSX } from 'react';
 import { Card } from '../components/Card';
 import { CardContainer } from '../components/CardContainer';
 import { Container } from '../components/Container';
@@ -28,10 +29,10 @@ export default function AboutPage(): JSX.Element {
         <Section>
           <CardContainer>
             <Card>
-              <h3>So that’s what we built.</h3>
+              <h3>So that's what we built.</h3>
               <p>
                 We believe that a clean, secure, and compliant data infrastructure layer will elevate the entire field
-                of healthcare innovation and make it possible for the top technical talent to focus on what’s next. We
+                of healthcare innovation and make it possible for the top technical talent to focus on what's next. We
                 believe that interoperability is vital to the future of healthcare technology. And we believe that
                 starting with a future-ready foundation will propel every healthcare innovator closer to better
                 clinical, operational, and financial outcomes.
@@ -49,7 +50,7 @@ export default function AboutPage(): JSX.Element {
               going slow enough to move forward with speed.
             </Feature>
             <Feature title="Practice uncompromising consistency." imgSrc="/img/icons/code.svg">
-              We’re reliably steadfast, exhibiting resolute determination and relentless follow-through. We aspire to be
+              We're reliably steadfast, exhibiting resolute determination and relentless follow-through. We aspire to be
               taken for granted.
             </Feature>
             <Feature title="Convene a catalytic force." imgSrc="/img/icons/automation.svg">
@@ -114,6 +115,45 @@ export default function AboutPage(): JSX.Element {
               imgUrl="/img/people/mattlong.jpg"
               linkedInUrl="https://www.linkedin.com/in/mateolargo/"
               githubUrl="https://github.com/mattlong"
+            />
+          </CardContainer>
+          <CardContainer>
+            <ProfileCard
+              name="Ian Plunkett"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/ianplunkett.jpg"
+              linkedInUrl="https://www.linkedin.com/in/ianplunkett/"
+              githubUrl="https://github.com/ianplunkett"
+            />
+            <ProfileCard
+              name="David Yanez"
+              title="Senior Software Engineer"
+              imgUrl="/img/people/david.jpg"
+              linkedInUrl="https://www.linkedin.com/in/jorge-david-yanez-a427b459/"
+              githubUrl="https://github.com/techdavidy"
+            />
+            <ProfileCard
+              name="Finn Bergquist"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/finnbergquist.jpg"
+              linkedInUrl="https://www.linkedin.com/in/finn-bergquist/"
+              githubUrl="https://github.com/finnbergquist"
+            />
+          </CardContainer>
+          <CardContainer>
+            <ProfileCard
+              name="Maddy Li"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/maddyli.jpg"
+              linkedInUrl="https://www.linkedin.com/in/maddy-li/"
+              githubUrl="https://github.com/maddyli"
+            />
+            <ProfileCard
+              name="Kevin Shaw"
+              title="Product Designer"
+              imgUrl="/img/people/kevinwadeshaw.jpeg"
+              linkedInUrl="https://www.linkedin.com/in/kevinwadeshaw/"
+              githubUrl="https://github.com/kevinwadeshaw"
             />
           </CardContainer>
         </Section>

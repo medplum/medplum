@@ -1,4 +1,4 @@
-import { OAuthTokenAuthMethod } from '@medplum/core';
+import { OAuthTokenAuthMethod, WithId } from '@medplum/core';
 import { ClientApplication, DomainConfiguration, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -7,7 +7,7 @@ import request from 'supertest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -28,14 +28,14 @@ const identityProvider = {
   clientSecret: '456',
 };
 
-let project: Project;
+let project: WithId<Project>;
 let defaultClient: ClientApplication;
 let externalAuthClient: ClientApplication;
 
 describe('External', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       await initApp(app, config);
 
       // Create a new project
@@ -87,8 +87,8 @@ describe('External', () => {
         firstName: 'External',
         lastName: 'User',
       });
-    })
-  );
+    });
+  });
 
   afterAll(async () => {
     await shutdownApp();
@@ -154,6 +154,26 @@ describe('External', () => {
     const res = await request(app).get(url);
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('Missing email', async () => {
+    // Build the external callback URL with the known domain
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({ domain }),
+    });
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
+      status: 200,
+      json: () => buildTokens(undefined),
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('External token does not contain email address');
   });
 
   test('Email does not match domain', async () => {
@@ -385,6 +405,52 @@ describe('External', () => {
     expect(tokenResponse.body.profile.display).toBe('External User');
   });
 
+  test('Missing subject', async () => {
+    const subjectAuthClient = await withTestContext(async () => {
+      const systemRepo = getSystemRepo();
+
+      // Create a new client application with external subject auth
+      const client = await createClient(systemRepo, {
+        project,
+        name: 'Subject Auth Client',
+        redirectUri,
+      });
+
+      // Update client application with external auth
+      await systemRepo.updateResource<ClientApplication>({
+        ...client,
+        identityProvider: {
+          ...identityProvider,
+          useSubject: true,
+        },
+      });
+
+      return client;
+    });
+
+    const url = appendQueryParams('/auth/external', {
+      code: randomUUID(),
+      state: JSON.stringify({
+        redirectUri,
+        clientId: subjectAuthClient.id,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+      }),
+    });
+
+    // Mock the external identity provider
+    (fetch as unknown as jest.Mock).mockImplementation(() => ({
+      ok: true,
+      status: 200,
+      json: () => buildTokens(undefined, ''),
+    }));
+
+    // Simulate the external identity provider callback
+    const res = await request(app).get(url);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('External token does not contain subject');
+  });
+
   test('Client secret post', async () => {
     const clientSecretPostClient = await withTestContext(async () => {
       const systemRepo = getSystemRepo();
@@ -526,7 +592,7 @@ describe('External', () => {
  * @param sub - The user subject to include as the sub claim.
  * @returns Fake tokens to mock the external identity provider.
  */
-function buildTokens(email: string, sub?: string): Record<string, string> {
+function buildTokens(email: string | undefined, sub?: string): Record<string, string> {
   return {
     id_token: 'header.' + Buffer.from(JSON.stringify({ email, sub }), 'ascii').toString('base64') + '.signature',
   };

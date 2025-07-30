@@ -1,15 +1,15 @@
-import { ExtendedInternalSchemaElement, buildElementsContext } from './elements-context';
+import { readJson } from '@medplum/definitions';
+import { AccessPolicy, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import { AccessPolicyInteraction, satisfiedAccessPolicy } from './access';
 import { HTTP_HL7_ORG } from './constants';
-import { isPopulated } from './utils';
+import { ExtendedInternalSchemaElement, buildElementsContext } from './elements-context';
 import {
   InternalTypeSchema,
   getDataType,
   indexStructureDefinitionBundle,
   parseStructureDefinition,
 } from './typeschema/types';
-import { AccessPolicy, Bundle, Patient, StructureDefinition } from '@medplum/fhirtypes';
-import { readJson } from '@medplum/definitions';
-import { AccessPolicyInteraction, satisfiedAccessPolicy } from './access';
+import { isPopulated } from './utils';
 
 describe('buildElementsContext', () => {
   const DEFAULT_EXTENDED_PROPS = { readonly: false, hidden: false };

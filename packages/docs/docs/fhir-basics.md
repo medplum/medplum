@@ -27,6 +27,8 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 [reference]: /docs/api/fhir/datatypes/reference
 [codeableconcept]: /docs/api/fhir/datatypes/codeableconcept
 
+To follow along with the concepts described in this guide, you can download and import this [sample FHIR bundle](https://drive.google.com/file/d/1196wfX-aBMUK33GdQiIdBUNlYn_cymBU/view?usp=drive_link) into your Medplum project. For instructions on how to import the data, refer to our [Import Sample Data](/docs/tutorials/importing-sample-data) guide.
+
 ## Why FHIR?
 
 Medplum stores healthcare data using the FHIR standard. Storing data according to this standard provides developers with the following benefits:
@@ -154,14 +156,11 @@ Refer to the [Medplum search documentation](/docs/search/basic-search) for a mor
 
 ## Standardizing Data: Codeable Concepts
 
-The healthcare system commonly uses standardized coding systems to describe healthcare share information between organizations about **diagnoses**, **procedures**, **clinical outcomes**, **billing**.
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/tWW2_0lxNl4?si=bs4lD_2pm1HO0Ux2" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
 
-Some of the most commonly used code systems in the U.S. are:
-
-- [ICD-10](https://www.cms.gov/Medicare/Coding/ICD10) - Diagnoses.
-- [LOINC](/docs/careplans/loinc) - Clinical measurements and lab results.
-- [RXNorm](/docs/medications/medication-codes#rxnorm) or [NDC](/docs/medications/medication-codes#ndc) - [Medication](/docs/medications/medication-codes#ndc).
-- [SNOMED](https://www.snomed.org/) - [Workforce administration](/docs/careplans/tasks#task-assignment), clinical findings.
+The healthcare system commonly uses standardized coding systems to describe healthcare share information between organizations about **diagnoses**, **procedures**, **clinical outcomes**, **billing**. See our summary on [Common Terminologies](/docs/terminology/common-terminologies) for an overview of the most frequently used codes in healthcare.
 
 Because there are multiple code systems for many domains, the same _concept_ can be defined in _multiple code systems_. To handle this mapping from concept to system, the FHIR defines the [`CodeableConcept`][codeableconcept] element type.
 
@@ -191,6 +190,10 @@ Below is an example [`CodeableConcept`][codeableconcept], that defines the medic
 </details>
 
 ## Naming Data: Identifiers
+
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/NumGLpR9Q7w?si=EPkEYFI2_jkxdzPw"  title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
 
 One issue in healthcare applications is that the same entity can have many different identifiers in different systems. For example, a patient might be identified simultaneously by their:
 

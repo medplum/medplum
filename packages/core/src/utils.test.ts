@@ -25,8 +25,10 @@ import {
   deepClone,
   deepEquals,
   deepIncludes,
+  escapeHtml,
   findObservationInterval,
   findObservationReferenceRange,
+  findObservationReferenceRanges,
   findResourceByCode,
   flatMapFilter,
   getAllQuestionnaireAnswers,
@@ -315,15 +317,25 @@ describe('Core Utils', () => {
   });
 
   test('Convert ArrayBuffer to hex string', () => {
-    const input = new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    const output = arrayBufferToHex(input);
-    expect(output).toBe('000102030405060708090a');
+    expect(arrayBufferToHex(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe('000102030405060708090a');
+    expect(arrayBufferToHex(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe('000102030405060708090a');
+    expect(arrayBufferToHex(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe(
+      '000000000100000002000000030000000400000005000000060000000700000008000000090000000a000000'
+    );
+    expect(arrayBufferToHex(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe(
+      '000000000100000002000000030000000400000005000000060000000700000008000000090000000a000000'
+    );
   });
 
   test('Convert ArrayBuffer to base-64 encoded string', () => {
-    const input = new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    const output = arrayBufferToBase64(input);
-    expect(output).toBe('AAECAwQFBgcICQo=');
+    expect(arrayBufferToBase64(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe('AAECAwQFBgcICQo=');
+    expect(arrayBufferToBase64(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe('AAECAwQFBgcICQo=');
+    expect(arrayBufferToBase64(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe(
+      'AAAAAAEAAAACAAAAAwAAAAQAAAAFAAAABgAAAAcAAAAIAAAACQAAAAoAAAA='
+    );
+    expect(arrayBufferToBase64(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe(
+      'AAAAAAEAAAACAAAAAwAAAAQAAAAFAAAABgAAAAcAAAAIAAAACQAAAAoAAAA='
+    );
   });
 
   test('Get date property', () => {
@@ -631,19 +643,43 @@ describe('Core Utils', () => {
   });
 
   test('Stringify', () => {
-    expect(stringify(null)).toBeUndefined();
-    expect(stringify(undefined)).toBeUndefined();
+    expect(stringify(null)).toStrictEqual('');
+    expect(stringify(undefined)).toStrictEqual('');
     expect(stringify('foo')).toStrictEqual('"foo"');
     expect(stringify({ x: 'y' })).toStrictEqual('{"x":"y"}');
     expect(stringify({ x: 123 })).toStrictEqual('{"x":123}');
-    expect(stringify({ x: undefined })).toStrictEqual('{}');
-    expect(stringify({ x: null })).toStrictEqual('{}');
-    expect(stringify({ x: {} })).toStrictEqual('{}');
+    expect(stringify({ x: undefined })).toStrictEqual('');
+    expect(stringify({ x: null })).toStrictEqual('');
+    expect(stringify({ x: {} })).toStrictEqual('');
+    expect(stringify({ x: [] })).toStrictEqual('');
     expect(stringify({ x: { y: 'z' } })).toStrictEqual('{"x":{"y":"z"}}');
     expect(stringify({ x: 2 }, true)).toStrictEqual('{\n  "x": 2\n}');
+    expect(stringify({ x: [''] })).toStrictEqual('');
+    expect(stringify({ x: ['', ''] })).toStrictEqual('');
+    expect(stringify({ x: ['y', ''] })).toStrictEqual('{"x":["y",null]}');
+    expect(stringify({ x: ['', 'y'] })).toStrictEqual('{"x":[null,"y"]}');
+    expect(stringify({ x: ['y', '', ''] })).toStrictEqual('{"x":["y",null,null]}');
+    expect(stringify({ x: ['', 'y', ''] })).toStrictEqual('{"x":[null,"y",null]}');
+    expect(stringify({ x: ['', '', 'y'] })).toStrictEqual('{"x":[null,null,"y"]}');
+
+    // Arrays with all empty values can be stripped
     expect(stringify({ resourceType: 'Patient', address: [{ line: [''] }] })).toStrictEqual(
-      '{"resourceType":"Patient","address":[{"line":[""]}]}'
+      '{"resourceType":"Patient"}'
     );
+
+    // Arrays with some empty values should not be stripped, but empty values should be replaced with "null"
+    expect(stringify({ resourceType: 'Patient', address: [{ line: ['', 'x'] }] })).toStrictEqual(
+      '{"resourceType":"Patient","address":[{"line":[null,"x"]}]}'
+    );
+
+    // Make sure we preserve "0", even though falsy
+    expect(stringify({ low: 0, high: 100 })).toStrictEqual('{"low":0,"high":100}');
+
+    // Make sure we preserve "false", even though falsy
+    expect(stringify({ low: false, high: true })).toStrictEqual('{"low":false,"high":true}');
+
+    // empty objects within arrays should be translated to null, but NOT removed
+    expect(stringify({ address: [{}, { use: 'home' }, {}] })).toStrictEqual('{"address":[null,{"use":"home"},null]}');
   });
 
   test('Deep equals', () => {
@@ -1048,6 +1084,12 @@ describe('Core Utils', () => {
     expect(findObservationReferenceRange(def, homer, ['N'])?.range?.low?.value).toBe(7);
     expect(findObservationReferenceRange(def, marge, ['N'])?.range?.low?.value).toBe(7);
     expect(findObservationReferenceRange(def, bart, ['N'])?.range?.low?.value).toBe(3);
+
+    expect(findObservationReferenceRanges(def, homer)).toHaveLength(2);
+    expect(findObservationReferenceRanges(def, marge)).toHaveLength(2);
+    expect(findObservationReferenceRanges(def, bart)).toHaveLength(2);
+
+    expect(findObservationReferenceRanges(def, { resourceType: 'Patient' })).toHaveLength(0);
   });
 
   test('preciseRound', () => {
@@ -1574,4 +1616,18 @@ describe('singularize', () => {
     expect(singularize([false])).toStrictEqual(false);
     expect(singularize([])).toBeUndefined();
   });
+});
+
+describe('escapeHtml', () => {
+  test('Escapes &', () => expect(escapeHtml('&')).toStrictEqual('&amp;'));
+  test('Escapes <', () => expect(escapeHtml('<')).toStrictEqual('&lt;'));
+  test('Escapes >', () => expect(escapeHtml('>')).toStrictEqual('&gt;'));
+  test('Escapes "', () => expect(escapeHtml('"')).toStrictEqual('&quot;'));
+  test('Escapes “', () => expect(escapeHtml('“')).toStrictEqual('&ldquo;'));
+  test('Escapes ”', () => expect(escapeHtml('”')).toStrictEqual('&rdquo;'));
+  test('Escapes ‘', () => expect(escapeHtml('‘')).toStrictEqual('&lsquo;'));
+  test('Escapes ’', () => expect(escapeHtml('’')).toStrictEqual('&rsquo;'));
+  test('Escapes …', () => expect(escapeHtml('…')).toStrictEqual('&hellip;'));
+
+  test('Escapes tag', () => expect(escapeHtml('<foo>')).toStrictEqual('&lt;foo&gt;'));
 });

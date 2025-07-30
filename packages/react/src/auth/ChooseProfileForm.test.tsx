@@ -1,8 +1,7 @@
 import { ProjectMembership } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act } from 'react-dom/test-utils';
-import { fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ChooseProfileForm } from './ChooseProfileForm';
 
 describe('ChooseProfileForm', () => {

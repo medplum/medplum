@@ -4,6 +4,7 @@ import {
   AgentUpgradeRequest,
   AgentUpgradeResponse,
   ContentType,
+  WithId,
   allOk,
   badRequest,
   serverError,
@@ -15,7 +16,7 @@ import { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
 import request, { Response } from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 import {
   MockAgentResponseHandle,
@@ -29,7 +30,7 @@ const NUM_DEFAULT_AGENTS = 2;
 
 describe('Agent/$upgrade', () => {
   const app = express();
-  const agents = [] as Agent[];
+  const agents = [] as WithId<Agent>[];
   let server: Server;
   let port: number;
   let accessToken: string;
@@ -167,7 +168,7 @@ describe('Agent/$upgrade', () => {
     );
 
     const res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$upgrade`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$upgrade`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(200);
@@ -200,7 +201,7 @@ describe('Agent/$upgrade', () => {
         {
           severity: 'error',
           code: 'invalid',
-          details: { text: "'timeout' must be an integer representing a duration in milliseconds, if defined" },
+          details: { text: `Invalid value 'INVALID' provided for integer parameter 'timeout'` },
         },
       ]),
     });
@@ -242,7 +243,7 @@ describe('Agent/$upgrade', () => {
 
     // Agent by ID
     res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$upgrade`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$upgrade`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(400);
@@ -287,13 +288,54 @@ describe('Agent/$upgrade', () => {
 
     // Single agent by ID
     res = await request(app)
-      .get(`/fhir/R4/Agent/${agents[0].id as string}/$upgrade`)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$upgrade`)
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toBe(500);
 
     const outcome = res.body as OperationOutcome;
     expect(outcome).toMatchObject<OperationOutcome>(serverError(new Error('Invalid response received from agent')));
+
+    for (const handle of handles) {
+      handle.cleanup();
+    }
+  });
+
+  test('Agent force upgrade', async () => {
+    // Multi agent example
+    const handlePromises = [] as Promise<MockAgentResponseHandle>[];
+    for (let i = 0; i < agents.length; i++) {
+      handlePromises[i] = mockAgentResponse<AgentUpgradeRequest, AgentUpgradeResponse | AgentError>(
+        agents[i],
+        accessToken,
+        'agent:upgrade:request',
+        { type: 'agent:upgrade:response', statusCode: 200 }
+      );
+    }
+    const handles = await Promise.all(handlePromises);
+
+    let res = await request(app)
+      .get('/fhir/R4/Agent/$upgrade')
+      .query({ force: true })
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toBe(200);
+    const bundle = res.body as Bundle<Parameters>;
+
+    for (const agent of agents) {
+      expectBundleToContainOutcome(bundle, agent, allOk);
+    }
+
+    // Agent by ID
+    res = await request(app)
+      .get(`/fhir/R4/Agent/${agents[0].id}/$upgrade`)
+      .query({ force: true })
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toBe(200);
+
+    const outcome = res.body as OperationOutcome;
+    expect(outcome).toMatchObject(allOk);
 
     for (const handle of handles) {
       handle.cleanup();

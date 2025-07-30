@@ -399,6 +399,12 @@
       "type": "token",
       "description": "The category of the flag, such as clinical, administrative, etc.",
       "expression": "Flag.category"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "active | inactive | entered-in-error",
+      "expression": "Flag.status"
     }
   ]
 }

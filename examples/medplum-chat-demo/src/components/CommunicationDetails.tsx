@@ -1,7 +1,8 @@
 import { Paper, Tabs, Title } from '@mantine/core';
 import { Communication } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, ResourceHistoryTable, ResourceTable } from '@medplum/react';
-import { useNavigate } from 'react-router-dom';
+import { JSX } from 'react';
+import { useNavigate } from 'react-router';
 
 interface CommunicationDetailsProps {
   readonly communication: Communication;
@@ -17,7 +18,7 @@ export function CommunicationDetails({ communication }: CommunicationDetailsProp
   const currentTab = tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
 
   function handleTabChange(newTab: string | null): void {
-    navigate(`/Communication/${id}/${newTab ?? ''}`);
+    navigate(`/Communication/${id}/${newTab ?? ''}`)?.catch(console.error);
   }
 
   return (

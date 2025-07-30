@@ -4,10 +4,10 @@ import { getReferenceString } from '@medplum/core';
 import { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import dayjs from 'dayjs';
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { JSX, useCallback, useContext, useEffect, useState } from 'react';
 import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { BlockAvailability } from '../components/actions/BlockAvailability';
 import { CreateAppointment } from '../components/actions/CreateAppointment';
 import { CreateUpdateSlot } from '../components/actions/CreateUpdateSlot';
@@ -145,7 +145,7 @@ export function SchedulePage(): JSX.Element {
       }
 
       function handleAppointment(): void {
-        navigate(`/Appointment/${id}`);
+        navigate(`/Appointment/${id}`)?.catch(console.error);
       }
 
       if (resourceType === 'Slot') {

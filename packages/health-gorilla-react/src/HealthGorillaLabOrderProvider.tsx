@@ -1,4 +1,4 @@
-import { createContext, PropsWithChildren } from 'react';
+import { createContext, JSX, PropsWithChildren } from 'react';
 import { UseHealthGorillaLabOrderReturn } from './useHealthGorillaLabOrder';
 
 export const HealthGorillaLabOrderContext = createContext<UseHealthGorillaLabOrderReturn | undefined>(undefined);

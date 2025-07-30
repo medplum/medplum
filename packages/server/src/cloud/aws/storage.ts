@@ -1,41 +1,26 @@
 import { CopyObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { Upload } from '@aws-sdk/lib-storage';
+import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { concatUrls } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { Readable } from 'stream';
-import { getConfig } from '../../config';
-import { BinarySource, BinaryStorage, checkFileMetadata } from '../../fhir/storage';
+import { getConfig } from '../../config/loader';
+import { BaseBinaryStorage } from '../../storage/base';
+import { BinarySource } from '../../storage/types';
 
 /**
  * The S3Storage class stores binary data in an AWS S3 bucket.
  * Files are stored in bucket/binary/binary.id/binary.meta.versionId.
  */
-export class S3Storage implements BinaryStorage {
+export class S3Storage extends BaseBinaryStorage {
   private readonly client: S3Client;
   readonly bucket: string;
 
   constructor(bucket: string) {
+    super();
     this.client = new S3Client({ region: getConfig().awsRegion });
     this.bucket = bucket;
-  }
-
-  /**
-   * Writes a binary blob to S3.
-   * @param binary - The binary resource destination.
-   * @param filename - Optional binary filename.
-   * @param contentType - Optional binary content type.
-   * @param stream - The Node.js stream of readable content.
-   * @returns Promise that resolves when the write is complete.
-   */
-  writeBinary(
-    binary: Binary,
-    filename: string | undefined,
-    contentType: string | undefined,
-    stream: BinarySource
-  ): Promise<void> {
-    checkFileMetadata(filename, contentType);
-    return this.writeFile(this.getKey(binary), contentType, stream);
   }
 
   /**
@@ -80,18 +65,14 @@ export class S3Storage implements BinaryStorage {
     await upload.done();
   }
 
-  async readBinary(binary: Binary): Promise<Readable> {
+  async readFile(key: string): Promise<Readable> {
     const output = await this.client.send(
       new GetObjectCommand({
         Bucket: this.bucket,
-        Key: this.getKey(binary),
+        Key: key,
       })
     );
     return output.Body as Readable;
-  }
-
-  async copyBinary(sourceBinary: Binary, destinationBinary: Binary): Promise<void> {
-    await this.copyFile(this.getKey(sourceBinary), this.getKey(destinationBinary));
   }
 
   async copyFile(sourceKey: string, destinationKey: string): Promise<void> {
@@ -113,8 +94,14 @@ export class S3Storage implements BinaryStorage {
    * @param binary - Binary resource.
    * @returns Presigned URL to access the binary data.
    */
-  getPresignedUrl(binary: Binary): string {
+  async getPresignedUrl(binary: Binary): Promise<string> {
     const config = getConfig();
+
+    if (!config.signingKey || !config.signingKeyId) {
+      const Key = this.getKey(binary);
+      return s3GetSignedUrl(this.client, new GetObjectCommand({ Bucket: this.bucket, Key }), { expiresIn: 3600 });
+    }
+
     const storageBaseUrl = config.storageBaseUrl;
     const unsignedUrl = concatUrls(storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`);
     const dateLessThan = new Date();
@@ -126,9 +113,5 @@ export class S3Storage implements BinaryStorage {
       privateKey: config.signingKey,
       passphrase: config.signingKeyPassphrase,
     });
-  }
-
-  getKey(binary: Binary): string {
-    return 'binary/' + binary.id + '/' + binary.meta?.versionId;
   }
 }

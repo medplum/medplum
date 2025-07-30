@@ -1,5 +1,5 @@
 ---
-sidebar_position: 3
+sidebar_position: 2
 ---
 
 # Install on AWS
@@ -43,6 +43,7 @@ At a high level, the process of installing Medplum on AWS includes:
 The resulting AWS configuration will look like the following:
 
 ![Medplum AWS Architecture](./medplum-aws-architecture.png)
+*Diagram current as of 7/21/2025*
 
 <p>Use this video guide as you follow the instructions:</p>
 <div className="responsive-iframe-wrapper">
@@ -192,6 +193,10 @@ See [Config Settings](/docs/self-hosting/config-settings) for more details on ea
 If you are using Route 53 as your DNS service, we recommend you select `dns` method for validating domain ownership.
 
 Then, follow [these instructions](https://docs.aws.amazon.com/acm/latest/userguide/dns-validation.html#setting-up-dns-validation) from AWS to finish the validation process.
+
+:::tip
+After creating records in Route 53, you may have to wait for your certificate in AWS Certificate Manager to change from `Pending validation` to `Issued` state before deploying. If the state doesn't change to `Issued` in 30 minutes, check on the status of your domain. AWS will reject your deploy without a fully-qualified domain for the certificate.
+:::
 
 ### CDK Bootstrap
 

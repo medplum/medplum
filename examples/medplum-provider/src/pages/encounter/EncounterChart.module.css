@@ -1,0 +1,7 @@
+.checkmark {
+  color: var(--mantine-color-green-6);
+}
+
+.active {
+  color: var(--mantine-color-green-6);
+}

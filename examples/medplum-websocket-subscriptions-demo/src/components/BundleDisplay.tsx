@@ -2,7 +2,7 @@ import { Accordion, ActionIcon, Chip, Group } from '@mantine/core';
 import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconArrowNarrowRight, IconCheck } from '@tabler/icons-react';
-import { SyntheticEvent, useCallback } from 'react';
+import { JSX, SyntheticEvent, useCallback } from 'react';
 
 export interface BundleDisplayProps {
   readonly bundle: Bundle;

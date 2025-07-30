@@ -40,6 +40,9 @@ tsconfig.tsbuildinfo
 # Server tarball
 medplum-server.tar.gz
 
+# App tarball
+medplum-app.tar.gz
+
 # Deb files
 *.deb
 
@@ -90,3 +93,12 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
+*.bak
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Cursor
+.cursor/

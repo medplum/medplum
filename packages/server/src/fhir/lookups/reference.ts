@@ -1,8 +1,23 @@
-import { PropertyType, evalFhirPathTyped, getSearchParameters, isUUID, toTypedValue } from '@medplum/core';
+import {
+  PropertyType,
+  WithId,
+  evalFhirPathTyped,
+  getSearchParameters,
+  isResource,
+  isUUID,
+  resolveId,
+  toTypedValue,
+} from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
-import { LookupTable } from './lookuptable';
 import { InsertQuery } from '../sql';
+import { LookupTable, LookupTableRow } from './lookuptable';
+
+export interface ReferenceTableRow extends LookupTableRow {
+  resourceId: string;
+  targetId: string;
+  code: string;
+}
 
 /**
  * The ReferenceTable class represents a set of lookup tables for references between resources.
@@ -26,13 +41,8 @@ export class ReferenceTable extends LookupTable {
     return false;
   }
 
-  async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (!create) {
-      await this.deleteValuesForResource(client, resource);
-    }
-
-    const values = getSearchReferences(resource);
-    await this.insertValuesForResource(client, resource.resourceType, values);
+  extractValues(result: ReferenceTableRow[], resource: WithId<Resource>): void {
+    getSearchReferences(result, resource);
   }
 
   /**
@@ -61,25 +71,19 @@ export class ReferenceTable extends LookupTable {
   }
 }
 
-interface ReferenceRow {
-  resourceId: string;
-  targetId: string;
-  code: string;
-}
-
 /**
  * Returns a list of all references in the resource to be inserted into the database.
  * This includes all values for any SearchParameter of `reference` type
+ * @param result - The array to which the references will be added.
  * @param resource - The resource being indexed.
- * @returns An array of all references from the resource to be inserted into the database.
  */
-function getSearchReferences(resource: Resource): ReferenceRow[] {
+function getSearchReferences(result: ReferenceTableRow[], resource: WithId<Resource>): void {
   const typedResource = [toTypedValue(resource)];
   const searchParams = getSearchParameters(resource.resourceType);
   if (!searchParams) {
-    return [];
+    return;
   }
-  const result = new Map<string, ReferenceRow>();
+  const resultMap = new Map<string, ReferenceTableRow>();
   for (const searchParam of Object.values(searchParams)) {
     if (!isIndexed(searchParam)) {
       continue;
@@ -87,20 +91,39 @@ function getSearchReferences(resource: Resource): ReferenceRow[] {
 
     const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
     for (const value of typedValues) {
-      if (value.type !== PropertyType.Reference || !value.value.reference) {
-        continue;
+      if (value.type === PropertyType.Reference && value.value.reference) {
+        const targetId = resolveId(value.value);
+        if (targetId && isUUID(targetId)) {
+          addSearchReferenceResult(resultMap, resource, searchParam, targetId);
+        }
       }
-      const [_targetType, targetId] = value.value.reference.split('/', 2);
-      if (isUUID(targetId)) {
-        result.set(`${searchParam.code}|${targetId}`, {
-          resourceId: resource.id as string,
-          targetId: targetId,
-          code: searchParam.code as string,
-        });
+
+      if (isResource(value.value) && value.value.id && isUUID(value.value.id)) {
+        addSearchReferenceResult(resultMap, resource, searchParam, value.value.id);
       }
     }
   }
-  return Array.from(result.values());
+  result.push(...resultMap.values());
+}
+
+/**
+ * Adds a search reference result to the result map.
+ * @param result - The result map to add the reference to.
+ * @param resource - The resource being indexed.
+ * @param searchParam - The search parameter.
+ * @param targetId - The target ID.
+ */
+function addSearchReferenceResult(
+  result: Map<string, ReferenceTableRow>,
+  resource: WithId<Resource>,
+  searchParam: SearchParameter,
+  targetId: string
+): void {
+  result.set(`${searchParam.code}|${targetId}`, {
+    resourceId: resource.id,
+    targetId: targetId,
+    code: searchParam.code as string,
+  });
 }
 
 /**

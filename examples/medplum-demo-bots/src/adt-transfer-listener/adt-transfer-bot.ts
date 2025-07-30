@@ -1,4 +1,13 @@
-import { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';
+/**
+ * This example shows how you might listen for ADT (Admit, Discharge, and Transfer)
+ * messages. ADT messages are commonly used to record patients information and log
+ * their movement between departments or facilities for the purposes of care coordination.
+ *
+ * This bot listens for ADT messages and creates a FHIR Patient and Encounter via the PID and PV1 segments.
+ *
+ * More information about the sections of ADT messages can be found here: https://rhapsody.health/resources/hl7-adt/
+ */
+import { BotEvent, createReference, Hl7Message, MedplumClient } from '@medplum/core';
 import { Encounter, Patient } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
@@ -92,7 +101,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
         reference: 'Patient/' + patient.id,
       },
       class: { code: 'AMB' },
-      location: [{ location: { reference: 'Location/' + location } }],
+      location: location ? [{ location: createReference(location) }] : undefined,
     });
   } else if (messageSubtype === 'A08') {
     let encounter = await medplum.searchOne('Encounter', 'subject=Patient/' + patient.id + '&status=arrived');

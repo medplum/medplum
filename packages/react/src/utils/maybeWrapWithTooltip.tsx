@@ -1,4 +1,5 @@
 import { Tooltip } from '@mantine/core';
+import { JSX } from 'react';
 
 export const READ_ONLY_TOOLTIP_TEXT = 'Read Only';
 

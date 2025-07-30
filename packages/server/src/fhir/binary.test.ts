@@ -1,13 +1,13 @@
 import { ContentType } from '@medplum/core';
-import { Binary, Bundle, DocumentReference } from '@medplum/fhirtypes';
+import { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import express from 'express';
 import { Duplex, Readable } from 'stream';
 import request from 'supertest';
 import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { getBinaryStorage } from '../storage/loader';
 import { initTestAuth, streamToString } from '../test.setup';
-import { getBinaryStorage } from './storage';
 
 const app = express();
 let accessToken: string;
@@ -167,31 +167,16 @@ describe('Binary', () => {
         entry: [
           {
             fullUrl: 'urn:uuid:a0010b42-02ea-411c-a314-9ec144f6c2b8',
-            request: {
-              method: 'POST',
-              url: 'Binary',
-            },
-            resource: {
-              resourceType: 'Binary',
-              contentType: 'text/plain',
-              data: 'SGVsbG8gV29ybGQh',
-            },
+            request: { method: 'POST', url: 'Binary' },
+            resource: { resourceType: 'Binary', contentType: 'text/plain', data: 'SGVsbG8gV29ybGQh' },
           },
           {
-            request: {
-              method: 'POST',
-              url: 'DocumentReference',
-            },
+            request: { method: 'POST', url: 'DocumentReference' },
             resource: {
               resourceType: 'DocumentReference',
               status: 'current',
               content: [
-                {
-                  attachment: {
-                    contentType: 'text/plain',
-                    url: 'urn:uuid:a0010b42-02ea-411c-a314-9ec144f6c2b8',
-                  },
-                },
+                { attachment: { contentType: 'text/plain', url: 'urn:uuid:a0010b42-02ea-411c-a314-9ec144f6c2b8' } },
               ],
             },
           },
@@ -230,10 +215,7 @@ describe('Binary', () => {
       .put('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        ...binary,
-        securityContext: { reference: 'Patient/123' },
-      });
+      .send({ ...binary, securityContext: { reference: 'Patient/123' } });
     expect(res2.status).toBe(200);
 
     const res3 = await request(app)
@@ -294,6 +276,25 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.text).toStrictEqual('{"resourceType":"Patient"}');
+  });
+
+  test('Error for disallowed file type', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/x-msdownload')
+      .send('Hello world');
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
+
+    const res2 = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/octet-stream')
+      .query({ _filename: 'foo.exe' })
+      .send('Hello world');
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
   });
 });
 

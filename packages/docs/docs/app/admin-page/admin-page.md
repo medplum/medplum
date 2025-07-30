@@ -16,7 +16,7 @@ The Users tab displays all of the [`Practitioner`](/docs/api/fhir/resources/prac
 
 ## Patients
 
-The Patients tab displays all of the [`Patient`](/docs/api/fhir/resources/patient) resources that are also a [`User`](/docs/api/fhir/medplum/user) in your project. It also allows you to invite new patients. For more details on the [`User`](/docs/api/fhir/medplum/user) and [`Patient`](/docs/api/fhir/resources/patient) resources see the [User Management Guide](/docs/auth/user-management-guide#project-scoped-users).
+The Patients tab displays all of the [`Patient`](/docs/api/fhir/resources/patient) resources that are also a [`User`](/docs/api/fhir/medplum/user) in your project. It also allows you to invite new patients. For more details on the [`User`](/docs/api/fhir/medplum/user) and [`Patient`](/docs/api/fhir/resources/patient) resources see the [User Management Guide](/docs/auth/user-management-guide).
 
 ## Clients
 

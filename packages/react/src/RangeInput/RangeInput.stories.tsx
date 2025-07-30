@@ -1,10 +1,11 @@
+import { buildElementsContext } from '@medplum/core';
 import { Range } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
-import { RangeInput } from './RangeInput';
-import { buildElementsContext } from '@medplum/core';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { RangeInput } from './RangeInput';
 
 export default {
   title: 'Medplum/RangeInput',

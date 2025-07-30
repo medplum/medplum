@@ -1,10 +1,10 @@
 import { Button } from '@mantine/core';
 import { Attachment, Reference } from '@medplum/fhirtypes';
-import { MouseEvent, useState } from 'react';
+import { JSX, MouseEvent, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
-import { killEvent } from '../utils/dom';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { killEvent } from '../utils/dom';
 
 export interface AttachmentInputProps extends ComplexTypeInputProps<Attachment> {
   readonly arrayElement?: boolean;

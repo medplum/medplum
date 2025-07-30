@@ -1,6 +1,6 @@
 import { Badge, Group, Paper, ScrollArea, Tabs, Text, useMantineTheme } from '@mantine/core';
-import { useState } from 'react';
-import { Outlet, useNavigate, useParams } from 'react-router-dom';
+import { JSX, useState } from 'react';
+import { Outlet, useNavigate, useParams } from 'react-router';
 
 const tabs = ['Form', 'JSON', 'Profiles'] as const;
 const BETA_TABS: (typeof tabs)[number][] = ['Profiles'];
@@ -24,7 +24,7 @@ export function CreateResourcePage(): JSX.Element {
       newTabName = defaultTab;
     }
     setCurrentTab(newTabName);
-    navigate(`/${resourceType}/new/${newTabName}`);
+    navigate(`/${resourceType}/new/${newTabName}`)?.catch(console.error);
   }
 
   return (

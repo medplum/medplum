@@ -1,7 +1,8 @@
+import { InternalSchemaElement, getPathDisplayName, isPopulated } from '@medplum/core';
 import { Attachment } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { DescriptionListEntry } from '../DescriptionList/DescriptionList';
-import { InternalSchemaElement, getPathDisplayName, isPopulated } from '@medplum/core';
 
 export interface AttachmentArrayDisplayProps {
   readonly path?: string;

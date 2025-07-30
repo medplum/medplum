@@ -1,8 +1,8 @@
 import { Group } from '@mantine/core';
 import { Ratio } from '@medplum/fhirtypes';
-import { useContext, useMemo, useState } from 'react';
-import { QuantityInput } from '../QuantityInput/QuantityInput';
+import { JSX, useContext, useMemo, useState } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { QuantityInput } from '../QuantityInput/QuantityInput';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface RatioInputProps extends ComplexTypeInputProps<Ratio> {}

@@ -6,6 +6,7 @@ import {
   Operator,
   SearchParameterType,
 } from '@medplum/core';
+import { JSX } from 'react';
 import { ResourceName } from '../ResourceName/ResourceName';
 
 export interface SearchFilterValueDisplayProps {

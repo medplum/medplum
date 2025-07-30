@@ -1,4 +1,4 @@
-import { ContentType, MedplumClient, resolveId } from '@medplum/core';
+import { MedplumClient, resolveId } from '@medplum/core';
 import { Patient, Reference, Resource, Specimen } from '@medplum/fhirtypes';
 
 /**
@@ -40,61 +40,12 @@ export function getSpecimen(resource: Resource): Specimen | Reference<Specimen> 
 }
 
 /**
- * Sends a structured command to the iframe using postMessage.
- *
- * Normally postMessage implies global event listeners. This method uses
- * MessageChannel to create a message channel between the iframe and the parent.
- * @param frame - The receiving IFrame.
- * @param command - The command to send.
- * @returns Promise to the response from the IFrame.
- * @see https://advancedweb.hu/how-to-use-async-await-with-postmessage/
- */
-export function sendCommand(frame: HTMLIFrameElement, command: any): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const channel = new MessageChannel();
-
-    channel.port1.onmessage = ({ data }) => {
-      channel.port1.close();
-      if (data.error) {
-        reject(data.error);
-      } else {
-        resolve(data.result);
-      }
-    };
-
-    frame.contentWindow?.postMessage(command, 'https://codeeditor.medplum.com', [channel.port2]);
-  });
-}
-
-/**
  * Returns the current project ID for the given client.
  * @param medplum - The Medplum client.
  * @returns The current project ID.
  */
 export function getProjectId(medplum: MedplumClient): string {
   return resolveId(medplum.getActiveLogin()?.project) as string;
-}
-
-/**
- * Creates a Blob object from the JSON object given and downloads the object.
- * @param jsonString - The JSON string.
- * @param fileName - Optional file name. Default is based on current timestamp.
- */
-export function exportJsonFile(jsonString: string, fileName?: string): void {
-  const blobForExport = new Blob([jsonString], { type: ContentType.JSON });
-  const url = URL.createObjectURL(blobForExport);
-
-  const link = document.createElement('a');
-  link.href = url;
-
-  const linkName = fileName ?? new Date().toISOString().replace(/\D/g, '');
-  link.download = `${linkName}.json`;
-
-  document.body.appendChild(link);
-  link.click();
-
-  // Clean up the URL object
-  URL.revokeObjectURL(url);
 }
 
 /**

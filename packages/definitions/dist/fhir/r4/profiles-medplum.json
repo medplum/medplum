@@ -572,6 +572,23 @@
               "min": 1,
               "max": "*"
             }
+          },
+          {
+            "id": "Project.exportedResourceType",
+            "path": "Project.exportedResourceType",
+            "definition": "The resource types exported by the project when linked",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "code"}],
+            "base": {
+              "path": "Project.exportedResourceType",
+              "min": 0,
+              "max": "*"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "http://hl7.org/fhir/ValueSet/resource-types"
+            }
           }
         ]
       }
@@ -781,6 +798,51 @@
             }
           },
           {
+            "id" : "ClientApplication.signInForm",
+            "path" : "ClientApplication.signInForm",
+            "definition" : "Custom values for the Log In form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "ClientApplication.signInForm",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.signInForm.welcomeString",
+            "path" : "ClientApplication.signInForm.welcomeString",
+            "definition" : "Welcome string for the Log In Form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.signInForm.welcomeString",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.signInForm.logo",
+            "path" : "ClientApplication.signInForm.logo",
+            "definition" : "Logo for the Log In Form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Attachment"
+            }],
+            "base": {
+              "path" : "ClientApplication.signInForm.logo",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "ClientApplication.secret",
             "path" : "ClientApplication.secret",
             "definition" : "Client secret string used to verify the identity of a client.",
@@ -791,6 +853,21 @@
             }],
             "base": {
               "path" : "ClientApplication.secret",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.retiringSecret",
+            "path" : "ClientApplication.retiringSecret",
+            "definition" : "Old version of the client secret that is being rotated out.  Instances of the client using this value should update to use the value in ClientApplication.secret",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.retiringSecret",
               "min" : 0,
               "max" : "1"
             }
@@ -871,6 +948,27 @@
             }
           },
           {
+            "id" : "ClientApplication.accessTokenLifetime",
+            "path" : "ClientApplication.accessTokenLifetime",
+            "definition" : "Optional configuration to set the access token duration",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "constraint" : [{
+              "key" : "clapp-1",
+              "severity" : "error",
+              "human" : "Token lifetime must be a valid string representing time duration (eg. 2w, 1h)",
+              "expression" : "$this.matches('^[0-9]+[smhdwy]$')"
+            }],
+            "base": {
+              "path" : "ClientApplication.accessTokenLifetime",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "ClientApplication.refreshTokenLifetime",
             "path" : "ClientApplication.refreshTokenLifetime",
             "definition" : "Optional configuration to set the refresh token duration",
@@ -889,6 +987,36 @@
               "path" : "ClientApplication.refreshTokenLifetime",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.allowedOrigin",
+            "path" : "ClientApplication.allowedOrigin",
+            "definition" : "Optional CORS allowed origin for the client application.  By default, all origins are allowed.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.allowedOrigin",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
+            "id" : "ClientApplication.defaultScope",
+            "path" : "ClientApplication.defaultScope",
+            "definition" : "Optional default OAuth scope for the client application. This scope is used when the client application does not specify a scope in the authorization request.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.defaultScope",
+              "min" : 0,
+              "max" : "*"
             }
           }
         ]
@@ -1388,6 +1516,23 @@
               "min" : 0,
               "max" : "*"
             }
+          },
+          {
+            "id" : "ProjectMembership.active",
+            "path" : "ProjectMembership.active",
+            "short" : "Whether this patient's record is in active use",
+            "definition" : "Whether this project membership record is in active use.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "ProjectMembership.active",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "meaningWhenMissing" : "This resource is generally assumed to be active if no value is provided for the active element"
           },
           {
             "id" : "ProjectMembership.project",
@@ -1932,6 +2077,21 @@
             }],
             "base" : {
               "path" : "Bot.runAsUser",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "Bot.publicWebhook",
+            "path" : "Bot.publicWebhook",
+            "definition" : "Optional flag to indicate that the bot can be used as an unauthenticated public webhook. Note that this is a security risk and should only be used for public bots that do not require authentication.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "base" : {
+              "path" : "Bot.publicWebhook",
               "min" : 0,
               "max" : "1"
             }
@@ -2541,7 +2701,7 @@
       "abstract" : false,
       "type" : "PasswordChangeRequest",
       "baseDefinition" : "http://hl7.org/fhir/StructureDefinition/DomainResource",
-      "description" : "@deprecated Password change request for the 'forgot password' flow. Use UserSecurityCheck instead.",
+      "description" : "@deprecated Password change request for the 'forgot password' flow. Use UserSecurityRequest instead.",
       "snapshot" : {
         "element" : [
           {
@@ -3177,7 +3337,7 @@
             "id": "JsonWebKey.alg",
             "path": "JsonWebKey.alg",
             "definition": "The specific cryptographic algorithm used with the key.",
-            "min": 0,
+            "min": 1,
             "max": "1",
             "type": [
               {
@@ -3186,7 +3346,7 @@
             ],
             "base": {
               "path": "JsonWebKey.alg",
-              "min": 0,
+              "min": 1,
               "max": "1"
             }
           },
@@ -3194,7 +3354,7 @@
             "id": "JsonWebKey.kty",
             "path": "JsonWebKey.kty",
             "definition": "The family of cryptographic algorithms used with the key.",
-            "min": 0,
+            "min": 1,
             "max": "1",
             "type": [
               {
@@ -3203,7 +3363,7 @@
             ],
             "base": {
               "path": "JsonWebKey.kty",
-              "min": 0,
+              "min": 1,
               "max": "1"
             }
           },
@@ -3424,6 +3584,57 @@
             ],
             "base": {
               "path" : "JsonWebKey.qi",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id": "JsonWebKey.x",
+            "path": "JsonWebKey.x",
+            "definition": "The x coordinate of the elliptic curve point (base64url encoded).",
+            "min": 0,
+            "max": "1",
+            "type": [
+              {
+                "code": "string"
+              }
+            ],
+            "base": {
+              "path" : "JsonWebKey.x",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id": "JsonWebKey.y",
+            "path": "JsonWebKey.y",
+            "definition": "The y coordinate of the elliptic curve point (base64url encoded).",
+            "min": 0,
+            "max": "1",
+            "type": [
+              {
+                "code": "string"
+              }
+            ],
+            "base": {
+              "path" : "JsonWebKey.y",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id": "JsonWebKey.crv",
+            "path": "JsonWebKey.crv",
+            "definition": "The cryptographic curve identifier (e.g., 'P-256', 'P-384', 'P-521').",
+            "min": 0,
+            "max": "1",
+            "type": [
+              {
+                "code": "string"
+              }
+            ],
+            "base": {
+              "path" : "JsonWebKey.crv",
               "min" : 0,
               "max" : "1"
             }
@@ -3703,7 +3914,7 @@
           {
             "id" : "AccessPolicy.resource.readonly",
             "path" : "AccessPolicy.resource.readonly",
-            "definition" : "Optional flag to indicate that the resource type is read-only.",
+            "definition" : "@deprecated Use AccessPolicy.resource.interaction = ['search', 'read', 'vread', 'history']",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -3713,6 +3924,25 @@
               "path" : "AccessPolicy.resource.readonly",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "AccessPolicy.resource.interaction",
+            "path" : "AccessPolicy.resource.interaction",
+            "definition" : "Permitted FHIR interactions with this resource type",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "code"
+            }],
+            "base" : {
+              "path" : "AccessPolicy.resource.interaction",
+              "min" : 0,
+              "max" : "*"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "https://medplum.com/fhir/ValueSet/access-poliicy-interactions"
             }
           },
           {
@@ -5135,7 +5365,15 @@
               "path" : "AsyncJob",
               "min" : 0,
               "max" : "*"
-            }
+            },
+            "constraint": [
+              {
+                "key" : "ajb-1",
+                "severity" : "error",
+                "human" : "Async jobs of type 'data-migration' require a 'dataVersion' and 'minServerVersion'.",
+                "expression" : "type.exists() and type = 'data-migration' implies dataVersion.exists() and minServerVersion.exists()"
+              }
+            ]
           },
           {
             "id" : "AsyncJob.id",
@@ -5341,6 +5579,56 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "AsyncJob.type",
+            "path" : "AsyncJob.type",
+            "short" : "data-migration",
+            "definition" : "The type of the AsyncJob.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.type",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/async-job-type|4.0.1"
+            }
+          },
+          {
+            "id" : "AsyncJob.dataVersion",
+            "path" : "AsyncJob.dataVersion",
+            "definition" : "The data version of the migration this job represents.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.dataVersion",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "integer"
+            }]
+          },
+          {
+            "id" : "AsyncJob.minServerVersion",
+            "path" : "AsyncJob.minServerVersion",
+            "definition" : "The minimum Medplum server version required to run this job.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.minServerVersion",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
           }
         ]
       }

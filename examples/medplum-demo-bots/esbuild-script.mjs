@@ -21,7 +21,7 @@ const esbuildOptions = {
   loader: {
     '.ts': 'ts', // Load TypeScript files
   },
-  resolveExtensions: ['.ts'],
+  resolveExtensions: ['.ts', '.js'],
   external: botLayerDeps,
   format: 'cjs', // Set output format as ECMAScript modules
   target: 'es2020', // Set the target ECMAScript version

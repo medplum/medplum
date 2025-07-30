@@ -233,6 +233,11 @@ describe('ResourceDiffTable', () => {
 
     expect(await screen.findByText('Replace photo[0]')).toBeInTheDocument();
 
+    await act(async () => {
+      const button = screen.getByText('Expand');
+      button.click();
+    });
+
     // There should be 2 download links
     expect(screen.getAllByText('Download')).toHaveLength(2);
   });

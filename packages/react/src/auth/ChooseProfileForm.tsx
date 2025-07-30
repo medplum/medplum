@@ -2,7 +2,7 @@ import { Avatar, Combobox, Flex, Group, Stack, Text, TextInput, Title, useCombob
 import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { Logo } from '../Logo/Logo';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 

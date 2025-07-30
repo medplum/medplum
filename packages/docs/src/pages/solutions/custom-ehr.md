@@ -1,12 +1,12 @@
 # Custom EHR
 
-Providers often want a custom experience to help smooth workflow, productivity and protocol compliance. Medplum provides a great starter kit and examples for those who want a custom experience, but don't want to invest a lot of resources into infrastructure.
+Medplum is a platform on which to build acompliant, custom electronic health record system.  Providers need an ergonomic and automatied software suite to smooth workflow, productivity and protocol compliance. Medplum provides the infrasturcture, integrations and compliance that reduce the time to build a custom solution by up to 80%.
 
-## Sample Application
+## Starter Application
 
-The Medplum custom EHR sample base application is called `medplum-hello-world`. You can view the [source code](https://github.com/medplum/medplum-hello-world).
+The Medplum custom EHR sample base application is called `medplum-provider`. You can view the [source code](https://github.com/medplum/medplum-provider).
 
-The `medplum-hello-world` applications is intended as a sample, and the experience is truly up to the developer to determine. The application provides out of the box authentication, navigation and includes our [react component library](/docs/react).
+The `medplum-provider` applications is intended as a sample, and the experience is truly up to the developer to determine. The application provides out of the box authentication, navigation and includes our [react component library](/docs/react).
 
 ## Customizable Pages
 

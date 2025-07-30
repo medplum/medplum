@@ -127,7 +127,7 @@ Because these properties may be undefined, we make heavy use of the Javascript [
 
 ## Deploying a Bot
 
-Clicking "Save" in the **Editor** tab persists your Bot code to the Medplum database, but _doesn't_ deploy your to run in production.
+Clicking "Save" in the **Editor** tab persists your Bot code to the Medplum database, but _doesn't_ deploy it to run in production.
 To deploy your bot, click the "Deploy" button.
 
 ![Deploy Button](/img/app/bots/deploy_button.png)
@@ -136,6 +136,25 @@ This works well for initial prototyping, but as you get closer to a production i
 
 **Medplum Bots** are run as [AWS Lambdas](https://aws.amazon.com/lambda/) and in heavily sandboxed environments.
 You can apply an [AccessPolicy](/docs/access/access-policies) to the Bot if you want to further reduce the data it can read and write.
+
+### Creating and Deploying Bot from your IDE instead of Editor tab
+
+Alternatively, you can also write the code for a Bot and deploy from within your IDE.
+
+- [Create a Bot](https://app.medplum.com/admin/project) on Medplum and note its `id`. (All Bots in your account can be found [here](https://app.medplum.com/Bot))
+- Create a new typescript file (e.g. `my-bot.ts`) and copy the contents of `examples/hello-patient.ts` into your new file.
+- With the `id` of the Bot `id` in hand, add a section to `medplum.config.json` like so
+
+```json
+{
+  "name": "sample-account-setup",
+  "id": "<BOT_ID>",
+  "source": "src/examples/sample-account-setup.ts",
+  "dist": "dist/sample-account-setup.js"
+}
+```
+
+Then, you can [deploy your bot from command line](/docs/bots/bots-in-production#deploying-your-bot)
 
 ## Executing a Bot
 

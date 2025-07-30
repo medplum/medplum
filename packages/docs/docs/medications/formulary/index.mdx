@@ -28,6 +28,10 @@ This guide is informed by the [DaVinci Payer Data Exchange (PDex) US Drug Formul
 You can download the examples in this guide [here](./formulary-examples.json), and upload them to your project using the [Medplum Batch Upload Tool](/docs/tutorials/importing-sample-data#batch-upload-tool)
 :::
 
+:::caution A note on the Medication resource
+You might be asking yourself, what is the difference between the `Medication` and `MedicationKnowledge` resources? Both resources hold information like medication manufacturer and ingredients, but `MedicationKnowledge` holds potentially critical information beyond that, like regulatory information related to controlled substances, packaging descriptions used by pharmacists, and administrative guidelines for both clinicians and patients. In general, we encourage the use of `MedicationKnowledge` rather than `Medication`. 
+:::
+
 ## Medication Code
 
 When defining `MedicationKnowledge.code`, it's highly recommended to use RxNorm as the primary coding system. RxNorm is an international standard that normalizes drug names from many different data sources.

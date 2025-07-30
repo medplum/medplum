@@ -2,7 +2,7 @@ import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-sec
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import { getConfig, loadConfig } from '../../config';
+import { getConfig, loadConfig } from '../../config/loader';
 
 describe('Config', () => {
   let mockSSMClient: AwsClientStub<SSMClient>;
@@ -28,6 +28,10 @@ describe('Config', () => {
         { Name: 'botCustomFunctionsEnabled', Value: 'true' },
         { Name: 'logAuditEvents', Value: 'true' },
         { Name: 'registerEnabled', Value: 'false' },
+        {
+          Name: 'defaultProjectSystemSetting',
+          Value: '[{"name":"someSetting","valueString":"someValue"},{"name":"secondSetting","valueInteger":5}]',
+        },
       ],
     });
   });
@@ -45,6 +49,10 @@ describe('Config', () => {
     expect(config.botCustomFunctionsEnabled).toStrictEqual(true);
     expect(config.logAuditEvents).toStrictEqual(true);
     expect(config.registerEnabled).toStrictEqual(false);
+    expect(config.defaultProjectSystemSetting).toStrictEqual([
+      { name: 'someSetting', valueString: 'someValue' },
+      { name: 'secondSetting', valueInteger: 5 },
+    ]);
     expect(config.database).toBeDefined();
     expect(config.database.ssl).toBeDefined();
     expect(config.database.ssl?.require).toStrictEqual(true);

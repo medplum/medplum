@@ -17,9 +17,11 @@ import {
   IconSortDescending,
   IconX,
 } from '@tabler/icons-react';
+import { JSX } from 'react';
 import {
   addLastMonthFilter,
   addMissingFilter,
+  addNext24HoursFilter,
   addNextMonthFilter,
   addThisMonthFilter,
   addTodayFilter,
@@ -44,15 +46,15 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
   }
 
   function onSort(searchParam: SearchParameter, desc: boolean): void {
-    onChange(setSort(props.search, searchParam.code as string, desc));
+    onChange(setSort(props.search, searchParam.code, desc));
   }
 
   function onClear(searchParam: SearchParameter): void {
-    onChange(clearFiltersOnField(props.search, searchParam.code as string));
+    onChange(clearFiltersOnField(props.search, searchParam.code));
   }
 
   function onPrompt(searchParam: SearchParameter, operator: Operator): void {
-    props.onPrompt(searchParam, { code: searchParam.code as string, operator, value: '' });
+    props.onPrompt(searchParam, { code: searchParam.code, operator, value: '' });
   }
 
   function onChange(definition: SearchRequest): void {
@@ -77,7 +79,7 @@ export function SearchPopupMenu(props: SearchPopupMenuProps): JSX.Element | null
   return (
     <Menu.Dropdown>
       {props.searchParams.map((searchParam) => (
-        <Menu.Item key={searchParam.code}>{buildFieldNameString(searchParam.code as string)}</Menu.Item>
+        <Menu.Item key={searchParam.code}>{buildFieldNameString(searchParam.code)}</Menu.Item>
       ))}
     </Menu.Dropdown>
   );
@@ -113,7 +115,7 @@ function SearchParameterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
 
 function DateFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
-  const code = searchParam.code as string;
+  const code = searchParam.code;
   return (
     <Menu.Dropdown>
       <Menu.Item leftSection={<IconSortAscending size={14} />} onClick={() => props.onSort(searchParam, false)}>
@@ -169,6 +171,12 @@ function DateFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
         onClick={() => props.onChange(addYesterdayFilter(props.search, code))}
       >
         Yesterday
+      </Menu.Item>
+      <Menu.Item
+        leftSection={<IconCalendar size={14} />}
+        onClick={() => props.onChange(addNext24HoursFilter(props.search, code))}
+      >
+        Next 24 Hours
       </Menu.Item>
       <Menu.Divider />
       <Menu.Item
@@ -312,7 +320,7 @@ function TokenFilterSubMenu(props: SearchPopupSubMenuProps): JSX.Element {
 
 function CommonMenuItems(props: SearchPopupSubMenuProps): JSX.Element {
   const { searchParam } = props;
-  const code = searchParam.code as string;
+  const code = searchParam.code;
   return (
     <>
       <Menu.Divider />

@@ -2,7 +2,7 @@ import { Title } from '@mantine/core';
 import { allOk, badRequest, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'crypto';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { TextEncoder } from 'util';
 import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { SignInForm, SignInFormProps } from './SignInForm';
@@ -64,6 +64,12 @@ function mockFetch(url: string, options: any): Promise<any> {
           },
         ],
       };
+    } else if (email === 'mfa-required@medplum.com' && password === 'mfa-required') {
+      status = 200;
+      result = {
+        login: '1',
+        mfaRequired: true,
+      };
     } else {
       status = 400;
       result = {
@@ -108,6 +114,12 @@ function mockFetch(url: string, options: any): Promise<any> {
       };
     }
   } else if (options.method === 'POST' && url.endsWith('auth/scope')) {
+    status = 200;
+    result = {
+      login: '1',
+      code: '1',
+    };
+  } else if (options.method === 'POST' && url.endsWith('auth/mfa/verify')) {
     status = 200;
     result = {
       login: '1',
@@ -382,12 +394,12 @@ describe('SignInForm', () => {
   });
 
   test('Choose scope', async () => {
-    let success = false;
+    const successFn = jest.fn();
 
     await setup({
       chooseScopes: true,
       scope: 'openid profile',
-      onSuccess: () => (success = true),
+      onSuccess: successFn,
     });
 
     await act(async () => {
@@ -418,7 +430,7 @@ describe('SignInForm', () => {
       fireEvent.click(screen.getByText('Set scope'));
     });
 
-    expect(success).toBe(true);
+    expect(successFn).toHaveBeenCalled();
   });
 
   test('Submit success new project', async () => {
@@ -726,5 +738,46 @@ describe('SignInForm', () => {
 
     await waitFor(() => expect(window.location.assign).toHaveBeenCalled());
     expect(window.location.assign).toHaveBeenCalled();
+  });
+
+  test('MFA -- Success', async () => {
+    let success = false;
+
+    await setup({
+      onSuccess: () => (success = true),
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Email', { exact: false }), {
+        target: { value: 'mfa-required@medplum.com' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Password', { exact: false }), {
+        target: { value: 'mfa-required' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Sign in'));
+    });
+
+    await expect(screen.findByLabelText(/mfa code*/i)).resolves.toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText(/mfa code*/i), { target: { value: '1234567890' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /submit code/i }));
+    });
+
+    await waitFor(() => expect(medplum.getProfile()).toBeDefined());
+    expect(success).toBe(true);
   });
 });

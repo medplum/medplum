@@ -122,7 +122,7 @@
         "base": ["ProjectMembership"],
         "type": "reference",
         "expression": "ProjectMembership.user",
-        "target": ["ClientApplication", "User"]
+        "target": ["Bot", "ClientApplication", "User"]
       }
     },
     {
@@ -140,7 +140,7 @@
         "base": ["ProjectMembership"],
         "type": "reference",
         "expression": "ProjectMembership.profile",
-        "target": ["ClientApplication", "Patient", "Practitioner"]
+        "target": ["Bot", "ClientApplication", "Patient", "Practitioner", "RelatedPerson"]
       }
     },
     {
@@ -210,6 +210,23 @@
         "type": "reference",
         "expression": "ProjectMembership.accessPolicy | ProjectMembership.access.policy",
         "target": ["AccessPolicy"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ProjectMembership-identifier",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ProjectMembership-identifier",
+        "url": "https://medplum.com/fhir/SearchParameter/ProjectMembership-identifier",
+        "version": "4.0.1",
+        "name": "identifier",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The identifier of the project membership",
+        "code": "identifier",
+        "base": ["ProjectMembership"],
+        "type": "token",
+        "expression": "ProjectMembership.identifier"
       }
     },
     {
@@ -1283,6 +1300,355 @@
         "base": ["Flag"],
         "type": "token",
         "expression": "Flag.category"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Flag-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Flag-status",
+        "url": "https://medplum.com/fhir/SearchParameter/Flag-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "active | inactive | entered-in-error",
+        "code": "status",
+        "base": ["Flag"],
+        "type": "token",
+        "expression": "Flag.status"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AsyncJob-type",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AsyncJob-type",
+        "url": "https://medplum.com/fhir/SearchParameter/AsyncJob-type",
+        "version": "4.0.1",
+        "name": "type",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for AsyncJob by type",
+        "code": "type",
+        "base": ["AsyncJob"],
+        "type": "token",
+        "expression": "AsyncJob.type"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AsyncJob-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AsyncJob-status",
+        "url": "https://medplum.com/fhir/SearchParameter/AsyncJob-status",
+        "version": "4.0.1",
+        "name": "status",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for AsyncJob by status",
+        "code": "status",
+        "base": ["AsyncJob"],
+        "type": "token",
+        "expression": "AsyncJob.status"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Practitioner-qualification-code",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Practitioner-qualification-code",
+        "url": "https://medplum.com/fhir/SearchParameter/Practitioner-qualification-code",
+        "version": "4.0.1",
+        "name": "qualification-code",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The type of qualification",
+        "code": "qualification-code",
+        "base": ["Practitioner"],
+        "type": "token",
+        "expression": "Practitioner.qualification.code"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/Immunization-encounter",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "Immunization-encounter",
+        "extension" : [{
+          "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+          "valueCode" : "trial-use"
+        },
+        {
+          "url" : "http://hl7.org/fhir/StructureDefinition/structuredefinition-wg",
+          "valueCode" : "pher"
+        }],
+        "url" : "http://hl7.org/fhir/SearchParameter/Immunization-encounter",
+        "version" : "6.0.0-ballot3",
+        "name" : "encounter",
+        "status" : "draft",
+        "experimental" : false,
+        "date" : "2025-04-01T12:16:37+11:00",
+        "publisher" : "HL7 International / Public Health",
+        "contact" : [{
+          "telecom" : [{
+            "system" : "url",
+            "value" : "http://www.hl7.org/Special/committees/fiwg"
+          }]
+        },
+        {
+          "telecom" : [{
+            "system" : "url",
+            "value" : "http://www.hl7.org/Special/committees/pher"
+          }]
+        }],
+        "description" : "The Encounter this Immunization was part of",
+        "jurisdiction" : [{
+          "coding" : [{
+            "system" : "http://unstats.un.org/unsd/methods/m49/m49.htm",
+            "code" : "001",
+            "display" : "World"
+          }]
+        }],
+        "code" : "encounter",
+        "base" : ["Immunization"],
+        "type" : "reference",
+        "expression" : "Immunization.encounter",
+        "target" : ["Encounter"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AllergyIntolerance-encounter",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AllergyIntolerance-encounter",
+        "url": "https://medplum.com/fhir/SearchParameter/AllergyIntolerance-encounter",
+        "version": "4.0.1",
+        "name": "encounter",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The Encounter this AllergyIntolerance was part of",
+        "code": "encounter",
+        "base": ["AllergyIntolerance"],
+        "type": "reference",
+        "target": ["Encounter"],
+        "expression": "AllergyIntolerance.encounter"
+      }
+    },
+    {
+      "fullUrl": "http://hl7.org/fhir/SearchParameter/Group-characteristic-reference",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Group-characteristic-reference",
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/StructureDefinition/structuredefinition-standards-status",
+            "valueCode": "trial-use"
+          }
+        ],
+        "url": "http://hl7.org/fhir/SearchParameter/Group-characteristic-reference",
+        "version": "5.0.0",
+        "name": "characteristic-reference",
+        "status": "draft",
+        "experimental": false,
+        "date": "2023-03-26T15:21:02+11:00",
+        "publisher": "Health Level Seven International (FHIR Infrastructure)",
+        "contact": [
+          {
+            "telecom": [
+              {
+                "system": "url",
+                "value": "http://hl7.org/fhir"
+              }
+            ]
+          },
+          {
+            "telecom": [
+              {
+                "system": "url",
+                "value": "http://www.hl7.org/Special/committees/fiwg/index.cfm"
+              }
+            ]
+          }
+        ],
+        "description": "An entity referenced in a characteristic",
+        "jurisdiction": [
+          {
+            "coding": [
+              {
+                "system": "http://unstats.un.org/unsd/methods/m49/m49.htm",
+                "code": "001",
+                "display": "World"
+              }
+            ]
+          }
+        ],
+        "code": "characteristic-reference",
+        "base": [
+          "Group"
+        ],
+        "type": "reference",
+        "expression": "(Group.characteristic.value.ofType(Reference))",
+        "target": [
+          "Account",
+          "ActivityDefinition",
+          "ActorDefinition",
+          "AdministrableProductDefinition",
+          "AdverseEvent",
+          "AllergyIntolerance",
+          "Appointment",
+          "AppointmentResponse",
+          "ArtifactAssessment",
+          "AuditEvent",
+          "Basic",
+          "Binary",
+          "BiologicallyDerivedProduct",
+          "BiologicallyDerivedProductDispense",
+          "BodyStructure",
+          "Bundle",
+          "CapabilityStatement",
+          "CarePlan",
+          "CareTeam",
+          "ChargeItem",
+          "ChargeItemDefinition",
+          "Citation",
+          "Claim",
+          "ClaimResponse",
+          "ClinicalImpression",
+          "ClinicalUseDefinition",
+          "CodeSystem",
+          "Communication",
+          "CommunicationRequest",
+          "CompartmentDefinition",
+          "Composition",
+          "ConceptMap",
+          "Condition",
+          "ConditionDefinition",
+          "Consent",
+          "Contract",
+          "Coverage",
+          "CoverageEligibilityRequest",
+          "CoverageEligibilityResponse",
+          "DetectedIssue",
+          "Device",
+          "DeviceAssociation",
+          "DeviceDefinition",
+          "DeviceDispense",
+          "DeviceMetric",
+          "DeviceRequest",
+          "DeviceUsage",
+          "DiagnosticReport",
+          "DocumentReference",
+          "Encounter",
+          "EncounterHistory",
+          "Endpoint",
+          "EnrollmentRequest",
+          "EnrollmentResponse",
+          "EpisodeOfCare",
+          "EventDefinition",
+          "Evidence",
+          "EvidenceReport",
+          "EvidenceVariable",
+          "ExampleScenario",
+          "ExplanationOfBenefit",
+          "FamilyMemberHistory",
+          "Flag",
+          "FormularyItem",
+          "GenomicStudy",
+          "Goal",
+          "GraphDefinition",
+          "Group",
+          "GuidanceResponse",
+          "HealthcareService",
+          "ImagingSelection",
+          "ImagingStudy",
+          "Immunization",
+          "ImmunizationEvaluation",
+          "ImmunizationRecommendation",
+          "ImplementationGuide",
+          "Ingredient",
+          "InsurancePlan",
+          "InventoryItem",
+          "InventoryReport",
+          "Invoice",
+          "Library",
+          "Linkage",
+          "List",
+          "Location",
+          "ManufacturedItemDefinition",
+          "Measure",
+          "MeasureReport",
+          "Medication",
+          "MedicationAdministration",
+          "MedicationDispense",
+          "MedicationKnowledge",
+          "MedicationRequest",
+          "MedicationStatement",
+          "MedicinalProductDefinition",
+          "MessageDefinition",
+          "MessageHeader",
+          "MolecularSequence",
+          "NamingSystem",
+          "NutritionIntake",
+          "NutritionOrder",
+          "NutritionProduct",
+          "Observation",
+          "ObservationDefinition",
+          "OperationDefinition",
+          "OperationOutcome",
+          "Organization",
+          "OrganizationAffiliation",
+          "PackagedProductDefinition",
+          "Parameters",
+          "Patient",
+          "PaymentNotice",
+          "PaymentReconciliation",
+          "Permission",
+          "Person",
+          "PlanDefinition",
+          "Practitioner",
+          "PractitionerRole",
+          "Procedure",
+          "Provenance",
+          "Questionnaire",
+          "QuestionnaireResponse",
+          "RegulatedAuthorization",
+          "RelatedPerson",
+          "RequestOrchestration",
+          "Requirements",
+          "ResearchStudy",
+          "ResearchSubject",
+          "RiskAssessment",
+          "Schedule",
+          "SearchParameter",
+          "ServiceRequest",
+          "Slot",
+          "Specimen",
+          "SpecimenDefinition",
+          "StructureDefinition",
+          "StructureMap",
+          "Subscription",
+          "SubscriptionStatus",
+          "SubscriptionTopic",
+          "Substance",
+          "SubstanceDefinition",
+          "SubstanceNucleicAcid",
+          "SubstancePolymer",
+          "SubstanceProtein",
+          "SubstanceReferenceInformation",
+          "SubstanceSourceMaterial",
+          "SupplyDelivery",
+          "SupplyRequest",
+          "Task",
+          "TerminologyCapabilities",
+          "TestPlan",
+          "TestReport",
+          "TestScript",
+          "Transport",
+          "ValueSet",
+          "VerificationResult",
+          "VisionPrescription"
+        ]
       }
     }
   ]

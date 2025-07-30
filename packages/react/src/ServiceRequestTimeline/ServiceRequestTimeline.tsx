@@ -1,5 +1,6 @@
 import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Group, Patient, Reference, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { ResourceTimeline, ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
 
 export interface ServiceRequestTimelineProps extends Pick<ResourceTimelineProps<ServiceRequest>, 'getMenu'> {

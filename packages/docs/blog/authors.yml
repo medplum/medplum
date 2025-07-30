@@ -39,3 +39,21 @@ andrewdilling:
   title: Head of Product, Chamber Cardio
   url: https://github.com/andrewdilling
   image_url: https://github.com/andrewdilling.png
+
+andrei-zudin:
+  name: Andrei Zudin
+  title: Head of Interoperability and Security, RhythmX
+  url: https://github.com/andrei-zudin
+  image_url: https://github.com/andrei-zudin.png
+  
+finnbergquist:
+  name: Finn Bergquist
+  title: Forward Deployed Engineer, Medplum
+  url: https://github.com/finnbergquist
+  image_url: https://github.com/finnbergquist.png
+
+ThatOneBro:
+  name: Derrick Farris
+  title: Founding Engineer, Medplum
+  url: https://github.com/ThatOneBro
+  image_url: https://github.com/ThatOneBro.png

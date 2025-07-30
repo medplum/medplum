@@ -1,5 +1,15 @@
 import { ResourceArray, createReference, deepClone, getExtensionValue, getIdentifier, isResource } from '@medplum/core';
-import { Bundle, Coverage, Patient, Practitioner, Questionnaire, Reference, ServiceRequest } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  Coverage,
+  Location,
+  Organization,
+  Patient,
+  Practitioner,
+  Questionnaire,
+  Reference,
+  ServiceRequest,
+} from '@medplum/fhirtypes';
 import {
   BillingInformation,
   DiagnosisCodeableConcept,
@@ -28,6 +38,9 @@ export type UseHealthGorillaLabOrderOptions = {
    * The Practitioner MUST have an NPI identifier with the system http://hl7.org/fhir/sid/us-npi.
    */
   requester: Practitioner | (Reference<Practitioner> & { reference: string }) | undefined;
+
+  /** For multi-location practices, optionally specify the location from which the order is being placed */
+  requestingLocation?: Location | Organization | (Reference<Location | Organization> & { reference: string });
 };
 
 export type HealthGorillaLabOrderState = {
@@ -103,163 +116,191 @@ type TestsReducerState = {
   specimenCollectedDateTime: Date | undefined;
 };
 
+type AddTestAction = { type: 'add'; test: TestCoding };
+type RemoveTestAction = { type: 'remove'; test: TestCoding };
+type SetTestsAction = { type: 'set'; tests: TestCoding[] };
+type UpdateMetadataAction = {
+  type: 'updateMetadata';
+  test: TestCoding;
+  partialMetadata: Partial<EditableLabOrderTestMetadata>;
+};
+type AoeLoadedAction = { type: 'aoeLoaded'; testAoes: [TestCoding, Questionnaire | undefined][] };
+type SpecimentCollectionDateChangeAction = { type: 'specimenCollectionDateChange'; newDate: Date | undefined };
+type AoeErrorAction = { type: 'aoeError'; tests: TestCoding[] };
+
 type TestsAction =
-  | { type: 'add'; test: TestCoding }
-  | { type: 'remove'; test: TestCoding }
-  | { type: 'set'; tests: TestCoding[] }
-  | { type: 'updateMetadata'; test: TestCoding; partialMetadata: Partial<EditableLabOrderTestMetadata> }
-  | { type: 'aoeLoaded'; testAoes: [TestCoding, Questionnaire | undefined][] }
-  | { type: 'specimenCollectionDateChange'; newDate: Date | undefined }
-  | { type: 'aoeError'; tests: TestCoding[] };
+  | AddTestAction
+  | RemoveTestAction
+  | SetTestsAction
+  | UpdateMetadataAction
+  | AoeLoadedAction
+  | SpecimentCollectionDateChangeAction
+  | AoeErrorAction;
 
 function testsReducer(prev: TestsReducerState, action: TestsAction): TestsReducerState {
   switch (action.type) {
-    case 'add': {
-      if (prev.selectedTests.some((test) => test.code === action.test.code)) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        selectedTests: [...prev.selectedTests, action.test],
-        testMetadata: {
-          ...prev.testMetadata,
-          [action.test.code]: { aoeStatus: 'loading' },
-        },
-      };
-    }
-    case 'remove': {
-      return {
-        ...prev,
-        selectedTests: prev.selectedTests.filter((test) => test.code !== action.test.code),
-        testMetadata: Object.fromEntries(
-          Object.entries(prev.testMetadata).filter(([code]) => code !== action.test.code)
-        ),
-      };
-    }
-    case 'set': {
-      return {
-        ...prev,
-        selectedTests: action.tests,
-        testMetadata: Object.fromEntries(
-          action.tests.map((test) => {
-            return [test.code, prev.testMetadata[test.code] ?? { aoeStatus: 'loading' }];
-          })
-        ),
-      };
-    }
-
-    case 'updateMetadata': {
-      const { test, partialMetadata } = action;
-
-      const prevTestMetadata = prev.testMetadata[test.code];
-      if (!prev.selectedTests.some((t) => t.code === test.code) || !prevTestMetadata) {
-        console.warn(`Cannot update metadata for test ${test.code} since it is not a selected tests`);
-        return prev;
-      }
-
-      let allowedUpdates = partialMetadata;
-      const restrictedKeys = Object.keys(partialMetadata).filter(
-        (k) => !EDITABLE_TEST_METADATA_KEYS.includes(k as any)
-      );
-
-      if (restrictedKeys.length > 0) {
-        console.warn(`Cannot update test metadata fields: ${restrictedKeys.join(', ')}`);
-
-        allowedUpdates = Object.fromEntries(
-          Object.entries(partialMetadata).filter(([k]) => !restrictedKeys.includes(k))
-        );
-      }
-
-      return {
-        ...prev,
-        testMetadata: {
-          ...prev.testMetadata,
-          [test.code]: { ...prevTestMetadata, ...allowedUpdates },
-        },
-      };
-    }
-    case 'aoeLoaded': {
-      let newTestMetadata: TestsReducerState['testMetadata'] | undefined;
-      for (const [test, aoeQuestionnaire] of action.testAoes) {
-        const prevMetadata = prev.testMetadata[test.code];
-        if (!prevMetadata) {
-          continue;
-        }
-
-        newTestMetadata ??= { ...prev.testMetadata };
-        newTestMetadata[test.code] = {
-          ...prevMetadata,
-          aoeStatus: aoeQuestionnaire ? 'loaded' : 'none',
-          aoeQuestionnaire:
-            aoeQuestionnaire &&
-            (updateAoeQuestionnaireRequiredItems(aoeQuestionnaire, prev.specimenCollectedDateTime) ?? aoeQuestionnaire),
-        };
-      }
-
-      if (!newTestMetadata) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        testMetadata: newTestMetadata,
-      };
-    }
-
-    case 'aoeError': {
-      let newTestMetadata: TestsReducerState['testMetadata'] | undefined;
-      for (const test of action.tests) {
-        const prevMetadata = prev.testMetadata[test.code];
-        if (!prevMetadata || prevMetadata.aoeStatus !== 'loading') {
-          continue;
-        }
-
-        newTestMetadata ??= { ...prev.testMetadata };
-        newTestMetadata[test.code] = {
-          ...prevMetadata,
-          aoeStatus: 'error',
-        };
-      }
-
-      if (!newTestMetadata) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        testMetadata: newTestMetadata,
-      };
-    }
-    case 'specimenCollectionDateChange': {
-      // check if we can reuse the previous testMetadata object to avoid unnecessary downstream re-renders
-      let newTestMetadata: TestsReducerState['testMetadata'] | undefined;
-      for (const test of prev.selectedTests) {
-        const prevTestMetadata = prev.testMetadata[test.code];
-        if (!prevTestMetadata) {
-          continue;
-        }
-
-        if (prevTestMetadata.aoeQuestionnaire) {
-          const newAoeQ = updateAoeQuestionnaireRequiredItems(prevTestMetadata.aoeQuestionnaire, action.newDate);
-          if (newAoeQ) {
-            newTestMetadata ??= { ...prev.testMetadata };
-            newTestMetadata[test.code] = { ...prevTestMetadata, aoeQuestionnaire: newAoeQ };
-          }
-        }
-      }
-
-      return {
-        ...prev,
-        // If no changes to AOE questionnaire item.required, reuse the previous object
-        testMetadata: newTestMetadata ?? prev.testMetadata,
-        specimenCollectedDateTime: action.newDate,
-      };
-    }
+    case 'add':
+      return addTest(prev, action);
+    case 'remove':
+      return removeTest(prev, action);
+    case 'set':
+      return setTests(prev, action);
+    case 'updateMetadata':
+      return updateMetadata(prev, action);
+    case 'aoeLoaded':
+      return aoeLoaded(prev, action);
+    case 'aoeError':
+      return aoeError(prev, action);
+    case 'specimenCollectionDateChange':
+      return specimenCollectionDateChange(prev, action);
     default:
       action satisfies never;
       return prev;
   }
+}
+
+function addTest(prev: TestsReducerState, action: AddTestAction): TestsReducerState {
+  if (prev.selectedTests.some((test) => test.code === action.test.code)) {
+    return prev;
+  }
+
+  return {
+    ...prev,
+    selectedTests: [...prev.selectedTests, action.test],
+    testMetadata: {
+      ...prev.testMetadata,
+      [action.test.code]: { aoeStatus: 'loading' },
+    },
+  };
+}
+
+function removeTest(prev: TestsReducerState, action: RemoveTestAction): TestsReducerState {
+  return {
+    ...prev,
+    selectedTests: prev.selectedTests.filter((test) => test.code !== action.test.code),
+    testMetadata: Object.fromEntries(Object.entries(prev.testMetadata).filter(([code]) => code !== action.test.code)),
+  };
+}
+
+function setTests(prev: TestsReducerState, action: SetTestsAction): TestsReducerState {
+  return {
+    ...prev,
+    selectedTests: action.tests,
+    testMetadata: Object.fromEntries(
+      action.tests.map((test) => {
+        return [test.code, prev.testMetadata[test.code] ?? { aoeStatus: 'loading' }];
+      })
+    ),
+  };
+}
+
+function updateMetadata(prev: TestsReducerState, action: UpdateMetadataAction): TestsReducerState {
+  const { test, partialMetadata } = action;
+
+  const prevTestMetadata = prev.testMetadata[test.code];
+  if (!prev.selectedTests.some((t) => t.code === test.code) || !prevTestMetadata) {
+    console.warn(`Cannot update metadata for test ${test.code} since it is not a selected tests`);
+    return prev;
+  }
+
+  let allowedUpdates = partialMetadata;
+  const restrictedKeys = Object.keys(partialMetadata).filter((k) => !EDITABLE_TEST_METADATA_KEYS.includes(k as any));
+
+  if (restrictedKeys.length > 0) {
+    console.warn(`Cannot update test metadata fields: ${restrictedKeys.join(', ')}`);
+
+    allowedUpdates = Object.fromEntries(Object.entries(partialMetadata).filter(([k]) => !restrictedKeys.includes(k)));
+  }
+
+  return {
+    ...prev,
+    testMetadata: {
+      ...prev.testMetadata,
+      [test.code]: { ...prevTestMetadata, ...allowedUpdates },
+    },
+  };
+}
+
+function aoeLoaded(prev: TestsReducerState, action: AoeLoadedAction): TestsReducerState {
+  let newTestMetadata: TestsReducerState['testMetadata'] | undefined;
+  for (const [test, aoeQuestionnaire] of action.testAoes) {
+    const prevMetadata = prev.testMetadata[test.code];
+    if (!prevMetadata) {
+      continue;
+    }
+
+    newTestMetadata ??= { ...prev.testMetadata };
+    newTestMetadata[test.code] = {
+      ...prevMetadata,
+      aoeStatus: aoeQuestionnaire ? 'loaded' : 'none',
+      aoeQuestionnaire:
+        aoeQuestionnaire &&
+        (updateAoeQuestionnaireRequiredItems(aoeQuestionnaire, prev.specimenCollectedDateTime) ?? aoeQuestionnaire),
+    };
+  }
+
+  if (!newTestMetadata) {
+    return prev;
+  }
+
+  return {
+    ...prev,
+    testMetadata: newTestMetadata,
+  };
+}
+
+function aoeError(prev: TestsReducerState, action: AoeErrorAction): TestsReducerState {
+  let newTestMetadata: TestsReducerState['testMetadata'] | undefined;
+  for (const test of action.tests) {
+    const prevMetadata = prev.testMetadata[test.code];
+    if (!prevMetadata || prevMetadata.aoeStatus !== 'loading') {
+      continue;
+    }
+
+    newTestMetadata ??= { ...prev.testMetadata };
+    newTestMetadata[test.code] = {
+      ...prevMetadata,
+      aoeStatus: 'error',
+    };
+  }
+
+  if (!newTestMetadata) {
+    return prev;
+  }
+
+  return {
+    ...prev,
+    testMetadata: newTestMetadata,
+  };
+}
+
+function specimenCollectionDateChange(
+  prev: TestsReducerState,
+  action: SpecimentCollectionDateChangeAction
+): TestsReducerState {
+  // check if we can reuse the previous testMetadata object to avoid unnecessary downstream re-renders
+  let newTestMetadata: TestsReducerState['testMetadata'] | undefined;
+  for (const test of prev.selectedTests) {
+    const prevTestMetadata = prev.testMetadata[test.code];
+    if (!prevTestMetadata) {
+      continue;
+    }
+
+    if (prevTestMetadata.aoeQuestionnaire) {
+      const newAoeQ = updateAoeQuestionnaireRequiredItems(prevTestMetadata.aoeQuestionnaire, action.newDate);
+      if (newAoeQ) {
+        newTestMetadata ??= { ...prev.testMetadata };
+        newTestMetadata[test.code] = { ...prevTestMetadata, aoeQuestionnaire: newAoeQ };
+      }
+    }
+  }
+
+  return {
+    ...prev,
+    // If no changes to AOE questionnaire item.required, reuse the previous object
+    testMetadata: newTestMetadata ?? prev.testMetadata,
+    specimenCollectedDateTime: action.newDate,
+  };
 }
 
 export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions): UseHealthGorillaLabOrderReturn {
@@ -343,9 +384,8 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     if (isReferenceOfType('Patient', opts.patient)) {
       return opts.patient;
     } else if (isResource(opts.patient)) {
-      return createReference(opts.patient) as Reference<Patient> & { reference: string };
+      return createReference(opts.patient);
     } else {
-      opts.patient satisfies undefined;
       return undefined;
     }
   }, [opts.patient]);
@@ -360,6 +400,21 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
       return undefined;
     }
   }, [opts.requester]);
+
+  const requestingLocationRef = useMemo<
+    (Reference<Location | Organization> & { reference: string }) | undefined
+  >(() => {
+    if (
+      isReferenceOfType('Location', opts.requestingLocation) ||
+      isReferenceOfType('Organization', opts.requestingLocation)
+    ) {
+      return opts.requestingLocation;
+    } else if (isResource(opts.requestingLocation)) {
+      return createReference(opts.requestingLocation);
+    } else {
+      return undefined;
+    }
+  }, [opts.requestingLocation]);
 
   const state: HealthGorillaLabOrderState = useMemo(() => {
     const cloned = deepClone({
@@ -514,6 +569,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
         const txn = createLabOrderBundle({
           patient: patientRef,
           requester: requesterRef,
+          requestingLocation: requestingLocationRef,
           performingLab: state.performingLab,
           performingLabAccountNumber: state.performingLabAccountNumber,
           selectedTests: state.selectedTests,
@@ -554,6 +610,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     medplum,
     patientRef,
     performingLab,
+    requestingLocationRef,
     requesterRef,
     state,
     updateBillingInformation,

@@ -1,13 +1,17 @@
 import {
+  getExtension,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   MedplumClient,
 } from '@medplum/core';
 import { readJson as readDefinitionsJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Patient, Practitioner, Questionnaire, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Organization, Patient, Practitioner, Questionnaire, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import {
+  HEALTH_GORILLA_AUTHORIZED_BY_EXT,
   HEALTH_GORILLA_SYSTEM,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
@@ -23,8 +27,6 @@ import {
 } from './lab-order';
 import { expectToBeDefined } from './test-utils';
 import { BillTo, LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 
 interface TestContext {
   medplum: MedplumClient;
@@ -308,6 +310,46 @@ describe('createLabOrderBundle', () => {
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'customer-account' },
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN, valueString: '123456' },
     ]);
+  });
+
+  test<TestContext>('requesting location', async (ctx) => {
+    const { medplum, patient, requester, performingLab } = ctx;
+    const requestingOrg = { resourceType: 'Organization', id: 'org-123' } satisfies Organization;
+
+    const selectedTests: TestCoding[] = [];
+    const testMetadata: Record<string, LabOrderTestMetadata> = {};
+    for (const code of TEST_CODES) {
+      selectedTests.push({ code } as TestCoding);
+    }
+
+    const bundle = createLabOrderBundle({
+      patient,
+      requester,
+      requestingLocation: requestingOrg,
+      selectedTests,
+      testMetadata,
+      performingLab,
+      billingInformation: {
+        billTo: 'patient',
+      },
+    });
+
+    expect(bundle.type).toStrictEqual('transaction');
+
+    const txnResponse = await medplum.executeBatch(bundle);
+    expect(txnResponse.type).toStrictEqual('transaction-response');
+    expectBundleResultSuccessful(txnResponse);
+
+    const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
+      _profile: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
+      subject: getReferenceString(patient),
+    });
+
+    expectToBeDefined(orderServiceRequest);
+
+    const authorizedByExt = getExtension(orderServiceRequest, HEALTH_GORILLA_AUTHORIZED_BY_EXT);
+    expectToBeDefined(authorizedByExt);
+    expect(authorizedByExt.valueReference).toMatchObject({ reference: 'Organization/org-123' });
   });
 
   describe('Input validation', () => {

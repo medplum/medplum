@@ -1,11 +1,14 @@
+import { Group, Text } from '@mantine/core';
 import { InternalSchemaElement, SliceDefinitionWithTypes, getPathDisplayName, isPopulated } from '@medplum/core';
-import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
-import { useState, useContext, useEffect, useMemo } from 'react';
-import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
-import { prepareSlices, assignValuesIntoSlices } from '../ResourceArrayInput/ResourceArrayInput.utils';
 import { useMedplum } from '@medplum/react-hooks';
-import { SliceDisplay } from '../SliceDisplay/SliceDisplay';
+import { JSX, useContext, useEffect, useMemo, useState } from 'react';
 import { DescriptionListEntry } from '../DescriptionList/DescriptionList';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { assignValuesIntoSlices, prepareSlices } from '../ResourceArrayInput/ResourceArrayInput.utils';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { SliceDisplay } from '../SliceDisplay/SliceDisplay';
+
+const MAX_ARRAY_SIZE = 50;
 
 export interface ResourceArrayDisplayProps {
   /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
@@ -25,6 +28,7 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
   const [loading, setLoading] = useState(true);
   const [slices, setSlices] = useState<SliceDefinitionWithTypes[]>([]);
   const [slicedValues, setSlicedValues] = useState<any[][]>(() => [values]);
+  const [valuesLength, setValuesLength] = useState(0);
   const ctx = useContext(ElementsContext);
 
   useEffect(() => {
@@ -33,8 +37,10 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
       property,
     })
       .then((slices) => {
+        setValuesLength(values.length);
         setSlices(slices);
-        const slicedValues = assignValuesIntoSlices(values, slices, property.slicing, ctx.profileUrl);
+        const limitedValues = values.slice(0, MAX_ARRAY_SIZE);
+        const slicedValues = assignValuesIntoSlices(limitedValues, slices, property.slicing, ctx.profileUrl);
         setSlicedValues(slicedValues);
         setLoading(false);
       })
@@ -107,6 +113,11 @@ export function ResourceArrayDisplay(props: ResourceArrayDisplayProps): JSX.Elem
       })}
 
       {nonSliceContent}
+      {valuesLength > MAX_ARRAY_SIZE && (
+        <Group justify="right">
+          <Text>... {valuesLength} total values</Text>
+        </Group>
+      )}
     </>
   );
 }

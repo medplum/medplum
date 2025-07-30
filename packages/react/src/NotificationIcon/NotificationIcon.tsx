@@ -1,7 +1,7 @@
 import { ActionIcon, Indicator, Tooltip } from '@mantine/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useSubscription } from '@medplum/react-hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { JSX, useCallback, useEffect, useState } from 'react';
 
 export interface NotificationIconProps {
   readonly iconComponent: JSX.Element;

@@ -1,13 +1,13 @@
 import { Stack } from '@mantine/core';
 import { TypedValue, getPathDisplayName } from '@medplum/core';
-import { useContext, useMemo, useState } from 'react';
+import { JSX, useContext, useMemo, useState } from 'react';
 import { CheckboxFormSection } from '../CheckboxFormSection/CheckboxFormSection';
 import { FormSection } from '../FormSection/FormSection';
 import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { getValueAndTypeFromElement } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
-import { EXTENSION_KEYS, ElementsContext, getElementsToRender } from './ElementsInput.utils';
 import { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { EXTENSION_KEYS, ElementsContext, getElementsToRender } from './ElementsInput.utils';
 
 export interface ElementsInputProps extends BaseInputProps {
   readonly type: string;

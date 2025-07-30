@@ -41,3 +41,4 @@ There are bots in the [medplum-demo-bot repository](https://github.com/medplum/m
 ## Related Resources
 
 - [Download Questionnaires](https://lhcformbuilder.nlm.nih.gov/) that have LOINC codes from NIH - includes many common assessments like PHQ-9, Activities of Daily living and more
+- [Video Overview on NIH Questionnaires](https://youtu.be/E5gttZwr2mk) on the Youtube

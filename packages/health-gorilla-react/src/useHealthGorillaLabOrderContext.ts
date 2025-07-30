@@ -1,6 +1,6 @@
 import { useContext } from 'react';
-import { UseHealthGorillaLabOrderReturn } from './useHealthGorillaLabOrder';
 import { HealthGorillaLabOrderContext } from './HealthGorillaLabOrderProvider';
+import { UseHealthGorillaLabOrderReturn } from './useHealthGorillaLabOrder';
 
 export function useHealthGorillaLabOrderContext(): UseHealthGorillaLabOrderReturn {
   const context = useContext(HealthGorillaLabOrderContext);

@@ -1,12 +1,13 @@
 import {
   badRequest,
-  crawlResource,
+  crawlTypedValueAsync,
   createReference,
   createStructureIssue,
   normalizeErrorString,
   OperationOutcomeError,
   parseSearchRequest,
   PropertyType,
+  toTypedValue,
   TypedValue,
 } from '@medplum/core';
 import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
@@ -51,12 +52,16 @@ function isCheckableReference(propertyValue: TypedValue | TypedValue[]): boolean
   return valueType === PropertyType.Reference;
 }
 
+function shouldValidateReference(ref: Reference): boolean {
+  return Boolean(ref.reference && !ref.reference.startsWith('%'));
+}
+
 export async function validateResourceReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
   const references: Record<string, Reference> = Object.create(null);
   const systemReferences: Record<string, Reference> = Object.create(null);
 
-  await crawlResource(
-    resource,
+  await crawlTypedValueAsync(
+    toTypedValue(resource),
     {
       async visitPropertyAsync(parent, _key, path, propertyValue, _schema) {
         if (!isCheckableReference(propertyValue) || parent.type === PropertyType.Meta) {
@@ -66,7 +71,7 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
         if (Array.isArray(propertyValue)) {
           for (let i = 0; i < propertyValue.length; i++) {
             const reference = propertyValue[i].value as Reference;
-            if (!reference.reference) {
+            if (!shouldValidateReference(reference)) {
               continue;
             }
 
@@ -76,7 +81,7 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
               references[path + '[' + i + ']'] = reference;
             }
           }
-        } else if (propertyValue.value.reference) {
+        } else if (shouldValidateReference(propertyValue.value)) {
           const reference = propertyValue.value as Reference;
           if (SYSTEM_REFERENCE_PATHS.includes(path)) {
             systemReferences[path] = reference;
@@ -104,10 +109,10 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
 
 async function resolveReplacementReference(
   repo: Repository,
-  reference: Reference,
+  reference: Reference | undefined,
   path: string
 ): Promise<Reference | undefined> {
-  if (!reference.reference?.includes?.('?')) {
+  if (!reference?.reference?.includes?.('?')) {
     return undefined;
   }
 
@@ -128,8 +133,8 @@ async function resolveReplacementReference(
 }
 
 export async function replaceConditionalReferences<T extends Resource>(repo: Repository, resource: T): Promise<T> {
-  await crawlResource(
-    resource,
+  await crawlTypedValueAsync(
+    toTypedValue(resource),
     {
       async visitPropertyAsync(parent, key, path, propertyValue, _schema) {
         if (!isCheckableReference(propertyValue)) {

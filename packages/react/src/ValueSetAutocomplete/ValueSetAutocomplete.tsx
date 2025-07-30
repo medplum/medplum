@@ -2,13 +2,13 @@ import { Group, Text } from '@mantine/core';
 import { ValueSetExpandParams } from '@medplum/core';
 import { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { forwardRef, useCallback } from 'react';
+import { IconCheck } from '@tabler/icons-react';
+import { forwardRef, JSX, useCallback } from 'react';
 import {
   AsyncAutocomplete,
   AsyncAutocompleteOption,
   AsyncAutocompleteProps,
 } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { IconCheck } from '@tabler/icons-react';
 
 export interface ValueSetAutocompleteProps
   extends Omit<AsyncAutocompleteProps<ValueSetExpansionContains>, 'loadOptions' | 'toKey' | 'toOption'> {
@@ -68,6 +68,7 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
           ...expandParams,
           url: binding,
           filter: input,
+          count: 10,
         },
         { signal }
       );

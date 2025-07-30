@@ -4,6 +4,7 @@ import { Router } from 'express';
 import { asyncWrap } from '../async';
 import { authenticateRequest } from '../oauth/middleware';
 import { changePasswordHandler, changePasswordValidator } from './changepassword';
+import { clientInfoHandler } from './clientinfo';
 import { exchangeHandler, exchangeValidator } from './exchange';
 import { externalCallbackHandler } from './external';
 import { googleHandler, googleValidator } from './google';
@@ -42,6 +43,7 @@ authRouter.post('/google', googleValidator, asyncWrap(googleHandler));
 authRouter.post('/exchange', exchangeValidator, asyncWrap(exchangeHandler));
 authRouter.post('/revoke', authenticateRequest, revokeValidator, asyncWrap(revokeHandler));
 authRouter.get('/login/:login', statusValidator, asyncWrap(statusHandler));
+authRouter.get('/clientinfo/:clientId', clientInfoHandler);
 
 function projectRegistrationAllowed(project: Project): OperationOutcome | undefined {
   if (!project.defaultPatientAccessPolicy) {

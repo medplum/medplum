@@ -1,5 +1,4 @@
-import { Resource } from '@medplum/fhirtypes';
-import { getTypedPropertyValue, GetTypedPropertyValueOptions, toTypedValue } from '../fhirpath/utils';
+import { getTypedPropertyValue, GetTypedPropertyValueOptions } from '../fhirpath/utils';
 import { isResource, TypedValue } from '../types';
 import { arrayify } from '../utils';
 import { getDataType, InternalTypeSchema } from './types';
@@ -19,9 +18,6 @@ export interface CrawlerVisitor {
   ) => void;
 }
 
-/** @deprecated - Use CrawlerVisitor instead */
-export type ResourceVisitor = CrawlerVisitor;
-
 export interface AsyncCrawlerVisitor {
   onEnterObject?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => Promise<void>;
   onExitObject?: (path: string, value: TypedValueWithPath, schema: InternalTypeSchema) => Promise<void>;
@@ -36,102 +32,11 @@ export interface AsyncCrawlerVisitor {
   ) => Promise<void>;
 }
 
-/** @deprecated - Use AsyncCrawlerVisitor instead */
-export type AsyncResourceVisitor = AsyncCrawlerVisitor;
-
-function isSchema(obj: InternalTypeSchema | CrawlerOptions): obj is InternalTypeSchema {
-  return 'elements' in obj;
-}
-
-function isAsync(visitor: CrawlerVisitor | AsyncCrawlerVisitor): visitor is AsyncCrawlerVisitor {
-  return Boolean((visitor as AsyncCrawlerVisitor).visitPropertyAsync);
-}
-
-/**
- * Crawls the resource synchronously.
- * @param resource - The resource to crawl.
- * @param visitor - The visitor functions to apply while crawling.
- * @param schema - The schema to use for the resource.
- * @param initialPath - The path within the resource form which to start crawling.
- * @deprecated - Use crawlTypedValue instead
- */
-export function crawlResource(
-  resource: Resource,
-  visitor: CrawlerVisitor,
-  schema?: InternalTypeSchema,
-  initialPath?: string
-): void;
-/**
- * Crawls the resource asynchronously.
- * @param resource - The resource to crawl.
- * @param visitor - The visitor functions to apply while crawling.
- * @param options - Options for how to crawl the resource.
- * @returns void
- * @deprecated - Use crawlTypedValueAsync instead
- */
-export function crawlResource(resource: Resource, visitor: AsyncCrawlerVisitor, options: CrawlerOptions): Promise<void>;
-/**
- * Crawls the resource synchronously.
- * @param resource - The resource to crawl.
- * @param visitor - The visitor functions to apply while crawling.
- * @param options - Options for how to crawl the resource.
- * @deprecated - Use crawlTypedValue instead
- */
-export function crawlResource(resource: Resource, visitor: CrawlerVisitor, options?: CrawlerOptions): void;
-
-/**
- * Crawls the resource synchronously.
- * @param resource - The resource to crawl.
- * @param visitor - The visitor functions to apply while crawling.
- * @param schema - The schema to use for the resource.
- * @param initialPath - The path within the resource form which to start crawling.
- * @returns Promise
- * @deprecated - Use crawlTypedValue or crawlTypedValueAsync instead
- */
-export function crawlResource(
-  resource: Resource,
-  visitor: CrawlerVisitor | AsyncCrawlerVisitor,
-  schema?: InternalTypeSchema | CrawlerOptions,
-  initialPath?: string
-): Promise<void> | void {
-  let options: CrawlerOptions | undefined;
-  if (schema && isSchema(schema)) {
-    options = { schema, initialPath };
-  } else {
-    options = schema;
-  }
-
-  if (isAsync(visitor)) {
-    return crawlTypedValueAsync(toTypedValue(resource), visitor, options);
-  } else {
-    return crawlTypedValue(toTypedValue(resource), visitor, options);
-  }
-}
-
-/**
- * Crawls the resource asynchronously.
- * @param resource - The resource to crawl.
- * @param visitor - The visitor functions to apply while crawling.
- * @param options - Options for how to crawl the resource.
- * @returns Promise
- * @deprecated - Use crawlTypedValueAsync instead
- */
-export async function crawlResourceAsync(
-  resource: Resource,
-  visitor: AsyncCrawlerVisitor,
-  options: CrawlerOptions
-): Promise<void> {
-  return crawlTypedValueAsync(toTypedValue(resource), visitor, options);
-}
-
 export interface CrawlerOptions {
   skipMissingProperties?: boolean;
   schema?: InternalTypeSchema;
   initialPath?: string;
 }
-
-/** @deprecated - Use CrawlerOptions instead */
-export type ResourceCrawlerOptions = CrawlerOptions;
 
 /**
  * Crawls the typed value synchronously.

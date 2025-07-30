@@ -13,8 +13,8 @@ import { Redis } from 'ioredis';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { IncomingMessage } from 'node:http';
 import ws from 'ws';
+import { executeBot } from '../bots/execute';
 import { getRepoForLogin } from '../fhir/accesspolicy';
-import { executeBot } from '../fhir/operations/execute';
 import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { getLoginForAccessToken } from '../oauth/utils';
@@ -123,7 +123,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
     agentId = command.agentId;
 
-    const authState = await getLoginForAccessToken(command.accessToken);
+    const authState = await getLoginForAccessToken(undefined, command.accessToken);
     if (!authState) {
       sendError('Invalid access token');
       return;
@@ -176,7 +176,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       return;
     }
 
-    const authState = await getLoginForAccessToken(command.accessToken);
+    const authState = await getLoginForAccessToken(undefined, command.accessToken);
     if (!authState) {
       sendError('Invalid access token');
       return;

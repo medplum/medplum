@@ -1,9 +1,10 @@
-import { ContentType, concatUrls, createReference, deepClone, getReferenceString } from '@medplum/core';
+import { ContentType, WithId, concatUrls, createReference, deepClone, getReferenceString } from '@medplum/core';
 import { Binary, Bundle, Media, Patient, Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { URL } from 'url';
 import { initAppServices, shutdownApp } from '../app';
-import { MedplumServerConfig, loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { withTestContext } from '../test.setup';
 import { Repository, getSystemRepo } from './repo';
 import { RewriteMode, rewriteAttachments } from './rewrite';
@@ -11,7 +12,7 @@ import { RewriteMode, rewriteAttachments } from './rewrite';
 describe('URL rewrite', () => {
   const systemRepo = getSystemRepo();
   let config: MedplumServerConfig;
-  let binary: Binary;
+  let binary: WithId<Binary>;
 
   beforeAll(async () => {
     config = await loadTestConfig();
@@ -202,7 +203,7 @@ describe('URL rewrite', () => {
       photo: [
         {
           contentType: 'image/jpeg',
-          url: concatUrls(config.storageBaseUrl, binary.id as string),
+          url: concatUrls(config.storageBaseUrl, binary.id),
         },
       ],
     };

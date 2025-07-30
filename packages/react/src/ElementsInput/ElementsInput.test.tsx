@@ -1,7 +1,7 @@
-import { ElementsInput } from './ElementsInput';
-import { render, screen } from '../test-utils/render';
-import { ElementsContext } from './ElementsInput.utils';
 import { ElementsContextType } from '@medplum/core';
+import { render, screen } from '../test-utils/render';
+import { ElementsInput } from './ElementsInput';
+import { ElementsContext } from './ElementsInput.utils';
 
 const elementsContext: ElementsContextType = {
   debugMode: false,

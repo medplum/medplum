@@ -1,8 +1,8 @@
-import { RefObject } from 'react';
+import { JSX, Ref } from 'react';
 
 export interface BotRunnerProps {
   readonly className?: string;
-  readonly iframeRef?: RefObject<HTMLIFrameElement>;
+  readonly iframeRef?: Ref<HTMLIFrameElement>;
   readonly testId?: string;
   readonly minHeight?: string;
 }
@@ -11,6 +11,7 @@ export function BotRunner(props: BotRunnerProps): JSX.Element {
   const url = `https://codeeditor.medplum.com/bot-runner.html`;
   return (
     <iframe
+      title="Bot Runner"
       frameBorder="0"
       src={url}
       className={props.className}

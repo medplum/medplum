@@ -21,12 +21,15 @@ const baseConfig = {
   apiDomainName: { system: 'aws_ssm_parameter_store', key: 'apiDomainName', type: 'string' },
   apiSslCertArn: { system: 'aws_ssm_parameter_store', key: 'apiSslCertArn', type: 'string' },
   apiInternetFacing: true,
+  apiWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAPIIpSet',
   appDomainName: 'app.foomedical.com',
   appSslCertArn: 'arn:abc-123',
   appApiProxy: { system: 'aws_ssm_parameter_store', key: 'appApiProxy', type: 'boolean' },
+  appWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAppIpSet',
   storageBucketName: { system: 'aws_ssm_parameter_store', key: 'storageBucketName', type: 'string' },
   storageDomainName: 'storage.foomedical.com',
   storageSslCertArn: 'arn:def-123',
+  storageWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumStorageIpSet',
   signingKeyId: { system: 'aws_ssm_parameter_store', key: 'signingKeyId', type: 'string' },
   storagePublicKey: { system: 'aws_ssm_parameter_store', key: 'storagePublicKey', type: 'string' },
   baseUrl: 'foomedical.com',
@@ -163,6 +166,9 @@ describe('Config', () => {
         clamscanLoggingBucket: 'no_logging',
         clamscanLoggingPrefix: 'foo_',
         skipDns: true,
+        apiWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAPIIpSet',
+        appWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAppIpSet',
+        storageWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumStorageIpSet',
       });
     });
 
@@ -199,6 +205,9 @@ describe('Config', () => {
         clamscanLoggingBucket: 'no_logging',
         clamscanLoggingPrefix: 'foo_',
         skipDns: true,
+        apiWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAPIIpSet',
+        appWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAppIpSet',
+        storageWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumStorageIpSet',
         additionalContainers: [
           {
             name: 'BIG IMAGE',
@@ -245,6 +254,9 @@ describe('Config', () => {
         clamscanLoggingBucket: 'no_logging',
         clamscanLoggingPrefix: 'foo_',
         skipDns: true,
+        apiWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAPIIpSet',
+        appWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumAppIpSet',
+        storageWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumStorageIpSet',
         cloudTrailAlarms: {
           logGroupName: 'FOOMEDICAL_PROD',
           logGroupCreate: false,

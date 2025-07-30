@@ -1,7 +1,8 @@
 import { resolveId } from '@medplum/core';
 import { RequestGroup, ResourceType } from '@medplum/fhirtypes';
 import { Document, RequestGroupDisplay, useResource } from '@medplum/react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { JSX } from 'react';
+import { useNavigate, useParams } from 'react-router';
 
 export function ChecklistPage(): JSX.Element | null {
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
@@ -16,8 +17,8 @@ export function ChecklistPage(): JSX.Element | null {
     <Document>
       <RequestGroupDisplay
         value={resource as RequestGroup}
-        onStart={(_task, taskInput) => navigate(`/forms/${resolveId(taskInput)}`)}
-        onEdit={(_task, _taskInput, taskOutput) => navigate(`/${taskOutput.reference}}`)}
+        onStart={(_task, taskInput) => navigate(`/forms/${resolveId(taskInput)}`)?.catch(console.error)}
+        onEdit={(_task, _taskInput, taskOutput) => navigate(`/${taskOutput.reference}}`)?.catch(console.error)}
       />
     </Document>
   );

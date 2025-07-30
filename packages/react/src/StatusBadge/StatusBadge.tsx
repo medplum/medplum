@@ -1,4 +1,5 @@
-import { Badge, DefaultMantineColor } from '@mantine/core';
+import { Badge, BadgeProps, DefaultMantineColor } from '@mantine/core';
+import { JSX } from 'react';
 
 /*
  * Request status: https://hl7.org/fhir/valueset-request-status.html
@@ -60,12 +61,20 @@ const statusToColor: Record<string, DefaultMantineColor> = {
   'not-done': 'red',
   connected: 'green',
   disconnected: 'red',
+  finished: 'green',
+  planned: 'gray',
 };
 
-export interface StatusBadgeProps {
+export interface StatusBadgeProps extends Omit<BadgeProps, 'children'> {
   readonly status: string;
 }
 
 export function StatusBadge(props: StatusBadgeProps): JSX.Element {
-  return <Badge color={statusToColor[props.status]}>{props.status}</Badge>;
+  const { status, ...badgeProps } = props;
+
+  return (
+    <Badge color={props.color || statusToColor[status]} {...badgeProps}>
+      {status.replace(/-/g, ' ')}
+    </Badge>
+  );
 }

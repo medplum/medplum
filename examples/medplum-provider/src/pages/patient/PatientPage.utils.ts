@@ -1,6 +1,6 @@
 import { Patient } from '@medplum/fhirtypes';
 
-function patientPathPrefix(patientId: string): string {
+export function patientPathPrefix(patientId: string): string {
   return `/Patient/${patientId}`;
 }
 
@@ -34,7 +34,11 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
 export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'timeline', url: '', label: 'Timeline' },
   { id: 'edit', url: 'edit', label: 'Edit' },
-  { id: 'encounter', url: 'encounter', label: 'Encounter' },
+  {
+    id: 'encounter',
+    url: 'Encounter?_count=20&_fields=_lastUpdated,period,status,serviceType&_sort=-_lastUpdated&patient=%patient.id',
+    label: 'Visits',
+  },
   {
     id: 'tasks',
     url: 'Task?_fields=_lastUpdated,code,status,focus&_offset=0&_sort=-_lastUpdated&patient=%patient.id',
@@ -75,6 +79,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     url: 'CarePlan?_fields=_lastUpdated,status,intent,category,period&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Care Plans',
   },
-  { id: 'communication', url: 'communication', label: 'Communications' },
+  { id: 'communication', url: 'communication', label: 'Messages' },
   { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
+  { id: 'export', url: 'export', label: 'Export' },
 ];

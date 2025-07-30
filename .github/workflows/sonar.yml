@@ -3,20 +3,26 @@ on:
   workflow_run:
     workflows: [Build]
     types: [completed]
+
+permissions:
+  contents: read
+
 jobs:
   sonar:
     name: Sonar
     runs-on: ubuntu-latest
     timeout-minutes: 30
     if: github.event.workflow_run.conclusion == 'success'
+    permissions:
+      pull-requests: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: ${{ github.event.workflow_run.head_repository.full_name }}
           ref: ${{ github.event.workflow_run.head_branch }}
           fetch-depth: 0
       - name: 'Download code coverage'
-        uses: actions/github-script@v6
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
         with:
           script: |
             let allArtifacts = await github.rest.actions.listWorkflowRunArtifacts({
@@ -38,7 +44,7 @@ jobs:
       - name: 'Unzip code coverage'
         run: unzip medplum-code-coverage.zip -d coverage
       - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@master
+        uses: SonarSource/sonarqube-scan-action@01850e2590cc09ed26831056406ae1525aa41ad5 # master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}

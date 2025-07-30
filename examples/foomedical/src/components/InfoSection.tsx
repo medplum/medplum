@@ -1,5 +1,5 @@
 import { Card, CloseButton, Title } from '@mantine/core';
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import classes from './InfoSection.module.css';
 
 interface InfoSectionProps {

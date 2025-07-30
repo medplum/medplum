@@ -1,9 +1,9 @@
+import { ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
 import { act, fireEvent, render, screen, within } from '../test-utils/render';
 import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
-import { ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
 
 describe('AsyncAutocomplete', () => {
   beforeEach(() => {

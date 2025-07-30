@@ -1,5 +1,5 @@
 import { MedplumClient, MedplumClientEventMap } from '@medplum/core';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { JSX, ReactNode, useEffect, useMemo, useState } from 'react';
 import { MedplumNavigateFunction, reactContext } from './MedplumProvider.context';
 
 export interface MedplumProviderProps {

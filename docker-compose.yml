@@ -3,7 +3,6 @@
 #   1) The Postgres database
 #   2) The Redis cache
 # You can start all services by running "docker-compose up"
-version: '3.7'
 services:
   postgres:
     image: postgres:16

@@ -1,6 +1,7 @@
 import { Box, Flex, Group, Paper, RingProgress, Text, Title } from '@mantine/core';
 import { formatCodeableConcept } from '@medplum/core';
 import { Measure, MeasureReportGroup } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { QuantityDisplay } from '../../QuantityDisplay/QuantityDisplay';
 
 interface MeasureReportGroupDisplayProps {

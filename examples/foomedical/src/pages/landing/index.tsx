@@ -1,5 +1,6 @@
 import { AppShell, Box, Button, Container, Group, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import cx from 'clsx';
+import { JSX } from 'react';
 import { Footer } from '../../components/Footer';
 import DoctorImage from '../../img/landingPage/doctor.jpg';
 import EngineeringImage from '../../img/landingPage/engineering.jpg';

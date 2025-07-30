@@ -19,7 +19,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { getConfig, loadTestConfig } from '../../config';
+import { getConfig, loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 import {
   DEFAULT_LAMBDA_TIMEOUT,
@@ -75,7 +75,7 @@ describe('Deploy', () => {
         return {
           FunctionName,
           Timeout: config.Timeout ?? DEFAULT_LAMBDA_TIMEOUT,
-          Runtime: 'nodejs18.x',
+          Runtime: 'nodejs20.x',
           Handler: 'index.handler',
           State: 'Active',
           Layers: [
@@ -438,7 +438,7 @@ describe('Deploy', () => {
     const bot = res1.body as Bot;
 
     const res2 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id as string}/$deploy`)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
@@ -453,7 +453,7 @@ describe('Deploy', () => {
     expect(res2.body).toMatchObject(allOk);
 
     const res3 = await request(app)
-      .get(`/fhir/R4/Bot/${bot.id as string}`)
+      .get(`/fhir/R4/Bot/${bot.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body).toMatchObject({ ...botProps, timeout: DEFAULT_LAMBDA_TIMEOUT });
@@ -487,7 +487,7 @@ describe('Deploy', () => {
     const bot = res1.body as Bot;
 
     const res2 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id as string}/$deploy`)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
@@ -528,7 +528,7 @@ describe('Deploy', () => {
     const bot = res1.body as Bot;
 
     const res2 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id as string}/$deploy`)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({

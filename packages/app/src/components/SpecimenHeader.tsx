@@ -1,7 +1,7 @@
 import { formatDateTime } from '@medplum/core';
 import { Reference, Specimen } from '@medplum/fhirtypes';
-import { useResource } from '@medplum/react';
-import { InfoBar } from './InfoBar';
+import { InfoBar, useResource } from '@medplum/react';
+import { JSX } from 'react';
 
 export interface SpecimenHeaderProps {
   readonly specimen: Specimen | Reference<Specimen>;

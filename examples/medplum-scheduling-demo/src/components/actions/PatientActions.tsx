@@ -2,8 +2,8 @@ import { Button, Stack, Title } from '@mantine/core';
 import { Patient } from '@medplum/fhirtypes';
 import { Loading } from '@medplum/react';
 import { IconClock } from '@tabler/icons-react';
-import { useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { JSX, useContext } from 'react';
+import { useNavigate } from 'react-router';
 import { ScheduleContext } from '../../Schedule.context';
 
 interface PatientActionsProps {
@@ -25,7 +25,7 @@ export function PatientActions(props: PatientActionsProps): JSX.Element {
 
       <Button
         leftSection={<IconClock size={16} />}
-        onClick={() => navigate(`/Patient/${patient.id}/Schedule/${schedule.id}`)}
+        onClick={() => navigate(`/Patient/${patient.id}/Schedule/${schedule.id}`)?.catch(console.error)}
       >
         Create Appointment
       </Button>

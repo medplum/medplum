@@ -1,9 +1,9 @@
-import { Communication, HumanName } from '@medplum/fhirtypes';
-import { BaseChat, Loading, useMedplum, useMedplumProfile, Container } from '@medplum/react';
-import { useCallback, useMemo, useState } from 'react';
-import { usePatient } from '../../hooks/usePatient';
-import { createReference, formatHumanName, getReferenceString } from '@medplum/core';
 import { Alert } from '@mantine/core';
+import { createReference, formatHumanName, getReferenceString } from '@medplum/core';
+import { Communication, HumanName } from '@medplum/fhirtypes';
+import { BaseChat, Container, Loading, useMedplum, useMedplumProfile } from '@medplum/react';
+import { JSX, useCallback, useMemo, useState } from 'react';
+import { usePatient } from '../../hooks/usePatient';
 
 export function CommunicationTab(): JSX.Element {
   const medplum = useMedplum();

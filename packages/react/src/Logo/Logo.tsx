@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 export interface LogoProps {
   readonly size: number;
   readonly fill?: string;

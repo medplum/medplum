@@ -1,7 +1,7 @@
 import { Button, Stack, TextInput, Title } from '@mantine/core';
 import { FhircastEventContext } from '@medplum/core';
 import { Document, useMedplum } from '@medplum/react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import TopicGenerator from './TopicGenerator';
 
 function createFhircastMessageContext(patientId: string): FhircastEventContext<'Patient-open'> {

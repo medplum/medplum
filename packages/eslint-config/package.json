@@ -1,6 +1,6 @@
 {
   "name": "@medplum/eslint-config",
-  "version": "3.2.23",
+  "version": "4.3.6",
   "description": "Shared ESLint configuration for Medplum projects",
   "keywords": [
     "eslint",
@@ -19,12 +19,12 @@
   "author": "Medplum <hello@medplum.com>",
   "main": "index.cjs",
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "8.15.0",
-    "@typescript-eslint/parser": "8.15.0",
-    "eslint": "8.57.0",
-    "eslint-plugin-jsdoc": "50.5.0",
-    "eslint-plugin-react-hooks": "5.0.0",
-    "eslint-plugin-react-refresh": "0.4.14"
+    "@typescript-eslint/eslint-plugin": "8.26.0",
+    "@typescript-eslint/parser": "8.26.0",
+    "eslint": "8.57.1",
+    "eslint-plugin-jsdoc": "50.8.0",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "eslint-plugin-react-refresh": "0.4.20"
   },
   "peerDependencies": {
     "@typescript-eslint/eslint-plugin": "^8",
@@ -35,6 +35,6 @@
     "eslint-plugin-react-refresh": "^0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

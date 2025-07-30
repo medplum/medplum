@@ -1,0 +1,75 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "0fedb502-9a38-4990-8bab-24debe2d332b",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": ["Katherine", "Jones"]
+          },
+          {
+            "family": "Madison",
+            "given": ["Kathy", "Jones"]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1970-06-01",
+        "address": [
+          {
+            "line": ["1001 Amber Dr"],
+            "city": "Beaverton",
+            "state": "OR",
+            "postalCode": "97006",
+            "country": "US"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+1(555)-111-1234"
+          },
+          {
+            "system": "phone",
+            "value": "+1(555)-112-1544"
+          }
+        ]
+      }
+    }
+  ]
+}

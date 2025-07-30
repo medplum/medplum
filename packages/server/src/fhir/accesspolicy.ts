@@ -1,4 +1,11 @@
-import { ProfileResource, createReference, projectAdminResourceTypes, resolveId } from '@medplum/core';
+import {
+  ProfileResource,
+  WithId,
+  createReference,
+  isResource,
+  projectAdminResourceTypes,
+  resolveId,
+} from '@medplum/core';
 import {
   AccessPolicy,
   AccessPolicyIpAccessRule,
@@ -8,9 +15,12 @@ import {
   ProjectMembershipAccess,
   Reference,
 } from '@medplum/fhirtypes';
+import { getLogger } from '../logger';
 import { AuthState } from '../oauth/middleware';
 import { Repository, getSystemRepo } from './repo';
 import { applySmartScopes } from './smart';
+
+export type PopulatedAccessPolicy = AccessPolicy & { resource: AccessPolicyResource[] };
 
 /**
  * Creates a repository object for the user auth state.
@@ -22,23 +32,39 @@ import { applySmartScopes } from './smart';
  * @returns A repository configured for the login details.
  */
 export async function getRepoForLogin(authState: AuthState, extendedMode?: boolean): Promise<Repository> {
-  const { project, login, membership } = authState;
+  const { login, membership: realMembership, onBehalfOfMembership } = authState;
+  const membership = onBehalfOfMembership ?? realMembership;
+  const systemRepo = getSystemRepo();
   const accessPolicy = await getAccessPolicyForLogin(authState);
 
-  let allowedProjects: string[] | undefined;
-  if (project.id) {
-    allowedProjects = [project.id];
-  }
-  if (project.link && allowedProjects?.length) {
+  const project = await systemRepo.readReference(membership.project);
+  const allowedProjects: WithId<Project>[] = [project];
+
+  if (project.link) {
+    const linkedProjectRefs: Reference<Project>[] = [];
     for (const link of project.link) {
-      allowedProjects.push(resolveId(link.project) as string);
+      if (link.project) {
+        linkedProjectRefs.push(link.project);
+      }
+    }
+
+    const linkedProjectsOrError = await systemRepo.readReferences<Project>(linkedProjectRefs);
+    for (let i = 0; i < linkedProjectsOrError.length; i++) {
+      const linkedProjectOrError = linkedProjectsOrError[i];
+      if (isResource(linkedProjectOrError)) {
+        allowedProjects.push(linkedProjectOrError);
+      } else {
+        // Ignore missing; if a super admin creates a project link to a non-existent project,
+        // searching it would be a no-op.
+        getLogger().debug('Linked project not found', { project: linkedProjectRefs[i] });
+      }
     }
   }
 
   return new Repository({
     projects: allowedProjects,
     currentProject: project,
-    author: membership.profile as Reference,
+    author: realMembership.profile as Reference,
     remoteAddress: login.remoteAddress,
     superAdmin: project.superAdmin,
     projectAdmin: membership.admin,
@@ -80,35 +106,37 @@ export async function getAccessPolicyForLogin(authState: AuthState): Promise<Acc
  * @param membership - The user project membership.
  * @returns The parameterized compound access policy.
  */
-export async function buildAccessPolicy(membership: ProjectMembership): Promise<AccessPolicy> {
-  let access: ProjectMembershipAccess[] = [];
-
+export async function buildAccessPolicy(membership: ProjectMembership): Promise<PopulatedAccessPolicy> {
+  const access: ProjectMembershipAccess[] = [];
   if (membership.accessPolicy) {
     access.push({ policy: membership.accessPolicy });
   }
-
   if (membership.access) {
-    access = access.concat(membership.access);
+    access.push(...membership.access);
   }
 
-  const profile = membership.profile as Reference<ProfileResource>;
   let compartment: Reference | undefined = undefined;
-  let resourcePolicies: AccessPolicyResource[] = [];
-  let ipAccessRules: AccessPolicyIpAccessRule[] = [];
+  const resourcePolicies: AccessPolicyResource[] = [];
+  const ipAccessRules: AccessPolicyIpAccessRule[] = [];
   for (const entry of access) {
-    const replaced = await buildAccessPolicyResources(entry, profile);
+    const replaced = await buildAccessPolicyResources(entry, membership.profile as Reference<ProfileResource>);
     if (replaced.compartment) {
       compartment = replaced.compartment;
     }
     if (replaced.resource) {
-      resourcePolicies = resourcePolicies.concat(replaced.resource);
+      for (const resourcePolicy of replaced.resource) {
+        if (!resourcePolicy.interaction && resourcePolicy.readonly) {
+          resourcePolicy.interaction = ['search', 'read', 'history', 'vread'];
+        }
+        resourcePolicies.push(resourcePolicy);
+      }
     }
     if (replaced.ipAccessRule) {
-      ipAccessRules = ipAccessRules.concat(replaced.ipAccessRule);
+      ipAccessRules.push(...replaced.ipAccessRule);
     }
   }
 
-  if ((!membership.access || membership.access.length === 0) && !membership.accessPolicy) {
+  if (!membership?.access?.length && !membership.accessPolicy) {
     // Preserve legacy behavior of null access policy
     // TODO: This should be removed in future release when access policies are required
     resourcePolicies.push({ resourceType: '*' });
@@ -121,7 +149,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
     basedOn: access.map((a) => a.policy),
     compartment,
     resource: resourcePolicies,
-    ipAccessRule: ipAccessRules,
+    ipAccessRule: ipAccessRules.length ? ipAccessRules : undefined,
   };
 }
 
@@ -185,32 +213,20 @@ function addDefaultResourceTypes(resourcePolicies: AccessPolicyResource[]): void
 function applyProjectAdminAccessPolicy(
   project: Project,
   membership: ProjectMembership,
-  accessPolicy: AccessPolicy
-): AccessPolicy {
+  accessPolicy: PopulatedAccessPolicy
+): PopulatedAccessPolicy {
   if (project.superAdmin) {
-    // If the user is a super admin, then do not apply any additional access policy rules.
-    return accessPolicy;
-  }
-
-  if (accessPolicy) {
-    // If there is an existing access policy
-    // Remove any references to project admin resource types
+    for (const adminResourceType of projectAdminResourceTypes) {
+      if (!accessPolicy.resource.some((r) => r.resourceType === adminResourceType)) {
+        accessPolicy.resource.push({ resourceType: adminResourceType });
+      }
+    }
+  } else if (membership.admin) {
+    // If the user is a project admin,
+    // then grant limited access to the project admin resource types
     accessPolicy.resource = accessPolicy.resource?.filter(
       (r) => !projectAdminResourceTypes.includes(r.resourceType as string)
     );
-  }
-
-  if (membership.admin) {
-    // If the user is a project admin,
-    // then grant limited access to the project admin resource types
-    if (!accessPolicy) {
-      accessPolicy = { resourceType: 'AccessPolicy' };
-    }
-
-    if (!accessPolicy.resource) {
-      accessPolicy.resource = [{ resourceType: '*' }];
-    }
-
     accessPolicy.resource.push({
       resourceType: 'Project',
       criteria: `Project?_id=${resolveId(membership.project)}`,
@@ -229,7 +245,6 @@ function applyProjectAdminAccessPolicy(
 
     accessPolicy.resource.push({
       resourceType: 'ProjectMembership',
-      criteria: `ProjectMembership?project=${membership.project?.reference}`,
       readonlyFields: ['project', 'user'],
     });
 
@@ -245,10 +260,14 @@ function applyProjectAdminAccessPolicy(
 
     accessPolicy.resource.push({
       resourceType: 'User',
-      criteria: `User?project=${membership.project?.reference}`,
       hiddenFields: ['passwordHash', 'mfaSecret'],
       readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
     });
+  } else {
+    // Remove any references to project admin resource types
+    accessPolicy.resource = accessPolicy.resource?.filter(
+      (r) => !projectAdminResourceTypes.includes(r.resourceType as string)
+    );
   }
 
   return accessPolicy;

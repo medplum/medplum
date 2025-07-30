@@ -1,9 +1,11 @@
-import { Button, Group, Modal, NativeSelect, Stack, TextInput } from '@mantine/core';
+import { Group, Modal, NativeSelect, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { deepClone, normalizeErrorString } from '@medplum/core';
+import { deepClone, normalizeErrorString, WithId } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
+import { JSX } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 
 interface BookmarkDialogProps {
   readonly pathname: string;
@@ -11,16 +13,15 @@ interface BookmarkDialogProps {
   readonly visible: boolean;
   readonly onOk: () => void;
   readonly onCancel: () => void;
-  readonly defaultValue?: string;
 }
 export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
   const medplum = useMedplum();
-  const config = medplum.getUserConfiguration() as UserConfiguration;
+  const config = medplum.getUserConfiguration() as WithId<UserConfiguration>;
 
   function submitHandler(formData: Record<string, string>): void {
     const { menuname, bookmarkname: name } = formData;
     const target = `${props.pathname}?${props.searchParams.toString()}`;
-    const newConfig = deepClone(config) as UserConfiguration;
+    const newConfig = deepClone(config);
     const menu = newConfig.menu?.find(({ title }) => title === menuname);
 
     menu?.link?.push({ name, target });
@@ -50,9 +51,7 @@ export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
           <SelectMenu config={config}></SelectMenu>
           <TextInput label="Bookmark Name" type="text" name="bookmarkname" placeholder="Bookmark Name" withAsterisk />
           <Group justify="flex-end">
-            <Button mt="sm" type="submit">
-              OK
-            </Button>
+            <SubmitButton mt="sm">OK</SubmitButton>
           </Group>
         </Stack>
       </Form>

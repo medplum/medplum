@@ -55,7 +55,7 @@ It is important to note that a [`Condition`](/docs/api/fhir/resources/condition)
 
 In addition to representing diagnoses, the [`Condition`](/docs/api/fhir/resources/condition) resource also has some other uses that should be noted.
 
-The [`Condition`](/docs/api/fhir/resources/condition) resource should not be used when recording allergies. Instead, FHIR provides the more specific [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) resource.
+The [`Condition`](/docs/api/fhir/resources/condition) resource should not be used when recording allergies. Instead, FHIR provides the more specific [`AllergyIntolerance`](/docs/api/fhir/resources/allergyintolerance) resource. More information on how to represent allergies is included [here](/docs/charting/allergy-intolerances)
 
 Additionally, the [`Condition`](/docs/api/fhir/resources/condition) resource can also be used to record social factors. For example, if a patient is unemployed or living in poverty, that can be recorded as a [`Condition`](/docs/api/fhir/resources/condition).
 

@@ -1,4 +1,4 @@
-import { AgentReloadConfigResponse, OperationOutcomeError, badRequest, serverError } from '@medplum/core';
+import { AgentReloadConfigResponse, OperationOutcomeError, WithId, badRequest, serverError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, OperationDefinition } from '@medplum/fhirtypes';
 import { handleBulkAgentOperation, publishAgentRequest } from './utils/agentutils';
@@ -28,10 +28,10 @@ export const operation: OperationDefinition = {
  * @returns The FHIR response.
  */
 export async function agentReloadConfigHandler(req: FhirRequest): Promise<FhirResponse> {
-  return handleBulkAgentOperation(req, async (agent: Agent) => reloadConfig(agent));
+  return handleBulkAgentOperation(req, async (agent) => reloadConfig(agent));
 }
 
-async function reloadConfig(agent: Agent): Promise<FhirResponse> {
+async function reloadConfig(agent: WithId<Agent>): Promise<FhirResponse> {
   // Send agent message
   const [outcome, result] = await publishAgentRequest<AgentReloadConfigResponse>(
     agent,

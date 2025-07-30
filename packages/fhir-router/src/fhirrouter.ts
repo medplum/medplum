@@ -44,6 +44,7 @@ export type FhirRequestConfig = {
 
 export type FhirResponseOptions = {
   contentType?: string;
+  forceRawBinaryResponse?: boolean;
 };
 
 export type FhirResponse =
@@ -177,21 +178,21 @@ export async function createResourceImpl<T extends Resource>(
 // Read resource by ID
 async function readResourceById(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
-  const resource = await repo.readResource(resourceType, id);
+  const resource = await repo.readResource(resourceType as ResourceType, id);
   return [allOk, resource];
 }
 
 // Read resource history
 async function readHistory(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
-  const bundle = await repo.readHistory(resourceType, id);
+  const bundle = await repo.readHistory(resourceType as ResourceType, id);
   return [allOk, bundle];
 }
 
 // Read resource version by version ID
 async function readVersion(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id, vid } = req.params;
-  const resource = await repo.readVersion(resourceType, id, vid);
+  const resource = await repo.readVersion(resourceType as ResourceType, id, vid);
   return [allOk, resource];
 }
 
@@ -262,7 +263,23 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   if (!Array.isArray(patch)) {
     return [badRequest('Patch body must be an array')];
   }
-  const resource = await repo.patchResource(resourceType, id, patch);
+  const resource = await repo.patchResource(resourceType as ResourceType, id, patch);
+  return [allOk, resource];
+}
+
+// Conditional PATCH
+async function conditionalPatch(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+  const { resourceType } = req.params;
+  const patch = req.body as Operation[];
+  if (!patch) {
+    return [badRequest('Empty patch body')];
+  }
+  if (!Array.isArray(patch)) {
+    return [badRequest('Patch body must be an array')];
+  }
+
+  const search = parseSearchRequest(resourceType as ResourceType, req.query);
+  const resource = await repo.conditionalPatch(search, patch);
   return [allOk, resource];
 }
 
@@ -297,6 +314,7 @@ export class FhirRouter extends EventTarget {
     this.router.add('DELETE', ':resourceType/:id', deleteResource, { interaction: 'delete' });
     this.router.add('DELETE', ':resourceType', conditionalDelete, { interaction: 'delete' });
     this.router.add('PATCH', ':resourceType/:id', patchResource, { interaction: 'patch' });
+    this.router.add('PATCH', ':resourceType', conditionalPatch, { interaction: 'patch' });
     this.router.add('POST', '$graphql', graphqlHandler, { interaction: 'operation' });
   }
 

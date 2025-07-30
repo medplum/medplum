@@ -1,6 +1,6 @@
 import { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { blame } from '../utils/blame';

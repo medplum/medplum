@@ -1,6 +1,7 @@
-import { MedplumClient, parseLogLevel } from '@medplum/core';
+import { MedplumClient, normalizeErrorString, parseLogLevel, sleep } from '@medplum/core';
 import { existsSync, readFileSync } from 'node:fs';
 import { App } from './app';
+import { RETRY_WAIT_DURATION_MS } from './constants';
 
 interface Args {
   baseUrl: string;
@@ -46,7 +47,18 @@ export async function agentMain(argv: string[]): Promise<App> {
   const { baseUrl, clientId, clientSecret, agentId } = args;
 
   const medplum = new MedplumClient({ baseUrl, clientId });
-  await medplum.startClientLogin(clientId, clientSecret);
+
+  let loggedIn = false;
+  while (!loggedIn) {
+    try {
+      await medplum.startClientLogin(clientId, clientSecret);
+      loggedIn = true;
+    } catch (err) {
+      console.error('Failed to login', { err: normalizeErrorString(err) });
+      console.log('Retrying login in 10 seconds...');
+      await sleep(RETRY_WAIT_DURATION_MS);
+    }
+  }
 
   const app = new App(medplum, agentId, parseLogLevel(args.logLevel ?? 'INFO'));
   await app.start();

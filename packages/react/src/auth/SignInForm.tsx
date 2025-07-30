@@ -2,7 +2,7 @@ import { showNotification } from '@mantine/notifications';
 import { BaseLoginRequest, LoginAuthenticationResponse, normalizeErrorString } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { JSX, ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Document } from '../Document/Document';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
@@ -129,7 +129,17 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
             </AuthenticationForm>
           );
         } else if (mfaRequired) {
-          return <MfaForm login={login} handleAuthResponse={handleAuthResponse} />;
+          return (
+            <MfaForm
+              onSubmit={async (fields) => {
+                const res = await medplum.post('auth/mfa/verify', {
+                  login: login,
+                  token: fields.token,
+                });
+                handleAuthResponse(res);
+              }}
+            />
+          );
         } else if (memberships) {
           return <ChooseProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
         } else if (props.projectId === 'new') {

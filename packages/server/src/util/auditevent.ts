@@ -1,16 +1,18 @@
-import { createReference } from '@medplum/core';
+import { append, createReference, isResource } from '@medplum/core';
 import {
   AuditEvent,
   AuditEventAgentNetwork,
   AuditEventEntity,
   Coding,
+  Extension,
   Practitioner,
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
-import { MedplumServerConfig, getConfig } from '../config';
-import { CloudWatchLogger } from './cloudwatch';
+import { getConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
+import { CloudWatchLogger } from './cloudwatch';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.
@@ -66,8 +68,8 @@ export const RestfulOperationType: Coding = {
  * See: https://dicom.nema.org/medical/dicom/current/output/chtml/part16/chapter_D.html
  */
 
-export const LoginEvent: Coding = { system: DicomCodeSystem, code: '110122', display: 'Login' };
-export const LogoutEvent: Coding = { system: DicomCodeSystem, code: '110123', display: 'Logout' };
+export const LoginEvent = { system: DicomCodeSystem, code: '110122', display: 'Login' } as const;
+export const LogoutEvent = { system: DicomCodeSystem, code: '110123', display: 'Logout' } as const;
 
 /*
  * Restful interactions.
@@ -77,25 +79,25 @@ export const RestfulInteractions = {
   read: { system: RestfulActionCodeSystem, code: 'read', display: 'read' },
 };
 
-export const ReadInteraction: Coding = { system: RestfulActionCodeSystem, code: 'read', display: 'read' };
-export const VreadInteraction: Coding = { system: RestfulActionCodeSystem, code: 'vread', display: 'vread' };
-export const UpdateInteraction: Coding = { system: RestfulActionCodeSystem, code: 'update', display: 'update' };
-export const PatchInteraction: Coding = { system: RestfulActionCodeSystem, code: 'patch', display: 'patch' };
-export const DeleteInteraction: Coding = { system: RestfulActionCodeSystem, code: 'delete', display: 'delete' };
-export const HistoryInteraction: Coding = { system: RestfulActionCodeSystem, code: 'history', display: 'history' };
-export const CreateInteraction: Coding = { system: RestfulActionCodeSystem, code: 'create', display: 'create' };
-export const SearchInteraction: Coding = { system: RestfulActionCodeSystem, code: 'search', display: 'search' };
-export const BatchInteraction: Coding = { system: RestfulActionCodeSystem, code: 'batch', display: 'batch' };
-export const TransactionInteraction: Coding = {
+export const ReadInteraction = { system: RestfulActionCodeSystem, code: 'read', display: 'read' } as const;
+export const VreadInteraction = { system: RestfulActionCodeSystem, code: 'vread', display: 'vread' } as const;
+export const UpdateInteraction = { system: RestfulActionCodeSystem, code: 'update', display: 'update' } as const;
+export const PatchInteraction = { system: RestfulActionCodeSystem, code: 'patch', display: 'patch' } as const;
+export const DeleteInteraction = { system: RestfulActionCodeSystem, code: 'delete', display: 'delete' } as const;
+export const HistoryInteraction = { system: RestfulActionCodeSystem, code: 'history', display: 'history' } as const;
+export const CreateInteraction = { system: RestfulActionCodeSystem, code: 'create', display: 'create' } as const;
+export const SearchInteraction = { system: RestfulActionCodeSystem, code: 'search', display: 'search' } as const;
+export const BatchInteraction = { system: RestfulActionCodeSystem, code: 'batch', display: 'batch' } as const;
+export const TransactionInteraction = {
   system: RestfulActionCodeSystem,
   code: 'transaction',
   display: 'transaction',
-};
-export const OperationInteraction: Coding = {
+} as const;
+export const OperationInteraction = {
   system: RestfulActionCodeSystem,
   code: 'operation',
   display: 'operation',
-};
+} as const;
 
 /* eslint-disable @typescript-eslint/no-duplicate-type-constituents */
 export type AuditEventType = typeof UserAuthenticationEvent | typeof RestfulOperationType;
@@ -120,104 +122,75 @@ export type AuditEventSubtype =
  * AuditEvent action code.
  * See: https://www.hl7.org/fhir/valueset-audit-event-action.html
  */
-export enum AuditEventAction {
-  Create = 'C',
-  Read = 'R',
-  Update = 'U',
-  Delete = 'D',
-  Execute = 'E',
-}
+export const AuditEventAction = {
+  Create: 'C',
+  Read: 'R',
+  Update: 'U',
+  Delete: 'D',
+  Execute: 'E',
+} as const;
+export type AuditEventAction = (typeof AuditEventAction)[keyof typeof AuditEventAction];
 
-const AuditEventActionLookup: Record<string, 'C' | 'R' | 'U' | 'D' | 'E'> = {
+const AuditEventActionLookup: Record<AuditEventSubtype['code'], AuditEventAction | undefined> = {
   create: 'C',
   read: 'R',
   vread: 'R',
   history: 'R',
   search: 'R',
   update: 'U',
+  patch: 'U',
+  delete: 'D',
+  batch: undefined,
+  transaction: undefined,
+  operation: undefined,
+  110122: undefined,
+  110123: undefined,
 };
 
 /**
  * AuditEvent outcome code.
  * See: https://www.hl7.org/fhir/valueset-audit-event-outcome.html
  */
-export enum AuditEventOutcome {
-  Success = '0',
-  MinorFailure = '4',
-  SeriousFailure = '8',
-  MajorFailure = '12',
-}
+export const AuditEventOutcome = {
+  Success: '0',
+  MinorFailure: '4',
+  SeriousFailure: '8',
+  MajorFailure: '12',
+} as const;
+export type AuditEventOutcome = (typeof AuditEventOutcome)[keyof typeof AuditEventOutcome];
 
-export function logAuthEvent(
-  subtype: AuditEventSubtype,
-  projectId: string,
-  who: Reference | undefined,
-  remoteAddress: string | undefined,
-  outcome: AuditEventOutcome,
-  outcomeDesc?: string
-): AuditEvent {
-  const auditEvent = createAuditEvent(
-    UserAuthenticationEvent,
-    subtype,
-    projectId,
-    who,
-    remoteAddress,
-    outcome,
-    outcomeDesc
-  );
-  logAuditEvent(auditEvent);
-  return auditEvent;
-}
-
-export function logRestfulEvent(
-  subtype: AuditEventSubtype,
-  projectId: string,
-  who: Reference | undefined,
-  remoteAddress: string | undefined,
-  outcome: AuditEventOutcome,
-  outcomeDesc?: string,
-  resource?: Resource,
-  searchQuery?: string
-): AuditEvent {
-  const auditEvent = createAuditEvent(
-    RestfulOperationType,
-    subtype,
-    projectId,
-    who,
-    remoteAddress,
-    outcome,
-    outcomeDesc,
-    resource,
-    searchQuery
-  );
-  logAuditEvent(auditEvent);
-  return auditEvent;
-}
-
-function createAuditEvent(
+export function createAuditEvent(
   type: AuditEventType,
   subtype: AuditEventSubtype,
   projectId: string,
   who: Reference | undefined,
   remoteAddress: string | undefined,
   outcome: AuditEventOutcome,
-  outcomeDesc?: string,
-  resource?: Resource,
-  searchQuery?: string
+  options?: {
+    description?: string;
+    resource?: Resource | Reference;
+    searchQuery?: string;
+    durationMs?: number;
+  }
 ): AuditEvent {
   const config = getConfig();
 
   let entity: AuditEventEntity[] | undefined = undefined;
-  if (resource) {
-    entity = [{ what: createReference(resource) }];
-  }
-  if (searchQuery) {
-    entity = [{ query: searchQuery }];
+  if (options?.resource) {
+    const what: Reference = isResource(options.resource) ? createReference(options.resource) : options.resource;
+    entity = [{ what }];
+  } else if (options?.searchQuery) {
+    entity = [{ query: options.searchQuery }];
   }
 
   let network: AuditEventAgentNetwork | undefined = undefined;
   if (remoteAddress) {
     network = { address: remoteAddress, type: '2' };
+  }
+
+  let extension = buildTracingExtension();
+  if (options?.durationMs) {
+    extension = append(extension, buildDurationExtension(options.durationMs));
   }
 
   const auditEvent: AuditEvent = {
@@ -227,7 +200,7 @@ function createAuditEvent(
     },
     type,
     subtype: [subtype],
-    action: AuditEventActionLookup[subtype.code as string],
+    action: AuditEventActionLookup[subtype.code as keyof typeof AuditEventActionLookup],
     recorded: new Date().toISOString(),
     source: { observer: { identifier: { value: config.baseUrl } } },
     agent: [
@@ -238,9 +211,9 @@ function createAuditEvent(
       },
     ],
     outcome,
-    outcomeDesc,
+    outcomeDesc: options?.description,
     entity,
-    extension: buildTracingExtension(),
+    extension,
   };
 
   return auditEvent;
@@ -255,6 +228,13 @@ export function logAuditEvent(auditEvent: AuditEvent): void {
       console.log(JSON.stringify(auditEvent));
     }
   }
+}
+
+function buildDurationExtension(duration: number): Extension {
+  return {
+    url: 'https://medplum.com/fhir/StructureDefinition/durationMs',
+    valueInteger: Math.round(duration),
+  };
 }
 
 /** @deprecated */

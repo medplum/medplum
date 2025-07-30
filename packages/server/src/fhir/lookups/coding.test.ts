@@ -1,6 +1,6 @@
 import { CodeSystem } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';

@@ -1,7 +1,7 @@
 import { ActionIcon } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
 import { IconCircleMinus, IconCloudUpload } from '@tabler/icons-react';
-import { MouseEvent, useRef, useState } from 'react';
+import { JSX, MouseEvent, useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { killEvent } from '../utils/dom';
@@ -17,7 +17,7 @@ export interface AttachmentArrayInputProps {
 export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Element {
   const [values, setValues] = useState<Attachment[]>(props.defaultValue ?? []);
 
-  const valuesRef = useRef<Attachment[]>();
+  const valuesRef = useRef<Attachment[]>(values);
   valuesRef.current = values;
 
   function setValuesWrapper(newValues: Attachment[]): void {

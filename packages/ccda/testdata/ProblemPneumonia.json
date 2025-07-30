@@ -1,0 +1,239 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "Problem List",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "11450-4",
+                  "display": "Problem List"
+                }
+              ],
+              "text": "Problem List"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table><thead><tr><th>Name</th><th>Dates</th><th>Status</th></tr></thead><tbody><tr ID=\"Problem1\"><td>Community Acquired Pneumonia</td><td><content>Onset: February 27 2014</content></td><td>Active</td></tr></tbody></table></div>"
+            },
+            "entry": [
+              {
+                "reference": "Condition/102ca2e9-884c-4523-a2b4-1b6c3469c397",
+                "display": "Community acquired pneumonia"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "ce862cfe-6559-411e-92e9-e8d005b1c226",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": ["Katherine"]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "3dfd1be3-1806-48e9-86dd-7282b2cae74f",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "66666"
+          }
+        ],
+        "name": [
+          {
+            "family": "Sixer",
+            "given": ["Heartly"],
+            "suffix": ["MD"]
+          }
+        ],
+        "address": [
+          {
+            "line": ["6666 StreetName St."],
+            "city": "Silver Spring",
+            "state": "MD",
+            "postalCode": "20901",
+            "country": "US"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+1(301)666-6666"
+          }
+        ],
+        "qualification": [
+          {
+            "coding": [
+              {
+                "system": "http://nucc.org/provider-taxonomy",
+                "code": "207RC0000X",
+                "display": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
+              }
+            ],
+            "text": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "3dfd1be3-1806-48e9-86dd-7282b2cae74f",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "66666"
+          }
+        ],
+        "name": [
+          {
+            "family": "Sixer",
+            "given": ["Heartly"],
+            "suffix": ["MD"]
+          }
+        ],
+        "address": [
+          {
+            "line": ["6666 StreetName St."],
+            "city": "Silver Spring",
+            "state": "MD",
+            "postalCode": "20901",
+            "country": "US"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "value": "+1(301)666-6666"
+          }
+        ],
+        "qualification": [
+          {
+            "coding": [
+              {
+                "system": "http://nucc.org/provider-taxonomy",
+                "code": "207RC0000X",
+                "display": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
+              }
+            ],
+            "text": "Allopathic & Osteopathic Physicians; Internal Medicine, Cardiovascular Disease"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Condition",
+        "id": "102ca2e9-884c-4523-a2b4-1b6c3469c397",
+        "identifier": [
+          {
+            "system": "urn:oid:1.3.6.1.4.1.22812.4.111.0.4.1.2.1",
+            "value": "10241104348"
+          }
+        ],
+        "meta": {
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-verification",
+              "code": "confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "385093006",
+              "display": "Community acquired pneumonia"
+            }
+          ],
+          "text": "Community acquired pneumonia"
+        },
+        "subject": {
+          "reference": "Patient/ce862cfe-6559-411e-92e9-e8d005b1c226",
+          "display": "Katherine Madison"
+        },
+        "onsetDateTime": "2014-02-27T00:00:00Z",
+        "recordedDate": "2014-03-02T12:45:36-0500",
+        "recorder": {
+          "reference": "Practitioner/3dfd1be3-1806-48e9-86dd-7282b2cae74f",
+          "display": "Heartly Sixer MD"
+        },
+        "asserter": {
+          "reference": "Practitioner/3dfd1be3-1806-48e9-86dd-7282b2cae74f",
+          "display": "Heartly Sixer MD"
+        },
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Problem1"
+          }
+        ]
+      }
+    }
+  ]
+}

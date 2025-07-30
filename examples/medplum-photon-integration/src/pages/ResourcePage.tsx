@@ -2,8 +2,8 @@ import { Title } from '@mantine/core';
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceTable, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { JSX, useEffect, useState } from 'react';
+import { useParams } from 'react-router';
 
 /**
  * This is an example of a generic "Resource Display" page.

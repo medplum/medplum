@@ -1,4 +1,5 @@
 import { Center, Loader } from '@mantine/core';
+import { JSX } from 'react';
 
 export function Loading(): JSX.Element {
   return (

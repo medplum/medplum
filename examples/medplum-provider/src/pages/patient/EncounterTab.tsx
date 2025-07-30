@@ -1,4 +1,5 @@
 import { Group } from '@mantine/core';
+import { JSX } from 'react';
 import { SoapNote } from '../../components/soapnote/SoapNote';
 import { TaskList } from '../../components/tasks/TaskList';
 

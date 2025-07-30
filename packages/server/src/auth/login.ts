@@ -2,7 +2,7 @@ import { ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { getLogger } from '../context';
+import { getLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
@@ -41,6 +41,7 @@ export async function loginHandler(req: Request, res: Response): Promise<void> {
     remoteAddress: req.ip,
     userAgent: req.get('User-Agent'),
     allowNoMembership: req.body.projectId === 'new',
+    origin: req.get('Origin'),
   });
 
   getLogger().info('Login success', { email: req.body.email, projectId });

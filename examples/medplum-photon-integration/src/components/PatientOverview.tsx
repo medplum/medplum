@@ -1,6 +1,7 @@
 import { Title } from '@mantine/core';
 import { Document, ResourceTable } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { JSX } from 'react';
+import { useParams } from 'react-router';
 
 /*
  * You can combine Medplum components with plain HTML to quickly display patient data.

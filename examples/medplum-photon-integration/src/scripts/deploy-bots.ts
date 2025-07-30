@@ -1,8 +1,8 @@
-import { Bundle, BundleEntry } from '@medplum/fhirtypes';
-import path from 'path';
-import fs from 'fs';
-import { randomUUID } from 'crypto';
 import { ContentType } from '@medplum/core';
+import { Bundle, BundleEntry } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
+import fs from 'fs';
+import path from 'path';
 
 interface BotDescription {
   src: string;
@@ -30,6 +30,10 @@ const Bots: BotDescription[] = [
   {
     src: 'src/bots/sync-formulary.ts',
     dist: 'dist/bots/sync-formulary.js',
+  },
+  {
+    src: 'src/bots/sync-patient-from-photon.ts',
+    dist: 'dist/bots/sync-patient-from-photon.js',
   },
 ];
 

@@ -1,5 +1,6 @@
 import { Redis } from 'ioredis';
-import { MedplumServerConfig, loadTestConfig } from './config';
+import { loadTestConfig } from './config/loader';
+import { MedplumServerConfig } from './config/types';
 import { closeRedis, getRedis, getRedisSubscriber, getRedisSubscriberCount, initRedis } from './redis';
 
 describe('Redis', () => {

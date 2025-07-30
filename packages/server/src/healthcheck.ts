@@ -1,7 +1,6 @@
 import { MEDPLUM_VERSION } from '@medplum/core';
 import { Request, Response } from 'express';
 import os from 'node:os';
-import v8 from 'node:v8';
 import { Pool } from 'pg';
 import { DatabaseMode, getDatabasePool } from './database';
 import { RecordMetricOptions, setGauge } from './otel/otel';
@@ -14,26 +13,6 @@ const METRIC_IN_SECS_OPTIONS = { ...BASE_METRIC_OPTIONS, options: { unit: 's' } 
 export async function healthcheckHandler(_req: Request, res: Response): Promise<void> {
   const writerPool = getDatabasePool(DatabaseMode.WRITER);
   const readerPool = getDatabasePool(DatabaseMode.READER);
-
-  setGauge('medplum.db.idleConnections', writerPool.idleCount, {
-    ...BASE_METRIC_OPTIONS,
-    attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
-  });
-  setGauge('medplum.db.queriesAwaitingClient', writerPool.waitingCount, {
-    ...BASE_METRIC_OPTIONS,
-    attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
-  });
-
-  if (writerPool !== readerPool) {
-    setGauge('medplum.db.idleConnections', readerPool.idleCount, {
-      ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
-    });
-    setGauge('medplum.db.queriesAwaitingClient', readerPool.waitingCount, {
-      ...BASE_METRIC_OPTIONS,
-      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
-    });
-  }
 
   let startTime = Date.now();
   const postgresWriterOk = await testPostgres(writerPool);
@@ -57,21 +36,6 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   const redisOk = await testRedis();
   const redisRoundtripMs = Date.now() - startTime;
   setGauge('medplum.redis.healthcheckRTT', redisRoundtripMs / 1000, METRIC_IN_SECS_OPTIONS);
-
-  const heapStats = v8.getHeapStatistics();
-  setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size, BASE_METRIC_OPTIONS);
-
-  const heapSpaceStats = v8.getHeapSpaceStatistics();
-  setGauge(
-    'medplum.node.oldSpaceUsedSize',
-    heapSpaceStats.find((entry) => entry.space_name === 'old_space')?.space_used_size ?? -1,
-    BASE_METRIC_OPTIONS
-  );
-  setGauge(
-    'medplum.node.newSpaceUsedSize',
-    heapSpaceStats.find((entry) => entry.space_name === 'new_space')?.space_used_size ?? -1,
-    BASE_METRIC_OPTIONS
-  );
 
   res.json({
     ok: true,

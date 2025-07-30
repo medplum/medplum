@@ -1,5 +1,6 @@
 import { stringify } from '@medplum/core';
 import { Reference } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 export interface ReferenceDisplayProps {

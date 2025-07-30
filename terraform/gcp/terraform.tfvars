@@ -1,31 +1,52 @@
+#  This file is used to define variable values for the Terraform configuration, 
+# allowing customization of the infrastructure setup without modifying the main configuration files.
 
-# GCP project
-project_id = "medplum-zencore"
-region     = "us-west1"
-zone       = "us-west1-a"
+# GCP project configuration - Change these values to use your own project, domains, region, and zone
 
-services_api = [
-  "compute.googleapis.com",
-  "container.googleapis.com",
-  "servicenetworking.googleapis.com",
-  # "sql-component.googleapis.com",
-  # "sqladmin.googleapis.com",
-  # "logging.googleapis.com",
-  # "monitoring.googleapis.com",
+project_id     = "your-project-id"          # e.g. "medplum-project"
+region         = "your-region"              # e.g. "us-west1"
+zone           = "your-zone"                # e.g. "us-west1-a"
+app_domain     = "your-static-asset-domain" # e.g. "app.medplum.dev"
+storage_domain = "your-user-content-domain" # e.g. "storage.medplum.dev"
+
+# GKE Cluster configuration - local network CIDR block should be replaced with your own to be able to access the GKE master nodes
+
+master_authorized_networks = [
+  {
+    # cidr_block   = "[Your local network CIDR Block]/32"
+    display_name = "Local Network"
+  },
 ]
 
-# Common enforced labels
+# Common enforced labels - Change these values to use your own labels
 labels = {
-  env     = "prod"
-  purpose = "gke"
-  owner   = "medplum"
+  env     = "your-environment" # e.g., "dev", "staging", "prod"
+  purpose = "your-purpose"     # e.g., "gke", "web", "database"
+  owner   = "your-owner"       # e.g., "team-name", "project-owner"
 }
 
-## VPC's
-vpc_name = "medplum-gke-vpc"
 
-## Postgres
-pg_ha_name = "medplum-pg-ha"
-
-# Private Service
-psa_range = "192.168.30.0/24"
+## Default Buckets configuration
+gcs_buckets = {
+  medplum-storage = { # Bucket name
+    location                 = "US"
+    public_access_prevention = "enforced"
+  },
+  medplum-app = { # Bucket name
+    location = "US"
+    website = {
+      main_page_suffix = "index.html"
+      not_found_page   = "index.html"
+    }
+    cors = [{
+      origin          = ["*"]
+      method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]
+      response_header = ["*"]
+      max_age_seconds = 3600
+    }]
+    iam_members = [{
+      role   = "roles/storage.objectViewer"
+      member = "allUsers"
+    }]
+  }
+}

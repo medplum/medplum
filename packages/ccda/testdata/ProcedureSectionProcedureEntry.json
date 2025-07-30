@@ -1,0 +1,118 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "Procedures",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "47519-4",
+                  "display": "HISTORY OF PROCEDURES"
+                }
+              ],
+              "text": "HISTORY OF PROCEDURES"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table><thead><tr><th>Description</th><th>Date and Time (Range)</th><th>Status</th></tr></thead><tbody><tr ID=\"Procedure1\"><td ID=\"ProcedureDesc1\">Laparoscopic appendectomy</td><td>(03 Feb 2014 09:22am- 03 Feb 2014 11:15am)</td><td>Completed</td></tr></tbody></table></div>"
+            },
+            "entry": [
+              {
+                "reference": "Procedure/64af26d5-88ef-4169-ba16-c6ef16a1824f",
+                "display": "Laparoscopic appendectomy"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": ["Katherine"]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "64af26d5-88ef-4169-ba16-c6ef16a1824f",
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "6025007",
+              "display": "Laparoscopic appendectomy"
+            }
+          ],
+          "text": "Laparoscopic appendectomy"
+        },
+        "subject": {
+          "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
+          "display": "Katherine Madison"
+        },
+        "performedPeriod": {
+          "start": "2014-02-03T09:22:05-0700",
+          "end": "2014-02-03T11:15:14-0700"
+        },
+        "bodySite": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "181255000",
+                "display": "Entire appendix"
+              }
+            ],
+            "text": "Entire appendix"
+          }
+        ],
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Procedure1"
+          }
+        ]
+      }
+    }
+  ]
+}

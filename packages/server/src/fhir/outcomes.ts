@@ -1,4 +1,4 @@
-import { ContentType, getStatus, isAccepted } from '@medplum/core';
+import { ContentType, getStatus, isAccepted, isRedirect } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Response } from 'express';
 import { Result, ValidationError } from 'express-validator';
@@ -37,6 +37,12 @@ function getValidationErrorExpression(error: ValidationError): string[] | undefi
 export function sendOutcome(res: Response, outcome: OperationOutcome): Response {
   if (isAccepted(outcome) && outcome.issue?.[0].diagnostics) {
     res.set('Content-Location', outcome.issue[0].diagnostics);
+  }
+  if (isRedirect(outcome)) {
+    const uri = outcome.issue[0].details?.coding?.find((c) => c.system === 'urn:ietf:rfc:3986')?.code;
+    if (uri) {
+      res.set('Location', uri);
+    }
   }
   return res
     .status(getStatus(outcome))

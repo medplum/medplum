@@ -1,10 +1,11 @@
 import { OperationOutcome, Practitioner, Resource } from '@medplum/fhirtypes';
+import { encodeBase64Url } from './base64';
 import { FetchLike, MedplumClient } from './client';
 import { ContentType } from './contenttype';
 import { generateId } from './crypto';
 import { OperationOutcomeError, badRequest, getStatus, isOperationOutcome } from './outcomes';
 import { ReadablePromise } from './readablepromise';
-import { ProfileResource, ensureNoLeadingSlash } from './utils';
+import { ProfileResource, WithId, ensureNoLeadingSlash } from './utils';
 
 export function mockFetch(
   status: number,
@@ -98,16 +99,16 @@ export class MockMedplumClient extends MedplumClient {
     this.nextResourceId = 'DEFAULT_MOCK_ID';
   }
 
-  get<T = any>(url: string | URL, _options?: RequestInit): ReadablePromise<T> {
-    return new ReadablePromise<T>(Promise.resolve<T>(this.router.fetchRoute<T>('GET', url.toString())));
+  get<T = any>(url: string | URL, _options?: RequestInit): ReadablePromise<WithId<T>> {
+    return new ReadablePromise<WithId<T>>(Promise.resolve(this.router.fetchRoute<WithId<T>>('GET', url.toString())));
   }
 
   addNextResourceId(id: string): void {
     this.nextResourceId = id;
   }
 
-  createResource<T extends Resource = Resource>(resource: T, _options?: RequestInit): Promise<T> {
-    return Promise.resolve<T>({ ...resource, id: this.nextResourceId });
+  createResource<T extends Resource = Resource>(resource: T, _options?: RequestInit): Promise<WithId<T>> {
+    return Promise.resolve({ ...resource, id: this.nextResourceId });
   }
 
   setProfile(profile: Practitioner | undefined): void {
@@ -121,5 +122,5 @@ export class MockMedplumClient extends MedplumClient {
 }
 
 export function createFakeJwt(claims: Record<string, string | number>): string {
-  return 'header.' + window.btoa(JSON.stringify(claims)) + '.signature';
+  return 'header.' + encodeBase64Url(JSON.stringify(claims)) + '.signature';
 }

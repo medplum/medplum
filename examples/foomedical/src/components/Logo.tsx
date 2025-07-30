@@ -1,4 +1,5 @@
 import { useMantineTheme } from '@mantine/core';
+import { JSX } from 'react';
 
 export interface LogoProps {
   readonly width: number;

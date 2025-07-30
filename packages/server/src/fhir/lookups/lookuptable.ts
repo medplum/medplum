@@ -1,21 +1,26 @@
-import { Operator as FhirOperator, Filter, SortRule, splitSearchOnComma } from '@medplum/core';
+import { Operator as FhirOperator, Filter, SortRule, splitSearchOnComma, WithId } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
+import { getLogger } from '../../logger';
 import {
   Column,
   Condition,
   Conjunction,
   DeleteQuery,
   Disjunction,
+  escapeLikeString,
   Expression,
-  SqlFunction,
   InsertQuery,
   Negation,
   SelectQuery,
-  escapeLikeString,
+  SqlFunction,
 } from '../sql';
 
-export const lookupTableBatchSize = 5_000;
+const lookupTableBatchSize = 5_000;
+
+export interface LookupTableRow {
+  resourceId: string;
+}
 
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
@@ -48,12 +53,74 @@ export abstract class LookupTable {
   abstract isIndexed(searchParam: SearchParameter, resourceType: string): boolean;
 
   /**
+   * Extracts the specific values to be indexed from a resource for this table.
+   * @param result - The array that rows to be inserted should be added to.
+   * @param resource - The resource to extract values from.
+   */
+  protected abstract extractValues(result: LookupTableRow[], resource: WithId<Resource>): void;
+
+  /**
    * Indexes the resource in the lookup table.
    * @param client - The database client.
    * @param resource - The resource to index.
    * @param create - True if the resource should be created (vs updated).
+   * @returns Promise on completion.
    */
-  abstract indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void>;
+  indexResource(client: PoolClient, resource: WithId<Resource>, create: boolean): Promise<void> {
+    return this.batchIndexResources(client, [resource], create);
+  }
+
+  /**
+   * Indexes the resource in the lookup table.
+   * @param client - The database client.
+   * @param resources - The resources to index.
+   * @param create - True if the resource should be created (vs updated).
+   */
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
+    if (resources.length === 0) {
+      return;
+    }
+
+    const resourceType = resources[0].resourceType;
+
+    if (!create) {
+      await this.batchDeleteValuesForResources(client, resources);
+    }
+
+    // Batch at the resource level to avoid tying up the event loop for too long
+    // with synchronous work without any async breaks between DB calls.
+    const resourceBatchSize = 200;
+    for (let i = 0; i < resources.length; i += resourceBatchSize) {
+      const newRows: LookupTableRow[] = [];
+      for (let j = i; j < i + resourceBatchSize && j < resources.length; j++) {
+        const resource = resources[j];
+        if (resource.resourceType !== resourceType) {
+          throw new Error(
+            `batchIndexResources must be called with resources of the same type: ${resource.resourceType} vs ${resourceType}`
+          );
+        }
+        try {
+          this.extractValues(newRows, resource);
+        } catch (err) {
+          getLogger().error('Error extracting values for resource', {
+            resource: `${resourceType}/${resource.id}`,
+            err,
+          });
+          throw err;
+        }
+      }
+
+      if (newRows.length > 0) {
+        await this.insertValuesForResource(client, resourceType, newRows);
+      }
+    }
+  }
+
+  protected readonly CONTAINS_SQL_OPERATOR: 'ILIKE' | 'LOWER_LIKE' = 'LOWER_LIKE';
 
   /**
    * Builds a "where" condition for the select query builder.
@@ -80,7 +147,11 @@ export abstract class LookupTable {
         disjunction.expressions.push(new Condition(new Column(lookupTableName, columnName), '=', option.trim()));
       } else if (filter.operator === FhirOperator.CONTAINS) {
         disjunction.expressions.push(
-          new Condition(new Column(lookupTableName, columnName), 'LIKE', `%${escapeLikeString(option)}%`)
+          new Condition(
+            new Column(lookupTableName, columnName),
+            this.CONTAINS_SQL_OPERATOR,
+            `%${escapeLikeString(option)}%`
+          )
         );
       } else {
         disjunction.expressions.push(
@@ -99,14 +170,12 @@ export abstract class LookupTable {
     }
 
     const exists = new SqlFunction('EXISTS', [
-      new SelectQuery(lookupTableName)
-        .column('resourceId')
-        .whereExpr(
-          new Conjunction([
-            new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
-            disjunction,
-          ])
-        ),
+      new SelectQuery(lookupTableName).whereExpr(
+        new Conjunction([
+          new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+          disjunction,
+        ])
+      ),
     ]);
 
     if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
@@ -128,7 +197,7 @@ export abstract class LookupTable {
     const columnName = this.getColumnName(sortRule.code);
     const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
     selectQuery.join(
-      'INNER JOIN',
+      'LEFT JOIN',
       new SelectQuery(lookupTableName).distinctOn('resourceId').column('resourceId').column(columnName),
       joinName,
       joinOnExpression
@@ -145,7 +214,7 @@ export abstract class LookupTable {
   protected async insertValuesForResource(
     client: Pool | PoolClient,
     resourceType: ResourceType,
-    values: Record<string, any>[]
+    values: LookupTableRow[]
   ): Promise<void> {
     if (values.length === 0) {
       return;
@@ -165,7 +234,29 @@ export abstract class LookupTable {
    */
   async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
     const tableName = this.getTableName(resource.resourceType);
-    const resourceId = resource.id as string;
+    const resourceId = resource.id;
     await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
+  }
+
+  async batchDeleteValuesForResources<T extends Resource>(client: Pool | PoolClient, resources: T[]): Promise<void> {
+    const tableName = this.getTableName(resources[0].resourceType);
+    const resourceIds = resources.map((r) => r.id);
+    await new DeleteQuery(tableName).where('resourceId', 'IN', resourceIds).execute(client);
+  }
+
+  /**
+   * Purges resources of the specified type that were last updated before the specified date.
+   * This is only available to the system and super admin accounts.
+   * @param client - The database client.
+   * @param resourceType - The FHIR resource type.
+   * @param before - The date before which resources should be purged.
+   */
+  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+    const lookupTableName = this.getTableName(resourceType);
+    await new DeleteQuery(lookupTableName)
+      .using(resourceType)
+      .where(new Column(lookupTableName, 'resourceId'), '=', new Column(resourceType, 'id'))
+      .where(new Column(resourceType, 'lastUpdated'), '<', before)
+      .execute(client);
   }
 }

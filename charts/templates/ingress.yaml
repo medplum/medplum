@@ -1,0 +1,54 @@
+{{- if and (eq .Values.global.cloudProvider "gcp") (eq .Values.ingress.deploy true) }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "medplum.fullname" . }}
+  namespace: {{ include "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}
+  annotations:
+    ingressClassName: "gce"
+    kubernetes.io/ingress.global-static-ip-name: medplum-external-ip
+    networking.gke.io/managed-certificates: {{ include "medplum.fullname" . }}
+    networking.gke.io/v1beta1.FrontendConfig: {{ include "medplum.fullname" . }}
+spec:
+  rules:
+    - host: {{ .Values.ingress.domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "medplum.fullname" . }}-service
+                port:
+                  number: {{ .Values.service.port | default 80 }}
+{{- end }}
+
+{{- if and (eq .Values.global.cloudProvider "azure") (eq .Values.ingress.deploy true) }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "medplum.fullname" . }}
+  namespace: {{ include "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}
+spec:
+  tls:
+    - hosts:
+      - {{ .Values.ingress.domain }}
+      secretName: {{ .Values.ingress.tlsSecretName }}
+  ingressClassName: azure-application-gateway
+  rules:
+  - host: {{ .Values.ingress.domain }}
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: {{ include "medplum.fullname" . }}-service
+            port:
+              number: {{ .Values.service.port | default 80 }}
+
+{{- end }}

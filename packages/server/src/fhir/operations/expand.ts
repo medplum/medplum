@@ -1,4 +1,4 @@
-import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
+import { allOk, badRequest, OperationOutcomeError, WithId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   CodeSystem,
@@ -9,22 +9,22 @@ import {
   ValueSetComposeIncludeFilter,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
-import { getAuthenticatedContext, getLogger } from '../../context';
-import { DatabaseMode, getDatabasePool } from '../../database';
+import { getAuthenticatedContext } from '../../context';
+import { DatabaseMode } from '../../database';
+import { getLogger } from '../../logger';
 import {
   Column,
   Condition,
   Conjunction,
   Disjunction,
   escapeLikeString,
-  Expression,
   Parameter,
   SelectQuery,
   SqlFunction,
 } from '../sql';
 import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
-import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
+import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 import {
   abstractProperty,
   addDescendants,
@@ -45,15 +45,12 @@ type ValueSetExpandParameters = {
   valueSet?: ValueSet;
 };
 
-// Implements FHIR "Value Set Expansion"
-// https://www.hl7.org/fhir/operation-valueset-expand.html
-
-// Currently only supports a limited subset
-// 1) The "url" parameter to identify the value set
-// 2) The "filter" parameter for text search
-// 3) Optional offset for pagination (default is zero for beginning)
-// 4) Optional count for pagination (default is 10, can be 1-1000)
-
+/**
+ * Implements FHIR ValueSet expansion.
+ * @see https://www.hl7.org/fhir/operation-valueset-expand.html
+ * @param req - The incoming request.
+ * @returns The server response.
+ */
 export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<ValueSetExpandParameters>(operation, req);
 
@@ -76,134 +73,12 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
     valueSet = await findTerminologyResource<ValueSet>('ValueSet', url);
   }
 
-  let offset = 0;
-  if (params.offset) {
-    offset = Math.max(0, params.offset);
+  if (params.filter && !params.count) {
+    params.count = 10; // Default to small page size for typeahead queries
   }
-
-  let result: ValueSet;
-  if (shouldUseLegacyTable()) {
-    let count = 10;
-    if (params.count) {
-      count = clamp(params.count, 1, 1000);
-    }
-
-    const elements = await queryValueSetElements(valueSet, offset, count, filter);
-    result = {
-      resourceType: 'ValueSet',
-      url: valueSet.url,
-      expansion: {
-        offset,
-        contains: elements,
-      },
-    } as ValueSet;
-  } else {
-    if (params.filter && !params.count) {
-      params.count = 10; // Default to small page size for typeahead queries
-    }
-    result = await expandValueSet(valueSet, params);
-  }
+  const result = await expandValueSet(valueSet, params);
 
   return [allOk, buildOutputParameters(operation, result)];
-}
-
-function shouldUseLegacyTable(): boolean {
-  const ctx = getAuthenticatedContext();
-  return !ctx.project.features?.includes('terminology');
-}
-
-async function queryValueSetElements(
-  valueSet: ValueSet,
-  offset: number,
-  count: number,
-  filter?: string
-): Promise<ValueSetExpansionContains[]> {
-  // Build a collection of all systems to include
-  const systemExpressions = buildValueSetSystems(valueSet);
-  if (systemExpressions.length === 0) {
-    throw new OperationOutcomeError(badRequest('No systems found'));
-  }
-
-  const client = getDatabasePool(DatabaseMode.READER);
-  const query = new SelectQuery('ValueSetElement')
-    .distinctOn('system')
-    .distinctOn('code')
-    .distinctOn('display')
-    .column('system')
-    .column('code')
-    .column('display')
-    .whereExpr(new Disjunction(systemExpressions))
-    .orderBy('display')
-    .offset(offset)
-    .limit(count);
-
-  query.where('display', 'TSVECTOR_ENGLISH', filter);
-
-  const rows = await query.execute(client);
-  const elements = rows.map((row) => ({
-    system: row.system,
-    code: row.code,
-    display: row.display ?? undefined, // if display is NULL, we want to filter it out before sending this to the client
-  })) as ValueSetExpansionContains[];
-
-  return elements;
-}
-
-function buildValueSetSystems(valueSet: ValueSet): Expression[] {
-  const result: Expression[] = [];
-  if (valueSet.compose?.include) {
-    for (const include of valueSet.compose.include) {
-      processInclude(result, include);
-    }
-  } else if (valueSet.expansion?.contains) {
-    processExpansion(result, valueSet.expansion.contains);
-  }
-  return result;
-}
-
-function processInclude(systemExpressions: Expression[], include: ValueSetComposeInclude): void {
-  if (!include.system) {
-    return;
-  }
-
-  const systemExpression = new Condition('system', '=', include.system);
-
-  if (include.concept) {
-    const codeExpressions: Expression[] = [];
-    for (const concept of include.concept) {
-      codeExpressions.push(new Condition('code', '=', concept.code));
-    }
-    systemExpressions.push(new Conjunction([systemExpression, new Disjunction(codeExpressions)]));
-  } else {
-    systemExpressions.push(systemExpression);
-  }
-}
-
-function processExpansion(systemExpressions: Expression[], expansionContains: ValueSetExpansionContains[]): void {
-  if (!expansionContains) {
-    return;
-  }
-
-  const systemToConcepts: Record<string, ValueSetExpansionContains[]> = Object.create(null);
-
-  for (const code of expansionContains) {
-    if (!code.system) {
-      continue;
-    }
-    if (!(code.system in systemToConcepts)) {
-      systemToConcepts[code.system] = [];
-    }
-    systemToConcepts[code.system].push(code);
-  }
-
-  for (const [system, concepts] of Object.entries(systemToConcepts)) {
-    const systemExpression = new Condition('system', '=', system);
-    const codeExpressions: Expression[] = [];
-    for (const concept of concepts) {
-      codeExpressions.push(new Condition('code', '=', concept.code));
-    }
-    systemExpressions.push(new Conjunction([systemExpression, new Disjunction(codeExpressions)]));
-  }
 }
 
 const MAX_EXPANSION_SIZE = 1000;
@@ -271,7 +146,7 @@ export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandP
 async function computeExpansion(
   valueSet: ValueSet,
   params: ValueSetExpandParameters,
-  terminologyResources: Record<string, CodeSystem | ValueSet> = Object.create(null)
+  terminologyResources: Record<string, WithId<CodeSystem> | WithId<ValueSet>> = Object.create(null)
 ): Promise<ValueSetExpansionContains[]> {
   const preExpansion = valueSet.expansion;
   if (
@@ -324,7 +199,7 @@ async function computeExpansion(
     }
 
     const codeSystem =
-      (terminologyResources[include.system] as CodeSystem) ??
+      (terminologyResources[include.system] as WithId<CodeSystem>) ??
       (await findTerminologyResource('CodeSystem', include.system));
     terminologyResources[include.system] = codeSystem;
 
@@ -417,14 +292,14 @@ export function expansionQuery(
             query = addDescendants(query, codeSystem, condition.value);
           }
           if (condition.op !== 'is-a') {
-            query.where('code', '!=', condition.value);
+            query.where(new Column(query.tableName, 'code'), '!=', condition.value);
           }
           break;
         case '=':
-          query = addPropertyFilter(query, condition.property, '=', condition.value);
+          query = addPropertyFilter(query, condition.property, '=', condition.value, codeSystem);
           break;
         case 'in':
-          query = addPropertyFilter(query, condition.property, 'IN', condition.value.split(','));
+          query = addPropertyFilter(query, condition.property, 'IN', condition.value.split(','), codeSystem);
           break;
         default:
           getLogger().warn('Unknown filter type in ValueSet', { filter: condition });
@@ -444,11 +319,11 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
     query
       .whereExpr(
         new Disjunction([
-          new Condition('code', '=', params.filter),
+          new Condition(new Column('Coding', 'code'), '=', params.filter),
           new Conjunction(
             params.filter
               .split(/\s+/g)
-              .map((filter) => new Condition('display', 'LIKE', `%${escapeLikeString(filter)}%`))
+              .map((filter) => new Condition('display', 'LOWER_LIKE', `%${escapeLikeString(filter)}%`))
           ),
         ])
       )

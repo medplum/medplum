@@ -59,11 +59,7 @@ export async function updateConfigCommand(tag: string, options: UpdateConfigOpti
     if (options.dryrun) {
       console.log(color.yellow('Dry run - skipping updates!'));
     } else if (options.yes || (await yesOrNo('Do you want to store these values in AWS Parameter Store?'))) {
-      await writeParameters(
-        infraConfig.region,
-        `/medplum/${infraConfig.name}/`,
-        serverConfig as Record<string, string | number>
-      );
+      await writeParameters(infraConfig.region, `/medplum/${infraConfig.name}/`, serverConfig);
     }
   } finally {
     closeTerminal();

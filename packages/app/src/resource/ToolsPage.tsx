@@ -1,12 +1,23 @@
-import { ActionIcon, Button, Divider, Group, Modal, NumberInput, Table, TextInput, Title } from '@mantine/core';
+import {
+  ActionIcon,
+  Button,
+  Checkbox,
+  Divider,
+  Group,
+  Modal,
+  NumberInput,
+  Table,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ContentType, fetchLatestVersionString, formatDateTime, normalizeErrorString } from '@medplum/core';
 import { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
 import { Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
 import { IconCheck, IconRouter } from '@tabler/icons-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { JSX, useCallback, useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router';
 
 type UpgradeConfirmContentProps = {
   readonly opened: boolean;
@@ -14,18 +25,19 @@ type UpgradeConfirmContentProps = {
   readonly version: string | undefined;
   readonly loadingStatus: boolean;
   readonly handleStatus: () => void;
-  readonly handleUpgrade: () => void;
+  readonly handleUpgrade: (force: boolean) => void;
 };
 
 function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
   const { opened, close, version, loadingStatus, handleStatus, handleUpgrade } = props;
 
   const [latestVersionString, setLatestVersionString] = useState<string>();
+  const [shouldForceUpgrade, setShouldForceUpgrade] = useState(false);
 
   useEffect(() => {
     if (opened) {
       if (!latestVersionString) {
-        fetchLatestVersionString().then(setLatestVersionString).catch(console.error);
+        fetchLatestVersionString('app-tools-page').then(setLatestVersionString).catch(console.error);
       }
       handleStatus();
     }
@@ -52,15 +64,18 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
       <p>
         Are you sure you want to upgrade this agent from version {version} to version {latestVersionString}?
       </p>
-      <Button
-        onClick={() => {
-          handleUpgrade();
-          close();
-        }}
-        aria-label="Confirm upgrade"
-      >
-        Confirm Upgrade
-      </Button>
+      <Group>
+        <Button
+          onClick={() => {
+            handleUpgrade(shouldForceUpgrade);
+            close();
+          }}
+          aria-label="Confirm upgrade"
+        >
+          Confirm Upgrade
+        </Button>
+        <Checkbox label="Force" onChange={(e) => setShouldForceUpgrade(e.currentTarget.checked)} />
+      </Group>
     </>
   );
 }
@@ -129,16 +144,19 @@ export function ToolsPage(): JSX.Element | null {
       .finally(() => setReloadingConfig(false));
   }, [medplum, id]);
 
-  const handleUpgrade = useCallback(() => {
-    setUpgrading(true);
-    medplum
-      .get(medplum.fhirUrl('Agent', id, '$upgrade'), { cache: 'reload' })
-      .then((_result: Bundle<Parameters>) => {
-        showSuccess('Agent upgraded successfully.');
-      })
-      .catch((err) => showError(normalizeErrorString(err)))
-      .finally(() => setUpgrading(false));
-  }, [medplum, id]);
+  const handleUpgrade = useCallback(
+    (force: boolean) => {
+      setUpgrading(true);
+      medplum
+        .get(medplum.fhirUrl('Agent', id, '$upgrade', `?force=${force}`), { cache: 'reload' })
+        .then((_result: Bundle<Parameters>) => {
+          showSuccess('Agent upgraded successfully.');
+        })
+        .catch((err) => showError(normalizeErrorString(err)))
+        .finally(() => setUpgrading(false));
+    },
+    [medplum, id]
+  );
 
   function showSuccess(message: string): void {
     showNotification({

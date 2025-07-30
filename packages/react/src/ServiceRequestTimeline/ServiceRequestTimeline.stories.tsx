@@ -1,5 +1,6 @@
 import { HomerServiceRequest } from '@medplum/mock';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { ServiceRequestTimeline } from './ServiceRequestTimeline';
 

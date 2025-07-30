@@ -7,11 +7,12 @@ import {
   Resource,
   ResourceType,
   SearchParameter,
+  StructureDefinition,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 import { SearchParameterDetails } from './search/details';
 import { InternalSchemaElement, InternalTypeSchema, getAllDataTypes, tryGetDataType } from './typeschema/types';
-import { capitalize, createReference, flatMapFilter } from './utils';
+import { capitalize, getReferenceString, isResourceWithId } from './utils';
 
 export type TypeName<T> = T extends string
   ? 'string'
@@ -151,12 +152,12 @@ export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): voi
   }
 }
 
-export function indexDefaultSearchParameters(bundle: Bundle): void {
-  const sds =
-    flatMapFilter(bundle.entry, (e) => (e.resource?.resourceType === 'StructureDefinition' ? e.resource : undefined)) ??
-    [];
-  for (const sd of sds) {
-    getOrInitTypeSchema(sd.type);
+export function indexDefaultSearchParameters(bundle: StructureDefinition[] | Bundle): void {
+  const maybeSDs = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource) ?? []);
+  for (const sd of maybeSDs) {
+    if (sd?.resourceType === 'StructureDefinition' && sd.kind === 'resource') {
+      getOrInitTypeSchema(sd.type);
+    }
   }
 }
 
@@ -169,7 +170,8 @@ function getOrInitTypeSchema(resourceType: string): TypeInfo {
     globalSchema.types[resourceType] = typeSchema;
   }
 
-  if (!typeSchema.searchParams) {
+  // Binary has no search parameters; not even those inherited from Resource
+  if (!typeSchema.searchParams && resourceType !== 'Binary') {
     typeSchema.searchParams = {
       _id: {
         base: [resourceType],
@@ -417,16 +419,35 @@ export function getElementDefinitionFromElements(
 }
 
 /**
- * Typeguard to validate that an object is a FHIR resource
- * @param value - The object to check
- * @returns True if the input is of type 'object' and contains property 'resourceType'
+ * Returns true if the value is a TypedValue.
+ * @param value - The unknown value to check.
+ * @returns True if the value is a TypedValue.
  */
-export function isResource(value: unknown): value is Resource {
-  return !!(value && typeof value === 'object' && 'resourceType' in value);
+export function isTypedValue(value: unknown): value is TypedValue {
+  return !!(value && typeof value === 'object' && 'type' in value && 'value' in value);
 }
 
 /**
- * Typeguard to validate that an object is a FHIR resource
+ * Type guard to validate that an object is a FHIR resource
+ * @param value - The object to check
+ * @param resourceType - Checks that the resource is of the given type
+ * @returns True if the input is of type 'object' and contains property 'resourceType'
+ */
+export function isResource<T extends Resource>(value: unknown, resourceType?: T['resourceType']): value is T {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  if (!('resourceType' in value)) {
+    return false;
+  }
+  if (resourceType && value.resourceType !== resourceType) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Type guard to validate that an object is a FHIR reference
  * @param value - The object to check
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
@@ -492,8 +513,8 @@ export function stringifyTypedValue(v: TypedValue): string {
     case PropertyType.Reference:
       return v.value.reference;
     default:
-      if (isResource(v.value)) {
-        return createReference(v.value).reference;
+      if (isResourceWithId(v.value)) {
+        return getReferenceString(v.value);
       }
       return JSON.stringify(v);
   }

@@ -1,4 +1,4 @@
-import { Context } from 'react';
+import { Context, JSX } from 'react';
 
 export function maybeWrapWithContext<T>(
   ContextProvider: Context<T>['Provider'],

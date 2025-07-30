@@ -47,6 +47,7 @@ describe('FHIR resource validation', () => {
   let medplumBundle: Bundle;
   let observationProfile: StructureDefinition;
   let patientProfile: StructureDefinition;
+  let smokingStatusProfile: StructureDefinition;
 
   beforeAll(() => {
     console.log = jest.fn();
@@ -63,6 +64,9 @@ describe('FHIR resource validation', () => {
       readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')
     );
     patientProfile = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-patient.json'), 'utf8'));
+    smokingStatusProfile = JSON.parse(
+      readFileSync(resolve(__dirname, '__test__', 'us-core-smoking-status.json'), 'utf8')
+    );
   });
 
   test('Invalid resource', () => {
@@ -110,6 +114,14 @@ describe('FHIR resource validation', () => {
       birthDate: 'Aug 14, 1949',
     };
     expect(() => validateResource(invalidFormat)).toThrow();
+  });
+
+  test('Invalid string size', () => {
+    const bigString: Patient = {
+      resourceType: 'Patient',
+      name: [{ text: 'John Jacob Jingleheimer-Schmidt'.repeat(50_000) }],
+    };
+    expect(() => validateResource(bigString)).toThrow('String cannot be larger than 1 MB (Patient.name[0].text)');
   });
 
   test('Invalid numeric value', () => {
@@ -866,6 +878,44 @@ describe('FHIR resource validation', () => {
     }
   });
 
+  test('Empty object', () => {
+    const p1: Patient = { resourceType: 'Patient', maritalStatus: { text: 'Single' } };
+    const p2: Patient = { resourceType: 'Patient', maritalStatus: {} };
+
+    expect(() => validateResource(p1)).not.toThrow();
+    expect(() => validateResource(p2)).not.toThrow();
+  });
+
+  test('Empty object in array element', () => {
+    const p1: Patient = { resourceType: 'Patient', address: [] };
+    const p3: Patient = { resourceType: 'Patient', address: [{}, { use: 'home' }, {}] };
+    const p2: Patient = { resourceType: 'Patient', address: [{}] };
+
+    expect(() => validateResource(p1)).not.toThrow();
+
+    try {
+      validateResource(p2);
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.length).toBe(1);
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.address[0]');
+    }
+
+    try {
+      validateResource(p3);
+      fail('Expected error');
+    } catch (err) {
+      const outcome = (err as OperationOutcomeError).outcome;
+      expect(outcome.issue?.length).toBe(2);
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.address[0]');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Patient.address[2]');
+    }
+  });
+
   test('Deep nested null array element', () => {
     try {
       validateResource({
@@ -1084,6 +1134,15 @@ describe('FHIR resource validation', () => {
     expect(() => validateResource(acct)).toThrow('String must contain non-whitespace content (Account.name)');
 
     acct.name = 'test';
+    expect(() => validateResource(acct)).not.toThrow();
+
+    acct.name = 'Invalid controls character \x00 \x01 \x0B \x1F are not allowed';
+    expect(() => validateResource(acct)).toThrow();
+
+    acct.name = 'Valid controls characters \x09 \x0A \x0D \x20 \x21 are allowed';
+    expect(() => validateResource(acct)).not.toThrow();
+
+    acct.name = 'High unicode characters \uFFFF \u1234 are allowed';
     expect(() => validateResource(acct)).not.toThrow();
   });
 
@@ -1506,6 +1565,56 @@ describe('FHIR resource validation', () => {
     expect(issues[0].details?.text).toContain('Invalid reference');
   });
 
+  test('Contained reference type check', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: { reference: '#patient' },
+      contained: [
+        {
+          resourceType: 'Patient',
+          id: 'patient',
+          birthDate: '1949-08-14',
+        },
+      ],
+    };
+
+    // Contained references should not generate validation warnings
+    const issues = validateResource(observation);
+    expect(issues).toHaveLength(0);
+  });
+
+  test('Conditional reference type check', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      subject: { reference: 'Patient?identifier=http://example.com/mrn|12345' },
+    };
+
+    // Conditional references should still validate the resource type
+    const issues = validateResource(observation);
+    expect(issues).toHaveLength(0);
+  });
+
+  test('Invalid conditional reference type check', () => {
+    const observation: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'test' },
+      // subject should reference a Patient, not an Organization
+      subject: { reference: 'Organization?identifier=http://example.com/id|123' },
+    };
+
+    // Conditional references should still validate the resource type
+    const issues = validateResource(observation);
+    expect(issues).toHaveLength(1);
+    expect(issues[0].severity).toBe('warning');
+    expect(issues[0].details?.text).toContain('Invalid reference');
+    expect(issues[0].details?.text).toContain('Organization');
+  });
+
   test('Nested recursive properties', () => {
     const consent: Consent = {
       resourceType: 'Consent',
@@ -1737,6 +1846,22 @@ describe('FHIR resource validation', () => {
         )
       )
     );
+  });
+
+  test('US Core Smoking Status profile', () => {
+    const resource: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      category: [
+        { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'social-history' }] },
+      ],
+      code: { coding: [{ system: LOINC, code: '72166-2' }] },
+      effectivePeriod: { start: '2020-01-01' },
+      valueCodeableConcept: { text: 'Pipe smoker' },
+      subject: { reference: 'urn:uuid:8c45961c-26fa-42d3-91e1-2d1acba74748' },
+    };
+
+    expect(() => validateResource(resource, { profile: smokingStatusProfile })).not.toThrow();
   });
 });
 

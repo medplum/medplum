@@ -1,5 +1,6 @@
 import { Stack, Title } from '@mantine/core';
 import { Coverage } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { DeleteCoverage } from './DeleteCoverage';
 import { EditCoverage } from './EditCoverage';
 import { InitiateEligibilityRequest } from './InitiateEligibilityRequest';

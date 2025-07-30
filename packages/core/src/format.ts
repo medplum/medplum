@@ -9,10 +9,12 @@ import {
   Period,
   Quantity,
   Range,
+  Reference,
   Timing,
   TimingRepeat,
 } from '@medplum/fhirtypes';
-import { capitalize } from './utils';
+import { TypedValue } from './types';
+import { capitalize, stringify } from './utils';
 
 export interface AddressFormatOptions {
   all?: boolean;
@@ -28,12 +30,57 @@ export interface HumanNameFormatOptions {
 }
 
 /**
+ * Converts a typed value to a string.
+ * @param typedValue - The typed value to convert to a string.
+ * @returns The string representation of the typed value.
+ */
+export function typedValueToString(typedValue: TypedValue | undefined): string {
+  if (!typedValue) {
+    return '';
+  }
+  switch (typedValue.type) {
+    case 'Address':
+      return formatAddress(typedValue.value);
+    case 'CodeableConcept':
+      return formatCodeableConcept(typedValue.value);
+    case 'Coding':
+      return formatCoding(typedValue.value);
+    case 'ContactPoint':
+      return typedValue.value.value;
+    case 'HumanName':
+      return formatHumanName(typedValue.value);
+    case 'Quantity':
+      return formatQuantity(typedValue.value);
+    case 'Reference':
+      return formatReferenceString(typedValue.value);
+    default:
+      return typedValue.value.toString();
+  }
+}
+
+/**
+ * Formats a FHIR Reference as a string.
+ * @param value - The reference to format.
+ * @returns The formatted reference string.
+ */
+export function formatReferenceString(value: Reference | undefined): string {
+  if (!value) {
+    return '';
+  }
+  return value.display ?? value.reference ?? stringify(value);
+}
+
+/**
  * Formats a FHIR Address as a string.
  * @param address - The address to format.
  * @param options - Optional address format options.
  * @returns The formatted address string.
  */
-export function formatAddress(address: Address, options?: AddressFormatOptions): string {
+export function formatAddress(address: Address | undefined, options?: AddressFormatOptions): string {
+  if (!address) {
+    return '';
+  }
+
   const builder = [];
 
   if (address.line) {
@@ -67,7 +114,11 @@ export function formatAddress(address: Address, options?: AddressFormatOptions):
  * @param options - Optional name format options.
  * @returns The formatted name string.
  */
-export function formatHumanName(name: HumanName, options?: HumanNameFormatOptions): string {
+export function formatHumanName(name: HumanName | undefined, options?: HumanNameFormatOptions): string {
+  if (!name) {
+    return '';
+  }
+
   const builder = [];
 
   if (name.prefix && options?.prefix !== false) {

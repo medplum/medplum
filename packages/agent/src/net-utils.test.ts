@@ -67,7 +67,7 @@ describe('Agent Net Utils', () => {
       });
 
       // Start the app
-      app = new App(medplum, agent.id as string, LogLevel.INFO);
+      app = new App(medplum, agent.id, LogLevel.INFO);
       await app.start();
 
       // Wait for the WebSocket to connect
@@ -323,7 +323,7 @@ describe('Agent Net Utils', () => {
       });
 
       // Start the app
-      app = new App(medplum, agent.id as string, LogLevel.INFO);
+      app = new App(medplum, agent.id, LogLevel.INFO);
       await app.start();
 
       // Wait for the WebSocket to connect

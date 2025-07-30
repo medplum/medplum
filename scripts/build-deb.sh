@@ -29,6 +29,7 @@ NGINX_SITES_AVAILABLE_DIR="$TMP_DIR/etc/nginx/sites-available"
 MEDPLUM_BASE_URL="__MEDPLUM_BASE_URL__"
 MEDPLUM_CLIENT_ID="__MEDPLUM_CLIENT_ID__"
 MEDPLUM_REGISTER_ENABLED="__MEDPLUM_REGISTER_ENABLED__"
+MEDPLUM_AWS_TEXTRACT_ENABLED="__MEDPLUM_AWS_TEXTRACT_ENABLED__"
 GOOGLE_CLIENT_ID="__GOOGLE_CLIENT_ID__"
 RECAPTCHA_SITE_KEY="__RECAPTCHA_SITE_KEY__"
 
@@ -41,7 +42,7 @@ rm -rf "$TMP_DIR"
 rm -rf "$SERVICE_NAME-$VERSION.deb"
 
 # Copy package files
-PACKAGES=("app" "core" "definitions" "fhir-router" "react" "react-hooks" "server")
+PACKAGES=("app" "ccda" "core" "definitions" "fhirtypes" "fhir-router" "react" "react-hooks" "server")
 for package in ${PACKAGES[@]}; do
   echo "Copy $package"
   mkdir -p "$LIB_DIR/packages/$package"
@@ -51,6 +52,7 @@ done
 
 # Copy root package.json
 cp package.json "$LIB_DIR"
+cp package-lock.json "$LIB_DIR"
 
 # Create the server config
 mkdir -p "$ETC_DIR"
@@ -65,7 +67,7 @@ echo "Medplum data files" > "$VAR_DIR/README.txt"
 pushd "$LIB_DIR"
 
 # Install dependencies
-npm i --omit=dev --omit=optional --omit=peer --maxsockets 1
+npm ci --omit=dev --omit=optional --omit=peer
 
 # Move back to the original directory
 popd
@@ -122,18 +124,13 @@ server {
     root /usr/lib/medplum/packages/app/dist;
     index index.html;
 
-    # Enable sub_filter for JavaScript files
-    sub_filter_types application/javascript;  # Enable for JS files
-    sub_filter '__MEDPLUM_BASE_URL__' 'https://api.nginx.medplum.dev';  # Replace with actual URL
-    sub_filter_once off;  # Replace all occurrences, not just the first
-
     # Gzip compression
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 
     # Main location block
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files \$uri \$uri/ /index.html;
     }
 
     # HTML files should not be cached (for SPA routing)
@@ -272,6 +269,16 @@ DB_HOST="\$RET"
 db_get medplum/db_password
 DB_PASSWORD="\$RET"
 
+# Update the app config
+# Recursively apply to all text files in the app dist directory
+find "/usr/lib/medplum/packages/app/dist" -type f -exec sed -i \
+  -e "s|__MEDPLUM_BASE_URL__|https://\${SERVER_HOSTNAME}/|g" \
+  -e "s|__MEDPLUM_CLIENT_ID__|\${MEDPLUM_CLIENT_ID}|g" \
+  -e "s|__GOOGLE_CLIENT_ID__|\${GOOGLE_CLIENT_ID}|g" \
+  -e "s|__RECAPTCHA_SITE_KEY__|\${RECAPTCHA_SITE_KEY}|g" \
+  -e "s|__MEDPLUM_REGISTER_ENABLED__|\${MEDPLUM_REGISTER_ENABLED}|g" \
+  {} \;
+
 # Update the server config
 if [ -f /etc/medplum/medplum.config.json ]; then
     # Update baseUrl
@@ -297,16 +304,35 @@ addgroup --system $SERVICE_NAME
 adduser --system --ingroup $SERVICE_NAME $SERVICE_NAME
 chown $SERVICE_NAME:$SERVICE_NAME "/var/lib/$SERVICE_NAME"
 
-# Start the service
-systemctl daemon-reload
-systemctl enable $SERVICE_NAME.service
+# Start or restart the service
+if [ "\$1" = "configure" ]; then
+    systemctl daemon-reload
+    systemctl enable $SERVICE_NAME.service
+    if [ -n "\$2" ]; then
+        # Restart the service if this is an upgrade
+        systemctl restart $SERVICE_NAME
+    else
+        # Start the service if this is a fresh install
+        systemctl start $SERVICE_NAME
+    fi
+fi
 EOF
 
 # Create the Debian pre-remove script
 cat > "$DEBIAN_DIR/prerm" <<EOF
 #!/bin/sh
-systemctl stop $SERVICE_NAME.service
-systemctl disable $SERVICE_NAME.service
+set -e
+
+# Only fully stop/disable on package removal
+if [ "\$1" = "remove" ]; then
+    systemctl stop $SERVICE_NAME.service
+    systemctl disable $SERVICE_NAME.service
+fi
+
+# For upgrades, we only need to stop the service temporarily
+if [ "\$1" = "upgrade" ]; then
+    systemctl stop $SERVICE_NAME.service
+fi
 EOF
 
 # Set permissions

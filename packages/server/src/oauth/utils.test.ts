@@ -1,8 +1,8 @@
-import { OperationOutcomeError } from '@medplum/core';
+import { OperationOutcomeError, WithId } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { createTestClient, withTestContext } from '../test.setup';
 import {
   getAuthTokens,
@@ -48,7 +48,7 @@ describe('OAuth utils', () => {
   test('Login with missing email', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: '',
         password: 'medplum_admin',
@@ -66,7 +66,7 @@ describe('OAuth utils', () => {
   test('Login with missing password', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'admin@example.com',
         password: '',
@@ -84,7 +84,7 @@ describe('OAuth utils', () => {
   test('User not found', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'user-not-found@example.com',
         password: 'medplum_admin',
@@ -102,7 +102,7 @@ describe('OAuth utils', () => {
   test('Blank authentication method', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: '' as unknown as 'password',
         email: 'admin@example.com',
         password: 'medplum_admin',
@@ -120,7 +120,7 @@ describe('OAuth utils', () => {
   test('Invalid authentication method', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'xyz' as unknown as 'password',
         email: 'admin@example.com',
         scope: 'openid',
@@ -137,7 +137,7 @@ describe('OAuth utils', () => {
   test('Invalid google credentials', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'google',
         email: 'admin@example.com',
         scope: 'openid',
@@ -154,7 +154,7 @@ describe('OAuth utils', () => {
   test('Invalid scope', async () => {
     try {
       await tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'admin@example.com',
         password: 'medplum_admin',
@@ -205,7 +205,7 @@ describe('OAuth utils', () => {
   test('Login successfully', async () => {
     const login = await withTestContext(() =>
       tryLogin({
-        clientId: client.id as string,
+        clientId: client.id,
         authMethod: 'password',
         email: 'admin@example.com',
         password: 'medplum_admin',
@@ -251,7 +251,7 @@ describe('OAuth utils', () => {
     try {
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -273,7 +273,7 @@ describe('OAuth utils', () => {
     try {
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -294,7 +294,7 @@ describe('OAuth utils', () => {
     try {
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -317,7 +317,7 @@ describe('OAuth utils', () => {
     expect(() =>
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -335,7 +335,7 @@ describe('OAuth utils', () => {
     expect(() =>
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -359,7 +359,7 @@ describe('OAuth utils', () => {
     expect(() =>
       validatePkce(
         {
-          clientId: client.id as string,
+          clientId: client.id,
           authMethod: 'password',
           email: 'admin@example.com',
           password: 'medplum_admin',
@@ -415,7 +415,7 @@ describe('OAuth utils', () => {
     try {
       await getAuthTokens(
         { resourceType: 'User', id: '123', firstName: 'John', lastName: 'Doe' },
-        { resourceType: 'Login', user: { reference: 'User/123' } } as Login,
+        { resourceType: 'Login', id: '456', user: { reference: 'User/123' } } as WithId<Login>,
         {
           reference: 'Patient/123',
         }

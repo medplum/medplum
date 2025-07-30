@@ -1,5 +1,5 @@
 import { Hl7Message } from '@medplum/core';
-import { decode, encode } from 'iconv-lite';
+import iconv from 'iconv-lite';
 import net from 'node:net';
 import { Hl7Base } from './base';
 import { CR, FS, VT } from './constants';
@@ -14,15 +14,21 @@ export type Hl7MessageQueueItem = {
   reject?: (err: Error) => void;
 };
 
-export class Hl7Connection extends Hl7Base {
-  private chunks: Buffer[] = [];
-  private messageQueue: Hl7MessageQueueItem[] = [];
+export const DEFAULT_ENCODING = 'utf-8';
 
-  constructor(
-    readonly socket: net.Socket,
-    readonly encoding: string = 'utf-8'
-  ) {
+export class Hl7Connection extends Hl7Base {
+  readonly socket: net.Socket;
+  encoding: string;
+  enhancedMode: boolean;
+  private chunks: Buffer[] = [];
+  private readonly messageQueue: Hl7MessageQueueItem[] = [];
+
+  constructor(socket: net.Socket, encoding: string = DEFAULT_ENCODING, enhancedMode = false) {
     super();
+
+    this.socket = socket;
+    this.encoding = encoding;
+    this.enhancedMode = enhancedMode;
 
     socket.on('data', (data: Buffer) => {
       try {
@@ -30,7 +36,7 @@ export class Hl7Connection extends Hl7Base {
         if (data.at(-2) === FS && data.at(-1) === CR) {
           const buffer = Buffer.concat(this.chunks);
           const contentBuffer = buffer.subarray(1, buffer.length - 2);
-          const contentString = decode(contentBuffer, this.encoding);
+          const contentString = iconv.decode(contentBuffer, this.encoding);
           const message = Hl7Message.parse(contentString);
           this.dispatchEvent(new Hl7MessageEvent(this, message));
           this.resetBuffer();
@@ -50,6 +56,9 @@ export class Hl7Connection extends Hl7Base {
     });
 
     this.addEventListener('message', (event) => {
+      if (this.enhancedMode) {
+        this.send(event.message.buildAck({ ackCode: 'CA' }));
+      }
       // Get the queue item at the head of the queue
       const next = this.messageQueue.shift();
       // If there isn't an item, then throw an error
@@ -69,7 +78,7 @@ export class Hl7Connection extends Hl7Base {
   private sendImpl(reply: Hl7Message, queueItem: Hl7MessageQueueItem): void {
     this.messageQueue.push(queueItem);
     const replyString = reply.toString();
-    const replyBuffer = encode(replyString, this.encoding);
+    const replyBuffer = iconv.encode(replyString, this.encoding);
     const outputBuffer = Buffer.alloc(replyBuffer.length + 3);
     outputBuffer.writeInt8(VT, 0);
     replyBuffer.copy(outputBuffer, 1);
@@ -101,5 +110,21 @@ export class Hl7Connection extends Hl7Base {
 
   private resetBuffer(): void {
     this.chunks = [];
+  }
+
+  setEncoding(encoding: string | undefined): void {
+    this.encoding = encoding ?? DEFAULT_ENCODING;
+  }
+
+  getEncoding(): string {
+    return this.encoding;
+  }
+
+  setEnhancedMode(enhancedMode: boolean): void {
+    this.enhancedMode = enhancedMode;
+  }
+
+  getEnhancedMode(): boolean {
+    return this.enhancedMode;
   }
 }

@@ -1,7 +1,7 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
-import { MemoryRouter } from 'react-router-dom';
 import { NoteDisplay, NoteDisplayProps } from './NoteDisplay';
 
 const medplum = new MockClient();

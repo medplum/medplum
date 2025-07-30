@@ -1,4 +1,4 @@
-import { BotEvent, allOk, normalizeErrorString, MedplumClient } from '@medplum/core';
+import { BotEvent, MedplumClient, allOk, normalizeErrorString } from '@medplum/core';
 
 export async function handler(_medplum: MedplumClient, event: BotEvent): Promise<any> {
   const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString as string;

@@ -6,10 +6,23 @@ To successfully use this demo app, the Medplum Health Gorilla integration must f
 
 ## Getting started
 
-By default, this app is configured to use the production Medplum server. You can change the `baseUrl` and other `MepdlumClient` configuration options in `src/main.tsx`.
+By default, this app is configured to use the production Medplum server. If you want to change any environment variables from the defaults, copy the `.env.defaults` file to `.env`
 
+```bash
+cp .env.defaults .env
 ```
+
+And make the changes you need.
+
+Next, install the dependencies.
+
+```bash
 npm i
+```
+
+Then, run the app
+
+```bash
 npm run dev
 ```
 

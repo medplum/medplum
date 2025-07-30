@@ -1,19 +1,49 @@
 import { Title } from '@mantine/core';
-import { CodeChallengeMethod } from '@medplum/core';
-import { Logo, SignInForm } from '@medplum/react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { showNotification } from '@mantine/notifications';
+import { CodeChallengeMethod, normalizeErrorString } from '@medplum/core';
+import { ClientApplicationSignInForm } from '@medplum/fhirtypes';
+import { Logo, SignInForm, useMedplum } from '@medplum/react';
+import { JSX, useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { getConfig } from './config';
 
 export function OAuthPage(): JSX.Element | null {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-
+  const medplum = useMedplum();
+  const scope = params.get('scope') || 'openid';
+  const [clientInfo, setClientInfo] = useState<ClientApplicationSignInForm>();
+  const [loading, setLoading] = useState(true);
   const clientId = params.get('client_id');
+  const login = params.get('login');
+
+  useEffect(() => {
+    if (!clientId || clientId === 'medplum-cli') {
+      return;
+    }
+    async function fetchProjectInfo(): Promise<void> {
+      try {
+        const info: ClientApplicationSignInForm = await medplum.get(`/auth/clientinfo/${clientId}`);
+        setClientInfo(info);
+      } catch (err) {
+        showNotification({
+          id: 'clientinfofail',
+          title: 'Failed to retrieve client information.',
+          color: 'red',
+          message: normalizeErrorString(err),
+          withCloseButton: true,
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProjectInfo().catch(console.error);
+  }, [medplum, clientId]);
+
   if (!clientId) {
     return null;
   }
-
-  const scope = params.get('scope') || 'openid';
 
   function onCode(code: string): void {
     const redirectUrl = new URL(params.get('redirect_uri') as string);
@@ -29,8 +59,8 @@ export function OAuthPage(): JSX.Element | null {
   return (
     <SignInForm
       onCode={onCode}
-      onForgotPassword={() => navigate('/resetpassword')}
-      onRegister={() => navigate('/register')}
+      onForgotPassword={() => navigate('/resetpassword')?.catch(console.error)}
+      onRegister={() => navigate('/register')?.catch(console.error)}
       googleClientId={getConfig().googleClientId}
       clientId={clientId || undefined}
       redirectUri={params.get('redirect_uri') || undefined}
@@ -40,9 +70,18 @@ export function OAuthPage(): JSX.Element | null {
       codeChallenge={params.get('code_challenge') || undefined}
       codeChallengeMethod={(params.get('code_challenge_method') as CodeChallengeMethod) || undefined}
       chooseScopes={scope !== 'openid'}
+      login={login || undefined}
     >
-      <Logo size={32} />
-      <Title>Sign in to Medplum</Title>
+      {!loading && (
+        <>
+          {clientInfo?.logo?.url ? (
+            <img src={clientInfo?.logo?.url} alt={`Welcome Logo`} height={60} style={{ width: 'auto' }} />
+          ) : (
+            <Logo size={32} />
+          )}
+          <Title>{clientInfo?.welcomeString ?? 'Sign in to Medplum'}</Title>
+        </>
+      )}
     </SignInForm>
   );
 }

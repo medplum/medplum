@@ -1,14 +1,14 @@
-import { Operator } from '@medplum/core';
+import { Operator, WithId } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
-import { Repository, getSystemRepo } from '../fhir/repo';
-import { r4ProjectId } from '../seed';
+import { r4ProjectId } from '../constants';
+import { Repository } from '../fhir/repo';
 
 /**
  * Imports all built-in ValueSets and CodeSystems into the database.
+ * @param systemRepo - The system repository to use
  */
-export async function rebuildR4ValueSets(): Promise<void> {
-  const systemRepo = getSystemRepo();
+export async function rebuildR4ValueSets(systemRepo: Repository): Promise<void> {
   const files = [
     'v2-tables.json',
     'v3-codesystems.json',
@@ -48,8 +48,8 @@ async function deleteExisting(
   });
   if (bundle.entry && bundle.entry.length > 0) {
     for (const entry of bundle.entry) {
-      const existing = entry.resource as CodeSystem | ValueSet;
-      await systemRepo.deleteResource(existing.resourceType, existing.id as string);
+      const existing = entry.resource as WithId<CodeSystem | ValueSet>;
+      await systemRepo.deleteResource(existing.resourceType, existing.id);
     }
   }
 }

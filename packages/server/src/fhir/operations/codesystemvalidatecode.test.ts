@@ -1,11 +1,11 @@
+import { ContentType, WithId } from '@medplum/core';
 import { CodeSystem, OperationOutcome, Parameters } from '@medplum/fhirtypes';
-import express from 'express';
-import { loadTestConfig } from '../../config';
-import { initApp, shutdownApp } from '../../app';
-import { initTestAuth } from '../../test.setup';
-import request from 'supertest';
 import { randomUUID } from 'crypto';
-import { ContentType } from '@medplum/core';
+import express from 'express';
+import request from 'supertest';
+import { initApp, shutdownApp } from '../../app';
+import { loadTestConfig } from '../../config/loader';
+import { initTestAuth } from '../../test.setup';
 import { validateCodings } from './codesystemvalidatecode';
 
 const app = express();
@@ -21,7 +21,7 @@ const testCodeSystem: CodeSystem = {
 };
 
 describe('CodeSystem validate-code', () => {
-  let codeSystem: CodeSystem;
+  let codeSystem: WithId<CodeSystem>;
   let accessToken: string;
 
   beforeAll(async () => {
@@ -37,7 +37,7 @@ describe('CodeSystem validate-code', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(testCodeSystem);
     expect(res.status).toStrictEqual(201);
-    codeSystem = res.body as CodeSystem;
+    codeSystem = res.body;
 
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)

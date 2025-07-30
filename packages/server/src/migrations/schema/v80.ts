@@ -5,8 +5,9 @@
 
 import { PoolClient } from 'pg';
 
-export async function run(client: PoolClient): Promise<void> {
-  await client.query(
-    'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Observation_lastUpdated_compound_idx" ON "Observation" USING gin ("compartments", "lastUpdated")'
-  );
+export async function run(_client: PoolClient): Promise<void> {
+  // NOTE: This migration has been deprecated: this expensive index is no longer needed and should not be created
+  // await client.query(
+  //   'CREATE INDEX CONCURRENTLY IF NOT EXISTS "Observation_lastUpdated_compound_idx" ON "Observation" USING gin ("compartments", "lastUpdated")'
+  // );
 }

@@ -52,19 +52,14 @@ describe('CLI rest', () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'delete', `Patient/${patient.id}`]);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching('OK'));
-    try {
-      await medplum.readReference(createReference(patient));
-      throw new Error('Expected error');
-    } catch (err) {
-      expect((err as Error).message).toBe('Not found');
-    }
+    await expect(medplum.readReference(createReference(patient))).rejects.toThrow('Not found');
   });
 
   test('Get command', async () => {
     const patient = await medplum.createResource<Patient>({ resourceType: 'Patient' });
     await main(['node', 'index.js', 'get', `Patient/${patient.id}`]);
 
-    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(patient.id as string));
+    expect(console.log).toHaveBeenCalledWith(expect.stringMatching(patient.id));
   });
 
   test('Get not found', async () => {
@@ -118,6 +113,25 @@ describe('CLI rest', () => {
   test('Post command', async () => {
     await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }']);
     expect(console.log).toHaveBeenCalledWith(expect.stringMatching('Patient'));
+  });
+
+  test('Post command with --prefer-async', async () => {
+    const postSpy = jest.spyOn(medplum, 'post');
+
+    await main(['node', 'index.js', 'post', 'Patient', '{ "resourceType": "Patient" }']);
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    const headers1 = postSpy.mock.calls[0][3]?.headers as Record<string, string> | undefined;
+    expect(headers1).toBeDefined();
+    expect(headers1?.Prefer).toBe(undefined);
+    postSpy.mockClear();
+
+    await main(['node', 'index.js', 'post', '--prefer-async', 'Patient', '{ "resourceType": "Patient" }']);
+    expect(postSpy).toHaveBeenCalledTimes(1);
+    const headers2 = postSpy.mock.calls[0][3]?.headers as Record<string, string> | undefined;
+    expect(headers2).toBeDefined();
+    expect(headers2?.Prefer).toBe('respond-async');
+
+    postSpy.mockRestore();
   });
 
   test('Basic Auth profile request', async () => {

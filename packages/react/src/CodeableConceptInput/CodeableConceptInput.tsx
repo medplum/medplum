@@ -1,5 +1,5 @@
 import { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 

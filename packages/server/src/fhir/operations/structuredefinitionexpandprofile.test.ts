@@ -4,7 +4,7 @@ import { Bundle, ElementDefinition, StructureDefinition, StructureDefinitionSnap
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
 
 jest.mock('node-fetch');

@@ -1,8 +1,9 @@
+import { JSX } from 'react';
 import GitHubSvg from './github.svg';
-import LinkedInSvg from './linkedin.svg';
 import LinkSvg from './link.svg';
-import YouTubeSvg from './youtube.svg';
+import LinkedInSvg from './linkedin.svg';
 import styles from './ProfileCard.module.css';
+import YouTubeSvg from './youtube.svg';
 
 export interface ProfileCardProps {
   readonly name: string;

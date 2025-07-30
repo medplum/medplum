@@ -30,7 +30,6 @@ describe('SearchParameterDetails', () => {
     const individualPhoneticParam = searchParams.find((e) => e.id === 'individual-phonetic') as SearchParameter;
     const details = getSearchParameterDetails('Patient', individualPhoneticParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toStrictEqual('phonetic');
     expect(details.array).toStrictEqual(true);
   });
 
@@ -39,7 +38,6 @@ describe('SearchParameterDetails', () => {
     const activeParam = searchParams.find((e) => e.id === 'Patient-active') as SearchParameter;
     const details = getSearchParameterDetails('Patient', activeParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toStrictEqual('active');
     expect(details.type).toStrictEqual(SearchParameterType.BOOLEAN);
     expect(details.array).toStrictEqual(false);
   });
@@ -49,7 +47,6 @@ describe('SearchParameterDetails', () => {
     const birthDateParam = searchParams.find((e) => e.id === 'individual-birthdate') as SearchParameter;
     const details = getSearchParameterDetails('Patient', birthDateParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toStrictEqual('birthdate');
     expect(details.type).toStrictEqual(SearchParameterType.DATE);
     expect(details.array).toStrictEqual(false);
   });
@@ -59,7 +56,6 @@ describe('SearchParameterDetails', () => {
     const authoredParam = searchParams.find((e) => e.id === 'ServiceRequest-authored') as SearchParameter;
     const details = getSearchParameterDetails('ServiceRequest', authoredParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toStrictEqual('authored');
     expect(details.type).toStrictEqual(SearchParameterType.DATETIME);
     expect(details.array).toStrictEqual(false);
   });
@@ -69,7 +65,6 @@ describe('SearchParameterDetails', () => {
     const missingExpressionParam = searchParams.find((e) => e.id === 'Patient-link') as SearchParameter;
     const details = getSearchParameterDetails('Patient', missingExpressionParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toStrictEqual('link');
     expect(details.type).toStrictEqual(SearchParameterType.REFERENCE);
   });
 
@@ -83,7 +78,6 @@ describe('SearchParameterDetails', () => {
 
     const details = getSearchParameterDetails('Patient', missingExpressionParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toStrictEqual('test');
   });
 
   test('Property not found', () => {
@@ -119,14 +113,60 @@ describe('SearchParameterDetails', () => {
     expect(() => getSearchParameterDetails('Patient', missingExpressionParam)).toThrow();
   });
 
+  describe('clinical-code', () => {
+    // "AllergyIntolerance.code | AllergyIntolerance.reaction.substance | Condition.code | (DeviceRequest.code as CodeableConcept) | DiagnosticReport.code | FamilyMemberHistory.condition.code | List.code | Medication.code | (MedicationAdministration.medication as CodeableConcept) | (MedicationDispense.medication as CodeableConcept) | (MedicationRequest.medication as CodeableConcept) | (MedicationStatement.medication as CodeableConcept) | Observation.code | Procedure.code | ServiceRequest.code"
+    const clinicalCodeParam = searchParams.find((e) => e.id === 'clinical-code') as SearchParameter;
+
+    test('AllergyIntolerance', () => {
+      const details = getSearchParameterDetails('AllergyIntolerance', clinicalCodeParam);
+      expect(details).toBeDefined();
+      expect(details.type).toStrictEqual(SearchParameterType.TEXT);
+      expect(details.elementDefinitions).toBeDefined();
+      expect(details.parsedExpression.toString()).toStrictEqual(
+        '(AllergyIntolerance.code | AllergyIntolerance.reaction.substance)'
+      );
+    });
+
+    test('Observation', () => {
+      const details = getSearchParameterDetails('Observation', clinicalCodeParam);
+      expect(details).toBeDefined();
+      expect(details.type).toStrictEqual(SearchParameterType.TEXT);
+      expect(details.elementDefinitions).toBeDefined();
+      expect(details.parsedExpression.toString()).toStrictEqual('Observation.code');
+    });
+  });
+
+  describe('individual-phone', () => {
+    // "Patient.telecom.where(system='phone') | Person.telecom.where(system='phone') | Practitioner.telecom.where(system='phone') | PractitionerRole.telecom.where(system='phone') | RelatedPerson.telecom.where(system='phone')"
+    const individualPhoneParam = searchParams.find((e) => e.id === 'individual-phone') as SearchParameter;
+
+    test('Patient', () => {
+      const details = getSearchParameterDetails('Patient', individualPhoneParam);
+      expect(details).toBeDefined();
+      expect(details.type).toStrictEqual(SearchParameterType.TEXT);
+      expect(details.elementDefinitions).toBeDefined();
+      expect(details.parsedExpression.toString()).toStrictEqual("Patient.telecom.where((system = 'phone'))");
+    });
+
+    test('RelatedPerson', () => {
+      const details = getSearchParameterDetails('RelatedPerson', individualPhoneParam);
+      expect(details).toBeDefined();
+      expect(details.type).toStrictEqual(SearchParameterType.TEXT);
+      expect(details.elementDefinitions).toBeDefined();
+      expect(details.parsedExpression.toString()).toStrictEqual("RelatedPerson.telecom.where((system = 'phone'))");
+    });
+  });
+
   test('Observation-value-date', () => {
-    // expression: '(Observation.value as dateTime) | (Observation.value as Period)',
+    // "(Observation.value as dateTime) | (Observation.value as Period)"
     const valueDateParam = searchParams.find((e) => e.id === 'Observation-value-date') as SearchParameter;
     const details = getSearchParameterDetails('Observation', valueDateParam);
     expect(details).toBeDefined();
     expect(details.type).toStrictEqual(SearchParameterType.DATETIME);
-    expect(details.columnName).toStrictEqual('valueDate');
     expect(details.elementDefinitions).toBeDefined();
+    expect(details.parsedExpression.toString()).toStrictEqual(
+      '((Observation.value as dateTime) | (Observation.value as Period))'
+    );
   });
 
   test('Observation-value-quantity', () => {
@@ -135,8 +175,10 @@ describe('SearchParameterDetails', () => {
     const details = getSearchParameterDetails('Observation', valueQuantityParam);
     expect(details).toBeDefined();
     expect(details.type).toStrictEqual(SearchParameterType.QUANTITY);
-    expect(details.columnName).toStrictEqual('valueQuantity');
     expect(details.elementDefinitions).toBeDefined();
+    expect(details.parsedExpression.toString()).toStrictEqual(
+      '((Observation.value as Quantity) | (Observation.value as SampledData))'
+    );
   });
 
   test('Encounter-date', () => {
@@ -145,8 +187,8 @@ describe('SearchParameterDetails', () => {
     const details = getSearchParameterDetails('Encounter', clinicalDateParam);
     expect(details).toBeDefined();
     expect(details.type).toStrictEqual(SearchParameterType.DATETIME);
-    expect(details.columnName).toStrictEqual('date');
     expect(details.elementDefinitions).toBeDefined();
+    expect(details.parsedExpression.toString()).toStrictEqual('Encounter.period');
   });
 
   test('Bundle-composition', () => {
@@ -241,6 +283,14 @@ describe('SearchParameterDetails', () => {
     expect(details).toBeDefined();
     expect(details.array).toBe(true);
     expect(details.type).toStrictEqual(SearchParameterType.TEXT);
+  });
+
+  test('CodeSystem-context', () => {
+    const searchParam = searchParams.find((e) => e.id === 'conformance-context') as SearchParameter;
+    const details = getSearchParameterDetails('CodeSystem', searchParam);
+    expect(details).toBeDefined();
+    expect(details.elementDefinitions).toBeDefined();
+    expect(details.elementDefinitions?.length).toBe(1);
   });
 
   test('Everything', () => {

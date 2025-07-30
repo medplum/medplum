@@ -21,11 +21,7 @@ export function main(): void {
 
   // For each type schema, only keep "display" and "properties"
   for (const [typeName, typeSchema] of Object.entries(allTypes).filter(([name, schema]) => isBaseType(name, schema))) {
-    const output = { elements: Object.create(null) };
-    for (const [propertyName, propertySchema] of Object.entries(typeSchema.elements)) {
-      output.elements[propertyName] = compressElement(propertySchema);
-    }
-    outputTypes[typeName] = output;
+    addOutputType(outputTypes, typeName, typeSchema);
   }
 
   writeFileSync(
@@ -41,4 +37,18 @@ if (require.main === module) {
 
 function isBaseType(name: string, schema: InternalTypeSchema): boolean {
   return !isLowerCase(name.charAt(0)) && schema.kind !== 'resource' && schema.kind !== 'logical' && !schema.parentType;
+}
+
+function addOutputType(outputTypes: BaseSchema, typeName: string, typeSchema: InternalTypeSchema): void {
+  const output = { elements: Object.create(null) };
+  for (const [propertyName, propertySchema] of Object.entries(typeSchema.elements)) {
+    output.elements[propertyName] = compressElement(propertySchema);
+  }
+  outputTypes[typeName] = output;
+
+  if (typeSchema.innerTypes) {
+    for (const innerType of typeSchema.innerTypes) {
+      addOutputType(outputTypes, innerType.name, innerType);
+    }
+  }
 }

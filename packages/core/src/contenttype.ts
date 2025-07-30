@@ -12,10 +12,15 @@ export const ContentType = {
   JAVASCRIPT: 'text/javascript',
   JSON: 'application/json',
   JSON_PATCH: 'application/json-patch+json',
+  JWT: 'application/jwt',
+  MULTIPART_FORM_DATA: 'multipart/form-data',
   PNG: 'image/png',
   SCIM_JSON: 'application/scim+json',
   SVG: 'image/svg+xml',
   TEXT: 'text/plain',
   TYPESCRIPT: 'text/typescript',
   PING: 'x-application/ping',
+  XML: 'text/xml',
+  // See: https://www.iana.org/assignments/media-types/application/cda+xml
+  CDA_XML: 'application/cda+xml',
 } as const;

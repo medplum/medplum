@@ -1,8 +1,8 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Quantity } from '@medplum/fhirtypes';
-import { useContext, useMemo, useState, WheelEvent } from 'react';
-import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { JSX, useContext, useMemo, useState, WheelEvent } from 'react';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface QuantityInputProps extends ComplexTypeInputProps<Quantity> {
   readonly autoFocus?: boolean;

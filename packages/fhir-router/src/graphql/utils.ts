@@ -78,7 +78,7 @@ function parseSearchArgsWithReference(
     referenceFilter = {
       code: reference,
       operator: Operator.EQUALS,
-      value: getReferenceString(source as Resource),
+      value: getReferenceString(source),
     };
   }
 

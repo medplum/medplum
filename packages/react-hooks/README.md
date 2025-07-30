@@ -105,7 +105,7 @@ See also: [`useSubscription` docs](https://www.medplum.com/docs/react/use-subscr
 
 ### Usage within `Expo` app
 
-Usage within `Expo` / `React Native` has some special considerations. See: [@medplum/expo-polyfills README](https://github.com/medplum/medplum/blob/main/packages/expo-polyfills/README.md)
+Usage within `Expo` / `React Native` has some special considerations. See: [@medplum/expo-polyfills README](https://github.com/medplum/medplum-expo-polyfills)
 
 ## About Medplum
 
@@ -113,4 +113,4 @@ Medplum is a healthcare platform that helps you quickly develop high-quality com
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2024
+Apache 2.0. Copyright &copy; Medplum 2025

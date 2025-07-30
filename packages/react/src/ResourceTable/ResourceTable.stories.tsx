@@ -8,7 +8,7 @@ import {
 } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
 import { Meta } from '@storybook/react';
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { JSX, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
   Covid19NasalSpecimen,

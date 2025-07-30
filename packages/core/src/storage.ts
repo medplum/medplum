@@ -53,7 +53,7 @@ export class ClientStorage implements IClientStorage {
  * The MemoryStorage class is a minimal in-memory implementation of the Storage interface.
  */
 export class MemoryStorage implements Storage {
-  private data: Map<string, string>;
+  private readonly data: Map<string, string>;
 
   constructor() {
     this.data = new Map<string, string>();
@@ -120,7 +120,7 @@ export class MemoryStorage implements Storage {
  */
 export class MockAsyncClientStorage extends ClientStorage implements IClientStorage {
   private initialized: boolean;
-  private initPromise: Promise<void>;
+  private readonly initPromise: Promise<void>;
   private initResolve: () => void = () => undefined;
 
   constructor() {

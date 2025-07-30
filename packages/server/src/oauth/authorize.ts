@@ -3,10 +3,10 @@ import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { URL } from 'url';
 import { asyncWrap } from '../async';
-import { getConfig } from '../config';
-import { getLogger } from '../context';
+import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
-import { MedplumIdTokenClaims, verifyJwt } from './keys';
+import { getLogger } from '../logger';
+import { generateSecret, MedplumIdTokenClaims, verifyJwt } from './keys';
 import { getClientApplication } from './utils';
 
 /*
@@ -59,68 +59,84 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     return false;
   }
 
-  if (client.redirectUri !== params.redirect_uri) {
+  const redirectUri = client.redirectUri;
+  if (!redirectUri) {
+    res.status(400).send('Client has no redirect URI');
+    return false;
+  }
+  if (!URL.canParse(redirectUri)) {
+    res.status(400).send('Invalid redirect URI');
+    return false;
+  }
+  if (redirectUri !== params.redirect_uri) {
     res.status(400).send('Incorrect redirect_uri');
     return false;
   }
 
-  const state = params.state as string;
+  const state = params.state ?? '';
 
   // Then, validate all other parameters.
   // If these are invalid, redirect back to the redirect URI.
-  const scope = params.scope as string | undefined;
-  if (!scope) {
-    sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
+  params.scope ??= client.defaultScope;
+  if (!params.scope) {
+    sendErrorRedirect(res, redirectUri, 'invalid_request', 'Missing scope', state);
     return false;
   }
-
-  const responseType = params.response_type;
-  if (responseType !== 'code') {
-    sendErrorRedirect(res, client.redirectUri as string, 'unsupported_response_type', state);
+  if (params.response_type !== 'code') {
+    sendErrorRedirect(res, redirectUri, 'unsupported_response_type', 'Invalid response type', state);
     return false;
   }
-
-  const requestObject = params.request as string | undefined;
-  if (requestObject) {
-    sendErrorRedirect(res, client.redirectUri as string, 'request_not_supported', state);
+  if (params.request) {
+    sendErrorRedirect(res, redirectUri, 'request_not_supported', 'Unsupported request parameter', state);
     return false;
   }
-
-  const aud = params.aud as string | undefined;
-  if (!isValidAudience(aud)) {
-    sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
+  if (!isValidAudience(params.aud)) {
+    sendErrorRedirect(res, redirectUri, 'invalid_request', 'Invalid audience', state);
     return false;
   }
-
-  const codeChallenge = params.code_challenge;
-  if (codeChallenge) {
-    const codeChallengeMethod = params.code_challenge_method;
-    if (!codeChallengeMethod) {
-      sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
-      return false;
-    }
+  if (params.code_challenge && !params.code_challenge_method) {
+    sendErrorRedirect(res, redirectUri, 'invalid_request', 'Missing code challenge method', state);
+    return false;
+  }
+  if (params.launch && !(await isValidLaunch(params.launch))) {
+    sendErrorRedirect(res, redirectUri, 'invalid_request', 'Invalid launch', state);
+    return false;
   }
 
   const existingLogin = await getExistingLogin(req, client);
 
   const prompt = params.prompt as string | undefined;
   if (prompt === 'none' && !existingLogin) {
-    sendErrorRedirect(res, client.redirectUri as string, 'login_required', state);
+    sendErrorRedirect(res, redirectUri, 'login_required', 'Login required', state);
     return false;
   }
 
   if (prompt !== 'login' && existingLogin) {
     const systemRepo = getSystemRepo();
-    await systemRepo.updateResource<Login>({
+    const updatedLogin = await systemRepo.updateResource<Login>({
       ...existingLogin,
       nonce: params.nonce as string,
+      codeChallenge: params.code_challenge ?? existingLogin.codeChallenge,
+      codeChallengeMethod: params.code_challenge_method ?? existingLogin.codeChallengeMethod,
+      code: generateSecret(16),
+      launch: params.launch ? { reference: `SmartAppLaunch/${params.launch}` } : existingLogin.launch,
       granted: false,
     });
 
-    const redirectUrl = new URL(params.redirect_uri as string);
-    redirectUrl.searchParams.append('code', existingLogin.code as string);
-    redirectUrl.searchParams.append('state', state);
-    res.redirect(redirectUrl.toString());
+    if (prompt === 'none') {
+      // Redirect straight to application without allowing scope changes
+      const redirectUrl = new URL(params.redirect_uri as string);
+      redirectUrl.searchParams.append('code', updatedLogin.code as string);
+      redirectUrl.searchParams.append('state', state);
+      res.redirect(redirectUrl.toString());
+    } else {
+      // Redirect to scope selection page to allow consent to updated scopes
+      params.login = updatedLogin.id;
+      if (!params.scope) {
+        params.scope = updatedLogin.scope;
+      }
+      sendSuccessRedirect(req, res, params);
+    }
     return false;
   }
 
@@ -144,6 +160,21 @@ function isValidAudience(aud: string | undefined): boolean {
     const audUrl = new URL(aud);
     const serverUrl = new URL(getConfig().baseUrl);
     return audUrl.protocol === serverUrl.protocol && audUrl.host === serverUrl.host;
+  } catch (_err) {
+    return false;
+  }
+}
+
+/**
+ * Returns true if the launch parameter is valid.
+ * @param launch - The launch parameter (which is a SmartAppLaunch ID).
+ * @returns True if the launch is valid; false otherwise.
+ */
+async function isValidLaunch(launch: string): Promise<boolean> {
+  const systemRepo = getSystemRepo();
+  try {
+    await systemRepo.readResource('SmartAppLaunch', launch);
+    return true;
   } catch (_err) {
     return false;
   }
@@ -235,11 +266,19 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
  * @param res - The response.
  * @param redirectUri - The client redirect URI.  This URI may already have query string parameters.
  * @param error - The OAuth/OpenID error code.
+ * @param errorDescription - The error description.
  * @param state - The client state.
  */
-function sendErrorRedirect(res: Response, redirectUri: string, error: string, state: string): void {
+function sendErrorRedirect(
+  res: Response,
+  redirectUri: string,
+  error: string,
+  errorDescription: string,
+  state: string
+): void {
   const url = new URL(redirectUri);
   url.searchParams.append('error', error);
+  url.searchParams.append('error_description', errorDescription);
   url.searchParams.append('state', state);
   res.redirect(url.toString());
 }

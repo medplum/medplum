@@ -1,4 +1,4 @@
-import { createReference, getReferenceString, sleep } from '@medplum/core';
+import { WithId, createReference, getReferenceString, sleep } from '@medplum/core';
 import {
   AccessPolicy,
   AsyncJob,
@@ -11,14 +11,19 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { setDefaultResultOrder } from 'dns';
 import { Express } from 'express';
 import internal from 'stream';
 import request from 'supertest';
 import { ServerInviteResponse, inviteUser } from './admin/invite';
-import { AuthenticatedRequestContext, requestContextStore } from './context';
+import { AuthenticatedRequestContext } from './context';
 import { Repository, RepositoryContext, getSystemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
+import { requestContextStore } from './request-context-store';
+
+// supertest v7 can cause websocket tests to hang without this
+setDefaultResultOrder('ipv4first');
 
 export interface TestProjectOptions {
   project?: Partial<Project>;
@@ -34,11 +39,11 @@ type Exact<T, U extends T> = T & Record<Exclude<keyof U, keyof T>, never>;
 type StrictTestProjectOptions<T extends TestProjectOptions> = Exact<TestProjectOptions, T>;
 
 export type TestProjectResult<T extends TestProjectOptions> = {
-  project: Project;
-  accessPolicy: T['accessPolicy'] extends Partial<AccessPolicy> ? AccessPolicy : undefined;
-  client: T['withClient'] extends true ? ClientApplication : undefined;
-  membership: T['withClient'] extends true ? ProjectMembership : undefined;
-  login: T['withAccessToken'] extends true ? Login : undefined;
+  project: WithId<Project>;
+  accessPolicy: T['accessPolicy'] extends Partial<AccessPolicy> ? WithId<AccessPolicy> : undefined;
+  client: T['withClient'] extends true ? WithId<ClientApplication> : undefined;
+  membership: T['withClient'] extends true ? WithId<ProjectMembership> : undefined;
+  login: T['withAccessToken'] extends true ? WithId<Login> : undefined;
   accessToken: T['withAccessToken'] extends true ? string : undefined;
   repo: T['withRepo'] extends true | Partial<RepositoryContext> ? Repository : undefined;
 };
@@ -67,12 +72,12 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
       ...options?.project,
     });
 
-    let client: ClientApplication | undefined = undefined;
-    let accessPolicy: AccessPolicy | undefined = undefined;
-    let membership: ProjectMembership | undefined = undefined;
-    let login: Login | undefined = undefined;
-    let accessToken: string | undefined = undefined;
-    let repo: Repository | undefined = undefined;
+    let client: WithId<ClientApplication> | undefined;
+    let accessPolicy: AccessPolicy | undefined;
+    let membership: ProjectMembership | undefined;
+    let login: WithId<Login> | undefined;
+    let accessToken: string | undefined;
+    let repo: Repository | undefined;
 
     if (options?.withClient || options?.withAccessToken || options?.withRepo) {
       client = await systemRepo.createResource<ClientApplication>({
@@ -80,9 +85,15 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
         secret: randomUUID(),
         redirectUri: 'https://example.com/',
         meta: {
-          project: project.id as string,
+          project: project.id,
         },
         name: 'Test Client Application',
+        signInForm: {
+          welcomeString: 'Test Welcome String',
+          logo: {
+            url: 'https://example.com/logo.png',
+          },
+        },
       });
 
       if (options?.accessPolicy) {
@@ -116,18 +127,18 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
         });
 
         accessToken = await generateAccessToken({
-          login_id: login.id as string,
-          sub: client.id as string,
-          username: client.id as string,
-          client_id: client.id as string,
+          login_id: login.id,
+          sub: client.id,
+          username: client.id,
+          client_id: client.id,
           profile: client.resourceType + '/' + client.id,
           scope,
         });
       }
 
       if (options?.withRepo) {
-        const repoContext = {
-          projects: [project.id as string],
+        const repoContext: RepositoryContext = {
+          projects: [project],
           currentProject: project,
           author: createReference(client),
           superAdmin: options?.superAdmin,
@@ -157,7 +168,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
   });
 }
 
-export async function createTestClient(options?: TestProjectOptions): Promise<ClientApplication> {
+export async function createTestClient(options?: TestProjectOptions): Promise<WithId<ClientApplication>> {
   return (await createTestProject({ ...options, withClient: true })).client;
 }
 
@@ -166,7 +177,7 @@ export async function initTestAuth(options?: TestProjectOptions): Promise<string
 }
 
 export async function addTestUser(
-  project: Project,
+  project: WithId<Project>,
   accessPolicy?: AccessPolicy
 ): Promise<ServerInviteResponse & { accessToken: string }> {
   requestContextStore.enterWith(AuthenticatedRequestContext.system());
@@ -204,9 +215,9 @@ export async function addTestUser(
   });
 
   const accessToken = await generateAccessToken({
-    login_id: login.id as string,
+    login_id: login.id,
     sub: user.id,
-    username: user.id as string,
+    username: user.id,
     scope: login.scope as string,
     profile: getReferenceString(profile),
   });
@@ -266,7 +277,7 @@ export function waitFor(fn: () => Promise<void>): Promise<void> {
 }
 
 export async function waitForAsyncJob(contentLocation: string, app: Express, accessToken: string): Promise<AsyncJob> {
-  for (let i = 0; i < 45; i++) {
+  for (let i = 0; i < 100; i++) {
     const res = await request(app)
       .get(new URL(contentLocation).pathname)
       .set('Authorization', 'Bearer ' + accessToken);
@@ -274,7 +285,7 @@ export async function waitForAsyncJob(contentLocation: string, app: Express, acc
       await sleep(500); // Buffer time to ensure that any remaining async processing has fully completed
       return res.body as AsyncJob;
     }
-    await sleep(1000);
+    await sleep(450);
   }
   throw new Error('Async Job did not complete');
 }

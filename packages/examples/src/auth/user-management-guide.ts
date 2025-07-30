@@ -97,6 +97,7 @@ await medplum.post('admin/projects/example-project-id/invite', {
   lastName: 'Smith',
   email: 'alicesmith@example.com',
   admin: true,
+  scope: 'server',
 });
 // end-block inviteNewAdminTs
 

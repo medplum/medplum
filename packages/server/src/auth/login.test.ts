@@ -1,5 +1,5 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
-import { createReference, LOINC } from '@medplum/core';
+import { createReference, LOINC, WithId } from '@medplum/core';
 import { ClientApplication, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -9,7 +9,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -22,18 +22,31 @@ jest.mock('node-fetch');
 const app = express();
 const email = randomUUID() + '@example.com';
 const password = randomUUID();
-let project: Project;
-let client: ClientApplication;
+let project: WithId<Project>;
+let client: WithId<ClientApplication>;
+let corsClient: WithId<ClientApplication>;
 
 describe('Login', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       config.emailProvider = 'awsses';
       await initApp(app, config);
 
       // Create a test project
       ({ project, client } = await createTestProject({ withClient: true }));
+
+      // Create another client with CORS "allowed origins"
+      corsClient = await getSystemRepo().createResource<ClientApplication>({
+        resourceType: 'ClientApplication',
+        meta: {
+          project: project.id,
+        },
+        secret: randomUUID(),
+        redirectUri: 'https://example.com/',
+        name: 'Test Client Application',
+        allowedOrigin: ['https://allowed.example.com'],
+      });
 
       // Create a test user
       const { user } = await inviteUser({
@@ -46,8 +59,8 @@ describe('Login', () => {
 
       // Set the test user password
       await setPassword(user, password);
-    })
-  );
+    });
+  });
 
   afterAll(async () => {
     await shutdownApp();
@@ -489,5 +502,73 @@ describe('Login', () => {
     expect(res.body.code).toBeUndefined();
     expect(res.body.memberships).toBeUndefined();
     expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('Inactive membership', async () => {
+    const email = `inactive-${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    // Create a test user
+    const { membership } = await withTestContext(() =>
+      inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Test',
+        lastName: 'User',
+        email,
+        password,
+      })
+    );
+
+    // Mark the membership as inactive
+    await getSystemRepo().updateResource({ ...membership, active: false });
+
+    // User should not be able to login
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      scope: 'openid offline',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      projectId: project.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.login).toBeUndefined();
+    expect(res.body.code).toBeUndefined();
+    expect(res.body.memberships).toBeUndefined();
+    expect(res.body.issue[0].details.text).toBe('Profile not active');
+  });
+
+  test('Success with no origin', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: corsClient.id,
+      email,
+      password,
+      scope: 'openid',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.code).toBeDefined();
+  });
+
+  test('Success with matching origin', async () => {
+    const res = await request(app).post('/auth/login').set('Origin', 'https://allowed.example.com').type('json').send({
+      clientId: corsClient.id,
+      email,
+      password,
+      scope: 'openid',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.code).toBeDefined();
+  });
+
+  test('Failure with unknown origin', async () => {
+    const res = await request(app).post('/auth/login').set('Origin', 'https://unknown.example.com').type('json').send({
+      clientId: corsClient.id,
+      email,
+      password,
+      scope: 'openid',
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid origin');
   });
 });

@@ -1,5 +1,5 @@
 ---
-sidebar_position: 2
+sidebar_position: 4
 ---
 
 # ONC Certification
@@ -37,6 +37,7 @@ This is the list of certified criteria. Related to this criteria these scripts a
 | [a2](/docs/careplans/diagnostic-catalog) | CPOE - Laboratory  |
 | [a5](/docs/charting/patient-demographics) | Demographics  |
 | [a14](/docs/charting/implantable-devices) | Implantable Device List  |
+| [b1](/docs/integration/c-cda)                                                  | Transitions of Care                        |
 | [b10](/docs/api/fhir/operations/patient-everything) | Electronic Health Information Export (Cures Update)  |
 | [d1](/docs/auth)                                    | Authentication, Access Control, Authorization        |
 | [d2](/docs/api/fhir/resources/auditevent) | Auditable Events and Tamper Resistance  |
@@ -51,6 +52,9 @@ This is the list of certified criteria. Related to this criteria these scripts a
 | g3                      | Safety Enhanced Design                            |
 | [g4](/docs/compliance/iso9001)                      | Quality Management System                            |
 | g5                                                  | Accessibility-Centered Design                        |
+| [g6](/docs/integration/c-cda)                                                  | Consolidated CDA Creation Performance                        |
+| [g7](/docs/integration/c-cda)                                                  | Application Access - Patient Selection                        |
+| [g9](/docs/integration/c-cda)                                                  | Application Access - Patient Selection                        |
 | [g10](/docs/api)                                    | Standardized API for Patient and Population Services |
 
 The following criteria are required for CHPL listing: d12, d13, [g4](/docs/compliance/iso9001), g5.
@@ -69,7 +73,7 @@ The following criteria are required for CHPL listing: d12, d13, [g4](/docs/compl
 
 ## Real World Testing
 
-Download [Real World Testing Plan](https://drive.google.com/file/d/1hepC2n74zVZt8jr5jR4Eye3zGw0pnYJ7/view?usp=sharing) 2024
-Download [Real World Testing Plan](https://drive.google.com/file/d/1JpxYdPgtNmda7gPHsfRIMLfzNfEPTJGl/view?usp=drive_link) 2025
+* Download [Real World Testing Plan](https://drive.google.com/file/d/1hepC2n74zVZt8jr5jR4Eye3zGw0pnYJ7/view?usp=sharing) 2024 ([Results](https://drive.google.com/file/d/1qR9vM3XYZ2ABl806W7HI8z6Und5GkEIz/view?usp=drive_link))
+* Download [Real World Testing Plan](https://drive.google.com/file/d/1JpxYdPgtNmda7gPHsfRIMLfzNfEPTJGl/view?usp=drive_link) 2025
 
 ![ONC 2015 Edition Cures](/img/compliance/onc-2015-edition-cures.png)

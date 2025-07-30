@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -16,9 +16,9 @@ let profile1: ProfileResource;
 let profile2: ProfileResource;
 
 describe('Profile', () => {
-  beforeAll(() =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await withTestContext(async () => {
       await initApp(app, config);
 
       // Create a user with multiple profiles
@@ -42,8 +42,8 @@ describe('Profile', () => {
       });
 
       profile2 = registerResult2.profile;
-    })
-  );
+    });
+  });
 
   afterAll(async () => {
     await shutdownApp();
@@ -218,13 +218,10 @@ describe('Profile', () => {
     expect(res1.body.memberships).toBeDefined();
     expect(res1.body.memberships.length).toBe(2);
 
-    const res2 = await request(app)
-      .post('/auth/profile')
-      .type('json')
-      .send({
-        login: res1.body.login,
-        profile: membership.id as string,
-      });
+    const res2 = await request(app).post('/auth/profile').type('json').send({
+      login: res1.body.login,
+      profile: membership.id,
+    });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();
     expect(res2.body.issue[0].details.text).toBe('Invalid profile');

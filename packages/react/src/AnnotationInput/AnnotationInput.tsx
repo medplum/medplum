@@ -2,7 +2,7 @@ import { TextInput } from '@mantine/core';
 import { createReference } from '@medplum/core';
 import { Annotation } from '@medplum/fhirtypes';
 import { useMedplumProfile } from '@medplum/react-hooks';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface AnnotationInputProps extends ComplexTypeInputProps<Annotation> {}

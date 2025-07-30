@@ -1,10 +1,11 @@
+import { buildElementsContext } from '@medplum/core';
 import { Ratio } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
-import { RatioInput } from './RatioInput';
-import { buildElementsContext } from '@medplum/core';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { RatioInput } from './RatioInput';
 
 export default {
   title: 'Medplum/RatioInput',

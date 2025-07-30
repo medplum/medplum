@@ -1,6 +1,7 @@
 import { Blockquote, Stack } from '@mantine/core';
 import { Annotation, Task } from '@medplum/fhirtypes';
 import { Document } from '@medplum/react';
+import { JSX } from 'react';
 
 export interface NotesPageProps {
   readonly task: Task;

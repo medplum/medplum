@@ -1,17 +1,14 @@
-import { Loader, Paper, ScrollArea, Tabs } from '@mantine/core';
+import { Loader, Modal, ScrollArea } from '@mantine/core';
 import { getReferenceString, isOk } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, OperationOutcomeAlert, PatientSummary } from '@medplum/react';
-import { useCallback, useEffect, useState } from 'react';
-import { Outlet, useLocation, useNavigate, Location } from 'react-router-dom';
+import { JSX, useCallback, useEffect, useState } from 'react';
+import { Location, Outlet, useLocation, useNavigate } from 'react-router';
 import { usePatient } from '../../hooks/usePatient';
 import classes from './PatientPage.module.css';
-import {
-  PatientPageTabInfo,
-  PatientPageTabs,
-  formatPatientPageTabUrl,
-  getPatientPageTabOrThrow,
-} from './PatientPage.utils';
+import { PatientPageTabInfo, PatientPageTabs, formatPatientPageTabUrl } from './PatientPage.utils';
+import { PatientTabsNavigation } from './PatientTabsNavigation';
+import { OrderLabsPage } from '../OrderLabsPage';
 
 function getTabFromLocation(location: Location): PatientPageTabInfo | undefined {
   const tabId = location.pathname.split('/')[3] ?? '';
@@ -20,11 +17,13 @@ function getTabFromLocation(location: Location): PatientPageTabInfo | undefined 
     : undefined;
   return tab;
 }
+
 export function PatientPage(): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const patient = usePatient({ setOutcome });
+  const [isLabsModalOpen, setIsLabsModalOpen] = useState(false);
   const [currentTab, setCurrentTab] = useState<string>(() => {
     return (getTabFromLocation(location) ?? PatientPageTabs[0]).id;
   });
@@ -39,11 +38,10 @@ export function PatientPage(): JSX.Element {
         console.error('Not within a patient context');
         return;
       }
-
       const tab = newTabName ? PatientPageTabs.find((t) => t.id === newTabName) : PatientPageTabs[0];
       if (tab) {
         setCurrentTab(tab.id);
-        navigate(formatPatientPageTabUrl(patient.id, tab));
+        navigate(formatPatientPageTabUrl(patient.id, tab))?.catch(console.error);
       }
     },
     [navigate, patient?.id]
@@ -58,6 +56,10 @@ export function PatientPage(): JSX.Element {
     }
   }, [currentTab, location]);
 
+  const handleCloseLabsModal = useCallback(() => {
+    setIsLabsModalOpen(false);
+  }, []);
+
   if (outcome && !isOk(outcome)) {
     return (
       <Document>
@@ -67,7 +69,6 @@ export function PatientPage(): JSX.Element {
   }
 
   const patientId = patient?.id;
-
   if (!patientId) {
     return (
       <Document>
@@ -77,32 +78,30 @@ export function PatientPage(): JSX.Element {
   }
 
   return (
-    <div key={getReferenceString(patient)} className={classes.container}>
-      <div className={classes.sidebar}>
-        <PatientSummary
-          w={350}
-          mb="auto"
-          patient={patient}
-          appointmentsUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('appointments'))}
-          encountersUrl={formatPatientPageTabUrl(patientId, getPatientPageTabOrThrow('encounter'))}
-        />
-      </div>
-      <div className={classes.content}>
-        <Paper>
-          <ScrollArea>
-            <Tabs value={currentTab.toLowerCase()} onChange={onTabChange}>
-              <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
-                {PatientPageTabs.map((t) => (
-                  <Tabs.Tab key={t.id} value={t.id}>
-                    {t.label}
-                  </Tabs.Tab>
-                ))}
-              </Tabs.List>
-            </Tabs>
+    <>
+      <div key={getReferenceString(patient)} className={classes.container}>
+        <div className={classes.sidebar}>
+          <ScrollArea className={classes.scrollArea}>
+            <PatientSummary
+              patient={patient}
+              onClickResource={(resource) =>
+                navigate(`/Patient/${patientId}/${resource.resourceType}/${resource.id}`)?.catch(console.error)
+              }
+              onRequestLabs={() => {
+                setIsLabsModalOpen(true);
+              }}
+            />
           </ScrollArea>
-        </Paper>
-        <Outlet />
+        </div>
+
+        <div className={classes.content}>
+          <PatientTabsNavigation currentTab={currentTab} onTabChange={onTabChange} />
+          <Outlet />
+        </div>
       </div>
-    </div>
+      <Modal opened={isLabsModalOpen} onClose={handleCloseLabsModal} size="xl" centered title="Order Labs">
+        <OrderLabsPage onSubmitLabOrder={handleCloseLabsModal} />
+      </Modal>
+    </>
   );
 }

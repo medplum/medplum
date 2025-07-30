@@ -735,7 +735,7 @@ describe('Batch', () => {
         {
           request: {
             method: 'PATCH',
-            url: 'Patient',
+            url: 'Patient/123/$everything',
           },
         },
       ],

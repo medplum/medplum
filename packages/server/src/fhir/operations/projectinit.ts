@@ -1,4 +1,4 @@
-import { ProfileResource, badRequest, createReference, created } from '@medplum/core';
+import { ProfileResource, WithId, badRequest, createReference, created } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   ClientApplication,
@@ -12,11 +12,12 @@ import { randomUUID } from 'crypto';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
 import { createProfile, createProjectMembership } from '../../auth/utils';
-import { getAuthenticatedContext, getLogger } from '../../context';
+import { getConfig } from '../../config/loader';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import { getSystemRepo } from '../repo';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { getConfig } from '../../config';
 
 const projectInitOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -121,10 +122,10 @@ export async function createProject(
   projectName: string,
   admin?: User
 ): Promise<{
-  project: Project;
-  client: ClientApplication;
-  profile?: ProfileResource;
-  membership?: ProjectMembership;
+  project: WithId<Project>;
+  client: WithId<ClientApplication>;
+  profile?: WithId<ProfileResource>;
+  membership?: WithId<ProjectMembership>;
 }> {
   const log = getLogger();
   const systemRepo = getSystemRepo();
@@ -137,6 +138,7 @@ export async function createProject(
     owner: admin ? createReference(admin) : undefined,
     strictMode: true,
     features: config.defaultProjectFeatures,
+    systemSetting: config.defaultProjectSystemSetting,
   });
 
   log.info('Project created', {
@@ -157,7 +159,7 @@ export async function createProject(
       admin.lastName as string,
       admin.email as string
     );
-    const membership = await createProjectMembership(admin, project, profile, { admin: true });
+    const membership = await createProjectMembership(systemRepo, admin, project, profile, { admin: true });
     return { project, profile, membership, client };
   }
   return { project, client };

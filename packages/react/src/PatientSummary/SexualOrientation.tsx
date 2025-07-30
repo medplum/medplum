@@ -1,12 +1,13 @@
-import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
+import { Box, Flex, Group, Modal, Radio, Stack, Text, UnstyledButton } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
+import { createReference, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState } from 'react';
-import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
+import { JSX, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
+import { SubmitButton } from '../Form/SubmitButton';
 import { killEvent } from '../utils/dom';
+import { CollapsibleSection } from './CollapsibleSection';
 
 const NULLFLAVOR = HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-NullFlavor';
 
@@ -35,13 +36,15 @@ export interface SexualOrientationProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly sexualOrientation?: Observation;
+  readonly onClickResource?: (resource: Observation) => void;
 }
 
 export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
-  const medplum = useMedplum();
   const { patient, encounter } = props;
+  const medplum = useMedplum();
   const [sexualOrientation, setSexualOrientation] = useState<Observation | undefined>(props.sexualOrientation);
   const [opened, { open, close }] = useDisclosure(false);
+  const [hoverIndex, setHoverIndex] = useState<number | null>(null);
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
@@ -99,29 +102,36 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
 
   return (
     <>
-      <Group justify="space-between">
-        <Text fz="md" fw={700}>
-          Sexual Orientation
-        </Text>
-        <Anchor
-          href="#"
-          onClick={(e) => {
-            killEvent(e);
-            open();
-          }}
-        >
-          + Edit
-        </Anchor>
-      </Group>
-      {sexualOrientation?.valueCodeableConcept ? (
-        <Box>
-          <Badge variant="light">
-            <CodeableConceptDisplay value={sexualOrientation.valueCodeableConcept} />
-          </Badge>
-        </Box>
-      ) : (
-        <Text>(none)</Text>
-      )}
+      <CollapsibleSection
+        title="Sexual Orientation"
+        onAdd={() => {
+          open();
+        }}
+      >
+        {sexualOrientation ? (
+          <Flex direction="column" gap={8}>
+            <Box onMouseEnter={() => setHoverIndex(0)} onMouseLeave={() => setHoverIndex(null)}>
+              <UnstyledButton
+                data-testid="sexual-orientation-button"
+                onClick={(e) => {
+                  killEvent(e);
+                  if (props.onClickResource) {
+                    props.onClickResource(sexualOrientation);
+                  }
+                }}
+              >
+                <Box pr={hoverIndex === 0 ? 24 : 0}>
+                  <Text size="sm" fw={500}>
+                    {sexualOrientation.valueCodeableConcept?.text ?? 'Unknown'}
+                  </Text>
+                </Box>
+              </UnstyledButton>
+            </Box>
+          </Flex>
+        ) : (
+          <Text>(none)</Text>
+        )}
+      </CollapsibleSection>
       <Modal opened={opened} onClose={close} title="Set Sexual Orientation">
         <Form onSubmit={handleSubmit}>
           <Stack>
@@ -131,7 +141,7 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
               ))}
             </Radio.Group>
             <Group justify="flex-end" gap={4} mt="md">
-              <Button type="submit">Save</Button>
+              <SubmitButton>Save</SubmitButton>
             </Group>
           </Stack>
         </Form>

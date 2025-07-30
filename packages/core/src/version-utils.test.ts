@@ -1,12 +1,14 @@
+import { MEDPLUM_VERSION } from './client';
 import {
   assertReleaseManifest,
   checkIfValidMedplumVersion,
   clearReleaseCache,
   fetchLatestVersionString,
   fetchVersionManifest,
-  GITHUB_RELEASES_URL,
   isValidMedplumSemver,
+  MEDPLUM_RELEASES_URL,
   ReleaseManifest,
+  warnIfNewerVersionAvailable,
 } from './version-utils';
 
 test('isValidMedplumSemver', () => {
@@ -17,6 +19,8 @@ test('isValidMedplumSemver', () => {
   expect(isValidMedplumSemver('10.256.121212')).toStrictEqual(true);
   expect(isValidMedplumSemver('10.256.121212-alpha')).toStrictEqual(false);
   expect(isValidMedplumSemver('10.256.121212-1012')).toStrictEqual(false);
+  expect(isValidMedplumSemver('10.256.121212-1z123a1')).toStrictEqual(true);
+  expect(isValidMedplumSemver('10.256.121212-test')).toStrictEqual(false);
 });
 
 test('assertReleaseManifest', () => {
@@ -66,7 +70,7 @@ describe('checkIfValidMedplumVersion', () => {
   });
 
   test('Invalid version format', async () => {
-    await expect(checkIfValidMedplumVersion('3.1.6-alpha')).resolves.toStrictEqual(false);
+    await expect(checkIfValidMedplumVersion('test', '3.1.6-alpha')).resolves.toStrictEqual(false);
   });
 
   test('Version not found', async () => {
@@ -81,7 +85,7 @@ describe('checkIfValidMedplumVersion', () => {
       }) as unknown as typeof globalThis.fetch
     );
 
-    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toStrictEqual(false);
+    await expect(checkIfValidMedplumVersion('test', '3.1.8')).resolves.toStrictEqual(false);
     fetchSpy.mockRestore();
   });
 
@@ -96,7 +100,7 @@ describe('checkIfValidMedplumVersion', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toStrictEqual(false);
+    await expect(checkIfValidMedplumVersion('test', '3.1.8')).resolves.toStrictEqual(false);
     fetchSpy.mockRestore();
   });
 
@@ -106,7 +110,7 @@ describe('checkIfValidMedplumVersion', () => {
         return Promise.reject(new Error('Network error'));
       })
     );
-    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toStrictEqual(false);
+    await expect(checkIfValidMedplumVersion('test', '3.1.8')).resolves.toStrictEqual(false);
     fetchSpy.mockRestore();
   });
 });
@@ -136,12 +140,12 @@ describe('fetchVersionManifest', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchVersionManifest()).resolves.toMatchObject<ReleaseManifest>(manifest);
+    await expect(fetchVersionManifest('test')).resolves.toMatchObject<ReleaseManifest>(manifest);
     // Should be called with latest
-    expect(fetchSpy).toHaveBeenLastCalledWith(`${GITHUB_RELEASES_URL}/latest`);
+    expect(fetchSpy).toHaveBeenLastCalledWith(expect.stringContaining(`${MEDPLUM_RELEASES_URL}/latest.json`));
     // Call again to make sure we don't refetch
     fetchSpy.mockClear();
-    await expect(fetchVersionManifest()).resolves.toMatchObject<ReleaseManifest>(manifest);
+    await expect(fetchVersionManifest('test')).resolves.toMatchObject<ReleaseManifest>(manifest);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
@@ -166,12 +170,12 @@ describe('fetchVersionManifest', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchVersionManifest('3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
-    // Should be called with latest
-    expect(fetchSpy).toHaveBeenLastCalledWith(`${GITHUB_RELEASES_URL}/tags/v3.1.6`);
+    await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
+    // Should be called with version
+    expect(fetchSpy).toHaveBeenLastCalledWith(expect.stringContaining(`${MEDPLUM_RELEASES_URL}/v3.1.6.json`));
     // Call again to make sure we don't refetch
     fetchSpy.mockClear();
-    await expect(fetchVersionManifest('3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
+    await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
@@ -182,7 +186,7 @@ describe('fetchVersionManifest', () => {
         return Promise.reject(new Error('Network request failed'));
       })
     );
-    await expect(fetchVersionManifest('3.1.6')).rejects.toThrow('Network request failed');
+    await expect(fetchVersionManifest('test', '3.1.6')).rejects.toThrow('Network request failed');
     fetchSpy.mockRestore();
   });
 
@@ -197,7 +201,7 @@ describe('fetchVersionManifest', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchVersionManifest('3.1.6')).rejects.toThrow(
+    await expect(fetchVersionManifest('test', '3.1.6')).rejects.toThrow(
       "Received status code 404 while fetching manifest for version '3.1.6'. Message: Not Found"
     );
     fetchSpy.mockRestore();
@@ -229,7 +233,7 @@ describe('fetchLatestVersionString', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchLatestVersionString()).resolves.toStrictEqual('3.1.6');
+    await expect(fetchLatestVersionString('test')).resolves.toStrictEqual('3.1.6');
     fetchSpy.mockRestore();
   });
 
@@ -253,9 +257,59 @@ describe('fetchLatestVersionString', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchLatestVersionString()).rejects.toThrow(
+    await expect(fetchLatestVersionString('test')).rejects.toThrow(
       "Invalid release name found. Release tag 'canary' did not start with 'v'"
     );
+    fetchSpy.mockRestore();
+  });
+});
+
+describe('warnIfNewerVersionAvailable', () => {
+  beforeEach(() => {
+    clearReleaseCache();
+  });
+
+  test('Newer version available', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+      jest.fn(async () => ({
+        status: 200,
+        json: async () => ({ tag_name: 'v100.0.0', assets: [{ name: 'x', browser_download_url: 'x' }] }),
+      })) as unknown as typeof globalThis.fetch
+    );
+
+    console.warn = jest.fn();
+    await warnIfNewerVersionAvailable('test', { foo: 'bar' });
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining(`${MEDPLUM_RELEASES_URL}/latest.json`));
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('A new version (v100.0.0) of Medplum is available.')
+    );
+    fetchSpy.mockRestore();
+  });
+
+  test('On current version', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+      jest.fn(async () => ({
+        status: 200,
+        json: async () => ({ tag_name: 'v' + MEDPLUM_VERSION, assets: [{ name: 'x', browser_download_url: 'x' }] }),
+      })) as unknown as typeof globalThis.fetch
+    );
+
+    console.warn = jest.fn();
+    await warnIfNewerVersionAvailable('test');
+    expect(console.warn).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  test('On current version', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+      jest.fn(async () => {
+        throw new Error('Network error');
+      }) as unknown as typeof globalThis.fetch
+    );
+
+    console.warn = jest.fn();
+    await warnIfNewerVersionAvailable('test');
+    expect(console.warn).toHaveBeenCalledWith('Failed to check for newer version: Network error');
     fetchSpy.mockRestore();
   });
 });

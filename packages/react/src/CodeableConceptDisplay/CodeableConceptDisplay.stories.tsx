@@ -1,6 +1,7 @@
 import { Meta } from '@storybook/react';
-import { CodeableConceptDisplay } from './CodeableConceptDisplay';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
+import { CodeableConceptDisplay } from './CodeableConceptDisplay';
 
 export default {
   title: 'Medplum/CodeableConceptDisplay',

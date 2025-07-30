@@ -13,7 +13,7 @@ import {
 import { ServerlessClamscan } from 'cdk-serverless-clamscan';
 import { Construct } from 'constructs';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
-import { buildWafConfig } from './waf';
+import { buildWaf } from './waf';
 
 /**
  * Binary storage bucket and CloudFront distribution.
@@ -88,9 +88,18 @@ export class Storage extends Construct {
             },
           ],
         },
+        corsBehavior: {
+          accessControlAllowCredentials: false,
+          accessControlAllowOrigins: [config.appDomainName, 'https://ccda.medplum.com'],
+          accessControlAllowHeaders: ['*'],
+          accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS'],
+          accessControlMaxAge: Duration.seconds(600),
+          originOverride: false,
+        },
         securityHeadersBehavior: {
           contentSecurityPolicy: {
-            contentSecurityPolicy: "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors *;",
+            contentSecurityPolicy:
+              "default-src 'none'; connect-src https://ccda.medplum.com; base-uri 'none'; form-action 'none'; frame-ancestors *;",
             override: true,
           },
           contentTypeOptions: { override: true },
@@ -117,10 +126,14 @@ export class Storage extends Construct {
       });
 
       // WAF
-      this.waf = new wafv2.CfnWebACL(
+      this.waf = buildWaf(
         this,
         'StorageWAF',
-        buildWafConfig(`${config.stackName}-StorageWAF`, 'CLOUDFRONT', config.storageWafIpSetArn)
+        `${config.stackName}-StorageWAF`,
+        'CLOUDFRONT',
+        config.storageWafIpSetArn,
+        config.wafLogGroupName,
+        config.wafLogGroupCreate
       );
 
       // Origin access identity
@@ -133,7 +146,7 @@ export class Storage extends Construct {
       // CloudFront distribution
       this.distribution = new cloudfront.Distribution(this, 'StorageDistribution', {
         defaultBehavior: {
-          origin: new origins.S3Origin(this.storageBucket, {
+          origin: origins.S3BucketOrigin.withOriginAccessIdentity(this.storageBucket, {
             originAccessIdentity: this.originAccessIdentity,
           }),
           responseHeadersPolicy: this.responseHeadersPolicy,

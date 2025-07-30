@@ -1,4 +1,4 @@
-import { ContentType, createReference, isUUID } from '@medplum/core';
+import { ContentType, createReference, isUUID, WithId } from '@medplum/core';
 import { Practitioner, Project } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -7,7 +7,8 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { createUser } from '../../auth/newuser';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
+import { MedplumServerConfig } from '../../config/types';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 
@@ -17,8 +18,10 @@ jest.mock('node-fetch');
 const app = express();
 
 describe('Project $init', () => {
+  let config: MedplumServerConfig;
+
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    config = await loadTestConfig();
     await initApp(app, config);
   });
 
@@ -35,7 +38,6 @@ describe('Project $init', () => {
 
   test('Success', async () => {
     const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
 
     const projectName = 'Test Init Project ' + randomUUID();
     const owner = await createUser({
@@ -65,15 +67,14 @@ describe('Project $init', () => {
       });
     expect(res.status).toBe(201);
 
-    const project = res.body as Project;
+    const project = res.body as WithId<Project>;
     expect(project.id).toBeDefined();
-    expect(isUUID(project.id as string)).toBe(true);
+    expect(isUUID(project.id)).toBe(true);
     expect(project.owner).toStrictEqual(createReference(owner));
   });
 
   test('Requires project name', async () => {
     const superAdminAccessToken = await initTestAuth({ superAdmin: true });
-    expect(superAdminAccessToken).toBeDefined();
 
     const owner = await createUser({
       email: randomUUID() + '@example.com',
@@ -131,7 +132,6 @@ describe('Project $init', () => {
 
   test('Requires server User', async () => {
     const accessToken = await initTestAuth();
-    expect(accessToken).toBeDefined();
 
     const projectName = 'Test Init Project ' + randomUUID();
     const owner = await createUser({
@@ -165,7 +165,6 @@ describe('Project $init', () => {
 
   test('Looks up existing user by email', async () => {
     const accessToken = await initTestAuth();
-    expect(accessToken).toBeDefined();
 
     const ownerEmail = randomUUID() + '@example.com';
     const projectName = 'Test Init Project ' + randomUUID();
@@ -202,7 +201,6 @@ describe('Project $init', () => {
 
   test('Creates new owner User from email', async () => {
     const accessToken = await initTestAuth();
-    expect(accessToken).toBeDefined();
 
     const ownerEmail = randomUUID() + '@example.com';
     const projectName = 'Test Init Project ' + randomUUID();
@@ -230,7 +228,6 @@ describe('Project $init', () => {
 
   test('Defaults to no owner if unspecified', async () => {
     const accessToken = await initTestAuth();
-    expect(accessToken).toBeDefined();
 
     const projectName = 'Test Init Project ' + randomUUID();
     const res = await request(app)
@@ -250,5 +247,33 @@ describe('Project $init', () => {
     expect(res.status).toBe(201);
     const project = res.body as Project;
     expect(project.owner).toBeUndefined();
+  });
+
+  test('Specify defaultProjectSystemSetting', async () => {
+    const originalDefaultProjectSystemSetting = config.defaultProjectSystemSetting;
+    config.defaultProjectSystemSetting = [{ name: 'searchTokenColumns', valueBoolean: true }];
+
+    const accessToken = await initTestAuth();
+    const projectName = 'Test Init Project ' + randomUUID();
+    const res = await request(app)
+      .post(`/fhir/R4/Project/$init`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'name',
+            valueString: projectName,
+          },
+        ],
+      });
+    expect(res.status).toBe(201);
+    const project = res.body as Project;
+    expect(project.owner).toBeUndefined();
+    expect(project.systemSetting).toStrictEqual(config.defaultProjectSystemSetting);
+
+    config.defaultProjectSystemSetting = originalDefaultProjectSystemSetting;
   });
 });

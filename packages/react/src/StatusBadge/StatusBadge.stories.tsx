@@ -1,4 +1,5 @@
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { StatusBadge } from './StatusBadge';
 
@@ -21,6 +22,9 @@ export const ExampleStatuses = (): JSX.Element => (
       </div>
       <div>
         Status: <StatusBadge status="cancelled" />
+      </div>
+      <div>
+        Status: <StatusBadge status="entered-in-error" />
       </div>
       <div>
         Status: <StatusBadge status="unknown" />

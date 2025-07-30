@@ -1,7 +1,7 @@
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { badRequest, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
 import Mail from 'nodemailer/lib/mailer';
-import { getConfig } from '../../config';
+import { getConfig } from '../../config/loader';
 import { addressToString, buildAddresses, buildRawMessage } from '../../email/utils';
 
 /**
@@ -14,6 +14,7 @@ export async function sendEmailViaSes(options: Mail.Options): Promise<void> {
   const toAddresses = buildAddresses(options.to);
   const ccAddresses = buildAddresses(options.cc);
   const bccAddresses = buildAddresses(options.bcc);
+  const replyToAddresses = buildAddresses(options.replyTo);
 
   let msg: Uint8Array;
   try {
@@ -32,6 +33,7 @@ export async function sendEmailViaSes(options: Mail.Options): Promise<void> {
           CcAddresses: ccAddresses,
           BccAddresses: bccAddresses,
         },
+        ReplyToAddresses: replyToAddresses,
         Content: {
           Raw: {
             Data: msg,

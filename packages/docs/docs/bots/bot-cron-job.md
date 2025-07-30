@@ -2,9 +2,9 @@
 sidebar_position: 21
 ---
 
-# Cron Jobs for Bots (Beta)
+# Cron Jobs for Bots
 
-You can now add a cron job for your bot so it can automatically run from a schedule. This means you can set a repeatable time for the bot to automatically every minute, day, other month, etc.
+You can add a cron job for your bot so it can automatically run from a schedule. This means you can set a repeatable time for the bot to automatically every minute, day, other month, etc.
 
 ## To add a scheduled timer for your Bot
 
@@ -16,7 +16,7 @@ You can now add a cron job for your bot so it can automatically run from a sched
 
 ## The Edit Form
 
-In the Edit Form, scroll down to the Cron and choose one of the two ways to create a cron job. One as a UI tool, or a direct Cron format `e.g * */3 * * *`
+In the Edit Form, scroll down to the Cron and choose one of the two ways to create a cron job. One as a UI tool, or a direct Cron format `e.g * */3 * * *`.
 
 ![Edit Form Page](/img/tutorials/edit-form.png)
 

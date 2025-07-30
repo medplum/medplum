@@ -1,5 +1,5 @@
 import { TypedEventTarget } from '@medplum/core';
-import { MedplumServerConfig } from './config';
+import { MedplumServerConfig } from './config/types';
 
 export type HeartbeatEventMap = {
   heartbeat: { type: 'heartbeat' };

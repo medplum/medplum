@@ -8,7 +8,7 @@ import {
   stringify,
 } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { JSX, useEffect, useMemo, useRef, useState } from 'react';
 import { buildFieldNameString } from '../SearchControl/SearchUtils';
 
 export interface SearchFieldEditorProps {
@@ -42,10 +42,6 @@ export function SearchFieldEditor(props: SearchFieldEditorProps): JSX.Element | 
       return { value: field, label: buildFieldNameString(field) };
     });
   }, [props.visible, props.search.resourceType]);
-
-  if (!props.visible) {
-    return null;
-  }
 
   function handleChange(newFields: string[]): void {
     setState({ search: { ...state.search, fields: newFields } });

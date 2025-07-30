@@ -1,9 +1,9 @@
-import { Bundle, Questionnaire, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
-import { getGroupRepeatedAnswers } from './intake-utils';
-import { intakeQuestionnaire, intakeResponse } from './test-data/intake-form-test-data';
-import { MockClient } from '@medplum/mock';
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import { Bundle, Questionnaire, QuestionnaireResponse, SearchParameter } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { getGroupRepeatedAnswers } from './intake-utils';
+import { intakeQuestionnaire, intakeResponse } from './test-data/intake-form-test-data';
 
 describe('getAnswers', async () => {
   let medplum: MockClient, questionnaire: Questionnaire, response: QuestionnaireResponse;

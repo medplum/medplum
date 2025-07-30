@@ -1,5 +1,5 @@
 import { Group, UnstyledButton } from '@mantine/core';
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 import classes from './InfoButton.module.css';
 
 export interface InfoButtonProps {

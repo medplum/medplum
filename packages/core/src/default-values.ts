@@ -1,9 +1,9 @@
 import { Resource } from '@medplum/fhirtypes';
+import { ElementsContextType } from './elements-context';
 import { SchemaCrawler, SchemaVisitor, VisitorSlicingRules } from './schema-crawler';
 import { SliceDefinitionWithTypes, getValueSliceName } from './typeschema/slices';
 import { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SlicingRules } from './typeschema/types';
 import { capitalize, deepClone, getPathDifference, isComplexTypeCode, isEmpty, isObject, isPopulated } from './utils';
-import { ElementsContextType } from './elements-context';
 
 /**
  * Used when an array entry, typically an empty one, needs to be assigned
@@ -57,27 +57,6 @@ export function applyDefaultValuesToElement(
   return existingValue;
 }
 
-export function applyDefaultValuesToElementWithVisitor(
-  existingValue: any,
-  path: string,
-  element: InternalSchemaElement,
-  elements: Record<string, InternalSchemaElement>,
-  schema: InternalTypeSchema
-): any {
-  const inputValue: object = existingValue ?? Object.create(null);
-
-  const [parentPath, key] = splitOnceRight(path, '.');
-  const parent = Object.create(null);
-  setValueAtKey(parent, inputValue, key, element);
-
-  const visitor = new DefaultValueVisitor(parent, parentPath, 'element');
-  const crawler = new SchemaCrawler(schema, visitor, elements);
-  crawler.crawlElement(element, key, parentPath);
-  const modifiedContainer = visitor.getDefaultValue();
-
-  return getValueAtKey(modifiedContainer, key, element, elements);
-}
-
 export function getDefaultValuesForNewSliceEntry(
   key: string,
   slice: SliceDefinition,
@@ -97,8 +76,7 @@ type ValueContext = {
 };
 
 class DefaultValueVisitor implements SchemaVisitor {
-  private rootValue: any;
-
+  private readonly rootValue: any;
   private readonly schemaStack: InternalTypeSchema[];
   private readonly valueStack: ValueContext[];
 
@@ -148,11 +126,12 @@ class DefaultValueVisitor implements SchemaVisitor {
         continue;
       }
 
+      const elementsKeyPrefix = getPathDifference(elementsContext.path, parentPath);
       const parentArray: any[] = Array.isArray(parentValue) ? parentValue : [parentValue];
       for (const parent of parentArray) {
-        applyMinimums(parent, key, element, elementsContext.elements);
+        applyMinimums(parent, key, element, elementsContext.elements, elementsKeyPrefix);
         applyFixedOrPatternValue(parent, key, element, elementsContext.elements);
-        const elementValue = getValueAtKey(parent, key, element, elementsContext.elements);
+        const elementValue = getValueAtKey(parent, key, elementsContext.elements, elementsKeyPrefix);
         if (elementValue !== undefined) {
           elementValues.push(elementValue);
         }
@@ -177,8 +156,9 @@ class DefaultValueVisitor implements SchemaVisitor {
       throw new Error(`Expected ${path} to be prefixed by ${this.value.path}`);
     }
 
+    const elementsKeyPrefix = getPathDifference(elementsContext.path, this.value.path);
     for (const parentValue of this.value.values) {
-      const elementValue = getValueAtKey(parentValue, key, element, elementsContext.elements);
+      const elementValue = getValueAtKey(parentValue, key, elementsContext.elements, elementsKeyPrefix);
 
       // remove empty items from arrays
       if (Array.isArray(elementValue)) {
@@ -201,17 +181,12 @@ class DefaultValueVisitor implements SchemaVisitor {
     const elementValues = this.value.values;
     const sliceValues: any[] = [];
 
-    for (const elementValue of elementValues) {
-      if (elementValue === undefined) {
-        continue;
+    for (const value of elementValues) {
+      if (value !== undefined) {
+        const elementValues = Array.isArray(value) ? value : [value];
+        const matchingItems: any[] = this.getMatchingSliceValues(elementValues, slice, slicing);
+        sliceValues.push(matchingItems);
       }
-
-      if (!Array.isArray(elementValue)) {
-        throw new Error('Expected array value for sliced element');
-      }
-
-      const matchingItems: any[] = this.getMatchingSliceValues(elementValue, slice, slicing);
-      sliceValues.push(matchingItems);
     }
 
     this.valueStack.push({
@@ -271,9 +246,11 @@ function applyMinimums(
   parent: any,
   key: string,
   element: InternalSchemaElement,
-  elements: Record<string, InternalSchemaElement>
+  elements: Record<string, InternalSchemaElement>,
+  /** The prefix, if any, that should be added to keys when looking up values in `elements` */
+  elementsKeyPrefix: string | undefined
 ): void {
-  const existingValue = getValueAtKey(parent, key, element, elements);
+  const existingValue = getValueAtKey(parent, key, elements, elementsKeyPrefix);
 
   if (element.min > 0 && existingValue === undefined) {
     if (isComplexTypeCode(element.type[0].code)) {
@@ -308,8 +285,9 @@ function setValueAtKey(parent: any, value: any, key: string, element: InternalSc
 function getValueAtKey(
   value: object,
   key: string,
-  element: InternalSchemaElement,
-  elements: Record<string, InternalSchemaElement>
+  elements: Record<string, InternalSchemaElement>,
+  /** The prefix, if any, that should be added to keys when looking up values in `elements` */
+  elementsKeyPrefix: string | undefined
 ): any {
   const keyParts = key.split('.');
   let last: any = value;
@@ -317,8 +295,10 @@ function getValueAtKey(
   for (let i = 0; i < keyParts.length; i++) {
     let keyPart = keyParts[i];
     if (keyPart.includes('[x]')) {
-      const keyPartElem = elements[keyParts.slice(0, i + 1).join('.')];
-      // should this loop through all possible types instead of using type[0]?
+      const key = (elementsKeyPrefix ? elementsKeyPrefix + '.' : '') + keyParts.slice(0, i + 1).join('.');
+      const keyPartElem = elements[key];
+
+      // this should loop through all possible types instead of using type[0]
       const code = keyPartElem.type[0].code;
       keyPart = keyPart.replace('[x]', capitalize(code));
     }
@@ -417,23 +397,4 @@ function applyPattern(existingValue: any, pattern: any): any {
   }
 
   return existingValue;
-}
-
-/**
- * Splits a string on the last occurrence of the delimiter
- * @param str - The string to split
- * @param delim - The delimiter string
- * @returns An array of two strings; the first consisting of the beginning of the
- * string up to the last occurrence of the delimiter. the second is the remainder of the
- * string after the last occurrence of the delimiter. If the delimiter is not present
- * in the string, the first element is empty and the second is the input string.
- */
-function splitOnceRight(str: string, delim: string): [string, string] {
-  const delimIndex = str.lastIndexOf(delim);
-  if (delimIndex === -1) {
-    return ['', str];
-  }
-  const beginning = str.substring(0, delimIndex);
-  const last = str.substring(delimIndex + delim.length);
-  return [beginning, last];
 }

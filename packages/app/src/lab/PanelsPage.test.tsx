@@ -2,7 +2,7 @@ import { createReference } from '@medplum/core';
 import { ActivityDefinition, ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
 import { PanelsPage } from './PanelsPage';
 

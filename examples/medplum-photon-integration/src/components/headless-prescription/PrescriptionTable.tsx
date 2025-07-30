@@ -1,5 +1,6 @@
 import { Table } from '@mantine/core';
 import { MedicationRequest } from '@medplum/fhirtypes';
+import { JSX } from 'react';
 import { PrescriptionRow } from './PrescriptionRow';
 
 interface PrescriptionTableProps {

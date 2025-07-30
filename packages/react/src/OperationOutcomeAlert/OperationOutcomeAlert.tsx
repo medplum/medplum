@@ -2,6 +2,7 @@ import { Alert } from '@mantine/core';
 import { operationOutcomeIssueToString } from '@medplum/core';
 import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { IconAlertCircle } from '@tabler/icons-react';
+import { JSX } from 'react';
 
 export interface OperationOutcomeAlertProps {
   readonly outcome?: OperationOutcome;

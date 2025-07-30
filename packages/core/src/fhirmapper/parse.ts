@@ -30,12 +30,15 @@ const CONCEPT_MAP_EQUIVALENCE: Record<string, string> = {
 };
 
 class StructureMapParser {
+  readonly parser: Parser;
   readonly structureMap: Partial<StructureMap> = {
     resourceType: 'StructureMap',
     status: 'active',
   };
 
-  constructor(readonly parser: Parser) {}
+  constructor(parser: Parser) {
+    this.parser = parser;
+  }
 
   parse(): StructureMap {
     while (this.parser.hasMore()) {

@@ -12,13 +12,16 @@ CURR_VERSION=$(node -p "require('./package.json').version")
 # Convert version string to array using '.' as delimiter
 IFS='.' read -ra CURR_VERSION_PARTS <<< "$CURR_VERSION"
 
-# Check if there have been any data migrations since the last release
-DATA_MIGRATIONS=$(git diff v$CURR_VERSION --name-only -- packages/server/src/migrations/data)
-if [ -z "$DATA_MIGRATIONS" ]; then
-    echo "No data migrations since v$CURR_VERSION, increasing patch version"
+# Check if a new requiredBefore entry has been added to the data migration manifest
+DIFF_OUTPUT=$(git diff v$CURR_VERSION -- packages/server/src/migrations/data/data-version-manifest.json) || true
+ADDED_REQUIRED_BEFORE=$(echo "$DIFF_OUTPUT" | grep -e '^\+.*"requiredBefore"' || true)
+
+# `-z "$(true)"` oddly evaluates to empty, so this still works as intended even when $ADDED_REQUIRED_BEFORE is true
+if [ -z "$ADDED_REQUIRED_BEFORE" ]; then
+    echo "No added requiredBefore entry since v$CURR_VERSION, increasing patch version"
     ((CURR_VERSION_PARTS[2]++)) || true
 else
-    echo "New data migrations since v$CURR_VERSION, increasing minor version"
+    echo "New requiredBefore entry since v$CURR_VERSION, increasing minor version"
     ((CURR_VERSION_PARTS[1]++)) || true
     CURR_VERSION_PARTS[2]=0
 fi
@@ -51,6 +54,10 @@ sed -i'' -E -e "s/\"version\": \"[^\"]+\"/\"version\": \"$NEW_VERSION\"/g" packa
 find examples -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medplum\/[^\"]+\"): \"[^\"]+\"/\1: \"$NEW_VERSION\"/g"
 find packages -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medplum\/[^\"]+\"): \"[^\"]+\"/\1: \"$NEW_VERSION\"/g"
 
+# Set version in charts/Chart.yaml (Helm)
+sed -i'' -E -e "s/^appVersion: ['\"][^\'\"]+['\"]/appVersion: '$NEW_VERSION'/g" charts/Chart.yaml
+sed -i'' -E -e "s/^version: [0-9.]+/version: $NEW_VERSION/g" charts/Chart.yaml
+
 # Run `npm version $version --workspaces`
 npm version "$NEW_VERSION" --workspaces
 
@@ -61,7 +68,7 @@ RELEASE_NOTES=$(echo -e "## What's Changed\n" && git log $(git describe --tags -
 git add -u .
 
 # Commit the changes with the release notes
-git commit -m "Release Version $NEW_VERSION" -m "$RELEASE_NOTES"
+git commit -s -m "Release Version $NEW_VERSION" -m "$RELEASE_NOTES"
 
 # Push the changes to the remote branch
 git push origin "$BRANCH_NAME"

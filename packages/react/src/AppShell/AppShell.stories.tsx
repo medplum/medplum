@@ -12,6 +12,7 @@ import {
   IconReceipt2,
   IconSettings,
 } from '@tabler/icons-react';
+import { JSX } from 'react';
 import { Logo } from '../Logo/Logo';
 import { NotificationIcon } from '../NotificationIcon/NotificationIcon';
 import { AppShell } from './AppShell';

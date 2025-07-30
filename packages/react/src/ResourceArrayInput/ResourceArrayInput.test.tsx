@@ -1,8 +1,8 @@
 import { InternalSchemaElement } from '@medplum/core';
-import { act, fireEvent, render, screen, within } from '../test-utils/render';
-import { ResourceArrayInput, ResourceArrayInputProps } from './ResourceArrayInput';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen, within } from '../test-utils/render';
+import { ResourceArrayInput, ResourceArrayInputProps } from './ResourceArrayInput';
 
 const medplum = new MockClient();
 

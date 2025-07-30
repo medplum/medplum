@@ -94,6 +94,6 @@ describe('ContactPointInput', () => {
       });
     });
 
-    expect(stringify(lastValue)).toBeUndefined();
+    expect(stringify(lastValue)).toStrictEqual('');
   });
 });

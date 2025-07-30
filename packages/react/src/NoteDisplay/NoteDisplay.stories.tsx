@@ -1,4 +1,5 @@
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../Document/Document';
 import { CreatinineObservation } from '../stories/referenceLab';
 import { NoteDisplay } from './NoteDisplay';

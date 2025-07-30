@@ -10,4 +10,4 @@ See: https://github.com/ashtuchkin/iconv-lite/wiki/Supported-Encodings
 
 ## License
 
-Apache 2.0. Copyright &copy; Medplum 2024
+Apache 2.0. Copyright &copy; Medplum 2025

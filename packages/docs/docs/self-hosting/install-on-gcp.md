@@ -1,10 +1,16 @@
 ---
-sidebar_position: 4
+sidebar_position: 6
 ---
 
 # Install on GCP
 
 This document is intended to guide Medplum through the deployment of a comprehensive infrastructure on Google Cloud Platform (GCP) using Terraform. It provides detailed instructions and configurations necessary to set up essential components such as a Virtual Private Cloud (VPC), Google Kubernetes Engine (GKE) cluster, Cloud SQL database, Cloud Storage buckets, and Redis instances. The purpose is to ensure a smooth and efficient deployment process tailored to Medplum’s specific requirements, facilitating scalability, security, and high availability within their cloud environment.
+
+:::danger
+
+Medplum on GCP is in beta.
+
+:::
 
 :::caution
 

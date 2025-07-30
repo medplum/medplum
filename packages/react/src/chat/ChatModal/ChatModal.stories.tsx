@@ -2,6 +2,7 @@ import { Text } from '@mantine/core';
 import { createReference, getReferenceString } from '@medplum/core';
 import { DrAliceSmith, HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
+import { JSX } from 'react';
 import { Document } from '../../Document/Document';
 import { withMockedDate } from '../../stories/decorators';
 import { BaseChat } from '../BaseChat/BaseChat';

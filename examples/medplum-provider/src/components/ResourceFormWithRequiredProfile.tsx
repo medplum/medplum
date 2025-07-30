@@ -1,9 +1,9 @@
 import { Alert } from '@mantine/core';
 import { InternalTypeSchema, addProfileToResource, normalizeErrorString, tryGetProfile } from '@medplum/core';
+import { Resource } from '@medplum/fhirtypes';
 import { Loading, ResourceForm, ResourceFormProps, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { ReactNode, useCallback, useEffect, useState } from 'react';
-import { Resource } from '@medplum/fhirtypes';
+import { JSX, ReactNode, useCallback, useEffect, useState } from 'react';
 
 interface ResourceFormWithRequiredProfileProps extends ResourceFormProps {
   /** (optional) If specified, an error is shown in place of `ResourceForm` if the profile cannot be loaded.  */

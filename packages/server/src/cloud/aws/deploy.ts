@@ -15,10 +15,10 @@ import { sleep } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
-import { getConfig } from '../../config';
-import { getLogger } from '../../context';
+import { getConfig } from '../../config/loader';
+import { getLogger } from '../../logger';
 
-export const LAMBDA_RUNTIME = 'nodejs18.x';
+export const LAMBDA_RUNTIME = 'nodejs20.x';
 export const LAMBDA_HANDLER = 'index.handler';
 export const LAMBDA_MEMORY = 1024;
 export const DEFAULT_LAMBDA_TIMEOUT = 10;
@@ -30,7 +30,7 @@ const PdfPrinter = require("pdfmake");
 const userCode = require("./user.js");
 
 exports.handler = async (event, context) => {
-  const { bot, baseUrl, accessToken, contentType, secrets, traceId } = event;
+  const { bot, baseUrl, accessToken, contentType, secrets, traceId, headers } = event;
   const medplum = new MedplumClient({
     baseUrl,
     fetch: function(url, options = {}) {
@@ -47,7 +47,7 @@ exports.handler = async (event, context) => {
     if (contentType === ContentType.HL7_V2 && input) {
       input = Hl7Message.parse(input);
     }
-    let result = await userCode.handler(medplum, { bot, input, contentType, secrets, traceId });
+    let result = await userCode.handler(medplum, { bot, input, contentType, secrets, traceId, headers });
     if (contentType === ContentType.HL7_V2 && result) {
       result = result.toString();
     }
@@ -297,7 +297,8 @@ async function updateLambdaCode(client: LambdaClient, name: string, zipFile: Uin
       const isBusy = err instanceof ResourceConflictException;
       const isLastAttempt = attempt === maxAttempts - 1;
       if (isBusy && !isLastAttempt) {
-        await sleep(1000);
+        // 1 sec, 2 sec, 4 sec, 8 sec
+        await sleep(1000 * 2 ** attempt);
       } else {
         throw err;
       }

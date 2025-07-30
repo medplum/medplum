@@ -667,7 +667,7 @@ describe('Agent CLI', () => {
 
     test('No message or agent', async () => {
       const device = await medplum.createResource({ id: randomUUID(), resourceType: 'Device' });
-      await expect(main(['node', 'index.js', 'agent', 'push', device.id as string])).rejects.toThrow(
+      await expect(main(['node', 'index.js', 'agent', 'push', device.id])).rejects.toThrow(
         'Process exited with exit code 1'
       );
       expect(processError).toHaveBeenCalledWith(expect.stringContaining("error: missing required argument 'message'"));
@@ -675,7 +675,7 @@ describe('Agent CLI', () => {
 
     test('No agent selected', async () => {
       const device = await medplum.createResource({ id: randomUUID(), resourceType: 'Device' });
-      await expect(main(['node', 'index.js', 'agent', 'push', device.id as string, EXAMPLE_HL7_MSG])).rejects.toThrow(
+      await expect(main(['node', 'index.js', 'agent', 'push', device.id, EXAMPLE_HL7_MSG])).rejects.toThrow(
         'Process exited with exit code 1'
       );
       expect(processError).toHaveBeenCalledWith(
@@ -696,11 +696,11 @@ describe('Agent CLI', () => {
 
         const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
         await expect(
-          main(['node', 'index.js', 'agent', 'push', device.id as string, EXAMPLE_HL7_MSG, agentId])
+          main(['node', 'index.js', 'agent', 'push', device.id, EXAMPLE_HL7_MSG, agentId])
         ).resolves.toBeUndefined();
         expect(medplumPushSpy).toHaveBeenCalledWith(
           { reference: `Agent/${agentId}` } satisfies Reference<Agent>,
-          { reference: `Device/${device.id as string}` },
+          { reference: `Device/${device.id}` },
           EXAMPLE_HL7_MSG,
           ContentType.HL7_V2,
           true,
@@ -726,7 +726,7 @@ describe('Agent CLI', () => {
             'index.js',
             'agent',
             'push',
-            device.id as string,
+            device.id,
             'Hello, Medplum!',
             agentId,
             '--content-type',
@@ -735,7 +735,7 @@ describe('Agent CLI', () => {
         ).resolves.toBeUndefined();
         expect(medplumPushSpy).toHaveBeenCalledWith(
           { reference: `Agent/${agentId}` } satisfies Reference<Agent>,
-          { reference: `Device/${device.id as string}` },
+          { reference: `Device/${device.id}` },
           'Hello, Medplum!',
           ContentType.TEXT,
           true,
@@ -761,7 +761,7 @@ describe('Agent CLI', () => {
             'index.js',
             'agent',
             'push',
-            device.id as string,
+            device.id,
             'Hello, Medplum!',
             agentId,
             '--no-wait',
@@ -771,7 +771,7 @@ describe('Agent CLI', () => {
         ).resolves.toBeUndefined();
         expect(medplumPushSpy).toHaveBeenCalledWith(
           { reference: `Agent/${agentId}` } satisfies Reference<Agent>,
-          { reference: `Device/${device.id as string}` },
+          { reference: `Device/${device.id}` },
           'Hello, Medplum!',
           ContentType.TEXT,
           false,
@@ -792,11 +792,11 @@ describe('Agent CLI', () => {
 
         const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
         await expect(
-          main(['node', 'index.js', 'agent', 'push', device.id as string, EXAMPLE_HL7_MSG, agentId, '--no-wait'])
+          main(['node', 'index.js', 'agent', 'push', device.id, EXAMPLE_HL7_MSG, agentId, '--no-wait'])
         ).resolves.toBeUndefined();
         expect(medplumPushSpy).toHaveBeenCalledWith(
           { reference: `Agent/${agentId}` } satisfies Reference<Agent>,
-          { reference: `Device/${device.id as string}` },
+          { reference: `Device/${device.id}` },
           EXAMPLE_HL7_MSG,
           ContentType.HL7_V2,
           false,
@@ -846,20 +846,11 @@ describe('Agent CLI', () => {
 
         const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
         await expect(
-          main([
-            'node',
-            'index.js',
-            'agent',
-            'push',
-            device.id as string,
-            EXAMPLE_HL7_MSG,
-            '--criteria',
-            'Agent?name=Test Agent',
-          ])
+          main(['node', 'index.js', 'agent', 'push', device.id, EXAMPLE_HL7_MSG, '--criteria', 'Agent?name=Test Agent'])
         ).resolves.toBeUndefined();
         expect(medplumPushSpy).toHaveBeenCalledWith(
           { reference: `Agent/${agentId}` } satisfies Reference<Agent>,
-          { reference: `Device/${device.id as string}` },
+          { reference: `Device/${device.id}` },
           EXAMPLE_HL7_MSG,
           ContentType.HL7_V2,
           true,
@@ -887,16 +878,7 @@ describe('Agent CLI', () => {
 
         const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent');
         await expect(
-          main([
-            'node',
-            'index.js',
-            'agent',
-            'push',
-            device.id as string,
-            EXAMPLE_HL7_MSG,
-            '--criteria',
-            'Agent?name=Test Agent',
-          ])
+          main(['node', 'index.js', 'agent', 'push', device.id, EXAMPLE_HL7_MSG, '--criteria', 'Agent?name=Test Agent'])
         ).rejects.toThrow('Process exited with exit code 1');
         expect(medplumPushSpy).not.toHaveBeenCalled();
         expect(processError).toHaveBeenCalledWith(
@@ -914,7 +896,7 @@ describe('Agent CLI', () => {
             'index.js',
             'agent',
             'push',
-            device.id as string,
+            device.id,
             EXAMPLE_HL7_MSG,
             '--criteria',
             'Agent?name=Test Agent 1',
@@ -922,7 +904,7 @@ describe('Agent CLI', () => {
         ).resolves.toBeUndefined();
         expect(medplumPushSpy).toHaveBeenCalledWith(
           { reference: `Agent/${agentId1}` } satisfies Reference<Agent>,
-          { reference: `Device/${device.id as string}` },
+          { reference: `Device/${device.id}` },
           EXAMPLE_HL7_MSG,
           ContentType.HL7_V2,
           true,
@@ -945,12 +927,12 @@ describe('Agent CLI', () => {
       const medplumPushSpy = jest.spyOn(medplum, 'pushToAgent').mockImplementation(() => {
         throw new Error('Invalid response!');
       });
-      await expect(
-        main(['node', 'index.js', 'agent', 'push', device.id as string, EXAMPLE_HL7_MSG, agentId])
-      ).rejects.toThrow('Process exited with exit code 1');
+      await expect(main(['node', 'index.js', 'agent', 'push', device.id, EXAMPLE_HL7_MSG, agentId])).rejects.toThrow(
+        'Process exited with exit code 1'
+      );
       expect(medplumPushSpy).toHaveBeenCalledWith(
         { reference: `Agent/${agentId}` } satisfies Reference<Agent>,
-        { reference: `Device/${device.id as string}` },
+        { reference: `Device/${device.id}` },
         EXAMPLE_HL7_MSG,
         ContentType.HL7_V2,
         true,
@@ -1321,6 +1303,106 @@ describe('Agent CLI', () => {
         );
         expect(processError).not.toHaveBeenCalled();
       });
+    });
+
+    test('Upgrade to specified version', async () => {
+      const agentId = randomUUID();
+      const agent = await medplum.createResource({
+        id: agentId,
+        resourceType: 'Agent',
+        name: 'Test Agent 1',
+        status: 'active',
+      } satisfies Agent);
+
+      medplum.router.router.add('GET', 'Agent/$upgrade', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Bundle',
+            type: 'collection',
+            entry: [
+              {
+                resource: {
+                  resourceType: 'Parameters',
+                  parameter: [
+                    { name: 'agent', resource: agent },
+                    {
+                      name: 'result',
+                      resource: allOk,
+                    },
+                  ],
+                },
+              },
+            ],
+          } satisfies Bundle,
+        ];
+      });
+
+      await expect(
+        main(['node', 'index.js', 'agent', 'upgrade', '--criteria', 'Agent?name=Test Agent', '--agentVersion', '4.3.1'])
+      ).resolves.toBeUndefined();
+      expect(medplumGetSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          href: medplum.fhirUrl('Agent', '$upgrade?name=Test+Agent&version=4.3.1').href,
+        }),
+        expect.objectContaining({ cache: 'reload' })
+      );
+      expect(processError).not.toHaveBeenCalled();
+    });
+
+    test('Force upgrade', async () => {
+      const agentId = randomUUID();
+      const agent = await medplum.createResource({
+        id: agentId,
+        resourceType: 'Agent',
+        name: 'Test Agent 1',
+        status: 'active',
+      } satisfies Agent);
+
+      medplum.router.router.add('GET', 'Agent/$upgrade', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Bundle',
+            type: 'collection',
+            entry: [
+              {
+                resource: {
+                  resourceType: 'Parameters',
+                  parameter: [
+                    { name: 'agent', resource: agent },
+                    {
+                      name: 'result',
+                      resource: allOk,
+                    },
+                  ],
+                },
+              },
+            ],
+          } satisfies Bundle,
+        ];
+      });
+
+      await expect(
+        main([
+          'node',
+          'index.js',
+          'agent',
+          'upgrade',
+          '--criteria',
+          'Agent?name=Test Agent',
+          '--agentVersion',
+          '4.3.1',
+          '--force',
+        ])
+      ).resolves.toBeUndefined();
+      expect(medplumGetSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          href: medplum.fhirUrl('Agent', '$upgrade?name=Test+Agent&version=4.3.1&force=true').href,
+        }),
+        expect.objectContaining({ cache: 'reload' })
+      );
+      expect(processError).not.toHaveBeenCalled();
     });
   });
 });

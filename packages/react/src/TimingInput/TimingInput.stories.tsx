@@ -1,9 +1,10 @@
-import { Meta } from '@storybook/react';
-import { Document } from '../Document/Document';
-import { TimingInput } from './TimingInput';
 import { buildElementsContext } from '@medplum/core';
+import { Meta } from '@storybook/react';
+import { JSX } from 'react';
+import { Document } from '../Document/Document';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
+import { TimingInput } from './TimingInput';
 
 export default {
   title: 'Medplum/TimingInput',

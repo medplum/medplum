@@ -2,8 +2,8 @@ import { Box, Flex, Text } from '@mantine/core';
 import { Questionnaire, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { JSX, useEffect, useState } from 'react';
+import { useParams } from 'react-router';
 
 export function SoapNote(): JSX.Element {
   const { id } = useParams();

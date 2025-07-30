@@ -42,7 +42,7 @@
 }
 
 .heroTitle {
-  font-size: 4rem;
+  font-size: 3.5rem;
   line-height: 1.2;
   font-weight: 300;
 }
@@ -114,4 +114,8 @@
   align-items: center;
   width: 100%;
   margin-bottom: 2rem;
+}
+
+.initCode {
+  font-size: 2rem;
 }

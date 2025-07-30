@@ -11,8 +11,6 @@ describe('App Index', () => {
           }),
       })
     );
-
-    global.Request = jest.fn();
   });
 
   test('Renders', async () => {

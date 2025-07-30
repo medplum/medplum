@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { InternalSchemaElement, deepClone, getElementDefinition, normalizeOperationOutcome } from '@medplum/core';
 import { ProjectSite } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, JSX, useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
 export function SitesPage(): JSX.Element {

@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import styles from './HomepageCallout.module.css';
 
 type HomepageCalloutProps = {

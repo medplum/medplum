@@ -2,7 +2,7 @@ import { Grid, GridCol } from '@mantine/core';
 import { parseReference, resolveId } from '@medplum/core';
 import { Communication, Patient } from '@medplum/fhirtypes';
 import { PatientSummary, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { CommunicationDetails } from '../components/CommunicationDetails';
 
 interface MessagePageProps {

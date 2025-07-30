@@ -1,10 +1,10 @@
 import { Box, Button, InputLabel, LoadingOverlay, NativeSelect, Stack, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { AddressInput, Form, ResourceAvatar, useMedplum } from '@medplum/react';
 import { formatFamilyName, formatGivenName, formatHumanName, normalizeErrorString } from '@medplum/core';
 import { Address, HumanName, Patient } from '@medplum/fhirtypes';
+import { AddressInput, Form, ResourceAvatar, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useState } from 'react';
+import { JSX, useState } from 'react';
 import { InfoSection } from '../../components/InfoSection';
 
 export function Profile(): JSX.Element | null {

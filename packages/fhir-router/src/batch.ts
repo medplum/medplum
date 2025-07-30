@@ -1,13 +1,15 @@
 import {
+  append,
   badRequest,
+  Event,
   getReferenceString,
   getStatus,
   isOk,
-  OperationOutcomeError,
-  parseSearchRequest,
-  Event,
   normalizeOperationOutcome,
   notFound,
+  OperationOutcomeError,
+  parseSearchRequest,
+  WithId,
 } from '@medplum/core';
 import {
   Bundle,
@@ -17,10 +19,10 @@ import {
   ParametersParameter,
   Resource,
 } from '@medplum/fhirtypes';
+import { IncomingHttpHeaders } from 'node:http';
 import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
 import { FhirRepository } from './repo';
 import { HttpMethod, RouteResult } from './urlrouter';
-import { IncomingHttpHeaders } from 'node:http';
 
 const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;
@@ -61,6 +63,10 @@ export async function processBatch(
  * In particular, it tracks rewritten IDs as necessary.
  */
 class BatchProcessor {
+  private readonly router: FhirRouter;
+  private readonly repo: FhirRepository;
+  private readonly bundle: Bundle;
+  private readonly req: FhirRequest;
   private readonly resolvedIdentities: Record<string, string>;
 
   /**
@@ -70,12 +76,11 @@ class BatchProcessor {
    * @param bundle - The input bundle.
    * @param req - The request for the batch.
    */
-  constructor(
-    private readonly router: FhirRouter,
-    private readonly repo: FhirRepository,
-    private readonly bundle: Bundle,
-    private readonly req: FhirRequest
-  ) {
+  constructor(router: FhirRouter, repo: FhirRepository, bundle: Bundle, req: FhirRequest) {
+    this.router = router;
+    this.repo = repo;
+    this.bundle = bundle;
+    this.req = req;
     this.resolvedIdentities = Object.create(null);
   }
 
@@ -280,7 +285,7 @@ class BatchProcessor {
     }
     if (entry.resource) {
       entry.resource.id = this.repo.generateId();
-      return { placeholder, reference: getReferenceString(entry.resource) };
+      return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
     }
     return undefined;
   }
@@ -317,7 +322,7 @@ class BatchProcessor {
               }
 
               entry.resource.id = this.repo.generateId();
-              return { placeholder, reference: getReferenceString(entry.resource) };
+              return { placeholder, reference: getReferenceString(entry.resource as WithId<Resource>) };
             }
             return undefined;
           default:
@@ -372,19 +377,28 @@ class BatchProcessor {
     };
     this.router.dispatchEvent(preEvent);
 
-    let errors = 0;
-
-    for (const entryIndex of bundleInfo.ordering) {
+    let errors: string[] | undefined;
+    for (let n = 0; n < bundleInfo.ordering.length; n++) {
+      const entryIndex = bundleInfo.ordering[n];
       const entry = entries[entryIndex];
       const rewritten = this.rewriteIdsInObject(entry);
       try {
         resultEntries[entryIndex] = await this.processBatchEntry(rewritten);
-      } catch (err) {
+      } catch (err: any) {
         if (this.isTransaction()) {
           throw err;
         }
 
-        errors++;
+        errors = append(errors, err.message);
+        if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 429) {
+          // Rate limit reached; terminate batch and finish to avoid further load on server
+          for (let i = n; i < bundleInfo.ordering.length; i++) {
+            const entryIndex = bundleInfo.ordering[i];
+            resultEntries[entryIndex] = buildBundleResponse(err.outcome);
+          }
+          break;
+        }
+
         resultEntries[entryIndex] = buildBundleResponse(normalizeOperationOutcome(err));
         continue;
       }
@@ -585,7 +599,7 @@ function buildBundleResponse(outcome: OperationOutcome, resource?: Resource): Bu
 export interface BatchEvent extends Event {
   bundleType: Bundle['type'];
   count?: number;
-  errors?: number;
+  errors?: string[];
   size?: number;
 }
 

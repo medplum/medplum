@@ -1,5 +1,6 @@
 import { Group, Title } from '@mantine/core';
 import { MedplumLink } from '@medplum/react';
+import { JSX } from 'react';
 import { MemberTable } from './MembersTable';
 
 export function ClientsPage(): JSX.Element {

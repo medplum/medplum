@@ -1,9 +1,9 @@
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
+import { isDateTimeString } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import { TypedValue, globalSchema, stringifyTypedValue } from '../types';
 import { append, sortStringArray } from '../utils';
-import { isDateTimeString } from '../fhirpath/utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 export const DEFAULT_MAX_SEARCH_COUNT = 1000;
@@ -49,44 +49,46 @@ export interface IncludeTarget {
  * These operators represent "modifiers" and "prefixes" in FHIR search.
  * See: https://www.hl7.org/fhir/search.html
  */
-export enum Operator {
-  EQUALS = 'eq',
-  NOT_EQUALS = 'ne',
+export const Operator = {
+  EQUALS: 'eq',
+  NOT_EQUALS: 'ne',
 
   // Numbers
-  GREATER_THAN = 'gt',
-  LESS_THAN = 'lt',
-  GREATER_THAN_OR_EQUALS = 'ge',
-  LESS_THAN_OR_EQUALS = 'le',
+  GREATER_THAN: 'gt',
+  LESS_THAN: 'lt',
+  GREATER_THAN_OR_EQUALS: 'ge',
+  LESS_THAN_OR_EQUALS: 'le',
 
   // Dates
-  STARTS_AFTER = 'sa',
-  ENDS_BEFORE = 'eb',
-  APPROXIMATELY = 'ap',
+  STARTS_AFTER: 'sa',
+  ENDS_BEFORE: 'eb',
+  APPROXIMATELY: 'ap',
 
   // String
-  CONTAINS = 'contains',
-  EXACT = 'exact',
+  CONTAINS: 'contains',
+  STARTS_WITH: 'sw',
+  EXACT: 'exact',
 
   // Token
-  TEXT = 'text',
-  NOT = 'not',
-  ABOVE = 'above',
-  BELOW = 'below',
-  IN = 'in',
-  NOT_IN = 'not-in',
-  OF_TYPE = 'of-type',
+  TEXT: 'text',
+  NOT: 'not',
+  ABOVE: 'above',
+  BELOW: 'below',
+  IN: 'in',
+  NOT_IN: 'not-in',
+  OF_TYPE: 'of-type',
 
   // All
-  MISSING = 'missing',
-  PRESENT = 'present',
+  MISSING: 'missing',
+  PRESENT: 'present',
 
   // Reference
-  IDENTIFIER = 'identifier',
+  IDENTIFIER: 'identifier',
 
   // _include and _revinclude
-  ITERATE = 'iterate',
-}
+  ITERATE: 'iterate',
+} as const;
+export type Operator = (typeof Operator)[keyof typeof Operator];
 
 /**
  * Parameter names may specify a modifier as a suffix.
@@ -124,6 +126,7 @@ const PREFIX_OPERATORS: Record<string, Operator> = {
   sa: Operator.STARTS_AFTER,
   eb: Operator.ENDS_BEFORE,
   ap: Operator.APPROXIMATELY,
+  sw: Operator.STARTS_WITH,
 };
 
 /**
@@ -189,37 +192,6 @@ export function parseSearchRequest<T extends Resource = Resource>(
 
   // Finally we can move on to the actual parsing
   return parseSearchImpl(resourceType, queryArray);
-}
-
-/**
- * Parses a search URL into a search request.
- * @param url - The search URL.
- * @returns A parsed SearchRequest.
- * @deprecated Use parseSearchRequest instead.
- */
-export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchRequest<T> {
-  return parseSearchRequest<T>(url);
-}
-
-/**
- * Parses a URL string into a SearchRequest.
- * @param url - The URL to parse.
- * @returns Parsed search definition.
- * @deprecated Use parseSearchRequest instead.
- */
-export function parseSearchDefinition<T extends Resource = Resource>(url: string): SearchRequest<T> {
-  return parseSearchRequest<T>(url);
-}
-
-/**
- * Parses a FHIR criteria string into a SearchRequest.
- * FHIR criteria strings are found on resources such as Subscription.
- * @param criteria - The FHIR criteria string.
- * @returns Parsed search definition.
- * @deprecated Use parseSearchRequest instead.
- */
-export function parseCriteriaAsSearchRequest<T extends Resource = Resource>(criteria: string): SearchRequest<T> {
-  return parseSearchRequest<T>(criteria);
 }
 
 function parseSearchImpl<T extends Resource = Resource>(
@@ -354,11 +326,12 @@ function parseSortRule(searchRequest: SearchRequest, value: string): void {
   }
 }
 
+const presenceOperators: Operator[] = [Operator.MISSING, Operator.PRESENT];
 export function parseParameter(searchParam: SearchParameter, modifier: string, value: string): Filter {
-  if (modifier === 'missing') {
+  if (presenceOperators.includes(modifier as Operator)) {
     return {
       code: searchParam.code,
-      operator: Operator.MISSING,
+      operator: modifier as Operator,
       value,
     };
   }
@@ -395,7 +368,7 @@ export function parseParameter(searchParam: SearchParameter, modifier: string, v
 }
 
 function parseUnknownParameter(code: string, modifier: string, value: string): Filter {
-  let operator = Operator.EQUALS;
+  let operator: Operator = Operator.EQUALS;
   if (modifier) {
     operator = modifier as Operator;
   } else if (value.length >= 2) {
@@ -525,6 +498,10 @@ export function formatSearchQuery(definition: SearchRequest): string {
 
   if (definition.total !== undefined) {
     params.push('_total=' + definition.total);
+  }
+
+  if (definition.types && definition.types.length > 0) {
+    params.push('_type=' + definition.types.join(','));
   }
 
   if (definition.include) {

@@ -18,7 +18,7 @@ import {
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { ReactNode } from 'react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from 'react-router';
 import { act, render, screen } from '../test-utils/render';
 import { ResourcePropertyDisplay } from './ResourcePropertyDisplay';
 
@@ -156,6 +156,26 @@ describe('ResourcePropertyDisplay', () => {
     );
     expect(screen.getByText('hello')).toBeInTheDocument();
     expect(screen.getByText('world')).toBeInTheDocument();
+  });
+
+  test('Renders string array with more than 50 items and shows total count', async () => {
+    const manyStrings = Array.from({ length: 75 }, (_, index) => `item-${index + 1}`);
+
+    await setup(
+      <ResourcePropertyDisplay
+        property={{ ...baseProperty, type: [{ code: 'string' }], max: Number.POSITIVE_INFINITY }}
+        propertyType={PropertyType.string}
+        value={manyStrings}
+      />
+    );
+
+    expect(screen.getByText('item-1')).toBeInTheDocument();
+    expect(screen.getByText('item-50')).toBeInTheDocument();
+
+    expect(screen.queryByText('item-51')).not.toBeInTheDocument();
+    expect(screen.queryByText('item-75')).not.toBeInTheDocument();
+
+    expect(screen.getByText('... 75 total values')).toBeInTheDocument();
   });
 
   test('Renders markdown', async () => {
@@ -433,10 +453,8 @@ describe('ResourcePropertyDisplay', () => {
   });
 
   test('Handles unknown property', async () => {
-    console.error = jest.fn();
     await expect(
       setup(<ResourcePropertyDisplay propertyType={PropertyType.BackboneElement} value={{}} />)
     ).rejects.toThrow('Displaying property of type BackboneElement requires element schema');
-    expect(console.error).toHaveBeenCalled();
   });
 });

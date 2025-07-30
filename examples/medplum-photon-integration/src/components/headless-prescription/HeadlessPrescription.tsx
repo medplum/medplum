@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { createReference } from '@medplum/core';
 import { MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 import { PrescriptionTable } from './PrescriptionTable';
 
 interface HeadlessPrescriptionProps {

@@ -1,4 +1,4 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
+import { BotEvent, isObject, MedplumClient } from '@medplum/core';
 import { ProjectSetting, Questionnaire, QuestionnaireItem, QuestionnaireItemAnswerOption } from '@medplum/fhirtypes';
 
 type GetLabTestEvent = {
@@ -38,9 +38,9 @@ type Event = GetLabTestEvent | GetLabEvent | GetMarkersEvent | GetAoEQuestionnai
  */
 export async function handler(
   medplum: MedplumClient,
-  event: BotEvent
+  event: BotEvent<Event>
 ): Promise<LabTest[] | Lab[] | Marker[] | Questionnaire | undefined> {
-  if (typeof event.input !== 'object' || !('endpoint' in event.input)) {
+  if (!isObject(event.input)) {
     return undefined;
   }
 

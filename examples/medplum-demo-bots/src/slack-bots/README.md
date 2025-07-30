@@ -46,7 +46,7 @@ For further reference on Bot Secrets see [Bot Secrets](https://www.medplum.com/d
 In the `handler` function of your bot code, update the `slackChannel` variable to match the name or ID of the Slack channel where you want to receive notifications:
 
 ```typescript
-const slackChannel = "your-channel-name";
+const slackChannel = 'your-channel-name';
 ```
 
 ### 5. Deploy the Bot

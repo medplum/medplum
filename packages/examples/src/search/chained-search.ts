@@ -58,7 +58,7 @@ curl 'https://api.medplum.com/fhir/R4/Observation?encounter:Encounter.service-pr
 
 // start-block reverseChainedSearchTs
 await medplum.searchResources('Patient', {
-  _has: 'Observation:subject:code=8867-4',
+  '_has:Observation:subject:code': '8867-4',
 });
 // end-block reverseChainedSearchTs
 
@@ -76,7 +76,7 @@ curl 'https://api.medplum.com/fhir/R4/Patient?_has:Observation:subject:code=8867
 
 // start-block nestedReverseChainTs
 await medplum.searchResources('Specimen', {
-  _has: 'DiagnosticReport:specimen:_has:Procedure:reason-reference:date=2023-11-12',
+  '_has:DiagnosticReport:specimen:_has:Procedure:reason-reference:date': '2023-11-12',
 });
 // end-block nestedReverseChainTs
 
@@ -94,7 +94,7 @@ curl 'https://api.medplum.com/fhir/R4/Specimen?_has:DiagnosticReport:specimen:_h
 
 // start-block combinedChainTs
 await medplum.searchResources('Patient', {
-  _has: 'Observation:subject:performer:CareTeam.participant:Practitioner.name=bob',
+  '_has:Observation:subject:performer:CareTeam.participant:Practitioner.name': 'bob',
 });
 // end-block combinedChainTs
 

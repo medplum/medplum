@@ -8,6 +8,16 @@ export const DOSESPOT_PATIENT_SYNC_BOT: Identifier = { system: MEDPLUM_BOT_SYSTE
 
 export const DOSESPOT_IFRAME_BOT: Identifier = { system: MEDPLUM_BOT_SYSTEM, value: 'dosespot-iframe-bot' };
 
+export const DOSESPOT_MEDICATION_HISTORY_BOT: Identifier = {
+  system: MEDPLUM_BOT_SYSTEM,
+  value: 'dosespot-medication-history-bot',
+};
+
+export const DOSESPOT_PRESCRIPTIONS_SYNC_BOT: Identifier = {
+  system: MEDPLUM_BOT_SYSTEM,
+  value: 'dosespot-prescriptions-sync-bot',
+};
+
 export const DOSESPOT_NOTIFICATION_COUNTS_BOT: Identifier = {
   system: MEDPLUM_BOT_SYSTEM,
   value: 'dosespot-notification-counts-bot',

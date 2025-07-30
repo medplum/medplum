@@ -1,4 +1,4 @@
-import { isResource } from '@medplum/core';
+import { isResourceWithId } from '@medplum/core';
 import { Request, Response } from 'express';
 import { JSONSchema4 } from 'json-schema';
 import type {
@@ -9,7 +9,7 @@ import type {
   SchemaObject,
   TagObject,
 } from 'openapi3-ts/oas31';
-import { getConfig } from './config';
+import { getConfig } from './config/loader';
 import { getJsonSchemaDefinitions } from './fhir/jsonschema';
 
 type OpenAPIObjectWithPaths = OpenAPIObject & { paths: PathsObject };
@@ -525,5 +525,5 @@ function buildPatchPath(): any {
 
 function isResourceType(definition: JSONSchema4): boolean {
   const props = definition.properties;
-  return !!(isResource(props) && 'id' in props && 'meta' in props);
+  return !!(isResourceWithId(props) && 'meta' in props);
 }

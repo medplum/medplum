@@ -114,3 +114,42 @@ export interface ScimListResponse<T> {
   startIndex?: number;
   Resources: T[];
 }
+
+/**
+ * SCIM PATCH request.
+ *
+ *   HTTP PATCH is an OPTIONAL server function that enables clients to
+ *   update one or more attributes of a SCIM resource using a sequence of
+ *   operations to "add", "remove", or "replace" values.  Clients may
+ *   discover service provider support for PATCH by querying the service
+ *   provider configuration (see Section 4).
+ *
+ *   The general form of the SCIM PATCH request is based on JSON Patch
+ *   [RFC6902].  One difference between SCIM PATCH and JSON Patch is that
+ *   SCIM servers do not support array indexing and do not support
+ *   [RFC6902] operation types relating to array element manipulation,
+ *   such as "move".
+ *
+ *   The body of each request MUST contain the "schemas" attribute with
+ *   the URI value of "urn:ietf:params:scim:api:messages:2.0:PatchOp".
+ *
+ *   The body of an HTTP PATCH request MUST contain the attribute
+ *   "Operations", whose value is an array of one or more PATCH
+ *   operations.  Each PATCH operation object MUST have exactly one "op"
+ *   member, whose value indicates the operation to perform and MAY be one
+ *   of "add", "remove", or "replace".  The semantics of each operation
+ *   are defined in the following subsections.
+ *
+ * See SCIM 3.5.2 - Modifying with PATCH
+ * https://www.rfc-editor.org/rfc/rfc7644#section-3.5.2
+ */
+export interface ScimPatchRequest {
+  schemas?: string[];
+  Operations: ScimPatchOperation[];
+}
+
+export interface ScimPatchOperation {
+  op: string;
+  path?: string;
+  value?: unknown;
+}

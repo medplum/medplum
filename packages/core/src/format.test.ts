@@ -14,11 +14,35 @@ import {
   formatPeriod,
   formatQuantity,
   formatRange,
+  formatReferenceString,
   formatTime,
   formatTiming,
+  typedValueToString,
 } from './format';
 
+describe('typedValueToString', () => {
+  expect(typedValueToString(undefined)).toStrictEqual('');
+  expect(typedValueToString({ type: 'Address', value: { city: 'x' } })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'CodeableConcept', value: { text: 'x' } })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'Coding', value: { code: 'x' } })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'ContactPoint', value: { value: 'x' } })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'HumanName', value: { given: ['x'] } })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'Quantity', value: { value: 1, unit: 'kg' } })).toStrictEqual('1 kg');
+  expect(typedValueToString({ type: 'Reference', value: { reference: 'Patient/x' } })).toStrictEqual('Patient/x');
+  expect(typedValueToString({ type: 'string', value: 'x' })).toStrictEqual('x');
+});
+
+test('formatReferenceString', () => {
+  expect(formatReferenceString(undefined)).toStrictEqual('');
+  expect(formatReferenceString({})).toStrictEqual('');
+  expect(formatReferenceString({ reference: 'Patient/123', display: 'Patient 123' })).toStrictEqual('Patient 123');
+  expect(formatReferenceString({ reference: 'Patient/123', display: undefined })).toStrictEqual('Patient/123');
+  expect(formatReferenceString({ reference: undefined, display: undefined, id: '123' })).toStrictEqual('{"id":"123"}');
+});
+
 test('Format Address', () => {
+  expect(formatAddress(undefined)).toStrictEqual('');
+  expect(formatAddress(null as unknown as undefined)).toStrictEqual('');
   expect(formatAddress({})).toStrictEqual('');
 
   expect(
@@ -114,6 +138,8 @@ test('Format Address', () => {
 });
 
 test('Format HumanName', () => {
+  expect(formatHumanName(undefined)).toStrictEqual('');
+  expect(formatHumanName(null as unknown as undefined)).toStrictEqual('');
   expect(formatHumanName({})).toStrictEqual('');
 
   expect(

@@ -2,7 +2,11 @@ import { MedplumClient } from './client';
 import { ContentType } from './contenttype';
 
 export class MedplumKeyValueClient {
-  constructor(readonly medplum: MedplumClient) {}
+  readonly medplum: MedplumClient;
+
+  constructor(medplum: MedplumClient) {
+    this.medplum = medplum;
+  }
 
   /**
    * Gets the value for the given key from the keyvalue store.

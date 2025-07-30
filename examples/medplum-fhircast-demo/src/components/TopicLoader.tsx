@@ -1,5 +1,5 @@
 import { Button, Input, Stack } from '@mantine/core';
-import { useEffect, useState } from 'react';
+import { JSX, useEffect, useState } from 'react';
 
 interface TopicLoaderProps {
   readonly onSetTopic: (topic: string | undefined) => void;

@@ -5,11 +5,10 @@ import '@mantine/core/styles.css';
 import { MedplumClient, ProfileResource, decodeBase64, encodeBase64, getDisplayString } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
 import '@medplum/react/styles.css';
-import GraphiQL from 'graphiql';
-import 'graphiql/graphiql.css';
-import { StrictMode } from 'react';
+import { GraphiQL } from 'graphiql';
+import 'graphiql/style.css';
+import { JSX, StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import 'regenerator-runtime/runtime.js';
 import { getConfig } from './config';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL

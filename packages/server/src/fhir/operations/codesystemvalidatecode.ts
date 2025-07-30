@@ -1,12 +1,11 @@
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, WithId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { findTerminologyResource } from './utils/terminology';
+import { findTerminologyResource, selectCoding } from './utils/terminology';
 
 const operation = getOperationDefinition('CodeSystem', 'validate-code');
 
@@ -29,7 +28,7 @@ type CodeSystemValidateCodeParameters = {
 export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<CodeSystemValidateCodeParameters>(operation, req);
 
-  let codeSystem: CodeSystem;
+  let codeSystem: WithId<CodeSystem>;
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.url) {
@@ -63,11 +62,14 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
   return [allOk, buildOutputParameters(operation, output)];
 }
 
-export async function validateCoding(codeSystem: CodeSystem, coding: Coding): Promise<Coding | undefined> {
+export async function validateCoding(codeSystem: WithId<CodeSystem>, coding: Coding): Promise<Coding | undefined> {
   return validateCodings(codeSystem, [coding]).then((results) => results[0]);
 }
 
-export async function validateCodings(codeSystem: CodeSystem, codings: Coding[]): Promise<(Coding | undefined)[]> {
+export async function validateCodings(
+  codeSystem: WithId<CodeSystem>,
+  codings: Coding[]
+): Promise<(Coding | undefined)[]> {
   const eligible: boolean[] = new Array(codings.length);
   const codesToQuery = new Set<string>();
   for (let i = 0; i < codings.length; i++) {
@@ -83,13 +85,7 @@ export async function validateCodings(codeSystem: CodeSystem, codings: Coding[])
 
   let result: any[] | undefined;
   if (codesToQuery.size > 0) {
-    const query = new SelectQuery('Coding')
-      .column('id')
-      .column('code')
-      .column('display')
-      .where('code', 'IN', codesToQuery)
-      .where('system', '=', codeSystem.id);
-
+    const query = selectCoding(codeSystem.id, ...codesToQuery);
     const db = getDatabasePool(DatabaseMode.READER);
     result = await query.execute(db);
   }

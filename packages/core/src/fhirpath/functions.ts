@@ -1298,7 +1298,7 @@ export const functions: Record<string, FhirPathFunction> = {
    */
   replaceMatches: (context: AtomContext, input: TypedValue[], regexAtom: Atom, substitionAtom: Atom): TypedValue[] => {
     return applyStringFunc(
-      (str, pattern, substition) => str.replaceAll(pattern as string, substition as string),
+      (str, pattern, substition) => str.replaceAll(new RegExp(pattern as string, 'g'), substition as string),
       context,
       input,
       regexAtom,

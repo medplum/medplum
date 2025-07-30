@@ -1,4 +1,5 @@
-import { Route, Routes } from 'react-router-dom';
+import { JSX } from 'react';
+import { Route, Routes } from 'react-router';
 import { BatchPage } from './BatchPage';
 import { BulkAppPage } from './BulkAppPage';
 import { ChangePasswordPage } from './ChangePasswordPage';
@@ -26,6 +27,7 @@ import { ProjectDetailsPage } from './admin/ProjectDetailsPage';
 import { ProjectPage } from './admin/ProjectPage';
 import { SecretsPage } from './admin/SecretsPage';
 import { SitesPage } from './admin/SitesPage';
+import { SuperAdminAsyncDashboardPage } from './admin/SuperAdminAsyncJobPage';
 import { SuperAdminPage } from './admin/SuperAdminPage';
 import { UsersPage } from './admin/UsersPage';
 import { AssaysPage } from './lab/AssaysPage';
@@ -40,6 +42,7 @@ import { ChecklistPage } from './resource/ChecklistPage';
 import { DeletePage } from './resource/DeletePage';
 import { DetailsPage } from './resource/DetailsPage';
 import { EditPage } from './resource/EditPage';
+import { ExportPage } from './resource/ExportPage';
 import { FormCreatePage } from './resource/FormCreatePage';
 import { HistoryPage } from './resource/HistoryPage';
 import { JsonCreatePage } from './resource/JsonCreatePage';
@@ -73,6 +76,7 @@ export function AppRoutes(): JSX.Element {
         <Route path="/smart" element={<SmartSearchPage />} />
         <Route path="/forms/:id" element={<FormPage />} />
         <Route path="/admin/super" element={<SuperAdminPage />} />
+        <Route path="/admin/super/asyncjob" element={<SuperAdminAsyncDashboardPage />} />
         <Route path="/admin/config" element={<ProjectAdminConfigPage />} />
         <Route path="/admin" element={<ProjectPage />}>
           <Route path="patients" element={<PatientsPage />} />
@@ -121,6 +125,7 @@ export function AppRoutes(): JSX.Element {
           <Route path="timeline" element={<TimelinePage />} />
           <Route path="tools" element={<ToolsPage />} />
           <Route path="profiles" element={<ProfilesPage />} />
+          <Route path="export" element={<ExportPage />} />
         </Route>
         <Route path="/:resourceType" element={<HomePage />} />
         <Route path="/" element={<HomePage />} />

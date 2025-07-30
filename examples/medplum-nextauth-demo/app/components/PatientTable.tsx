@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
-import { Bundle, Patient } from '@medplum/fhirtypes';
 import { Table } from '@mantine/core';
+import { Bundle, Patient } from '@medplum/fhirtypes';
+import React from 'react';
 
 type PatientTableProps = {
   patients: Bundle<Patient>;
