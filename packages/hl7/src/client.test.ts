@@ -2,6 +2,7 @@ import { AckCode, Hl7Message, isOperationOutcome, OperationOutcomeError, sleep }
 import { createServer, Socket } from 'node:net';
 import { Hl7Client } from './client';
 import { Hl7Connection, ReturnAckCategory } from './connection';
+import { Hl7ErrorEvent } from './events';
 import { Hl7Server } from './server';
 
 describe('Hl7Client', () => {
@@ -140,6 +141,95 @@ describe('Hl7Client', () => {
 
       expect(warningEvent).toBeDefined();
       expect(warningEvent.error.outcome.issue[0].diagnostics).toContain('UNKNOWN_MSG_ID');
+    });
+
+    test('Rejects when message response times out', async () => {
+      // Set up a custom response callback that doesn't respond (to trigger timeout)
+      nextResponseCb = (_message: Hl7Message) => {
+        // Don't send any response, which will cause the client to timeout
+        return null as any;
+      };
+
+      let timeoutError: any = null;
+      try {
+        await hl7Client.sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          ),
+          { timeoutMs: 100 }
+        );
+      } catch (err) {
+        timeoutError = err;
+      }
+
+      expect(timeoutError).toBeDefined();
+      expect(timeoutError).toBeInstanceOf(OperationOutcomeError);
+      expect(isOperationOutcome(timeoutError.outcome)).toBe(true);
+      expect(timeoutError.outcome.issue?.[0].code).toBe('timeout');
+      expect(timeoutError.outcome.issue?.[0].details?.text).toBe('Client timeout');
+      expect(timeoutError.outcome.issue?.[0].diagnostics).toContain('Request timed out after waiting 100 milliseconds');
+    });
+
+    test('Rejects outstanding promises and emits error when close is called', async () => {
+      // Set up a custom response callback that doesn't respond immediately
+      nextResponseCb = (_message: Hl7Message) => {
+        // Don't send any response, keeping the promise pending
+        return null as any;
+      };
+
+      // Start a sendAndWait that will remain pending
+      const pendingPromise = hl7Client.sendAndWait(
+        Hl7Message.parse(
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+        ),
+        { timeoutMs: 1000 } // Long timeout to ensure it stays pending
+      );
+
+      // Wait a bit to ensure the message is sent and pending
+      await sleep(0);
+
+      // Listen for error events
+      let closeErrorEvent: Hl7ErrorEvent | undefined = undefined;
+      hl7Client.addEventListener('error', (event) => {
+        if (
+          event.error instanceof OperationOutcomeError &&
+          isOperationOutcome(event.error.outcome) &&
+          event.error.outcome.issue?.[0].details?.text === 'Messages were still pending when connection closed'
+        ) {
+          closeErrorEvent = event as Hl7ErrorEvent;
+        }
+      });
+
+      // Close the client while message is pending
+      hl7Client.close();
+
+      // Verify the pending promise was rejected
+      let promiseRejected = false;
+      let rejectionError: OperationOutcomeError | undefined = undefined;
+      try {
+        await pendingPromise;
+      } catch (err) {
+        promiseRejected = true;
+        rejectionError = err as OperationOutcomeError;
+      }
+
+      expect(promiseRejected).toBe(true);
+      expect(rejectionError).toBeInstanceOf(OperationOutcomeError);
+      expect(isOperationOutcome(rejectionError?.outcome)).toBe(true);
+      expect(rejectionError?.outcome.issue?.[0].code).toBe('incomplete');
+      expect(rejectionError?.outcome.issue?.[0].details?.text).toBe('Message was still pending when connection closed');
+
+      // Verify the error event was emitted
+      expect(closeErrorEvent).toBeDefined();
+      expect(
+        ((closeErrorEvent as unknown as Hl7ErrorEvent)?.error as OperationOutcomeError)?.outcome?.issue?.[0].details
+          ?.text
+      ).toBe('Messages were still pending when connection closed');
+      expect(
+        ((closeErrorEvent as unknown as Hl7ErrorEvent)?.error as OperationOutcomeError)?.outcome?.issue?.[0].diagnostics
+      ).toContain('Hl7Connection closed while 1 messages were pending');
     });
 
     test.each(['AA', 'AE', 'AR', 'CA', 'CE', 'CR'] as const satisfies AckCode[])(

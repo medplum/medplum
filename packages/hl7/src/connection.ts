@@ -178,7 +178,7 @@ export class Hl7Connection extends Hl7Base {
         message: msg,
         resolve,
         reject,
-        returnAck: options?.returnAck ?? ReturnAckCategory.ANY,
+        returnAck: options?.returnAck ?? ReturnAckCategory.FIRST,
         timer,
       });
       this.sendImpl(msg);
