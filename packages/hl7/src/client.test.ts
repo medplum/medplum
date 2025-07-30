@@ -1,7 +1,7 @@
-import { Hl7Message, sleep } from '@medplum/core';
+import { AckCode, Hl7Message, isOperationOutcome, OperationOutcomeError, sleep } from '@medplum/core';
 import { createServer, Socket } from 'node:net';
 import { Hl7Client } from './client';
-import { Hl7Connection } from './connection';
+import { Hl7Connection, ReturnAckCategory } from './connection';
 import { Hl7Server } from './server';
 
 describe('Hl7Client', () => {
@@ -10,6 +10,208 @@ describe('Hl7Client', () => {
   function getRandomPort(): number {
     return Math.floor(Math.random() * 10000) + 30000;
   }
+
+  describe('sendAndWait', () => {
+    const port = getRandomPort();
+    const defaultResponseCb = (message: Hl7Message): Hl7Message => {
+      return message.buildAck();
+    };
+
+    let hl7Server: Hl7Server;
+    let hl7Client: Hl7Client;
+    let nextResponseCb: ((message: Hl7Message) => Hl7Message) | undefined = undefined;
+
+    beforeAll(async () => {
+      hl7Server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          // Check if a response cb has been set, otherwise use the default
+          if (nextResponseCb) {
+            connection.send(nextResponseCb(message));
+          } else {
+            connection.send(defaultResponseCb(message));
+          }
+        });
+      });
+      hl7Server.start(port);
+    });
+
+    beforeEach(async () => {
+      nextResponseCb = undefined;
+
+      hl7Client = new Hl7Client({
+        host: 'localhost',
+        port,
+      });
+      await hl7Client.connect();
+    });
+
+    afterEach(async () => {
+      hl7Client.close();
+      // Sleep to let client cleanup
+      await sleep(0);
+    });
+
+    afterAll(async () => {
+      hl7Client.close();
+      await hl7Server.stop();
+    });
+
+    test('Resolves on when receiving ACK containing the message control ID', async () => {
+      const ack = await hl7Client.sendAndWait(
+        Hl7Message.parse(
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+        )
+      );
+      expect(ack).toBeDefined();
+    });
+
+    test('Does not resolve on the incorrect message control ID', async () => {
+      // Set up a custom response callback that sends an ACK with a different message control ID
+      nextResponseCb = (message: Hl7Message) => {
+        // Create an ACK with a different message control ID than the original message
+        const ack = message.buildAck();
+        // Change the message control ID in the ACK to something different
+        ack.getSegment('MSA')?.setField(2, 'DIFFERENT_MSG_ID');
+        return ack;
+      };
+
+      let timedOut = false;
+      try {
+        await hl7Client.sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          ),
+          { timeoutMs: 100 }
+        );
+      } catch (err) {
+        if (
+          isOperationOutcome((err as OperationOutcomeError).outcome) &&
+          (err as OperationOutcomeError).outcome.issue?.[0].details?.text === 'Client timeout'
+        ) {
+          timedOut = true;
+        } else {
+          throw err;
+        }
+      }
+
+      expect(timedOut).toStrictEqual(true);
+    });
+
+    test('Emits warning when receiving an ACK for a message control ID not found in pending messages', async () => {
+      // Set up a custom response callback that sends an ACK with a different message control ID
+      nextResponseCb = (message: Hl7Message) => {
+        // Create an ACK with a different message control ID than the original message
+        const ack = message.buildAck();
+        // Change the message control ID in the ACK to something different
+        ack.getSegment('MSA')?.setField(2, 'UNKNOWN_MSG_ID');
+        return ack;
+      };
+
+      // Listen for warning events
+      let warningEvent: any = null;
+      hl7Client.addEventListener('error', (event) => {
+        if (
+          event.error instanceof OperationOutcomeError &&
+          isOperationOutcome(event.error.outcome) &&
+          event.error.outcome.issue?.[0].severity === 'warning' &&
+          event.error.outcome.issue?.[0].details?.text === 'Response received for unknown message control ID'
+        ) {
+          warningEvent = event;
+        }
+      });
+
+      // Send a message and wait for the ACK with wrong message control ID
+      await hl7Client
+        .sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          ),
+          { timeoutMs: 100 }
+        )
+        .catch(() => {
+          // Expected to timeout since ACK has wrong message control ID
+        });
+
+      // Wait until next tick for event to process
+      await sleep(0);
+
+      expect(warningEvent).toBeDefined();
+      expect(warningEvent.error.outcome.issue[0].diagnostics).toContain('UNKNOWN_MSG_ID');
+    });
+
+    test.each(['AA', 'AE', 'AR', 'CA', 'CE', 'CR'] as const satisfies AckCode[])(
+      'Returns on %s when returnAck is specified as ReturnAckCategory.FIRST',
+      async (ackCode) => {
+        nextResponseCb = (message: Hl7Message) => {
+          return message.buildAck({ ackCode });
+        };
+
+        const response = await hl7Client.sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          )
+        );
+
+        expect(response).toBeDefined();
+        // Should return on the first ACK
+        expect(response.getSegment('MSA')?.getField(1)?.toString()).toStrictEqual(ackCode);
+      }
+    );
+
+    test.each(['AA', 'AE', 'AR', 'CE', 'CR'] as const)(
+      'Returns on %s when returnAck is specified as ReturnAckCategory.APPLICATION',
+      async (ackCode) => {
+        // Set up a custom response callback that sends the specific ACK code
+        nextResponseCb = (message: Hl7Message) => {
+          return message.buildAck({ ackCode });
+        };
+
+        const response = await hl7Client.sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          ),
+          { returnAck: ReturnAckCategory.APPLICATION }
+        );
+
+        expect(response).toBeDefined();
+        expect(response.getSegment('MSA')?.getField(1)?.toString()).toStrictEqual(ackCode);
+      }
+    );
+
+    test('Does not return on CA when returnAck is specified as ReturnAckCategory.APPLICATION', async () => {
+      // Set up a custom response callback that sends a CA ACK
+      nextResponseCb = (message: Hl7Message) => {
+        return message.buildAck({ ackCode: 'CA' });
+      };
+
+      let timedOut = false;
+      try {
+        await hl7Client.sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          ),
+          { returnAck: 'application', timeoutMs: 100 }
+        );
+      } catch (err) {
+        if (
+          isOperationOutcome((err as OperationOutcomeError).outcome) &&
+          (err as OperationOutcomeError).outcome.issue?.[0].details?.text === 'Client timeout'
+        ) {
+          timedOut = true;
+        } else {
+          throw err;
+        }
+      }
+
+      expect(timedOut).toStrictEqual(true);
+    });
+  });
 
   // Test the basic connection and timeout functionality
   test('Connection timeout when server is unreachable', async () => {
@@ -96,14 +298,12 @@ describe('Hl7Client', () => {
 
     // Track connection count
     const state = {
-      connectionCount: 0,
       maxParallelConnections: 0,
       currentConnections: 0,
     };
 
     // Create a server that tracks connection counts
     const server = createServer((socket) => {
-      state.connectionCount++;
       state.currentConnections++;
       state.maxParallelConnections = Math.max(state.maxParallelConnections, state.currentConnections);
 
@@ -132,6 +332,9 @@ describe('Hl7Client', () => {
 
     // Wait for all connection attempts to complete or fail
     await Promise.race([connect1, connect2, connect3]);
+
+    // Sleep so that events can fire
+    await sleep(0);
 
     // Cleanup
     client.close();

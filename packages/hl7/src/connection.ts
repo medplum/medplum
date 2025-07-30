@@ -13,11 +13,13 @@ export type Hl7MessageQueueItem = {
   resolve: (reply: Hl7Message) => void;
   reject: (err: Error) => void;
   returnAck: ReturnAckCategory;
+  timer?: NodeJS.Timeout;
 };
 
 export const ReturnAckCategory = {
-  ANY: 'any',
-  COMMIT: 'commit',
+  /** The first ACK message received is the one returned */
+  FIRST: 'first',
+  /** Only return upon receiving a positive application-level ACK (AA), or if a commit-level error occurred */
   APPLICATION: 'application',
 } as const;
 export type ReturnAckCategory = (typeof ReturnAckCategory)[keyof typeof ReturnAckCategory];
@@ -25,6 +27,8 @@ export type ReturnAckCategory = (typeof ReturnAckCategory)[keyof typeof ReturnAc
 export interface SendAndWaitOptions {
   /** The ACK-level that the Promise should resolve on. The default is `ReturnAckCategory.ANY` (returns on the first ACK of any type). */
   returnAck?: ReturnAckCategory;
+  /** The amount of milliseconds to wait before timing out when waiting for the response to a message. */
+  timeoutMs?: number;
 }
 
 export const DEFAULT_ENCODING = 'utf-8';
@@ -108,12 +112,13 @@ export class Hl7Connection extends Hl7Base {
         return;
       }
 
-      // If application-level return ACK or commit-level return ACK categories are specified, and the ACK code doesn't match, return
-      // Otherwise if ReturnAckCategory matches or is ANY, then resolve the queueItem promise
-      if (
-        (queueItem.returnAck === ReturnAckCategory.APPLICATION && !ackCode.startsWith('A')) ||
-        (queueItem.returnAck === ReturnAckCategory.COMMIT && !ackCode.startsWith('C'))
-      ) {
+      // Two modes:
+      // Application-level or first ACK
+
+      // First should always return on any ACK message, this is the default
+      // The exception is APPLICATION, which should not resolve when the ACK is a CA, but should resolve on all other ACK types
+      // On CA, we return early
+      if (queueItem.returnAck === ReturnAckCategory.APPLICATION && ackCode === 'CA') {
         return;
       }
 
@@ -145,11 +150,36 @@ export class Hl7Connection extends Hl7Base {
         reject(new OperationOutcomeError(validationError('Required field missing: MSH.10')));
         return;
       }
+
+      let timer: NodeJS.Timeout | undefined;
+
+      if (options?.timeoutMs) {
+        timer = setTimeout(() => {
+          this.pendingMessages.delete(msgCtrlId);
+          reject(
+            new OperationOutcomeError({
+              resourceType: 'OperationOutcome',
+              issue: [
+                {
+                  severity: 'error',
+                  code: 'timeout',
+                  details: {
+                    text: 'Client timeout',
+                  },
+                  diagnostics: `Request timed out after waiting ${options.timeoutMs} milliseconds for response`,
+                },
+              ],
+            })
+          );
+        }, options.timeoutMs);
+      }
+
       this.pendingMessages.set(msgCtrlId, {
         message: msg,
         resolve,
         reject,
         returnAck: options?.returnAck ?? ReturnAckCategory.ANY,
+        timer,
       });
       this.sendImpl(msg);
     });
@@ -160,6 +190,25 @@ export class Hl7Connection extends Hl7Base {
     this.socket.destroy();
     // Before clearing out messages, we should propagate a message to the consumer that we are closing the connection while some messages were still pending a response
     if (this.pendingMessages.size) {
+      for (const queueItem of this.pendingMessages.values()) {
+        if (queueItem.timer) {
+          clearTimeout(queueItem.timer);
+        }
+        queueItem.reject(
+          new OperationOutcomeError({
+            resourceType: 'OperationOutcome',
+            issue: [
+              {
+                severity: 'warning',
+                code: 'incomplete',
+                details: {
+                  text: 'Message was still pending when connection closed',
+                },
+              },
+            ],
+          })
+        );
+      }
       this.dispatchEvent(
         new Hl7ErrorEvent(
           new OperationOutcomeError({
@@ -169,7 +218,7 @@ export class Hl7Connection extends Hl7Base {
                 severity: 'warning',
                 code: 'incomplete',
                 details: {
-                  text: 'Messages incomplete',
+                  text: 'Messages were still pending when connection closed',
                 },
                 diagnostics: `Hl7Connection closed while ${this.pendingMessages.size} messages were pending`,
               },
