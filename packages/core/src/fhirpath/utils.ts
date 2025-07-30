@@ -504,14 +504,14 @@ export function toPeriod(input: unknown): Period | undefined {
 
   if (isDateString(input) || isDateTimeString(input)) {
     return {
-      start: dateStringToInstantString(input, '0000-00-00T00:00:00.000Z'),
+      start: dateStringToInstantString(input, '0000-01-01T00:00:00.000Z'),
       end: dateStringToInstantString(input, 'xxxx-12-31T23:59:59.999Z'),
     };
   }
 
   if (isPeriod(input)) {
     return {
-      start: input.start ? dateStringToInstantString(input.start, '0000-00-00T00:00:00.000Z') : undefined,
+      start: input.start ? dateStringToInstantString(input.start, '0000-01-01T00:00:00.000Z') : undefined,
       end: input.end ? dateStringToInstantString(input.end, 'xxxx-12-31T23:59:59.999Z') : undefined,
     };
   }

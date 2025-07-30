@@ -390,5 +390,11 @@ describe('FHIRPath utils', () => {
       start: '2020-01-01T11:34:56.000Z',
       end: '2020-01-01T11:34:56.999Z',
     });
+
+    // Extend year to valid dates
+    expect(toPeriod('2020')).toMatchObject({
+      start: '2020-01-01T00:00:00.000Z',
+      end: '2020-12-31T23:59:59.999Z',
+    });
   });
 });
