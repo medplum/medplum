@@ -55,6 +55,8 @@ export type ElementsContextType = {
   getExtendedProps(path: string): ExtendedElementProperties | undefined;
   /** `true` if this is a default/placeholder `ElementsContextType` */
   isDefaultContext?: boolean;
+  /** (optional) Security context reference for file uploads */
+  securityContext?: any;
 };
 
 export function buildElementsContext({
