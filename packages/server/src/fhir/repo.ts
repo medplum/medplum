@@ -1129,9 +1129,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           lastUpdated,
           deleted: true,
           projectId: resource.meta?.project,
-          compartments: this.getCompartments(resource).map((ref) => resolveId(ref)),
           content,
         };
+
+        if (resourceType !== 'Binary') {
+          columns['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
+        }
 
         for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
           this.buildColumn({ resourceType } as Resource, columns, searchParam);
