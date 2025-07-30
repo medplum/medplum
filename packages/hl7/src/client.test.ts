@@ -232,6 +232,26 @@ describe('Hl7Client', () => {
       ).toContain('Hl7Connection closed while 1 messages were pending');
     });
 
+    test('Sending a message without a message control ID rejects', async () => {
+      const message = Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+      );
+      message.getSegment('MSH')?.setField(10, '');
+
+      let threw = false;
+      try {
+        await hl7Client.sendAndWait(message);
+      } catch (err) {
+        threw = true;
+        expect(err).toBeInstanceOf(OperationOutcomeError);
+        expect(isOperationOutcome((err as OperationOutcomeError).outcome)).toBe(true);
+        expect((err as OperationOutcomeError).outcome.issue?.[0].details?.text).toBe('Required field missing: MSH.10');
+      }
+
+      expect(threw).toStrictEqual(true);
+    });
+
     test.each(['AA', 'AE', 'AR', 'CA', 'CE', 'CR'] as const satisfies AckCode[])(
       'Returns on %s when returnAck is specified as ReturnAckCategory.FIRST',
       async (ackCode) => {
