@@ -57,10 +57,13 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
     database: config.dbname,
     user: config.username,
     password: config.password,
+    schema: config.schema
     application_name: 'medplum-server',
     ssl: config.ssl,
     max: config.maxConnections ?? 100,
   };
+
+  const fhirCustomSchema = poolConfig.schema;
 
   if (proxyEndpoint) {
     poolConfig.host = proxyEndpoint;
@@ -76,6 +79,15 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
 
   if (!config.disableConnectionConfiguration) {
     pool.on('connect', (client) => {
+      client.query(`SET search_path TO '${fhirCustomSchema}';`)
+        .then(() => {
+          globalLogger.info(`Successfully set search path to schema '${fhirCustomSchema}'`);
+        })
+        .catch((err) => {
+          globalLogger.warn(`Failed to set search path to schema '${fhirCustomSchema}'!`, err);
+          client.release(true);
+          throw err;
+        });
       client.query(`SET statement_timeout TO ${config.queryTimeout ?? 60000}`).catch((err) => {
         globalLogger.warn('Failed to set query timeout', err);
       });
