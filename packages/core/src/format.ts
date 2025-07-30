@@ -54,7 +54,7 @@ export function typedValueToString(typedValue: TypedValue | undefined): string {
     case 'Reference':
       return formatReferenceString(typedValue.value);
     default:
-      return typedValue.value.toString();
+      return typedValue.value?.toString() ?? '';
   }
 }
 
