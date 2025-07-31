@@ -1,7 +1,7 @@
 import { Hl7Message } from '@medplum/core';
 import { connect, Socket } from 'node:net';
 import { Hl7Base } from './base';
-import { Hl7Connection } from './connection';
+import { Hl7Connection, SendAndWaitOptions } from './connection';
 import { Hl7CloseEvent, Hl7ErrorEvent } from './events';
 
 export interface Hl7ClientOptions {
@@ -110,8 +110,8 @@ export class Hl7Client extends Hl7Base {
     return (await this.connect()).send(msg);
   }
 
-  async sendAndWait(msg: Hl7Message): Promise<Hl7Message> {
-    return (await this.connect()).sendAndWait(msg);
+  async sendAndWait(msg: Hl7Message, options?: SendAndWaitOptions): Promise<Hl7Message> {
+    return (await this.connect()).sendAndWait(msg, options);
   }
 
   close(): void {
