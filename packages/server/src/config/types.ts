@@ -73,6 +73,8 @@ export interface MedplumServerConfig {
   defaultAuthRateLimit?: number;
   /** Number of FHIR interaction rate limit units per minute users can consume by default; overridable by Project settings */
   defaultFhirQuota?: number;
+  /** Optional config for global default for `maxUserWebSocketSubscriptions`; overridable by Project setting: `maxUserWebSocketSubscriptions` */
+  defaultMaxUserWebSocketSubscriptions?: number;
 
   /** Max length of Bot AuditEvent.outcomeDesc when creating a FHIR Resource */
   maxBotLogLengthForResource?: number;
