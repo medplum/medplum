@@ -305,6 +305,13 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
     indexdef = indexdef.substring(0, whereMatch.index);
   }
 
+  let nulls: string | undefined;
+  const nullsMatch = indexdef.match(/ NULLS ((NOT )?DISTINCT)/);
+  if (nullsMatch) {
+    nulls = nullsMatch[1];
+    indexdef = indexdef.substring(0, nullsMatch.index);
+  }
+
   let include: string[] | undefined;
   const includeMatch = indexdef.match(/ INCLUDE \((.+)\)$/);
   if (includeMatch) {
@@ -355,6 +362,7 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
     indexType: indexType,
     unique: indexdef.includes('CREATE UNIQUE INDEX'),
     indexdef: fullIndexDef,
+    nulls: nulls as IndexDefinition['nulls'] | undefined,
   };
 
   if (where) {
@@ -794,7 +802,6 @@ function buildCodingTable(result: SchemaDefinition): void {
     ],
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
-      { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
       {
         columns: ['system', 'code'],
         indexType: 'btree',
@@ -803,7 +810,16 @@ function buildCodingTable(result: SchemaDefinition): void {
         where: `"synonymOf" IS NULL`,
         indexNameSuffix: 'primary_idx',
       },
-      { columns: ['system', 'code', 'display'], indexType: 'btree', unique: true },
+      {
+        columns: [
+          'system',
+          'code',
+          'display',
+          { expression: `COALESCE("synonymOf", ('-1'::integer)::bigint)`, name: 'synonymOf' },
+        ],
+        indexType: 'btree',
+        unique: true,
+      },
       { columns: ['system', { expression: 'display gin_trgm_ops', name: 'displayTrgm' }], indexType: 'gin' },
     ],
   });
@@ -1257,6 +1273,10 @@ function buildIndexSql(tableName: string, indexName: string, index: IndexDefinit
     result += ')';
   }
 
+  if (index.nulls) {
+    result += ' NULLS ' + index.nulls;
+  }
+
   if (index.where) {
     result += ' WHERE (';
     result += index.where;
@@ -1305,6 +1325,7 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
     return {
       ...d,
       unique: d.unique ?? false,
+      nulls: d.nulls, // Ensure `nulls` property is populated
       // don't care about indexNameSuffix, indexdef, nor expression names
       indexNameSuffix: undefined,
       indexdef: undefined,
