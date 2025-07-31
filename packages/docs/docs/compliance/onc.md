@@ -11,9 +11,9 @@ Medplum is ONC Certified. Below are certification resources and documentation.
 | Item                           | Description                                                                    |
 | ------------------------------ | ------------------------------------------------------------------------------ |
 | Developer Organization Name    | Medplum                                                                        |
-| Date the product was certified | 07/31/2024                                                                     |
-| Product Name and Version       | Medplum, 3                                                                     |
-| Unique Certification Number    | [15.04.04.3147.Medp.03.01.1.240731](https://chpl.healthit.gov/#/listing/11496) |
+| Date the product was certified | 07/31/2025                                                                     |
+| Product Name and Version       | Medplum, 4                                                                     |
+| Unique Certification Number    | [15.04.04.3147.Medp.04.02.1.250731](https://chpl.healthit.gov/#/listing/11676) |
 | Certification Criteria         | [Criteria link](#criteria-certified)                                           |
 | Pricing                        | [Offering Grid](/pricing)                                                      |
 | Registration Process           | [Instructions](/docs/tutorials/register)                                       |
