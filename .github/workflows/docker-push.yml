@@ -13,7 +13,7 @@ on:
         required: false
         type: choice
         options:
-          - alp-os/d2e-medplum
+          - data2evidence/d2e-medplum
       GIT_BRANCH_NAME:
         default: main
         description: Enter BranchName
