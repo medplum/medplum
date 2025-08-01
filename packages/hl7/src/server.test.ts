@@ -35,7 +35,7 @@ describe('HL7 Server', () => {
     );
     expect(response).toBeDefined();
 
-    client.close();
+    await client.close();
     await server.stop();
   });
 

@@ -318,7 +318,9 @@ export class App {
 
     if (!keepAlive && this.hl7Clients.size !== 0) {
       for (const client of this.hl7Clients.values()) {
-        client.close();
+        client.close().catch((err) => {
+          this.log.error(normalizeErrorString(err));
+        });
       }
     }
 
@@ -509,7 +511,9 @@ export class App {
 
     if (this.hl7Clients.size !== 0) {
       for (const client of this.hl7Clients.values()) {
-        client.close();
+        client.close().catch((err) => {
+          this.log.error(normalizeErrorString(err));
+        });
       }
     }
 
@@ -864,7 +868,9 @@ export class App {
           this.log.info(
             `Persistent connection to remote '${message.remote}' encountered an error... Closing connection...`
           );
-          client.close();
+          client.close().catch((err) => {
+            this.log.error(normalizeErrorString(err));
+          });
         });
       }
     }
@@ -906,12 +912,16 @@ export class App {
 
         if (client.keepAlive) {
           this.hl7Clients.delete(message.remote);
-          client.close();
+          client.close().catch((err) => {
+            this.log.error(normalizeErrorString(err));
+          });
         }
       })
       .finally(() => {
         if (!client.keepAlive) {
-          client.close();
+          client.close().catch((err) => {
+            this.log.error(normalizeErrorString(err));
+          });
         }
       });
   }
