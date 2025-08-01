@@ -13,7 +13,7 @@ This example demonstrates how to create Medplum bots that share code and are aut
 - **Single Command Setup**: `npm run setup` handles everything
 - **Build & Deploy**: Automatically builds and deploys bots to Medplum
 - **Subscription Creation**: Creates subscriptions with correct `Bot/<id>` endpoints
-- **TypeScript Support**: Full type safety throughout the setup process
+- **TypeScript Support**: Full type safety with build step for scripts
 
 ## 📁 Project Structure
 
@@ -26,8 +26,7 @@ medplum-ci-cd-bots/
 │       ├── hapi-sync-bot.ts         # Returns enriched resource
 │       └── hapi-sync-simple-bot.ts  # Returns boolean result
 ├── scripts/
-│   ├── setup-bots-and-subscriptions.ts  # Complete setup script
-│   └── tsconfig.json                    # TypeScript config for scripts
+│   └── setup-bots-and-subscriptions.ts  # Complete setup script
 ├── package.json
 ├── medplum.config.json
 └── README.md
