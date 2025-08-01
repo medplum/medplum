@@ -1,3 +1,4 @@
+import Link from '@docusaurus/Link';
 import { JSX } from 'react';
 import styles from './HomepageCallout.module.css';
 
@@ -14,10 +15,10 @@ export default function HomepageCallout(props: HomepageCalloutProps): JSX.Elemen
         <h2 className={styles.title}>{props.title}</h2>
         <p className={styles.cardBody}>{props.body}</p>
         <div className={styles['link-container']}>
-          <a href={props.linkRef}>{props.linkText}</a>
-          <a href={props.linkRef} style={{ maxHeight: '26px' }}>
+          <Link href={props.linkRef}>{props.linkText}</Link>
+          <Link href={props.linkRef} style={{ maxHeight: '26px' }}>
             <img className={styles['icon']} src="img/small_arrow.svg" alt="Arrow icon" />
-          </a>
+          </Link>
         </div>
       </div>
     </div>

@@ -24,12 +24,13 @@
   padding-bottom: 0rem;
   flex-direction: column;
   justify-content: center;
-  background-image: radial-gradient(circle farthest-corner at 73% 18%, #f7f4ff, #e0dbf0);
+  /* background-image: radial-gradient(circle farthest-corner at 73% 18%, #fff4ff, #f0dbef); */
   transition: all 200ms ease;
+  /* background:  */
 }
 
 [data-theme='dark'] .heroSection {
-  background: radial-gradient(81.56% 81.56% at 73.23% 18.44%, #211e2c 0%, #121116 100%);
+  background: radial-gradient(81.56% 81.56% at 73.23% 18.44%, #2c1e2c 0%, #121116 100%);
 }
 
 .heroContent {
@@ -87,7 +88,7 @@
   padding-right: 1.125rem;
   padding-left: 2.5rem;
   grid-column-gap: 0.625rem;
-  background-color: #946af9;
+  background-color: #800080;
   transition: all 200ms ease;
   font-size: 1.125rem;
   text-decoration: none;

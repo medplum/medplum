@@ -1,0 +1,19 @@
+.logoContainer {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-right: 24px;
+}
+
+.logoImage {
+  color: purple;
+  display: block;
+  margin: 0 auto;
+  transform: scale(1);
+  transition: all 0.1s ease;
+}
+
+.logoImage:hover {
+  color: #881088;
+  transform: scale(1.03);
+}

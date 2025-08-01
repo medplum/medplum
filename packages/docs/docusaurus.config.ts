@@ -44,6 +44,7 @@ const config: Config = {
             items = items.filter((e) => !(e.type === 'doc' && e.id.endsWith('index')));
             return items;
           },
+          showLastUpdateTime: true,
         },
         blog: {
           showReadingTime: true,
@@ -72,14 +73,6 @@ const config: Config = {
     {
       tagName: 'link',
       attributes: {
-        rel: 'icon',
-        href: '/img/logo.svg',
-        type: 'image/svg+xml',
-      },
-    },
-    {
-      tagName: 'link',
-      attributes: {
         rel: 'manifest',
         href: '/manifest.json',
       },
@@ -88,7 +81,6 @@ const config: Config = {
 
   themeConfig: {
     navbar: {
-      title: 'Medplum',
       logo: {
         alt: 'Medplum Logo',
         src: 'img/logo.svg',
@@ -131,17 +123,6 @@ const config: Config = {
     },
     footer: {
       links: [
-        {
-          title: 'Medplum',
-          items: [
-            {
-              html: `
-                <a href="/security"><img src="/img/compliance/soc.png" class="medplum-soc-compliance-image" loading="lazy" alt="SOC"></a>
-                <a href="/security"><img src="/img/compliance/hipaa.png" class="medplum-hipaa-compliance-image" loading="lazy" alt="HIPAA"></a>
-                  `,
-            },
-          ],
-        },
         {
           title: 'Developers',
           items: [
@@ -194,18 +175,6 @@ const config: Config = {
             {
               label: 'About us',
               to: '/about',
-            },
-            {
-              label: 'Security',
-              to: '/security',
-            },
-            {
-              label: 'Terms of Service',
-              to: '/terms',
-            },
-            {
-              label: 'Privacy Policy',
-              to: '/privacy',
             },
             {
               label: 'Pricing',

@@ -80,8 +80,8 @@
 
 .profileLink:hover {
   border-radius: 12px;
-  background-color: #f4f0fe;
+  background-color: #eddeff;
   filter: brightness(100%) grayscale(0%);
-  color: #946af9;
+  color: #800080;
   text-decoration: none;
 }
