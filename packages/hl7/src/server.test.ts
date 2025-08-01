@@ -77,7 +77,7 @@ describe('HL7 Server', () => {
     const response1 = await client1.sendAndWait(message);
     expect(response1).toBeDefined();
     expect(receivedPatientName).toBe(patientName);
-    client1.close();
+    await client1.close();
 
     // Next, connect with a client configured for utf-8
     // This should produce invalid results due to the encoding mismatch
@@ -94,7 +94,7 @@ describe('HL7 Server', () => {
     const response2 = await client2.sendAndWait(message);
     expect(response2).toBeDefined();
     expect(receivedPatientName).toBe('Ã‡Ã¶dÃ¿');
-    client2.close();
+    await client2.close();
 
     // Shut down
     await server.stop();
