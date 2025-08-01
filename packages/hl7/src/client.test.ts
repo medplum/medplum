@@ -27,7 +27,7 @@ describe('Hl7Client', () => {
     await expect(client.connect()).rejects.toThrow();
 
     // Cleanup
-    client.close();
+    await client.close();
   });
 
   // Test sending to a non-responsive server
@@ -45,7 +45,7 @@ describe('Hl7Client', () => {
     await expect(client.connect()).rejects.toThrow('Connection timeout after 500ms');
 
     // Close the connection
-    client.close();
+    await client.close();
   }, 1000);
 
   // Test cancelling a connection attempt
@@ -73,11 +73,17 @@ describe('Hl7Client', () => {
       connectTimeout: 1000, // Long enough that we can cancel before it times out
     });
 
+    let err: Error | undefined;
     // Start connection but don't await it
-    expect(client.connect()).toBeDefined();
+    const pendingConnectPromise = client.connect().catch((_err) => {
+      err = _err;
+    });
+    expect(pendingConnectPromise).toBeDefined();
 
     // Close the client immediately to cancel the connection
-    client.close();
+    await client.close();
+
+    expect(err).toStrictEqual(new Error('Client closed while connecting'));
 
     // Stop the server
     await new Promise<void>((resolve) => {
@@ -96,14 +102,12 @@ describe('Hl7Client', () => {
 
     // Track connection count
     const state = {
-      connectionCount: 0,
       maxParallelConnections: 0,
       currentConnections: 0,
     };
 
     // Create a server that tracks connection counts
     const server = createServer((socket) => {
-      state.connectionCount++;
       state.currentConnections++;
       state.maxParallelConnections = Math.max(state.maxParallelConnections, state.currentConnections);
 
@@ -125,16 +129,27 @@ describe('Hl7Client', () => {
     });
 
     // Make multiple connection attempts in rapid succession
-    const connect1 = client.connect().catch(() => null);
-    // Don't wait for the first to complete
-    const connect2 = client.connect().catch(() => null);
-    const connect3 = client.connect().catch(() => null);
-
     // Wait for all connection attempts to complete or fail
-    await Promise.race([connect1, connect2, connect3]);
+    const results = await Promise.allSettled([client.connect(), client.connect(), client.connect()]);
+
+    // First two attempts should fail, and final attempt should resolve
+    expect(results).toMatchObject([
+      expect.objectContaining({
+        status: 'rejected',
+        reason: new Error('Connection attempt interrupted by new attempt to connect'),
+      }),
+      expect.objectContaining({
+        status: 'rejected',
+        reason: new Error('Connection attempt interrupted by new attempt to connect'),
+      }),
+      expect.objectContaining({ status: 'fulfilled', value: expect.any(Hl7Connection) }),
+    ]);
+
+    // Give some time for the server side listener to be invoked
+    await sleep(500);
 
     // Cleanup
-    client.close();
+    await client.close();
 
     // Stop the server
     await new Promise<void>((resolve) => {
@@ -182,7 +197,7 @@ describe('Hl7Client', () => {
     expect(response).toBeDefined();
 
     // Cleanup
-    client.close();
+    await client.close();
     await server.stop();
   });
 
@@ -227,7 +242,7 @@ describe('Hl7Client', () => {
     expect(response).toBeDefined();
 
     // Cleanup
-    client.close();
+    await client.close();
     await server.stop();
 
     // Should only have seen one connection
@@ -265,9 +280,10 @@ describe('Hl7Client', () => {
 
     expect(ack).toBeDefined();
 
-    serverSideConnection.close();
+    await serverSideConnection.close();
 
-    // Need to sleep since close event are emitted on next tick
+    // We need to wait until next tick for client-side to close their connection in response to server-side closing
+    // Otherwise when we go to send, the first tick the connection won't show as closed
     await sleep(0);
 
     // Should succeed
@@ -280,7 +296,7 @@ describe('Hl7Client', () => {
 
     expect(ack).toBeDefined();
 
-    client.close();
+    await client.close();
     await server.stop();
   });
 });

@@ -21,6 +21,8 @@ export class Hl7Client extends Hl7Base {
   keepAlive: boolean;
   private socket?: Socket;
   private connectTimeout: number;
+  private rejectConnectPromise?: (err: Error) => void;
+  private socketListeners = new Map<string, (...args: any[]) => void>();
 
   constructor(options: Hl7ClientOptions) {
     super();
@@ -33,19 +35,32 @@ export class Hl7Client extends Hl7Base {
   }
 
   connect(): Promise<Hl7Connection> {
-    // If we already have a connection, use it
-    if (this.connection) {
+    if (this.connection && !this.connection.isClosed()) {
       return Promise.resolve(this.connection);
     }
 
     // If there's an ongoing connection attempt, destroy it
     if (this.socket) {
-      this.socket.removeAllListeners();
+      // We surgically unregister the event listeners that we as the client register,
+      // since there are lifecycle events that the Hl7Connection itself registers and we don't want to just purge all the event listeners
+      for (const [eventName, listener] of this.socketListeners.entries()) {
+        this.socket.off(eventName, listener);
+      }
+      this.socketListeners.clear();
       this.socket.destroy();
       this.socket = undefined;
     }
 
+    // We reject any existing connect promise since that connect promise will never resolve otherwise
+    if (this.rejectConnectPromise) {
+      this.rejectConnectPromise(new Error('Connection attempt interrupted by new attempt to connect'));
+    }
+
     return new Promise((resolve, reject) => {
+      // Attach the reject for this promise to the client, so that if we try to connect again later, we reject the old promise
+      // And don't leave it hanging
+      this.rejectConnectPromise = reject;
+
       // Create the socket
       this.socket = connect({
         host: this.host,
@@ -58,18 +73,20 @@ export class Hl7Client extends Hl7Base {
         this.socket.setTimeout(this.connectTimeout);
 
         // Handle timeout event
-        this.socket.on('timeout', () => {
+        const timeoutListener = (): void => {
           const error = new Error(`Connection timeout after ${this.connectTimeout}ms`);
           if (this.socket) {
             this.socket.destroy();
             this.socket = undefined;
           }
           reject(error);
-        });
+        };
+        this.socket.on('timeout', timeoutListener);
+        this.socketListeners.set('timeout', timeoutListener);
       }
 
       // Handle successful connection
-      this.socket.on('connect', () => {
+      const connectListener = (): void => {
         if (!this.socket) {
           return; // Socket was already destroyed
         }
@@ -93,16 +110,20 @@ export class Hl7Client extends Hl7Base {
         });
 
         resolve(this.connection);
-      });
+      };
+      this.socket.on('connect', connectListener);
+      this.socketListeners.set('connect', connectListener);
 
       // Handle connection errors
-      this.socket.on('error', (err) => {
+      const errorListener = (err: Error): void => {
         if (this.socket) {
           this.socket.destroy();
           this.socket = undefined;
         }
         reject(err);
-      });
+      };
+      this.socket.on('error', errorListener);
+      this.socketListeners.set('error', errorListener);
     });
   }
 
@@ -114,7 +135,7 @@ export class Hl7Client extends Hl7Base {
     return (await this.connect()).sendAndWait(msg);
   }
 
-  close(): void {
+  async close(): Promise<void> {
     // Close the socket if it exists
     if (this.socket) {
       this.socket.removeAllListeners();
@@ -122,10 +143,16 @@ export class Hl7Client extends Hl7Base {
       this.socket = undefined;
     }
 
+    if (this.rejectConnectPromise) {
+      this.rejectConnectPromise(new Error('Client closed while connecting'));
+      this.rejectConnectPromise = undefined;
+    }
+
     // Close established connection if it exists
     if (this.connection) {
-      this.connection.close();
+      const connection = this.connection;
       delete this.connection;
+      await connection.close();
     }
   }
 }
