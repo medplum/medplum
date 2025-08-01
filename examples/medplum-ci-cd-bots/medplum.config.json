@@ -1,34 +1,16 @@
 {
   "bots": [
     {
-      "name": "patient-validation-bot",
+      "name": "hapi-sync-bot",
       "id": "",
-      "source": "src/bots/patient-validation-bot.ts",
-      "dist": "dist/bots/patient-validation-bot.js"
+      "source": "src/bots/hapi-sync-bot.ts",
+      "dist": "dist/bots/hapi-sync-bot.js"
     },
     {
-      "name": "patient-audit-bot",
+      "name": "hapi-sync-simple-bot",
       "id": "",
-      "source": "src/bots/patient-audit-bot.ts",
-      "dist": "dist/bots/patient-audit-bot.js"
-    },
-    {
-      "name": "patient-notification-bot",
-      "id": "",
-      "source": "src/bots/patient-notification-bot.ts",
-      "dist": "dist/bots/patient-notification-bot.js"
-    },
-    {
-      "name": "resource-sync-bot",
-      "id": "",
-      "source": "src/bots/resource-sync-bot.ts",
-      "dist": "dist/bots/resource-sync-bot.js"
-    },
-    {
-      "name": "data-quality-bot",
-      "id": "",
-      "source": "src/bots/data-quality-bot.ts",
-      "dist": "dist/bots/data-quality-bot.js"
+      "source": "src/bots/hapi-sync-simple-bot.ts",
+      "dist": "dist/bots/hapi-sync-simple-bot.js"
     }
   ]
 } 

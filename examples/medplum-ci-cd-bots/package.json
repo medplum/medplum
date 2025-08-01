@@ -1,12 +1,12 @@
 {
   "name": "medplum-ci-cd-bots",
   "version": "1.0.0",
-  "description": "Medplum CI/CD Bots Example - Demonstrating Code Reuse and Subscription Management",
+  "description": "Medplum CI/CD Bots Example - Demonstrating Code Sharing Between 2 Bots",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "scripts": {
-    "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
+    "build": "npm run clean && tsc && node --no-warnings esbuild-script.mjs",
     "clean": "rimraf dist",
     "lint": "eslint src/",
     "prettier": "prettier --write .",
@@ -14,7 +14,7 @@
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "test:watch": "vitest watch",
-    "install:subscriptions": "node scripts/install-subscriptions.mjs",
+    "setup": "tsc --project scripts/tsconfig.json && node scripts/setup-bots-and-subscriptions.js && rm scripts/setup-bots-and-subscriptions.js",
     "deploy": "npm run build && medplum deploy"
   },
   "prettier": {

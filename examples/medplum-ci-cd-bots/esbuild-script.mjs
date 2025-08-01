@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 
 const config = JSON.parse(readFileSync('./medplum.config.json', 'utf8'));
 
-async function buildBots(): Promise<void> {
+async function buildBots() {
   for (const bot of config.bots) {
     console.log(`Building ${bot.name}...`);
     
