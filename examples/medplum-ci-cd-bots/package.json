@@ -14,7 +14,8 @@
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "test:watch": "vitest watch",
-    "setup": "tsc --project scripts/tsconfig.json && node scripts/setup-bots-and-subscriptions.js && rm scripts/setup-bots-and-subscriptions.js",
+    "setup": "npm run build:scripts && node scripts/setup-bots-and-subscriptions.js && rm scripts/setup-bots-and-subscriptions.js",
+    "build:scripts": "tsc --target ES2022 --module ESNext --moduleResolution node --esModuleInterop --skipLibCheck scripts/setup-bots-and-subscriptions.ts",
     "deploy": "npm run build && medplum deploy"
   },
   "prettier": {
