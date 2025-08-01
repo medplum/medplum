@@ -105,7 +105,7 @@ describe('HL7', () => {
     expect(response.segments).toHaveLength(2);
     expect(response.segments[1].name).toBe('MSA');
 
-    client.close();
+    await client.close();
     await app.stop();
     mockServer.stop();
   });
@@ -182,7 +182,7 @@ describe('HL7', () => {
       expect.stringContaining('Error during handling transmit request: Something bad happened')
     );
 
-    client.close();
+    await client.close();
     await app.stop();
     mockServer.stop();
     console.log = originalConsoleLog;
@@ -259,7 +259,7 @@ describe('HL7', () => {
     await sleep(150);
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Transmit response missing callback'));
 
-    client.close();
+    await client.close();
     await app.stop();
     mockServer.stop();
     console.log = originalConsoleLog;
@@ -341,7 +341,7 @@ describe('HL7', () => {
     expect(response.segments).toHaveLength(2);
     expect(response.segments[1].name).toBe('MSA');
 
-    client.close();
+    await client.close();
     await app.stop();
     mockServer.stop();
   });

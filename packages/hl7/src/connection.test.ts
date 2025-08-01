@@ -41,11 +41,11 @@ describe('HL7 Connection', () => {
     expect(listener).toHaveBeenCalledTimes(1);
 
     // Close multiple times to test idempotency
-    connection.close();
-    connection.close();
+    await connection.close();
+    await connection.close();
   });
 
-  test('enhancedMode', () => {
+  test('enhancedMode', async () => {
     const handlers: Record<string, (event: any) => void> = {};
 
     // Create a mock net.Socket
@@ -89,6 +89,6 @@ IN1|1|BCBS|67890|Blue Cross Blue Shield||||||||||||||||||||||||||||||||XYZ789`);
     ackToCompare.getSegment('MSH')?.setField(10, 'CONTROLID');
 
     expect(receivedMsg.toString().replaceAll('\r', '\n')).toStrictEqual(ackToCompare.toString().replaceAll('\r', '\n'));
-    connection.close();
+    await connection.close();
   });
 });
