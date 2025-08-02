@@ -72,6 +72,15 @@ jobs:
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+      - name: Deploy app preview
+        run: './scripts/deploy-app.sh'
+        env:
+          APP_BUCKET: preview.medplum.dev/previews/app-${{ github.sha }}
+          GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
+          MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
+          MEDPLUM_AWS_TEXTRACT_ENABLED: 'true'
+          RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
+          AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
 
   eslint:
     name: Run eslint
