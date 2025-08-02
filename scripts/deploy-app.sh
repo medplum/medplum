@@ -8,8 +8,6 @@ fi
 # Exit on error
 set -e
 
-pushd packages/app
-
 # Check that all required variables are set to avoid missing env vars not set in deploy.yml
 if [[ -z "${MEDPLUM_BASE_URL}" ]]; then
   echo "MEDPLUM_BASE_URL is missing"
@@ -26,7 +24,8 @@ fi
 # Find all JS files in the assets directory
 # Update the app config
 # Recursively apply to all text files in the app dist directory
-find "./dist" -type f -exec sed -i \
+# TODO: Could this be done as part of s3deploy.mjs?
+find "packages/app/dist" -type f -exec sed -i \
   -e "s|__MEDPLUM_BASE_URL__|${MEDPLUM_BASE_URL}|g" \
   -e "s|__MEDPLUM_CLIENT_ID__||g" \
   -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
@@ -37,71 +36,5 @@ find "./dist" -type f -exec sed -i \
 
 echo "Environment variable replacement complete."
 
-# First deploy hashed files that are cached forever
-# It is important to deploy these files first,
-# because they are referenced by the index.html file.
-# If a user attempts to download a hashed file that doesn't exist,
-# it can cause a bad cache entry in CloudFront.
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "text/css" \
-  --cache-control "public, max-age=31536000" \
-  --exclude "*" \
-  --include "*.css"
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "text/javascript" \
-  --cache-control "public, max-age=31536000" \
-  --exclude "*" \
-  --include "*.js"
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "application/json" \
-  --cache-control "public, max-age=31536000" \
-  --exclude "*" \
-  --include "*.map"
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "text/plain" \
-  --cache-control "public, max-age=31536000" \
-  --exclude "*" \
-  --include "*.txt"
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "image/x-icon" \
-  --cache-control "public, max-age=31536000" \
-  --exclude "*" \
-  --include "*.ico"
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "image/png" \
-  --cache-control "public, max-age=31536000" \
-  --exclude "*" \
-  --include "*.png"
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "image/svg+xml" \
-  --cache-control "public, max-age=31536000" \
-  --exclude "*" \
-  --include "*.svg"
-
-# Now deploy named files that are not cached.
-# These are small lightweight files that are not hashed.
-# It is important to deploy these files last,
-# because they reference the previously uploaded hashed files.
-
-aws s3 cp dist/ "s3://${APP_BUCKET}/" \
-  --recursive \
-  --content-type "text/html" \
-  --cache-control "no-cache" \
-  --exclude "*" \
-  --include "*.html"
-
-popd
+# Fast upload the build output to S3
+node scripts/s3deploy.mjs packages/app/dist "s3://${APP_BUCKET}"
