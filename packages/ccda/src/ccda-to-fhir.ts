@@ -1,4 +1,13 @@
-import { createReference, generateId, isUUID, LOINC, UCUM, formatHl7DateTime, getExtensionValue, resolveId } from '@medplum/core';
+import {
+  createReference,
+  formatHl7DateTime,
+  generateId,
+  getExtensionValue,
+  isUUID,
+  LOINC,
+  resolveId,
+  UCUM,
+} from '@medplum/core';
 import {
   Address,
   AllergyIntolerance,
@@ -15,6 +24,7 @@ import {
   Condition,
   ContactPoint,
   Coverage,
+  DocumentReference,
   Encounter,
   EncounterDiagnosis,
   Extension,
@@ -35,20 +45,20 @@ import {
   Procedure,
   Reference,
   Resource,
-  DocumentReference,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { XMLBuilder } from 'fast-xml-parser';
 import { mapCcdaToFhirDate, mapCcdaToFhirDateTime } from './datetime';
 import {
+  OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_ALLERGIES_SECTION_ENTRIES_OPTIONAL,
   OID_ALLERGIES_SECTION_ENTRIES_OPTIONAL_V2,
   OID_ALLERGIES_SECTION_ENTRIES_REQUIRED,
   OID_ALLERGIES_SECTION_ENTRIES_REQUIRED_V2,
-  OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_CARE_TEAMS_SECTION,
   OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
   OID_CPT_CODE_SYSTEM,
+  OID_DOCUMENT_ID_CODE_SYSTEM,
   OID_ENCOUNTER_ACTIVITIES,
   OID_GOAL_OBSERVATION,
   OID_GOALS_SECTION,
@@ -61,48 +71,46 @@ import {
   OID_MEDICATION_FREE_TEXT_SIG,
   OID_MEDICATIONS_SECTION_ENTRIES_REQUIRED,
   OID_NOTES_SECTION,
+  // Additional OIDs for QRDA generation
+  OID_PARTICIPANT_DEVICE,
   OID_PAYERS_SECTION,
   OID_PLAN_OF_CARE_SECTION,
   OID_PROBLEMS_SECTION_ENTRIES_OPTIONAL,
   OID_PROBLEMS_SECTION_ENTRIES_REQUIRED,
   OID_PROBLEMS_SECTION_V2_ENTRIES_OPTIONAL,
   OID_PROBLEMS_SECTION_V2_ENTRIES_REQUIRED,
+  OID_PROCEDURE_ACTIVITY_ACT,
   OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
+  OID_QRDA_AUTHOR_DATETIME,
+  // QRDA Template OIDs
+  OID_QRDA_CATEGORY_I_REPORT,
+  OID_QRDA_CATEGORY_I_REPORT_CMS,
+  OID_QRDA_CATEGORY_I_REPORT_QDM,
+  OID_QRDA_ENCOUNTER_CLASS,
+  OID_QRDA_ENCOUNTER_DIAGNOSIS,
+  OID_QRDA_ENCOUNTER_PERFORMED,
+  OID_QRDA_INTERVENTION_PERFORMED,
+  OID_QRDA_MEASURE_ID,
+  OID_QRDA_MEASURE_REFERENCE,
+  OID_QRDA_MEASURE_REFERENCE_QDM,
+  OID_QRDA_MEASURE_SECTION,
+  OID_QRDA_MEASURE_SECTION_QDM,
+  OID_QRDA_NEGATION_RATIONALE,
+  OID_QRDA_PATIENT_CHARACTERISTIC_PAYER,
+  OID_QRDA_PATIENT_DATA_SECTION,
+  // QRDA Patient Data Section Template
+  OID_QRDA_PATIENT_DATA_SECTION_LEGACY,
+  OID_QRDA_PATIENT_DATA_SECTION_V2,
+  OID_QRDA_PROCEDURE_PERFORMED,
+  OID_QRDA_RANK,
+  OID_QRDA_REPORTING_PARAMETERS_ACT,
+  OID_QRDA_REPORTING_PARAMETERS_ACT_V2,
+  OID_QRDA_REPORTING_PARAMETERS_SECTION,
+  OID_QRDA_REPORTING_PARAMETERS_SECTION_V2,
   OID_REASON_FOR_REFERRAL,
   OID_SNOMED_CT_CODE_SYSTEM,
   OID_US_NPI_CODE_SYSTEM,
   OID_US_REALM_CDA_HEADER,
-  // QRDA Template OIDs
-  OID_QRDA_CATEGORY_I_REPORT,
-  OID_QRDA_CATEGORY_I_REPORT_QDM,
-  OID_QRDA_CATEGORY_I_REPORT_CMS,
-  OID_QRDA_MEASURE_SECTION,
-  OID_QRDA_MEASURE_SECTION_QDM,
-  OID_QRDA_PATIENT_DATA_SECTION,
-  OID_QRDA_PATIENT_DATA_SECTION_V2,
-  OID_QRDA_REPORTING_PARAMETERS_SECTION,
-  OID_QRDA_REPORTING_PARAMETERS_SECTION_V2,
-  OID_QRDA_MEASURE_REFERENCE,
-  OID_QRDA_MEASURE_REFERENCE_QDM,
-  OID_QRDA_ENCOUNTER_PERFORMED,
-  OID_QRDA_INTERVENTION_PERFORMED,
-  OID_QRDA_PROCEDURE_PERFORMED,
-  OID_QRDA_PATIENT_CHARACTERISTIC_PAYER,
-  OID_QRDA_ENCOUNTER_DIAGNOSIS,
-  OID_QRDA_RANK,
-  OID_QRDA_AUTHOR_DATETIME,
-  OID_QRDA_NEGATION_RATIONALE,
-  OID_QRDA_ENCOUNTER_CLASS,
-  OID_QRDA_REPORTING_PARAMETERS_ACT,
-  OID_QRDA_REPORTING_PARAMETERS_ACT_V2,
-  // QRDA Patient Data Section Template
-  OID_QRDA_PATIENT_DATA_SECTION_LEGACY,
-  OID_QRDA_MEASURE_ID,
-  OID_DOCUMENT_ID_CODE_SYSTEM,
-  // Additional OIDs for QRDA generation
-  OID_PARTICIPANT_DEVICE,
-  OID_PROCEDURE_ACTIVITY_ACT,
-  OID_PROCEDURE_ACTIVITY_PROCEDURE,
 } from './oids';
 import {
   ACT_CODE_SYSTEM,
@@ -132,13 +140,6 @@ import {
   US_CORE_ETHNICITY_URL,
   US_CORE_MEDICATION_REQUEST_URL,
   US_CORE_RACE_URL,
-  // Additional code systems for QRDA
-  SOURCE_OF_PAYMENT_TYPOLOGY_CODE_SYSTEM,
-  SNOMED_CT_CODE_SYSTEM,
-  CPT_CODE_SYSTEM,
-  LOINC_CODE_SYSTEM,
-  CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
-  NUCC_TAXONOMY_CODE_SYSTEM,
 } from './systems';
 import {
   Ccda,
@@ -364,7 +365,10 @@ function buildAuthor(currentDateTime: string): Record<string, any> {
   return {
     time: { '@_value': authorData.author.time },
     assignedAuthor: {
-      id: { '@_extension': authorData.author.assignedAuthor.id.extension, '@_root': authorData.author.assignedAuthor.id.root },
+      id: {
+        '@_extension': authorData.author.assignedAuthor.id.extension,
+        '@_root': authorData.author.assignedAuthor.id.root,
+      },
       addr: {
         streetAddressLine: authorData.author.assignedAuthor.addr.streetAddressLine,
         city: authorData.author.assignedAuthor.addr.city,
@@ -372,7 +376,10 @@ function buildAuthor(currentDateTime: string): Record<string, any> {
         postalCode: authorData.author.assignedAuthor.addr.postalCode,
         country: authorData.author.assignedAuthor.addr.country,
       },
-      telecom: { '@_use': authorData.author.assignedAuthor.telecom.use, '@_value': authorData.author.assignedAuthor.telecom.value },
+      telecom: {
+        '@_use': authorData.author.assignedAuthor.telecom.use,
+        '@_value': authorData.author.assignedAuthor.telecom.value,
+      },
       assignedAuthoringDevice: {
         manufacturerModelName: authorData.author.assignedAuthor.assignedAuthoringDevice.manufacturerModelName,
         softwareName: authorData.author.assignedAuthor.assignedAuthoringDevice.softwareName,
@@ -390,12 +397,19 @@ function buildCustodian(): Record<string, any> {
   return {
     assignedCustodian: {
       representedCustodianOrganization: {
-        id: { '@_extension': custodianData.custodian.assignedCustodian.representedCustodianOrganization.id.extension, '@_root': custodianData.custodian.assignedCustodian.representedCustodianOrganization.id.root },
+        id: {
+          '@_extension': custodianData.custodian.assignedCustodian.representedCustodianOrganization.id.extension,
+          '@_root': custodianData.custodian.assignedCustodian.representedCustodianOrganization.id.root,
+        },
         name: custodianData.custodian.assignedCustodian.representedCustodianOrganization.name,
-        telecom: { '@_use': custodianData.custodian.assignedCustodian.representedCustodianOrganization.telecom.use, '@_value': custodianData.custodian.assignedCustodian.representedCustodianOrganization.telecom.value },
+        telecom: {
+          '@_use': custodianData.custodian.assignedCustodian.representedCustodianOrganization.telecom.use,
+          '@_value': custodianData.custodian.assignedCustodian.representedCustodianOrganization.telecom.value,
+        },
         addr: {
           '@_use': custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.use,
-          streetAddressLine: custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.streetAddressLine,
+          streetAddressLine:
+            custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.streetAddressLine,
           city: custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.city,
           state: custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.state,
           postalCode: custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.postalCode,
@@ -425,7 +439,10 @@ function buildLegalAuthenticator(currentDateTime: string): Record<string, any> {
         postalCode: authenticatorData.legalAuthenticator.assignedEntity.addr.postalCode,
         country: authenticatorData.legalAuthenticator.assignedEntity.addr.country,
       },
-      telecom: { '@_use': authenticatorData.legalAuthenticator.assignedEntity.telecom.use, '@_value': authenticatorData.legalAuthenticator.assignedEntity.telecom.value },
+      telecom: {
+        '@_use': authenticatorData.legalAuthenticator.assignedEntity.telecom.use,
+        '@_value': authenticatorData.legalAuthenticator.assignedEntity.telecom.value,
+      },
       assignedPerson: {
         name: {
           given: authenticatorData.legalAuthenticator.assignedEntity.assignedPerson.name.given,
@@ -632,7 +649,7 @@ function buildEncounterEntry(
 ): Record<string, any> {
   const periodStart = encounter.period?.start;
   const periodEnd = encounter.period?.end;
-  
+
   // Use shared code mapping
   const encounterTypeCode = mapCodeToStandard(encounter.type?.[0], OID_CPT_CODE_SYSTEM);
   const diagnosisCode = mapCodeToStandard(diagnosisCondition?.code, OID_SNOMED_CT_CODE_SYSTEM);
@@ -1195,11 +1212,16 @@ function buildXmlString(data: Record<string, any>): string {
  * @param defaultSystem - Default code system if not specified
  * @returns Standardized code object
  */
-function mapCodeToStandard(code: CodeableConcept | undefined, defaultSystem?: string): {
-  code: string;
-  system: string;
-  display: string;
-} | undefined {
+function mapCodeToStandard(
+  code: CodeableConcept | undefined,
+  defaultSystem?: string
+):
+  | {
+      code: string;
+      system: string;
+      display: string;
+    }
+  | undefined {
   if (!code?.coding?.[0]) {
     return undefined;
   }
@@ -1221,17 +1243,17 @@ function normalizeCodeSystem(system: string | undefined): string | undefined {
   if (!system) {
     return undefined;
   }
-  
+
   // Ensure it's a valid OID format
   if (system.match(/^\d+(\.\d+)*$/)) {
     return system;
   }
-  
+
   // Handle FHIR URLs
   if (system.startsWith('http')) {
     return system;
   }
-  
+
   return undefined;
 }
 
@@ -1261,27 +1283,35 @@ class CcdaToFhirConverter {
           id: generateId(),
           status: 'current',
           type: {
-            coding: [{
-              system: LOINC,
-              code: '55182-0',
-              display: 'Quality Measure Report'
-            }]
+            coding: [
+              {
+                system: LOINC,
+                code: '55182-0',
+                display: 'Quality Measure Report',
+              },
+            ],
           },
-          category: [{
-            coding: [{
-              system: LOINC,
-              code: '55182-0',
-              display: 'Quality Measure Report'
-            }]
-          }],
+          category: [
+            {
+              coding: [
+                {
+                  system: LOINC,
+                  code: '55182-0',
+                  display: 'Quality Measure Report',
+                },
+              ],
+            },
+          ],
           subject: this.patient ? createReference(this.patient) : undefined,
           date: new Date().toISOString(),
-          content: [{
-            attachment: {
-              contentType: 'application/xml',
-              data: Buffer.from(qrdaXml).toString('base64')
-            }
-          }]
+          content: [
+            {
+              attachment: {
+                contentType: 'application/xml',
+                data: Buffer.from(qrdaXml).toString('base64'),
+              },
+            },
+          ],
         };
         this.resources.push(documentReference);
       }
@@ -1304,10 +1334,7 @@ class CcdaToFhirConverter {
    * @param params - Parameters for QRDA generation
    * @returns Generated XML string or null if patient has no data to export
    */
-  private generateQRDACategoryI(
-    patientData: QRDAPatientData,
-    params: QRDAGenerationParams
-  ): string | null {
+  private generateQRDACategoryI(patientData: QRDAPatientData, params: QRDAGenerationParams): string | null {
     // Does not create QRDA if patient has no data to export
     if (
       patientData.encounters.length === 0 &&
@@ -1355,7 +1382,7 @@ class CcdaToFhirConverter {
     const patientRole = this.ccda.recordTarget?.[0]?.patientRole;
     if (patientRole) {
       this.patient = this.createPatient(patientRole);
-      
+
       // Initialize QRDA patient data if QRDA generation is requested
       if (this.options?.generateQRDA) {
         this.qrdaPatientData = {
@@ -1363,7 +1390,7 @@ class CcdaToFhirConverter {
           encounters: [],
           interventions: [],
           procedures: [],
-          coverages: []
+          coverages: [],
         };
       }
     }
