@@ -1,4 +1,4 @@
-import { createReference, generateId, isUUID, LOINC, UCUM } from '@medplum/core';
+import { createReference, generateId, isUUID, LOINC, UCUM, formatHl7DateTime, getExtensionValue, resolveId } from '@medplum/core';
 import {
   Address,
   AllergyIntolerance,
@@ -14,6 +14,7 @@ import {
   CompositionSection,
   Condition,
   ContactPoint,
+  Coverage,
   Encounter,
   EncounterDiagnosis,
   Extension,
@@ -34,19 +35,29 @@ import {
   Procedure,
   Reference,
   Resource,
+  DocumentReference,
 } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
+import { XMLBuilder } from 'fast-xml-parser';
 import { mapCcdaToFhirDate, mapCcdaToFhirDateTime } from './datetime';
 import {
   OID_ALLERGIES_SECTION_ENTRIES_OPTIONAL,
   OID_ALLERGIES_SECTION_ENTRIES_OPTIONAL_V2,
   OID_ALLERGIES_SECTION_ENTRIES_REQUIRED,
   OID_ALLERGIES_SECTION_ENTRIES_REQUIRED_V2,
+  OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
   OID_CARE_TEAMS_SECTION,
+  OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
+  OID_CPT_CODE_SYSTEM,
+  OID_ENCOUNTER_ACTIVITIES,
   OID_GOAL_OBSERVATION,
   OID_GOALS_SECTION,
   OID_HEALTH_CONCERNS_SECTION,
   OID_IMMUNIZATIONS_SECTION_ENTRIES_OPTIONAL,
   OID_IMMUNIZATIONS_SECTION_ENTRIES_REQUIRED,
+  OID_LANGUAGE_COMMUNICATION_TEMPLATE_HITSP,
+  OID_LANGUAGE_COMMUNICATION_TEMPLATE_IHE,
+  OID_LOINC_CODE_SYSTEM,
   OID_MEDICATION_FREE_TEXT_SIG,
   OID_MEDICATIONS_SECTION_ENTRIES_REQUIRED,
   OID_NOTES_SECTION,
@@ -58,6 +69,40 @@ import {
   OID_PROBLEMS_SECTION_V2_ENTRIES_REQUIRED,
   OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
   OID_REASON_FOR_REFERRAL,
+  OID_SNOMED_CT_CODE_SYSTEM,
+  OID_US_NPI_CODE_SYSTEM,
+  OID_US_REALM_CDA_HEADER,
+  // QRDA Template OIDs
+  OID_QRDA_CATEGORY_I_REPORT,
+  OID_QRDA_CATEGORY_I_REPORT_QDM,
+  OID_QRDA_CATEGORY_I_REPORT_CMS,
+  OID_QRDA_MEASURE_SECTION,
+  OID_QRDA_MEASURE_SECTION_QDM,
+  OID_QRDA_PATIENT_DATA_SECTION,
+  OID_QRDA_PATIENT_DATA_SECTION_V2,
+  OID_QRDA_REPORTING_PARAMETERS_SECTION,
+  OID_QRDA_REPORTING_PARAMETERS_SECTION_V2,
+  OID_QRDA_MEASURE_REFERENCE,
+  OID_QRDA_MEASURE_REFERENCE_QDM,
+  OID_QRDA_ENCOUNTER_PERFORMED,
+  OID_QRDA_INTERVENTION_PERFORMED,
+  OID_QRDA_PROCEDURE_PERFORMED,
+  OID_QRDA_PATIENT_CHARACTERISTIC_PAYER,
+  OID_QRDA_ENCOUNTER_DIAGNOSIS,
+  OID_QRDA_RANK,
+  OID_QRDA_AUTHOR_DATETIME,
+  OID_QRDA_NEGATION_RATIONALE,
+  OID_QRDA_ENCOUNTER_CLASS,
+  OID_QRDA_REPORTING_PARAMETERS_ACT,
+  OID_QRDA_REPORTING_PARAMETERS_ACT_V2,
+  // QRDA Patient Data Section Template
+  OID_QRDA_PATIENT_DATA_SECTION_LEGACY,
+  OID_QRDA_MEASURE_ID,
+  OID_DOCUMENT_ID_CODE_SYSTEM,
+  // Additional OIDs for QRDA generation
+  OID_PARTICIPANT_DEVICE,
+  OID_PROCEDURE_ACTIVITY_ACT,
+  OID_PROCEDURE_ACTIVITY_PROCEDURE,
 } from './oids';
 import {
   ACT_CODE_SYSTEM,
@@ -87,6 +132,13 @@ import {
   US_CORE_ETHNICITY_URL,
   US_CORE_MEDICATION_REQUEST_URL,
   US_CORE_RACE_URL,
+  // Additional code systems for QRDA
+  SOURCE_OF_PAYMENT_TYPOLOGY_CODE_SYSTEM,
+  SNOMED_CT_CODE_SYSTEM,
+  CPT_CODE_SYSTEM,
+  LOINC_CODE_SYSTEM,
+  CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
+  NUCC_TAXONOMY_CODE_SYSTEM,
 } from './systems';
 import {
   Ccda,
@@ -100,6 +152,7 @@ import {
   CcdaEffectiveTime,
   CcdaEncounter,
   CcdaEntry,
+  CcdaEntryRelationship,
   CcdaId,
   CcdaName,
   CcdaObservation,
@@ -117,8 +170,31 @@ import {
 } from './types';
 import { convertToCompactXml } from './xml';
 
+// Extension URL mappings for QRDA
+const extensionURLMapping = {
+  patientBirthTime: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient-birthtime',
+  encounterDescription: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-encounter-description',
+  procedureRank: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-procedure-rank',
+};
+
 export interface CcdaToFhirOptions {
   ignoreUnsupportedSections?: boolean;
+  generateQRDA?: boolean;
+  qrdaParams?: QRDAGenerationParams;
+}
+
+export interface QRDAGenerationParams {
+  patientId: string;
+  measurePeriodStart: string;
+  measurePeriodEnd: string;
+}
+
+export interface QRDAPatientData {
+  patient: Patient;
+  encounters: (Encounter | Condition)[];
+  interventions: Procedure[];
+  procedures: Procedure[];
+  coverages: Coverage[];
 }
 
 /**
@@ -136,11 +212,1035 @@ export function convertCcdaToFhir(ccda: Ccda, options?: CcdaToFhirOptions): Bund
   return new CcdaToFhirConverter(ccda, options).convert();
 }
 
+/**
+ * Builds the QRDA document structure
+ * @param data - Patient data including demographics, medications, and encounters
+ * @param params - QRDA generation parameters
+ * @returns The complete QRDA document structure
+ */
+function buildQRDADocument(data: QRDAPatientData, params: QRDAGenerationParams): Record<string, any> {
+  const { patient, encounters, interventions, procedures, coverages } = data;
+
+  const currentDateTime = new Date().toISOString().replace(/[-:]/g, '').split('.')[0];
+  const documentId = randomUUID();
+
+  return {
+    ClinicalDocument: {
+      '@_xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+      '@_xmlns': 'urn:hl7-org:v3',
+      '@_xmlns:voc': 'urn:hl7-org:v3/voc',
+      '@_xmlns:sdtc': 'urn:hl7-org:sdtc',
+
+      // QRDA Header
+      realmCode: { '@_code': 'US' },
+      typeId: { '@_root': '2.16.840.1.113883.1.3', '@_extension': 'POCD_HD000040' },
+      templateId: [
+        // US Realm Header Template Id
+        { '@_root': OID_US_REALM_CDA_HEADER, '@_extension': '2015-08-01' },
+        // QRDA templateId
+        { '@_root': OID_QRDA_CATEGORY_I_REPORT, '@_extension': '2017-08-01' },
+        // QDM-based QRDA templateId
+        { '@_root': OID_QRDA_CATEGORY_I_REPORT_QDM, '@_extension': '2021-08-01' },
+        // CMS QRDA templateId - QRDA Category I Report - CMS (V8)
+        { '@_root': OID_QRDA_CATEGORY_I_REPORT_CMS, '@_extension': '2022-02-01' },
+      ],
+      id: { '@_root': documentId },
+      // QRDA document type code
+      code: {
+        '@_code': '55182-0',
+        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+        '@_codeSystemName': 'LOINC',
+        '@_displayName': 'Quality Measure Report',
+      },
+      title: 'QRDA Incidence Report',
+      // This is the document creation time
+      effectiveTime: { '@_value': currentDateTime },
+      confidentialityCode: { '@_code': 'N', '@_codeSystem': '2.16.840.1.113883.5.25' },
+      languageCode: { '@_code': 'en' },
+
+      // Patient Information
+      recordTarget: buildRecordTarget(patient),
+
+      // Author
+      author: buildAuthor(currentDateTime),
+
+      // Custodian
+      custodian: buildCustodian(),
+
+      // Legal Authenticator
+      legalAuthenticator: buildLegalAuthenticator(currentDateTime),
+
+      // Participant
+      participant: buildParticipant(),
+
+      // Documentation
+      documentationOf: buildDocumentationOf(),
+
+      // Body
+      component: {
+        structuredBody: {
+          // Measure Section
+          component: [
+            buildMeasureSection(),
+            buildReportingParametersSection(params.measurePeriodStart, params.measurePeriodEnd),
+            buildPatientDataSection(patient, encounters, interventions, procedures, coverages),
+          ],
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Builds the record target section with patient demographics
+ * @param patient - The patient resource with demographic information
+ * @returns The record target section for the QRDA document
+ */
+function buildRecordTarget(patient: Patient): Record<string, any> {
+  const demographics = extractPatientDemographics(patient);
+  const telecom = demographics.telecom.find((t) => t.system === 'phone');
+  const email = demographics.telecom.find((t) => t.system === 'email');
+
+  return {
+    patientRole: {
+      id: {
+        '@_extension': patient.id,
+        '@_root': '1.3.6.1.4.1.115',
+      },
+      addr: demographics.address
+        ? {
+            '@_use': 'HP',
+            streetAddressLine: demographics.address.line?.[0] ?? '',
+            city: demographics.address.city ?? '',
+            state: demographics.address.state ?? '',
+            postalCode: demographics.address.postalCode ?? '',
+            country: demographics.address.country || 'US',
+          }
+        : undefined,
+      telecom: [
+        telecom ? { '@_use': 'HP', '@_value': `tel:${telecom.value}` } : undefined,
+        email ? { '@_use': 'HP', '@_value': `mailto:${email.value}` } : undefined,
+      ].filter(Boolean),
+      patient: {
+        name: {
+          given: demographics.name.given,
+          family: demographics.name.family,
+        },
+        administrativeGenderCode: {
+          '@_code': demographics.gender,
+          '@_codeSystem': OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
+          '@_codeSystemName': 'AdministrativeGender',
+        },
+        birthTime: { '@_value': demographics.birthDateTime ? formatHl7DateTime(demographics.birthDateTime) : '' },
+        raceCode: {
+          '@_code': demographics.race?.code ?? '',
+          '@_codeSystem': OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
+          '@_codeSystemName': 'CDCREC',
+        },
+        ethnicGroupCode: {
+          '@_code': demographics.ethnicity?.code ?? '',
+          '@_codeSystem': OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
+          '@_codeSystemName': 'CDCREC',
+        },
+        languageCommunication: {
+          templateId: [
+            { '@_root': OID_LANGUAGE_COMMUNICATION_TEMPLATE_HITSP, '@_assigningAuthorityName': 'HITSP/C83' },
+            { '@_root': OID_LANGUAGE_COMMUNICATION_TEMPLATE_IHE, '@_assigningAuthorityName': 'IHE/PCC' },
+          ],
+          languageCode: { '@_code': 'eng' },
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Builds the author section
+ * @param currentDateTime - The current date/time for the document
+ * @returns The author section for the QRDA document
+ */
+function buildAuthor(currentDateTime: string): Record<string, any> {
+  const authorData = extractAuthorCustodianData(currentDateTime);
+  return {
+    time: { '@_value': authorData.author.time },
+    assignedAuthor: {
+      id: { '@_extension': authorData.author.assignedAuthor.id.extension, '@_root': authorData.author.assignedAuthor.id.root },
+      addr: {
+        streetAddressLine: authorData.author.assignedAuthor.addr.streetAddressLine,
+        city: authorData.author.assignedAuthor.addr.city,
+        state: authorData.author.assignedAuthor.addr.state,
+        postalCode: authorData.author.assignedAuthor.addr.postalCode,
+        country: authorData.author.assignedAuthor.addr.country,
+      },
+      telecom: { '@_use': authorData.author.assignedAuthor.telecom.use, '@_value': authorData.author.assignedAuthor.telecom.value },
+      assignedAuthoringDevice: {
+        manufacturerModelName: authorData.author.assignedAuthor.assignedAuthoringDevice.manufacturerModelName,
+        softwareName: authorData.author.assignedAuthor.assignedAuthoringDevice.softwareName,
+      },
+    },
+  };
+}
+
+/**
+ * Builds the custodian section
+ * @returns The custodian section for the QRDA document
+ */
+function buildCustodian(): Record<string, any> {
+  const custodianData = extractAuthorCustodianData(new Date().toISOString().replace(/[-:]/g, '').split('.')[0]);
+  return {
+    assignedCustodian: {
+      representedCustodianOrganization: {
+        id: { '@_extension': custodianData.custodian.assignedCustodian.representedCustodianOrganization.id.extension, '@_root': custodianData.custodian.assignedCustodian.representedCustodianOrganization.id.root },
+        name: custodianData.custodian.assignedCustodian.representedCustodianOrganization.name,
+        telecom: { '@_use': custodianData.custodian.assignedCustodian.representedCustodianOrganization.telecom.use, '@_value': custodianData.custodian.assignedCustodian.representedCustodianOrganization.telecom.value },
+        addr: {
+          '@_use': custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.use,
+          streetAddressLine: custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.streetAddressLine,
+          city: custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.city,
+          state: custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.state,
+          postalCode: custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.postalCode,
+          country: custodianData.custodian.assignedCustodian.representedCustodianOrganization.addr.country,
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Builds the legal authenticator section
+ * @param currentDateTime - The current date/time for the document
+ * @returns The legal authenticator section for the QRDA document
+ */
+function buildLegalAuthenticator(currentDateTime: string): Record<string, any> {
+  const authenticatorData = extractAuthorCustodianData(currentDateTime);
+  return {
+    time: { '@_value': authenticatorData.legalAuthenticator.time },
+    signatureCode: { '@_code': authenticatorData.legalAuthenticator.signatureCode.code },
+    assignedEntity: {
+      id: { '@_root': authenticatorData.legalAuthenticator.assignedEntity.id.root },
+      addr: {
+        streetAddressLine: authenticatorData.legalAuthenticator.assignedEntity.addr.streetAddressLine,
+        city: authenticatorData.legalAuthenticator.assignedEntity.addr.city,
+        state: authenticatorData.legalAuthenticator.assignedEntity.addr.state,
+        postalCode: authenticatorData.legalAuthenticator.assignedEntity.addr.postalCode,
+        country: authenticatorData.legalAuthenticator.assignedEntity.addr.country,
+      },
+      telecom: { '@_use': authenticatorData.legalAuthenticator.assignedEntity.telecom.use, '@_value': authenticatorData.legalAuthenticator.assignedEntity.telecom.value },
+      assignedPerson: {
+        name: {
+          given: authenticatorData.legalAuthenticator.assignedEntity.assignedPerson.name.given,
+          family: authenticatorData.legalAuthenticator.assignedEntity.assignedPerson.name.family,
+        },
+      },
+      representedOrganization: {
+        id: { root: OID_DOCUMENT_ID_CODE_SYSTEM },
+        name: 'Medplum Test System',
+      },
+    },
+  };
+}
+
+/**
+ * Builds the participant section
+ * @returns The participant section for the QRDA document
+ */
+function buildParticipant(): Record<string, any> {
+  // NOTE: This is a placeholder for the participant section.
+  return {
+    '@_typeCode': 'DEV',
+    associatedEntity: {
+      '@_classCode': 'RGPR',
+      id: { '@_extension': '0015CPV4ZTB4WBU', '@_root': OID_PARTICIPANT_DEVICE },
+    },
+  };
+}
+
+/**
+ * Builds the documentation section
+ * @returns The documentation section for the QRDA document
+ */
+function buildDocumentationOf(): Record<string, any> {
+  return {
+    '@_typeCode': 'DOC',
+    serviceEvent: {
+      '@_classCode': 'PCPR',
+      // Care provision
+      effectiveTime: {
+        low: { '@_nullFlavor': 'UNK' },
+        high: { '@_nullFlavor': 'UNK' },
+      },
+      performer: {
+        '@_typeCode': 'PRF',
+        time: {
+          low: { '@_nullFlavor': 'UNK' },
+          high: { '@_nullFlavor': 'UNK' },
+        },
+        assignedEntity: {
+          id: [
+            { '@_extension': '1250504853', '@_root': OID_US_NPI_CODE_SYSTEM },
+            { '@_extension': '117323', '@_root': '2.16.840.1.113883.4.336' },
+          ],
+          code: {
+            '@_code': '207Q00000X',
+            '@_codeSystem': '2.16.840.1.113883.6.101',
+            '@_codeSystemName': 'Healthcare Provider Taxonomy (HIPAA)',
+          },
+          addr: {
+            '@_use': 'HP',
+            streetAddressLine: '202 Burlington Rd.',
+            city: 'Bedford',
+            state: 'MA',
+            postalCode: '01730',
+            country: 'US',
+          },
+          assignedPerson: {
+            name: {
+              given: 'Sylvia',
+              family: 'Joseph',
+            },
+          },
+          representedOrganization: {
+            id: { '@_extension': '916854671', '@_root': '2.16.840.1.113883.4.2' },
+            addr: {
+              '@_use': 'HP',
+              streetAddressLine: '202 Burlington Rd.',
+              city: 'Bedford',
+              state: 'MA',
+              postalCode: '01730',
+              country: 'US',
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Builds the measure section
+ * @returns The measure section for the QRDA document
+ */
+function buildMeasureSection(): Record<string, any> {
+  return {
+    section: {
+      templateId: [
+        // This is the templateId for Measure Section
+        { '@_root': OID_QRDA_MEASURE_SECTION },
+        // This is the templateId for Measure Section QDM
+        { '@_root': OID_QRDA_MEASURE_SECTION_QDM },
+      ],
+      // This is the LOINC code for "Measure document". This stays the same for all measure section required by QRDA standard
+      code: { '@_code': '55186-1', '@_codeSystem': OID_LOINC_CODE_SYSTEM },
+      title: 'Measure Section',
+      text: {
+        table: {
+          '@_border': '1',
+          '@_width': '100%',
+          thead: {
+            tr: {
+              th: ['eMeasure Title', 'Version specific identifier'],
+            },
+          },
+          tbody: {
+            tr: {
+              td: [
+                'Percentage of visits for which the eligible clinician attests to documenting a list of current medications using all immediate resources available on the date of the encounter',
+                '8A6D0454-8DF0-2D9F-018D-F6AEBA950637',
+                '',
+              ],
+            },
+          },
+        },
+      },
+      // 1..* Organizers, each containing a reference to an eMeasure
+      entry: {
+        organizer: {
+          '@_classCode': 'CLUSTER',
+          '@_moodCode': 'EVN',
+          templateId: [
+            // This is the templateId for Measure Reference
+            { '@_root': OID_QRDA_MEASURE_REFERENCE },
+            // This is the templateId for eMeasure Reference QDM
+            { '@_root': OID_QRDA_MEASURE_REFERENCE_QDM },
+          ],
+          id: { '@_extension': randomUUID(), '@_root': '1.3.6.1.4.1.115' },
+          statusCode: { '@_code': 'completed' },
+          // Containing isBranch external references
+          reference: {
+            '@_typeCode': 'REFR',
+            externalDocument: {
+              '@_classCode': 'DOC',
+              '@_moodCode': 'EVN',
+              id: { '@_extension': '8A6D0454-8DF0-2D9F-018D-F6AEBA950637', '@_root': OID_QRDA_MEASURE_ID },
+              text: 'Percentage of visits for which the eligible clinician attests to documenting a list of current medications using all immediate resources available on the date of the encounter',
+              setId: { '@_root': '9A032D9C-3D9B-11E1-8634-00237D5BF174' },
+            },
+          },
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Builds the reporting parameters section
+ * @param periodStart - Start datetime of the reporting period
+ * @param periodEnd - End datetime of the reporting period
+ * @returns The reporting parameters section for the QRDA document
+ */
+function buildReportingParametersSection(periodStart: string, periodEnd: string): Record<string, any> {
+  return {
+    section: {
+      // This is the templateId for Reporting Parameters section
+      templateId: [
+        { '@_root': OID_QRDA_REPORTING_PARAMETERS_SECTION },
+        { '@_root': OID_QRDA_REPORTING_PARAMETERS_SECTION_V2, '@_extension': '2016-03-01' },
+      ],
+      code: { '@_code': '55187-9', '@_codeSystem': OID_LOINC_CODE_SYSTEM },
+      title: 'Reporting Parameters',
+      text: '',
+      entry: {
+        '@_typeCode': 'DRIV',
+        act: {
+          '@_classCode': 'ACT',
+          '@_moodCode': 'EVN',
+          // This is the templateId for Reporting Parameters Act
+          templateId: [
+            { '@_root': OID_QRDA_REPORTING_PARAMETERS_ACT },
+            { '@_root': OID_QRDA_REPORTING_PARAMETERS_ACT_V2, '@_extension': '2016-03-01' },
+          ],
+          id: { '@_extension': randomUUID(), '@_root': '1.3.6.1.4.1.115' },
+          code: {
+            '@_code': '252116004',
+            '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+            '@_displayName': 'Observation Parameters',
+          },
+          effectiveTime: {
+            low: { '@_value': formatHl7DateTime(periodStart) },
+            high: { '@_value': formatHl7DateTime(periodEnd) },
+          },
+        },
+      },
+    },
+  };
+}
+
+function buildEncounterEntry(
+  encounter: Encounter,
+  diagnosisCondition?: Condition,
+  diagnosisConditionRank?: number
+): Record<string, any> {
+  const periodStart = encounter.period?.start;
+  const periodEnd = encounter.period?.end;
+  
+  // Use shared code mapping
+  const encounterTypeCode = mapCodeToStandard(encounter.type?.[0], OID_CPT_CODE_SYSTEM);
+  const diagnosisCode = mapCodeToStandard(diagnosisCondition?.code, OID_SNOMED_CT_CODE_SYSTEM);
+
+  return {
+    encounter: {
+      '@_classCode': 'ENC',
+      '@_moodCode': 'EVN',
+      templateId: [
+        // Encounter activities template
+        { '@_root': OID_ENCOUNTER_ACTIVITIES, '@_extension': '2015-08-01' },
+        // Encounter performed template
+        { '@_root': OID_QRDA_ENCOUNTER_PERFORMED, '@_extension': '2021-08-01' },
+      ],
+      id: { '@_extension': encounter.id, '@_root': '1.3.6.1.4.1.115' },
+      // QDM Attribute: Code
+      code: {
+        '@_code': encounterTypeCode?.code ?? '',
+        '@_codeSystem': normalizeCodeSystem(encounterTypeCode?.system) ?? OID_CPT_CODE_SYSTEM,
+        '@_codeSystemName': 'CPT',
+      },
+      text: getExtensionValue(encounter, extensionURLMapping.encounterDescription) ?? '',
+      statusCode: { '@_code': 'completed' },
+      // QDM Attribute: Relevant Period
+      effectiveTime: {
+        low: { '@_value': periodStart ? formatHl7DateTime(periodStart) : '' },
+        high: { '@_value': periodEnd ? formatHl7DateTime(periodEnd) : '' },
+      },
+      // QDM Attribute: Diagnoses
+      ...(diagnosisCondition &&
+        diagnosisConditionRank && {
+          entryRelationship: {
+            '@_typeCode': 'REFR',
+            observation: {
+              '@_classCode': 'OBS',
+              '@_moodCode': 'EVN',
+              // Encounter Diagnosis QDM
+              templateId: { '@_root': OID_QRDA_ENCOUNTER_DIAGNOSIS, '@_extension': '2019-12-01' },
+              // Diagnosis - https://loinc.org/29308-4
+              code: {
+                '@_code': '29308-4',
+                '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+              },
+              value: {
+                '@_code': diagnosisCode?.code ?? '',
+                '@_codeSystem': normalizeCodeSystem(diagnosisCode?.system) ?? OID_SNOMED_CT_CODE_SYSTEM,
+                '@_codeSystemName': 'SNOMEDCT',
+                '@_xsi:type': 'CD',
+              },
+              // QDM Attribute: Rank
+              entryRelationship: {
+                '@_typeCode': 'REFR',
+                observation: {
+                  '@_classCode': 'OBS',
+                  '@_moodCode': 'EVN',
+                  templateId: { '@_root': OID_QRDA_RANK, '@_extension': '2019-12-01' },
+                  // Rank - http://snomed.info/sct/263486008
+                  code: { '@_code': '263486008', '@_displayName': 'Rank', '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM },
+                  value: { '@_xsi:type': 'INT', '@_value': diagnosisConditionRank.toString() },
+                },
+              },
+            },
+          },
+        }),
+      // QDM Attribute: Class
+      ...(encounter.class?.code !== 'UNK' && {
+        entryRelationship: {
+          '@_typeCode': 'REFR',
+          act: {
+            '@_classCode': 'ACT',
+            '@_moodCode': 'EVN',
+            templateId: [{ '@_root': OID_QRDA_ENCOUNTER_CLASS, '@_extension': '2021-08-01' }],
+            code: {
+              '@_code': encounter.class?.code ?? '',
+              '@_codeSystem': '2.16.840.1.113883.5.4',
+              '@_codeSystemName': 'HL7 Act Code',
+            },
+          },
+        },
+      }),
+      // QDM Attribute: Discharge Disposition
+      ...(encounter.hospitalization?.dischargeDisposition?.coding?.[0] && {
+        'sdtc:dischargeDispositionCode': {
+          '@_code': encounter.hospitalization?.dischargeDisposition?.coding?.[0]?.code ?? '',
+          '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
+          '@_codeSystemName': 'SNOMEDCT',
+        },
+      }),
+    },
+  };
+}
+
+function buildPayerEntry(coverage: Coverage): Record<string, any> {
+  const periodStart = coverage.period?.start;
+
+  return {
+    //  Patient Characteristic Payer
+    observation: {
+      '@_classCode': 'OBS',
+      '@_moodCode': 'EVN',
+      templateId: { '@_root': OID_QRDA_PATIENT_CHARACTERISTIC_PAYER },
+      id: { '@_root': coverage.id },
+      // Payment sources Document - https://loinc.org/48768-6
+      code: {
+        '@_code': '48768-6',
+        '@_codeSystemName': 'LOINC',
+        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+        '@_displayName': 'Payment source',
+      },
+      statusCode: { '@_code': 'completed' },
+      effectiveTime: {
+        low: { '@_value': periodStart ? formatHl7DateTime(periodStart) : '' },
+        high: { '@_nullFlavor': 'UNK' },
+      },
+      value: {
+        '@_xsi:type': 'CD',
+        '@_code': coverage.type?.coding?.[0]?.code ?? '',
+        '@_codeSystem': '2.16.840.1.113883.3.221.5',
+        '@_codeSystemName': 'Source of Payment Typology',
+      },
+    },
+  };
+}
+
+function buildInterventionEntry(intervention: Procedure): Record<string, any> {
+  const performedDateTime = intervention.performedDateTime;
+  const performedPeriodStart = intervention.performedPeriod?.start;
+
+  // Use shared code mapping
+  const interventionCode = mapCodeToStandard(intervention.code, OID_SNOMED_CT_CODE_SYSTEM);
+  const statusReasonCode = mapCodeToStandard(intervention.statusReason, OID_SNOMED_CT_CODE_SYSTEM);
+
+  return {
+    act: {
+      '@_classCode': 'ACT',
+      '@_moodCode': 'EVN',
+      '@_negationInd': 'true',
+      templateId: [
+        // Consolidation CDA: Procedure Activity Act template
+        { '@_root': OID_PROCEDURE_ACTIVITY_ACT, '@_extension': '2014-06-09' },
+        // Intervention Performed Template
+        { '@_root': OID_QRDA_INTERVENTION_PERFORMED, '@_extension': '2021-08-01' },
+      ],
+      id: { '@_root': '1.3.6.1.4.1.115', '@_extension': intervention.id },
+      code: {
+        '@_code': interventionCode?.code ?? '',
+        '@_codeSystem': normalizeCodeSystem(interventionCode?.system) ?? OID_SNOMED_CT_CODE_SYSTEM,
+        '@_codeSystemName': 'SNOMEDCT',
+      },
+      text: interventionCode?.display ?? '',
+      statusCode: { '@_code': 'completed' },
+      effectiveTime: {
+        ...(performedPeriodStart ? { '@_value': formatHl7DateTime(performedPeriodStart) } : { '@_nullFlavor': 'UNK' }),
+      },
+      // QDM Attribute: Author dateTime
+      ...(performedDateTime && {
+        author: {
+          templateId: { '@_root': OID_QRDA_AUTHOR_DATETIME, '@_extension': '2019-12-01' },
+          time: { '@_value': formatHl7DateTime(performedDateTime) },
+          assignedAuthor: {
+            id: { '@_nullFlavor': 'NA' },
+          },
+        },
+      }),
+      // QDM Attribute: Negation Rationale
+      ...(intervention.statusReason?.coding?.[0] && {
+        entryRelationship: {
+          '@_typeCode': 'RSON',
+          observation: {
+            '@_classCode': 'OBS',
+            '@_moodCode': 'EVN',
+            templateId: { '@_root': OID_QRDA_NEGATION_RATIONALE, '@_extension': '2017-08-01' },
+            // Reason care action performed or not - https://loinc.org/77301-0
+            code: {
+              '@_code': '77301-0',
+              '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+              '@_displayName': 'reason',
+              '@_codeSystemName': 'LOINC',
+            },
+            value: {
+              '@_code': statusReasonCode?.code ?? '',
+              '@_codeSystem': normalizeCodeSystem(statusReasonCode?.system) ?? OID_SNOMED_CT_CODE_SYSTEM,
+              '@_codeSystemName': 'SNOMEDCT',
+              '@_xsi:type': 'CD',
+            },
+          },
+        },
+      }),
+    },
+  };
+}
+
+function buildProcedureEntry(procedure: Procedure): Record<string, any> {
+  const rank = getExtensionValue(procedure, extensionURLMapping.procedureRank) as number | undefined;
+  const performedDateTime = procedure.performedDateTime;
+  const performedPeriodStart = procedure.performedPeriod?.start;
+
+  // Use shared code mapping
+  const procedureCode = mapCodeToStandard(procedure.code, OID_SNOMED_CT_CODE_SYSTEM);
+  const statusReasonCode = mapCodeToStandard(procedure.statusReason, OID_SNOMED_CT_CODE_SYSTEM);
+
+  return {
+    procedure: {
+      '@_classCode': 'PROC',
+      '@_moodCode': 'EVN',
+      '@_negationInd': 'true',
+      templateId: [
+        // Procedure performed template
+        { '@_root': OID_QRDA_PROCEDURE_PERFORMED, '@_extension': '2021-08-01' },
+        // Procedure Activity Procedure
+        { '@_root': '2.16.840.1.113883.10.20.22.4.14', '@_extension': '2014-06-09' },
+      ],
+      id: { '@_root': '1.3.6.1.4.1.115', '@_extension': procedure.id },
+      code: {
+        '@_code': procedureCode?.code ?? '',
+        '@_codeSystem': normalizeCodeSystem(procedureCode?.system) ?? OID_SNOMED_CT_CODE_SYSTEM,
+        '@_codeSystemName': 'SNOMEDCT',
+      },
+      text: procedureCode?.display ?? '',
+      statusCode: { '@_code': 'completed' },
+      effectiveTime: {
+        ...(performedPeriodStart ? { '@_value': formatHl7DateTime(performedPeriodStart) } : { '@_nullFlavor': 'UNK' }),
+      },
+      // QDM Attribute: Author dateTime
+      ...(performedDateTime && {
+        author: {
+          templateId: { '@_root': OID_QRDA_AUTHOR_DATETIME, '@_extension': '2019-12-01' },
+          time: { '@_value': formatHl7DateTime(performedDateTime) },
+          assignedAuthor: {
+            id: { '@_nullFlavor': 'NA' },
+          },
+        },
+      }),
+      // QDM Attribute: Rank
+      ...(rank && {
+        entryRelationship: {
+          '@_typeCode': 'REFR',
+          observation: {
+            '@_classCode': 'OBS',
+            '@_moodCode': 'EVN',
+            templateId: { '@_root': OID_QRDA_RANK, '@_extension': '2019-12-01' },
+            // Rank - http://snomed.info/sct/263486008
+            code: { '@_code': '263486008', '@_displayName': 'Rank', '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM },
+            value: { '@_xsi:type': 'INT', '@_value': rank.toString() },
+          },
+        },
+      }),
+      // QDM Attribute: Negation Rationale
+      ...(procedure.statusReason?.coding?.[0] && {
+        entryRelationship: {
+          '@_typeCode': 'RSON',
+          observation: {
+            '@_classCode': 'OBS',
+            '@_moodCode': 'EVN',
+            templateId: { '@_root': OID_QRDA_NEGATION_RATIONALE, '@_extension': '2017-08-01' },
+            // Reason care action performed or not - https://loinc.org/77301-0
+            code: {
+              '@_code': '77301-0',
+              '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+              '@_displayName': 'reason',
+              '@_codeSystemName': 'LOINC',
+            },
+            value: {
+              '@_code': statusReasonCode?.code ?? '',
+              '@_codeSystem': normalizeCodeSystem(statusReasonCode?.system) ?? OID_SNOMED_CT_CODE_SYSTEM,
+              '@_codeSystemName': 'SNOMEDCT',
+              '@_xsi:type': 'CD',
+            },
+          },
+        },
+      }),
+    },
+  };
+}
+
+/**
+ * Builds the patient data section with encounters and medications
+ * @param patient - The patient resource
+ * @param encounters - Array of encounter and condition resources
+ * @param interventions - Array of intervention resources
+ * @param procedures - Array of procedure resources
+ * @param coverages - Array of coverage resources
+ * @returns The patient data section for the QRDA document
+ */
+function buildPatientDataSection(
+  patient: Patient,
+  encounters: (Encounter | Condition)[],
+  interventions: Procedure[],
+  procedures: Procedure[],
+  coverages: Coverage[]
+): Record<string, any> {
+  const entries: any[] = [];
+
+  // Add encounter entries
+  encounters.forEach((encounter) => {
+    // It can contain Encounter.diagnosis.condition resources due to _include query
+    if (encounter.resourceType !== 'Encounter') {
+      return;
+    }
+
+    const diagnosis = encounter.diagnosis?.[0];
+    const condition = encounters.find(
+      (e) => e.resourceType === 'Condition' && e.id === resolveId(diagnosis?.condition)
+    ) as Condition | undefined;
+
+    entries.push(buildEncounterEntry(encounter, condition, diagnosis?.rank));
+  });
+
+  // Add interventions entries
+  interventions.forEach((intervention) => {
+    entries.push(buildInterventionEntry(intervention));
+  });
+
+  // Add procedures entries
+  procedures.forEach((procedure) => {
+    entries.push(buildProcedureEntry(procedure));
+  });
+
+  // Add patient characteristic payer
+  coverages.forEach((coverage) => {
+    entries.push(buildPayerEntry(coverage));
+  });
+
+  return {
+    section: {
+      templateId: [
+        { '@_root': OID_QRDA_PATIENT_DATA_SECTION_LEGACY },
+        { '@_root': OID_QRDA_PATIENT_DATA_SECTION, '@_extension': '2021-08-01' },
+        { '@_root': OID_QRDA_PATIENT_DATA_SECTION_V2, '@_extension': '2022-02-01' },
+      ],
+      code: { '@_code': '55188-7', '@_codeSystem': OID_LOINC_CODE_SYSTEM },
+      title: 'Patient Data',
+      text: '',
+      entry: entries,
+    },
+  };
+}
+
+/**
+ * Shared data processing utilities for both C-CDA and QRDA generation
+ */
+
+/**
+ * Extracts patient demographics data that can be used for both C-CDA and QRDA
+ * @param patient - The FHIR Patient resource
+ * @returns Structured patient demographics data
+ */
+function extractPatientDemographics(patient: Patient): {
+  name: { given: string; family: string };
+  gender: string | undefined;
+  birthDateTime: string | undefined;
+  race: Coding | undefined;
+  ethnicity: Coding | undefined;
+  address: Address | undefined;
+  telecom: ContactPoint[];
+} {
+  const patientName = patient.name?.[0];
+  const address = patient.address?.[0];
+  const telecom = patient.telecom || [];
+  const raceExtension = getExtensionValue(
+    patient,
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
+    'ombCategory'
+  ) as Coding;
+  const ethnicityExtension = getExtensionValue(
+    patient,
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity',
+    'ombCategory'
+  ) as Coding;
+  const birthDateTime = getExtensionValue((patient as any)._birthDate, extensionURLMapping.patientBirthTime) as string;
+
+  return {
+    name: {
+      given: patientName?.given?.[0] ?? '',
+      family: patientName?.family ?? '',
+    },
+    gender: patient.gender,
+    birthDateTime,
+    race: raceExtension,
+    ethnicity: ethnicityExtension,
+    address,
+    telecom,
+  };
+}
+
+/**
+ * Extracts author/custodian information that can be used for both C-CDA and QRDA
+ * @param currentDateTime - Current date/time string
+ * @returns Structured author/custodian data
+ */
+function extractAuthorCustodianData(currentDateTime: string): {
+  author: {
+    time: string;
+    assignedAuthor: {
+      id: { extension: string; root: string };
+      addr: {
+        streetAddressLine: string;
+        city: string;
+        state: string;
+        postalCode: string;
+        country: string;
+      };
+      telecom: { use: string; value: string };
+      assignedAuthoringDevice: {
+        manufacturerModelName: string;
+        softwareName: string;
+      };
+    };
+  };
+  custodian: {
+    assignedCustodian: {
+      representedCustodianOrganization: {
+        id: { extension: string; root: string };
+        name: string;
+        telecom: { use: string; value: string };
+        addr: {
+          use: string;
+          streetAddressLine: string;
+          city: string;
+          state: string;
+          postalCode: string;
+          country: string;
+        };
+      };
+    };
+  };
+  legalAuthenticator: {
+    time: string;
+    signatureCode: { code: string };
+    assignedEntity: {
+      id: { root: string };
+      addr: {
+        streetAddressLine: string;
+        city: string;
+        state: string;
+        postalCode: string;
+        country: string;
+      };
+      telecom: { use: string; value: string };
+      assignedPerson: {
+        name: {
+          given: string;
+          family: string;
+        };
+      };
+      representedOrganization: {
+        id: { root: string };
+        name: string;
+      };
+    };
+  };
+} {
+  return {
+    author: {
+      time: currentDateTime,
+      assignedAuthor: {
+        id: { extension: '1250504853', root: OID_US_NPI_CODE_SYSTEM },
+        addr: {
+          streetAddressLine: '123 Happy St',
+          city: 'Sunnyvale',
+          state: 'CA',
+          postalCode: '95008',
+          country: 'US',
+        },
+        telecom: { use: 'WP', value: 'tel:(781)271-3000' },
+        assignedAuthoringDevice: {
+          manufacturerModelName: 'Medplum Test System',
+          softwareName: 'Medplum Test System',
+        },
+      },
+    },
+    custodian: {
+      assignedCustodian: {
+        representedCustodianOrganization: {
+          id: { extension: '117323', root: '2.16.840.1.113883.4.336' },
+          name: 'Medplum Test Deck',
+          telecom: { use: 'WP', value: 'tel:(781)271-3000' },
+          addr: {
+            use: 'HP',
+            streetAddressLine: '202 Burlington Rd.',
+            city: 'Bedford',
+            state: 'MA',
+            postalCode: '01730',
+            country: 'US',
+          },
+        },
+      },
+    },
+    legalAuthenticator: {
+      time: currentDateTime,
+      signatureCode: { code: 'S' },
+      assignedEntity: {
+        id: { root: randomUUID() },
+        addr: {
+          streetAddressLine: '123 Happy St',
+          city: 'Sunnyvale',
+          state: 'CA',
+          postalCode: '95008',
+          country: 'US',
+        },
+        telecom: { use: 'WP', value: 'tel:(781)271-3000' },
+        assignedPerson: {
+          name: {
+            given: 'John',
+            family: 'Doe',
+          },
+        },
+        representedOrganization: {
+          id: { root: '2.16.840.1.113883.19.5' },
+          name: 'Medplum Test System',
+        },
+      },
+    },
+  };
+}
+
+/**
+ * Shared XML building utilities for both C-CDA and QRDA generation
+ */
+
+/**
+ * Creates a standardized XML builder configuration for both C-CDA and QRDA
+ * @returns XMLBuilder configuration object
+ */
+function createXmlBuilderConfig(): any {
+  return {
+    ignoreAttributes: false,
+    attributeNamePrefix: '@_',
+    format: true,
+    indentBy: '  ',
+    suppressBooleanAttributes: false,
+  };
+}
+
+/**
+ * Builds XML header for both C-CDA and QRDA documents
+ * @returns XML header string
+ */
+function buildXmlHeader(): string {
+  return '<?xml version="1.0" encoding="utf-8"?>\n';
+}
+
+/**
+ * Converts a data object to XML string using standardized configuration
+ * @param data - The data object to convert
+ * @returns XML string
+ */
+function buildXmlString(data: Record<string, any>): string {
+  const builder = new XMLBuilder(createXmlBuilderConfig());
+  return buildXmlHeader() + builder.build(data);
+}
+
+/**
+ * Shared code mapping utilities for both C-CDA and QRDA generation
+ */
+
+/**
+ * Maps a FHIR code to a standardized format for both C-CDA and QRDA
+ * @param code - The FHIR CodeableConcept
+ * @param defaultSystem - Default code system if not specified
+ * @returns Standardized code object
+ */
+function mapCodeToStandard(code: CodeableConcept | undefined, defaultSystem?: string): {
+  code: string;
+  system: string;
+  display: string;
+} | undefined {
+  if (!code?.coding?.[0]) {
+    return undefined;
+  }
+
+  const coding = code.coding[0];
+  return {
+    code: coding.code || '',
+    system: coding.system || defaultSystem || '',
+    display: coding.display || code.text || '',
+  };
+}
+
+/**
+ * Validates and normalizes a code system OID
+ * @param system - The code system to validate
+ * @returns Normalized code system or undefined if invalid
+ */
+function normalizeCodeSystem(system: string | undefined): string | undefined {
+  if (!system) {
+    return undefined;
+  }
+  
+  // Ensure it's a valid OID format
+  if (system.match(/^\d+(\.\d+)*$/)) {
+    return system;
+  }
+  
+  // Handle FHIR URLs
+  if (system.startsWith('http')) {
+    return system;
+  }
+  
+  return undefined;
+}
+
 class CcdaToFhirConverter {
   private readonly ccda: Ccda;
   private readonly options: CcdaToFhirOptions | undefined;
   private readonly resources: Resource[] = [];
   private patient?: Patient;
+  private qrdaPatientData?: QRDAPatientData;
 
   constructor(ccda: Ccda, options?: CcdaToFhirOptions) {
     this.ccda = ccda;
@@ -150,6 +1250,42 @@ class CcdaToFhirConverter {
   convert(): Bundle {
     this.processHeader();
     const composition = this.createComposition();
+
+    // If QRDA generation is requested, build QRDA document
+    if (this.options?.generateQRDA && this.options.qrdaParams && this.qrdaPatientData) {
+      const qrdaXml = this.generateQRDACategoryI(this.qrdaPatientData, this.options.qrdaParams);
+      if (qrdaXml) {
+        // Add QRDA document as a DocumentReference resource
+        const documentReference: DocumentReference = {
+          resourceType: 'DocumentReference',
+          id: generateId(),
+          status: 'current',
+          type: {
+            coding: [{
+              system: LOINC,
+              code: '55182-0',
+              display: 'Quality Measure Report'
+            }]
+          },
+          category: [{
+            coding: [{
+              system: LOINC,
+              code: '55182-0',
+              display: 'Quality Measure Report'
+            }]
+          }],
+          subject: this.patient ? createReference(this.patient) : undefined,
+          date: new Date().toISOString(),
+          content: [{
+            attachment: {
+              contentType: 'application/xml',
+              data: Buffer.from(qrdaXml).toString('base64')
+            }
+          }]
+        };
+        this.resources.push(documentReference);
+      }
+    }
 
     return {
       resourceType: 'Bundle',
@@ -162,10 +1298,74 @@ class CcdaToFhirConverter {
     };
   }
 
+  /**
+   * Generates a QRDA Category I XML document for CMS68v14 measure
+   * @param patientData - Patient data including demographics, medications, and encounters
+   * @param params - Parameters for QRDA generation
+   * @returns Generated XML string or null if patient has no data to export
+   */
+  private generateQRDACategoryI(
+    patientData: QRDAPatientData,
+    params: QRDAGenerationParams
+  ): string | null {
+    // Does not create QRDA if patient has no data to export
+    if (
+      patientData.encounters.length === 0 &&
+      patientData.interventions.length === 0 &&
+      patientData.procedures.length === 0
+    ) {
+      return null;
+    }
+
+    // Build QRDA XML
+    const qrdaDocument = buildQRDADocument(patientData, params);
+
+    // Convert to XML string using shared utilities
+    return buildXmlString(qrdaDocument);
+  }
+
+  /**
+   * Collects QRDA-relevant data from processed resources
+   * @param resource - The FHIR resource to check for QRDA relevance
+   */
+  private collectQRDAData(resource: Resource): void {
+    if (!this.qrdaPatientData) {
+      return;
+    }
+
+    switch (resource.resourceType) {
+      case 'Encounter':
+        this.qrdaPatientData.encounters.push(resource as Encounter);
+        break;
+      case 'Condition':
+        this.qrdaPatientData.encounters.push(resource as Condition);
+        break;
+      case 'Procedure':
+        // For now, treat all procedures as regular procedures
+        // TODO: Add logic to distinguish between interventions and procedures
+        this.qrdaPatientData.procedures.push(resource as Procedure);
+        break;
+      case 'Coverage':
+        this.qrdaPatientData.coverages.push(resource as Coverage);
+        break;
+    }
+  }
+
   private processHeader(): void {
     const patientRole = this.ccda.recordTarget?.[0]?.patientRole;
     if (patientRole) {
       this.patient = this.createPatient(patientRole);
+      
+      // Initialize QRDA patient data if QRDA generation is requested
+      if (this.options?.generateQRDA) {
+        this.qrdaPatientData = {
+          patient: this.patient,
+          encounters: [],
+          interventions: [],
+          procedures: [],
+          coverages: []
+        };
+      }
     }
   }
 
@@ -355,6 +1555,10 @@ class CcdaToFhirConverter {
       const resource = this.processAct(section, act);
       if (resource) {
         resources.push(resource);
+        // Collect QRDA data if enabled
+        if (this.options?.generateQRDA) {
+          this.collectQRDAData(resource);
+        }
       }
     }
 
@@ -362,23 +1566,47 @@ class CcdaToFhirConverter {
       const resource = this.processSubstanceAdministration(section, substanceAdmin);
       if (resource) {
         resources.push(resource);
+        // Collect QRDA data if enabled
+        if (this.options?.generateQRDA) {
+          this.collectQRDAData(resource);
+        }
       }
     }
 
     for (const organizer of entry.organizer ?? []) {
-      resources.push(this.processOrganizer(section, organizer));
+      const resource = this.processOrganizer(section, organizer);
+      resources.push(resource);
+      // Collect QRDA data if enabled
+      if (this.options?.generateQRDA) {
+        this.collectQRDAData(resource);
+      }
     }
 
     for (const observation of entry.observation ?? []) {
-      resources.push(this.processObservation(section, observation));
+      const resource = this.processObservation(section, observation);
+      resources.push(resource);
+      // Collect QRDA data if enabled
+      if (this.options?.generateQRDA) {
+        this.collectQRDAData(resource);
+      }
     }
 
     for (const encounter of entry.encounter ?? []) {
-      resources.push(this.processEncounter(section, encounter));
+      const resource = this.processEncounter(section, encounter);
+      resources.push(resource);
+      // Collect QRDA data if enabled
+      if (this.options?.generateQRDA) {
+        this.collectQRDAData(resource);
+      }
     }
 
     for (const procedure of entry.procedure ?? []) {
-      resources.push(this.processProcedure(section, procedure));
+      const resource = this.processProcedure(section, procedure);
+      resources.push(resource);
+      // Collect QRDA data if enabled
+      if (this.options?.generateQRDA) {
+        this.collectQRDAData(resource);
+      }
     }
   }
 
@@ -788,10 +2016,15 @@ class CcdaToFhirConverter {
       return undefined;
     }
 
+    const system = normalizeCodeSystem(code['@_codeSystem']);
+    if (!system) {
+      return undefined;
+    }
+
     const result = {
       coding: [
         {
-          system: mapCcdaSystemToFhir(code['@_codeSystem']),
+          system: mapCcdaSystemToFhir(system),
           code: code['@_code'],
           display: code['@_displayName'],
         },
@@ -801,11 +2034,14 @@ class CcdaToFhirConverter {
 
     if (code.translation) {
       for (const translation of code.translation) {
-        result.coding.push({
-          system: mapCcdaSystemToFhir(translation['@_codeSystem']),
-          code: translation['@_code'],
-          display: translation['@_displayName'],
-        });
+        const translationSystem = normalizeCodeSystem(translation['@_codeSystem']);
+        if (translationSystem) {
+          result.coding.push({
+            system: mapCcdaSystemToFhir(translationSystem),
+            code: translation['@_code'],
+            display: translation['@_displayName'],
+          });
+        }
       }
     }
 
@@ -1235,7 +2471,7 @@ class CcdaToFhirConverter {
 
     // Add participant information
     if (encounter.performer) {
-      result.participant = encounter.performer.map((performer) => ({
+      result.participant = encounter.performer.map((performer: CcdaPerformer) => ({
         type: [
           {
             coding: [
@@ -1254,8 +2490,8 @@ class CcdaToFhirConverter {
     // Add diagnoses from entryRelationships
     if (encounter.entryRelationship) {
       const diagnoses = encounter.entryRelationship
-        .filter((rel) => rel['@_typeCode'] === 'RSON')
-        .map((rel) => {
+        .filter((rel: CcdaEntryRelationship) => rel['@_typeCode'] === 'RSON')
+        .map((rel: CcdaEntryRelationship) => {
           const observation = rel.observation?.[0];
           if (!observation) {
             return undefined;
