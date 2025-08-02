@@ -156,7 +156,7 @@ export function convertHealthieAllergyToFhir(
  * @param status - The status value from Healthie.
  * @returns A FHIR-compliant clinical status code.
  */
-export function mapHealthieStatusToClinicalStatus(status?: string): string {
+export function mapHealthieStatusToClinicalStatus(status?: string): 'active' | 'inactive' | 'resolved' {
   if (!status) {
     return 'active';
   }

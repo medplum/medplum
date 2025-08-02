@@ -9,7 +9,7 @@ import {
 } from './patient';
 
 // Load environment variables from .env file
-config();
+config({ quiet: true });
 
 const originalFetch = global.fetch;
 
