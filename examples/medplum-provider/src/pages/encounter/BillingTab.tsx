@@ -170,14 +170,12 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
   const updateChargeItems = useCallback(
     async (updatedChargeItems: ChargeItem[]): Promise<void> => {
       setChargeItems(updatedChargeItems);
-      console.log('updatedChargeItems', updatedChargeItems);
       if (claim?.id && updatedChargeItems.length > 0 && encounter) {
         const updatedClaim: Claim = {
           ...claim,
           item: getCptChargeItems(updatedChargeItems, { reference: getReferenceString(encounter) }),
           total: { value: calculateTotalPrice(updatedChargeItems) },
         };
-        console.log('updatedClaim', updatedClaim);
         setClaim(updatedClaim);
         await debouncedUpdateResource(updatedClaim);
       }
