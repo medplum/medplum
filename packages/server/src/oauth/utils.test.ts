@@ -442,7 +442,7 @@ describe('OAuth utils', () => {
       [' https://example.com/oauth2/userinfo ', false],
       ['file://example.com/oauth2/userinfo', true],
       [' file://example.com/oauth2/userinfo ', true],
-    ])('with URL [%s]', async (userInfoUrl, expectError) => {
+    ])('with URL [%s]', (userInfoUrl, expectError) => {
       try {
         normalizeUserInfoUrl(userInfoUrl);
         if (expectError) {
