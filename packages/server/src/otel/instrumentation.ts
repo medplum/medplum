@@ -10,7 +10,7 @@ import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { IORedisInstrumentation } from '@opentelemetry/instrumentation-ioredis';
 import { PgInstrumentation, PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
 import { RuntimeNodeInstrumentation } from '@opentelemetry/instrumentation-runtime-node';
-import { Resource } from '@opentelemetry/resources';
+import { defaultResource, resourceFromAttributes } from '@opentelemetry/resources';
 import { MetricReader, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { SpanExporter } from '@opentelemetry/sdk-trace-base';
@@ -36,8 +36,8 @@ export function initOpenTelemetry(): void {
     return;
   }
 
-  const resource = Resource.default().merge(
-    new Resource({
+  const resource = defaultResource().merge(
+    resourceFromAttributes({
       [ATTR_SERVICE_NAME]: 'medplum',
       [ATTR_SERVICE_VERSION]: MEDPLUM_VERSION,
     })
