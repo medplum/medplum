@@ -1,53 +1,88 @@
-import { Box, Divider, Flex, Paper, ScrollArea, SegmentedControl, Skeleton, Stack } from '@mantine/core';
+import { Button, Divider, Flex, Paper, ScrollArea, Skeleton, Stack } from '@mantine/core';
 import React, { JSX, useEffect, useMemo, useState } from 'react';
-import styles from './TasksPage.module.css';
-import { ResourceType, Task } from '@medplum/fhirtypes';
-import { PatientSummary, ResourceTimeline, useMedplum, useMedplumProfile, useResource } from '@medplum/react';
+import classes from './TasksPage.module.css';
+import { Task } from '@medplum/fhirtypes';
+import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { showErrorNotification } from '../../utils/notifications';
-import { createReference, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
+import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
 import { TaskListItem } from '../../components/tasks/TaskListItem';
-import { TaskInfo } from '../../components/tasks/TaskInfo';
-import { TasksInputNote } from '../../components/tasks/TaskInputNote';
+import cx from 'clsx';
+import { useParams, Outlet } from 'react-router';
 
 export function TasksPage(): JSX.Element {
+  const { taskId } = useParams();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
-  const selectedPatient = useResource(selectedTask?.for);
-  const [activeTab, setActiveTab] = useState<string>('properties');
+  const [showMyTasks, setShowMyTasks] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
 
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
       const searchParams = new URLSearchParams();
-      searchParams.append('status:not', 'completed');
-      searchParams.append('status:not', 'cancelled');
-      searchParams.append('status:not', 'failed');
-      if (profileRef) {
+      // searchParams.append('status:not', 'completed');
+      // searchParams.append('status:not', 'cancelled');
+      // searchParams.append('status:not', 'failed');
+      searchParams.append('_sort', '-_lastUpdated');
+      if (profileRef && showMyTasks) {
         searchParams.append('owner', getReferenceString(profileRef));
       }
       const tasks = await medplum.searchResources('Task', searchParams, { cache: 'no-cache' });
+      // console.log('tasks', tasks);
+      // if (taskId) {
+      //   const task = tasks.find((task) => task.id === taskId);
+      //   if (task) {
+      //     setSelectedTask(task);
+      //   } else {
+      //     await medplum.readResource('Task', taskId).then((task) => {
+      //       if (task) {
+      //         setSelectedTask(task);
+      //       } else {
+      //         setSelectedTask(undefined);
+      //       }
+      //     });
+      //   }
+      // } else if (tasks.length > 0) {
+      //   setSelectedTask(tasks[0]);
+      // }
+
       setTasks(tasks);
-      if (tasks.length > 0) {
-        setSelectedTask(tasks[0]);
-      }
     };
 
     setLoading(true);
     fetchTasks()
       .catch(showErrorNotification)
       .finally(() => setLoading(false));
-  }, [medplum, profileRef]);
+  }, [medplum, profileRef, showMyTasks]);
+
+  useEffect(() => {
+    const handleTaskSelection = async (): Promise<void> => {
+      if (taskId) {
+        const task = tasks.find((task) => task.id === taskId);
+        if (task) {
+          setSelectedTask(task);
+        } else {
+          try {
+            const task = await medplum.readResource('Task', taskId);
+            setSelectedTask(task || undefined);
+          } catch (error) {
+            console.error('Error fetching task:', error);
+            setSelectedTask(undefined);
+          }
+        }
+      } else if (tasks.length > 0) {
+        setSelectedTask(tasks[0]);
+      }
+    };
+  
+    handleTaskSelection() .catch(showErrorNotification)
+  }, [taskId, tasks, medplum]);
 
   const handleTaskChange = (task: Task): void => {
     setSelectedTask(task);
     setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
-  };
-
-  const handleTabChange = (value: string): void => {
-    setActiveTab(value);
   };
 
   const handleDeleteTask = (task: Task): void => {
@@ -56,70 +91,48 @@ export function TasksPage(): JSX.Element {
   };
 
   return (
-    <div className={styles.container}>
+    <div className={classes.container}>
       <Flex h="100%" w="100%">
-        <Flex direction="column" w="25%" h="100%" className={styles.borderRight}>
-          <Paper h="100%" p="xs">
-            {loading ? (
-              <TaskListSkeleton />
-            ) : (
-              tasks.map((task, index) => (
-                <React.Fragment key={task.id}>
-                  <TaskListItem task={task} selectedTask={selectedTask} onClick={() => setSelectedTask(task)} />
-                  {index < tasks.length - 1 && <Divider />}
-                </React.Fragment>
-              ))
-            )}
+        <Flex direction="column" w="40%" h="100%" className={classes.borderRight}>
+          <Paper>
+            <Flex p="md" gap="xs" align="center"  h={72}>
+              <Button
+                className={cx(classes.button, { [classes.selected]: showMyTasks })}
+                h={32}
+                radius="xl"
+                onClick={() => setShowMyTasks(true)}
+              >
+                My Tasks
+              </Button>
+
+              <Button
+                className={cx(classes.button, { [classes.selected]: !showMyTasks })}
+                h={32}
+                radius="xl"
+                onClick={() => setShowMyTasks(false)}
+              >
+                All Tasks
+              </Button>
+            </Flex>
+          </Paper>
+          <Divider />
+          <Paper h="calc(100% - 60px)" id="task-list">
+            <ScrollArea h="100%" id="task-list-scrollarea">
+              {loading ? (
+                <TaskListSkeleton />
+              ) : (
+                tasks.map((task, index) => (
+                  <React.Fragment key={task.id}>
+                    <TaskListItem task={task} selectedTask={selectedTask} />
+                    {index < tasks.length - 1 && <Divider />}
+                  </React.Fragment>
+                ))
+              )}
+            </ScrollArea>
           </Paper>
         </Flex>
 
-        <Flex direction="column" w="45%" h="100%" className={styles.borderRight}>
-          {selectedTask && <TasksInputNote key={selectedTask.id} task={selectedTask} onDeleteTask={handleDeleteTask} />}
-        </Flex>
-
-        <Flex direction="column" w="30%" h="100%">
-          <Paper h="100%" p="xs">
-            <Box px="md" pb="md">
-              <SegmentedControl
-                value={activeTab}
-                onChange={(value: string) => handleTabChange(value)}
-                data={[
-                  { label: 'Properties', value: 'properties' },
-                  { label: 'Activity Log', value: 'activity-log' },
-                  { label: 'Patient Summary', value: 'patient-summary' },
-                ]}
-                fullWidth
-                radius="md"
-                color="gray"
-                size="md"
-                className={styles.segmentedControl}
-              />
-            </Box>
-
-            {selectedPatient?.resourceType === 'Patient' && selectedTask && (
-              <>
-                {activeTab === 'properties' && (
-                  <TaskInfo p="md" key={selectedTask.id} task={selectedTask} onTaskChange={handleTaskChange} />
-                )}
-                {activeTab === 'activity-log' && (
-                  <ScrollArea h="calc(100% - 50px)">
-                    <ResourceTimeline
-                      value={selectedTask}
-                      loadTimelineResources={async (
-                        medplum: MedplumClient,
-                        _resourceType: ResourceType,
-                        id: string
-                      ) => {
-                        return Promise.allSettled([medplum.readHistory('Task', id)]);
-                      }}
-                    />
-                  </ScrollArea>
-                )}
-                {activeTab === 'patient-summary' && <PatientSummary patient={selectedPatient} />}
-              </>
-            )}
-          </Paper>
-        </Flex>
+        <Outlet context={{ task: selectedTask, onTaskChange: handleTaskChange, onDeleteTask: handleDeleteTask }} />
       </Flex>
     </div>
   );
