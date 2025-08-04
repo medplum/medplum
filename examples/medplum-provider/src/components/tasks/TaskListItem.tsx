@@ -27,12 +27,7 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
   };
 
   return (
-    <Anchor
-      href={`${task.id}`}
-      onClick={handleClick}
-      td="none"
-      c="inherit"
-    >
+    <Anchor href={`${task.id}`} onClick={handleClick} td="none" c="inherit">
       <Group
         p="xs"
         align="center"
