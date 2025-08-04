@@ -134,7 +134,8 @@ export function useEncounterChart(patientId?: string, encounterId?: string): Enc
 
   useEffect(() => {
     const createClaim = async (): Promise<void> => {
-      if (claim) { // If a claim already exists, don't create a new one
+      if (claim) {
+        // If a claim already exists, don't create a new one
         return;
       }
 
