@@ -39,7 +39,7 @@
     "@types/react-dom": "19.1.7",
     "eslint": "8.57.1",
     "eslint-config-next": "15.4.5",
-    "typescript": "5.9.2"
+    "typescript": "5.8.3"
   },
   "packageManager": "npm@10.9.3",
   "engines": {
