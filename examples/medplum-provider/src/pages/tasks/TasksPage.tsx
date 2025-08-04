@@ -22,32 +22,11 @@ export function TasksPage(): JSX.Element {
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
       const searchParams = new URLSearchParams();
-      // searchParams.append('status:not', 'completed');
-      // searchParams.append('status:not', 'cancelled');
-      // searchParams.append('status:not', 'failed');
       searchParams.append('_sort', '-_lastUpdated');
       if (profileRef && showMyTasks) {
         searchParams.append('owner', getReferenceString(profileRef));
       }
       const tasks = await medplum.searchResources('Task', searchParams, { cache: 'no-cache' });
-      // console.log('tasks', tasks);
-      // if (taskId) {
-      //   const task = tasks.find((task) => task.id === taskId);
-      //   if (task) {
-      //     setSelectedTask(task);
-      //   } else {
-      //     await medplum.readResource('Task', taskId).then((task) => {
-      //       if (task) {
-      //         setSelectedTask(task);
-      //       } else {
-      //         setSelectedTask(undefined);
-      //       }
-      //     });
-      //   }
-      // } else if (tasks.length > 0) {
-      //   setSelectedTask(tasks[0]);
-      // }
-
       setTasks(tasks);
     };
 
@@ -68,7 +47,7 @@ export function TasksPage(): JSX.Element {
             const task = await medplum.readResource('Task', taskId);
             setSelectedTask(task || undefined);
           } catch (error) {
-            console.error('Error fetching task:', error);
+            showErrorNotification(error);
             setSelectedTask(undefined);
           }
         }
