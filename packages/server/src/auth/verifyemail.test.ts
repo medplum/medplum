@@ -7,6 +7,7 @@ import { loadTestConfig } from '../config/loader';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
+import { verifyEmail } from './verifyemail';
 
 const app = express();
 
@@ -26,7 +27,7 @@ export async function createUserSecurityRequest(
   });
 }
 
-describe('Verify email', () => {
+describe('Verify email handler', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -52,7 +53,7 @@ describe('Verify email', () => {
   test('Success', async () =>
     withTestContext(async () => {
       const systemRepo = getSystemRepo();
-      const usr = await createUserSecurityRequest(systemRepo, user, 'verify-email');
+      const usr = await verifyEmail(user);
 
       // Attempt verification with incorrect secret
       const res1 = await request(app)

@@ -1,8 +1,7 @@
-import { allOk, badRequest, concatUrls, createReference, resolveId } from '@medplum/core';
+import { allOk, badRequest, createReference, resolveId, WithId } from '@medplum/core';
 import { Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { generateSecret } from '../oauth/keys';
@@ -50,10 +49,10 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
  * @param redirectUri - Optional URI for redirection to the client application.
  * @returns The URL to reset the password.
  */
-export async function verifyEmail(user: User, redirectUri?: string): Promise<string> {
+export async function verifyEmail(user: User, redirectUri?: string): Promise<WithId<UserSecurityRequest>> {
   // Create the password change request
   const systemRepo = getSystemRepo();
-  const { id, secret } = await systemRepo.createResource<UserSecurityRequest>({
+  return systemRepo.createResource<UserSecurityRequest>({
     resourceType: 'UserSecurityRequest',
     meta: { project: resolveId(user.project) },
     type: 'verify-email',
@@ -61,7 +60,4 @@ export async function verifyEmail(user: User, redirectUri?: string): Promise<str
     secret: generateSecret(16),
     redirectUri,
   });
-
-  // Build the reset URL
-  return concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
 }

@@ -2,6 +2,7 @@ import {
   allOk,
   append,
   badRequest,
+  concatUrls,
   forbidden,
   getReferenceString,
   OperationOutcomeError,
@@ -11,6 +12,7 @@ import {
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
 import { verifyEmail } from '../../auth/verifyemail';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
 import { getSystemRepo } from '../repo';
@@ -101,7 +103,9 @@ async function updateUser(userId: string, params: InputParams, project: Project)
     user = await systemRepo.updateResource(user);
 
     if (!params.skipEmailVerification) {
-      const url = await verifyEmail(user);
+      const { id, secret } = await verifyEmail(user);
+      const url = concatUrls(getConfig().appBaseUrl, `verifyemail/${id}/${secret}`);
+
       await sendEmail(systemRepo, {
         to: params.email,
         subject: 'Medplum Email Address Updated',
