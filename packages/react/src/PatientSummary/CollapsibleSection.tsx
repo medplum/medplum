@@ -51,7 +51,7 @@ export function CollapsibleSection(props: CollapsibleSectionProps): JSX.Element 
       </Group>
 
       <Collapse in={!collapsed}>
-        <Box ml="var(--mantine-spacing-xl)" mt="xs" mb="md">
+        <Box ml="var(--mantine-spacing-xl)" mt="xs" mb="md" pl={4}>
           {children}
         </Box>
       </Collapse>
