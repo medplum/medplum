@@ -108,7 +108,9 @@ export function httpResponseHook(
 }
 
 export function pgResponseHook(span: Span, { data }: PgResponseHookInformation): void {
-  span.setAttribute('medplum.db.rowCount', data.rowCount);
+  if (data.rowCount !== null) {
+    span.setAttribute('medplum.db.rowCount', data.rowCount);
+  }
 }
 
 export async function shutdownOpenTelemetry(): Promise<void> {
