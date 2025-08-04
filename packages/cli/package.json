@@ -58,13 +58,13 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aws-sdk/client-acm": "3.848.0",
-    "@aws-sdk/client-cloudformation": "3.848.0",
-    "@aws-sdk/client-cloudfront": "3.850.0",
-    "@aws-sdk/client-ecs": "3.848.0",
-    "@aws-sdk/client-s3": "3.850.0",
-    "@aws-sdk/client-ssm": "3.849.0",
-    "@aws-sdk/client-sts": "3.848.0",
+    "@aws-sdk/client-acm": "3.859.0",
+    "@aws-sdk/client-cloudformation": "3.859.0",
+    "@aws-sdk/client-cloudfront": "3.859.0",
+    "@aws-sdk/client-ecs": "3.859.0",
+    "@aws-sdk/client-s3": "3.859.0",
+    "@aws-sdk/client-ssm": "3.859.0",
+    "@aws-sdk/client-sts": "3.859.0",
     "@aws-sdk/types": "3.840.0",
     "@medplum/core": "4.3.7",
     "@medplum/hl7": "4.3.7",
@@ -79,7 +79,7 @@
   "devDependencies": {
     "@medplum/fhirtypes": "4.3.7",
     "@medplum/mock": "4.3.7",
-    "@types/node-fetch": "2.6.12",
+    "@types/node-fetch": "2.6.13",
     "@types/semver": "7.7.0",
     "aws-sdk-client-mock": "4.1.0"
   },
