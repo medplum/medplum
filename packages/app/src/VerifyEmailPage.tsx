@@ -1,4 +1,4 @@
-import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/core';
+import { Button, Center, Group, Stack, Title } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import {
@@ -7,7 +7,6 @@ import {
   Logo,
   MedplumLink,
   OperationOutcomeAlert,
-  getErrorsForInput,
   getIssuesForExpression,
   useMedplum,
 } from '@medplum/react';
@@ -39,30 +38,22 @@ export function VerifyEmailPage(): JSX.Element {
       >
         <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
-          <Title>Set password</Title>
+          <Title>Email address verification required</Title>
         </Center>
         {!success && (
           <Stack>
-            <PasswordInput
-              name="password"
-              label="New password"
-              required={true}
-              error={getErrorsForInput(outcome, 'password')}
-            />
-            <PasswordInput
-              name="confirmPassword"
-              label="Confirm new password"
-              required={true}
-              error={getErrorsForInput(outcome, 'confirmPassword')}
-            />
+            <p>
+              In order to sign in, click the button below to verify your ability to receive email at the address this
+              link was sent to.
+            </p>
             <Group justify="flex-end" mt="xl">
-              <Button type="submit">Set password</Button>
+              <Button type="submit">Verify email</Button>
             </Group>
           </Stack>
         )}
         {success && (
           <div data-testid="success">
-            Password set. You can now&nbsp;<MedplumLink to="/signin">sign in</MedplumLink>.
+            Email verified. You can now&nbsp;<MedplumLink to="/signin">sign in</MedplumLink>.
           </div>
         )}
       </Form>
