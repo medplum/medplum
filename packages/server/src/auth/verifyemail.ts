@@ -50,7 +50,7 @@ export async function verifyEmailHandler(req: Request, res: Response): Promise<v
  * @param redirectUri - Optional URI for redirection to the client application.
  * @returns The URL to reset the password.
  */
-export async function verifyEmaill(user: User, redirectUri?: string): Promise<string> {
+export async function verifyEmail(user: User, redirectUri?: string): Promise<string> {
   // Create the password change request
   const systemRepo = getSystemRepo();
   const { id, secret } = await systemRepo.createResource<UserSecurityRequest>({

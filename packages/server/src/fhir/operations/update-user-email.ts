@@ -10,7 +10,7 @@ import {
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Project, ProjectMembership, ResourceType, User } from '@medplum/fhirtypes';
-import { resetPassword } from '../../auth/resetpassword';
+import { verifyEmail } from '../../auth/verifyemail';
 import { getAuthenticatedContext } from '../../context';
 import { sendEmail } from '../../email/email';
 import { getSystemRepo } from '../repo';
@@ -101,7 +101,7 @@ async function updateUser(userId: string, params: InputParams, project: Project)
     user = await systemRepo.updateResource(user);
 
     if (!params.skipEmailVerification) {
-      const url = await resetPassword(user, 'verify-email');
+      const url = await verifyEmail(user);
       await sendEmail(systemRepo, {
         to: params.email,
         subject: 'Medplum Email Address Updated',
