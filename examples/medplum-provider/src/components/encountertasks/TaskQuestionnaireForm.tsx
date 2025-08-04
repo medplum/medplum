@@ -44,8 +44,8 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
 
     setLoading(true);
     fetchResources()
-    .catch(showErrorNotification)
-    .finally(() => setLoading(false));
+      .catch(showErrorNotification)
+      .finally(() => setLoading(false));
   }, [medplum, task]);
 
   if (loading) {

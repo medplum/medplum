@@ -55,8 +55,8 @@ export function TasksPage(): JSX.Element {
         setSelectedTask(tasks[0]);
       }
     };
-  
-    handleTaskSelection() .catch(showErrorNotification)
+
+    handleTaskSelection().catch(showErrorNotification);
   }, [taskId, tasks, medplum]);
 
   const handleTaskChange = (task: Task): void => {
@@ -74,7 +74,7 @@ export function TasksPage(): JSX.Element {
       <Flex h="100%" w="100%">
         <Flex direction="column" w="40%" h="100%" className={classes.borderRight}>
           <Paper>
-            <Flex p="md" gap="xs" align="center"  h={72}>
+            <Flex p="md" gap="xs" align="center" h={72}>
               <Button
                 className={cx(classes.button, { [classes.selected]: showMyTasks })}
                 h={32}

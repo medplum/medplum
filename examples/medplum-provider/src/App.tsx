@@ -136,7 +136,7 @@ export function App(): JSX.Element | null {
               </Route>
               <Route path="/messages" element={<MessagesPage />} />
               <Route path="/Task" element={<TasksPage />}>
-               <Route index element={<TaskSelectEmpty />} />
+                <Route index element={<TaskSelectEmpty />} />
                 <Route path=":taskId" element={<TaskDetails />} />
               </Route>
               <Route path="/onboarding" element={<IntakeFormPage />} />

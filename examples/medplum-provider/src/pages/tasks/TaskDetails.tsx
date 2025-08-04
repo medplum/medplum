@@ -55,18 +55,12 @@ export function TaskDetails(): JSX.Element {
 
           {selectedPatient?.resourceType === 'Patient' && task && (
             <>
-              {activeTab === 'properties' && (
-                <TaskInfo p="md" key={task.id} task={task} onTaskChange={onTaskChange} />
-              )}
+              {activeTab === 'properties' && <TaskInfo p="md" key={task.id} task={task} onTaskChange={onTaskChange} />}
               {activeTab === 'activity-log' && (
                 <ScrollArea h="calc(100% - 50px)">
                   <ResourceTimeline
                     value={task}
-                    loadTimelineResources={async (
-                      medplum: MedplumClient,
-                      _resourceType: ResourceType,
-                      id: string
-                    ) => {
+                    loadTimelineResources={async (medplum: MedplumClient, _resourceType: ResourceType, id: string) => {
                       return Promise.allSettled([medplum.readHistory('Task', id)]);
                     }}
                   />

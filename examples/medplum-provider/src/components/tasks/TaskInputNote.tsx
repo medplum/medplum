@@ -140,31 +140,17 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
         </Stack>
       </ScrollArea>
 
-      <Modal
-        opened={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="Delete Task"
-        size="md"
-        centered
-      >
+      <Modal opened={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Task" size="md" centered>
         <Stack gap="md">
-          <Text>
-            Are you sure you want to delete this task? This action cannot be undone.
-          </Text>
+          <Text>Are you sure you want to delete this task? This action cannot be undone.</Text>
           <Text fw={500} c="dimmed">
             Task: {getDisplayString(task)}
           </Text>
           <Flex justify="flex-end" gap="sm">
-            <Button 
-              variant="outline" 
-              onClick={() => setShowDeleteModal(false)}
-            >
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
               Cancel
             </Button>
-            <Button 
-              color="red" 
-              onClick={confirmDeleteTask}
-            >
+            <Button color="red" onClick={confirmDeleteTask}>
               Delete
             </Button>
           </Flex>
