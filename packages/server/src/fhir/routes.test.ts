@@ -216,6 +216,19 @@ describe('FHIR Routes', () => {
       .get(`/fhir/R4/Patient/${patientId}/_history`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
+    const bundle = res.body as Bundle;
+    expect(bundle.entry).toBeDefined();
+    expect(bundle.entry).toHaveLength(1);
+  });
+
+  test('Read resource history with too large offset', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/Patient/${patientId}/_history`)
+      .query({ _count: 2, _offset: 1000 })
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    const bundle = res.body as Bundle;
+    expect(bundle.entry).toBeUndefined();
   });
 
   test('Read resource history invalid UUID', async () => {

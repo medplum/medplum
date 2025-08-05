@@ -29,6 +29,11 @@ export type UpdateResourceOptions = {
   ifMatch?: string;
 };
 
+export type ReadHistoryOptions = {
+  offset?: number;
+  limit?: number;
+};
+
 export const RepositoryMode = {
   READER: 'reader',
   WRITER: 'writer',
@@ -111,7 +116,11 @@ export abstract class FhirRepository<TClient = unknown> {
    * @param id - The FHIR resource ID.
    * @returns Operation outcome and a history bundle.
    */
-  abstract readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<WithId<T>>>;
+  abstract readHistory<T extends Resource>(
+    resourceType: string,
+    id: string,
+    options?: ReadHistoryOptions
+  ): Promise<Bundle<WithId<T>>>;
 
   /**
    * Reads a FHIR resource version.
