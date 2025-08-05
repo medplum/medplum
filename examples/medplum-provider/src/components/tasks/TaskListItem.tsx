@@ -28,15 +28,13 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
         })}
       >
         <Stack gap={0}>
-          <Text fw={700} className={classes.content} >
+          <Text fw={700} className={classes.content}>
             {task.code?.text ?? `Task from ${formatDate(task?.authoredOn)}`}
           </Text>
           {task.restriction?.period && <Text fw={500}>Due {formatDate(task.restriction?.period?.end)}</Text>}
           {patient?.resourceType === 'Patient' && <Text>For: {formatHumanName(patient.name?.[0] as HumanName)}</Text>}
           {owner?.resourceType === 'Practitioner' && (
-            <Text size="sm">
-              Assigned to {formatHumanName(owner.name?.[0] as HumanName)}
-            </Text>
+            <Text size="sm">Assigned to {formatHumanName(owner.name?.[0] as HumanName)}</Text>
           )}
         </Stack>
       </Group>
