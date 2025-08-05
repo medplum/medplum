@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Container, Group } from '@mantine/core';
 import { JSX, Suspense } from 'react';
 import { Outlet } from 'react-router';

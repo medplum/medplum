@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Flex, Modal, Card, Stack, Text } from '@mantine/core';
 import { Condition, Encounter, EncounterDiagnosis, Patient } from '@medplum/fhirtypes';
 import { JSX, useEffect, useState } from 'react';

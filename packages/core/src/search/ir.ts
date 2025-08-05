@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Search Immediate Representation (IR) module
 //
 // https://hl7.org/fhir/R4/search.html

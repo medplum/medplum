@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 export const HEALTHIE_IDENTIFIER_SYSTEM = 'https://www.gethealthie.com';
 export const HEALTHIE_USER_ID_SYSTEM = `${HEALTHIE_IDENTIFIER_SYSTEM}/userId`;
 export const HEALTHIE_MEDICATION_ID_SYSTEM = `${HEALTHIE_IDENTIFIER_SYSTEM}/medicationId`;

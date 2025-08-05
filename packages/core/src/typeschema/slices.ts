@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { TypedValue } from '../types';
 import { getNestedProperty } from './crawler';
 import { InternalTypeSchema, SliceDefinition, SliceDiscriminator } from './types';

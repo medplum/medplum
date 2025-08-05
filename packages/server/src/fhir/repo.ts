@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   AccessPolicyInteraction,
   accessPolicySupportsInteraction,
@@ -1627,6 +1629,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment:identifier' ||
+      searchParam.code === '_deleted' ||
       searchParam.type === 'composite'
     ) {
       return;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AsyncLocalStorage } from 'async_hooks';
 import bytes from 'bytes';
 import { randomUUID } from 'crypto';

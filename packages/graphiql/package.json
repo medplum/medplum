@@ -1,6 +1,6 @@
 {
   "name": "@medplum/graphiql",
-  "version": "4.3.7",
+  "version": "4.3.8",
   "description": "Medplum GraphiQL",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -18,7 +18,8 @@
     "build": "npm run clean && tsc && vite build",
     "clean": "rimraf dist",
     "dev": "vite",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "browserslist": [
     "last 1 Chrome versions"
@@ -28,19 +29,19 @@
     "@graphiql/toolkit": "0.11.3",
     "@mantine/core": "7.17.8",
     "@mantine/hooks": "7.17.8",
-    "@medplum/core": "4.3.7",
-    "@medplum/fhirtypes": "4.3.7",
-    "@medplum/react": "4.3.7",
-    "@types/react": "19.1.8",
-    "@types/react-dom": "19.1.6",
+    "@medplum/core": "4.3.8",
+    "@medplum/fhirtypes": "4.3.8",
+    "@medplum/react": "4.3.8",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.1.7",
     "graphiql": "4.1.2",
     "graphql": "16.11.0",
     "graphql-ws": "6.0.6",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "vite": "6.3.5"
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "vite": "7.0.6"
   },
   "engines": {
     "node": "^20.19.0 || >=22.12.0"

@@ -4,9 +4,10 @@ A complete guide to deploy Medplum with Fission on Docker Desktop Kubernetes for
 
 ## 🎯 Overview
 
-This guide provides a simple, step-by-step process to deploy the Medplum healthcare platform with Fission serverless functions on your local machine using Docker Desktop's built-in Kubernetes cluster. 
+This guide provides a simple, step-by-step process to deploy the Medplum healthcare platform with Fission serverless functions on your local machine using Docker Desktop's built-in Kubernetes cluster.
 
 **What you'll get:**
+
 - 🏥 Medplum FHIR server running on http://localhost:8103
 - 🖥️ Medplum web app running on http://localhost:3000
 - 🗄️ PostgreSQL database for data storage
@@ -20,12 +21,14 @@ This guide provides a simple, step-by-step process to deploy the Medplum healthc
 Before starting, ensure you have:
 
 ### Required Software
-- **Docker Desktop** https://docs.docker.com/desktop/ 
-- **kubectl** https://kubernetes.io/docs/tasks/tools/ 
+
+- **Docker Desktop** https://docs.docker.com/desktop/
+- **kubectl** https://kubernetes.io/docs/tasks/tools/
 - **Helm** https://helm.sh/docs/intro/install/
 - **Fission CLI** https://fission.io/docs/installation/
 
 ### Docker Desktop Configuration
+
 1. Open Docker Desktop
 2. Go to **Settings** → **Resources**
 3. Allocate at least **8GB RAM** and **4 CPUs** (Fission requires more resources)
@@ -35,6 +38,7 @@ Before starting, ensure you have:
 7. Wait for Kubernetes to start (green indicator)
 
 ### Verify Setup
+
 ```bash
 # Verify kubectl is pointing to Docker Desktop
 kubectl config current-context
@@ -52,15 +56,18 @@ helm version
 fission version
 # Should show version info
 ```
+
 ## 🚀 Quick Start
 
 ### 1. Create Project Directory
+
 ```bash
 mkdir medplum-k8s-deployment
 cd medplum-k8s-deployment
 ```
 
 ### 2. Clone Medplum Repository
+
 ```bash
 git clone https://github.com/medplum/medplum.git
 cd medplum/charts
@@ -74,6 +81,7 @@ cd medplum/charts
 ```
 
 The script will:
+
 1. Create the `medplum` namespace
 2. Install Fission v1.21.0 with proper CRDs
 3. Set up RBAC permissions for Medplum-Fission integration
@@ -98,25 +106,28 @@ curl http://localhost:8103/healthcheck
 
 Once deployed, Medplum is accessible at:
 
-| URL | Purpose |
-|-----|---------|
-| http://localhost:3000 | Medplum web application |
-| http://localhost:8103 | Main Medplum server |
-| http://localhost:8103/healthcheck | Health check endpoint |
+| URL                                    | Purpose                   |
+| -------------------------------------- | ------------------------- |
+| http://localhost:3000                  | Medplum web application   |
+| http://localhost:8103                  | Main Medplum server       |
+| http://localhost:8103/healthcheck      | Health check endpoint     |
 | http://localhost:8103/fhir/R4/metadata | FHIR capability statement |
-| http://localhost:8103/fhir/R4/ | FHIR API base URL |
+| http://localhost:8103/fhir/R4/         | FHIR API base URL         |
 
 ## ⚡ Fission Integration
 
 ### What is Fission?
+
 Fission is a Kubernetes-native serverless framework that enables you to run Medplum Bots as serverless functions. This allows for:
+
 - Automatic scaling based on demand
 - Efficient resource usage
 - Easy deployment and management of bot functions
 - Integration with Kubernetes ecosystem
 
 ### Working with Fission
-```bash
+
+````bash
 # List available environments
 fission env list
 
@@ -151,16 +162,18 @@ kubectl rollout restart deployment/medplum -n medplum
 
 # Scale deployments
 kubectl scale deployment medplum --replicas=2 -n medplum
-```
+````
 
 ## 🧪 Testing Your Deployment
 
 ### Health Check
+
 ```bash
 curl http://localhost:8103/healthcheck
 ```
 
 Expected response:
+
 ```json
 {
   "ok": true,
@@ -171,12 +184,14 @@ Expected response:
 ```
 
 ### FHIR API Test
+
 ```bash
 # Get FHIR capability statement
 curl http://localhost:8103/fhir/R4/metadata
 ```
 
 ### Fission Test
+
 ```bash
 # Test Fission is working
 fission env list
@@ -192,6 +207,7 @@ kubectl auth can-i create packages.fission.io --as=system:serviceaccount:medplum
 ### Common Issues
 
 **Pods not starting:**
+
 ```bash
 # Check pod status
 kubectl get pods -n medplum
@@ -206,6 +222,7 @@ kubectl logs -n fission deployment/executor
 ```
 
 **Fission issues:**
+
 ```bash
 # Run the debug script
 ./debug-fission.sh
@@ -218,6 +235,7 @@ fission env list
 ```
 
 **Database connection issues:**
+
 ```bash
 # Test database connectivity
 kubectl exec -n medplum deployment/postgres -- psql -U medplum -d medplum -c "SELECT 1;"
@@ -229,6 +247,7 @@ kubectl exec -n medplum deployment/redis -- redis-cli -a medplum ping
 ### Reset Everything
 
 If something goes wrong:
+
 ```bash
 # Clean up completely (including Fission)
 ./cleanup-local.sh
@@ -240,9 +259,11 @@ sleep 10
 # Deploy fresh
 ./deploy-local.sh
 ```
+
 ## 📊 Resource Usage
 
 This deployment uses:
+
 - **CPU**: ~2-3 cores (increased due to Fission)
 - **Memory**: ~4-6 GB RAM (increased due to Fission)
 - **Storage**: ~2-3 GB (temporary storage only)
@@ -251,23 +272,27 @@ This deployment uses:
 ## 🚨 Important Notes
 
 ### Security
+
 - This configuration is for **development only**
 - Uses demo/weak passwords and keys
 - Allows all origins (`*`)
 - **Do not use in production**
 
 ### Data Persistence
+
 - Uses `emptyDir` volumes (data lost on pod restart)
 - For persistent data, configure persistent volumes
 - Database data will be reset on PostgreSQL pod restart
 
 ### Performance
+
 - Single replica deployments
 - No resource limits set by default
 - Suitable for development and testing
 - Fission may take additional time to start functions on first use
 
 ### Fission Considerations
+
 - Functions are deployed in the `default` namespace
 - Uses Node.js runtime environment
 - Built-in builder for handling dependencies
@@ -276,6 +301,7 @@ This deployment uses:
 ## 🔄 Updates and Maintenance
 
 ### Updating Medplum
+
 ```bash
 # Pull latest chart
 cd medplum/charts
@@ -286,6 +312,7 @@ helm upgrade medplum . -n medplum -f values-local.yaml
 ```
 
 ### Updating Fission
+
 ```bash
 # Check current version
 helm list -n fission
@@ -295,6 +322,7 @@ helm upgrade fission fission-charts/fission-all -n fission
 ```
 
 ### Viewing Logs
+
 ```bash
 # Real-time Medplum logs
 kubectl logs -f -n medplum deployment/medplum

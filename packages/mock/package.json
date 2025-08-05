@@ -1,6 +1,6 @@
 {
   "name": "@medplum/mock",
-  "version": "4.3.7",
+  "version": "4.3.8",
   "description": "Medplum Mock Client",
   "keywords": [
     "medplum",
@@ -51,13 +51,14 @@
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "4.3.7",
-    "@medplum/definitions": "4.3.7",
-    "@medplum/fhir-router": "4.3.7",
-    "@medplum/fhirtypes": "4.3.7",
+    "@medplum/core": "4.3.8",
+    "@medplum/definitions": "4.3.8",
+    "@medplum/fhir-router": "4.3.8",
+    "@medplum/fhirtypes": "4.3.8",
     "dataloader": "2.2.3",
     "jest-websocket-mock": "2.5.0",
     "rfc6902": "5.1.2"

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MultiSelect, NativeSelect, Stack } from '@mantine/core';
 import { HumanName } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AccessPolicy } from '@medplum/fhirtypes';
 
 // This access policy allows a user to read and write to the Patient, Observation, DiagnosticReport, Encounter,

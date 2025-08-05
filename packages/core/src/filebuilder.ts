@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 const DEFAULT_INDENT = ' '.repeat(2);
 
 export class FileBuilder {

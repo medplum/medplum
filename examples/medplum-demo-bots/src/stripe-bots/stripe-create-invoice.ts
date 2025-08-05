@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { BotEvent, createReference, MedplumClient } from '@medplum/core';
 import { Account, Invoice, Money } from '@medplum/fhirtypes';
 import type Stripe from 'stripe';

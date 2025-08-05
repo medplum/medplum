@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Divider, Group, Input, List, ListItem, rem, Text } from '@mantine/core';
 import { Coverage, Patient } from '@medplum/fhirtypes';
 import { BillingInformation, LabOrderInputErrors } from '@medplum/health-gorilla-core';

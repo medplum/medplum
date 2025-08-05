@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Group, Stepper } from '@mantine/core';
 import { QuestionnaireFormPaginationState } from '@medplum/react-hooks';
 import { JSX } from 'react';

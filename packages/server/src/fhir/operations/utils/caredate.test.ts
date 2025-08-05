@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { deepClone, WithId } from '@medplum/core';
 import { Bundle, CodeableConcept, Device, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { filterByCareDate } from './caredate';
