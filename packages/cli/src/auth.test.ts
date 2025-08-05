@@ -29,7 +29,7 @@ describe('CLI auth', () => {
   let processError: jest.SpyInstance;
 
   beforeAll(() => {
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    process.exit = jest.fn().mockImplementation(function exit(exitCode: number) {
       if (exitCode === 0) {
         return;
       }
