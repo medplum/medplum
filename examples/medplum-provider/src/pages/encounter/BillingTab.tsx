@@ -262,10 +262,10 @@ export const BillingTab = (props: BillingTabProps): JSX.Element => {
 
       {chargeItems && (
         <ChargeItemList
-          chargeItems={chargeItems}
-          updateChargeItems={updateChargeItems}
           patient={patient}
           encounter={encounter}
+          chargeItems={chargeItems}
+          updateChargeItems={updateChargeItems}
         />
       )}
     </Stack>
