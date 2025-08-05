@@ -1,10 +1,6 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { Patient, Identifier } from '@medplum/fhirtypes';
-import { 
-  makeConditionalFhirRequest, 
-  HTTP_VERBS, 
-  logExternalRequest 
-} from '../shared/http-helpers';
+import { makeConditionalFhirRequest, HTTP_VERBS, logExternalRequest } from '../shared/http-helpers';
 
 /**
  * HAPI FHIR Server Sync Bot with External EHR Integration
@@ -153,4 +149,4 @@ export async function handler(_medplum: MedplumClient, event: BotEvent): Promise
     // Create or update patient record and return enriched data
     return syncHapiResource(patient, HTTP_VERBS['PUT']);
   }
-} 
+}

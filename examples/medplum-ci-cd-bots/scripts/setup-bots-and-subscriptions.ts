@@ -2,15 +2,15 @@
 
 /**
  * Complete Setup Script for Medplum CI/CD Bots
- * 
+ *
  * This script performs the complete setup:
  * 1. Builds all bots
  * 2. Deploys bots to Medplum
  * 3. Creates subscriptions with correct bot endpoints
- * 
+ *
  * Usage:
  *   npm run setup
- * 
+ *
  * @author Medplum Team
  * @version 1.0.0
  */
@@ -21,8 +21,6 @@ import { execSync } from 'child_process';
 
 // Load configuration
 const config = JSON.parse(readFileSync('./medplum.config.json', 'utf8'));
-
-
 
 interface SubscriptionConfig {
   botName: string;
@@ -64,16 +62,16 @@ async function buildBots(): Promise<void> {
  */
 async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]> {
   console.log('🚀 Deploying bots to Medplum...\n');
-  
+
   const results: BotDeploymentResult[] = [];
 
   for (const bot of config.bots) {
     try {
       console.log(`📦 Deploying ${bot.name}...`);
-      
+
       // Read the bot source file
       const botSource = readFileSync(bot.source, 'utf8');
-      
+
       // Create the bot using the Medplum API
       const botResource = await medplum.createResource({
         resourceType: 'Bot',
@@ -91,13 +89,13 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
           ],
         },
       });
-      
+
       results.push({
         botName: bot.name,
         botId: botResource.id || '',
         status: 'success',
       });
-      
+
       console.log(`   ✅ Deployed with ID: ${botResource.id}\n`);
     } catch (error) {
       results.push({
@@ -105,7 +103,7 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
         status: 'failed',
         error: error instanceof Error ? error.message : String(error),
       });
-      
+
       console.log(`   ❌ Failed: ${error instanceof Error ? error.message : String(error)}\n`);
     }
   }
@@ -115,7 +113,7 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
 
 /**
  * Creates a subscription for a bot
- * 
+ *
  * @param medplum - The Medplum client
  * @param botName - The name of the bot
  * @param botId - The deployed bot ID
@@ -123,10 +121,10 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
  * @param criteria - The subscription criteria
  */
 async function createSubscription(
-  medplum: MedplumClient, 
+  medplum: MedplumClient,
   botName: string,
   botId: string,
-  resourceType: string, 
+  resourceType: string,
   criteria: string
 ): Promise<any> {
   try {
@@ -161,12 +159,12 @@ async function createSubscription(
 
 /**
  * Creates all subscriptions for the deployed bots
- * 
+ *
  * @param medplum - The Medplum client
  * @param deployedBots - Results from bot deployment
  */
 async function createAllSubscriptions(
-  medplum: MedplumClient, 
+  medplum: MedplumClient,
   deployedBots: BotDeploymentResult[]
 ): Promise<SubscriptionResult[]> {
   console.log('🔗 Creating subscriptions for deployed bots...\n');
@@ -190,15 +188,15 @@ async function createAllSubscriptions(
 
   for (const subscription of subscriptions) {
     // Find the corresponding deployed bot
-    const deployedBot = deployedBots.find(bot => bot.botName === subscription.botName);
-    
+    const deployedBot = deployedBots.find((bot) => bot.botName === subscription.botName);
+
     if (!deployedBot || deployedBot.status === 'failed') {
       results.push({
         botName: subscription.botName,
         status: 'failed',
         error: deployedBot?.error || 'Bot deployment failed',
       });
-      
+
       console.log(`📋 Skipping subscription for ${subscription.botName} (bot deployment failed)\n`);
       continue;
     }
@@ -207,7 +205,7 @@ async function createAllSubscriptions(
       console.log(`📋 Creating subscription for ${subscription.botName}...`);
       console.log(`   Description: ${subscription.description}`);
       console.log(`   Bot ID: ${deployedBot.botId}`);
-      
+
       const result = await createSubscription(
         medplum,
         subscription.botName,
@@ -215,13 +213,13 @@ async function createAllSubscriptions(
         subscription.resourceType,
         subscription.criteria
       );
-      
+
       results.push({
         botName: subscription.botName,
         subscriptionId: result.id,
         status: 'success',
       });
-      
+
       console.log(`   ✅ Subscription ID: ${result.id}\n`);
     } catch (error) {
       results.push({
@@ -229,7 +227,7 @@ async function createAllSubscriptions(
         status: 'failed',
         error: error instanceof Error ? error.message : String(error),
       });
-      
+
       console.log(`   ❌ Failed: ${error instanceof Error ? error.message : String(error)}\n`);
     }
   }
@@ -267,47 +265,46 @@ async function main(): Promise<void> {
     // Print summary
     console.log('📊 Setup Summary:');
     console.log('==================');
-    
+
     // Bot deployment summary
     console.log('\n🤖 Bot Deployment:');
-    const successfulBots = deployedBots.filter(r => r.status === 'success');
-    const failedBots = deployedBots.filter(r => r.status === 'failed');
-    
+    const successfulBots = deployedBots.filter((r) => r.status === 'success');
+    const failedBots = deployedBots.filter((r) => r.status === 'failed');
+
     console.log(`✅ Successful: ${successfulBots.length}`);
-    successfulBots.forEach(result => {
+    successfulBots.forEach((result) => {
       console.log(`   - ${result.botName}: ${result.botId}`);
     });
-    
+
     if (failedBots.length > 0) {
       console.log(`❌ Failed: ${failedBots.length}`);
-      failedBots.forEach(result => {
+      failedBots.forEach((result) => {
         console.log(`   - ${result.botName}: ${result.error}`);
       });
     }
-    
+
     // Subscription summary
     console.log('\n🔗 Subscriptions:');
-    const successfulSubs = subscriptionResults.filter(r => r.status === 'success');
-    const failedSubs = subscriptionResults.filter(r => r.status === 'failed');
-    
+    const successfulSubs = subscriptionResults.filter((r) => r.status === 'success');
+    const failedSubs = subscriptionResults.filter((r) => r.status === 'failed');
+
     console.log(`✅ Successful: ${successfulSubs.length}`);
-    successfulSubs.forEach(result => {
+    successfulSubs.forEach((result) => {
       console.log(`   - ${result.botName}: ${result.subscriptionId}`);
     });
-    
+
     if (failedSubs.length > 0) {
       console.log(`❌ Failed: ${failedSubs.length}`);
-      failedSubs.forEach(result => {
+      failedSubs.forEach((result) => {
         console.log(`   - ${result.botName}: ${result.error}`);
       });
     }
-    
+
     console.log('\n🎉 Setup complete!');
     console.log('\nNext steps:');
     console.log('1. Test the bots by creating/updating Patient resources');
     console.log('2. Monitor bot execution in the Medplum console');
     console.log('3. Check subscription status in the Medplum console');
-    
   } catch (error) {
     console.error('💥 Setup failed:', error);
     process.exit(1);
@@ -315,4 +312,4 @@ async function main(): Promise<void> {
 }
 
 // Run the main function
-main().catch(console.error); 
+main().catch(console.error);

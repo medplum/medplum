@@ -3,11 +3,11 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 
 /**
  * Shared HTTP Helpers for Medplum Bots
- * 
+ *
  * This module provides reusable HTTP functionality for bots that need to
  * communicate with external services. It includes standardized error handling
  * and response processing.
- * 
+ *
  * @author Medplum Team
  * @version 1.0.0
  */
@@ -20,7 +20,7 @@ export enum HTTP_VERBS {
 
 /**
  * Makes an HTTP request to an external service with standardized error handling
- * 
+ *
  * @param url - The URL to make the request to
  * @param method - The HTTP method to use
  * @param body - The request body (optional)
@@ -104,10 +104,10 @@ export async function makeExternalRequest(
 
 /**
  * Makes a conditional request to an external FHIR server
- * 
+ *
  * This function is specifically designed for FHIR servers that support
  * conditional operations based on identifiers.
- * 
+ *
  * @param baseUrl - The base URL of the external FHIR server
  * @param resourceType - The FHIR resource type (e.g., 'Patient')
  * @param identifier - The identifier to use for conditional operations
@@ -129,24 +129,19 @@ export async function makeConditionalFhirRequest(
 
 /**
  * Logs the result of an external request for debugging and audit purposes
- * 
+ *
  * @param operation - Description of the operation performed
  * @param resourceId - The ID of the resource being processed
  * @param success - Whether the operation was successful
  * @param error - Error details if the operation failed
  */
-export function logExternalRequest(
-  operation: string,
-  resourceId: string,
-  success: boolean,
-  error?: string
-): void {
+export function logExternalRequest(operation: string, resourceId: string, success: boolean, error?: string): void {
   const timestamp = new Date().toISOString();
   const status = success ? 'SUCCESS' : 'FAILED';
-  
+
   console.log(`[${timestamp}] ${operation} - Resource: ${resourceId} - Status: ${status}`);
-  
+
   if (error) {
     console.error(`[${timestamp}] ${operation} - Error: ${error}`);
   }
-} 
+}
