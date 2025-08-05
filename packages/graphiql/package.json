@@ -18,7 +18,8 @@
     "build": "npm run clean && tsc && vite build",
     "clean": "rimraf dist",
     "dev": "vite",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "browserslist": [
     "last 1 Chrome versions"

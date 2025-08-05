@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * A complex attribute containing resource metadata.  All "meta"
  * sub-attributes are assigned by the service provider (have a

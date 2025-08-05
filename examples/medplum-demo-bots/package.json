@@ -9,6 +9,7 @@
     "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
     "clean": "rimraf dist",
     "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
     "prettier": "prettier --write .",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",

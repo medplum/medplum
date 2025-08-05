@@ -54,6 +54,7 @@
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "medplum": "ts-node src/index.ts",
     "test": "jest"
   },

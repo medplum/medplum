@@ -1,13 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Box, Flex, Paper, ScrollArea, SegmentedControl } from '@mantine/core';
-import { JSX, useState } from 'react';
+import { MedplumClient } from '@medplum/core';
 import { ResourceType, Task } from '@medplum/fhirtypes';
 import { PatientSummary, ResourceTimeline, useResource } from '@medplum/react';
-import { MedplumClient } from '@medplum/core';
+import { JSX, useState } from 'react';
+import { useOutletContext } from 'react-router';
 import { TaskInfo } from '../../components/tasks/TaskInfo';
 import { TasksInputNote } from '../../components/tasks/TaskInputNote';
 import { TaskSelectEmpty } from '../../components/tasks/TaskSelectEmpty';
 import classes from './TasksPage.module.css';
-import { useOutletContext } from 'react-router';
 
 interface TasksOutletContext {
   task: Task | undefined;

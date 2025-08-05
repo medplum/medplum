@@ -1,11 +1,13 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Button, Divider, Flex, Modal, Paper, ScrollArea, Stack, Text, Textarea } from '@mantine/core';
-import { Annotation, Task } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
-import { TaskQuestionnaireForm } from '../encountertasks/TaskQuestionnaireForm';
 import { createReference, formatDate, getDisplayString, PatchOperation } from '@medplum/core';
-import { IconCheck, IconTrash } from '@tabler/icons-react';
+import { Annotation, Task } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconCheck, IconTrash } from '@tabler/icons-react';
+import React, { useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
+import { TaskQuestionnaireForm } from '../encountertasks/TaskQuestionnaireForm';
 
 interface TasksInputNoteProps {
   task: Task;

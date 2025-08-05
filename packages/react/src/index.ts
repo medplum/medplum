@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Re-export all hooks from @medplum/react-hooks
 export * from '@medplum/react-hooks';
 

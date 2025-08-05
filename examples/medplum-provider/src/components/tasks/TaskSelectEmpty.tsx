@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Center, Stack, Text, ThemeIcon } from '@mantine/core';
 import { IconClipboardList } from '@tabler/icons-react';
 import { JSX } from 'react';

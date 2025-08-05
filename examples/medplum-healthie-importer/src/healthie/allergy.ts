@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AllergyIntolerance, Patient, Reference } from '@medplum/fhirtypes';
 import { HealthieClient } from './client';
 import { HEALTHIE_ALLERGY_CODE_SYSTEM, HEALTHIE_ALLERGY_ID_SYSTEM, HEALTHIE_REACTION_CODE_SYSTEM } from './constants';
