@@ -1,4 +1,4 @@
-import { ActionIcon, Button, Divider, Flex, Paper, ScrollArea, Stack, Text, Textarea } from '@mantine/core';
+import { ActionIcon, Button, Divider, Flex, Modal, Paper, ScrollArea, Stack, Text, Textarea } from '@mantine/core';
 import { Annotation, Task } from '@medplum/fhirtypes';
 import React, { useState } from 'react';
 import { TaskQuestionnaireForm } from '../encountertasks/TaskQuestionnaireForm';
@@ -18,6 +18,7 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
   const author = useMedplumProfile();
   const [task, setTask] = useState<Task>(initialTask);
   const [note, setNote] = useState<string>('');
+  const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
 
   const handleAddComment = async (): Promise<void> => {
     const taskId = task.id as string;
@@ -41,10 +42,15 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
     }
   };
 
-  const handleDeleteTask = async (): Promise<void> => {
+  const handleDeleteTask = (): void => {
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteTask = async (): Promise<void> => {
     try {
       await medplum.deleteResource('Task', task.id as string);
       onDeleteTask(task);
+      setShowDeleteModal(false);
     } catch (error) {
       showErrorNotification(error);
     }
@@ -64,10 +70,10 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
 
   return (
     <Paper h="100%">
-      <Flex justify="space-between" align="flex-start" p="lg" h={70}>
-        <Flex justify="left" align="center" direction="row">
-          <Text size="xl" fw={600}>
-            {getDisplayString(task)}
+      <Flex justify="space-between" align="flex-start" p="lg" h={72}>
+        <Flex justify="left" align="center" direction="row" pr="md">
+          <Text size="xl" fw={600} lh={1.2}>
+            {task.code?.text ?? `Task`}
             {task?.authoredOn && ` from ${formatDate(task?.authoredOn)}`}
           </Text>
         </Flex>
@@ -87,9 +93,8 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
           </ActionIcon>
 
           <ActionIcon
-            variant="outline"
-            c={task.status === 'completed' ? 'filled' : 'dimmed'}
-            color={task.status === 'completed' ? undefined : 'gray'}
+            variant={task.status === 'completed' ? 'filled' : 'outline'}
+            color={task.status === 'completed' ? 'blue' : 'gray'}
             aria-label="Mark as Completed"
             radius="xl"
             w={36}
@@ -134,6 +139,23 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
           </Stack>
         </Stack>
       </ScrollArea>
+
+      <Modal opened={showDeleteModal} onClose={() => setShowDeleteModal(false)} title="Delete Task" size="md" centered>
+        <Stack gap="md">
+          <Text>Are you sure you want to delete this task? This action cannot be undone.</Text>
+          <Text fw={500} c="dimmed">
+            Task: {getDisplayString(task)}
+          </Text>
+          <Flex justify="flex-end" gap="sm">
+            <Button variant="outline" onClick={() => setShowDeleteModal(false)}>
+              Cancel
+            </Button>
+            <Button color="red" onClick={confirmDeleteTask}>
+              Delete
+            </Button>
+          </Flex>
+        </Stack>
+      </Modal>
     </Paper>
   );
 }

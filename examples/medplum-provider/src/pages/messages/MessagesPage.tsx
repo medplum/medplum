@@ -9,6 +9,7 @@ import { showErrorNotification } from '../../utils/notifications';
 import { IconChevronDown, IconPlus } from '@tabler/icons-react';
 import classes from './MessagesPage.module.css';
 import { useDisclosure } from '@mantine/hooks';
+import cx from 'clsx';
 
 /**
  * Messages page that matches the Home page layout but without the patient list.
@@ -77,9 +78,8 @@ export function MessagesPage(): JSX.Element {
                 <Divider />
                 <Flex p="md" gap="xs">
                   <Button
-                    variant={status === 'in-progress' ? 'filled' : 'default'}
-                    color="gray"
-                    h={24}
+                    className={cx(classes.button, { [classes.selected]: status === 'in-progress' })}
+                    h={32}
                     radius="xl"
                     onClick={() => setStatus('in-progress')}
                   >
@@ -87,9 +87,8 @@ export function MessagesPage(): JSX.Element {
                   </Button>
 
                   <Button
-                    variant={status === 'completed' ? 'filled' : 'default'}
-                    color="gray"
-                    h={24}
+                    className={cx(classes.button, { [classes.selected]: status === 'completed' })}
+                    h={32}
                     radius="xl"
                     onClick={() => setStatus('completed')}
                   >
