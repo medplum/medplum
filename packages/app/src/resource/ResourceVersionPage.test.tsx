@@ -83,4 +83,18 @@ describe('ResourceVersionPage', () => {
 
     expect(screen.getByText('Raw')).toBeInTheDocument();
   });
+
+  test('Next button', async () => {
+    await act(async () => {
+      setup('/Practitioner/123/_history/1');
+    });
+
+    expect(await screen.findByLabelText('Next page')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Next page'));
+    });
+
+    expect(screen.getByText('Raw')).toBeInTheDocument();
+  });
 });

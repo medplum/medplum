@@ -5,6 +5,7 @@ import {
   DescriptionList,
   DescriptionListEntry,
   Document,
+  getPaginationControlProps,
   Loading,
   MedplumLink,
   Panel,
@@ -45,16 +46,7 @@ export function ResourceVersionPage(): JSX.Element {
     return <Loading />;
   }
 
-  if (!historyBundle) {
-    return (
-      <Document>
-        <Title>Resource not found</Title>
-        <MedplumLink to={`/${resourceType}`}>Return to search page</MedplumLink>
-      </Document>
-    );
-  }
-
-  const entries = historyBundle.entry ?? [];
+  const entries = historyBundle?.entry ?? [];
   const index = entries.findIndex((entry) => entry.resource?.meta?.versionId === versionId);
   if (index === -1) {
     return (
@@ -79,11 +71,12 @@ export function ResourceVersionPage(): JSX.Element {
             <Pagination
               total={entries.length}
               value={paginationIndex}
-              onChange={(newIndex) => {
-                const newEntry = entries[entries.length - newIndex];
-                const newVersionId = newEntry.resource?.meta?.versionId;
-                navigate(`/${resourceType}/${id}/_history/${newVersionId}/${currTab}`)?.catch(console.error);
-              }}
+              getControlProps={getPaginationControlProps}
+              onChange={(newIndex) =>
+                navigate(
+                  `/${resourceType}/${id}/_history/${entries[entries.length - newIndex]?.resource?.meta?.versionId}/${currTab}`
+                )?.catch(console.error)
+              }
             />
             <Group justify="right">
               <SegmentedControl
