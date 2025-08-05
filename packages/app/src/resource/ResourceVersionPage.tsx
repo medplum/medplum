@@ -16,6 +16,8 @@ import {
 import { JSX, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
+const PAGE_SIZE = 2;
+
 export function ResourceVersionPage(): JSX.Element {
   const navigate = useNavigate();
   const { resourceType, id, versionId, tab } = useParams() as {
@@ -26,6 +28,8 @@ export function ResourceVersionPage(): JSX.Element {
   };
   const medplum = useMedplum();
   const [loading, setLoading] = useState(true);
+  const [index, setIndex] = useState(0);
+  const [offset, setOffset] = useState(0);
   const [historyBundle, setHistoryBundle] = useState<Bundle | undefined>();
   const [error, setError] = useState<OperationOutcome | undefined>();
 
@@ -33,21 +37,26 @@ export function ResourceVersionPage(): JSX.Element {
     setError(undefined);
     setLoading(true);
     medplum
-      .readHistory(resourceType as ResourceType, id)
+      .readHistory(resourceType as ResourceType, id, { count: PAGE_SIZE, offset })
       .then((result) => setHistoryBundle(result))
       .then(() => setLoading(false))
       .catch((reason) => {
         setError(reason);
         setLoading(false);
       });
-  }, [medplum, resourceType, id]);
+  }, [medplum, resourceType, id, offset]);
+
+  const entries = historyBundle?.entry ?? [];
+
+  const onPaginationChange = (newIndex: number): void => {
+    setIndex(newIndex);
+    //TODO
+  };
 
   if (loading) {
     return <Loading />;
   }
 
-  const entries = historyBundle?.entry ?? [];
-  const index = entries.findIndex((entry) => entry.resource?.meta?.versionId === versionId);
   if (index === -1) {
     return (
       <Document>
@@ -69,14 +78,10 @@ export function ResourceVersionPage(): JSX.Element {
           {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
           <SimpleGrid cols={2} mb="lg">
             <Pagination
-              total={entries.length}
+              total={historyBundle?.total ?? entries.length}
               value={paginationIndex}
               getControlProps={getPaginationControlProps}
-              onChange={(newIndex) =>
-                navigate(
-                  `/${resourceType}/${id}/_history/${entries[entries.length - newIndex]?.resource?.meta?.versionId}/${currTab}`
-                )?.catch(console.error)
-              }
+              onChange={onPaginationChange}
             />
             <Group justify="right">
               <SegmentedControl
