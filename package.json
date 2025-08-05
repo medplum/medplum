@@ -36,9 +36,9 @@
   },
   "overrides": {
     "esbuild": "0.25.8",
-    "react": "19.1.0",
+    "react": "19.1.1",
     "react-compiler-runtime": "latest",
-    "react-dom": "19.1.0",
+    "react-dom": "19.1.1",
     "rollup": "4.44.2",
     "typescript": "5.8.3",
     "vite": "7.0.6",
