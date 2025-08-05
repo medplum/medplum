@@ -311,7 +311,20 @@ async function getSearchEntries<T extends Resource>(
 ): Promise<{ entry: BundleEntry<WithId<T>>[]; rowCount: number; nextResource?: T }> {
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   const rowCount = rows.length;
-  const resources = rows.map((row) => JSON.parse(row.content)) as WithId<T>[];
+  const resources = [];
+  for (const row of rows) {
+    if (row.content) {
+      resources.push(JSON.parse(row.content));
+    } else {
+      // Handle missing content
+      // In the original implementation of deleted resources, the content was not stored in the database.
+      resources.push({
+        resourceType: searchRequest.resourceType,
+        id: row.id,
+        meta: { lastUpdated: row.lastUpdated?.toISOString() },
+      } as WithId<T>);
+    }
+  }
   let nextResource: T | undefined;
   if (resources.length > searchRequest.count) {
     nextResource = resources.pop();
@@ -393,7 +406,9 @@ function getBaseSelectQueryForResourceType(
       new Disjunction([new Condition(col, '<=', opts.maxResourceVersion), new Condition(col, '=', null)])
     );
   }
-  repo.addDeletedFilter(builder);
+  if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
+    repo.addDeletedFilter(builder);
+  }
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(repo, builder, resourceType, searchRequest);
   if (opts?.resourceTypeQueryCallback) {
@@ -1066,6 +1081,18 @@ function trySpecialSearchParameter(
           parsedExpression: parseFhirPath('lastUpdated'),
         },
         filter
+      );
+    case '_deleted':
+      return buildBooleanSearchFilter(
+        table,
+        {
+          type: SearchParameterType.BOOLEAN,
+          columnName: 'deleted',
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('deleted'),
+        },
+        filter.operator,
+        filter.value
       );
     case '_compartment':
     case '_project': {

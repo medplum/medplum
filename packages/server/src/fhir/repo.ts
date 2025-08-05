@@ -1627,6 +1627,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment:identifier' ||
+      searchParam.code === '_deleted' ||
       searchParam.type === 'composite'
     ) {
       return;
