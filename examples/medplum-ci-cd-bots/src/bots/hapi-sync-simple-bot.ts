@@ -1,10 +1,6 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
-import { 
-  makeConditionalFhirRequest, 
-  HTTP_VERBS, 
-  logExternalRequest 
-} from '../shared/http-helpers';
+import { makeConditionalFhirRequest, HTTP_VERBS, logExternalRequest } from '../shared/http-helpers';
 
 /**
  * HAPI FHIR Server Sync Bot (Simple Version)
@@ -57,11 +53,7 @@ async function syncHapiResource(patient: Patient, verb: HTTP_VERBS): Promise<boo
       patientForHapi
     );
 
-    logExternalRequest(
-      `HAPI sync ${verb}`,
-      patient.id || 'unknown',
-      true
-    );
+    logExternalRequest(`HAPI sync ${verb}`, patient.id || 'unknown', true);
 
     return true;
   } catch (error) {
@@ -106,4 +98,4 @@ export async function handler(_medplum: MedplumClient, event: BotEvent): Promise
     // Create or update a copy of the patient record
     await syncHapiResource(patient, HTTP_VERBS['PUT']);
   }
-} 
+}
