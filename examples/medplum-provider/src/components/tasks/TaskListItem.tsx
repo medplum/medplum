@@ -18,7 +18,7 @@ export function TaskListItem(props: TaskListItemProps): JSX.Element {
   const owner = useResource(task.owner);
 
   return (
-    <MedplumLink to={`/task/${task.id}`} c="dark">
+    <MedplumLink to={`/Task/${task.id}`} c="dark">
       <Group
         p="xs"
         align="center"
