@@ -30,8 +30,8 @@ describe('ResourceVersionPage', () => {
       await jest.runAllTimersAsync();
     });
 
-    expect(await screen.findByText('Resource not found')).toBeInTheDocument();
-    expect(screen.getByText('Resource not found')).toBeInTheDocument();
+    expect(await screen.findByText('Not found')).toBeInTheDocument();
+    expect(screen.getByText('Not found')).toBeInTheDocument();
   });
 
   test('Version not found', async () => {
