@@ -83,5 +83,4 @@ function AnswerDisplay({ answer }: AnswerDisplayProps): JSX.Element {
     default:
       return <Text>{value.toString()}</Text>;
   }
-
 }
