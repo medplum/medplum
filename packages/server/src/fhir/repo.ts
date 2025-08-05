@@ -568,6 +568,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         .offset(options?.offset ?? 0)
         .execute(this.getDatabaseClient(DatabaseMode.READER));
 
+      const countRows = await new SelectQuery(resourceType + '_History')
+        .raw('COUNT(*)::int AS "count"')
+        .where('id', '=', id)
+        .execute(this.getDatabaseClient(DatabaseMode.READER));
+
+      const totalCount = countRows[0].count as number;
+
       const entries: BundleEntry<T>[] = [];
 
       for (const row of rows) {
@@ -607,6 +614,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         resourceType: 'Bundle',
         type: 'history',
         entry: entries,
+        total: totalCount,
       };
     } catch (err) {
       const durationMs = Date.now() - startTime;
