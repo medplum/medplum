@@ -36,7 +36,7 @@
     "twilio": "5.8.0"
   },
   "devDependencies": {
-    "@types/node-fetch": "2.6.12"
+    "@types/node-fetch": "2.6.13"
   },
   "peerDependencies": {
     "@medplum/ccda": "4.3.8",

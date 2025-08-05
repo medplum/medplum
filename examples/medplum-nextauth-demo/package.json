@@ -25,23 +25,23 @@
     "@mantine/notifications": "7.17.8",
     "@medplum/core": "4.3.8",
     "@medplum/eslint-config": "4.3.8",
-    "next": "15.4.4",
+    "next": "15.4.5",
     "next-auth": "4.24.11",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
-    "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "4.3.8",
     "@types/node": "20.19.9",
-    "@types/react": "19.1.8",
-    "@types/react-dom": "19.1.6",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.1.7",
     "eslint": "8.57.1",
-    "eslint-config-next": "15.4.4",
+    "eslint-config-next": "15.4.5",
     "typescript": "5.8.3"
   },
-  "packageManager": "npm@10.9.2",
+  "packageManager": "npm@10.9.3",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   }

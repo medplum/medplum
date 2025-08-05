@@ -23,18 +23,18 @@
     "@medplum/fhirtypes": "4.3.8",
     "@medplum/react": "4.3.8",
     "@tabler/icons-react": "3.34.1",
-    "@types/react": "19.1.8",
-    "@types/react-dom": "19.1.6",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.1.7",
     "@vitejs/plugin-react": "4.7.0",
     "postcss": "8.5.6",
     "postcss-preset-mantine": "1.18.0",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "react-router": "7.7.1",
     "typescript": "5.8.3",
     "vite": "6.3.5"
   },
-  "packageManager": "npm@10.9.2",
+  "packageManager": "npm@10.9.3",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   }
