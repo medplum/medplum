@@ -5,7 +5,7 @@ import { JSX } from 'react';
 import { QuestionnaireResponseItemDisplay } from './QuestionnaireResponseItemDisplay';
 
 export interface QuestionnaireResponseDisplayProps {
-  questionnaireResponse: QuestionnaireResponse | Reference<QuestionnaireResponse>;
+  readonly questionnaireResponse: QuestionnaireResponse | Reference<QuestionnaireResponse>;
 }
 
 export function QuestionnaireResponseDisplay(props: QuestionnaireResponseDisplayProps): JSX.Element {

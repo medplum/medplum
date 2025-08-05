@@ -1,7 +1,7 @@
 import { Stack, Text } from '@mantine/core';
 import { formatDate } from '@medplum/core';
 import { QuestionnaireResponseItem, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
-import { JSX } from 'react';
+import { JSX, useMemo } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
@@ -14,29 +14,34 @@ export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseIte
   const { item } = props;
   const { text: title, answer, item: nestedAnswers } = item;
 
-  function renderContent(): JSX.Element {
+  const renderContent = useMemo((): JSX.Element => {
     if (answer && answer.length > 0) {
-      return <AnswerDisplay key={answer[0].id} answer={answer[0]} />;
+      return (
+        <>
+          {answer.map((ans, index) => (
+            <AnswerDisplay key={ans.id || `answer-${index}`} answer={ans} />
+          ))}
+        </>
+      );
     } else if (nestedAnswers && nestedAnswers.length > 0) {
       return (
         <>
-          {nestedAnswers.map((nestedAnswer) => (
-            <QuestionnaireResponseItemDisplay
-              key={nestedAnswer.id}
-              item={nestedAnswer}
-            />
+          {nestedAnswers.map((nestedAnswer, index) => (
+            <QuestionnaireResponseItemDisplay key={nestedAnswer.id || `nested-${index}`} item={nestedAnswer} />
           ))}
         </>
       );
     } else {
       return <Text c="dimmed">No answer</Text>;
     }
-  }
+  }, [answer, nestedAnswers]);
 
   return (
-    <Stack gap={0} pb="xs">
-      <Text size="lg" fw={600}>{title}</Text>
-      {renderContent()}
+    <Stack gap={0} pb="xs" role="group" aria-labelledby={item.id ? `question-${item.id}` : undefined}>
+      <Text size="lg" fw={600} id={item.id ? `question-${item.id}` : undefined} component="h3">
+        {title}
+      </Text>
+      {renderContent}
     </Stack>
   );
 }
@@ -46,11 +51,17 @@ interface AnswerDisplayProps {
 }
 
 function AnswerDisplay({ answer }: AnswerDisplayProps): JSX.Element {
-
   if (!answer) {
-    throw new Error('No answer');
+    return <Text c="dimmed">Invalid answer</Text>;
   }
-  const [[key, value]] = Object.entries(answer);
+
+  const validEntries = Object.entries(answer).filter(([, value]) => value !== undefined && value !== null);
+
+  if (validEntries.length === 0) {
+    return <Text c="dimmed">No valid answer data</Text>;
+  }
+
+  const [key, value] = validEntries[0];
 
   switch (key) {
     case 'valueInteger':
@@ -72,4 +83,5 @@ function AnswerDisplay({ answer }: AnswerDisplayProps): JSX.Element {
     default:
       return <Text>{value.toString()}</Text>;
   }
+
 }
