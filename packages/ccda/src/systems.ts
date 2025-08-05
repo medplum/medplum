@@ -222,6 +222,14 @@ export const US_CORE_MEDICATION_REQUEST_URL = `${HTTP_HL7_ORG}/fhir/us/core/Stru
  */
 
 export const CCDA_TEMPLATE_CODE_SYSTEM = `${HTTP_HL7_ORG}/cda/template`;
+
+// Additional code systems used in QRDA generation
+export const SOURCE_OF_PAYMENT_TYPOLOGY_CODE_SYSTEM = '2.16.840.1.113883.3.221.5';
+export const SNOMED_CT_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/snomed-ct`;
+export const CPT_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/cpt`;
+export const LOINC_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/loinc`;
+export const CDC_RACE_AND_ETHNICITY_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/v3-Race`;
+export const NUCC_TAXONOMY_CODE_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/nucc-taxonomy`;
 export const NCI_THESAURUS_URL = `${HTTP}//ncithesaurus-stage.nci.nih.gov`;
 export const US_SSN_URL = `${HTTP_HL7_ORG}/fhir/sid/us-ssn`;
 export const US_DRIVER_LICENSE_URL = `${HTTP_HL7_ORG}/fhir/sid/us-dln`;
