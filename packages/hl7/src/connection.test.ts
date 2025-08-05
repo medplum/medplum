@@ -10,13 +10,6 @@ class MockSocket extends Duplex {
   handlers: Record<string, () => void> = {};
   setEncoding = jest.fn();
 
-  constructor() {
-    super();
-    this.addListener('close', () => {
-      this.emit('end');
-    });
-  }
-
   on(event: unknown, listener: unknown): this {
     this.handlers[event as string] = listener as () => void;
     return super.on(event as any, listener as any);
@@ -28,7 +21,17 @@ class MockSocket extends Duplex {
     return this;
   }
 
-  write = jest.fn();
+  end(): this {
+    return this.close();
+  }
+
+  destroy(_error?: Error): this {
+    return this.close();
+  }
+
+  write = jest.fn((chunk) => {
+    super.write(chunk);
+  }) as any;
 }
 
 describe('HL7 Connection', () => {
