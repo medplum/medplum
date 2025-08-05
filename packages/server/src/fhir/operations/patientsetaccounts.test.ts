@@ -1,5 +1,5 @@
 import { createReference } from '@medplum/core';
-import { Bundle, DiagnosticReport, Observation, Organization, Patient } from '@medplum/fhirtypes';
+import { Bundle, Communication, DiagnosticReport, Observation, Organization, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -204,6 +204,46 @@ describe('Patient Set Accounts Operation', () => {
       query: {},
     });
     expect(res[0].issue?.[0]?.details?.text).toBe('Must specify Patient ID');
+  });
+
+  test("Do not delete a resource in patient's compartment's meta.security field when set-accounts is called", async () => {
+    //Create a Communication in Patient's compartment with a security tag
+    const res1 = await request(app)
+      .post(`/fhir/R4/Communication`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Communication',
+        subject: createReference(patient),
+        status: 'completed',
+        meta: {
+          security: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality',
+              code: 'N',
+            },
+          ],
+        },
+      } satisfies Communication);
+
+    expect(res1.status).toBe(201);
+    const communication = res1.body as Communication;
+    expect(communication.meta?.security).toBeDefined();
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [],
+      });
+    expect(res2.status).toBe(200);
+
+    const res4 = await request(app)
+      .get(`/fhir/R4/Communication/${communication.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4.status).toBe(200);
+    const updatedCommunication = res4.body as Communication;
+    expect(updatedCommunication.meta?.security).toBeDefined();
   });
 
   test('Non admin user trying to set accounts', async () => {

@@ -86,7 +86,12 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
     if (entry.search?.mode === 'match') {
       const resource = entry.resource;
       if (resource && resource.resourceType !== 'Patient') {
-        delete resource.meta;
+        resource.meta = {
+          //persist other meta fields (ex. tag, security, etc.)
+          ...resource.meta,
+          accounts: undefined, //don't define here. Instead, inherit from the patient resource on update
+          account: undefined,
+        };
 
         await ctx.repo.updateResource(resource);
         count++;
