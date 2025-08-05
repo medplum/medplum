@@ -30,8 +30,8 @@ describe('ResourceVersionPage', () => {
       await jest.runAllTimersAsync();
     });
 
-    expect(await screen.findByText('Resource not found')).toBeInTheDocument();
-    expect(screen.getByText('Resource not found')).toBeInTheDocument();
+    expect(await screen.findByText('Not found')).toBeInTheDocument();
+    expect(screen.getByText('Not found')).toBeInTheDocument();
   });
 
   test('Version not found', async () => {
@@ -79,6 +79,20 @@ describe('ResourceVersionPage', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText('Raw'));
+    });
+
+    expect(screen.getByText('Raw')).toBeInTheDocument();
+  });
+
+  test('Next button', async () => {
+    await act(async () => {
+      setup('/Practitioner/123/_history/1');
+    });
+
+    expect(await screen.findByLabelText('Next page')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Next page'));
     });
 
     expect(screen.getByText('Raw')).toBeInTheDocument();

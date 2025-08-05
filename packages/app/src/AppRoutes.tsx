@@ -94,8 +94,6 @@ export function AppRoutes(): JSX.Element {
         </Route>
         <Route path="/lab/assays" element={<AssaysPage />} />
         <Route path="/lab/panels" element={<PanelsPage />} />
-        <Route path="/:resourceType/:id/_history/:versionId/:tab" element={<ResourceVersionPage />} />
-        <Route path="/:resourceType/:id/_history/:versionId" element={<ResourceVersionPage />} />
         <Route path="/:resourceType/new" element={<CreateResourcePage />}>
           <Route index element={<FormCreatePage />} />
           <Route path="form" element={<FormCreatePage />} />
@@ -115,7 +113,16 @@ export function AppRoutes(): JSX.Element {
           <Route path="details" element={<DetailsPage />} />
           <Route path="edit" element={<EditPage />} />
           <Route path="editor" element={<BotEditor />} />
-          <Route path="history" element={<HistoryPage />} />
+          <Route path="history">
+            <Route index element={<HistoryPage />} />
+            <Route path=":versionId/:tab" element={<ResourceVersionPage />} />
+            <Route path=":versionId" element={<ResourceVersionPage />} />
+          </Route>
+          <Route path="_history">
+            <Route index element={<HistoryPage />} />
+            <Route path=":versionId/:tab" element={<ResourceVersionPage />} />
+            <Route path=":versionId" element={<ResourceVersionPage />} />
+          </Route>
           <Route path="json" element={<JsonPage />} />
           <Route path="preview" element={<PreviewPage />} />
           <Route path="responses" element={<QuestionnaireResponsePage />} />

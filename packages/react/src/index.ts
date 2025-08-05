@@ -108,6 +108,7 @@ export * from './TimingInput/TimingInput';
 export * from './utils/date';
 export * from './utils/dom';
 export * from './utils/outcomes';
+export * from './utils/pagination';
 export * from './utils/recaptcha';
 export * from './utils/script';
 export * from './ValueSetAutocomplete/ValueSetAutocomplete';
