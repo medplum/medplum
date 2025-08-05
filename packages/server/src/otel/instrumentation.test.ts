@@ -71,4 +71,14 @@ describe('Instrumentation', () => {
 
     expect(span.setAttribute).toHaveBeenCalledWith('medplum.db.rowCount', 21);
   });
+
+  test('Postgres response hook -- null rowCount', async () => {
+    const span = {
+      setAttribute: jest.fn(),
+    } as unknown as Span;
+
+    pgResponseHook(span, { data: { rowCount: null } } as unknown as PgResponseHookInformation);
+
+    expect(span.setAttribute).not.toHaveBeenCalled();
+  });
 });
