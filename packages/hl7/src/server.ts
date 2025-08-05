@@ -7,6 +7,7 @@ export class Hl7Server {
   server?: net.Server;
   private encoding: string | undefined = undefined;
   private enhancedMode = false;
+  private messagesPerSec: number | undefined = undefined;
 
   constructor(handler: (connection: Hl7Connection) => void) {
     this.handler = handler;
@@ -74,5 +75,13 @@ export class Hl7Server {
 
   getEncoding(): string | undefined {
     return this.encoding;
+  }
+
+  setMessagesPerSec(messagesPerSec: number | undefined): void {
+    this.messagesPerSec = messagesPerSec;
+  }
+
+  getMessagesPerSec(): number | undefined {
+    return this.messagesPerSec;
   }
 }
