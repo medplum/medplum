@@ -17,7 +17,7 @@ CI/CD for bots involves automating the entire lifecycle of bot development, from
 
 ## Project Structure
 
-A typical CI/CD bot project structure looks like this:
+A typical bot project structure looks like this:
 
 ```
 medplum-ci-cd-bots/
@@ -308,7 +308,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '22'
       - run: npm ci
       - run: npm run test
       - run: npm run lint
@@ -321,7 +321,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '22'
       - run: npm ci
       - run: npm run build
       - run: npm run deploy
@@ -336,117 +336,6 @@ jobs:
           MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
 ```
 
-## Monitoring and Observability
-
-### Bot Execution Monitoring
-
-Monitor bot performance and errors:
-
-```typescript
-// scripts/monitor-bots.ts
-import { MedplumClient } from '@medplum/core';
-
-async function monitorBots(medplum: MedplumClient): Promise<void> {
-  // Check bot execution logs
-  const logs = await medplum.search('AuditEvent', {
-    'agent.who.reference': 'Bot/*',
-    '_lastUpdated': 'gt2023-01-01T00:00:00Z',
-  });
-  
-  console.log(`Found ${logs.total} bot executions`);
-  
-  // Check for errors
-  const errors = logs.entry?.filter(entry => 
-    entry.resource.outcome?.issue?.some(issue => 
-      issue.severity === 'error'
-    )
-  );
-  
-  if (errors && errors.length > 0) {
-    console.error(`Found ${errors.length} bot errors:`);
-    errors.forEach(error => {
-      console.error(`- ${error.resource.description}`);
-    });
-  }
-}
-```
-
-### Subscription Health Checks
-
-Monitor subscription status:
-
-```typescript
-// scripts/check-subscriptions.ts
-import { MedplumClient } from '@medplum/core';
-
-async function checkSubscriptions(medplum: MedplumClient): Promise<void> {
-  const subscriptions = await medplum.search('Subscription', {
-    'reason': 'CI/CD Bot',
-  });
-  
-  for (const entry of subscriptions.entry || []) {
-    const subscription = entry.resource;
-    console.log(`Subscription ${subscription.id}: ${subscription.status}`);
-    
-    if (subscription.status !== 'active') {
-      console.warn(`⚠️  Subscription ${subscription.id} is not active`);
-    }
-  }
-}
-```
-
-## Best Practices
-
-### Code Organization
-- Keep bots focused on single responsibilities
-- Use shared utilities for common functionality
-- Implement consistent error handling
-- Document all functions and their parameters
-
-### Deployment Strategy
-- Use semantic versioning for bot releases
-- Implement rollback procedures
-- Test in staging environment before production
-- Monitor deployment success rates
-
-### Security
-- Use environment-specific credentials
-- Implement proper access controls
-- Audit bot permissions regularly
-- Secure API keys and secrets
-
-### Performance
-- Optimize bot execution time
-- Implement proper error handling
-- Use appropriate subscription criteria
-- Monitor resource usage
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Bot Deployment Failures**
-   - Check API credentials and permissions
-   - Verify bot code syntax
-   - Ensure all dependencies are available
-
-2. **Subscription Creation Failures**
-   - Verify bot endpoints are correct
-   - Check subscription criteria syntax
-   - Ensure proper permissions for subscription creation
-
-3. **Bot Execution Errors**
-   - Review bot execution logs
-   - Check input data validation
-   - Verify external service connectivity
-
-### Debugging Tips
-
-- Use detailed logging in bot code
-- Test bots locally before deployment
-- Monitor subscription delivery status
-- Check Medplum dashboard for bot status
-
 ## Example Implementation
 
 See the complete [CI/CD Bots Example](https://github.com/medplum/medplum/tree/main/examples/medplum-ci-cd-bots) for a full implementation of these patterns.
@@ -456,5 +345,3 @@ This example includes:
 - Subscription management
 - Shared code utilities
 - Comprehensive testing
-- GitHub Actions workflow
-- Monitoring and observability 
