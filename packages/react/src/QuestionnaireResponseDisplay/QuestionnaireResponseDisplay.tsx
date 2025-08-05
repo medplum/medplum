@@ -12,9 +12,9 @@ export function QuestionnaireResponseDisplay(props: QuestionnaireResponseDisplay
   const questionnaireResponse = useResource(props.questionnaireResponse);
 
   return (
-    <Stack>
+    <Stack gap={0}>
       {questionnaireResponse?.item?.map((item) => (
-        <QuestionnaireResponseItemDisplay key={item.id} item={item} order={4} />
+        <QuestionnaireResponseItemDisplay key={item.id} item={item} />
       ))}
     </Stack>
   );

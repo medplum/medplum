@@ -1,4 +1,4 @@
-import { Stack, Text, Title, TitleOrder } from '@mantine/core';
+import { Stack, Text } from '@mantine/core';
 import { formatDate } from '@medplum/core';
 import { QuestionnaireResponseItem, QuestionnaireResponseItemAnswer } from '@medplum/fhirtypes';
 import { JSX } from 'react';
@@ -8,11 +8,10 @@ import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 
 export interface QuestionnaireResponseItemDisplayProps {
   item: QuestionnaireResponseItem;
-  order: TitleOrder;
 }
 
 export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseItemDisplayProps): JSX.Element {
-  const { item, order } = props;
+  const { item } = props;
   const { text: title, answer, item: nestedAnswers } = item;
 
   function renderContent(): JSX.Element {
@@ -25,7 +24,6 @@ export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseIte
             <QuestionnaireResponseItemDisplay
               key={nestedAnswer.id}
               item={nestedAnswer}
-              order={Math.min(order + 1, 6) as TitleOrder}
             />
           ))}
         </>
@@ -36,9 +34,9 @@ export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseIte
   }
 
   return (
-    <Stack>
-      <Title order={order}>{title}</Title>
-      <Stack>{renderContent()}</Stack>
+    <Stack gap={0} pb="xs">
+      <Text size="lg" fw={600}>{title}</Text>
+      {renderContent()}
     </Stack>
   );
 }
@@ -48,13 +46,11 @@ interface AnswerDisplayProps {
 }
 
 function AnswerDisplay({ answer }: AnswerDisplayProps): JSX.Element {
-  console.log(answer);
+
   if (!answer) {
     throw new Error('No answer');
   }
   const [[key, value]] = Object.entries(answer);
-
-  console.log(key, value);
 
   switch (key) {
     case 'valueInteger':
