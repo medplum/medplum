@@ -7,7 +7,7 @@ import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 
 export interface QuestionnaireResponseItemDisplayProps {
-  item: QuestionnaireResponseItem;
+  readonly item: QuestionnaireResponseItem;
 }
 
 export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseItemDisplayProps): JSX.Element {
@@ -37,7 +37,7 @@ export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseIte
   }, [answer, nestedAnswers]);
 
   return (
-    <Stack gap={0} pb="xs" role="group" aria-labelledby={item.id ? `question-${item.id}` : undefined}>
+    <Stack gap={0} pb="xs">
       <Text size="lg" fw={600} id={item.id ? `question-${item.id}` : undefined} component="h3">
         {title}
       </Text>
@@ -47,7 +47,7 @@ export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseIte
 }
 
 interface AnswerDisplayProps {
-  answer: QuestionnaireResponseItemAnswer;
+  readonly answer: QuestionnaireResponseItemAnswer;
 }
 
 function AnswerDisplay({ answer }: AnswerDisplayProps): JSX.Element {
