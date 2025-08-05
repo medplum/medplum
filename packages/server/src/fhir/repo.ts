@@ -59,7 +59,13 @@ import {
   validateResourceType,
   WithId,
 } from '@medplum/core';
-import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from '@medplum/fhir-router';
+import {
+  CreateResourceOptions,
+  FhirRepository,
+  ReadHistoryOptions,
+  RepositoryMode,
+  UpdateResourceOptions,
+} from '@medplum/fhir-router';
 import {
   AccessPolicy,
   AccessPolicyResource,
@@ -528,10 +534,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * See: https://www.hl7.org/fhir/http.html#history
    * @param resourceType - The FHIR resource type.
    * @param id - The FHIR resource ID.
-   * @param limit - The maximum number of results to return.
+   * @param options - The read history options.
    * @returns Operation outcome and a history bundle.
    */
-  async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string, limit = 100): Promise<Bundle<T>> {
+  async readHistory<T extends Resource>(
+    resourceType: T['resourceType'],
+    id: string,
+    options?: ReadHistoryOptions
+  ): Promise<Bundle<T>> {
     await this.rateLimiter()?.recordHistory();
     const startTime = Date.now();
     try {
@@ -554,7 +564,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         .column('lastUpdated')
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
-        .limit(Math.min(limit, DEFAULT_MAX_SEARCH_COUNT))
+        .limit(Math.min(options?.limit ?? 100, DEFAULT_MAX_SEARCH_COUNT))
+        .offset(options?.offset ?? 0)
         .execute(this.getDatabaseClient(DatabaseMode.READER));
 
       const entries: BundleEntry<T>[] = [];
@@ -1107,7 +1118,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     let previousVersion: T | undefined;
 
     if (interaction === 'update') {
-      const history = await this.readHistory(resourceType, id, 2);
+      const history = await this.readHistory(resourceType, id, { limit: 2 });
       if (history.entry?.[0]?.resource?.meta?.versionId !== resource.meta?.versionId) {
         throw new OperationOutcomeError(preconditionFailed);
       }
