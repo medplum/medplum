@@ -30,7 +30,7 @@
     "@medplum/definitions": "4.3.8",
     "@medplum/fhirtypes": "4.3.8",
     "@types/json-schema": "7.0.15",
-    "@types/pg": "8.15.4",
+    "@types/pg": "8.15.5",
     "@types/unzipper": "0.10.11",
     "csv-parser": "3.2.0",
     "fast-xml-parser": "5.2.5",

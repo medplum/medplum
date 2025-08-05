@@ -23,15 +23,15 @@
     "@medplum/eslint-config": "4.3.8",
     "@medplum/fhirtypes": "4.3.8",
     "@medplum/react-hooks": "4.3.8",
-    "@types/react": "19.1.8",
-    "@types/react-dom": "19.1.6",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.1.7",
     "@vitejs/plugin-react": "4.7.0",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "typescript": "5.8.3",
-    "vite": "6.3.5"
+    "vite": "7.0.6"
   },
-  "packageManager": "npm@10.9.2",
+  "packageManager": "npm@10.9.3",
   "engines": {
     "node": "^20.19.0 || >=22.12.0"
   }
