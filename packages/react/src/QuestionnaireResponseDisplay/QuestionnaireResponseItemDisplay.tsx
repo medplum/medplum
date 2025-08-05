@@ -21,10 +21,7 @@ export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseIte
       return (
         <>
           {nestedAnswers.map((nestedAnswer) => (
-            <QuestionnaireResponseItemDisplay
-              key={nestedAnswer.id}
-              item={nestedAnswer}
-            />
+            <QuestionnaireResponseItemDisplay key={nestedAnswer.id} item={nestedAnswer} />
           ))}
         </>
       );
@@ -35,7 +32,9 @@ export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseIte
 
   return (
     <Stack gap={0} pb="xs">
-      <Text size="lg" fw={600}>{title}</Text>
+      <Text size="lg" fw={600}>
+        {title}
+      </Text>
       {renderContent()}
     </Stack>
   );
@@ -46,7 +45,6 @@ interface AnswerDisplayProps {
 }
 
 function AnswerDisplay({ answer }: AnswerDisplayProps): JSX.Element {
-
   if (!answer) {
     throw new Error('No answer');
   }
