@@ -40,7 +40,7 @@ export class AgentHl7Channel extends BaseChannel {
       return;
     }
     this.log.info('Channel stopping...');
-    await Promise.allSettled(this.connections.values().map((connection) => connection.close()));
+    await Promise.allSettled(Array.from(this.connections.values()).map((connection) => connection.close()));
     await this.server.stop();
     this.started = false;
     this.log.info('Channel stopped successfully');

@@ -1,5 +1,7 @@
 import {
+  AgentReloadConfigRequest,
   AgentReloadConfigResponse,
+  AgentTransmitRequest,
   AgentTransmitResponse,
   allOk,
   ContentType,
@@ -11,6 +13,7 @@ import {
 import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
+import { randomUUID } from 'crypto';
 import { Client, Server } from 'mock-socket';
 import { App } from './app';
 
@@ -516,7 +519,8 @@ describe('HL7', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57001',
-        })
+          contentType: ContentType.HL7_V2,
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -539,7 +543,8 @@ describe('HL7', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57001',
-        })
+          contentType: ContentType.HL7_V2,
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -562,13 +567,8 @@ describe('HL7', () => {
       Buffer.from(
         JSON.stringify({
           type: 'agent:reloadconfig:request',
-          body:
-            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
-            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
-            'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
-            'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
-          remote: 'mllp://localhost:57001',
-        })
+          callback: randomUUID(),
+        } satisfies AgentReloadConfigRequest)
       )
     );
 
@@ -586,7 +586,8 @@ describe('HL7', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57001',
-        })
+          contentType: ContentType.HL7_V2,
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -608,7 +609,8 @@ describe('HL7', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57001',
-        })
+          contentType: ContentType.HL7_V2,
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -631,13 +633,8 @@ describe('HL7', () => {
       Buffer.from(
         JSON.stringify({
           type: 'agent:reloadconfig:request',
-          body:
-            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
-            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
-            'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
-            'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
-          remote: 'mllp://localhost:57001',
-        })
+          callback: randomUUID(),
+        } satisfies AgentReloadConfigRequest)
       )
     );
 
@@ -656,7 +653,8 @@ describe('HL7', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57001',
-        })
+          contentType: ContentType.HL7_V2,
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -678,7 +676,8 @@ describe('HL7', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57001',
-        })
+          contentType: ContentType.HL7_V2,
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -789,7 +788,8 @@ describe('HL7', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57001',
-        })
+          contentType: ContentType.HL7_V2,
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -847,7 +847,6 @@ describe('HL7', () => {
       });
     });
 
-    // Start with keepAlive = false
     const agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
       name: 'Test Agent',
@@ -952,7 +951,7 @@ describe('HL7', () => {
         JSON.stringify({
           type: 'agent:transmit:request',
           body:
-            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00002|P|2.2\r' +
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
@@ -960,6 +959,8 @@ describe('HL7', () => {
         })
       )
     );
+
+    expect(hl7Messages.length).toBe(1);
 
     // Wait for the HL7 message to be received
     while (hl7Messages.length < 2) {
@@ -975,7 +976,7 @@ describe('HL7', () => {
 
     expect(console.log).toHaveBeenCalledWith(
       expect.stringContaining(
-        `Persistent connection to remote 'mllp://localhost:57001' encountered an error... Closing connection...`
+        `Persistent connection to remote 'mllp://localhost:57001' encountered error: 'Something bad happened' - Closing connection...`
       )
     );
 
