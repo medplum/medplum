@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { useContext } from 'react';
-import { HealthGorillaLabOrderContext } from './HealthGorillaLabOrderProvider';
+import { HealthGorillaLabOrderContext } from './HealthGorillaLabOrderContext';
 import { UseHealthGorillaLabOrderReturn } from './useHealthGorillaLabOrder';
 
 export function useHealthGorillaLabOrderContext(): UseHealthGorillaLabOrderReturn {
