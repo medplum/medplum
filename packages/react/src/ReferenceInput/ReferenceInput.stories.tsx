@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { loadDataType } from '@medplum/core';
 import { FishPatientResources } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';

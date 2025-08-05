@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Button, Group, JsonInput, Tabs, Text, Title, useMantineTheme } from '@mantine/core';
 import { Dropzone, FileWithPath } from '@mantine/dropzone';
 import { notifications } from '@mantine/notifications';

@@ -64,6 +64,7 @@
     "clean": "rimraf dist storybook-static",
     "dev": "storybook dev -p 6006",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "storybook": "storybook build",
     "test": "jest"
   },

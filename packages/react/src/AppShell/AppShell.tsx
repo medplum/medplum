@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AppShell as MantineAppShell } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';

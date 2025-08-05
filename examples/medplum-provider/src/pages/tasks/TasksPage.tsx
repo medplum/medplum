@@ -1,13 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Divider, Flex, Paper, ScrollArea, Skeleton, Stack } from '@mantine/core';
-import React, { JSX, useEffect, useMemo, useState } from 'react';
-import classes from './TasksPage.module.css';
+import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
 import { Task } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { showErrorNotification } from '../../utils/notifications';
-import { createReference, getReferenceString, ProfileResource } from '@medplum/core';
-import { TaskListItem } from '../../components/tasks/TaskListItem';
 import cx from 'clsx';
-import { useParams, Outlet } from 'react-router';
+import React, { JSX, useEffect, useMemo, useState } from 'react';
+import { Outlet, useParams } from 'react-router';
+import { TaskListItem } from '../../components/tasks/TaskListItem';
+import { showErrorNotification } from '../../utils/notifications';
+import classes from './TasksPage.module.css';
 
 export function TasksPage(): JSX.Element {
   const { taskId } = useParams();

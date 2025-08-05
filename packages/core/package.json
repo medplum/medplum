@@ -53,6 +53,7 @@
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor && npm run api-documenter",
     "clean": "rimraf dist",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest"
   },
   "devDependencies": {

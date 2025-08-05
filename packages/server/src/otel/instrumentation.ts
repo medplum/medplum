@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { BullMQInstrumentation } from '@appsignal/opentelemetry-instrumentation-bullmq';
 import { MEDPLUM_VERSION } from '@medplum/core';
 import { diag, DiagConsoleLogger, DiagLogLevel, Span, SpanStatusCode } from '@opentelemetry/api';

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Binary } from '@medplum/fhirtypes';
 import { createPrivateKey, createPublicKey, createVerify, KeyObject } from 'crypto';
 import { Request, Response, Router } from 'express';

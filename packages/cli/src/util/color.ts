@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // CLI color highlighting
 const RESET = '\x1b[0m';
 const BOLD = '\x1b[1m';

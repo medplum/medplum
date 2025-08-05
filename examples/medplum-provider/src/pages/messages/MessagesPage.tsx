@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ScrollArea, Text, Paper, Stack, Divider, Flex, Button, ActionIcon, Menu, Skeleton, Box } from '@mantine/core';
 import { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum, PatientSummary, ThreadChat } from '@medplum/react';

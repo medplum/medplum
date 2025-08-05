@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Center, Checkbox, Divider, Group, PasswordInput, Stack, TextInput } from '@mantine/core';
 import {
   BaseLoginRequest,

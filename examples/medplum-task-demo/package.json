@@ -9,6 +9,7 @@
     "clean": "rimraf dist",
     "dev": "npm run build:bots && vite",
     "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
     "preview": "vite preview",
     "test": "vitest run"
   },

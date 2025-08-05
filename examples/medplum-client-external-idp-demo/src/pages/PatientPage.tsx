@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { JSX } from 'react';
 import { Container, Stack, Title } from '@mantine/core';
 import { Practitioner } from '@medplum/fhirtypes';
