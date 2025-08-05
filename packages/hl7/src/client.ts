@@ -22,7 +22,7 @@ export class Hl7Client extends Hl7Base {
   private socket?: Socket;
   private connectTimeout: number;
   private rejectConnectPromise?: (err: Error) => void;
-  private socketListeners = new Map<string, (...args: any[]) => void>();
+  private readonly socketListeners = new Map<string, (...args: any[]) => void>();
 
   constructor(options: Hl7ClientOptions) {
     super();
