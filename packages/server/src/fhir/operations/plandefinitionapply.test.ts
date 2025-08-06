@@ -480,7 +480,7 @@ describe('PlanDefinition apply', () => {
     expect(res7.body.resourceType).toBe('ServiceRequest');
   });
 
-  test('Happy path with patient, practitioner, organization, and encounter using ActivityDefinition', async () => {
+  test('Dynamic and static assigned owner and performerType', async () => {
     // 1. Create an ActivityDefinition
     // 2. Create a PlanDefinition
     // 3. Create a Patient
