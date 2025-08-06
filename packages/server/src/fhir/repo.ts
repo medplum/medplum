@@ -628,9 +628,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       let result: WithId<T>;
       if (options?.ifMatch) {
         // Conditional update requires transaction
-        result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options.ifMatch));
+        result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options.ifMatch, options?.inheritAccounts));
       } else {
-        result = await this.updateResourceImpl(resource, false);
+        result = await this.updateResourceImpl(resource, false, undefined, options?.inheritAccounts);
       }
       const durationMs = Date.now() - startTime;
       await this.postCommit(async () => {
@@ -669,7 +669,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async updateResourceImpl<T extends Resource>(
     resource: T,
     create: boolean,
-    versionId?: string
+    versionId?: string,
+    inheritAccounts?: boolean
   ): Promise<WithId<T>> {
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
     let validatedResource = this.checkResourcePermissions(resource, interaction);
@@ -720,7 +721,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (projectId) {
       resultMeta.project = projectId;
     }
-    const accounts = await this.getAccounts(existing, updated);
+    const accounts = await this.getAccounts(existing, updated, inheritAccounts);
     if (accounts) {
       resultMeta.account = accounts[0];
       resultMeta.accounts = accounts;
@@ -1871,14 +1872,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Otherwise uses the current context profile.
    * @param existing - Current (soon to be previous) resource, if one exists.
    * @param updated - The incoming updated resource.
+   * @param inheritAccounts - If true, inherit accounts from the parent resource.
    * @returns The account values.
    */
   private async getAccounts(
     existing: WithId<Resource> | undefined,
-    updated: WithId<Resource>
+    updated: WithId<Resource>,
+    inheritAccounts?: boolean
   ): Promise<Reference[] | undefined> {
-    if (updated.meta && this.canWriteAccount()) {
-      // If the user specifies accounts, allow it if they have permission.
+    if (updated.meta && this.canWriteAccount() && !inheritAccounts) {
+      // If the user specifies accounts, and they have permission, and inheritAccounts is false, then use the provided accounts.
       const updatedAccounts = this.extractAccountReferences(updated.meta);
       return updatedAccounts;
     }

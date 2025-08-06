@@ -232,9 +232,15 @@ describe('Patient Set Accounts Operation', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
       .set('Authorization', 'Bearer ' + accessToken)
+      .set('x-medplum', 'extended')
       .send({
         resourceType: 'Parameters',
-        parameter: [],
+        parameter: [
+          {
+            name: 'accounts',
+            valueReference: createReference(organization1),
+          },
+        ],
       });
     expect(res2.status).toBe(200);
 
@@ -243,6 +249,7 @@ describe('Patient Set Accounts Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
     const updatedCommunication = res4.body as Communication;
+    expect(updatedCommunication.meta?.accounts).toHaveLength(1);
     expect(updatedCommunication.meta?.security).toBeDefined();
   });
 

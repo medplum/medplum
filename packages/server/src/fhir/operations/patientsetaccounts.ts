@@ -93,7 +93,7 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
           account: undefined,
         };
 
-        await ctx.repo.updateResource(resource);
+        await ctx.repo.updateResource(resource, { inheritAccounts: true });
         count++;
       }
     }
