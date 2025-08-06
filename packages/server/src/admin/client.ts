@@ -41,11 +41,14 @@ export interface CreateClientRequest {
   readonly project: Project;
   readonly name: string;
   readonly description?: string;
-  readonly redirectUri?: string;
+  readonly redirectUris?: string[];
   readonly accessPolicy?: Reference<AccessPolicy>;
   readonly identityProvider?: IdentityProvider;
   readonly accessTokenLifetime?: string;
   readonly refreshTokenLifetime?: string;
+
+  /** @deprecated Use redirectUris instead */
+  readonly redirectUri?: string;
 }
 
 export async function createClient(repo: Repository, request: CreateClientRequest): Promise<WithId<ClientApplication>> {
@@ -60,6 +63,7 @@ export async function createClient(repo: Repository, request: CreateClientReques
     secret: generateSecret(32),
     description: request.description,
     redirectUri: request.redirectUri,
+    redirectUris: request.redirectUris,
     identityProvider: request.identityProvider,
     accessTokenLifetime: request.accessTokenLifetime,
     refreshTokenLifetime: request.refreshTokenLifetime,
