@@ -33,7 +33,7 @@ import { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
-const TASK_ELEMENTS_URL = 'http://medplum.com/fhir/StructureDefinition/task-elements';
+const TASK_ELEMENTS_URL = 'https://medplum.com/fhir/StructureDefinition/task-elements';
 const operation = getOperationDefinition('PlanDefinition', 'apply');
 
 interface PlanDefinitionApplyParameters {
@@ -215,6 +215,7 @@ async function createActivityDefinitionTask(
   const parameters = {
     practitioner: practitioner,
     organization: organization,
+    subject: subject,
   };
 
   const taskElementsExtension = getExtension(activityDefinition, TASK_ELEMENTS_URL);

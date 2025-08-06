@@ -504,7 +504,7 @@ describe('PlanDefinition apply', () => {
         description: 'Check patient blood pressure',
         extension: [
           {
-            url: 'http://medplum.com/fhir/StructureDefinition/task-elements',
+            url: 'https://medplum.com/fhir/StructureDefinition/task-elements',
             extension: [
               {
                 url: 'owner',
