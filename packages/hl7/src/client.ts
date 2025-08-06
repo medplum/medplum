@@ -1,4 +1,5 @@
 import { Hl7Message } from '@medplum/core';
+import assert from 'node:assert';
 import { connect, Socket } from 'node:net';
 import { Hl7Base } from './base';
 import { Hl7Connection } from './connection';
@@ -12,6 +13,12 @@ export interface Hl7ClientOptions {
   connectTimeout?: number; // Add timeout option
 }
 
+export interface DeferredConnectionPromise {
+  promise: Promise<Hl7Connection>;
+  resolve: (connection: Hl7Connection) => void;
+  reject: (err: Error) => void;
+}
+
 export class Hl7Client extends Hl7Base {
   options: Hl7ClientOptions;
   host: string;
@@ -21,7 +28,7 @@ export class Hl7Client extends Hl7Base {
   keepAlive: boolean;
   private socket?: Socket;
   private connectTimeout: number;
-  private rejectConnectPromise?: (err: Error) => void;
+  private deferredConnectionPromise?: DeferredConnectionPromise;
   private readonly socketListeners = new Map<string, (...args: any[]) => void>();
 
   constructor(options: Hl7ClientOptions) {
@@ -35,8 +42,13 @@ export class Hl7Client extends Hl7Base {
   }
 
   connect(): Promise<Hl7Connection> {
-    if (this.connection && !this.connection.isClosed()) {
-      return Promise.resolve(this.connection);
+    if (this.connection?.isClosed()) {
+      this.deferredConnectionPromise?.reject(new Error('Connection closed, connect attempt failed'));
+      this.deferredConnectionPromise = undefined;
+    }
+
+    if (this.deferredConnectionPromise) {
+      return this.deferredConnectionPromise.promise;
     }
 
     // If there's an ongoing connection attempt, destroy it
@@ -51,15 +63,12 @@ export class Hl7Client extends Hl7Base {
       this.socket = undefined;
     }
 
-    // We reject any existing connect promise since that connect promise will never resolve otherwise
-    if (this.rejectConnectPromise) {
-      this.rejectConnectPromise(new Error('Connection attempt interrupted by new attempt to connect'));
-    }
-
-    return new Promise((resolve, reject) => {
-      // Attach the reject for this promise to the client, so that if we try to connect again later, we reject the old promise
-      // And don't leave it hanging
-      this.rejectConnectPromise = reject;
+    const promise = new Promise<Hl7Connection>((resolve, reject) => {
+      this.deferredConnectionPromise = {
+        promise,
+        resolve,
+        reject,
+      };
 
       // Create the socket
       this.socket = connect({
@@ -68,62 +77,83 @@ export class Hl7Client extends Hl7Base {
         keepAlive: this.keepAlive,
       });
 
-      // Set timeout if specified
       if (this.connectTimeout > 0) {
         this.socket.setTimeout(this.connectTimeout);
-
-        // Handle timeout event
-        const timeoutListener = (): void => {
-          const error = new Error(`Connection timeout after ${this.connectTimeout}ms`);
-          if (this.socket) {
-            this.socket.destroy();
-            this.socket = undefined;
-          }
-          reject(error);
-        };
-        this.socket.on('timeout', timeoutListener);
-        this.socketListeners.set('timeout', timeoutListener);
+        this.registerSocketTimeoutListener(this.deferredConnectionPromise);
       }
 
-      // Handle successful connection
-      const connectListener = (): void => {
-        if (!this.socket) {
-          return; // Socket was already destroyed
-        }
+      this.registerSocketConnectListener(this.deferredConnectionPromise);
+      this.registerSocketErrorListener(this.deferredConnectionPromise);
+    });
 
-        // Create the HL7 connection
-        let connection: Hl7Connection;
-        this.connection = connection = new Hl7Connection(this.socket, this.encoding);
+    return promise;
+  }
 
-        // Remove the timeout listener as we're now connected
-        this.socket.setTimeout(0);
+  private registerSocketTimeoutListener(deferredPromise: DeferredConnectionPromise): void {
+    assert(this.socket);
 
-        // Set up event handlers
-        connection.addEventListener('close', () => {
-          this.socket = undefined;
-          this.connection = undefined;
-          this.dispatchEvent(new Hl7CloseEvent());
-        });
+    // Handle timeout event
+    const timeoutListener = (): void => {
+      const error = new Error(`Connection timeout after ${this.connectTimeout}ms`);
+      if (this.socket) {
+        this.socket.destroy();
+        this.socket = undefined;
+      }
+      deferredPromise.reject(error);
+    };
+    this.socket.on('timeout', timeoutListener);
+    this.socketListeners.set('timeout', timeoutListener);
+  }
 
-        connection.addEventListener('error', (event) => {
-          this.dispatchEvent(new Hl7ErrorEvent(event.error));
-        });
+  private registerSocketConnectListener(deferredPromise: DeferredConnectionPromise): void {
+    assert(this.socket);
 
-        resolve(this.connection);
-      };
-      this.socket.on('connect', connectListener);
-      this.socketListeners.set('connect', connectListener);
+    // Handle successful connection
+    const connectListener = (): void => {
+      if (!this.socket) {
+        return; // Socket was already destroyed
+      }
 
-      // Handle connection errors
-      const errorListener = (err: Error): void => {
-        if (this.socket) {
-          this.socket.destroy();
-          this.socket = undefined;
-        }
-        reject(err);
-      };
-      this.socket.on('error', errorListener);
-      this.socketListeners.set('error', errorListener);
+      // Create the HL7 connection
+      let connection: Hl7Connection;
+      this.connection = connection = new Hl7Connection(this.socket, this.encoding);
+
+      // Remove the timeout listener as we're now connected
+      this.socket.setTimeout(0);
+
+      this.registerHl7ConnectionListeners(connection);
+
+      deferredPromise.resolve(this.connection);
+    };
+    this.socket.on('connect', connectListener);
+    this.socketListeners.set('connect', connectListener);
+  }
+
+  private registerSocketErrorListener(deferredPromise: DeferredConnectionPromise): void {
+    assert(this.socket);
+
+    // Handle connection errors
+    const errorListener = (err: Error): void => {
+      if (this.socket) {
+        this.socket.destroy();
+        this.socket = undefined;
+      }
+      deferredPromise.reject(err);
+    };
+    this.socket.on('error', errorListener);
+    this.socketListeners.set('error', errorListener);
+  }
+
+  private registerHl7ConnectionListeners(connection: Hl7Connection): void {
+    // Set up event handlers
+    connection.addEventListener('close', () => {
+      this.socket = undefined;
+      this.connection = undefined;
+      this.dispatchEvent(new Hl7CloseEvent());
+    });
+
+    connection.addEventListener('error', (event) => {
+      this.dispatchEvent(new Hl7ErrorEvent(event.error));
     });
   }
 
@@ -143,9 +173,9 @@ export class Hl7Client extends Hl7Base {
       this.socket = undefined;
     }
 
-    if (this.rejectConnectPromise) {
-      this.rejectConnectPromise(new Error('Client closed while connecting'));
-      this.rejectConnectPromise = undefined;
+    if (this.deferredConnectionPromise) {
+      this.deferredConnectionPromise.reject(new Error('Client closed while connecting'));
+      this.deferredConnectionPromise = undefined;
     }
 
     // Close established connection if it exists
