@@ -38,14 +38,10 @@ import {
   REQUIRED_AOE_TEST,
   RWS_AOE_TEST,
 } from './autocomplete-endpoint.test';
+import { HealthGorillaLabOrderState, UseHealthGorillaLabOrderReturn } from './HealthGorillaLabOrderContext';
 import { HealthGorillaLabOrderProvider } from './HealthGorillaLabOrderProvider';
 import { expectToBeDefined } from './test-utils';
-import {
-  HealthGorillaLabOrderState,
-  useHealthGorillaLabOrder,
-  UseHealthGorillaLabOrderOptions,
-  UseHealthGorillaLabOrderReturn,
-} from './useHealthGorillaLabOrder';
+import { useHealthGorillaLabOrder, UseHealthGorillaLabOrderOptions } from './useHealthGorillaLabOrder';
 import { useHealthGorillaLabOrderContext } from './useHealthGorillaLabOrderContext';
 
 const DIAGNOSES = [
