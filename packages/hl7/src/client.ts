@@ -69,28 +69,34 @@ export class Hl7Client extends Hl7Base {
       this.socket = undefined;
     }
 
-    const promise = new Promise<Hl7Connection>((resolve, reject) => {
-      this.deferredConnectionPromise = {
-        promise,
-        resolve,
-        reject,
-      };
-
-      // Create the socket
-      this.socket = connect({
-        host: this.host,
-        port: this.port,
-        keepAlive: this.keepAlive,
-      });
-
-      if (this.connectTimeout > 0) {
-        this.socket.setTimeout(this.connectTimeout);
-        this.registerSocketTimeoutListener(this.deferredConnectionPromise);
-      }
-
-      this.registerSocketConnectListener(this.deferredConnectionPromise);
-      this.registerSocketErrorListener(this.deferredConnectionPromise);
+    // Setup our deferred connection promise
+    let resolve!: (connection: Hl7Connection) => void;
+    let reject!: (err: Error) => void;
+    const promise = new Promise<Hl7Connection>((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
     });
+
+    this.deferredConnectionPromise = {
+      promise,
+      resolve,
+      reject,
+    };
+
+    // Create the socket
+    this.socket = connect({
+      host: this.host,
+      port: this.port,
+      keepAlive: this.keepAlive,
+    });
+
+    if (this.connectTimeout > 0) {
+      this.socket.setTimeout(this.connectTimeout);
+      this.registerSocketTimeoutListener(this.deferredConnectionPromise);
+    }
+
+    this.registerSocketConnectListener(this.deferredConnectionPromise);
+    this.registerSocketErrorListener(this.deferredConnectionPromise);
 
     return promise;
   }
