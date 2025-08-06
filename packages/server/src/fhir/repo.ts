@@ -252,6 +252,25 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
 
+  /**
+   * The version to be set on resources when they are inserted/updated into the database.
+   * The value should be incremented each time there is a change in the schema (really just columns)
+   * of the resource tables or when there are code changes to `buildResourceRow`.
+   *
+   * Version history:
+   *
+   * 1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
+   * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
+   * 3. 04/09/25 - Added __tokens column for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
+   * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
+   * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
+   * 6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
+   * 7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
+   * 8. 08/06/25 - Added Task to Patient compartment (https://github.com/medplum/medplum/pull/7194)
+   *
+   */
+  static readonly VERSION: number = 8;
+
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
     this.context = context;
@@ -1463,24 +1482,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       builder.predicate.expressions.push(new Disjunction(expressions));
     }
   }
-
-  /**
-   * The version to be set on resources when they are inserted/updated into the database.
-   * The value should be incremented each time there is a change in the schema (really just columns)
-   * of the resource tables or when there are code changes to `buildResourceRow`.
-   *
-   * Version history:
-   *
-   * 1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
-   * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
-   * 3. 04/09/25 - Added __tokens column for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
-   * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
-   * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
-   * 6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
-   * 7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
-   *
-   */
-  static readonly VERSION: number = 7;
 
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
