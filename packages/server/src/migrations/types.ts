@@ -36,7 +36,6 @@ export interface IndexDefinition {
   unique?: boolean;
   include?: string[];
   where?: string;
-  nulls?: 'DISTINCT' | 'NOT DISTINCT';
   indexNameSuffix?: string;
   indexdef?: string;
 }

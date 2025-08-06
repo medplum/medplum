@@ -307,13 +307,6 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
     indexdef = indexdef.substring(0, whereMatch.index);
   }
 
-  let nulls: string | undefined;
-  const nullsMatch = indexdef.match(/ NULLS ((NOT )?DISTINCT)/);
-  if (nullsMatch) {
-    nulls = nullsMatch[1];
-    indexdef = indexdef.substring(0, nullsMatch.index);
-  }
-
   let include: string[] | undefined;
   const includeMatch = indexdef.match(/ INCLUDE \((.+)\)$/);
   if (includeMatch) {
@@ -364,7 +357,6 @@ export function parseIndexDefinition(indexdef: string): IndexDefinition {
     indexType: indexType,
     unique: indexdef.includes('CREATE UNIQUE INDEX'),
     indexdef: fullIndexDef,
-    nulls: nulls as IndexDefinition['nulls'] | undefined,
   };
 
   if (where) {
@@ -1275,10 +1267,6 @@ function buildIndexSql(tableName: string, indexName: string, index: IndexDefinit
     result += ')';
   }
 
-  if (index.nulls) {
-    result += ' NULLS ' + index.nulls;
-  }
-
   if (index.where) {
     result += ' WHERE (';
     result += index.where;
@@ -1327,7 +1315,6 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
     return {
       ...d,
       unique: d.unique ?? false,
-      nulls: d.nulls, // Ensure `nulls` property is populated
       // don't care about indexNameSuffix, indexdef, nor expression names
       indexNameSuffix: undefined,
       indexdef: undefined,
