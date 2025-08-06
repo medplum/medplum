@@ -22,7 +22,7 @@
     "lint:fix": "eslint . --fix",
     "migrate": "ts-node --transpileOnly src/migrations/migrate.ts",
     "start": "node --require ./dist/otel/instrumentation.js dist/index.js",
-    "test": "jest",
+    "test": "jest --verbose",
     "test:seed": "jest seed.test.ts --testTimeout=400000"
   },
   "dependencies": {
