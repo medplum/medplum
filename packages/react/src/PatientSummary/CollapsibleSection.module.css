@@ -9,6 +9,10 @@
   cursor: default;
 }
 
+.header:hover .addButton {
+  opacity: 1;
+}
+
 .chevron {
   transition: transform 0.2s ease;
   cursor: pointer;
@@ -23,6 +27,8 @@
 }
 
 .addButton {
+  opacity: 0;
+  transition: opacity 0.2s ease;
   position: absolute;
   right: 0;
   top: 0;
