@@ -42,15 +42,21 @@ export class Hl7Client extends Hl7Base {
   }
 
   connect(): Promise<Hl7Connection> {
+    // We check to see if a) there is a connection and b) if it's already closed
+    // If it's closed we attempt to reject the current connection promise just in case somehow it hasn't resolved
+    // And then we remove the deferred connection promise which makes us skip over the next early return
     if (this.connection?.isClosed()) {
       this.deferredConnectionPromise?.reject(new Error('Connection closed, connect attempt failed'));
       this.deferredConnectionPromise = undefined;
     }
 
+    // If we are already waiting for a pending connection attempt, just return the deferred promise to that
+    // In the case that the promise is already resolve, we will also return a resolved connection
     if (this.deferredConnectionPromise) {
       return this.deferredConnectionPromise.promise;
     }
 
+    // If we made it here that means that there is no current deferredConnectionPromise, so we are going to try to make a new one
     // If there's an ongoing connection attempt, destroy it
     if (this.socket) {
       // We surgically unregister the event listeners that we as the client register,
