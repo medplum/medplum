@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   OperationOutcomeError,
   Operator,
@@ -549,7 +551,6 @@ export class MemoryRepository extends FhirRepository<undefined> {
 
   withTransaction<TResult>(callback: (client: undefined) => Promise<TResult>): Promise<TResult> {
     // MockRepository currently does not support transactions
-    console.debug('WARN: MockRepository does not support transactions');
     return callback(undefined);
   }
 }

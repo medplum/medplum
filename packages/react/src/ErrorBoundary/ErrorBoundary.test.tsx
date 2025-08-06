@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { JSX, useCallback, useEffect, useState } from 'react';
 import { render, screen } from '../test-utils/render';
 import { ErrorBoundary } from './ErrorBoundary';

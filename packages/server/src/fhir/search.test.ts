@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   createReference,
   Filter,
@@ -5092,5 +5094,34 @@ describe('systemRepo', () => {
       );
       expect(bundle3.entry?.length).toStrictEqual(1);
       expect(bundle3.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
+    }));
+
+  test('Search for deleted resources', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await repo.deleteResource<Patient>('Patient', patient.id);
+
+      const searchResult1 = await repo.search({
+        resourceType: 'Patient',
+      });
+      expect(searchResult1.entry?.length).toBe(0);
+
+      const searchResult2 = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_deleted',
+            operator: Operator.EQUALS,
+            value: 'true',
+          },
+        ],
+      });
+      expect(searchResult2.entry?.length).toBe(1);
     }));
 });

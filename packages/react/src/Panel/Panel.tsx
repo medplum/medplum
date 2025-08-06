@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Paper, PaperProps } from '@mantine/core';
 import cx from 'clsx';
 import { JSX, ReactNode } from 'react';

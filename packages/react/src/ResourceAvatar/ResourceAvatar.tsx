@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Avatar, AvatarProps } from '@mantine/core';
 import { getDisplayString, getImageSrc } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';

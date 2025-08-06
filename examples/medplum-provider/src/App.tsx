@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ProfileResource, getReferenceString } from '@medplum/core';
 import {
   AppShell,
@@ -35,16 +37,17 @@ import { ExportTab } from './pages/patient/ExportTab';
 import { IntakeFormPage } from './pages/patient/IntakeFormPage';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
-import { TaskTab } from './pages/patient/TaskTab';
 import { TimelineTab } from './pages/patient/TimelineTab';
 import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
 import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
 import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
+import { TaskDetailsModal } from './pages/tasks/TaskDetailsModal';
 import { TaskDetails } from './pages/tasks/TaskDetails';
 import { MessagesPage } from './pages/messages/MessagesPage';
 import { TasksPage } from './pages/tasks/TasksPage';
+import { TaskSelectEmpty } from './components/tasks/TaskSelectEmpty';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -76,7 +79,7 @@ export function App(): JSX.Element | null {
         },
         {
           title: 'Tasks',
-          links: [{ icon: <IconClipboardCheck />, label: 'Tasks', href: '/tasks' }],
+          links: [{ icon: <IconClipboardCheck />, label: 'Tasks', href: '/Task' }],
         },
         {
           title: 'Onboarding',
@@ -116,16 +119,12 @@ export function App(): JSX.Element | null {
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
                 <Route path="Encounter/:encounterId" element={<EncounterChart />}>
-                  <Route path="Task/:taskId" element={<TaskDetails />} />
+                  <Route path="Task/:taskId" element={<TaskDetailsModal />} />
                 </Route>
                 <Route path="edit" element={<EditTab />} />
                 <Route path="communication" element={<CommunicationTab />} />
                 <Route path="communication/:id" element={<CommunicationTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
-                <Route path="Task/:id">
-                  <Route index element={<TaskTab />} />
-                  <Route path="*" element={<TaskTab />} />
-                </Route>
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path="export" element={<ExportTab />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
@@ -137,12 +136,11 @@ export function App(): JSX.Element | null {
                 </Route>
                 <Route path="" element={<TimelineTab />} />
               </Route>
-              <Route path="Task/:id">
-                <Route index element={<TaskTab />} />
-                <Route path="*" element={<TaskTab />} />
-              </Route>
               <Route path="/messages" element={<MessagesPage />} />
-              <Route path="/tasks" element={<TasksPage />} />
+              <Route path="/Task" element={<TasksPage />}>
+                <Route index element={<TaskSelectEmpty />} />
+                <Route path=":taskId" element={<TaskDetails />} />
+              </Route>
               <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/signin" element={<SignInPage />} />

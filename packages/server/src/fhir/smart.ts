@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /*
  * Parse HL7 SMART scope strings.
  * https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html

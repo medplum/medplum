@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference, getReferenceString, WithId } from '@medplum/core';
 import { PlanDefinition, Questionnaire, QuestionnaireResponse, RequestGroup, Task } from '@medplum/fhirtypes';
 import { DrAliceSmith } from './alice';

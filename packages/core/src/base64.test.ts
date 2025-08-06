@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { decodeBase64, decodeBase64Url, encodeBase64, encodeBase64Url } from './base64';
 
 const originalWindow = globalThis.window;
