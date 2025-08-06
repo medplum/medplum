@@ -48,6 +48,11 @@ Super administrators can enable bots via the Medplum App:
 
 1. Coming Soon: Verifying that all Lab Results are present on a DiagnosticReport before sending it for physician review
 
+## Development and Operations
+
+1. [CI/CD for Medplum Bots](/docs/bots/ci-cd-bots) - Automated testing, deployment, and subscription management
+2. [Code Sharing in Medplum Bots](/docs/bots/code-sharing) - Reusable utilities, helpers, and patterns for bot development
+
 ## Reference
 
 - [Demo Bots Repository](https://github.com/medplum/medplum-demo-bots) on Github
