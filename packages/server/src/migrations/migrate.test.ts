@@ -206,7 +206,12 @@ describe('Generator', () => {
         'CREATE INDEX "DomainConfiguration_compartments_idx" ON public."DomainConfiguration" USING gin (compartments)';
 
       const def = parseIndexDefinition(indexdef);
-      const expected: IndexDefinition = { columns: ['compartments'], indexType: 'gin', unique: false, indexdef };
+      const expected: IndexDefinition = {
+        columns: ['compartments'],
+        indexType: 'gin',
+        unique: false,
+        indexdef,
+      };
 
       expect(def).toStrictEqual(expected);
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
@@ -216,7 +221,12 @@ describe('Generator', () => {
       const indexdef = 'CREATE UNIQUE INDEX "Coding_pkey" ON public."Coding" USING btree (id)';
 
       const def = parseIndexDefinition(indexdef);
-      const expected: IndexDefinition = { columns: ['id'], indexType: 'btree', unique: true, indexdef };
+      const expected: IndexDefinition = {
+        columns: ['id'],
+        indexType: 'btree',
+        unique: true,
+        indexdef,
+      };
 
       expect(def).toStrictEqual(expected);
       expect(indexDefinitionsEqual(def, expected)).toBeTruthy();
