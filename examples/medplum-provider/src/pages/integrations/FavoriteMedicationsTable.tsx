@@ -83,11 +83,9 @@ export function FavoriteMedicationsTable({ refreshKey }: FavoriteMedicationsTabl
             <Table.Td>
               <Text fw={500}>{medication.code?.text || 'Unknown'}</Text>
             </Table.Td>
+            <Table.Td>{medication.code ? getCodeBySystem(medication.code, NDC) : ''}</Table.Td>
             <Table.Td>
-              {medication.code ? getCodeBySystem(medication.code, NDC) : ''}
-            </Table.Td>
-            <Table.Td>
-                {medication.administrationGuidelines?.[0]?.dosage?.[0]?.dosage?.[0]?.patientInstruction || ''}
+              {medication.administrationGuidelines?.[0]?.dosage?.[0]?.dosage?.[0]?.patientInstruction || ''}
             </Table.Td>
           </Table.Tr>
         ))}
