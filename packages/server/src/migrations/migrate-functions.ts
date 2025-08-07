@@ -107,7 +107,7 @@ export async function nonBlockingAlterColumnNotNull(
   const nullCount = nullCountResult.rows[0].count;
   if (nullCount > 0) {
     throw new Error(
-      `Cannot alter column ${columnName} to NOT NULL because there are ${nullCount} rows with NULL values`
+      `Cannot alter "${tableName}"."${columnName}" to NOT NULL because there are ${nullCount} rows with NULL values`
     );
   }
 
