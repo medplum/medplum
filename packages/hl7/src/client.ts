@@ -29,7 +29,6 @@ export class Hl7Client extends Hl7Base {
   private socket?: Socket;
   private connectTimeout: number;
   private deferredConnectionPromise?: DeferredConnectionPromise;
-  private readonly socketListeners = new Map<string, (...args: any[]) => void>();
 
   constructor(options: Hl7ClientOptions) {
     super();
@@ -42,46 +41,13 @@ export class Hl7Client extends Hl7Base {
   }
 
   connect(): Promise<Hl7Connection> {
-    // We check to see if a) there is a connection and b) if it's already closed
-    // If it's closed we attempt to reject the current connection promise just in case somehow it hasn't resolved
-    // And then we remove the deferred connection promise which makes us skip over the next early return
-    if (this.connection?.isClosed()) {
-      this.deferredConnectionPromise?.reject(new Error('Connection closed, connect attempt failed'));
-      this.deferredConnectionPromise = undefined;
-    }
-
     // If we are already waiting for a pending connection attempt, just return the deferred promise to that
     // In the case that the promise is already resolve, we will also return a resolved connection
     if (this.deferredConnectionPromise) {
       return this.deferredConnectionPromise.promise;
     }
 
-    // If we made it here that means that there is no current deferredConnectionPromise, so we are going to try to make a new one
-    // If there's an ongoing connection attempt, destroy it
-    if (this.socket) {
-      // We surgically unregister the event listeners that we as the client register,
-      // since there are lifecycle events that the Hl7Connection itself registers and we don't want to just purge all the event listeners
-      for (const [eventName, listener] of this.socketListeners.entries()) {
-        this.socket.off(eventName, listener);
-      }
-      this.socketListeners.clear();
-      this.socket.destroy();
-      this.socket = undefined;
-    }
-
-    // Setup our deferred connection promise
-    let resolve!: (connection: Hl7Connection) => void;
-    let reject!: (err: Error) => void;
-    const promise = new Promise<Hl7Connection>((_resolve, _reject) => {
-      resolve = _resolve;
-      reject = _reject;
-    });
-
-    this.deferredConnectionPromise = {
-      promise,
-      resolve,
-      reject,
-    };
+    const deferredPromise = (this.deferredConnectionPromise = this.createDeferredConnectionPromise());
 
     // Create the socket
     this.socket = connect({
@@ -92,68 +58,81 @@ export class Hl7Client extends Hl7Base {
 
     if (this.connectTimeout > 0) {
       this.socket.setTimeout(this.connectTimeout);
-      this.registerSocketTimeoutListener(this.deferredConnectionPromise);
+      this.registerSocketTimeoutListener(deferredPromise);
     }
 
-    this.registerSocketConnectListener(this.deferredConnectionPromise);
-    this.registerSocketErrorListener(this.deferredConnectionPromise);
+    this.registerSocketConnectListener(deferredPromise);
+    this.registerSocketErrorListener(deferredPromise);
+    this.registerSocketCloseListener(deferredPromise);
 
-    return promise;
+    return deferredPromise.promise;
   }
 
   private registerSocketTimeoutListener(deferredPromise: DeferredConnectionPromise): void {
     assert(this.socket);
+    const socket = this.socket;
 
     // Handle timeout event
     const timeoutListener = (): void => {
+      this.cleanupSocket(socket);
       const error = new Error(`Connection timeout after ${this.connectTimeout}ms`);
-      if (this.socket) {
-        this.socket.destroy();
-        this.socket = undefined;
-      }
-      deferredPromise.reject(error);
+      this.rejectDeferredPromise(deferredPromise, error);
     };
     this.socket.on('timeout', timeoutListener);
-    this.socketListeners.set('timeout', timeoutListener);
   }
 
   private registerSocketConnectListener(deferredPromise: DeferredConnectionPromise): void {
     assert(this.socket);
+    const socket = this.socket;
 
     // Handle successful connection
     const connectListener = (): void => {
-      if (!this.socket) {
-        return; // Socket was already destroyed
+      if (socket !== this.socket) {
+        this.cleanupSocket(socket);
+        return;
       }
 
       // Create the HL7 connection
       let connection: Hl7Connection;
-      this.connection = connection = new Hl7Connection(this.socket, this.encoding);
+      this.connection = connection = new Hl7Connection(socket, this.encoding);
 
       // Remove the timeout listener as we're now connected
-      this.socket.setTimeout(0);
+      socket.setTimeout(0);
 
       this.registerHl7ConnectionListeners(connection);
 
-      deferredPromise.resolve(this.connection);
+      deferredPromise.resolve(connection);
     };
-    this.socket.on('connect', connectListener);
-    this.socketListeners.set('connect', connectListener);
+    socket.on('connect', connectListener);
   }
 
   private registerSocketErrorListener(deferredPromise: DeferredConnectionPromise): void {
     assert(this.socket);
+    const socket = this.socket;
 
     // Handle connection errors
-    const errorListener = (err: Error): void => {
-      if (this.socket) {
-        this.socket.destroy();
-        this.socket = undefined;
+    const errorListener = (err: Error | AggregateError): void => {
+      this.cleanupSocket(socket);
+
+      if (err.constructor.name === 'AggregateError') {
+        this.rejectDeferredPromise(deferredPromise, (err as AggregateError).errors[0]);
+      } else {
+        this.rejectDeferredPromise(deferredPromise, err);
       }
-      deferredPromise.reject(err);
     };
-    this.socket.on('error', errorListener);
-    this.socketListeners.set('error', errorListener);
+    socket.on('error', errorListener);
+  }
+
+  private registerSocketCloseListener(deferredPromise: DeferredConnectionPromise): void {
+    assert(this.socket);
+    const socket = this.socket;
+
+    // Handle connection errors
+    const closeListener = (): void => {
+      this.cleanupSocket(socket);
+      this.rejectDeferredPromise(deferredPromise, new Error('Socket closed before connection finished'));
+    };
+    socket.on('close', closeListener);
   }
 
   private registerHl7ConnectionListeners(connection: Hl7Connection): void {
@@ -161,12 +140,49 @@ export class Hl7Client extends Hl7Base {
     connection.addEventListener('close', () => {
       this.socket = undefined;
       this.connection = undefined;
+      this.deferredConnectionPromise = undefined;
       this.dispatchEvent(new Hl7CloseEvent());
     });
 
     connection.addEventListener('error', (event) => {
       this.dispatchEvent(new Hl7ErrorEvent(event.error));
     });
+  }
+
+  private createDeferredConnectionPromise(): DeferredConnectionPromise {
+    // Setup our deferred connection promise
+    let resolve!: (connection: Hl7Connection) => void;
+    let reject!: (err: Error) => void;
+
+    const promise = new Promise<Hl7Connection>((_resolve, _reject) => {
+      resolve = _resolve;
+      reject = _reject;
+    });
+
+    return {
+      promise,
+      resolve,
+      reject,
+    };
+  }
+
+  private rejectDeferredPromise(deferredPromise: DeferredConnectionPromise, err: Error): void {
+    // Reject this deferred promise with the given error
+    deferredPromise.reject(err);
+
+    // If the currently tracked deferred promise is this deferred promise, remove it from the client
+    if (this.deferredConnectionPromise === deferredPromise) {
+      this.deferredConnectionPromise = undefined;
+    }
+  }
+
+  private cleanupSocket(socket: Socket): void {
+    if (!socket.destroyed) {
+      socket.destroy();
+      if (socket === this.socket) {
+        this.socket = undefined;
+      }
+    }
   }
 
   async send(msg: Hl7Message): Promise<void> {
@@ -186,8 +202,7 @@ export class Hl7Client extends Hl7Base {
     }
 
     if (this.deferredConnectionPromise) {
-      this.deferredConnectionPromise.reject(new Error('Client closed while connecting'));
-      this.deferredConnectionPromise = undefined;
+      this.rejectDeferredPromise(this.deferredConnectionPromise, new Error('Client closed while connecting'));
     }
 
     // Close established connection if it exists

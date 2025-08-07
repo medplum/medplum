@@ -118,7 +118,7 @@ describe('Hl7Client', () => {
 
     // Start the server
     await new Promise<void>((resolve) => {
-      server.listen(port, () => resolve());
+      server.listen(port, resolve);
     });
 
     // Create client with a moderate timeout
@@ -128,21 +128,20 @@ describe('Hl7Client', () => {
       connectTimeout: 1000,
     });
 
+    const connectionPromise = client.connect();
+
     // Make multiple connection attempts in rapid succession
     // Wait for all connection attempts to complete or fail
     const results = await Promise.allSettled([client.connect(), client.connect(), client.connect()]);
 
-    // First two attempts should fail, and final attempt should resolve
+    // Get resolved connection from first promise for comparison with all the other results
+    const connection = await connectionPromise;
+
+    // All attempts to connect should resolve to the same connection
     expect(results).toMatchObject([
-      expect.objectContaining({
-        status: 'rejected',
-        reason: new Error('Connection attempt interrupted by new attempt to connect'),
-      }),
-      expect.objectContaining({
-        status: 'rejected',
-        reason: new Error('Connection attempt interrupted by new attempt to connect'),
-      }),
-      expect.objectContaining({ status: 'fulfilled', value: expect.any(Hl7Connection) }),
+      expect.objectContaining({ status: 'fulfilled', value: connection }),
+      expect.objectContaining({ status: 'fulfilled', value: connection }),
+      expect.objectContaining({ status: 'fulfilled', value: connection }),
     ]);
 
     // Give some time for the server side listener to be invoked
