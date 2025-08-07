@@ -50,7 +50,7 @@ import { getLogger } from '../logger';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
-import { SelectQuery } from './sql';
+import { SelectQuery, SYSTEM_PROJECT_ID } from './sql';
 
 jest.mock('hibp');
 
@@ -1194,6 +1194,11 @@ describe('FHIR Repo', () => {
     setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
     expect(patient.photo?.[1].contentType).toStrictEqual('image/jpeg');
   });
+  async function getProjectIdColumn(id: string): Promise<string | null> {
+    const projectIdQuery = new SelectQuery('User').column('projectId').where('id', '=', id);
+    const client = getSystemRepo().getDatabaseClient(DatabaseMode.WRITER);
+    return (await projectIdQuery.execute(client))[0].projectId;
+  }
 
   test('Super admin can edit User.meta.project', async () =>
     withTestContext(async () => {
@@ -1207,6 +1212,7 @@ describe('FHIR Repo', () => {
         lastName: randomUUID(),
       });
       expect(user1.meta?.project).toStrictEqual(project.id);
+      expect(await getProjectIdColumn(user1.id)).toStrictEqual(project.id);
 
       // Try to change the project as the normal user
       // Should silently fail, and preserve the meta.project
@@ -1215,6 +1221,7 @@ describe('FHIR Repo', () => {
         meta: { project: undefined },
       });
       expect(user2.meta?.project).toStrictEqual(project.id);
+      expect(await getProjectIdColumn(user2.id)).toStrictEqual(project.id);
 
       // Now try to change the project as the super admin
       // Should succeed
@@ -1223,6 +1230,7 @@ describe('FHIR Repo', () => {
         meta: { project: undefined },
       });
       expect(user3.meta?.project).toBeUndefined();
+      expect(await getProjectIdColumn(user3.id)).toStrictEqual(SYSTEM_PROJECT_ID);
     }));
 
   test('Handles caching of profile from linked project', async () =>
