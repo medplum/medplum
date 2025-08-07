@@ -4,7 +4,7 @@ import { Client, escapeIdentifier, Pool } from 'pg';
 import { loadTestConfig } from '../config/loader';
 import { MedplumServerConfig } from '../config/types';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from '../database';
-import { analyzeTable, idempotentCreateIndex } from './migrate-functions';
+import { analyzeTable, idempotentCreateIndex, nonBlockingAlterColumnNotNull } from './migrate-functions';
 import { MigrationActionResult } from './types';
 
 interface IndexInfo {
@@ -147,6 +147,33 @@ describe('migrate-functions', () => {
           durationMs: expect.any(Number),
         },
       ]);
+    });
+  });
+
+  describe('nonBlockingAlterColumnNotNull', () => {
+    test('should throw if there are NULL values', async () => {
+      const columnName = 'name';
+
+      const results: MigrationActionResult[] = [];
+
+      // insert rows, some with name as null
+      await client.query(`INSERT INTO ${escapedTableName} (id, name) VALUES (1, NULL), (2, NULL), (3, 'not null')`);
+
+      // expect error because there are 2 rows with NULL values
+      await expect(nonBlockingAlterColumnNotNull(client, results, tableName, columnName)).rejects.toThrow(
+        `Cannot alter "${tableName}"."${columnName}" to NOT NULL because there are 2 rows with NULL values`
+      );
+
+      // update all rows where name is null to be 'fixed'
+      await client.query(`UPDATE ${escapedTableName} SET name = 'fixed' WHERE name IS NULL`);
+
+      // expect success
+      await nonBlockingAlterColumnNotNull(client, results, tableName, columnName);
+
+      // attempting to insert a row where name is null should fail
+      await expect(client.query(`INSERT INTO ${escapedTableName} (id, name) VALUES (4, NULL)`)).rejects.toThrow(
+        /violates not-null constraint/
+      );
     });
   });
 });
