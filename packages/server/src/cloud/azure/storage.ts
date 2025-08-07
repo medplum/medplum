@@ -1,6 +1,6 @@
 import { DefaultAzureCredential } from '@azure/identity';
 import { BlobSASPermissions, BlobServiceClient } from '@azure/storage-blob';
-import { splitN, isString } from '@medplum/core';
+import { isString, splitN } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { IncomingMessage } from 'http';
 import { Readable } from 'stream';
@@ -37,7 +37,7 @@ export class AzureBlobStorage extends BaseBinaryStorage {
       blobCacheControl: 'max-age=3600, s-maxage=86400',
     };
 
-    if(isString(data)){
+    if (isString(data)) {
       // For strings, we can directly upload the string content as a blob.
       await blockBlobClient.upload(data, data.length, {
         blobHTTPHeaders,
