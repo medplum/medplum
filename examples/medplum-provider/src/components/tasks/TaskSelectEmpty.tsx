@@ -5,11 +5,11 @@ import { IconClipboardList } from '@tabler/icons-react';
 import { JSX } from 'react';
 
 interface TaskSelectEmptyProps {
-  notFound: boolean;
+  notFound?: boolean;
 }
 
 export function TaskSelectEmpty(props : TaskSelectEmptyProps): JSX.Element {
-  const { notFound } = props;
+  const { notFound = false } = props;
   return (
     <Center h="100%" w="100%">
       <Stack align="center" gap="md">
