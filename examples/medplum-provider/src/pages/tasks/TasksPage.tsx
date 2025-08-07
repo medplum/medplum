@@ -57,18 +57,17 @@ export function TasksPage(): JSX.Element {
     handleTaskSelection().catch(() => {
       setNotFound(true);
     });
-    }, [taskId, tasks, medplum, navigate]);
+  }, [taskId, tasks, medplum, navigate]);
 
-    const handleTaskChange = (task: Task): void => {
-      console.log('handleTaskChange', task);
-      setSelectedTask(task);
-      setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
+  const handleTaskChange = (task: Task): void => {
+    console.log('handleTaskChange', task);
+    setSelectedTask(task);
+    setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
   };
 
   const handleDeleteTask = (task: Task): void => {
     setTasks(tasks.filter((t) => t.id !== task.id));
     setSelectedTask(undefined);
-    
   };
 
   return (
@@ -113,7 +112,9 @@ export function TasksPage(): JSX.Element {
           </Paper>
         </Flex>
 
-        <Outlet context={{ notFound, task: selectedTask, onTaskChange: handleTaskChange, onDeleteTask: handleDeleteTask }} />
+        <Outlet
+          context={{ notFound, task: selectedTask, onTaskChange: handleTaskChange, onDeleteTask: handleDeleteTask }}
+        />
       </Flex>
     </div>
   );

@@ -60,7 +60,6 @@ export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
     <Paper {...paperProps}>
       <Flex direction="column" gap="lg">
         <Stack gap="xs">
-
           <CodeInput
             key={`${task?.status}-${task?.id}`}
             name="status"

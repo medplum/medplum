@@ -8,7 +8,7 @@ interface TaskSelectEmptyProps {
   notFound?: boolean;
 }
 
-export function TaskSelectEmpty(props : TaskSelectEmptyProps): JSX.Element {
+export function TaskSelectEmpty(props: TaskSelectEmptyProps): JSX.Element {
   const { notFound = false } = props;
   return (
     <Center h="100%" w="100%">

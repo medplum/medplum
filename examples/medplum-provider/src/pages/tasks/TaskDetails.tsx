@@ -86,9 +86,7 @@ export function TaskDetails(): JSX.Element {
                     />
                   </ScrollArea>
                 )}
-                {activeTab === 'patient-summary' && selectedPatient && (
-                  <PatientSummary patient={selectedPatient} />
-                )}
+                {activeTab === 'patient-summary' && selectedPatient && <PatientSummary patient={selectedPatient} />}
               </>
             )}
           </Paper>
