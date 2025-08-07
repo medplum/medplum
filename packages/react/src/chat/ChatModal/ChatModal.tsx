@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon } from '@mantine/core';
 import { useMedplumProfile } from '@medplum/react-hooks';
 import { IconChevronDown, IconChevronUp } from '@tabler/icons-react';

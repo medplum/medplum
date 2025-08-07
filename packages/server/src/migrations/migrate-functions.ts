@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Client, escapeIdentifier, Pool, PoolClient } from 'pg';
 import { globalLogger } from '../logger';
 import { MigrationActionResult } from './types';

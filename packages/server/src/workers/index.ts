@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { BackgroundJobContext, WithId } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 import { MedplumServerConfig } from '../config/types';

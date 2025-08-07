@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { HTTP_HL7_ORG } from '@medplum/core';
 
 export const MEDPLUM_HEALTH_GORILLA_TENANT_PROFILE =

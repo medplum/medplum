@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block imports
 import { MedplumClient } from '@medplum/core';
 
@@ -404,4 +407,22 @@ curl 'https://api.medplum.com/fhir/R4/Communication?_compartment=Patient/homer-s
 	-H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \ 
 // end-block compartmentCurl
+*/
+
+// start-block securityTs
+await medplum.searchResources('Patient', {
+  _security: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality|N',
+});
+// end-block securityTs
+
+/*
+// start-block securityCli
+medplum get 'Patient?_security=http://terminology.hl7.org/CodeSystem/v3-Confidentiality|N'
+// end-block securityCli
+
+// start-block securityCurl
+curl 'https://api.medplum.com/fhir/R4/Patient?_security=http://terminology.hl7.org/CodeSystem/v3-Confidentiality|N' \
+	-H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \ 
+// end-block securityCurl
 */

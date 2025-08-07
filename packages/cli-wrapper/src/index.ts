@@ -1,9 +1,3 @@
-import { run } from '@medplum/cli';
-import { normalizeErrorString } from '@medplum/core';
-
-if (require.main === module) {
-  run().catch((err) => {
-    console.error('Unhandled error:', normalizeErrorString(err));
-    process.exit(1);
-  });
-}
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import '@medplum/cli';

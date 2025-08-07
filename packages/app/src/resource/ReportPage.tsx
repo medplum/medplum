@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { DiagnosticReport, MeasureReport, ResourceType } from '@medplum/fhirtypes';
 import { DiagnosticReportDisplay, Document, MeasureReportDisplay, useResource } from '@medplum/react';
 import { JSX } from 'react';

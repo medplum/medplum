@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Parameters, Patient } from '@medplum/fhirtypes';
 import WS from 'jest-websocket-mock';
 import { FetchLike, MedplumClient } from './client';

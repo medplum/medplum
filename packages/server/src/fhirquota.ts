@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { deepClone, Logger, OperationOutcomeError, tooManyRequests } from '@medplum/core';
 import { Response } from 'express';
 import Redis from 'ioredis';

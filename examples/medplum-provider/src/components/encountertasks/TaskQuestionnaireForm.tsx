@@ -1,7 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Box } from '@mantine/core';
 import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
+import { showErrorNotification } from '../../utils/notifications';
 
 interface TaskQuestionnaireFormProps {
   task: Task;
@@ -12,6 +15,7 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
   const medplum = useMedplum();
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>(undefined);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
+  const [loading, setLoading] = useState(false);
 
   const onChange = (response: QuestionnaireResponse): void => {
     const baseResponse = questionnaireResponse || response;
@@ -40,10 +44,13 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
       }
     };
 
-    fetchResources().catch(console.error);
+    setLoading(true);
+    fetchResources()
+      .catch(showErrorNotification)
+      .finally(() => setLoading(false));
   }, [medplum, task]);
 
-  if (!questionnaire || (task.output?.[0]?.valueReference && !questionnaireResponse)) {
+  if (loading) {
     return (
       <Box p="md">
         <Loading />
@@ -53,12 +60,14 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
 
   return (
     <Box p="md">
-      <QuestionnaireForm
-        questionnaire={questionnaire}
-        questionnaireResponse={questionnaireResponse}
-        excludeButtons={true}
-        onChange={onChange}
-      />
+      {questionnaire && (
+        <QuestionnaireForm
+          questionnaire={questionnaire}
+          questionnaireResponse={questionnaireResponse}
+          excludeButtons={true}
+          onChange={onChange}
+        />
+      )}
     </Box>
   );
 };

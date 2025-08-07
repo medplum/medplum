@@ -1,8 +1,10 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Bundle, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { JSX, useEffect, useState } from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
+import { ResourceName } from '../ResourceName/ResourceName';
 import { blame } from '../utils/blame';
 import classes from './ResourceBlame.module.css';
 import { getTimeString, getVersionUrl } from './ResourceBlame.utils';
@@ -44,10 +46,10 @@ export function ResourceBlame(props: ResourceBlameProps): JSX.Element | null {
               {row.span > 0 && (
                 <>
                   <td className={classes.author} rowSpan={row.span}>
-                    <ResourceBadge value={row.meta.author} link={true} />
+                    <ResourceName value={row.meta.author} link={true} fz="xs" />
                   </td>
                   <td className={classes.dateTime} rowSpan={row.span}>
-                    <MedplumLink to={getVersionUrl(resource, row.meta.versionId as string)}>
+                    <MedplumLink to={getVersionUrl(resource, row.meta.versionId as string)} fz="xs">
                       {getTimeString(row.meta.lastUpdated as string)}
                     </MedplumLink>
                   </td>

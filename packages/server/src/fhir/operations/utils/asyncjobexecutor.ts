@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, WithId, accepted } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { DelayedError } from 'bullmq';

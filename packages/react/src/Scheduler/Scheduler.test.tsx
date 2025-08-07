@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
 import { Reference, Schedule } from '@medplum/fhirtypes';
 import { DrAliceSmithSchedule, ExampleQuestionnaire, MockClient } from '@medplum/mock';

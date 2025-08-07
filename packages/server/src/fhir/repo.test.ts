@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   allOk,
   badRequest,
@@ -622,6 +624,21 @@ describe('FHIR Repo', () => {
       expect(entries[1].resource).toBeUndefined();
       expect(entries[2].response?.status).toStrictEqual('200');
       expect(entries[2].resource).toBeDefined();
+    }));
+
+  test('Delete Binary', () =>
+    withTestContext(async () => {
+      // Create the resource
+      const binary = await systemRepo.createResource<Binary>({
+        resourceType: 'Binary',
+        contentType: 'text/plain',
+      });
+
+      // Delete the resource
+      await systemRepo.deleteResource('Binary', binary.id);
+
+      const history2 = await systemRepo.readHistory('Binary', binary.id);
+      expect(history2.entry?.length).toBe(2);
     }));
 
   test('Reindex resource as non-admin', async () => {

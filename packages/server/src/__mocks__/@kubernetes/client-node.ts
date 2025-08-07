@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 export const KubeConfig = jest.fn().mockImplementation(() => ({
   loadFromDefault: jest.fn(),
   makeApiClient: jest.fn().mockReturnValue({

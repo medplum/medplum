@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Hl7Message, sleep } from '@medplum/core';
 import { createServer, Socket } from 'node:net';
 import { Hl7Client } from './client';

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, badRequest, OperationOutcomeError, WithId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
@@ -293,7 +295,7 @@ export function expansionQuery(
             query = addDescendants(query, codeSystem, condition.value);
           }
           if (condition.op !== 'is-a') {
-            query.where(new Column('Coding', 'code'), '!=', condition.value);
+            query.where(new Column(query.tableName, 'code'), '!=', condition.value);
           }
           break;
         case '=':

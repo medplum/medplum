@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // start-block customEmails
 import { BotEvent, getDisplayString, getReferenceString, MedplumClient, ProfileResource } from '@medplum/core';
 import { ProjectMembership, Reference, User, UserSecurityRequest } from '@medplum/fhirtypes';

@@ -1,0 +1,34 @@
+# fission-rbac.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fission-medplum-access
+rules:
+  - apiGroups: ["fission.io"]
+    resources:
+      [
+        "packages",
+        "functions",
+        "environments",
+        "httptriggers",
+        "messagequeuetriggers",
+        "timetriggers",
+        "kubernetesWatchtriggers",
+      ]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "secrets"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fission-medplum-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fission-medplum-access
+subjects:
+  - kind: ServiceAccount
+    name: medplum
+    namespace: medplum

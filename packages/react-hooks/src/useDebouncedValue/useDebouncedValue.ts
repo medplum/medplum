@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /*
   This hook was forked from: https://github.com/mantinedev/mantine/blob/fbcee929e0b11782092f48c1e7af2a1d1c878823/packages/%40mantine/hooks/src/use-debounced-value/use-debounced-value.ts
   and has the following license:
