@@ -126,6 +126,7 @@ import {
   periodToRangeString,
   PostgresError,
   SelectQuery,
+  SYSTEM_PROJECT_ID,
   TransactionIsolationLevel,
 } from './sql';
 import { buildTokenColumns } from './token-column';
@@ -439,6 +440,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const resource = JSON.parse(rows[0].content as string) as WithId<T>;
+    //TODO{mattlong} replace meta.project of UUID_NIL with undefined
     await this.setCacheEntry(resource);
     return resource;
   }
@@ -1499,7 +1501,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
-      projectId: meta.project,
+      projectId: meta.project ?? SYSTEM_PROJECT_ID,
       content,
       __version: Repository.VERSION,
     };

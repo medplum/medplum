@@ -68,6 +68,7 @@ import {
   SelectQuery,
   Operator as SQL,
   SqlFunction,
+  SYSTEM_PROJECT_ID,
   Union,
   UnionAllBuilder,
 } from './sql';
@@ -1097,16 +1098,41 @@ function trySpecialSearchParameter(
         filter.operator,
         filter.value
       );
-    case '_compartment':
     case '_project': {
-      if (filter.code === '_project') {
-        if (filter.operator === Operator.MISSING) {
-          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '=' : '!=', null);
-        } else if (filter.operator === Operator.PRESENT) {
-          return new Condition(new Column(table, 'projectId'), filter.value === 'true' ? '!=' : '=', null);
+      if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
+        // After post-deploy migration that enforces `projectId` to be non-null, the `null` handling is no longer needed.
+        if (
+          (filter.operator === Operator.MISSING && filter.value === 'true') ||
+          (filter.operator === Operator.PRESENT && filter.value !== 'true')
+        ) {
+          // missing
+          return new Disjunction([
+            new Condition(new Column(table, 'projectId'), '=', null),
+            new Condition(new Column(table, 'projectId'), '=', SYSTEM_PROJECT_ID),
+          ]);
+        } else {
+          // present
+          return new Conjunction([
+            new Condition(new Column(table, 'projectId'), '!=', null),
+            new Condition(new Column(table, 'projectId'), '!=', SYSTEM_PROJECT_ID),
+          ]);
         }
       }
 
+      return buildIdSearchFilter(
+        table,
+        {
+          columnName: 'projectId',
+          type: SearchParameterType.UUID,
+          array: false,
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('projectId'),
+        },
+        filter.operator,
+        splitSearchOnComma(filter.value)
+      );
+    }
+    case '_compartment': {
       return buildIdSearchFilter(
         table,
         {

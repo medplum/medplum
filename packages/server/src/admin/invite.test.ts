@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { allOk, ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { BundleEntry, Practitioner, ProjectMembership } from '@medplum/fhirtypes';
+import { BundleEntry, Practitioner, ProjectMembership, User } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
@@ -88,10 +88,11 @@ describe('Admin Invite', () => {
 
     expect(parsed.subject).toBe('Welcome to Medplum');
     const rows = await new SelectQuery('User')
-      .column('projectId')
+      .column('content')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toStrictEqual(null);
+    const user = JSON.parse(rows[0].content) as User;
+    expect(user.meta?.project).toStrictEqual(undefined);
   });
 
   test('Existing user to project', async () => {
@@ -142,10 +143,11 @@ describe('Admin Invite', () => {
     expect(parsed.subject).toBe('Medplum: Welcome to Alice Project');
 
     const rows = await new SelectQuery('User')
-      .column('projectId')
+      .column('content')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toStrictEqual(null);
+    const user = JSON.parse(rows[0].content) as User;
+    expect(user.meta?.project).toStrictEqual(undefined);
   });
 
   test('Existing practitioner to project', async () => {
@@ -191,10 +193,11 @@ describe('Admin Invite', () => {
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
     const rows = await new SelectQuery('User')
-      .column('projectId')
+      .column('content')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toStrictEqual(null);
+    const user = JSON.parse(rows[0].content) as User;
+    expect(user.meta?.project).toStrictEqual(undefined);
   });
 
   test('Specified practitioner to project', async () => {
@@ -242,10 +245,11 @@ describe('Admin Invite', () => {
     expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
     const rows = await new SelectQuery('User')
-      .column('projectId')
+      .column('content')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toStrictEqual(null);
+    const user = JSON.parse(rows[0].content) as User;
+    expect(user.meta?.project).toStrictEqual(undefined);
   });
 
   test('Access denied', async () => {
