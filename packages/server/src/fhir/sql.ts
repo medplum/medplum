@@ -20,6 +20,11 @@ export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, par
 
 export type TransactionIsolationLevel = 'READ COMMITTED' | 'REPEATABLE READ' | 'SERIALIZABLE';
 
+/**
+ * The UUID used to populate NON NULL "projectId" columns for resources not associated with a specific project.
+ */
+export const SYSTEM_PROJECT_ID = 'ffffffff-ffff-ffff-ffff-ffffffffffff';
+
 export const Operator = {
   '=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.appendColumn(column);
