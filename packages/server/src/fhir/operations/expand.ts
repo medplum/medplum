@@ -270,6 +270,7 @@ export function expansionQuery(
     .column('id')
     .column('code')
     .column('display')
+    .column('synonymOf')
     .where('system', '=', codeSystem.id);
 
   if (include.filter?.length) {

@@ -751,7 +751,6 @@ describe('Expand', () => {
       const res = await request(app)
         .get(`/fhir/R4/ValueSet/$expand?url=${descendentValueSet.url}`)
         .set('Authorization', 'Bearer ' + accessToken);
-      console.log(res.body.issue);
       expect(res.status).toStrictEqual(200);
       const expansion = res.body.expansion as ValueSetExpansion;
 
@@ -1196,6 +1195,8 @@ describe('Expand', () => {
     expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
-    expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([{ code: 'UTIC', display: 'Hives' }]);
+    expect(expansion.contains).toStrictEqual<ValueSetExpansionContains[]>([
+      { code: 'UTIC', display: 'Hives', system: codeSystem.url },
+    ]);
   });
 });

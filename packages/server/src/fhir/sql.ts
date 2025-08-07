@@ -671,7 +671,9 @@ export class SelectQuery extends BaseQuery implements Expression {
   }
 
   addColumns(columns: Column[]): this {
-    this.columns.push(...columns);
+    for (const col of columns) {
+      this.columns.push(new Column(this.tableName, col.columnName));
+    }
     return this;
   }
 

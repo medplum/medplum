@@ -96,6 +96,7 @@ export function selectCoding(systemId: string, ...code: string[]): SelectQuery {
     .column('id')
     .column('code')
     .column('display')
+    .column('synonymOf')
     .where('system', '=', systemId)
     .where('code', 'IN', code)
     .where('synonymOf', '=', null);
@@ -167,8 +168,7 @@ export function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestor
   );
 
   return new SelectQuery(recursiveCTE)
-    .column('code')
-    .column('display')
+    .addColumns(base.columns)
     .withRecursive(recursiveCTE, new Union(base, query))
     .where('code', '=', ancestorCode)
     .limit(1);
@@ -202,6 +202,7 @@ export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, paren
     .column('id')
     .column('code')
     .column('display')
+    .column('synonymOf')
     .where('system', '=', codeSystem.id)
     .where('code', '=', parentCode);
 
@@ -242,11 +243,9 @@ export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, paren
   const offset = query.offset_;
   query.offset(0);
 
-  return new SelectQuery('cte_descendants')
-    .column('id')
-    .column('code')
-    .column('display')
-    .withRecursive('cte_descendants', new Union(base, query))
+  return new SelectQuery(recursiveCTE)
+    .addColumns(base.columns)
+    .withRecursive(recursiveCTE, new Union(base, query))
     .limit(limit)
     .offset(offset);
 }
