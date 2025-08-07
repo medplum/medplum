@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   AgentError,
   AgentMessage,
@@ -26,7 +28,7 @@ import os from 'node:os';
 import { resolve } from 'node:path';
 import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
-import { AgentHl7Channel } from './hl7';
+import { AgentHl7Channel, AgentHl7ChannelConnection } from './hl7';
 import * as pidModule from './pid';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 
@@ -565,6 +567,30 @@ describe('App', () => {
     expect(app.channels.has('hl7-staging')).toStrictEqual(true);
     expect(app.channels.size).toStrictEqual(5);
 
+    const prodChannel = app.channels.get('hl7-prod') as AgentHl7Channel;
+    expect(prodChannel).toBeDefined();
+
+    expect(prodChannel.connections.size).toStrictEqual(0);
+
+    // Create a connection to the prod channel
+    const hl7Client = new Hl7Client({
+      host: 'localhost',
+      port: 9002,
+    });
+
+    await hl7Client.connect();
+    // Sleep to let connect event get emitted agent-side
+    await sleep(0);
+
+    expect(prodChannel.connections.size).toStrictEqual(1);
+    const hl7ProdConnection = prodChannel.connections.values().next().value as AgentHl7ChannelConnection;
+    expect(hl7ProdConnection).toBeDefined();
+    expect(hl7ProdConnection.hl7Connection.enhancedMode).toStrictEqual(false);
+
+    // Check that the socket is not closed
+    const hl7ProdConnectionSocket = hl7ProdConnection.hl7Connection.socket;
+    expect(hl7ProdConnectionSocket.closed).toStrictEqual(false);
+
     const stagingChannel = app.channels.get('hl7-staging') as AgentHl7Channel;
 
     // Create a new endpoint for both hl7-test and dicom-test
@@ -581,6 +607,16 @@ describe('App', () => {
       connectionType: { code: ContentType.DICOM },
       address: 'dicom://0.0.0.0:10003',
       payloadType: [{ coding: [{ code: ContentType.DICOM }] }],
+    });
+
+    // Update endpoint to have enhanced mode on, which should trigger a reload without making a new socket
+    const enhancedProdAddress = new URL(hl7ProdEndpoint.address);
+    enhancedProdAddress.searchParams.set('enhanced', 'true');
+
+    // Update the new address
+    await medplum.updateResource<Endpoint>({
+      ...hl7ProdEndpoint,
+      address: enhancedProdAddress.toString(),
     });
 
     // Update endpoint name
@@ -652,7 +688,21 @@ describe('App', () => {
     expect(app.channels.has('hl7-dev')).toStrictEqual(true);
     expect(app.channels.size).toStrictEqual(5);
 
-    // Make sure old channel is closed
+    // Check that our prod connection for the prod channel is the same connection as before
+    expect(prodChannel.connections.size).toStrictEqual(1);
+    const hl7ProdConnectionAfter = prodChannel.connections.values().next().value as AgentHl7ChannelConnection;
+
+    expect(hl7ProdConnectionAfter).toBeDefined();
+
+    // Check that the socket is not closed and is the same socket
+    const hl7ProdConnectionSocketAfter = hl7ProdConnection.hl7Connection.socket;
+    expect(hl7ProdConnectionSocketAfter.closed).toStrictEqual(false);
+    expect(hl7ProdConnectionSocketAfter).toStrictEqual(hl7ProdConnectionSocket);
+
+    // But enhanced mode should be active on the existing connection
+    expect(hl7ProdConnectionAfter.hl7Connection.enhancedMode).toStrictEqual(true);
+
+    // Make sure old staging channel is closed
     shouldThrow = false;
     timeout = setTimeout(() => {
       shouldThrow = true;
@@ -766,6 +816,7 @@ describe('App', () => {
     expect(app.channels.has('hl7-dev')).toStrictEqual(true);
     expect(app.channels.size).toStrictEqual(5);
 
+    hl7Client.close();
     await app.stop();
     await new Promise<void>((resolve) => {
       mockServer.stop(resolve);

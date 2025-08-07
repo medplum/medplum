@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import packageJson from '../../../package.json';
 
 export const FISSION_PACKAGE_JSON = `{

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * Returns a month display string (e.g. "January 2020").
  * @param date - Any date within the month.

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import { Bundle, Questionnaire } from '@medplum/fhirtypes';
 import { PropertyType, TypedValue } from '../types';
@@ -377,6 +379,24 @@ describe('FHIRPath utils', () => {
     ).toMatchObject({
       start: '2020-01-01T12:34:56.000Z',
       end: '2020-01-01T12:34:56.999Z',
+    });
+
+    // Normalize date strings with time zone offsets
+    expect(toPeriod('2020-01-01T12:34:56.000+01:00')).toMatchObject({
+      start: '2020-01-01T11:34:56.000Z',
+      end: '2020-01-01T11:34:56.000Z',
+    });
+
+    // Normalize periods with time zone offsets
+    expect(toPeriod({ start: '2020-01-01T12:34:56.000+01:00', end: '2020-01-01T12:34:56.999+01:00' })).toMatchObject({
+      start: '2020-01-01T11:34:56.000Z',
+      end: '2020-01-01T11:34:56.999Z',
+    });
+
+    // Extend year to valid dates
+    expect(toPeriod('2020')).toMatchObject({
+      start: '2020-01-01T00:00:00.000Z',
+      end: '2020-12-31T23:59:59.999Z',
     });
   });
 });

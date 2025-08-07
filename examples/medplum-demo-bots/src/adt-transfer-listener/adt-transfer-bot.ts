@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * This example shows how you might listen for ADT (Admit, Discharge, and Transfer)
  * messages. ADT messages are commonly used to record patients information and log
@@ -7,6 +10,7 @@
  *
  * More information about the sections of ADT messages can be found here: https://rhapsody.health/resources/hl7-adt/
  */
+
 import { BotEvent, createReference, Hl7Message, MedplumClient } from '@medplum/core';
 import { Encounter, Patient } from '@medplum/fhirtypes';
 

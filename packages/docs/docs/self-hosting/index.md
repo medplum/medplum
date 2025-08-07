@@ -8,6 +8,10 @@ Medplum is an open source healthcare development platform that you can deploy in
 
 These guides are designed for DevOps engineers and system administrators who have experience managing production healthcare systems.
 
+:::warning Considerations
+Thinking about self-hosting? Take a look at our [self-hosting vs. cloud guide](./considerations.md) to help you decide if self-hosting is for you. 
+:::
+
 ## Installation Options
 
 ### [Install on AWS](/docs/self-hosting/install-on-aws) (Recommended)

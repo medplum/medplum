@@ -1,6 +1,6 @@
 {
   "name": "@medplum/agent",
-  "version": "4.3.6",
+  "version": "4.3.8",
   "description": "Medplum Agent",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -21,25 +21,26 @@
     "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "4.3.6",
-    "@medplum/hl7": "4.3.6",
+    "@medplum/core": "4.3.8",
+    "@medplum/hl7": "4.3.8",
     "dcmjs-dimse": "0.3.0",
     "iconv-lite": "0.6.3",
     "semver": "7.7.2",
     "ws": "8.18.3"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "4.3.6",
-    "@medplum/mock": "4.3.6",
+    "@medplum/fhirtypes": "4.3.8",
+    "@medplum/mock": "4.3.8",
     "@types/async-eventemitter": "0.2.4",
     "@types/ws": "8.18.1",
     "mock-socket": "9.3.1",
     "postject": "1.0.0-alpha.6"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SNOMED, createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, Patient, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
@@ -5,7 +7,7 @@ import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { createOrmMessage, handler } from './send-orm-message';
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const CONNECTION_DETAILS = {
   SFTP_USER: { name: 'SFTP_USER', valueString: 'user' },

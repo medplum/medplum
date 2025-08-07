@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Avatar, Combobox, Flex, Group, Stack, Text, TextInput, Title, useCombobox } from '@mantine/core';
 import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, ProjectMembership } from '@medplum/fhirtypes';

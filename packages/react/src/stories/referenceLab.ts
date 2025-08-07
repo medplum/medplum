@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SNOMED, UCUM, createReference } from '@medplum/core';
 import { DiagnosticReport, Observation, ObservationDefinition } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport } from '@medplum/mock';

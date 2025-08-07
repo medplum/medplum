@@ -96,7 +96,6 @@ medplum/
 │   ├── definitions     # Data definitions
 │   ├── docs            # Documentation
 │   ├── examples        # Example code used in documentation
-│   ├── expo-polyfills  # Expo polyfills for MedplumClient compatibility
 │   ├── fhir-router     # FHIR URL router
 │   ├── fhirtypes       # FHIR TypeScript definitions
 │   ├── generator       # Code generator utilities

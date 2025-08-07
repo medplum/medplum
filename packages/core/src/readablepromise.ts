@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * The ReadablePromise class wraps a request promise suitable for React Suspense.
  * See: https://blog.logrocket.com/react-suspense-data-fetching/#wrappromise-js

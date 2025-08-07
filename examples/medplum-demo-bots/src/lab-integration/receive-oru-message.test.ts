@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   BotEvent,
   createReference,
@@ -25,7 +27,7 @@ import { Readable } from 'stream';
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest';
 import { handler, processOruMessage } from './receive-oru-message';
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const CONNECTION_DETAILS = {
   SFTP_USER: { name: 'SFTP_USER', valueString: 'user' },

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { ContentType, getReferenceString } from '@medplum/core';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
@@ -295,9 +297,7 @@ describe('Email', () => {
           },
         ],
       })
-    ).rejects.toThrow(
-      'Invalid email options: The "chunk" argument must be of type string or an instance of Buffer, TypedArray, or DataView. Received an instance of Object'
-    );
+    ).rejects.toThrow(/Invalid email options/);
 
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 0);

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { color, processDescription } from '../util/color';
 import { addSubcommand, MedplumCommand } from '../utils';
 import { describeStacksCommand } from './describe';

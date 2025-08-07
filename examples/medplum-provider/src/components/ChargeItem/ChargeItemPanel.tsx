@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Card, Flex, Grid, Menu, Stack, Text, TextInput } from '@mantine/core';
 import { HTTP_HL7_ORG } from '@medplum/core';
 import { ChargeItem, CodeableConcept, Money } from '@medplum/fhirtypes';
