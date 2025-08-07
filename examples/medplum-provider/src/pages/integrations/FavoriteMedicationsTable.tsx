@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Card, Text, LoadingOverlay } from '@mantine/core';
 import { MedicationKnowledge } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
-import { formatSearchQuery, NDC } from '@medplum/core';
+import { formatSearchQuery, getCodeBySystem, NDC } from '@medplum/core';
 
 interface FavoriteMedicationsTableProps {
   refreshKey?: number;
@@ -83,9 +83,11 @@ export function FavoriteMedicationsTable({ refreshKey }: FavoriteMedicationsTabl
             <Table.Td>
               <Text fw={500}>{medication.code?.text || 'Unknown'}</Text>
             </Table.Td>
-            <Table.Td>{medication.code?.coding?.find((coding) => coding.system === NDC)?.code || ''}</Table.Td>
             <Table.Td>
-              {medication.administrationGuidelines?.[0]?.dosage?.[0]?.dosage?.[0]?.patientInstruction || ''}
+              {medication.code ? getCodeBySystem(medication.code, NDC) : ''}
+            </Table.Td>
+            <Table.Td>
+                {medication.administrationGuidelines?.[0]?.dosage?.[0]?.dosage?.[0]?.patientInstruction || ''}
             </Table.Td>
           </Table.Tr>
         ))}
