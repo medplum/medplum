@@ -7,10 +7,11 @@ import { MigrationActionResult } from './types';
 export async function query(
   client: Client | Pool | PoolClient,
   results: MigrationActionResult[],
-  queryStr: string
+  queryStr: string,
+  params?: any[]
 ): Promise<void> {
   const start = Date.now();
-  await client.query(queryStr);
+  await client.query(queryStr, params);
   results.push({ name: queryStr, durationMs: Date.now() - start });
 }
 
