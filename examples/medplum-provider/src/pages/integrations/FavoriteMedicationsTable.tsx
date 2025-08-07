@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Text, LoadingOverlay } from '@mantine/core';
 import { MedicationKnowledge } from '@medplum/fhirtypes';
@@ -11,13 +13,13 @@ interface FavoriteMedicationsTableProps {
 /**
  * This is a demo component for how you could display your favorite Medications
  * from DoseSpot.
- * 
+ *
  * The page is refreshed when a medication is added to the favorites list.
- * 
+ *
  * @param props - The props for the component.
  * @param props.refreshKey - The key to refresh the table.
  * @returns A React component that displays the favorite medications.
- */   
+ */
 export function FavoriteMedicationsTable({ refreshKey }: FavoriteMedicationsTableProps): React.JSX.Element {
   const [medications, setMedications] = useState<MedicationKnowledge[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,7 +29,7 @@ export function FavoriteMedicationsTable({ refreshKey }: FavoriteMedicationsTabl
     const loadMedications = async (): Promise<void> => {
       try {
         setLoading(true);
-        
+
         // Get MedicationKnowledge;s that have any dosespot fav medication id system
         const searchRequest = {
           resourceType: 'MedicationKnowledge' as const,
@@ -41,7 +43,7 @@ export function FavoriteMedicationsTable({ refreshKey }: FavoriteMedicationsTabl
         };
         const queryString = formatSearchQuery(searchRequest);
         const result = await medplum.search('MedicationKnowledge', queryString);
-        setMedications(result.entry?.map(entry => entry.resource as MedicationKnowledge) || []);
+        setMedications(result.entry?.map((entry) => entry.resource as MedicationKnowledge) || []);
       } finally {
         setLoading(false);
       }
@@ -60,9 +62,9 @@ export function FavoriteMedicationsTable({ refreshKey }: FavoriteMedicationsTabl
 
   if (medications.length === 0) {
     return (
-        <Text c="dimmed" ta="center" py="xl">
-          No favorite medications found
-        </Text>
+      <Text c="dimmed" ta="center" py="xl">
+        No favorite medications found
+      </Text>
     );
   }
 
@@ -81,15 +83,13 @@ export function FavoriteMedicationsTable({ refreshKey }: FavoriteMedicationsTabl
             <Table.Td>
               <Text fw={500}>{medication.code?.text || 'Unknown'}</Text>
             </Table.Td>
+            <Table.Td>{medication.code?.coding?.find((coding) => coding.system === NDC)?.code || ''}</Table.Td>
             <Table.Td>
-              {medication.code?.coding?.find(coding => coding.system === NDC)?.code || ''}
-            </Table.Td>
-            <Table.Td>
-                {medication.administrationGuidelines?.[0]?.dosage?.[0]?.dosage?.[0]?.patientInstruction || ''}
+              {medication.administrationGuidelines?.[0]?.dosage?.[0]?.dosage?.[0]?.patientInstruction || ''}
             </Table.Td>
           </Table.Tr>
         ))}
       </Table.Tbody>
     </Table>
   );
-} 
+}

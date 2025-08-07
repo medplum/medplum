@@ -1,6 +1,21 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import React, { useState } from 'react';
-import { Container, Title, Paper, Button, Modal, Group, Box, TextInput, Stack, Divider, Text, Group as MantineGroup } from '@mantine/core';
-import { showNotification } from '@mantine/notifications';  
+import {
+  Container,
+  Title,
+  Paper,
+  Button,
+  Modal,
+  Group,
+  Box,
+  TextInput,
+  Stack,
+  Divider,
+  Text,
+  Group as MantineGroup,
+} from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
 import { MedicationKnowledge } from '@medplum/fhirtypes';
 import { IconPlus } from '@tabler/icons-react';
@@ -8,13 +23,12 @@ import { normalizeErrorString } from '@medplum/core';
 import { AsyncAutocomplete } from '@medplum/react';
 import { FavoriteMedicationsTable } from './FavoriteMedicationsTable';
 
-
 /**
  * This is a demo component for how you could display your favorite Medications
  * from DoseSpot.
- * 
+ *
  * The page is refreshed when a medication is added to the favorites list.
- * 
+ *
  * @returns A React component that displays the favorite medications.
  */
 export function DoseSpotFavoritesPage(): React.JSX.Element {
@@ -22,7 +36,15 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const { state, addFavoriteMedication, searchMedications, setDirections, setSelectedMedication, getMedicationStrength, getMedicationName } = useDoseSpotClinicFormulary();
+  const {
+    state,
+    addFavoriteMedication,
+    searchMedications,
+    setDirections,
+    setSelectedMedication,
+    getMedicationStrength,
+    getMedicationName,
+  } = useDoseSpotClinicFormulary();
 
   const handleAddFavoriteMedication = async (medication: MedicationKnowledge | undefined): Promise<void> => {
     if (!medication) {
@@ -33,7 +55,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
       setLoading(true);
       await addFavoriteMedication(medication);
       setModalOpened(false);
-      setRefreshKey(prev => prev + 1); // Trigger refresh
+      setRefreshKey((prev) => prev + 1); // Trigger refresh
       showNotification({
         title: 'Medication added to favorites',
         message: 'The medication has been added to your favorites',
@@ -50,7 +72,9 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
     }
   };
 
-  const toOption = (medication: MedicationKnowledge): { value: string; label: string; resource: MedicationKnowledge } => ({
+  const toOption = (
+    medication: MedicationKnowledge
+  ): { value: string; label: string; resource: MedicationKnowledge } => ({
     value: Math.random().toString(), //No ids on the MedicationKnowledge objects yet
     label: medication.code?.text || 'Unknown Medication',
     resource: medication,
@@ -67,8 +91,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
         </Group>
 
         {/* Example of a table to display favorite medications (MedicationKnowledge resources) */}
-        <FavoriteMedicationsTable refreshKey={refreshKey}/>
-
+        <FavoriteMedicationsTable refreshKey={refreshKey} />
       </Paper>
 
       <Modal
@@ -89,7 +112,9 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
             toOption={toOption}
             itemComponent={({ resource }) => (
               <Group gap="sm">
-                <div> {/* Show medication name and strength on dropdown */}
+                <div>
+                  {' '}
+                  {/* Show medication name and strength on dropdown */}
                   <Text size="sm">{getMedicationName(resource)}</Text>
                   <Text size="xs" c="dimmed">
                     {getMedicationStrength(resource)}
@@ -108,7 +133,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
             clearable
             maxValues={1} // Only allow single selection
           />
-      
+
           {/* After selecting a medication, show the medication info with followup input items */}
           {state.selectedMedication && (
             <Stack gap="md" mt="lg">
@@ -134,13 +159,16 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
 
           {/* Action Buttons */}
           <MantineGroup justify="flex-end" gap="md" mt="md">
-              <Button onClick={() => handleAddFavoriteMedication(state.selectedMedication)} disabled={!state.directions || !state.selectedMedication || loading } loading={loading}>
+            <Button
+              onClick={() => handleAddFavoriteMedication(state.selectedMedication)}
+              disabled={!state.directions || !state.selectedMedication || loading}
+              loading={loading}
+            >
               Add Favorite
-            </Button> 
+            </Button>
           </MantineGroup>
         </Box>
       </Modal>
-
     </Container>
   );
 }

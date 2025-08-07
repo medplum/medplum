@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Bundle, BundleEntry, MedicationKnowledge } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useState } from 'react';
@@ -78,7 +80,7 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
   };
 
   const searchMedications = async (searchTerm: string): Promise<MedicationKnowledge[]> => {
-    const bundle = await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm }) as Bundle;
+    const bundle = (await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm })) as Bundle;
     return bundle.entry?.map((entry: BundleEntry) => entry.resource as MedicationKnowledge) || [];
   };
 
@@ -107,21 +109,15 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
 
     const numeratorValue = strength.numerator?.value;
     const numeratorUnit = strength.numerator?.unit || '';
-    const numerator = numeratorValue === 1
-       ? numeratorUnit 
-       : numeratorValue?.toString() + numeratorUnit;
+    const numerator = numeratorValue === 1 ? numeratorUnit : numeratorValue?.toString() + numeratorUnit;
 
-    
     // Only show denominator value if it's not 1, otherwise just show the unit
     const denominatorValue = strength.denominator?.value;
     const denominatorUnit = strength.denominator?.unit || '';
-    const denominator = denominatorValue === 1 
-      ? denominatorUnit 
-      : denominatorValue?.toString() + denominatorUnit;
-      
+    const denominator = denominatorValue === 1 ? denominatorUnit : denominatorValue?.toString() + denominatorUnit;
+
     return `${numerator ? numerator : ''} ${denominator ? '/ ' + denominator : ''}`;
   };
-
 
   return {
     state,

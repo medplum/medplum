@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Bundle, MedicationKnowledge } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -8,8 +10,16 @@ import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT }
 import { useDoseSpotClinicFormulary } from './useDoseSpotFormularyCenter';
 
 function TestComponent(): JSX.Element {
-  const { state, searchMedications, addFavoriteMedication, setDirections, setSelectedMedication, getMedicationName, getMedicationStrength } = useDoseSpotClinicFormulary();
-  
+  const {
+    state,
+    searchMedications,
+    addFavoriteMedication,
+    setDirections,
+    setSelectedMedication,
+    getMedicationName,
+    getMedicationStrength,
+  } = useDoseSpotClinicFormulary();
+
   const handleSetMedication = (): void => {
     const testMedication: MedicationKnowledge = {
       resourceType: 'MedicationKnowledge',
@@ -20,13 +30,15 @@ function TestComponent(): JSX.Element {
     };
     setSelectedMedication(testMedication);
   };
-  
+
   return (
     <div>
       <div>Selected: {state.selectedMedication?.code?.text || 'none'}</div>
       <div>Directions: {state.directions || 'none'}</div>
       <button onClick={() => searchMedications('aspirin')}>Search</button>
-      <button onClick={() => state.selectedMedication && addFavoriteMedication(state.selectedMedication)}>Add Favorite</button>
+      <button onClick={() => state.selectedMedication && addFavoriteMedication(state.selectedMedication)}>
+        Add Favorite
+      </button>
       <button onClick={() => setDirections('Take 1 daily')}>Set Directions</button>
       <button onClick={handleSetMedication}>Set Medication</button>
       <div>Name: {getMedicationName(state.selectedMedication)}</div>
@@ -180,7 +192,10 @@ describe('useDoseSpotClinicFormulary', () => {
       screen.getByText('Add Favorite').click();
     });
 
-    expect(medplum.executeBot).toHaveBeenCalledWith(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, expectedMedicationWithDirections);
+    expect(medplum.executeBot).toHaveBeenCalledWith(
+      DOSESPOT_ADD_FAVORITE_MEDICATION_BOT,
+      expectedMedicationWithDirections
+    );
   });
 
   test('addFavoriteMedication handles empty directions', async () => {
@@ -234,7 +249,10 @@ describe('useDoseSpotClinicFormulary', () => {
       screen.getByText('Add Favorite').click();
     });
 
-    expect(medplum.executeBot).toHaveBeenCalledWith(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, expectedMedicationWithDirections);
+    expect(medplum.executeBot).toHaveBeenCalledWith(
+      DOSESPOT_ADD_FAVORITE_MEDICATION_BOT,
+      expectedMedicationWithDirections
+    );
   });
 
   test('setDirections updates state', async () => {
@@ -308,6 +326,4 @@ describe('useDoseSpotClinicFormulary', () => {
 
     expect(screen.getByText('Strength:')).toBeDefined();
   });
-
-
-}); 
+});

@@ -62,7 +62,6 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
     }
   }, [medplum, patientId]);
 
-
   return (
     <>
       <Group style={{ position: 'absolute', top: 8, right: 8, zIndex: 100 }}>
@@ -141,7 +140,6 @@ export function DoseSpotAdvancedOptions({ patientId }: { patientId: string }): J
               </Text>
               <Button onClick={syncPatient}>Sync Patient</Button>
             </Box>
-
           </Stack>
         </Box>
       </Modal>
