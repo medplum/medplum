@@ -398,7 +398,7 @@ export function buildCreateTables(result: SchemaDefinition, maybeResourceType: s
       { name: 'content', type: 'TEXT', notNull: true },
       { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
       { name: 'deleted', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
-      { name: 'projectId', type: 'UUID' },
+      { name: 'projectId', type: 'UUID', notNull: true },
       { name: '__version', type: 'INTEGER', notNull: true },
       { name: '_source', type: 'TEXT' },
       { name: '_profile', type: 'TEXT[]' },
