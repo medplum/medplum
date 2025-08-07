@@ -86,16 +86,17 @@ export const TaskPanel = (props: TaskPanelProps): JSX.Element => {
   return (
     <Card withBorder shadow="sm" p={0}>
       <Stack gap="xs">
-        {task.focus?.reference?.startsWith('Questionnaire/') && (
-          <TaskQuestionnaireForm key={task.id} task={task} onChangeResponse={onChangeResponse} />
-        )}
-        {task.focus?.reference?.startsWith('ServiceRequest/') && (
-          <TaskServiceRequest key={task.id} task={task} saveDiagnosticReport={onSaveDiagnosticReport} />
-        )}
+        <Stack p="md">
+          {task.focus?.reference?.startsWith('Questionnaire/') && (
+            <TaskQuestionnaireForm key={task.id} task={task} onChangeResponse={onChangeResponse} />
+          )}
+          {task.focus?.reference?.startsWith('ServiceRequest/') && (
+            <TaskServiceRequest key={task.id} task={task} saveDiagnosticReport={onSaveDiagnosticReport} />
+          )}
 
-        {!task.focus?.reference?.startsWith('ServiceRequest/') &&
-          !task.focus?.reference?.startsWith('Questionnaire/') && <SimpleTask key={task.id} task={task} />}
-
+          {!task.focus?.reference?.startsWith('ServiceRequest/') &&
+            !task.focus?.reference?.startsWith('Questionnaire/') && <SimpleTask key={task.id} task={task} />}
+        </Stack>
         <TaskStatusPanel task={task} onActionButtonClicked={onActionButtonClicked} onChangeStatus={onChangeStatus} />
       </Stack>
     </Card>
