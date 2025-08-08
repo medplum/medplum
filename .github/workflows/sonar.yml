@@ -45,7 +45,7 @@ jobs:
             await downloadArtifact('medplum-code-coverage', 'coverage');
             await downloadArtifact('medplum-safe-patch', '.');
       - name: Apply safe patch
-        run: git apply changes.patch
+        run: git apply --allow-empty changes.patch
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@01850e2590cc09ed26831056406ae1525aa41ad5 # master
         env:

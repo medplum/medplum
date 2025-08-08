@@ -43,6 +43,8 @@ jobs:
             }
             await downloadArtifact('medplum-code-coverage', 'coverage');
             await downloadArtifact('medplum-safe-patch', '.');
+      - name: Apply safe patch
+        run: git apply --allow-empty changes.patch
       - name: Coveralls GitHub Action
         uses: coverallsapp/github-action@09b709cf6a16e30b0808ba050c7a6e8a5ef13f8d # master
         with:
