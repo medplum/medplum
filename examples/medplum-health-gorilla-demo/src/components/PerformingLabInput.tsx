@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { Patient, Resource } from '@medplum/fhirtypes';
 import { LabOrderInputErrors, LabOrganization } from '@medplum/health-gorilla-core';

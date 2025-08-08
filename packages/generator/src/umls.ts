@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReadStream, createWriteStream, existsSync, mkdirSync } from 'node:fs';
 import { createInterface } from 'node:readline';
 

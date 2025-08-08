@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Observation } from '@medplum/fhirtypes';
 import { LOINC, UCUM } from './constants';
 import {
@@ -30,6 +32,9 @@ describe('typedValueToString', () => {
   expect(typedValueToString({ type: 'Quantity', value: { value: 1, unit: 'kg' } })).toStrictEqual('1 kg');
   expect(typedValueToString({ type: 'Reference', value: { reference: 'Patient/x' } })).toStrictEqual('Patient/x');
   expect(typedValueToString({ type: 'string', value: 'x' })).toStrictEqual('x');
+  expect(typedValueToString({ type: 'boolean', value: true })).toStrictEqual('true');
+  expect(typedValueToString({ type: 'boolean', value: false })).toStrictEqual('false');
+  expect(typedValueToString({ type: 'boolean', value: undefined })).toStrictEqual('');
 });
 
 test('formatReferenceString', () => {

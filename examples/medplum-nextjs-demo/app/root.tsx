@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 'use client';
 import '@mantine/core/styles.css';
 import { MedplumClient } from '@medplum/core';

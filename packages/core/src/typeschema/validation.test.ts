@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import {
   Account,
@@ -114,6 +116,14 @@ describe('FHIR resource validation', () => {
       birthDate: 'Aug 14, 1949',
     };
     expect(() => validateResource(invalidFormat)).toThrow();
+  });
+
+  test('Invalid string size', () => {
+    const bigString: Patient = {
+      resourceType: 'Patient',
+      name: [{ text: 'John Jacob Jingleheimer-Schmidt'.repeat(50_000) }],
+    };
+    expect(() => validateResource(bigString)).toThrow('String cannot be larger than 1 MB (Patient.name[0].text)');
   });
 
   test('Invalid numeric value', () => {

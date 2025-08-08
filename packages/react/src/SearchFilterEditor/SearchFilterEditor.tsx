@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Group, Modal, NativeSelect } from '@mantine/core';
 import { Filter, Operator, SearchRequest, deepClone, getSearchParameters } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';

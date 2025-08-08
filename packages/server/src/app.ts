@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
@@ -163,6 +165,13 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(cors(corsOptions));
   app.use(compression());
   app.use(attachRequestContext);
+
+  // Add logging middleware immediately after setting up request context, to ensure that
+  // any errors in later middleware don't skip the request logging
+  if (config.logRequests) {
+    app.use(loggingMiddleware);
+  }
+
   app.use(rateLimitHandler(config));
   app.use('/fhir/R4/Binary', binaryRouter);
 
@@ -177,10 +186,6 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: [ContentType.HL7_V2],
     })
   );
-
-  if (config.logRequests) {
-    app.use(loggingMiddleware);
-  }
 
   const apiRouter = Router();
   apiRouter.get('/', (_req, res) => res.sendStatus(200));

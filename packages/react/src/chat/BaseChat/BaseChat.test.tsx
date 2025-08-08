@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Notifications } from '@mantine/notifications';
 import {
   ProfileResource,
@@ -480,5 +482,269 @@ describe('BaseChat', () => {
 
     await sleep(500);
     expect(baseProps.onError).toHaveBeenCalledWith(new Error('Something is broken'));
+  });
+
+  test('Day sections are displayed when messages span multiple days', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(today.getDate() - 1);
+    const twoDaysAgo = new Date(today);
+    twoDaysAgo.setDate(today.getDate() - 2);
+
+    await Promise.all([
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: twoDaysAgo.toISOString(),
+        payload: [{ contentString: 'Message from two days ago' }],
+      }),
+      createCommunication(medplum, {
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: yesterday.toISOString(),
+        payload: [{ contentString: 'Message from yesterday' }],
+      }),
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: today.toISOString(),
+        payload: [{ contentString: 'Message from today' }],
+      }),
+    ]);
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(screen.getByText('Message from two days ago')).toBeInTheDocument();
+    expect(screen.getByText('Message from yesterday')).toBeInTheDocument();
+    expect(screen.getByText('Message from today')).toBeInTheDocument();
+
+    const twoDaysAgoFormatted = twoDaysAgo.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    const yesterdayFormatted = yesterday.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+    const todayFormatted = today.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+
+    expect(screen.getByText(twoDaysAgoFormatted)).toBeInTheDocument();
+    expect(screen.getByText(yesterdayFormatted)).toBeInTheDocument();
+    expect(screen.getByText(todayFormatted)).toBeInTheDocument();
+  });
+
+  test('Day sections are not duplicated for messages on the same day', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const today = new Date();
+    const todayMorning = new Date(today);
+    todayMorning.setHours(9, 0, 0, 0);
+    const todayAfternoon = new Date(today);
+    todayAfternoon.setHours(15, 30, 0, 0);
+
+    await Promise.all([
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: todayMorning.toISOString(),
+        payload: [{ contentString: 'Good morning!' }],
+      }),
+      createCommunication(medplum, {
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: todayAfternoon.toISOString(),
+        payload: [{ contentString: 'Good afternoon!' }],
+      }),
+    ]);
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(screen.getByText('Good morning!')).toBeInTheDocument();
+    expect(screen.getByText('Good afternoon!')).toBeInTheDocument();
+
+    const todayFormatted = today.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+
+    const daySections = screen.getAllByText(todayFormatted);
+    expect(daySections).toHaveLength(1);
+  });
+
+  test('Scrolls to bottom when new messages arrive', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const mockScrollTo = jest.fn();
+    Object.defineProperty(HTMLElement.prototype, 'scrollTo', {
+      value: mockScrollTo,
+      writable: true,
+    });
+
+    Object.defineProperty(HTMLElement.prototype, 'scrollHeight', {
+      value: 1000,
+      configurable: true,
+    });
+
+    await createCommunication(medplum, {
+      sender: drAliceReference,
+      recipient: [homerReference],
+      payload: [{ contentString: 'Initial message' }],
+    });
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(await screen.findByText('Initial message')).toBeInTheDocument();
+
+    await act(async () => {
+      await sleep(100);
+    });
+
+    mockScrollTo.mockClear();
+
+    const newMessage = await createCommunication(medplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentString: 'New message triggers scroll!' }],
+    });
+
+    const bundle = await createCommunicationSubBundle(medplum, newMessage);
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle,
+      });
+    });
+
+    expect(await screen.findByText('New message triggers scroll!')).toBeInTheDocument();
+
+    await act(async () => {
+      await sleep(100);
+    });
+
+    expect(mockScrollTo).toHaveBeenCalled();
+
+    const lastCall = mockScrollTo.mock.calls[mockScrollTo.mock.calls.length - 1];
+    expect(lastCall[0]).toEqual(
+      expect.objectContaining({
+        top: expect.any(Number),
+      })
+    );
+  });
+
+  test('BaseChat returns null when profile is null', async () => {
+    const medplum = new MockClient({ profile: null });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(screen.queryByRole('heading', { name: /test chat/i })).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+    expect(screen.queryByText('Hello, Medplum!')).not.toBeInTheDocument();
+  });
+
+  test('BaseChat handles multiple communications with undefined sent date via subscription', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await createCommunication(medplum, {
+      sender: drAliceReference,
+      recipient: [homerReference],
+      payload: [{ contentString: 'Normal message' }],
+    });
+
+    await setup(
+      {
+        title: 'Test Chat',
+        query: HOMER_DR_ALICE_CHAT_QUERY,
+        sendMessage: () => undefined,
+      },
+      medplum
+    );
+
+    expect(await screen.findByText('Normal message')).toBeInTheDocument();
+
+    const communicationsWithUndefinedSent = [
+      {
+        id: generateId(),
+        resourceType: 'Communication',
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: undefined,
+        status: 'in-progress',
+        payload: [{ contentString: 'First message with no sent date' }],
+      },
+      {
+        id: generateId(),
+        resourceType: 'Communication',
+        sender: drAliceReference,
+        recipient: [homerReference],
+        sent: undefined,
+        status: 'in-progress',
+        payload: [{ contentString: 'Second message with no sent date' }],
+      },
+      {
+        id: generateId(),
+        resourceType: 'Communication',
+        sender: homerReference,
+        recipient: [drAliceReference],
+        sent: undefined,
+        status: 'in-progress',
+        payload: [{ contentString: 'Third message with no sent date' }],
+      },
+    ] as Communication[];
+
+    for (const communication of communicationsWithUndefinedSent) {
+      const bundle = await createCommunicationSubBundle(medplum, communication);
+      act(() => {
+        defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+          type: 'message',
+          payload: bundle,
+        });
+      });
+    }
+
+    expect(await screen.findByText('First message with no sent date')).toBeInTheDocument();
+    expect(screen.getByText('Second message with no sent date')).toBeInTheDocument();
+    expect(screen.getByText('Third message with no sent date')).toBeInTheDocument();
   });
 });

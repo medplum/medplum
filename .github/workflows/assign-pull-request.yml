@@ -4,6 +4,9 @@ on:
   pull_request_target:
     types: [opened, ready_for_review]
 
+permissions:
+  contents: read
+
 jobs:
   assign-pull-request:
     name: Assign pull request
@@ -11,4 +14,4 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: kentaro-m/auto-assign-action@v2.0.0
+      - uses: kentaro-m/auto-assign-action@f4648c0a9fdb753479e9e75fc251f507ce17bb7e # v2.0.0

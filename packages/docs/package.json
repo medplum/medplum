@@ -1,6 +1,6 @@
 {
   "name": "@medplum/docs",
-  "version": "4.3.6",
+  "version": "4.3.8",
   "description": "Medplum Docs",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -48,23 +48,23 @@
     "@docusaurus/tsconfig": "3.8.1",
     "@docusaurus/types": "3.8.1",
     "@mdx-js/react": "3.1.0",
-    "@medplum/core": "4.3.6",
-    "@medplum/fhirtypes": "4.3.6",
-    "@medplum/mock": "4.3.6",
+    "@medplum/core": "4.3.8",
+    "@medplum/fhirtypes": "4.3.8",
+    "@medplum/mock": "4.3.8",
     "@svgr/webpack": "8.1.0",
     "clsx": "2.1.1",
     "file-loader": "6.2.0",
     "prism-react-renderer": "2.4.1",
     "raw-loader": "4.0.2",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
     "react-intersection-observer": "9.16.0",
-    "react-router": "7.7.0",
-    "react-router-dom": "7.7.0",
+    "react-router": "7.7.1",
+    "react-router-dom": "7.7.1",
     "typescript": "5.8.3",
     "url-loader": "4.1.1"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^20.19.0 || >=22.12.0"
   }
 }

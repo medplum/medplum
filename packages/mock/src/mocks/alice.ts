@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, createReference, lazy, WithId } from '@medplum/core';
 import { Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 

@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AckCode, Hl7Message, isOperationOutcome, OperationOutcomeError, sleep } from '@medplum/core';
-import { createServer, Socket } from 'node:net';
+import net, { createServer, Socket } from 'node:net';
 import { Hl7Client } from './client';
 import { Hl7Connection, ReturnAckCategory } from './connection';
 import { Hl7ErrorEvent } from './events';
 import { Hl7Server } from './server';
+import { MockServer, MockSocket } from './test-utils';
 
 describe('Hl7Client', () => {
   // Helper function to get a random port number
@@ -47,13 +50,10 @@ describe('Hl7Client', () => {
     });
 
     afterEach(async () => {
-      hl7Client.close();
-      // Sleep to let client cleanup
-      await sleep(0);
+      await hl7Client.close();
     });
 
     afterAll(async () => {
-      hl7Client.close();
       await hl7Server.stop();
     });
 
@@ -202,8 +202,11 @@ describe('Hl7Client', () => {
         }
       });
 
+      let errorFromClose: Error | undefined;
       // Close the client while message is pending
-      hl7Client.close();
+      const closePromise = hl7Client.close().catch((err) => {
+        errorFromClose = err;
+      });
 
       // Verify the pending promise was rejected
       let promiseRejected = false;
@@ -220,6 +223,10 @@ describe('Hl7Client', () => {
       expect(isOperationOutcome(rejectionError?.outcome)).toBe(true);
       expect(rejectionError?.outcome.issue?.[0].code).toBe('incomplete');
       expect(rejectionError?.outcome.issue?.[0].details?.text).toBe('Message was still pending when connection closed');
+
+      // Close itself should not emit any errors
+      await closePromise;
+      expect(errorFromClose).toBeUndefined();
 
       // Verify the error event was emitted
       expect(closeErrorEvent).toBeDefined();
@@ -339,7 +346,7 @@ describe('Hl7Client', () => {
     await expect(client.connect()).rejects.toThrow();
 
     // Cleanup
-    client.close();
+    await client.close();
   });
 
   // Test sending to a non-responsive server
@@ -357,7 +364,7 @@ describe('Hl7Client', () => {
     await expect(client.connect()).rejects.toThrow('Connection timeout after 500ms');
 
     // Close the connection
-    client.close();
+    await client.close();
   }, 1000);
 
   // Test cancelling a connection attempt
@@ -385,11 +392,17 @@ describe('Hl7Client', () => {
       connectTimeout: 1000, // Long enough that we can cancel before it times out
     });
 
+    let err: Error | undefined;
     // Start connection but don't await it
-    expect(client.connect()).toBeDefined();
+    const pendingConnectPromise = client.connect().catch((_err) => {
+      err = _err;
+    });
+    expect(pendingConnectPromise).toBeDefined();
 
     // Close the client immediately to cancel the connection
-    client.close();
+    await client.close();
+
+    expect(err).toStrictEqual(new Error('Client closed while connecting'));
 
     // Stop the server
     await new Promise<void>((resolve) => {
@@ -424,7 +437,7 @@ describe('Hl7Client', () => {
 
     // Start the server
     await new Promise<void>((resolve) => {
-      server.listen(port, () => resolve());
+      server.listen(port, resolve);
     });
 
     // Create client with a moderate timeout
@@ -434,20 +447,30 @@ describe('Hl7Client', () => {
       connectTimeout: 1000,
     });
 
-    // Make multiple connection attempts in rapid succession
-    const connect1 = client.connect().catch(() => null);
-    // Don't wait for the first to complete
-    const connect2 = client.connect().catch(() => null);
-    const connect3 = client.connect().catch(() => null);
+    const connectionPromise = client.connect();
 
+    // Make multiple connection attempts in rapid succession
     // Wait for all connection attempts to complete or fail
-    await Promise.race([connect1, connect2, connect3]);
+    const results = await Promise.allSettled([client.connect(), client.connect(), client.connect()]);
+
+    // Get resolved connection from first promise for comparison with all the other results
+    const connection = await connectionPromise;
+
+    // All attempts to connect should resolve to the same connection
+    expect(results).toMatchObject([
+      expect.objectContaining({ status: 'fulfilled', value: connection }),
+      expect.objectContaining({ status: 'fulfilled', value: connection }),
+      expect.objectContaining({ status: 'fulfilled', value: connection }),
+    ]);
+
+    // Give some time for the server side listener to be invoked
+    await sleep(500);
 
     // Sleep so that events can fire
     await sleep(0);
 
     // Cleanup
-    client.close();
+    await client.close();
 
     // Stop the server
     await new Promise<void>((resolve) => {
@@ -495,7 +518,7 @@ describe('Hl7Client', () => {
     expect(response).toBeDefined();
 
     // Cleanup
-    client.close();
+    await client.close();
     await server.stop();
   });
 
@@ -540,7 +563,7 @@ describe('Hl7Client', () => {
     expect(response).toBeDefined();
 
     // Cleanup
-    client.close();
+    await client.close();
     await server.stop();
 
     // Should only have seen one connection
@@ -578,9 +601,10 @@ describe('Hl7Client', () => {
 
     expect(ack).toBeDefined();
 
-    serverSideConnection.close();
+    await serverSideConnection.close();
 
-    // Need to sleep since close event are emitted on next tick
+    // We need to wait until next tick for client-side to close their connection in response to server-side closing
+    // Otherwise when we go to send, the first tick the connection won't show as closed
     await sleep(0);
 
     // Should succeed
@@ -593,7 +617,64 @@ describe('Hl7Client', () => {
 
     expect(ack).toBeDefined();
 
-    client.close();
+    await client.close();
     await server.stop();
+  });
+
+  describe('Using MockSocket', () => {
+    test('Does not fail many calls to sendAndWait in a row when connection is broken', async () => {
+      // Scenario: Disconnected client gets a lot of calls to sendAndWait at once
+      // Previously we would keep aborting connection attempts every time another call to `sendAndWait` is made since we always call connect
+      // This test makes sure that if we call `sendAndWait` a lot that the one pending connection attempt is reused and all the calls resolve instead of all rejecting
+      // Except for the last call which finally connects
+
+      const clientMockSocket = new MockSocket();
+      const serverMockSocket = new MockSocket();
+      const mockServer = new MockServer();
+
+      // Mock connect and createServer so we can wait to connect with a delay
+      jest.spyOn(net, 'connect').mockImplementation(() => clientMockSocket as unknown as net.Socket);
+      jest.spyOn(net, 'createServer').mockImplementation(((
+        connectionListener?: (socket: net.Socket) => void
+      ): net.Server => {
+        mockServer.connectionListener = connectionListener as any;
+        return mockServer as unknown as net.Server;
+      }) as any);
+
+      const hl7Server = new Hl7Server((connection) => {
+        connection.addEventListener('message', (event) => {
+          connection.send(event.message.buildAck());
+        });
+      });
+
+      hl7Server.start(9001);
+
+      // Create client with keepAlive = true
+      const client = new Hl7Client({
+        host: 'localhost',
+        port: 9001, // Port doesn't matter since we are mocking socket
+        keepAlive: true,
+      });
+
+      const promises = [];
+      for (let i = 0; i < 6; i++) {
+        promises.push(
+          client.sendAndWait(
+            Hl7Message.parse(
+              `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG0000${i + 1}|P|2.2\r` +
+                'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+            )
+          )
+        );
+        await sleep(50);
+      }
+
+      // Delayed connect for client after all calls to sendAndWait
+      mockServer.mockConnect(clientMockSocket, serverMockSocket);
+
+      await Promise.all(promises);
+      await client.close();
+      await hl7Server.stop();
+    });
   });
 });

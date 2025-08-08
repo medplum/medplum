@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { convertCcdaToFhir } from './ccda-to-fhir';

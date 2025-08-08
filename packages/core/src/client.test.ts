@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   Bot,
   Bundle,
@@ -531,6 +533,46 @@ describe('Client', () => {
     expect(result).toBeUndefined();
     expect(assign).not.toHaveBeenCalledWith(expect.stringContaining('code_challenge'));
     expect(assign).not.toHaveBeenCalledWith(expect.stringContaining('code_challenge_method'));
+  });
+
+  test('Sign in with external auth -- no crypto.subtle', async () => {
+    const originalAssign = window.location.assign;
+    const assign = jest.fn();
+    Object.defineProperty(window, 'location', {
+      value: { assign },
+      writable: true,
+    });
+
+    const originalSubtle = crypto.subtle;
+    Object.defineProperty(crypto, 'subtle', {
+      value: undefined,
+      writable: true,
+    });
+
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.signInWithExternalAuth(
+      'https://auth.example.com/authorize',
+      'external-client-123',
+      'https://me.example.com',
+      {
+        clientId: 'medplum-client-123',
+      },
+      false
+    );
+    expect(result).toBeUndefined();
+    expect(assign).not.toHaveBeenCalledWith(expect.stringContaining('code_challenge'));
+    expect(assign).not.toHaveBeenCalledWith(expect.stringContaining('code_challenge_method'));
+
+    Object.defineProperty(crypto, 'subtle', {
+      value: originalSubtle,
+      writable: true,
+    });
+
+    Object.defineProperty(window, 'location', {
+      value: { assign: originalAssign },
+      writable: true,
+    });
   });
 
   test('External auth token exchange', async () => {

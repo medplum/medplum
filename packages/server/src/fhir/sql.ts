@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
@@ -870,6 +872,7 @@ export class InsertQuery extends BaseQuery {
   private readonly query?: SelectQuery;
   private returnColumns?: string[];
   private conflictColumns?: string[];
+  private conflictCondition?: Condition;
   private ignoreConflict?: boolean;
 
   constructor(tableName: string, values: Record<string, any>[] | SelectQuery) {
@@ -881,8 +884,11 @@ export class InsertQuery extends BaseQuery {
     }
   }
 
-  mergeOnConflict(columns?: string[]): this {
+  mergeOnConflict(columns?: string[], where?: Condition): this {
     this.conflictColumns = columns ?? ['id'];
+    if (where) {
+      this.conflictCondition = where;
+    }
     return this;
   }
 
@@ -971,7 +977,14 @@ export class InsertQuery extends BaseQuery {
       return;
     }
 
-    sql.append(` ON CONFLICT (${this.conflictColumns.map((c) => '"' + c + '"').join(', ')}) DO UPDATE SET `);
+    sql.append(` ON CONFLICT (`);
+    sql.append(this.conflictColumns.map((c) => '"' + c + '"').join(', '));
+    sql.append(`)`);
+    if (this.conflictCondition) {
+      sql.append(' WHERE ');
+      sql.appendExpression(this.conflictCondition);
+    }
+    sql.append(` DO UPDATE SET `);
 
     const columns = Object.keys(this.values[0]);
     let first = true;

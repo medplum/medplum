@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { HealthieClient } from './client';
 import {

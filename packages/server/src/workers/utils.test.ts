@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Subscription } from '@medplum/fhirtypes';
 import { Job, Queue, Worker } from 'bullmq';
 import EventEmitter from 'node:events';

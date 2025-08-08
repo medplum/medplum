@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { normalizeOperationOutcome } from '@medplum/core';
 import { Bundle, OperationOutcome, Patient } from '@medplum/fhirtypes';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
