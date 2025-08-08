@@ -129,13 +129,7 @@ export async function nonBlockingAlterColumnNotNull(
   */
 
   // add constraint with NOT VALID to avoid a blocking full table scan
-  await query(
-    client,
-    actions,
-    `ALTER TABLE ${escapeIdentifier(tableName)}
-    ADD CONSTRAINT ${escapeIdentifier(constraintName)}
-    CHECK (${escapeIdentifier(columnName)} IS NOT NULL) NOT VALID`
-  );
+  await addConstraint(client, actions, tableName, constraintName, `${escapeIdentifier(columnName)} IS NOT NULL`, true);
 
   // validate constraint; does not block updates to the table
   await query(
@@ -156,5 +150,20 @@ export async function nonBlockingAlterColumnNotNull(
     client,
     actions,
     `ALTER TABLE ${escapeIdentifier(tableName)} DROP CONSTRAINT ${escapeIdentifier(constraintName)}`
+  );
+}
+
+export async function addConstraint(
+  client: Client | Pool | PoolClient,
+  actions: MigrationActionResult[],
+  tableName: string,
+  constraintName: string,
+  constraintExpression: string,
+  notValid?: boolean
+): Promise<void> {
+  await query(
+    client,
+    actions,
+    `ALTER TABLE ${escapeIdentifier(tableName)} ADD CONSTRAINT ${escapeIdentifier(constraintName)} CHECK (${constraintExpression})${notValid ? ' NOT VALID' : ''}`
   );
 }
