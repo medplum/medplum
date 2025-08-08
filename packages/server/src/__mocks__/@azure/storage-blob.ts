@@ -1,8 +1,5 @@
-/**
- * This is a Jest mock for the Azure Blob Storage client library.
- * It provides minimal mocking to support testing the string vs stream handling logic
- * in AzureBlobStorage.writeFile().
- */
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 
 export const mockUpload = jest.fn().mockResolvedValue(undefined);
 export const mockUploadStream = jest.fn().mockResolvedValue(undefined);
