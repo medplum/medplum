@@ -225,11 +225,7 @@ async function createActivityDefinitionTask(
     const expression = ownerExtension.valueExpression?.expression;
     if (expression) {
       const parametersValue = toTypedValue(parameters);
-      const patientValue = toTypedValue(subject);
-      const result = evalFhirPathTyped(expression, [parametersValue, patientValue], {
-        '%resource': parametersValue,
-        '%patient': patientValue,
-      });
+      const result = evalFhirPathTyped(expression, [parametersValue]);
       if (result.length !== 0) {
         const resultValue = result[0].value;
         if (resultValue && typeof resultValue === 'object' && 'reference' in resultValue) {
