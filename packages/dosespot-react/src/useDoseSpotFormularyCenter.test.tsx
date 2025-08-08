@@ -10,14 +10,8 @@ import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT }
 import { useDoseSpotClinicFormulary } from './useDoseSpotFormularyCenter';
 
 function TestComponent(): JSX.Element {
-  const {
-    state,
-    searchMedications,
-    addFavoriteMedication,
-    setDirections,
-    setSelectedMedication,
-    getMedicationName,
-  } = useDoseSpotClinicFormulary();
+  const { state, searchMedications, addFavoriteMedication, setDirections, setSelectedMedication, getMedicationName } =
+    useDoseSpotClinicFormulary();
 
   const handleSetMedication = (): void => {
     const testMedication: MedicationKnowledge = {

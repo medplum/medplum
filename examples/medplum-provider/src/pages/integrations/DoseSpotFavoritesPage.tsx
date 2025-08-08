@@ -34,14 +34,8 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
   const [loading, setLoading] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const {
-    state,
-    addFavoriteMedication,
-    searchMedications,
-    setDirections,
-    setSelectedMedication,
-    getMedicationName,
-  } = useDoseSpotClinicFormulary();
+  const { state, addFavoriteMedication, searchMedications, setDirections, setSelectedMedication, getMedicationName } =
+    useDoseSpotClinicFormulary();
 
   const handleAddFavoriteMedication = async (medication: MedicationKnowledge | undefined): Promise<void> => {
     if (!medication) {
@@ -74,7 +68,9 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
     }
   };
 
-  const toOption = (medication: MedicationKnowledge): { value: string; label: string; resource: MedicationKnowledge } => ({
+  const toOption = (
+    medication: MedicationKnowledge
+  ): { value: string; label: string; resource: MedicationKnowledge } => ({
     value: Math.random().toString(), //No ids on the MedicationKnowledge objects yet
     label: medication.code?.text || 'Unknown Medication',
     resource: medication,
@@ -112,7 +108,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
             toOption={toOption}
             itemComponent={({ resource }) => (
               <Group gap="sm">
-                  <Text size="sm">{getMedicationName(resource)}</Text>
+                <Text size="sm">{getMedicationName(resource)}</Text>
               </Group>
             )}
             onChange={(medications) => {
