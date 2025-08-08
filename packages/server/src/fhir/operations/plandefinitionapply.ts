@@ -219,7 +219,7 @@ async function createActivityDefinitionTask(
   };
 
   const taskElementsExtension = getExtension(activityDefinition, TASK_ELEMENTS_URL);
-  const ownerExtension = taskElementsExtension?.extension?.find((e) => e.url === 'owner');
+  const ownerExtension = getExtension(taskElementsExtension, 'owner');
   let owner: Reference<Practitioner | Organization> | undefined = undefined;
   if (ownerExtension) {
     const expression = ownerExtension.valueExpression?.expression;
@@ -235,7 +235,7 @@ async function createActivityDefinitionTask(
     }
   }
 
-  const performerTypeExtension = taskElementsExtension?.extension?.find((e) => e.url === 'performerType');
+  const performerTypeExtension = getExtension(taskElementsExtension, 'performerType');
   const performerType: CodeableConcept | undefined = performerTypeExtension
     ? performerTypeExtension.valueCodeableConcept
     : undefined;
