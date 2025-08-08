@@ -629,10 +629,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       if (options?.ifMatch) {
         // Conditional update requires transaction
         result = await this.withTransaction(() =>
-          this.updateResourceImpl(resource, false, options.ifMatch, options?.inheritAccounts)
+          this.updateResourceImpl(resource, false, options)
         );
       } else {
-        result = await this.updateResourceImpl(resource, false, undefined, options?.inheritAccounts);
+        result = await this.updateResourceImpl(resource, false, options);
       }
       const durationMs = Date.now() - startTime;
       await this.postCommit(async () => {
@@ -671,8 +671,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async updateResourceImpl<T extends Resource>(
     resource: T,
     create: boolean,
-    versionId?: string,
-    inheritAccounts?: boolean
+    options?: UpdateResourceOptions
   ): Promise<WithId<T>> {
     const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
     let validatedResource = this.checkResourcePermissions(resource, interaction);
@@ -699,7 +698,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         // Check before the update
         throw new OperationOutcomeError(forbidden);
       }
-      if (versionId && existing.meta?.versionId !== versionId) {
+      if (options?.ifMatch && existing.meta?.versionId !== options.ifMatch) {
         throw new OperationOutcomeError(preconditionFailed);
       }
     }
@@ -723,7 +722,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (projectId) {
       resultMeta.project = projectId;
     }
-    const accounts = await this.getAccounts(existing, updated, inheritAccounts);
+    const accounts = await this.getAccounts(existing, updated, options?.inheritAccounts);
     if (accounts) {
       resultMeta.account = accounts[0];
       resultMeta.accounts = accounts;
@@ -1198,7 +1197,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         patchObject(resource, patch);
 
-        const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
+        const result = await this.updateResourceImpl(resource, false, options);
         const durationMs = Date.now() - startTime;
 
         await this.postCommit(async () => {
