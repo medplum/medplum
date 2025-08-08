@@ -6,7 +6,7 @@ import { Task } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import cx from 'clsx';
 import React, { JSX, useEffect, useMemo, useState } from 'react';
-import { Outlet, useParams } from 'react-router';
+import { Outlet, useNavigate, useParams } from 'react-router';
 import { TaskListItem } from '../../components/tasks/TaskListItem';
 import { showErrorNotification } from '../../utils/notifications';
 import classes from './TasksPage.module.css';
@@ -15,10 +15,12 @@ export function TasksPage(): JSX.Element {
   const { taskId } = useParams();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | undefined>(undefined);
   const [showMyTasks, setShowMyTasks] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
+  const [notFound, setNotFound] = useState<boolean>(false);
   const profileRef = useMemo(() => (profile ? createReference(profile as ProfileResource) : undefined), [profile]);
 
   useEffect(() => {
@@ -45,23 +47,20 @@ export function TasksPage(): JSX.Element {
         if (task) {
           setSelectedTask(task);
         } else {
-          try {
-            const task = await medplum.readResource('Task', taskId);
-            setSelectedTask(task || undefined);
-          } catch (error) {
-            showErrorNotification(error);
-            setSelectedTask(undefined);
-          }
+          const task = await medplum.readResource('Task', taskId);
+          setSelectedTask(task);
         }
-      } else if (tasks.length > 0) {
-        setSelectedTask(tasks[0]);
       }
     };
 
-    handleTaskSelection().catch(showErrorNotification);
-  }, [taskId, tasks, medplum]);
+    setNotFound(false);
+    handleTaskSelection().catch(() => {
+      setNotFound(true);
+    });
+  }, [taskId, tasks, medplum, navigate]);
 
   const handleTaskChange = (task: Task): void => {
+    console.log('handleTaskChange', task);
     setSelectedTask(task);
     setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
   };
@@ -113,7 +112,9 @@ export function TasksPage(): JSX.Element {
           </Paper>
         </Flex>
 
-        <Outlet context={{ task: selectedTask, onTaskChange: handleTaskChange, onDeleteTask: handleDeleteTask }} />
+        <Outlet
+          context={{ notFound, task: selectedTask, onTaskChange: handleTaskChange, onDeleteTask: handleDeleteTask }}
+        />
       </Flex>
     </div>
   );

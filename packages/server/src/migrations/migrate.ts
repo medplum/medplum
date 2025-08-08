@@ -796,7 +796,6 @@ function buildCodingTable(result: SchemaDefinition): void {
     ],
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
-      { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
       {
         columns: ['system', 'code'],
         indexType: 'btree',
@@ -805,7 +804,16 @@ function buildCodingTable(result: SchemaDefinition): void {
         where: `"synonymOf" IS NULL`,
         indexNameSuffix: 'primary_idx',
       },
-      { columns: ['system', 'code', 'display'], indexType: 'btree', unique: true },
+      {
+        columns: [
+          'system',
+          'code',
+          'display',
+          { expression: `COALESCE("synonymOf", ('-1'::integer)::bigint)`, name: 'synonymOf' },
+        ],
+        indexType: 'btree',
+        unique: true,
+      },
       { columns: ['system', { expression: 'display gin_trgm_ops', name: 'displayTrgm' }], indexType: 'gin' },
     ],
   });

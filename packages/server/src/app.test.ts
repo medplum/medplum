@@ -188,6 +188,22 @@ describe('App', () => {
       const logObj = JSON.parse(logLine);
       expect(logObj).toMatchObject({ profile: `${getReferenceString(client)} (as ${getReferenceString(profile)})` });
     });
+
+    test('Logs on middleware error', async () => {
+      const accessToken = await initTestAuth();
+      const res1 = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(`>kjaysgdfsk;sdfgjsdrg<`); // Send malformed data that will fail in the body parser middleware
+      expect(res1.status).toBe(400);
+      expect(process.stdout.write).toHaveBeenCalledTimes(1);
+
+      const calls = (process.stdout.write as jest.Mock).mock.calls;
+      const logLine = calls[calls.length - 1][0];
+      const logObj = JSON.parse(logLine);
+      expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 400 });
+    });
   });
 
   test('Internal Server Error', async () => {
