@@ -628,9 +628,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       let result: WithId<T>;
       if (options?.ifMatch) {
         // Conditional update requires transaction
-        result = await this.withTransaction(() =>
-          this.updateResourceImpl(resource, false, options)
-        );
+        result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options));
       } else {
         result = await this.updateResourceImpl(resource, false, options);
       }
