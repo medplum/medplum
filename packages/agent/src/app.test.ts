@@ -816,7 +816,7 @@ describe('App', () => {
     expect(app.channels.has('hl7-dev')).toStrictEqual(true);
     expect(app.channels.size).toStrictEqual(5);
 
-    hl7Client.close();
+    await hl7Client.close();
     await app.stop();
     await new Promise<void>((resolve) => {
       mockServer.stop(resolve);
@@ -1046,7 +1046,7 @@ describe('App', () => {
     }
     expect(isError).toStrictEqual(true);
 
-    hl7Client.close();
+    await hl7Client.close();
 
     // Wait for socket
     let shouldThrow = false;
@@ -1190,7 +1190,7 @@ describe('App', () => {
     expect(response.segments).toHaveLength(2);
     expect(response.segments[1].name).toBe('MSA');
 
-    hl7Client.close();
+    await hl7Client.close();
 
     // Try to send agent:transmit:request -- should return valid response
     // Start an HL7 listener
@@ -1365,7 +1365,7 @@ describe('App', () => {
     }
     expect(isError).toStrictEqual(true);
 
-    hl7Client.close();
+    await hl7Client.close();
 
     // This one should succeed
     hl7Client = new Hl7Client({
@@ -1387,7 +1387,7 @@ describe('App', () => {
     expect(response.segments).toHaveLength(2);
     expect(response.segments[1].name).toBe('MSA');
 
-    hl7Client.close();
+    await hl7Client.close();
 
     // Set agent status back to 'active'
     await medplum.updateResource<Endpoint>({
@@ -1458,7 +1458,7 @@ describe('App', () => {
     expect(response.segments).toHaveLength(2);
     expect(response.segments[1].name).toBe('MSA');
 
-    hl7Client.close();
+    await hl7Client.close();
 
     // This one should succeed
     hl7Client = new Hl7Client({
@@ -1480,7 +1480,7 @@ describe('App', () => {
     expect(response.segments).toHaveLength(2);
     expect(response.segments[1].name).toBe('MSA');
 
-    hl7Client.close();
+    await hl7Client.close();
 
     await app.stop();
     await new Promise<void>((resolve) => {
@@ -1583,7 +1583,7 @@ describe('App', () => {
     const testChannel = app.channels.get('test') as AgentHl7Channel;
     expect(testChannel.connections.size).toBe(1);
 
-    hl7Client.close();
+    await hl7Client.close();
 
     await app.stop();
 
