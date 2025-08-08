@@ -440,7 +440,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const resource = JSON.parse(rows[0].content as string) as WithId<T>;
-    //TODO{mattlong} replace meta.project of UUID_NIL with undefined
     await this.setCacheEntry(resource);
     return resource;
   }
@@ -1156,7 +1155,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           id,
           lastUpdated,
           deleted: true,
-          projectId: resource.meta?.project,
+          projectId: resource.meta?.project ?? SYSTEM_PROJECT_ID,
           content,
           __version: -1,
         };
