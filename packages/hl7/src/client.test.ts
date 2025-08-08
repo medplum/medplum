@@ -1,8 +1,9 @@
 import { Hl7Message, sleep } from '@medplum/core';
-import { createServer, Socket } from 'node:net';
+import net, { createServer, Socket } from 'node:net';
 import { Hl7Client } from './client';
 import { Hl7Connection } from './connection';
 import { Hl7Server } from './server';
+import { MockServer, MockSocket } from './test-utils';
 
 describe('Hl7Client', () => {
   // Helper function to get a random port number
@@ -297,5 +298,62 @@ describe('Hl7Client', () => {
 
     await client.close();
     await server.stop();
+  });
+
+  describe('Using MockSocket', () => {
+    test('Does not fail many calls to sendAndWait in a row when connection is broken', async () => {
+      // Scenario: Disconnected client gets a lot of calls to sendAndWait at once
+      // Previously we would keep aborting connection attempts every time another call to `sendAndWait` is made since we always call connect
+      // This test makes sure that if we call `sendAndWait` a lot that the one pending connection attempt is reused and all the calls resolve instead of all rejecting
+      // Except for the last call which finally connects
+
+      const clientMockSocket = new MockSocket();
+      const serverMockSocket = new MockSocket();
+      const mockServer = new MockServer();
+
+      // Mock connect and createServer so we can wait to connect with a delay
+      jest.spyOn(net, 'connect').mockImplementation(() => clientMockSocket as unknown as net.Socket);
+      jest.spyOn(net, 'createServer').mockImplementation(((
+        connectionListener?: (socket: net.Socket) => void
+      ): net.Server => {
+        mockServer.connectionListener = connectionListener as any;
+        return mockServer as unknown as net.Server;
+      }) as any);
+
+      const hl7Server = new Hl7Server((connection) => {
+        connection.addEventListener('message', (event) => {
+          connection.send(event.message.buildAck());
+        });
+      });
+
+      hl7Server.start(9001);
+
+      // Create client with keepAlive = true
+      const client = new Hl7Client({
+        host: 'localhost',
+        port: 9001, // Port doesn't matter since we are mocking socket
+        keepAlive: true,
+      });
+
+      const promises = [];
+      for (let i = 0; i < 6; i++) {
+        promises.push(
+          client.sendAndWait(
+            Hl7Message.parse(
+              `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG0000${i + 1}|P|2.2\r` +
+                'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+            )
+          )
+        );
+        await sleep(50);
+      }
+
+      // Delayed connect for client after all calls to sendAndWait
+      mockServer.mockConnect(clientMockSocket, serverMockSocket);
+
+      await Promise.all(promises);
+      await client.close();
+      await hl7Server.stop();
+    });
   });
 });

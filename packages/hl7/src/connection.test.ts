@@ -1,38 +1,9 @@
 import { Hl7Message } from '@medplum/core';
 import iconv from 'iconv-lite';
-import { Duplex } from 'node:stream';
 import { Hl7Connection } from './connection';
 import { CR, FS, VT } from './constants';
 import { Hl7MessageEvent } from './events';
-
-class MockSocket extends Duplex {
-  closed = false;
-  handlers: Record<string, () => void> = {};
-  setEncoding = jest.fn();
-
-  on(event: unknown, listener: unknown): this {
-    this.handlers[event as string] = listener as () => void;
-    return super.on(event as any, listener as any);
-  }
-
-  close(): this {
-    this.closed = true;
-    this.emit('close');
-    return this;
-  }
-
-  end(): this {
-    return this.close();
-  }
-
-  destroy(_error?: Error): this {
-    return this.close();
-  }
-
-  write = jest.fn((chunk) => {
-    super.write(chunk);
-  }) as any;
-}
+import { MockSocket } from './test-utils';
 
 describe('HL7 Connection', () => {
   test('Error', async () => {

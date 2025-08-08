@@ -78,7 +78,8 @@ export class Hl7Client extends Hl7Base {
       const error = new Error(`Connection timeout after ${this.connectTimeout}ms`);
       this.rejectDeferredPromise(deferredPromise, error);
     };
-    this.socket.on('timeout', timeoutListener);
+
+    socket.on('timeout', timeoutListener);
   }
 
   private registerSocketConnectListener(deferredPromise: DeferredConnectionPromise): void {
@@ -103,6 +104,7 @@ export class Hl7Client extends Hl7Base {
 
       deferredPromise.resolve(connection);
     };
+
     socket.on('connect', connectListener);
   }
 
@@ -120,6 +122,7 @@ export class Hl7Client extends Hl7Base {
         this.rejectDeferredPromise(deferredPromise, err);
       }
     };
+
     socket.on('error', errorListener);
   }
 
@@ -179,9 +182,9 @@ export class Hl7Client extends Hl7Base {
   private cleanupSocket(socket: Socket): void {
     if (!socket.destroyed) {
       socket.destroy();
-      if (socket === this.socket) {
-        this.socket = undefined;
-      }
+    }
+    if (socket === this.socket) {
+      this.socket = undefined;
     }
   }
 
