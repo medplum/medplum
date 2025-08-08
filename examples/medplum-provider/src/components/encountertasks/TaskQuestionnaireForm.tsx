@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Box, Center, Group, Paper, Skeleton, Stack, ThemeIcon, Text } from '@mantine/core';
-import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
-import { QuestionnaireForm, useMedplum } from '@medplum/react';
+import { Box, Group, Skeleton, Stack } from '@mantine/core';
+import { normalizeOperationOutcome } from '@medplum/core';
+import { OperationOutcome, Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
+import { OperationOutcomeAlert, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
-import { IconFileX } from '@tabler/icons-react';
 
 interface TaskQuestionnaireFormProps {
   task: Task;
@@ -15,8 +15,8 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
   const medplum = useMedplum();
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>(undefined);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
-  const [notFound, setNotFound] = useState(false);
+  const [loading, setLoading] = useState(false)
+  const [outcome, setOutcome] = useState<OperationOutcome | undefined>(undefined);
 
   const onChange = (response: QuestionnaireResponse): void => {
     const baseResponse = questionnaireResponse || response;
@@ -45,11 +45,11 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
       }
     };
 
-    setNotFound(false);
+    setOutcome(undefined);
     setLoading(true);
     fetchResources()
-      .catch(() => {
-        setNotFound(true);
+      .catch((err) => {
+        setOutcome(normalizeOperationOutcome(err));
       })
       .finally(() => setLoading(false));
   }, [medplum, task]);
@@ -68,8 +68,7 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
           onChange={onChange}
         />
       )}
-
-      {notFound && <NotFoundPanel />}
+      {outcome && <OperationOutcomeAlert outcome={outcome} />}
     </Box>
   );
 };
@@ -137,34 +136,4 @@ const QuestionnaireSkeleton = (): JSX.Element => (
       </Group>
     </Stack>
   </Stack>
-);
-
-const NotFoundPanel = (): JSX.Element => (
-  <Paper
-    withBorder
-    p="xl"
-    radius="md"
-    style={{
-      backgroundColor: 'var(--mantine-color-gray-0)',
-      borderColor: 'var(--mantine-color-gray-3)',
-    }}
-  >
-    <Center>
-      <Stack align="center" gap="md">
-        <ThemeIcon size={60} radius="xl" color="gray" variant="light">
-          <IconFileX size={30} />
-        </ThemeIcon>
-
-        <Stack align="center" gap="xs">
-          <Text size="lg" fw={500} c="dimmed">
-            Questionnaire Not Found
-          </Text>
-          <Text size="sm" c="dimmed" ta="center" maw={300}>
-            The questionnaire associated with this task could not be loaded. It may have been deleted or you may not
-            have permission to access it.
-          </Text>
-        </Stack>
-      </Stack>
-    </Center>
-  </Paper>
 );
