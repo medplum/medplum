@@ -4,41 +4,47 @@ import { Divider, Flex, Paper, PaperProps, Stack, Text } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { Patient, Practitioner, Reference, ResourceType, Task } from '@medplum/fhirtypes';
 import { CodeInput, DateTimeInput, ReferenceInput, ResourceInput, useMedplum } from '@medplum/react';
-import React, { useState } from 'react';
-import { SAVE_TIMEOUT_MS } from '../../config/constants';
+import React, { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
 
-interface TaskInfoProps extends PaperProps {
+interface TaskPropertiesProps extends PaperProps {
   task: Task;
   onTaskChange: (task: Task) => void;
 }
 
-export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
-  const { task, onTaskChange, ...paperProps } = props;
+export function TaskProperties(props: TaskPropertiesProps): React.JSX.Element {
+  const { task: initialTask, onTaskChange, ...paperProps } = props;
+  const [task, setTask] = useState<Task | undefined>(initialTask);
   const medplum = useMedplum();
   const [dueDate, setDueDate] = useState<string | undefined>(task?.restriction?.period?.end);
-  const debouncedUpdateResource = useDebouncedUpdateResource(medplum, SAVE_TIMEOUT_MS);
+  const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
+
+  useEffect(() => {
+    setTask(initialTask);
+  }, [initialTask]);
 
   const handleDueDateChange = async (value: string | undefined): Promise<void> => {
     setDueDate(value);
-    await handleTaskUpdate({ ...task, restriction: { ...task.restriction, period: { end: value } } });
+    await handleTaskUpdate({ ...task, restriction: { ...task?.restriction, period: { end: value } } } as Task);
   };
 
   const handlePatientChange = async (value: Reference<Patient> | undefined): Promise<void> => {
-    await handleTaskUpdate({ ...task, for: value });
+    await handleTaskUpdate({ ...task, for: value } as Task);
   };
 
   const handlePriorityChange = async (value: string): Promise<void> => {
-    await handleTaskUpdate({ ...task, priority: value as Task['priority'] });
+    await handleTaskUpdate({ ...task, priority: value as Task['priority'] } as Task);
   };
 
   const handlePractitionerChange = async (value: Reference<Practitioner> | undefined): Promise<void> => {
-    await handleTaskUpdate({ ...task, owner: value });
+    await handleTaskUpdate({ ...task, owner: value } as Task);
   };
 
   const handleStatusChange = async (value: string | undefined): Promise<void> => {
-    await handleTaskUpdate({ ...task, status: value as Task['status'] });
+    if (value) {
+      await handleTaskUpdate({ ...task, status: value as Task['status'] } as Task);
+    }
   };
 
   const handleTaskUpdate = async (value: Task): Promise<void> => {
@@ -55,6 +61,7 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
       <Flex direction="column" gap="lg">
         <Stack gap="xs">
           <CodeInput
+            key={`${task?.status}-${task?.id}`}
             name="status"
             label="Status"
             binding="http://hl7.org/fhir/ValueSet/task-status"
@@ -110,8 +117,8 @@ export function TaskInfo(props: TaskInfoProps): React.JSX.Element {
                 placeholder="Select any resource..."
                 onChange={async (value: Reference | undefined) => {
                   if (value?.reference) {
-                    const newBasedOn = [...(task.basedOn || []), value];
-                    await handleTaskUpdate({ ...task, basedOn: newBasedOn });
+                    const newBasedOn = [...(task?.basedOn || []), value];
+                    await handleTaskUpdate({ ...task, basedOn: newBasedOn } as Task);
                   }
                 }}
               />

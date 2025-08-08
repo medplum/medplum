@@ -34,7 +34,7 @@ const send = new MedplumCommand('send')
       const response = await client.sendAndWait(Hl7Message.parse(body));
       console.log(response.toString().replaceAll('\r', '\n'));
     } finally {
-      client.close();
+      await client.close();
     }
   });
 

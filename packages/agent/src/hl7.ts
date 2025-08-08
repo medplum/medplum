@@ -42,7 +42,7 @@ export class AgentHl7Channel extends BaseChannel {
       return;
     }
     this.log.info('Channel stopping...');
-    this.connections.forEach((connection) => connection.close());
+    await Promise.allSettled(Array.from(this.connections.values()).map((connection) => connection.close()));
     await this.server.stop();
     this.started = false;
     this.log.info('Channel stopped successfully');
@@ -149,7 +149,7 @@ export class AgentHl7ChannelConnection {
     this.channel.log.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
   }
 
-  close(): void {
-    this.hl7Connection.close();
+  close(): Promise<void> {
+    return this.hl7Connection.close();
   }
 }
