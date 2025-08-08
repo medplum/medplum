@@ -1,30 +1,50 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Button, Divider, Flex, Modal, Paper, ScrollArea, Stack, Text, Textarea } from '@mantine/core';
-import { createReference, formatDate, getDisplayString, PatchOperation } from '@medplum/core';
-import { Annotation, Task } from '@medplum/fhirtypes';
+import {
+  ActionIcon,
+  Button,
+  Card,
+  Divider,
+  Flex,
+  Modal,
+  Paper,
+  ScrollArea,
+  Stack,
+  Text,
+  Textarea,
+} from '@mantine/core';
+import { createReference, formatDate, getDisplayString, getReferenceString } from '@medplum/core';
+import { Annotation, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCheck, IconTrash } from '@tabler/icons-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { showErrorNotification } from '../../utils/notifications';
 import { TaskQuestionnaireForm } from '../encountertasks/TaskQuestionnaireForm';
+import { useDebouncedUpdateResource } from '../../hooks/useDebouncedUpdateResource';
+import { TaskNoteItem } from './TaskNoteItem';
+import { useDebouncedCallback } from '@mantine/hooks';
+import { SAVE_TIMEOUT_MS } from '../../config/constants';
 
 interface TasksInputNoteProps {
   task: Task;
+  onTaskChange: (task: Task) => void;
   onDeleteTask: (task: Task) => void;
 }
 
 export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
-  const { task: initialTask, onDeleteTask } = props;
+  const { task: initialTask, onTaskChange, onDeleteTask } = props;
   const medplum = useMedplum();
+  const debouncedUpdateResource = useDebouncedUpdateResource(medplum);
   const author = useMedplumProfile();
   const [task, setTask] = useState<Task>(initialTask);
   const [note, setNote] = useState<string>('');
   const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
 
+  useEffect(() => {
+    setTask(initialTask);
+  }, [initialTask]);
+
   const handleAddComment = async (): Promise<void> => {
-    const taskId = task.id as string;
-    const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
     const comment: Annotation = {
       text: note,
       authorReference: author && createReference(author),
@@ -32,12 +52,13 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
     };
 
     const taskNotes = [...(task.note || []), comment];
-    const op: PatchOperation['op'] = task.note ? 'replace' : 'add';
-    ops.push({ op, path: '/note', value: taskNotes });
 
     try {
-      const result = await medplum.patchResource('Task', taskId, ops);
-      setTask(result);
+      const result: Task = await medplum.updateResource({
+        ...task,
+        note: taskNotes,
+      } as Task);
+      onTaskChange(result);
       setNote('');
     } catch (error) {
       showErrorNotification(error);
@@ -59,16 +80,42 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
   };
 
   const handleMarkAsCompleted = async (): Promise<void> => {
-    const ops: PatchOperation[] = [{ op: 'test', path: '/meta/versionId', value: task.meta?.versionId }];
-    ops.push({ op: 'replace', path: '/status', value: 'completed' });
-
     try {
-      const result = await medplum.patchResource('Task', task.id as string, ops);
-      setTask(result);
+      const result: Task = {
+        ...task,
+        status: 'completed',
+      };
+      onTaskChange(result);
+      await debouncedUpdateResource(result);
     } catch (error) {
       showErrorNotification(error);
     }
   };
+
+  const saveQuestionnaireResponse = useDebouncedCallback(
+    async (task: Task, response: QuestionnaireResponse): Promise<void> => {
+      try {
+        if (response.id) {
+          await medplum.updateResource<QuestionnaireResponse>(response);
+        } else {
+          const updatedResponse = await medplum.createResource<QuestionnaireResponse>(response);
+          const updatedTask = await medplum.updateResource<Task>({
+            ...task,
+            output: [
+              {
+                type: { text: 'QuestionnaireResponse' },
+                valueReference: { reference: getReferenceString(updatedResponse) },
+              },
+            ],
+          });
+          onTaskChange(updatedTask);
+        }
+      } catch (err) {
+        showErrorNotification(err);
+      }
+    },
+    SAVE_TIMEOUT_MS
+  );
 
   return (
     <Paper h="100%">
@@ -113,31 +160,46 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
         <Stack>
           {task?.focus?.reference?.startsWith('Questionnaire/') && (
             <>
-              <TaskQuestionnaireForm key={task.id} task={task} />
+              <Stack gap={0}>
+                <Text size="lg" fw={600} mb="lg">
+                  Related Questionnaire
+                </Text>
+                <Card withBorder shadow="sm" p="md">
+                  <TaskQuestionnaireForm
+                    key={task.focus.reference}
+                    task={task}
+                    onChangeResponse={(response) => saveQuestionnaireResponse(task, response)}
+                  />
+                  <Divider />
+                </Card>
+              </Stack>
               <Divider />
             </>
           )}
 
-          {task.note?.map((note) => (
-            <div key={note.id}>
-              <Text>{note.text}</Text>
-              <Divider />
-            </div>
-          ))}
+          <Stack gap={0}>
+            <Text size="lg" fw={600} mb="md">
+              Notes
+            </Text>
 
-          <Stack gap="xs">
-            <Textarea
-              placeholder="Add a note..."
-              minRows={4}
-              value={note ?? ''}
-              onChange={(e) => setNote(e.currentTarget.value)}
-              autosize
-            />
-            <Flex justify="flex-end">
-              <Button type="submit" disabled={!note || note.trim() === ''} onClick={handleAddComment}>
-                Submit
-              </Button>
-            </Flex>
+            {task.note?.map((note, index) => (
+              <TaskNoteItem key={note.id || index} note={note} index={index} />
+            ))}
+
+            <Stack gap="xs">
+              <Textarea
+                placeholder="Add a note..."
+                minRows={4}
+                value={note ?? ''}
+                onChange={(e) => setNote(e.currentTarget.value)}
+                autosize
+              />
+              <Flex justify="flex-end">
+                <Button type="submit" disabled={!note || note.trim() === ''} onClick={handleAddComment}>
+                  Submit
+                </Button>
+              </Flex>
+            </Stack>
           </Stack>
         </Stack>
       </ScrollArea>

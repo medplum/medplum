@@ -55,7 +55,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
 
   return (
     <>
-      <Stack p="md">
+      <Stack p={0}>
         <Stack gap={0}>
           <Title>{displayText ? displayText : getDisplayString(serviceRequest)}</Title>
           {codeText && <Text>SNOMED: {codeText}</Text>}
