@@ -1,15 +1,26 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, createReference, getReferenceString, ProfileResource } from '@medplum/core';
+import {
+  allOk,
+  createReference,
+  evalFhirPathTyped,
+  getExtension,
+  getReferenceString,
+  ProfileResource,
+  toTypedValue,
+} from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   ActivityDefinition,
   Bot,
   ClientApplication,
+  CodeableConcept,
   Encounter,
+  Organization,
   Patient,
   PlanDefinition,
   PlanDefinitionAction,
+  Practitioner,
   Reference,
   RequestGroup,
   RequestGroupAction,
@@ -22,11 +33,14 @@ import { Repository } from '../repo';
 import { getOperationDefinition } from './definitions';
 import { parseInputParameters } from './utils/parameters';
 
+const TASK_ELEMENTS_URL = 'https://medplum.com/fhir/StructureDefinition/task-elements';
 const operation = getOperationDefinition('PlanDefinition', 'apply');
 
 interface PlanDefinitionApplyParameters {
   readonly subject: string[];
   readonly encounter?: string;
+  readonly practitioner?: string;
+  readonly organization?: string;
 }
 
 /**
@@ -61,10 +75,33 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
     encounterRef = createReference(encounter);
   }
 
+  let practitionerRef: Reference<Practitioner> | undefined = undefined;
+  if (params.practitioner) {
+    const practitioner = await ctx.repo.readReference<Practitioner>({ reference: params.practitioner });
+    practitionerRef = createReference(practitioner);
+  }
+
+  let organizationRef: Reference<Organization> | undefined = undefined;
+  if (params.organization) {
+    const organization = await ctx.repo.readReference<Organization>({ reference: params.organization });
+    organizationRef = createReference(organization);
+  }
+
   const actions: RequestGroupAction[] = [];
   if (planDefinition.action) {
     for (const action of planDefinition.action) {
-      actions.push(await createAction(ctx.repo, planDefinition, ctx.profile, subjectRef, action, encounterRef));
+      actions.push(
+        await createAction(
+          ctx.repo,
+          planDefinition,
+          ctx.profile,
+          subjectRef,
+          action,
+          encounterRef,
+          practitionerRef,
+          organizationRef
+        )
+      );
     }
   }
 
@@ -89,6 +126,8 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
  * @param subject - The subject of the plan definition.
  * @param action - The PlanDefinition action.
  * @param encounter - Optional encounter reference.
+ * @param practitioner - Optional practitioner reference.
+ * @param organization - Optional organization reference.
  * @returns The RequestGroup action.
  */
 async function createAction(
@@ -97,12 +136,23 @@ async function createAction(
   requester: Reference<ProfileResource | Bot | ClientApplication>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
-  encounter?: Reference<Encounter>
+  encounter?: Reference<Encounter>,
+  practitioner?: Reference<Practitioner>,
+  organization?: Reference<Organization>
 ): Promise<RequestGroupAction> {
   if (action.definitionCanonical?.startsWith('Questionnaire/')) {
     return createQuestionnaireTask(repo, planDefinition, requester, subject, action, encounter);
   } else if (action.definitionCanonical?.startsWith('ActivityDefinition/')) {
-    return createActivityDefinitionTask(repo, planDefinition, requester, subject, action, encounter);
+    return createActivityDefinitionTask(
+      repo,
+      planDefinition,
+      requester,
+      subject,
+      action,
+      encounter,
+      practitioner,
+      organization
+    );
   }
   return createTask(repo, planDefinition, requester, subject, action, encounter);
 }
@@ -125,7 +175,7 @@ async function createQuestionnaireTask(
   action: PlanDefinitionAction,
   encounter?: Reference<Encounter>
 ): Promise<RequestGroupAction> {
-  return createTask(repo, planDefinition, requester, subject, action, encounter, [
+  return createTask(repo, planDefinition, requester, subject, action, encounter, undefined, undefined, [
     {
       type: {
         text: 'Questionnaire',
@@ -146,6 +196,8 @@ async function createQuestionnaireTask(
  * @param subject - The subject of the plan definition.
  * @param action - The PlanDefinition action.
  * @param encounter - Optional encounter reference.
+ * @param practitioner - Optional practitioner reference.
+ * @param organization - Optional organization reference.
  * @returns The RequestGroup action.
  */
 async function createActivityDefinitionTask(
@@ -154,9 +206,44 @@ async function createActivityDefinitionTask(
   requester: Reference<Bot | ClientApplication | ProfileResource>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
-  encounter: Reference<Encounter> | undefined
+  encounter: Reference<Encounter> | undefined,
+  practitioner?: Reference<Practitioner>,
+  organization?: Reference<Organization>
 ): Promise<RequestGroupAction> {
   const activityDefinition = await repo.readReference<ActivityDefinition>({ reference: action.definitionCanonical });
+
+  const parameters = {
+    practitioner: practitioner,
+    organization: organization,
+    subject: subject,
+  };
+
+  const taskElementsExtension = getExtension(activityDefinition, TASK_ELEMENTS_URL);
+  const ownerExtension = getExtension(taskElementsExtension, 'owner');
+  let owner: Reference<Practitioner | Organization> | undefined = undefined;
+  if (ownerExtension) {
+    const expression = ownerExtension.valueExpression?.expression;
+    if (expression) {
+      const parametersValue = toTypedValue(parameters);
+      const result = evalFhirPathTyped(expression, [parametersValue], {
+        '%practitioner': toTypedValue(practitioner),
+        '%organization': toTypedValue(organization),
+        '%subject': toTypedValue(subject),
+      });
+      if (result.length !== 0) {
+        const resultValue = result[0].value;
+        if (resultValue && typeof resultValue === 'object' && 'reference' in resultValue) {
+          owner = resultValue as Reference<Practitioner | Organization>;
+        }
+      }
+    }
+  }
+
+  const performerTypeExtension = getExtension(taskElementsExtension, 'performerType');
+  const performerType: CodeableConcept | undefined = performerTypeExtension
+    ? performerTypeExtension.valueCodeableConcept
+    : undefined;
+
   switch (activityDefinition.kind) {
     case 'ServiceRequest': {
       const serviceRequest = await repo.createResource({
@@ -170,7 +257,7 @@ async function createActivityDefinitionTask(
         extension: activityDefinition.extension,
       });
 
-      return createTask(repo, planDefinition, requester, subject, action, encounter, [
+      return createTask(repo, planDefinition, requester, subject, action, encounter, owner, performerType, [
         {
           type: {
             text: 'ServiceRequest',
@@ -196,6 +283,8 @@ async function createActivityDefinitionTask(
  * @param subject - The subject of the plan definition.
  * @param action - The PlanDefinition action.
  * @param encounter - Optional encounter reference.
+ * @param owner - Optional owner reference.
+ * @param performerType - Optional performer type.
  * @param input - Optional input details.
  * @returns The RequestGroup action.
  */
@@ -206,6 +295,8 @@ async function createTask(
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
   encounter?: Reference<Encounter>,
+  owner?: Reference<Practitioner | Organization>,
+  performerType?: CodeableConcept,
   input?: TaskInput[]
 ): Promise<RequestGroupAction> {
   const task = await repo.createResource<Task>({
@@ -213,13 +304,14 @@ async function createTask(
     code: {
       text: action.title,
     },
+    performerType: performerType ? [performerType] : undefined,
     intent: 'order',
     status: 'requested',
     authoredOn: new Date().toISOString(),
     requester: requester as Task['requester'],
     for: subject,
     encounter: encounter,
-    owner: subject,
+    owner: owner,
     description: action.description,
     focus: input?.[0]?.valueReference,
     input,
@@ -230,7 +322,6 @@ async function createTask(
       },
     ],
   });
-
   return {
     title: action.title,
     resource: createReference(task),
