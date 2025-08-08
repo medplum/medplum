@@ -510,7 +510,7 @@ describe('PlanDefinition apply', () => {
                 url: 'owner',
                 valueExpression: {
                   language: 'text/fhirpath',
-                  expression: 'practitioner',
+                  expression: '%practitioner',
                 },
               },
               {
