@@ -18,7 +18,7 @@ import { buildBinaryIds } from './utils/binary';
  */
 export async function expungeHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
-  if (!ctx.project.superAdmin) {
+  if (!ctx.project.superAdmin && !ctx.membership.admin) {
     return [forbidden];
   }
 
