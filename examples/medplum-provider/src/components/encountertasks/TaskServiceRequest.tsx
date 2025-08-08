@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { DiagnosticReport, Reference, ServiceRequest, Task } from '@medplum/fhirtypes';
 import { StatusBadge, useMedplum } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
@@ -53,7 +55,7 @@ export const TaskServiceRequest = (props: TaskServiceRequestProps): JSX.Element 
 
   return (
     <>
-      <Stack p="md">
+      <Stack p={0}>
         <Stack gap={0}>
           <Title>{displayText ? displayText : getDisplayString(serviceRequest)}</Title>
           {codeText && <Text>SNOMED: {codeText}</Text>}

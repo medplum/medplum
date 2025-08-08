@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Alert, Anchor } from '@mantine/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useResource } from '@medplum/react';

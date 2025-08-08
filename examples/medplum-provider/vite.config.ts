@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import react from '@vitejs/plugin-react';
 import dns from 'dns';
 import { existsSync } from 'fs';
@@ -12,7 +14,7 @@ const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
     '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
     '@medplum/dosespot-react': path.resolve(__dirname, '../../packages/dosespot-react/src'),
     '@medplum/react$': path.resolve(__dirname, '../../packages/react/src'),
-    '@medplum/react/styles.css': path.resolve(__dirname, '../../packages/react/dist/styles.css'),
+    '@medplum/react/styles.css': path.resolve(__dirname, '../../packages/react/dist/esm/index.css'),
     '@medplum/react-hooks': path.resolve(__dirname, '../../packages/react-hooks/src'),
     '@medplum/health-gorilla-core': path.resolve(__dirname, '../../packages/health-gorilla-core/src'),
     '@medplum/health-gorilla-react': path.resolve(__dirname, '../../packages/health-gorilla-react/src'),

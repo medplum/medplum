@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Hl7Message } from '@medplum/core';
 import iconv from 'iconv-lite';
 import net from 'node:net';
@@ -14,14 +16,16 @@ export type Hl7MessageQueueItem = {
   reject?: (err: Error) => void;
 };
 
+export const DEFAULT_ENCODING = 'utf-8';
+
 export class Hl7Connection extends Hl7Base {
   readonly socket: net.Socket;
-  readonly encoding: string;
-  readonly enhancedMode: boolean;
+  encoding: string;
+  enhancedMode: boolean;
   private chunks: Buffer[] = [];
   private readonly messageQueue: Hl7MessageQueueItem[] = [];
 
-  constructor(socket: net.Socket, encoding: string = 'utf-8', enhancedMode = false) {
+  constructor(socket: net.Socket, encoding: string = DEFAULT_ENCODING, enhancedMode = false) {
     super();
 
     this.socket = socket;
@@ -49,12 +53,15 @@ export class Hl7Connection extends Hl7Base {
       this.dispatchEvent(new Hl7ErrorEvent(err));
     });
 
-    socket.on('end', () => {
-      this.close();
+    // The difference between "end" and "close", is that "end" is only emitted on half-close from the other side
+    // If the connection from the other side does not close gracefully, but instead we destroy the socket, then the Hl7Connection will not emit close
+    // if we listen only for "end"; "close" is always emitted, whether the close is graceful or forceful
+    socket.on('close', () => {
+      this.dispatchEvent(new Hl7CloseEvent());
     });
 
     this.addEventListener('message', (event) => {
-      if (enhancedMode) {
+      if (this.enhancedMode) {
         this.send(event.message.buildAck({ ackCode: 'CA' }));
       }
       // Get the queue item at the head of the queue
@@ -71,6 +78,11 @@ export class Hl7Connection extends Hl7Base {
       // Resolve the promise if there is one pending for this message
       next.resolve?.(event.message);
     });
+  }
+
+  /** @returns A boolean representing whether the socket attached to this Hl7Connection has emitted the close event already or not. */
+  isClosed(): boolean {
+    return this.socket.closed;
   }
 
   private sendImpl(reply: Hl7Message, queueItem: Hl7MessageQueueItem): void {
@@ -96,10 +108,17 @@ export class Hl7Connection extends Hl7Base {
     });
   }
 
-  close(): void {
-    this.socket.end();
-    this.socket.destroy();
-    this.dispatchEvent(new Hl7CloseEvent());
+  async close(): Promise<void> {
+    // If we have already received the close event, then we can just return immediately
+    if (this.isClosed()) {
+      return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+      // Register a temporary listener to help resolve the promise once close has been emitted
+      this.socket.once('close', resolve);
+      this.socket.end();
+      this.socket.destroy();
+    });
   }
 
   private appendData(data: Buffer): void {
@@ -108,5 +127,21 @@ export class Hl7Connection extends Hl7Base {
 
   private resetBuffer(): void {
     this.chunks = [];
+  }
+
+  setEncoding(encoding: string | undefined): void {
+    this.encoding = encoding ?? DEFAULT_ENCODING;
+  }
+
+  getEncoding(): string {
+    return this.encoding;
+  }
+
+  setEnhancedMode(enhancedMode: boolean): void {
+    this.enhancedMode = enhancedMode;
+  }
+
+  getEnhancedMode(): boolean {
+    return this.enhancedMode;
   }
 }

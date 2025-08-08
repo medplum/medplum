@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Accordion, Center, Divider, Group, Stack, Text, Title } from '@mantine/core';
 import { FhircastMessagePayload, SubscriptionRequest } from '@medplum/core';
 import { Document, useMedplum, usePrevious } from '@medplum/react';

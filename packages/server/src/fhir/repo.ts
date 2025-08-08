@@ -1,25 +1,26 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   AccessPolicyInteraction,
-  BackgroundJobInteraction,
-  DEFAULT_MAX_SEARCH_COUNT,
-  Filter,
-  OperationOutcomeError,
-  Operator,
-  PropertyType,
-  SearchParameterDetails,
-  SearchParameterType,
-  SearchRequest,
-  TypedValue,
-  WithId,
   accessPolicySupportsInteraction,
   allOk,
   arrayify,
+  BackgroundJobInteraction,
   badRequest,
+  convertToSearchableDates,
+  convertToSearchableNumbers,
+  convertToSearchableQuantities,
+  convertToSearchableReferences,
+  convertToSearchableStrings,
+  convertToSearchableTokens,
+  convertToSearchableUris,
   createReference,
   deepClone,
   deepEquals,
-  evalFhirPath,
+  DEFAULT_MAX_SEARCH_COUNT,
   evalFhirPathTyped,
+  Filter,
+  flatMapFilter,
   forbidden,
   formatSearchQuery,
   getReferenceString,
@@ -29,26 +30,34 @@ import {
   isNotFound,
   isObject,
   isOk,
-  isReference,
   isResource,
   isResourceWithId,
   isUUID,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
+  OperationOutcomeError,
+  Operator,
   parseReference,
   parseSearchRequest,
   preconditionFailed,
+  PropertyType,
   protectedResourceTypes,
   readInteractions,
   resolveId,
   satisfiedAccessPolicy,
+  SearchParameterDetails,
+  SearchParameterType,
+  SearchRequest,
   serverError,
   sleep,
   stringify,
   toPeriod,
+  toTypedValue,
+  TypedValue,
   validateResource,
   validateResourceType,
+  WithId,
 } from '@medplum/core';
 import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from '@medplum/fhir-router';
 import {
@@ -69,7 +78,7 @@ import {
 import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
-import { v7 } from 'uuid';
+import { v4 } from 'uuid';
 import { getConfig } from '../config/loader';
 import { syntheticR4Project } from '../constants';
 import { AuthenticatedRequestContext, tryGetRequestContext } from '../context';
@@ -81,17 +90,17 @@ import { getBinaryStorage } from '../storage/loader';
 import {
   AuditEventOutcome,
   AuditEventSubtype,
+  createAuditEvent,
   CreateInteraction,
   DeleteInteraction,
   HistoryInteraction,
+  logAuditEvent,
   PatchInteraction,
   ReadInteraction,
   RestfulOperationType,
   SearchInteraction,
   UpdateInteraction,
   VreadInteraction,
-  createAuditEvent,
-  logAuditEvent,
 } from '../util/auditevent';
 import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
@@ -104,8 +113,8 @@ import { preCommitValidation } from './precommit';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { ResourceCap } from './resource-cap';
 import { getFullUrl } from './response';
-import { RewriteMode, rewriteAttachments } from './rewrite';
-import { SearchOptions, buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
+import { rewriteAttachments, RewriteMode } from './rewrite';
+import { buildSearchExpression, searchByReferenceImpl, searchImpl, SearchOptions } from './search';
 import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
@@ -113,16 +122,17 @@ import {
   Disjunction,
   Expression,
   InsertQuery,
-  SelectQuery,
-  TransactionIsolationLevel,
   normalizeDatabaseError,
   periodToRangeString,
+  PostgresError,
+  SelectQuery,
+  TransactionIsolationLevel,
 } from './sql';
 import { buildTokenColumns } from './token-column';
 
 const defaultTransactionAttempts = 2;
 const defaultExpBackoffBaseDelayMs = 50;
-const retryableTransactionErrorCodes = ['40001'];
+const retryableTransactionErrorCodes: string[] = [PostgresError.SerializationFailure];
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -243,6 +253,25 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
 
+  /**
+   * The version to be set on resources when they are inserted/updated into the database.
+   * The value should be incremented each time there is a change in the schema (really just columns)
+   * of the resource tables or when there are code changes to `buildResourceRow`.
+   *
+   * Version history:
+   *
+   * 1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
+   * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
+   * 3. 04/09/25 - Added __tokens column for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
+   * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
+   * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
+   * 6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
+   * 7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
+   * 8. 08/06/25 - Added Task to Patient compartment (https://github.com/medplum/medplum/pull/7194)
+   *
+   */
+  static readonly VERSION: number = 8;
+
   constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
     this.context = context;
@@ -319,13 +348,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, {
+        durationMs,
+        resource: { type: resource.resourceType },
+      });
       throw err;
     }
   }
 
   generateId(): string {
-    return v7();
+    return v4();
   }
 
   async readResource<T extends Resource>(
@@ -637,11 +669,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private async updateResourceImpl<T extends Resource>(
-    resource: T,
-    create: boolean,
-    versionId?: string
-  ): Promise<WithId<T>> {
+  private checkResourcePermissions<T extends Resource>(resource: T, interaction: AccessPolicyInteraction): WithId<T> {
     if (!isResourceWithId(resource)) {
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
@@ -649,7 +677,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
-    const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
 
     // Add default profiles before validating resource
     if (!resource.meta?.profile && this.currentProject()?.defaultProfile) {
@@ -658,12 +685,34 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       )?.profile;
       resource.meta = { ...resource.meta, profile: defaultProfiles };
     }
-
     if (!this.supportsInteraction(interaction, resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
+    return resource;
+  }
 
-    await preCommitValidation(this.context.projects?.[0], resource, 'update');
+  private async updateResourceImpl<T extends Resource>(
+    resource: T,
+    create: boolean,
+    versionId?: string
+  ): Promise<WithId<T>> {
+    const interaction = create ? AccessPolicyInteraction.CREATE : AccessPolicyInteraction.UPDATE;
+    let validatedResource = this.checkResourcePermissions(resource, interaction);
+    const { resourceType, id } = validatedResource;
+
+    const preCommitResult = await preCommitValidation(
+      this.context.author,
+      this.context.projects?.[0],
+      validatedResource,
+      'update'
+    );
+
+    if (
+      isResourceWithId(preCommitResult, validatedResource.resourceType) &&
+      preCommitResult.id === validatedResource.id
+    ) {
+      validatedResource = this.checkResourcePermissions(preCommitResult, interaction);
+    }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
@@ -678,23 +727,23 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, {
-      ...this.restoreReadonlyFields(resource, existing),
+      ...this.restoreReadonlyFields(validatedResource, existing),
     });
     updated = await replaceConditionalReferences(this, updated);
 
     const resultMeta: Meta = {
       ...updated.meta,
       versionId: this.generateId(),
-      lastUpdated: this.getLastUpdated(existing, resource),
-      author: this.getAuthor(resource),
+      lastUpdated: this.getLastUpdated(existing, validatedResource),
+      author: this.getAuthor(validatedResource),
       onBehalfOf: this.context.onBehalfOf,
     };
 
     const result = { ...updated, meta: resultMeta };
 
-    const project = this.getProjectId(existing, updated);
-    if (project) {
-      resultMeta.project = project;
+    const projectId = this.getProjectId(existing, updated);
+    if (projectId) {
+      resultMeta.project = projectId;
     }
     const accounts = await this.getAccounts(existing, updated);
     if (accounts) {
@@ -722,9 +771,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     await this.handleStorage(result, create);
+    await this.postCommit(async () => this.handleBinaryUpdate(existing, result));
     await this.postCommit(async () => {
-      await this.handleBinaryUpdate(existing, result);
-      const project = await this.getProjectById(result.meta?.project);
+      const project = await this.getProjectById(projectId);
       await addBackgroundJobs(result, existing, { project, interaction });
     });
 
@@ -1093,7 +1142,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         throw new OperationOutcomeError(forbidden);
       }
 
-      await preCommitValidation(this.context.projects?.[0], resource, 'delete');
+      await preCommitValidation(this.context.author, this.context.projects?.[0], resource, 'delete');
 
       await this.deleteCacheEntry(resourceType, id);
 
@@ -1105,9 +1154,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           lastUpdated,
           deleted: true,
           projectId: resource.meta?.project,
-          compartments: this.getCompartments(resource).map((ref) => resolveId(ref)),
           content,
         };
+
+        if (resourceType !== 'Binary') {
+          columns['compartments'] = this.getCompartments(resource).map((ref) => resolveId(ref));
+        }
 
         for (const searchParam of getStandardAndDerivedSearchParameters(resourceType)) {
           this.buildColumn({ resourceType } as Resource, columns, searchParam);
@@ -1382,6 +1434,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
+    // Binary has no search parameters, so it cannot be restricted by an access policy
+    if (resourceType === 'Binary') {
+      return;
+    }
+
     const expressions: Expression[] = [];
 
     for (const policy of accessPolicy.resource) {
@@ -1430,24 +1487,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       builder.predicate.expressions.push(new Disjunction(expressions));
     }
   }
-
-  /**
-   * The version to be set on resources when they are inserted/updated into the database.
-   * The value should be incremented each time there is a change in the schema (really just columns)
-   * of the resource tables or when there are code changes to `buildResourceRow`.
-   *
-   * Version history:
-   *
-   * 1. 02/27/25 - Added `__version` column (https://github.com/medplum/medplum/pull/6033)
-   * 2. 04/09/25 - Added qualification-code search param for `Practitioner` (https://github.com/medplum/medplum/pull/6280)
-   * 3. 04/09/25 - Added __tokens column for `token-column` search strategy (https://github.com/medplum/medplum/pull/6291)
-   * 4. 04/25/25 - Consider `resource.id` in lookup table batch reindex (https://github.com/medplum/medplum/pull/6479)
-   * 5. 04/29/25 - Added `status` param for `Flag` resources (https://github.com/medplum/medplum/pull/6500)
-   * 6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
-   * 7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
-   *
-   */
-  static readonly VERSION: number = 7;
 
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
@@ -1596,6 +1635,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment:identifier' ||
+      searchParam.code === '_deleted' ||
       searchParam.type === 'composite'
     ) {
       return;
@@ -1611,7 +1651,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    const values = evalFhirPath(impl.parsedExpression, resource);
+    const typedValues = evalFhirPathTyped(impl.parsedExpression, [toTypedValue(resource)]);
 
     let columnImpl: ColumnSearchParameterImplementation | undefined;
     if (impl.searchStrategy === 'token-column') {
@@ -1622,22 +1662,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     if (columnImpl) {
-      let columnValue = undefined;
-      if (values.length > 0) {
-        if (columnImpl.array) {
-          columnValue = values.map((v) => this.buildColumnValue(searchParam, columnImpl, v));
-        } else {
-          columnValue = this.buildColumnValue(searchParam, columnImpl, values[0]);
-        }
+      const columnValues = this.buildColumnValues(searchParam, columnImpl, typedValues);
+      if (columnImpl.array) {
+        columns[columnImpl.columnName] = columnValues.length > 0 ? columnValues : undefined;
+      } else {
+        columns[columnImpl.columnName] = columnValues[0];
       }
-      columns[columnImpl.columnName] = columnValue;
     }
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
     // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
     if (searchParam.id === 'MeasureReport-period') {
-      columns['period_range'] = this.buildPeriodColumn(values[0]);
+      columns['period_range'] = this.buildPeriodColumn(typedValues[0]?.value);
     }
   }
 
@@ -1647,90 +1684,63 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * If the search parameter is not an array, then this method will be called for the value.
    * @param searchParam - The search parameter definition.
    * @param details - The extra search parameter details.
-   * @param value - The FHIR resource value.
+   * @param typedValues - The FHIR resource value.
    * @returns The column value.
    */
-  private buildColumnValue(searchParam: SearchParameter, details: SearchParameterDetails, value: any): any {
+  private buildColumnValues(
+    searchParam: SearchParameter,
+    details: SearchParameterDetails,
+    typedValues: TypedValue[]
+  ): (boolean | number | string | undefined)[] {
     if (details.type === SearchParameterType.BOOLEAN) {
-      return value === true || value === 'true';
+      const value = typedValues[0]?.value;
+      return [value === true || value === 'true'];
     }
 
     if (details.type === SearchParameterType.DATE) {
-      return this.buildDateColumn(value);
+      // "Date" column is a special case that only applies when the following conditions are true:
+      // 1. The search parameter is a date type.
+      // 2. The underlying FHIR ElementDefinition referred to by the search parameter has a type of "date".
+      return flatMapFilter(convertToSearchableDates(typedValues), (p) => (p.start ?? p.end)?.substring(0, 10));
     }
 
     if (details.type === SearchParameterType.DATETIME) {
-      return this.buildDateTimeColumn(value);
+      // Future work: write the whole period to the DB after migrating all "date" search parameters to use a tstzrange.
+      return flatMapFilter(convertToSearchableDates(typedValues), (p) => p.start ?? p.end);
+    }
+
+    if (searchParam.type === 'number') {
+      // Future work: write the whole range to the DB after migrating all "number" search parameters to use a range.
+      return flatMapFilter(convertToSearchableNumbers(typedValues), ([low, high]) => low ?? high);
     }
 
     if (searchParam.type === 'quantity') {
-      return this.buildQuantityColumn(value);
+      // Future work: write the whole range to the DB after migrating all "quantity" search parameters to use a range.
+      return flatMapFilter(convertToSearchableQuantities(typedValues), (q) => q.value);
     }
 
-    // Handle all string values specially to ensure they are truncated to the correct length
-    let stringValue: string | undefined;
     if (searchParam.type === 'reference') {
-      stringValue = this.buildReferenceColumns(value);
-    } else if (searchParam.type === 'token') {
-      stringValue = this.buildTokenColumn(value);
-    } else {
-      stringValue = typeof value === 'string' ? value : stringify(value);
+      return flatMapFilter(convertToSearchableReferences(typedValues), truncateTextColumn);
     }
 
-    if (!stringValue) {
-      return undefined;
+    if (searchParam.type === 'token') {
+      return flatMapFilter(convertToSearchableTokens(typedValues), (t) => truncateTextColumn(t.value));
     }
 
-    return truncateTextColumn(stringValue);
-  }
-
-  /**
-   * Builds the column value for a date parameter.
-   * Tries to parse the date string.
-   * Silently ignores failure.
-   * @param value - The FHIRPath result.
-   * @returns The date string if parsed; undefined otherwise.
-   */
-  private buildDateColumn(value: any): string | undefined {
-    // "Date" column is a special case that only applies when the following conditions are true:
-    // 1. The search parameter is a date type.
-    // 2. The underlying FHIR ElementDefinition referred to by the search parameter has a type of "date".
-    if (typeof value === 'string') {
-      try {
-        const date = new Date(value);
-        return date.toISOString().substring(0, 10);
-      } catch (_err) {
-        // Silent ignore
-      }
+    if (searchParam.type === 'string') {
+      return flatMapFilter(convertToSearchableStrings(typedValues), truncateTextColumn);
     }
-    return undefined;
-  }
 
-  /**
-   * Builds the column value for a date/time parameter.
-   * Tries to parse the date string.
-   * Silently ignores failure.
-   * @param value - The FHIRPath result.
-   * @returns The date/time string if parsed; undefined otherwise.
-   */
-  private buildDateTimeColumn(value: any): string | undefined {
-    if (typeof value === 'string') {
-      try {
-        const date = new Date(value);
-        return date.toISOString();
-      } catch (_err) {
-        // Silent ignore
-      }
-    } else if (typeof value === 'object') {
-      // Can be a Period
-      if ('start' in value) {
-        return this.buildDateTimeColumn(value.start);
-      }
-      if ('end' in value) {
-        return this.buildDateTimeColumn(value.end);
-      }
+    if (searchParam.type === 'uri') {
+      return flatMapFilter(convertToSearchableUris(typedValues), truncateTextColumn);
     }
-    return undefined;
+
+    if (searchParam.type === 'special' || searchParam.type === 'composite') {
+      // Special and composite search parameters are not supported in the database.
+      return [];
+    }
+
+    throw new Error('Unrecognized search parameter type: ' + searchParam.type);
   }
 
   /**
@@ -1743,117 +1753,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const period = toPeriod(value);
     if (period) {
       return periodToRangeString(period);
-    }
-    return undefined;
-  }
-
-  /**
-   * Builds the columns to write for a Reference value.
-   * @param value - The property value of the reference.
-   * @returns The reference column value.
-   */
-  private buildReferenceColumns(value: any): string | undefined {
-    if (!value) {
-      return undefined;
-    }
-    if (typeof value === 'string') {
-      // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
-      // This is a reference string that is not a FHIR reference
-      return value;
-    }
-    if (typeof value === 'object') {
-      if (isReference(value)) {
-        // Handle normal "reference" properties
-        return value.reference;
-      }
-      if (isResource(value) && value.id) {
-        // Handle inline references
-        return getReferenceString(value);
-      }
-      if (typeof value.identifier === 'object') {
-        // Handle logical (identifier-only) references by putting a placeholder in the column
-        // NOTE(mattwiller 2023-11-01): This is done to enable searches using the :missing modifier;
-        // actual identifier search matching is handled by the `<ResourceType>_Token` lookup tables
-        return `identifier:${value.identifier.system}|${value.identifier.value}`;
-      }
-    }
-    return undefined;
-  }
-
-  /**
-   * Builds the column value to write a "code" search parameter.
-   * The common cases are:
-   *  1) The property value is a string, so return directly.
-   *  2) The property value is a CodeableConcept.
-   *  3) Otherwise fallback to stringify.
-   * @param value - The property value of the code.
-   * @returns The value to write to the database column.
-   */
-  private buildTokenColumn(value: any): string | undefined {
-    if (!value) {
-      return undefined;
-    }
-
-    if (typeof value === 'string') {
-      // If the value is a string, return the value directly
-      return value;
-    }
-
-    if (typeof value === 'object') {
-      const codeableConceptValue = this.buildCodeableConceptColumn(value);
-      if (codeableConceptValue) {
-        return codeableConceptValue;
-      }
-    }
-
-    // Otherwise, return a stringified version of the value
-    return stringify(value);
-  }
-
-  /**
-   * Builds a CodeableConcept column value.
-   * @param value - The property value of the code.
-   * @returns The value to write to the database column.
-   */
-  private buildCodeableConceptColumn(value: any): string | undefined {
-    // If the value is a CodeableConcept,
-    // then use the following logic to determine the code:
-    // 1) value.coding[0].code
-    // 2) value.coding[0].display
-    // 3) value.text
-    if ('coding' in value) {
-      const coding = value.coding;
-      if (Array.isArray(coding) && coding.length > 0) {
-        if (coding[0].code) {
-          return coding[0].code;
-        }
-
-        if (coding[0].display) {
-          return coding[0].display;
-        }
-      }
-    }
-
-    if ('text' in value) {
-      return value.text as string;
-    }
-
-    return undefined;
-  }
-
-  /**
-   * Builds a Quantity column value.
-   * @param value - The property value of the quantity.
-   * @returns The numeric value if available; undefined otherwise.
-   */
-  private buildQuantityColumn(value: any): number | undefined {
-    if (typeof value === 'object') {
-      if ('value' in value) {
-        const num = value.value;
-        if (typeof num === 'number') {
-          return num;
-        }
-      }
     }
     return undefined;
   }
@@ -2408,10 +2307,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const transactionAttempts = config.transactionAttempts ?? defaultTransactionAttempts;
     let error: OperationOutcomeError | undefined;
     for (let attempt = 0; attempt < transactionAttempts; attempt++) {
+      const attemptStartTime = Date.now();
       try {
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
         const result = await callback(client);
         await this.commitTransaction();
+        if (attempt > 0) {
+          getLogger().info('Completed transaction', {
+            attempt,
+            attemptDurationMs: Date.now() - attemptStartTime,
+            transactionAttempts,
+            serializable: options?.serializable ?? false,
+          });
+        }
         return result;
       } catch (err) {
         const operationOutcomeError = normalizeDatabaseError(err);
@@ -2427,15 +2335,30 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         this.endTransaction();
       }
 
+      const attemptDurationMs = Date.now() - attemptStartTime;
+
       if (attempt + 1 < transactionAttempts) {
         const baseDelayMs = config.transactionExpBackoffBaseDelayMs ?? defaultExpBackoffBaseDelayMs;
-        // Attempts are 0-indexed, so first wait after first attempt will be somewhere between 75% and 100% of baseDelayMs
+        // Attempts are 0-indexed, so first wait after first attempt will be somewhere between 75% and 125% of baseDelayMs
         // This calculation results in something like this for the default values:
-        // Attempt 1: 50 * (2^0) = 50 * [0.75, 1] = **[37.5, 50] ms**
-        // Attempt 2: 50 * (2^1) = 100 * [0.75, 1] = **[75, 100] ms**
+        // Between attempt 0 and 1: 50 * (2^0) = 50 * [0.75, 1.25] = **[37.5, 63.5] ms**
+        // Between attempt 1 and 2: 50 * (2^1) = 100 * [0.75, 1.25] = **[75, 125] ms**
         // etc...
-        const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.25));
+        const delayMs = Math.ceil(baseDelayMs * 2 ** attempt * (0.75 + Math.random() * 0.5));
+        getLogger().info('Retrying transaction', {
+          attempt,
+          attemptDurationMs,
+          transactionAttempts,
+          delayMs,
+          baseDelayMs,
+        });
         await sleep(delayMs);
+      } else {
+        getLogger().info('Transaction failed final attempt', {
+          attempt,
+          attemptDurationMs,
+          transactionAttempts,
+        });
       }
     }
 
@@ -2500,6 +2423,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       this.preCommitCallbacks.push(fn);
     } else {
+      // rely on thrown errors bubbling up from here to halt the transaction
       await fn();
     }
   }
@@ -2508,6 +2432,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const callbacks = this.preCommitCallbacks;
     this.preCommitCallbacks = [];
     for (const cb of callbacks) {
+      // rely on thrown errors bubbling up from here to halt the transaction
       await cb();
     }
   }
@@ -2516,7 +2441,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       this.postCommitCallbacks.push(fn);
     } else {
-      await fn();
+      await this.invokePostCommitCallback(fn);
     }
   }
 
@@ -2524,7 +2449,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const callbacks = this.postCommitCallbacks;
     this.postCommitCallbacks = [];
     for (const cb of callbacks) {
-      await cb();
+      await this.invokePostCommitCallback(cb);
+    }
+  }
+
+  private async invokePostCommitCallback(fn: () => Promise<void>): Promise<void> {
+    try {
+      await fn();
+    } catch (err) {
+      if (err instanceof Error) {
+        getLogger().error('Error processing post-commit callback', err);
+      } else {
+        getLogger().error('Error processing post-commit callback', { err });
+      }
     }
   }
 
@@ -2791,7 +2728,11 @@ const textEncoder = new TextEncoder();
  * @param value - The column value to truncate.
  * @returns The possibly truncated column value.
  */
-function truncateTextColumn(value: string): string {
+function truncateTextColumn(value: string | undefined): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
   if (textEncoder.encode(value).length <= 2704) {
     return value;
   }

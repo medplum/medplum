@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Common terminology systems, taken from https://terminology.hl7.org/external_terminologies.html
 export const UCUM = 'http://unitsofmeasure.org';
 export const LOINC = 'http://loinc.org';

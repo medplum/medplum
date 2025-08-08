@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Tabs } from '@mantine/core';
 import { getQuestionnaireAnswers, getReferenceString } from '@medplum/core';
 import { Encounter, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';

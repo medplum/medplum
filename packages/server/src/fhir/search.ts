@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   AccessPolicyInteraction,
   badRequest,
@@ -62,13 +64,12 @@ import {
   escapeLikeString,
   Expression,
   Negation,
-  Parameter,
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
   SqlFunction,
   Union,
-  ValuesQuery,
+  UnionAllBuilder,
 } from './sql';
 import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-column';
 
@@ -149,9 +150,9 @@ export async function searchByReferenceImpl<T extends Resource>(
 ): Promise<Record<string, WithId<T>[]>> {
   validateSearchResourceTypes(repo, searchRequest);
 
-  const referencesTableName = 'references';
-  const referencesColumnName = 'ref';
-  const referenceColumn = new Column(referencesTableName, referencesColumnName);
+  // Hold on to references to parts of the SelectQuery that need to be modified per reference value
+  const referenceConditions: Condition[] = [];
+  const referenceColumns: Column[] = [];
 
   const searchQuery = getSelectQueryForSearch(repo, searchRequest, {
     addColumns: true,
@@ -169,24 +170,33 @@ export async function searchByReferenceImpl<T extends Resource>(
           badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
         );
       }
-      builder.whereExpr(buildReferenceSearchFilter(builder.tableName, impl, Operator.EQUALS, referenceColumn));
+      const expr = buildReferenceEqualsCondition(builder.tableName, impl, referenceValues[0]);
+      referenceConditions.push(expr);
+      builder.whereExpr(expr);
+
+      const column = new Column(undefined, `'${referenceValues[0]}'`, true, 'ref');
+      referenceColumns.push(column);
+      builder.column(column);
     },
   });
-  const builder = new SelectQuery(
-    referencesTableName,
-    new ValuesQuery(
-      referencesTableName,
-      [referencesColumnName],
-      referenceValues.map((r) => [r])
-    )
-  );
-  builder.join('INNER JOIN LATERAL', searchQuery, 'results', new Parameter('true'));
-  builder.column(new Column('results', 'id')).column(new Column('results', 'content')).column(referenceColumn);
+
+  const unionAllBuilder = new UnionAllBuilder();
+  for (const refValue of referenceValues) {
+    // Update each condition with the current reference value
+    for (const cond of referenceConditions) {
+      cond.parameter = refValue;
+    }
+    // Update each column with the current reference value literal
+    for (const column of referenceColumns) {
+      column.columnName = `'${refValue}'`;
+    }
+    unionAllBuilder.add(searchQuery);
+  }
 
   const rows: {
     content: string;
     ref: string;
-  }[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  }[] = await unionAllBuilder.execute(repo.getDatabaseClient(DatabaseMode.READER));
 
   const results: Record<string, WithId<T>[]> = Object.create(null);
   for (const ref of referenceValues) {
@@ -303,7 +313,20 @@ async function getSearchEntries<T extends Resource>(
 ): Promise<{ entry: BundleEntry<WithId<T>>[]; rowCount: number; nextResource?: T }> {
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   const rowCount = rows.length;
-  const resources = rows.map((row) => JSON.parse(row.content)) as WithId<T>[];
+  const resources = [];
+  for (const row of rows) {
+    if (row.content) {
+      resources.push(JSON.parse(row.content));
+    } else {
+      // Handle missing content
+      // In the original implementation of deleted resources, the content was not stored in the database.
+      resources.push({
+        resourceType: searchRequest.resourceType,
+        id: row.id,
+        meta: { lastUpdated: row.lastUpdated?.toISOString() },
+      } as WithId<T>);
+    }
+  }
   let nextResource: T | undefined;
   if (resources.length > searchRequest.count) {
     nextResource = resources.pop();
@@ -356,7 +379,7 @@ function getBaseSelectQuery(
     }
     builder = new SelectQuery('combined', new Union(...queries));
     if (opts?.addColumns ?? true) {
-      builder.column('id').column('lastUpdated').column('content');
+      builder.raw('*');
     }
   } else {
     builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, opts);
@@ -385,7 +408,9 @@ function getBaseSelectQueryForResourceType(
       new Disjunction([new Condition(col, '<=', opts.maxResourceVersion), new Condition(col, '=', null)])
     );
   }
-  repo.addDeletedFilter(builder);
+  if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
+    repo.addDeletedFilter(builder);
+  }
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(repo, builder, resourceType, searchRequest);
   if (opts?.resourceTypeQueryCallback) {
@@ -1059,6 +1084,18 @@ function trySpecialSearchParameter(
         },
         filter
       );
+    case '_deleted':
+      return buildBooleanSearchFilter(
+        table,
+        {
+          type: SearchParameterType.BOOLEAN,
+          columnName: 'deleted',
+          searchStrategy: 'column',
+          parsedExpression: parseFhirPath('deleted'),
+        },
+        filter.operator,
+        filter.value
+      );
     case '_compartment':
     case '_project': {
       if (filter.code === '_project') {
@@ -1164,9 +1201,9 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
     if (operator === Operator.EXACT) {
       return new Condition(column, '=', v);
     } else if (operator === Operator.CONTAINS) {
-      return new Condition(column, 'LIKE', `%${escapeLikeString(v)}%`);
+      return new Condition(column, 'LOWER_LIKE', `%${escapeLikeString(v)}%`);
     } else if (prefixMatchOperators.includes(operator)) {
-      return new Condition(column, 'LIKE', `${escapeLikeString(v)}%`);
+      return new Condition(column, 'LOWER_LIKE', `${escapeLikeString(v)}%`);
     } else {
       throw new OperationOutcomeError(badRequest('Unsupported string search operator: ' + operator));
     }
@@ -1279,6 +1316,46 @@ function buildReferenceSearchFilter(
   return operator === Operator.NOT || operator === Operator.NOT_EQUALS ? new Negation(condition) : condition;
 }
 
+function buildReferenceEqualsCondition(
+  table: string,
+  impl: ColumnSearchParameterImplementation,
+  value: string | Column
+): Condition {
+  const column = new Column(table, impl.columnName);
+  let condition: Condition;
+  if (impl.array) {
+    condition = new Condition(column, 'ARRAY_OVERLAPS_AND_IS_NOT_NULL', [value], 'TEXT[]');
+  } else {
+    condition = new Condition(column, '=', value);
+  }
+  return condition;
+}
+
+/**
+ * From the dateTime regex on {@link https://hl7.org/fhir/R4/datatypes.html#primitive}, but with:
+ * - year and month required
+ * - seconds optional when minutes specified for backwards compatibility, e.g. 1985-11-30T05:05Z
+ * - A space is allowed instead of a T as the date/time separator
+ */
+const supportedDateRegex =
+  /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])([T ]([01]\d|2[0-3])(:[0-5]\d(:([0-5]\d|60))?(\.\d{1,9})?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?$/;
+
+/**
+ * Perform validation on date or dateTime values to ensure compatibility with Postgres timestamp parsing.
+ * Throws a badRequest OperationOutcomeError if the value is invalid.
+ * @param value - The date or dateTime value to validate.
+ */
+function validateDateValue(value: string): void {
+  if (!supportedDateRegex.test(value)) {
+    throw new OperationOutcomeError(badRequest(`Invalid date value: ${value}`));
+  }
+
+  const dateValue = new Date(value);
+  if (isNaN(dateValue.getTime())) {
+    throw new OperationOutcomeError(badRequest(`Invalid date value: ${value}`));
+  }
+}
+
 /**
  * Adds a date or date/time search filter.
  * @param table - The resource table name.
@@ -1286,11 +1363,12 @@ function buildReferenceSearchFilter(
  * @param filter - The search filter.
  * @returns The select query condition.
  */
-function buildDateSearchFilter(table: string, impl: ColumnSearchParameterImplementation, filter: Filter): Expression {
-  const dateValue = new Date(filter.value);
-  if (isNaN(dateValue.getTime())) {
-    throw new OperationOutcomeError(badRequest(`Invalid date value: ${filter.value}`));
-  }
+export function buildDateSearchFilter(
+  table: string,
+  impl: ColumnSearchParameterImplementation,
+  filter: Filter
+): Expression {
+  validateDateValue(filter.value);
 
   if (table === 'MeasureReport' && impl.columnName === 'period') {
     // Handle special case for "MeasureReport.period"

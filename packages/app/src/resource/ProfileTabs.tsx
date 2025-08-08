@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Tabs, ThemeIcon } from '@mantine/core';
 import { Resource } from '@medplum/fhirtypes';
 import { SupportedProfileStructureDefinition, isSupportedProfileStructureDefinition, useMedplum } from '@medplum/react';

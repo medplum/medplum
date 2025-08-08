@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   deepEquals,
   FileBuilder,
@@ -724,6 +726,18 @@ function buildHumanNameTable(result: SchemaDefinition): void {
     ['name', 'given', 'family'],
     [
       {
+        columns: [{ expression: 'name gin_trgm_ops', name: 'nameTrgm' }],
+        indexType: 'gin',
+      },
+      {
+        columns: [{ expression: 'given gin_trgm_ops', name: 'givenTrgm' }],
+        indexType: 'gin',
+      },
+      {
+        columns: [{ expression: 'family gin_trgm_ops', name: 'familyTrgm' }],
+        indexType: 'gin',
+      },
+      {
         columns: [{ expression: "to_tsvector('simple'::regconfig, name)", name: 'name' }],
         indexType: 'gin',
         unique: false,
@@ -777,14 +791,30 @@ function buildCodingTable(result: SchemaDefinition): void {
       { name: 'system', type: 'UUID', notNull: true },
       { name: 'code', type: 'TEXT', notNull: true },
       { name: 'display', type: 'TEXT' },
-      { name: 'isSynonym', type: 'BOOLEAN' },
+      { name: 'isSynonym', type: 'BOOLEAN', notNull: true },
+      { name: 'synonymOf', type: 'BIGINT' },
     ],
     indexes: [
       { columns: ['id'], indexType: 'btree', unique: true },
-      { columns: ['system', 'code'], indexType: 'btree', unique: true, include: ['id'] },
-      // This index definition is cheating since "display gin_trgm_ops" is of course not just a column name
-      // It should have a special parser
-      { columns: ['system', 'display gin_trgm_ops'], indexType: 'gin' },
+      {
+        columns: ['system', 'code'],
+        indexType: 'btree',
+        unique: true,
+        include: ['id'],
+        where: `"synonymOf" IS NULL`,
+        indexNameSuffix: 'primary_idx',
+      },
+      {
+        columns: [
+          'system',
+          'code',
+          'display',
+          { expression: `COALESCE("synonymOf", ('-1'::integer)::bigint)`, name: 'synonymOf' },
+        ],
+        indexType: 'btree',
+        unique: true,
+      },
+      { columns: ['system', { expression: 'display gin_trgm_ops', name: 'displayTrgm' }], indexType: 'gin' },
     ],
   });
 }
@@ -796,12 +826,17 @@ function buildCodingPropertyTable(result: SchemaDefinition): void {
       { name: 'coding', type: 'BIGINT', notNull: true },
       { name: 'property', type: 'BIGINT', notNull: true },
       { name: 'target', type: 'BIGINT' },
-      { name: 'value', type: 'TEXT' },
+      { name: 'value', type: 'TEXT', notNull: true },
     ],
     indexes: [
-      { columns: ['coding', 'property', 'target', 'value'], indexType: 'btree', unique: true },
       { columns: ['target', 'property', 'coding'], indexType: 'btree', unique: false, where: 'target IS NOT NULL' },
-      { columns: ['coding'], indexType: 'btree', unique: false },
+      { columns: ['coding', 'property'], indexType: 'btree', unique: false, indexNameSuffix: '_idx' },
+      {
+        columns: ['property', 'value', 'coding', 'target'],
+        indexType: 'btree',
+        unique: true,
+        indexNameSuffix: 'full_idx',
+      },
     ],
   });
 }

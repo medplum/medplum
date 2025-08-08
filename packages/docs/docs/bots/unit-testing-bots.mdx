@@ -59,12 +59,22 @@ We recommend creating a `MockClient` at the beginning of each test, to avoid any
 
 :::warning Caution
 
-The MockClient does not yet _perfectly_ replicate the functionality of the `MedplumClient` class, as this would require duplicating the entire server codebase. Some advanced functionality does not yet behave the same between `MockClient` and `MedplumClient`, including:
+The MockClient does not yet perfectly replicate all functionality of the `MedplumClient` class. Here are the known differences:
 
-- `medplum.graphql`
-- FHIR $ operations
+- Chained search
+- Search `_include` and `_revinclude` parameters
+- Full compliance for token search parameters
+- More accurate schema validation
+- **Authentication** 
+- **Most FHIR $ operations** 
+- **`$validate`** 
+- **`Bot/$execute`** 
+- **Terminology service** (e.g., `ValueSet/$expand`)
+- **FHIRcast**
+- **Websocket subscriptions**
+- **Project admin calls** (new project, invite user, create client application, etc.)
 
-The Medplum team is working on bringing these features to parity as soon as possible.
+The Medplum team is working on bringing these features to parity as soon as possible. For related discussion, see [related GitHub issue](https://github.com/medplum/medplum/issues/6889). 
 
 :::
 

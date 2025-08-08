@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, MedplumClient, isCoding, isResource } from '@medplum/core';
 import { Identifier, Questionnaire } from '@medplum/fhirtypes';
 import { HGAutocompleteBotResponse, LabOrganization, TestCoding } from '@medplum/health-gorilla-core';

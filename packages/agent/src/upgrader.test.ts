@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { clearReleaseCache } from '@medplum/core';
 import child_process from 'node:child_process';
 import fs from 'node:fs';
@@ -64,9 +66,9 @@ describe('Upgrader', () => {
 
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade'])).resolves.toBeUndefined();
       await expect(receivedMsgPromise).resolves.toStrictEqual({ type: 'STARTED' });
-      expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-3.1.6.exe'));
-      expect(getReleaseBinPath('3.1.6').endsWith('medplum-agent-installer-3.1.6.exe')).toStrictEqual(true);
-      expect(spawnSyncSpy).toHaveBeenLastCalledWith(`"${getReleaseBinPath('3.1.6')}" /S`, {
+      expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-4.2.4.exe'));
+      expect(getReleaseBinPath('4.2.4').endsWith('medplum-agent-installer-4.2.4.exe')).toStrictEqual(true);
+      expect(spawnSyncSpy).toHaveBeenLastCalledWith(`"${getReleaseBinPath('4.2.4')}" /S`, {
         shell: true,
         windowsHide: true,
       });
@@ -102,9 +104,9 @@ describe('Upgrader', () => {
 
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade'])).resolves.toBeUndefined();
       await expect(receivedMsgPromise).resolves.toStrictEqual({ type: 'STARTED' });
-      expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-3.1.6.exe'));
-      expect(getReleaseBinPath('3.1.6').endsWith('medplum-agent-installer-3.1.6.exe')).toStrictEqual(true);
-      expect(spawnSyncSpy).toHaveBeenLastCalledWith(`"${getReleaseBinPath('3.1.6')}" /S`, {
+      expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-4.2.4.exe'));
+      expect(getReleaseBinPath('4.2.4').endsWith('medplum-agent-installer-4.2.4.exe')).toStrictEqual(true);
+      expect(spawnSyncSpy).toHaveBeenLastCalledWith(`"${getReleaseBinPath('4.2.4')}" /S`, {
         shell: true,
         windowsHide: true,
       });
@@ -125,7 +127,7 @@ describe('Upgrader', () => {
       const originalConsoleLog = console.log;
       console.log = jest.fn();
 
-      const fetchSpy = mockFetchForUpgrader('3.1.5');
+      const fetchSpy = mockFetchForUpgrader('4.2.4');
       const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
       const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(
         jest.fn(() => {
@@ -141,11 +143,11 @@ describe('Upgrader', () => {
         });
       });
 
-      await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', '3.1.5'])).resolves.toBeUndefined();
+      await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', '4.2.4'])).resolves.toBeUndefined();
       await expect(receivedMsgPromise).resolves.toStrictEqual({ type: 'STARTED' });
-      expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-3.1.5.exe'));
-      expect(getReleaseBinPath('3.1.5').endsWith('medplum-agent-installer-3.1.5.exe')).toStrictEqual(true);
-      expect(spawnSyncSpy).toHaveBeenLastCalledWith(`"${getReleaseBinPath('3.1.5')}" /S`, {
+      expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-4.2.4.exe'));
+      expect(getReleaseBinPath('4.2.4').endsWith('medplum-agent-installer-4.2.4.exe')).toStrictEqual(true);
+      expect(spawnSyncSpy).toHaveBeenLastCalledWith(`"${getReleaseBinPath('4.2.4')}" /S`, {
         shell: true,
         windowsHide: true,
       });
@@ -164,7 +166,6 @@ describe('Upgrader', () => {
 
     test('Invalid version', async () => {
       const originalConsoleLog = console.log;
-      // console.log = jest.fn();
 
       const fetchSpy = mockFetchForUpgrader();
       const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
@@ -178,6 +179,31 @@ describe('Upgrader', () => {
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', 'INVALID'])).rejects.toThrow(
         'Invalid version specified'
       );
+
+      for (const spy of [fetchSpy, existsSyncSpy, spawnSyncSpy, execSyncSpy]) {
+        spy.mockRestore();
+      }
+      console.log = originalConsoleLog;
+    });
+
+    test('Pre-4.2.4', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const fetchSpy = mockFetchForUpgrader();
+      const existsSyncSpy = jest.spyOn(fs, 'existsSync').mockImplementation(() => false);
+      const spawnSyncSpy = jest.spyOn(child_process, 'spawnSync').mockImplementation(jest.fn());
+      const execSyncSpy = jest.spyOn(child_process, 'execSync').mockImplementation(jest.fn());
+
+      // Try to use a pre-4.2.4 version
+      await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', '3.1.6'])).resolves.toBeUndefined();
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(
+          'Uninstalling the current agent service before installing the pre-zero-downtime agent...'
+        )
+      );
+      expect(spawnSyncSpy).toHaveBeenCalledWith(resolve(__dirname, 'upgrader.ts'), ['--remove-old-services', '--all']);
 
       for (const spy of [fetchSpy, existsSyncSpy, spawnSyncSpy, execSyncSpy]) {
         spy.mockRestore();

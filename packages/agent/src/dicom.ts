@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   AgentTransmitResponse,
   ContentType,
@@ -152,6 +154,32 @@ export class AgentDicomChannel extends BaseChannel {
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
     this.log = app.log.clone({ options: { prefix: `[DICOM:${definition.name}] ` } });
+  }
+
+  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
+    const previousEndpoint = this.endpoint;
+    this.definition = definition;
+    this.endpoint = endpoint;
+
+    this.log.info('Reloading config... Evaluating if channel needs to change address...');
+
+    if (this.needToRebindToPort(previousEndpoint, endpoint)) {
+      await this.stop();
+      this.start();
+      this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
+    } else {
+      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
+    }
+  }
+
+  private needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
+    if (
+      firstEndpoint.address === secondEndpoint.address ||
+      new URL(firstEndpoint.address).port === new URL(secondEndpoint.address).port
+    ) {
+      return false;
+    }
+    return true;
   }
 
   start(): void {

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ActionIcon, Box, Collapse, Group, Text } from '@mantine/core';
 import { IconChevronDown, IconPlus } from '@tabler/icons-react';
 import { JSX, ReactNode, useState } from 'react';
@@ -51,7 +53,7 @@ export function CollapsibleSection(props: CollapsibleSectionProps): JSX.Element 
       </Group>
 
       <Collapse in={!collapsed}>
-        <Box ml="var(--mantine-spacing-xl)" mt="xs" mb="md">
+        <Box ml="var(--mantine-spacing-xl)" mt="xs" mb="md" pl={4}>
           {children}
         </Box>
       </Collapse>

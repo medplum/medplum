@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { randomUUID } from 'crypto';
 import { generateKeyPair, SignJWT } from 'jose';
 import { initAppServices, shutdownApp } from '../app';
@@ -82,7 +84,7 @@ describe('Keys', () => {
 
     // Construct a broken JWT with empty "kid"
     const accessToken = await new SignJWT({})
-      .setProtectedHeader({ alg: 'RS256', kid: '', typ: 'JWT' })
+      .setProtectedHeader({ alg: 'ES256', kid: '', typ: 'JWT' })
       .setIssuedAt()
       .setIssuer(config.issuer)
       .setAudience('my-audience')

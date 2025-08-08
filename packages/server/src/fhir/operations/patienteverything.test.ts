@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, LOINC, createReference, getReferenceString } from '@medplum/core';
 import { Bundle, Condition, Observation, Organization, Patient, Practitioner, Resource } from '@medplum/fhirtypes';
 import express from 'express';

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { formatHl7DateTime, Hl7Message } from '@medplum/core';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { readFileSync } from 'node:fs';
@@ -32,7 +34,7 @@ const send = new MedplumCommand('send')
       const response = await client.sendAndWait(Hl7Message.parse(body));
       console.log(response.toString().replaceAll('\r', '\n'));
     } finally {
-      client.close();
+      await client.close();
     }
   });
 

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Login, SmartAppLaunch } from '@medplum/fhirtypes';
 import { Request, RequestHandler, Response } from 'express';
 import { JWTPayload } from 'jose';

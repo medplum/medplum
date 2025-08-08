@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Anchor, Box, Button, Modal, Stack, Text, Title } from '@mantine/core';
 import { formatDateTime, formatHumanName, formatTiming } from '@medplum/core';
 import { HumanName, MedicationRequest } from '@medplum/fhirtypes';

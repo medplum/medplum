@@ -13,7 +13,6 @@ PACKAGES=(
   "definitions"
   "dosespot-react"
   "eslint-config"
-  "expo-polyfills"
   "fhir-router"
   "fhirtypes"
   "health-gorilla-core"

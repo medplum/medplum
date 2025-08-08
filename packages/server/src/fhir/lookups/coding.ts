@@ -1,4 +1,6 @@
-import { append } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { append, WithId } from '@medplum/core';
 import {
   CodeSystem,
   CodeSystemConcept,
@@ -8,7 +10,7 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
-import { ImportedProperty, importCodeSystem } from '../operations/codesystemimport';
+import { importCodeSystem, ImportedProperty } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
 import { Column, DeleteQuery } from '../sql';
 import { LookupTable } from './lookuptable';
@@ -38,7 +40,11 @@ export class CodingTable extends LookupTable {
     throw new Error('CodingTable.extractValues not implemented');
   }
 
-  async batchIndexResources(client: PoolClient, resources: Resource[], create: boolean): Promise<void> {
+  async batchIndexResources<T extends Resource>(
+    client: PoolClient,
+    resources: WithId<T>[],
+    create: boolean
+  ): Promise<void> {
     for (const resource of resources) {
       if (
         resource.resourceType === 'CodeSystem' &&

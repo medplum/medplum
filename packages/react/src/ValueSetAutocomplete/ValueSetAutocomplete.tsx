@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, Text } from '@mantine/core';
 import { ValueSetExpandParams } from '@medplum/core';
 import { ValueSetExpansionContains } from '@medplum/fhirtypes';

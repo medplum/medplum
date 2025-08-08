@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Pool, PoolClient } from 'pg';
 import { loadTestConfig } from './config/loader';
 import { closeDatabase, DatabaseMode, getDatabasePool, initDatabase } from './database';

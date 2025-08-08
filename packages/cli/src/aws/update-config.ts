@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MedplumInfraConfig } from '@medplum/core';
 import { color } from '../util/color';
 import { getConfigFileName, readConfig, readServerConfig } from '../utils';

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   Address,
   CodeableConcept,
@@ -54,7 +56,7 @@ export function typedValueToString(typedValue: TypedValue | undefined): string {
     case 'Reference':
       return formatReferenceString(typedValue.value);
     default:
-      return typedValue.value.toString();
+      return typedValue.value?.toString() ?? '';
   }
 }
 

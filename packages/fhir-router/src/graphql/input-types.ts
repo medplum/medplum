@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { InternalSchemaElement, capitalize, getDataType, isResourceType } from '@medplum/core';
 import { ElementDefinitionType, ResourceType } from '@medplum/fhirtypes';
 import {

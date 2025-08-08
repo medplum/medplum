@@ -16,7 +16,7 @@ node --version
 npm --version
 
 # Install
-[ ! -d "node_modules" ] && npm ci --maxsockets 1
+[ ! -d "node_modules" ] && npm ci
 
 # Build
 npm run build:docs

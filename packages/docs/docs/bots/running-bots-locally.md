@@ -26,7 +26,7 @@ Using VM Context allows you to use resources more efficiently, however it can al
 
 :::danger
 
-WE STRONGLY CAUTION THAT VM CONTEXT BOTS SHOULD ONLY BE USED IN TRUSTED ENVIRONMENTS.
+**The `node:vm` module is not a security mechanism. Do not use it to run untrusted code.**
 
 The code for these bots runs in the server, so they can potentially have access to sensitive information when run in production environments without appropriate safety measures.
 

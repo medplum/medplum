@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
 import { ContentType, createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { BundleEntry, Practitioner, ProjectMembership } from '@medplum/fhirtypes';
@@ -759,6 +761,21 @@ describe('Admin Invite', () => {
     expect(normalizeErrorString(res5.body)).toStrictEqual(
       'User is already a member of this project with a different profile'
     );
+
+    // Invite Bob third time with "forceNewMembership = true" - should succeed
+    const res6 = await request(app)
+      .post('/admin/projects/' + project.id + '/invite')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Practitioner',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        email: bobEmail,
+        forceNewMembership: true,
+      });
+    expect(res6.status).toBe(200);
+    expect(res6.body.resourceType).toBe('ProjectMembership');
+    expect(res6.body.id).not.toStrictEqual(res2.body.id);
   });
 
   test('Invite project scoped user', async () => {

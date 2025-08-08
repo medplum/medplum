@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Tabs } from '@mantine/core';
 import { Operator, SearchRequest, formatSearchQuery, getReferenceString, parseSearchRequest } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';

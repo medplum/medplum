@@ -2,7 +2,7 @@
 
 # AZURE USAGE: (requires az cli to be installed and authenticated)
 # It uploads the files to the $web container of the specified storage account.
-# npm ci --maxsockets 1 --include dev && npm run build:fast
+# npm ci --include dev && npm run build:fast
 # STORAGE_ACCOUNT=medplumapp ./scripts/deploy-app-azure.sh
 
 if [[ -z "${STORAGE_ACCOUNT}" ]]; then

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeIssue } from '@medplum/fhirtypes';
 import { createStructureIssue, OperationOutcomeError, validationError } from './outcomes';
 import { isResourceType } from './typeschema/types';

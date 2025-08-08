@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 export function getGoogleClientId(clientId: string | undefined): string | undefined {
   if (clientId) {
     return clientId;

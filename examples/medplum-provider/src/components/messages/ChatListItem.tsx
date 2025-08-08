@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, Stack, Text } from '@mantine/core';
 import { Communication, HumanName, Patient, Reference } from '@medplum/fhirtypes';
 import { ResourceAvatar, useResource } from '@medplum/react';
@@ -17,8 +19,8 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
   const { topic, lastCommunication, isSelected, onClick } = props;
   const patientResource = useResource(topic.subject as Reference<Patient>);
   const patientName = formatHumanName(patientResource?.name?.[0] as HumanName);
-  const lastMsg = lastCommunication?.payload?.[0]?.contentString || 'No preview';
-  const content = lastMsg.length > 100 ? lastMsg.slice(0, 100) + '...' : lastMsg;
+  const lastMsg = lastCommunication?.payload?.[0]?.contentString;
+  const content = lastMsg?.length && lastMsg.length > 100 ? lastMsg.slice(0, 100) + '...' : lastMsg;
 
   return (
     <Group
@@ -37,7 +39,7 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
           {patientName}
         </Text>
         <Text size="sm" fw={400} c="gray.7" lineClamp={2} className={classes.content}>
-          {content}
+          {content ? `${lastCommunication?.sender?.display}: ${content}` : `No messages available`}
         </Text>
         <Text size="xs" c="gray.6" style={{ marginTop: 2 }}>
           {lastCommunication ? formatDateTime(lastCommunication.sent) : ''}

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { FhircastConnection, FhircastMessageEvent, FhircastMessagePayload, SubscriptionRequest } from '@medplum/core';
 import { useMedplum } from '@medplum/react';
 import { useEffect, useRef, useState } from 'react';

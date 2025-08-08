@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Card, Radio, Stack, Text, TextInput } from '@mantine/core';
 import { LabOrderInputErrors, TestCoding } from '@medplum/health-gorilla-core';
 import { TestMetadata, useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';

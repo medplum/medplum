@@ -6,11 +6,10 @@
 } 
 
 .contentContainer {
-  border-radius: 8;
   transition: background 0.2s;
   cursor: pointer;
 }
 
 .contentContainer.selected {
-  background: var(--mantine-color-gray-2);
+  background: light-dark(var(--mantine-color-gray-2),  var(--mantine-color-dark-8));
 }

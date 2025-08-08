@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Alert, Center, Group, Stack, TextInput, Title } from '@mantine/core';
 import { normalizeErrorString } from '@medplum/core';
 import { IconAlertCircle } from '@tabler/icons-react';

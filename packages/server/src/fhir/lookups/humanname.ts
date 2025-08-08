@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { formatFamilyName, formatGivenName, formatHumanName, WithId } from '@medplum/core';
 import {
   HumanName,
@@ -41,6 +43,8 @@ export class HumanNameTable extends LookupTable {
   private static hasHumanName(resourceType: ResourceType): resourceType is HumanNameResourceType {
     return resourceTypeSet.has(resourceType as any);
   }
+
+  protected readonly CONTAINS_SQL_OPERATOR: LookupTable['CONTAINS_SQL_OPERATOR'] = 'ILIKE';
 
   /**
    * Returns the table name.

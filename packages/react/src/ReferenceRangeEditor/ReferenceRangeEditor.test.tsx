@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { deepClone } from '@medplum/core';
 import { ObservationDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';

@@ -1,9 +1,14 @@
 name: Publish
+
 # Based on: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
 on:
   push:
     tags:
       - 'v*'
+
+permissions:
+  contents: read
+
 jobs:
   build_and_check:
     name: publish
@@ -19,13 +24,14 @@ jobs:
     permissions:
       actions: read
       contents: write
+      id-token: write
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
@@ -49,7 +55,7 @@ jobs:
             {"text": "Starting publish: ${{ github.ref_name }}"}
 
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
 
       - name: Build
         run: npm run build:all
@@ -89,10 +95,9 @@ jobs:
           APP_DOCKERHUB_REPOSITORY: ${{ secrets.APP_DOCKERHUB_REPOSITORY }}
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@b47578312673ae6fa5b5096b330d9fbac3d116df
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Deploy bot layer
@@ -111,7 +116,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Install NSIS
         run: choco install nsis
@@ -126,7 +131,7 @@ jobs:
           java-version: '17'
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
@@ -150,7 +155,7 @@ jobs:
             ${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
 
       - name: Set repo hash for agent build
         shell: bash
@@ -163,7 +168,7 @@ jobs:
         run: npm run build -- --filter=@medplum/agent
 
       - name: Find signtool
-        uses: actions/github-script@v6
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         id: find-signtool
         with:
           result-encoding: string
@@ -221,7 +226,7 @@ jobs:
           SM_CERT_ALIAS: ${{ secrets.SM_CERT_ALIAS }}
 
       - name: Upload Agent installer
-        uses: actions/github-script@v6
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const packageJson = require('./packages/agent/package.json');
@@ -267,10 +272,10 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
@@ -288,7 +293,7 @@ jobs:
             ${{ runner.os }}-
 
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
 
       - name: Set repo hash for agent build
         shell: bash
@@ -305,7 +310,7 @@ jobs:
         run: ./scripts/build-agent-installer-linux.sh
 
       - name: Upload Agent
-        uses: actions/github-script@v6
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           script: |
             const packageJson = require('./packages/agent/package.json');

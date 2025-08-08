@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   allOk,
   badRequest,
@@ -12,6 +14,7 @@ import { Attachment, Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
 import { isBotEnabled } from '../../bots/utils';
 import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
+import { deployFissionBot } from '../../cloud/fission/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { getBinaryStorage } from '../../storage/loader';
 import { readStreamToString } from '../../util/streams';
@@ -98,5 +101,7 @@ export async function deployBot(repo: Repository, bot: WithId<Bot>, code?: strin
       });
     }
     await deployLambda(latestBot, codeToDeploy as string);
+  } else if (latestBot.runtimeVersion === 'fission') {
+    await deployFissionBot(latestBot, codeToDeploy as string);
   }
 }

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import cp from 'node:child_process';
 import fs from 'node:fs';
 import readline from 'node:readline/promises';

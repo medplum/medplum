@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Menu } from '@mantine/core';
 import { MedicationRequest } from '@medplum/fhirtypes';
 import { IconCircleOff, IconEdit, IconMenu2, IconNewSection, IconRefresh } from '@tabler/icons-react';

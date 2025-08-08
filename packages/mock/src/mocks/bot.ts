@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Binary, Bot, ClientApplication } from '@medplum/fhirtypes';
 
 export const ExampleBotSourceCode: Binary = {

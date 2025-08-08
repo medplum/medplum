@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Span, SpanStatusCode } from '@opentelemetry/api';
 import { PgResponseHookInformation } from '@opentelemetry/instrumentation-pg';
 import { NodeSDK } from '@opentelemetry/sdk-node';
@@ -70,5 +72,15 @@ describe('Instrumentation', () => {
     pgResponseHook(span, { data: { rowCount: 21 } } as unknown as PgResponseHookInformation);
 
     expect(span.setAttribute).toHaveBeenCalledWith('medplum.db.rowCount', 21);
+  });
+
+  test('Postgres response hook -- null rowCount', async () => {
+    const span = {
+      setAttribute: jest.fn(),
+    } as unknown as Span;
+
+    pgResponseHook(span, { data: { rowCount: null } } as unknown as PgResponseHookInformation);
+
+    expect(span.setAttribute).not.toHaveBeenCalled();
   });
 });

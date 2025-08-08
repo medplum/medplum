@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Patient } from '@medplum/fhirtypes';
 import { Atom, AtomContext } from '../fhirlexer/parse';
 import { PropertyType, TypedValue } from '../types';

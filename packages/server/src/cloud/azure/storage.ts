@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { DefaultAzureCredential } from '@azure/identity';
 import { BlobSASPermissions, BlobServiceClient } from '@azure/storage-blob';
-import { splitN } from '@medplum/core';
+import { isString, splitN } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { IncomingMessage } from 'http';
 import { Readable } from 'stream';
@@ -23,15 +25,31 @@ export class AzureBlobStorage extends BaseBinaryStorage {
     this.containerClient = this.client.getContainerClient(containerName);
   }
 
-  async writeFile(key: string, contentType: string | undefined, stream: BinarySource): Promise<void> {
+  /**
+   * Writes a file to Azure Blob Storage.
+   * This method now correctly handles both Readable streams and strings as input.
+   * @param key - The key (path) for the file in the container.
+   * @param contentType - The MIME type of the content.
+   * @param data - The content to write, either as a Readable stream or a string.
+   */
+  async writeFile(key: string, contentType: string | undefined, data: BinarySource): Promise<void> {
     const blockBlobClient = this.containerClient.getBlockBlobClient(key);
+    const blobHTTPHeaders = {
+      blobContentType: contentType ?? 'application/octet-stream',
+      blobCacheControl: 'max-age=3600, s-maxage=86400',
+    };
 
-    await blockBlobClient.uploadStream(stream as IncomingMessage, undefined, undefined, {
-      blobHTTPHeaders: {
-        blobContentType: contentType ?? 'application/octet-stream',
-        blobCacheControl: 'max-age=3600, s-maxage=86400',
-      },
-    });
+    if (isString(data)) {
+      // For strings, we can directly upload the string content as a blob.
+      await blockBlobClient.upload(data, data.length, {
+        blobHTTPHeaders,
+      });
+    } else {
+      // For streams, we pipe the data to a write stream provided by the client library.
+      await blockBlobClient.uploadStream(data as IncomingMessage, undefined, undefined, {
+        blobHTTPHeaders,
+      });
+    }
   }
 
   async readFile(key: string): Promise<Readable> {

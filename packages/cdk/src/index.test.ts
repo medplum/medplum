@@ -1,13 +1,15 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MedplumSourceInfraConfig } from '@medplum/core';
 import { App } from 'aws-cdk-lib';
-import { unlinkSync, writeFileSync } from 'fs';
+import { unlink, writeFile } from 'fs/promises';
 import { resolve } from 'path';
 import { normalizeInfraConfig } from './config';
 import { main, MedplumStack } from './index';
 
-function writeConfig(filename: string, config: any): string {
+async function writeConfig(filename: string, config: any): Promise<string> {
   const resolvedPath = resolve(filename);
-  writeFileSync(resolvedPath, JSON.stringify(config), { encoding: 'utf-8' });
+  await writeFile(resolvedPath, JSON.stringify(config, null, 2), { encoding: 'utf-8' });
   return resolvedPath;
 }
 
@@ -39,26 +41,27 @@ describe('Infra', () => {
     clamscanLoggingBucket: 'medplum-logs-us-east-1',
     clamscanLoggingPrefix: 'clamscan',
   };
+
   beforeEach(() => {
     console.log = jest.fn();
   });
 
-  test('Missing config', () => {
+  test('Missing config', async () => {
     expect(() => main()).not.toThrow();
   });
 
-  test('Synth stack', () => {
-    const filename = writeConfig('./medplum.test.config.json', {
+  test('Synth stack', async () => {
+    const filename = await writeConfig('./medplum.test.config.json', {
       ...baseConfig,
       stackName: 'MedplumUnitTestStack',
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Multi region stack', () => {
-    const filename = writeConfig('./medplum.multiregion.config.json', {
+  test('Multi region stack', async () => {
+    const filename = await writeConfig('./medplum.multiregion.config.json', {
       ...baseConfig,
       name: 'multiregion',
       stackName: 'MedplumMultiRegionStack',
@@ -66,73 +69,73 @@ describe('Infra', () => {
       domainName: 'ap-southeast-1.medplum.com',
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('ECR image', () => {
-    const filename = writeConfig('./medplum.customvpc.config.json', {
+  test('ECR image', async () => {
+    const filename = await writeConfig('./medplum.customvpc.config.json', {
       ...baseConfig,
       name: 'customvpc',
       stackName: 'MedplumCustomVpcStack',
       serverImage: '647991932601.dkr.ecr.us-east-1.amazonaws.com/medplum-server:staging',
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Custom VPC', () => {
+  test('Custom VPC', async () => {
     // Create a temp config file
-    const filename = writeConfig('./medplum.customvpc.config.json', {
+    const filename = await writeConfig('./medplum.customvpc.config.json', {
       ...baseConfig,
       name: 'customvpc',
       stackName: 'MedplumCustomVpcStack',
       vpcId: 'vpc-0fc3a4d0600000000',
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Custom RDS instance type', () => {
-    const filename = writeConfig('./medplum.customRdsInstanceType.config.json', {
+  test('Custom RDS instance type', async () => {
+    const filename = await writeConfig('./medplum.customRdsInstanceType.config.json', {
       ...baseConfig,
       name: 'customRdsInstanceType',
       stackName: 'MedplumCustomRdsInstanceTypeStack',
       rdsInstanceType: 't3.micro',
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Custom RDS secrets', () => {
-    const filename = writeConfig('./medplum.customRdsSecrets.config.json', {
+  test('Custom RDS secrets', async () => {
+    const filename = await writeConfig('./medplum.customRdsSecrets.config.json', {
       ...baseConfig,
       name: 'customRdsSecrets',
       stackName: 'MedplumCustomRdsSecretsStack',
       rdsSecretsArn: 'arn:aws:secretsmanager:s-east-1:647991932601:secret:SecretName-6RandomCharacters',
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Skip DNS', () => {
-    const filename = writeConfig('./medplum.skipDns.config.json', {
+  test('Skip DNS', async () => {
+    const filename = await writeConfig('./medplum.skipDns.config.json', {
       ...baseConfig,
       name: 'skipDns',
       stackName: 'MedplumSkipDnsStack',
       skipDns: true,
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Add DataDog container', () => {
-    const filename = writeConfig('./medplum.datadog.config.json', {
+  test('Add DataDog container', async () => {
+    const filename = await writeConfig('./medplum.datadog.config.json', {
       ...baseConfig,
       name: 'datadog',
       stackName: 'MedplumDataDogStack',
@@ -148,79 +151,79 @@ describe('Infra', () => {
       ],
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('API in private subnet', () => {
-    const filename = writeConfig('./medplum.test.config.json', {
+  test('API in private subnet', async () => {
+    const filename = await writeConfig('./medplum.test.config.json', {
       ...baseConfig,
       stackName: 'MedplumUnitTestStack',
       apiInternetFacing: false,
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Disable app-api proxy', () => {
-    const filename = writeConfig('./medplum.test.config.json', {
+  test('Disable app-api proxy', async () => {
+    const filename = await writeConfig('./medplum.test.config.json', {
       ...baseConfig,
       stackName: 'MedplumUnitTestStack',
       appApiProxy: false,
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Custom cacheNodeType', () => {
-    const filename = writeConfig('./medplum.cacheNodeType.config.json', {
+  test('Custom cacheNodeType', async () => {
+    const filename = await writeConfig('./medplum.cacheNodeType.config.json', {
       ...baseConfig,
       stackName: 'MedplumCacheNodeTypeStack',
       cacheNodeType: 'cache.m4.2xlarge',
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('RDS reader instance', () => {
-    const filename = writeConfig('./medplum.reader.config.json', {
+  test('RDS reader instance', async () => {
+    const filename = await writeConfig('./medplum.reader.config.json', {
       ...baseConfig,
       stackName: 'MedplumReaderStack',
       rdsInstances: 2,
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('RDS proxy', () => {
-    const filename = writeConfig('./medplum.rdsproxy.config.json', {
+  test('RDS proxy', async () => {
+    const filename = await writeConfig('./medplum.rdsproxy.config.json', {
       ...baseConfig,
       stackName: 'MedplumRdsProxyStack',
       rdsProxyEnabled: true,
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Existing signing key', () => {
-    const filename = writeConfig('./medplum.signingKey.config.json', {
+  test('Existing signing key', async () => {
+    const filename = await writeConfig('./medplum.signingKey.config.json', {
       ...baseConfig,
       name: 'signingKey',
       stackName: 'MedplumSigningKeyStack',
       signingKeyId: 'K1234',
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('CloudTrail alarms', () => {
-    const filename = writeConfig('./medplum.cloudtrail.config.json', {
+  test('CloudTrail alarms', async () => {
+    const filename = await writeConfig('./medplum.cloudtrail.config.json', {
       ...baseConfig,
       name: 'cloudtrail',
       stackName: 'MedplumCloudTrailStack',
@@ -231,12 +234,12 @@ describe('Infra', () => {
       },
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Override hosted zone name', () => {
-    const filename = writeConfig('./medplum.hostedzone.config.json', {
+  test('Override hosted zone name', async () => {
+    const filename = await writeConfig('./medplum.hostedzone.config.json', {
       ...baseConfig,
       name: 'cloudtrail',
       stackName: 'MedplumHostedZoneStack',
@@ -247,12 +250,12 @@ describe('Infra', () => {
       storageDomainName: 'storage.foo.medplum.com',
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Autoscaling', () => {
-    const filename = writeConfig('./medplum.autoscaling.config.json', {
+  test('Autoscaling', async () => {
+    const filename = await writeConfig('./medplum.autoscaling.config.json', {
       ...baseConfig,
       name: 'autoscaling',
       stackName: 'MedplumAutoscalingTestStack',
@@ -265,12 +268,12 @@ describe('Infra', () => {
       },
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Custom security groups', () => {
-    const filename = writeConfig('./medplum.custom-security-groups.config.json', {
+  test('Custom security groups', async () => {
+    const filename = await writeConfig('./medplum.custom-security-groups.config.json', {
       ...baseConfig,
       name: 'custom-security-groups',
       stackName: 'MedplumCustomSecurityGroupsStack',
@@ -278,12 +281,12 @@ describe('Infra', () => {
       loadBalancerSecurityGroupId: 'sg-0fc4',
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('IP Set rules', () => {
-    const filename = writeConfig('./medplum.ipset.config.json', {
+  test('IP Set rules', async () => {
+    const filename = await writeConfig('./medplum.ipset.config.json', {
       ...baseConfig,
       name: 'ipset',
       stackName: 'MedplumIpSetStack',
@@ -292,19 +295,19 @@ describe('Infra', () => {
       storageWafIpSetArn: 'arn:aws:wafv2:us-east-1:647991932601:ipset/MedplumIpSet',
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('rdsPersistentParameterGroups', () => {
-    const filename = writeConfig('./medplum.pgpersistentparams.config.json', {
+  test('rdsPersistentParameterGroups', async () => {
+    const filename = await writeConfig('./medplum.pgpersistentparams.config.json', {
       ...baseConfig,
       stackName: 'MedplumPGStep1Stack',
       rdsPersistentParameterGroups: true,
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
   test('rdsIdsMajorVersionSuffix without rdsPersistentParameterGroups fails', async () => {
@@ -327,20 +330,20 @@ describe('Infra', () => {
     );
   });
 
-  test('rdsPersistentParameterGroups and rdsIdsMajorVersionSuffix', () => {
-    const filename = writeConfig('./medplum.PersistentAndIds.config.json', {
+  test('rdsPersistentParameterGroups and rdsIdsMajorVersionSuffix', async () => {
+    const filename = await writeConfig('./medplum.PersistentAndIds.config.json', {
       ...baseConfig,
       stackName: 'MedplumPGStep1Stack',
       rdsPersistentParameterGroups: true,
       rdsIdsMajorVersionSuffix: true,
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Create WAF logging group', () => {
-    const filename = writeConfig('./medplum.createWafLogGroup.config.json', {
+  test('Create WAF logging group', async () => {
+    const filename = await writeConfig('./medplum.createWafLogGroup.config.json', {
       ...baseConfig,
       name: 'createWafLogGroup',
       stackName: 'MedplumCreateWafLogGroupStack',
@@ -348,12 +351,12 @@ describe('Infra', () => {
       wafLogGroupCreate: true,
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 
-  test('Use existing WAF logging group', () => {
-    const filename = writeConfig('./medplum.existingWafLogGroup.config.json', {
+  test('Use existing WAF logging group', async () => {
+    const filename = await writeConfig('./medplum.existingWafLogGroup.config.json', {
       ...baseConfig,
       name: 'existingWafLogGroup',
       stackName: 'MedplumExistingWafLogGroupStack',
@@ -361,7 +364,38 @@ describe('Infra', () => {
       wafLogGroupCreate: true,
     });
 
-    expect(() => main({ config: filename })).not.toThrow();
-    unlinkSync(filename);
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
+  });
+
+  test('Use FireLens and Datadog', async () => {
+    const filename = await writeConfig('./medplum.fireLens.config.json', {
+      ...baseConfig,
+      name: 'fireLens',
+      stackName: 'MedplumFireLensGroupStack',
+      fireLens: {
+        enabled: true,
+        logDriverConfig: {
+          Name: 'datadog',
+          Host: 'http-intake.logs.datadoghq.com',
+          TLS: 'on',
+          compress: 'gzip',
+          apikey: 'YOUR_DATADOG_API_KEY',
+          dd_service: 'my-fargate-app',
+          dd_source: 'nginx',
+          dd_tags: 'environment:dev,project:firelens-example',
+          provider: 'ecs',
+        },
+        logRouterConfig: {
+          type: 'fluentbit',
+          options: {
+            enableECSLogMetadata: true,
+          },
+        },
+      },
+    });
+
+    await expect(main({ config: filename })).resolves.not.toThrow();
+    await unlink(filename);
   });
 });

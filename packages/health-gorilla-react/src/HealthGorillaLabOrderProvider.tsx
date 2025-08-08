@@ -1,7 +1,7 @@
-import { createContext, JSX, PropsWithChildren } from 'react';
-import { UseHealthGorillaLabOrderReturn } from './useHealthGorillaLabOrder';
-
-export const HealthGorillaLabOrderContext = createContext<UseHealthGorillaLabOrderReturn | undefined>(undefined);
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { JSX, PropsWithChildren } from 'react';
+import { HealthGorillaLabOrderContext, UseHealthGorillaLabOrderReturn } from './HealthGorillaLabOrderContext';
 
 /**
  * A provider component that propagates the `useHealthGorillaLabOrder` return value to all children components via [React Context](https://reactjs.org/docs/context.html) API. To be used with {@link useHealthGorillaLabOrderContext}.

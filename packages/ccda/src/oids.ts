@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 // Source: https://confluence.hl7.org/spaces/SD/pages/51227465/C-CDA+OIDs
 
 export const OID_REASON_FOR_REFERRAL = '1.3.6.1.4.1.19376.1.5.3.1.3.1';

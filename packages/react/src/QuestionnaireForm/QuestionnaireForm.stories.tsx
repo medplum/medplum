@@ -1,4 +1,6 @@
-import { QuestionnaireResponse } from '@medplum/fhirtypes';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { QuestionnaireItem, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
 import { JSX } from 'react';
 import { Document } from '../Document/Document';
@@ -267,7 +269,7 @@ export const LabOrdering = (): JSX.Element => {
     };
   }
 
-  const vendors: any = {
+  const vendors: QuestionnaireItem = {
     id: 'question2',
     linkId: 'question2',
     text: 'Vendor',
@@ -303,7 +305,7 @@ export const LabOrdering = (): JSX.Element => {
     ],
   };
 
-  const orders: any = {
+  const orders: QuestionnaireItem = {
     id: 'the-big',
     linkId: 'q2',
     type: 'group',
@@ -7063,6 +7065,47 @@ export const AHCHRSNScreening = (): JSX.Element => (
                 ],
               },
             ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
+export const SignatureRequired = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'basic-example',
+        title: 'Basic Example',
+        extension: [
+          {
+            url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-signatureRequired',
+            valueCodeableConcept: {
+              coding: [
+                {
+                  system: 'urn:iso-astm:E1762-95:2013',
+                  code: '1.2.840.10065.1.12.1.1',
+                  display: "Author's Signature",
+                },
+              ],
+            },
+          },
+        ],
+        item: [
+          {
+            linkId: 'titleDisplay',
+            text: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.',
+            type: 'display',
+          },
+          {
+            linkId: 'abc',
+            text: 'Question',
+            type: 'string',
           },
         ],
       }}

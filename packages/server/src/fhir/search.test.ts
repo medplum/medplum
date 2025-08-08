@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   createReference,
   Filter,
@@ -1029,24 +1031,45 @@ describe('project-scoped Repository', () => {
       expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toBeDefined();
     }));
 
-  test('Handle malformed _lastUpdated', async () =>
+  test.each([
+    ['xyz', false],
+    ['1985', false],
+    ['1985-11', false],
+    ['1985-11-30', true],
+    ['1985-11-30T05:05', true],
+    ['1985-11-30 05:05', true],
+    ['1985-11-30T05:05Z', true],
+    ['1985-11-30 05:05Z', true],
+    ['1985-11-30T05:05:55', true],
+    ['1985-11-30 05:05:55', true],
+    ['1985-11-30T05:05:55Z', true],
+    ['1985-11-30T05:05:55.000Z', true],
+    ['1985-11-30T05:05:55.000000000Z', true],
+    ['1985-11-30T05:05:55+05:05', true],
+    ['1985-11-30T05:05:55-13:30', true],
+    ['1985-11-30T05:05:55-14:00', true],
+    ['1985-11-30T05:05:55.000000000-14:00', true],
+    ['1985-11-30T05:05:55-15:00', false],
+  ])('Handle_lastUpdated value %s, isValid? %s', async (value, isValid) =>
     withTestContext(async () => {
-      try {
-        await repo.search({
-          resourceType: 'Patient',
-          filters: [
-            {
-              code: '_lastUpdated',
-              operator: Operator.GREATER_THAN,
-              value: 'xyz',
-            },
-          ],
-        });
-        fail('Expected error');
-      } catch (err) {
-        expect(normalizeErrorString(err)).toStrictEqual('Invalid date value: xyz');
+      const searchPromise = repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_lastUpdated',
+            operator: Operator.LESS_THAN,
+            value,
+          },
+        ],
+      });
+      if (isValid) {
+        const searchResult = await searchPromise;
+        expect(searchResult.entry?.length).toStrictEqual(0);
+      } else {
+        await expect(searchPromise).rejects.toThrow(`Invalid date value: ${value}`);
       }
-    }));
+    })
+  );
 
   test('Handle non-string value', async () =>
     withTestContext(async () => {
@@ -5071,5 +5094,34 @@ describe('systemRepo', () => {
       );
       expect(bundle3.entry?.length).toStrictEqual(1);
       expect(bundle3.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
+    }));
+
+  test('Search for deleted resources', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      await repo.deleteResource<Patient>('Patient', patient.id);
+
+      const searchResult1 = await repo.search({
+        resourceType: 'Patient',
+      });
+      expect(searchResult1.entry?.length).toBe(0);
+
+      const searchResult2 = await repo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: '_deleted',
+            operator: Operator.EQUALS,
+            value: 'true',
+          },
+        ],
+      });
+      expect(searchResult2.entry?.length).toBe(1);
     }));
 });

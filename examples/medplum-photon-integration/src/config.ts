@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 // Default values to enable Photon Elements. Replace with your own photon credentials for use. https://docs.photon.health/docs/elements
 export interface MedplumAppConfig {
   baseUrl?: string;

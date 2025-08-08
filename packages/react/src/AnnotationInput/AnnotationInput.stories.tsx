@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { createReference } from '@medplum/core';
 import { Annotation } from '@medplum/fhirtypes';
 import { DrAliceSmith } from '@medplum/mock';

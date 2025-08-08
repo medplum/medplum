@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
@@ -37,19 +39,17 @@ export const Operator = {
       sql.appendParameters(parameter, true);
     }
   },
-  LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+  LOWER_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.append('LOWER(');
     sql.appendColumn(column);
     sql.append(')');
     sql.append(' LIKE ');
     sql.param((parameter as string).toLowerCase());
   },
-  NOT_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
-    sql.append('LOWER(');
+  ILIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.appendColumn(column);
-    sql.append(')');
-    sql.append(' NOT LIKE ');
-    sql.param((parameter as string).toLowerCase());
+    sql.append(' ILIKE ');
+    sql.param(parameter as string);
   },
   '<': simpleBinaryOperator('<'),
   '<=': simpleBinaryOperator('<='),
@@ -211,7 +211,7 @@ export interface Expression {
 
 export class Column implements Expression {
   readonly tableName: string | undefined;
-  readonly columnName: string;
+  columnName: string;
   readonly raw?: boolean;
   readonly alias?: string;
 
@@ -256,7 +256,7 @@ export class Negation implements Expression {
 export class Condition implements Expression {
   readonly column: Column;
   readonly operator: keyof typeof Operator;
-  readonly parameter: any;
+  parameter: any;
   readonly parameterType?: string;
 
   constructor(column: Column | string, operator: keyof typeof Operator, parameter: any, parameterType?: string) {
@@ -363,6 +363,29 @@ export class SqlFunction implements Expression {
       }
     }
     sql.append(')');
+  }
+}
+
+export class UnionAllBuilder {
+  private queryCount: number = 0;
+  sql: SqlBuilder;
+
+  constructor() {
+    this.sql = new SqlBuilder();
+  }
+
+  add(query: SelectQuery): void {
+    if (this.queryCount > 0) {
+      this.sql.append(' UNION ALL ');
+    }
+    this.sql.append('(');
+    this.sql.appendExpression(query);
+    this.sql.append(')');
+    this.queryCount++;
+  }
+
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
+    return (await this.sql.execute(conn)).rows;
   }
 }
 
@@ -531,6 +554,13 @@ export class SqlBuilder {
   }
 }
 
+export const PostgresError = {
+  UniqueViolation: '23505',
+  SerializationFailure: '40001',
+  QueryCanceled: '57014',
+  InFailedSqlTransaction: '25P02',
+} as const;
+
 export function normalizeDatabaseError(err: any): OperationOutcomeError {
   if (err instanceof OperationOutcomeError) {
     // Pass through already-normalized errors
@@ -540,18 +570,18 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
   // Handle known Postgres error codes
   // @see https://www.postgresql.org/docs/16/errcodes-appendix.html
   switch (err?.code) {
-    case '23505': // unique_violation
+    case PostgresError.UniqueViolation:
       // Duplicate key error -> 409 Conflict
       // @see https://github.com/brianc/node-postgres/issues/1602
       return new OperationOutcomeError(conflict(err.detail), err);
-    case '40001': // serialization_failure
+    case PostgresError.SerializationFailure:
       // Transaction rollback due to serialization error -> 409 Conflict
       return new OperationOutcomeError(conflict(err.message, err.code), err);
-    case '57014': // query_canceled
+    case PostgresError.QueryCanceled:
       // Statement timeout -> 504 Gateway Timeout
       getLogger().warn('Database statement timeout', { error: err.message, stack: err.stack, code: err.code });
       return new OperationOutcomeError(serverTimeout(err.message), err);
-    case '25P02': // in_failed_sql_transaction
+    case PostgresError.InFailedSqlTransaction:
       getLogger().warn('Statement in failed transaction', { stack: err.stack });
       return new OperationOutcomeError(normalizeOperationOutcome(err), err);
   }
@@ -842,6 +872,7 @@ export class InsertQuery extends BaseQuery {
   private readonly query?: SelectQuery;
   private returnColumns?: string[];
   private conflictColumns?: string[];
+  private conflictCondition?: Condition;
   private ignoreConflict?: boolean;
 
   constructor(tableName: string, values: Record<string, any>[] | SelectQuery) {
@@ -853,8 +884,11 @@ export class InsertQuery extends BaseQuery {
     }
   }
 
-  mergeOnConflict(columns?: string[]): this {
+  mergeOnConflict(columns?: string[], where?: Condition): this {
     this.conflictColumns = columns ?? ['id'];
+    if (where) {
+      this.conflictCondition = where;
+    }
     return this;
   }
 
@@ -943,7 +977,14 @@ export class InsertQuery extends BaseQuery {
       return;
     }
 
-    sql.append(` ON CONFLICT (${this.conflictColumns.map((c) => '"' + c + '"').join(', ')}) DO UPDATE SET `);
+    sql.append(` ON CONFLICT (`);
+    sql.append(this.conflictColumns.map((c) => '"' + c + '"').join(', '));
+    sql.append(`)`);
+    if (this.conflictCondition) {
+      sql.append(' WHERE ');
+      sql.appendExpression(this.conflictCondition);
+    }
+    sql.append(` DO UPDATE SET `);
 
     const columns = Object.keys(this.values[0]);
     let first = true;

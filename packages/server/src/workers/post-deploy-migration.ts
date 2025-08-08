@@ -1,4 +1,6 @@
-import { getReferenceString, WithId } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { getReferenceString, normalizeErrorString, WithId } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Job, JobsOptions, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import * as semver from 'semver';
@@ -155,6 +157,13 @@ async function runDynamicMigration(
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
   } catch (err: any) {
+    const errorMsg = normalizeErrorString(err);
+    globalLogger.error('Post-deploy migration threw an error', {
+      error: errorMsg,
+      asyncJob: getReferenceString(asyncJob),
+      type: job.data.type,
+      dataVersion: asyncJob.dataVersion,
+    });
     await exec.failJob(repo, err);
   }
   return 'finished';
@@ -176,6 +185,13 @@ export async function runCustomMigration(
     const output = getAsyncJobOutputFromMigrationActionResults(results);
     await exec.completeJob(repo, output);
   } catch (err: any) {
+    const errorMsg = normalizeErrorString(err);
+    globalLogger.error('Post-deploy migration threw an error', {
+      error: errorMsg,
+      asyncJob: getReferenceString(asyncJob),
+      type: jobData.type,
+      dataVersion: asyncJob.dataVersion,
+    });
     await exec.failJob(repo, err);
   }
   return 'finished';

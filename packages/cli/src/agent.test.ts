@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   allOk,
   badRequest,
@@ -1303,6 +1305,106 @@ describe('Agent CLI', () => {
         );
         expect(processError).not.toHaveBeenCalled();
       });
+    });
+
+    test('Upgrade to specified version', async () => {
+      const agentId = randomUUID();
+      const agent = await medplum.createResource({
+        id: agentId,
+        resourceType: 'Agent',
+        name: 'Test Agent 1',
+        status: 'active',
+      } satisfies Agent);
+
+      medplum.router.router.add('GET', 'Agent/$upgrade', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Bundle',
+            type: 'collection',
+            entry: [
+              {
+                resource: {
+                  resourceType: 'Parameters',
+                  parameter: [
+                    { name: 'agent', resource: agent },
+                    {
+                      name: 'result',
+                      resource: allOk,
+                    },
+                  ],
+                },
+              },
+            ],
+          } satisfies Bundle,
+        ];
+      });
+
+      await expect(
+        main(['node', 'index.js', 'agent', 'upgrade', '--criteria', 'Agent?name=Test Agent', '--agentVersion', '4.3.1'])
+      ).resolves.toBeUndefined();
+      expect(medplumGetSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          href: medplum.fhirUrl('Agent', '$upgrade?name=Test+Agent&version=4.3.1').href,
+        }),
+        expect.objectContaining({ cache: 'reload' })
+      );
+      expect(processError).not.toHaveBeenCalled();
+    });
+
+    test('Force upgrade', async () => {
+      const agentId = randomUUID();
+      const agent = await medplum.createResource({
+        id: agentId,
+        resourceType: 'Agent',
+        name: 'Test Agent 1',
+        status: 'active',
+      } satisfies Agent);
+
+      medplum.router.router.add('GET', 'Agent/$upgrade', async () => {
+        return [
+          allOk,
+          {
+            resourceType: 'Bundle',
+            type: 'collection',
+            entry: [
+              {
+                resource: {
+                  resourceType: 'Parameters',
+                  parameter: [
+                    { name: 'agent', resource: agent },
+                    {
+                      name: 'result',
+                      resource: allOk,
+                    },
+                  ],
+                },
+              },
+            ],
+          } satisfies Bundle,
+        ];
+      });
+
+      await expect(
+        main([
+          'node',
+          'index.js',
+          'agent',
+          'upgrade',
+          '--criteria',
+          'Agent?name=Test Agent',
+          '--agentVersion',
+          '4.3.1',
+          '--force',
+        ])
+      ).resolves.toBeUndefined();
+      expect(medplumGetSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          href: medplum.fhirUrl('Agent', '$upgrade?name=Test+Agent&version=4.3.1&force=true').href,
+        }),
+        expect.objectContaining({ cache: 'reload' })
+      );
+      expect(processError).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * Decodes a base64 string.
  * Handles both browser and Node environments.
@@ -5,6 +8,7 @@
  * @param data - The base-64 encoded input string.
  * @returns The decoded string.
  */
+
 export function decodeBase64(data: string): string {
   if (typeof window !== 'undefined') {
     const binaryString = window.atob(data);

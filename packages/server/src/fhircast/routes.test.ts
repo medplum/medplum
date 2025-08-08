@@ -1,12 +1,14 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   ContentType,
+  createFhircastMessagePayload,
   CurrentContext,
   FhircastEventContext,
   FhircastEventPayload,
-  WithId,
-  createFhircastMessagePayload,
   generateId,
   isOperationOutcome,
+  WithId,
 } from '@medplum/core';
 import { DiagnosticReport, Project } from '@medplum/fhirtypes';
 import express from 'express';
@@ -42,7 +44,7 @@ class MockChainableCommander {
   }
 }
 
-describe('FHIRCast routes', () => {
+describe('FHIRcast routes', () => {
   let app: express.Express;
   let config: MedplumServerConfig;
   let server: Server;
@@ -569,7 +571,7 @@ describe('FHIRCast routes', () => {
   test('Get context', async () => {
     const topic = randomUUID();
     let res: any;
-    // Non-standard FHIRCast extension to support Nuance PowerCast Hub
+    // Non-standard FHIRcast extension to support Nuance PowerCast Hub
     res = await request(server)
       .get(`${STU2_BASE_ROUTE}/${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);

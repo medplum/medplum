@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, AppShell as MantineAppShell, Menu, Text, UnstyledButton } from '@mantine/core';
 import { formatHumanName } from '@medplum/core';
 import { HumanName } from '@medplum/fhirtypes';

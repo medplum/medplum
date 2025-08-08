@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { BotEvent, getExtensionValue, MedplumClient } from '@medplum/core';
 import { Appointment, Extension } from '@medplum/fhirtypes';
 

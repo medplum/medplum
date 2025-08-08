@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import assert from 'assert';
 import { Pool, PoolClient, QueryResult } from 'pg';
 import { getLatestPostDeployMigrationVersion, MigrationVersion } from './migrations/migration-versions';

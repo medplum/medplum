@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   BackgroundJobInteraction,
   ContentType,
@@ -9,7 +11,7 @@ import {
   resourceMatchesSubscriptionCriteria,
   WithId,
 } from '@medplum/core';
-import { Bot, Project, Resource, Subscription } from '@medplum/fhirtypes';
+import { Bot, Project, Reference, Resource, Subscription } from '@medplum/fhirtypes';
 import { executeBot } from '../bots/execute';
 import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
@@ -25,22 +27,28 @@ export function isPreCommitSubscription(subscription: WithId<Subscription>): boo
 /**
  * Performs pre-commit validation for a resource by executing any associated pre-commit bots.
  * Throws an error if the bot execution fails.
+ * @param author - The author of the resource, used to check against blacklisted authors for pre-commit
  * @param project  - The project to which the resource belongs. Must be passed separately because this is called before the resource meta is assigned.
  * @param resource  - The resource to validate.
  * @param interaction - The interaction type (e.g., 'create', 'update', 'delete').
+ * @returns The validated resource if a pre-commit bot returns one, otherwise undefined.
  */
-export async function preCommitValidation(
+export async function preCommitValidation<T extends Resource>(
+  author: Reference,
   project: WithId<Project> | undefined,
-  resource: WithId<Resource>,
+  resource: T,
   interaction: BackgroundJobInteraction
-): Promise<void> {
+): Promise<T | boolean | undefined> {
+  // reject if the server does not have pre-commit enabled
+  // or if the project does not have pre-commit enabled
   if (
     !getConfig().preCommitSubscriptionsEnabled ||
     !project?.setting?.find((s) => s.name === 'preCommitSubscriptionsEnabled')?.valueBoolean
   ) {
-    return;
+    return undefined;
   }
 
+  resource.meta = { ...resource.meta, author };
   const systemRepo = getSystemRepo();
   const logger = getLogger();
   const subscriptions = await systemRepo.searchResources<Subscription>({
@@ -111,5 +119,9 @@ export async function preCommitValidation(
     if (!botResult.success) {
       throw new OperationOutcomeError(normalizeOperationOutcome(botResult.returnValue));
     }
+
+    return botResult.returnValue;
   }
+
+  return undefined;
 }

@@ -1,16 +1,18 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
+  badRequest,
   CurrentContext,
   FhircastAnchorResourceType,
   FhircastDiagnosticReportCloseContext,
   FhircastDiagnosticReportOpenContext,
   FhircastEventPayload,
   FhircastMessagePayload,
-  OperationOutcomeError,
-  badRequest,
   generateId,
   getWebSocketUrl,
   isResource,
   normalizeErrorString,
+  OperationOutcomeError,
   resolveId,
   serverError,
 } from '@medplum/core';
@@ -506,7 +508,7 @@ protectedSTU2Routes.get(
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const currentContext = await getCurrentContext(ctx.project.id, req.params.topic);
-    // Non-standard FHIRCast extension to support Nuance PowerCast Hub
+    // Non-standard FHIRcast extension to support Nuance PowerCast Hub
     if (!currentContext) {
       res.status(200).json([]);
       return;

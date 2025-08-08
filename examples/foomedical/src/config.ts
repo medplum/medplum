@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 // Default values work on localhost:3000 and foomedical.com
 // Replace these values with your own values for production
 export const MEDPLUM_PROJECT_ID = '9602358d-eeb0-4de8-bccf-e2438b5c9162';

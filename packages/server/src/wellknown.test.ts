@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { isUUID } from '@medplum/core';
 import express from 'express';
 import request from 'supertest';
@@ -29,21 +31,34 @@ describe('Well Known', () => {
       expect(key.kid).toBeDefined();
       expect(key.kid.length).toStrictEqual(36); // kid should be a UUID
       expect(isUUID(key.kid)).toStrictEqual(true);
-      expect(key.alg).toStrictEqual('RS256');
-      expect(key.kty).toStrictEqual('RSA');
+      expect(key.alg).toMatch(/^(RS256|ES256)$/);
+      expect(key.kty).toMatch(/^(RSA|EC)$/);
       expect(key.use).toStrictEqual('sig');
 
-      // Make sure public key properties are there
-      expect(key.e).toBeDefined();
-      expect(key.n).toBeDefined();
+      if (key.kty === 'EC') {
+        // Make sure public key properties are there
+        expect(key.x).toBeDefined();
+        expect(key.y).toBeDefined();
+        expect(key.crv).toBeDefined();
 
-      // Make sure private key properties are *NOT* there
-      expect(key.d).toBeUndefined();
-      expect(key.p).toBeUndefined();
-      expect(key.q).toBeUndefined();
-      expect(key.dp).toBeUndefined();
-      expect(key.dq).toBeUndefined();
-      expect(key.qi).toBeUndefined();
+        // Make sure private key properties are *NOT* there
+        expect(key.d).toBeUndefined();
+        expect(key.x5c).toBeUndefined();
+        expect(key.x5t).toBeUndefined();
+        expect(key.x5t256).toBeUndefined();
+      } else if (key.kty === 'RSA') {
+        // Make sure public key properties are there
+        expect(key.e).toBeDefined();
+        expect(key.n).toBeDefined();
+
+        // Make sure private key properties are *NOT* there
+        expect(key.d).toBeUndefined();
+        expect(key.p).toBeUndefined();
+        expect(key.q).toBeUndefined();
+        expect(key.dp).toBeUndefined();
+        expect(key.dq).toBeUndefined();
+        expect(key.qi).toBeUndefined();
+      }
     }
   });
 

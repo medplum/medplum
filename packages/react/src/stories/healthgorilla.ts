@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { SNOMED, createReference } from '@medplum/core';
 import { DiagnosticReport, Observation } from '@medplum/fhirtypes';
 import { HomerSimpson, TestOrganization } from '@medplum/mock';

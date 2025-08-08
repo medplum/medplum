@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   badRequest,
   ContentType,
@@ -779,6 +781,14 @@ function includeRefreshToken(request: LoginRequest): boolean {
   return scopeArray.includes('offline') || scopeArray.includes('offline_access');
 }
 
+export function normalizeUserInfoUrl(userInfoUrl: string): string {
+  const url = new URL(userInfoUrl);
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+    throw new Error('Must use http or https protocol');
+  }
+  return url.toString();
+}
+
 /**
  * Returns the external identity provider user info for an access token.
  * This can be used to verify the access token and get the user's email address.
@@ -793,8 +803,11 @@ export async function getExternalUserInfo(
   idp?: IdentityProvider
 ): Promise<Record<string, unknown>> {
   const log = getLogger();
-  if (!userInfoUrl.startsWith('http:') && !userInfoUrl.startsWith('https:')) {
-    log.warn('Invalid user info URL', { userInfoUrl, clientId: idp?.clientId });
+
+  try {
+    userInfoUrl = normalizeUserInfoUrl(userInfoUrl);
+  } catch (err: unknown) {
+    log.warn('Invalid user info URL', { userInfoUrl, clientId: idp?.clientId, err });
     throw new OperationOutcomeError(badRequest('Invalid user info URL - check your identity provider configuration'));
   }
 
@@ -965,7 +978,7 @@ async function tryAddOnBehalfOf(req: IncomingMessage | undefined, authState: Aut
     return;
   }
 
-  if (!authState.membership.admin) {
+  if (!authState.membership.admin && !authState.project.superAdmin) {
     throw new OperationOutcomeError(forbidden);
   }
 
@@ -1075,8 +1088,13 @@ async function tryExternalAuthLogin(
 
   // Profile string can be either a reference or a search string
   let searchRequest: SearchRequest<ProfileResource>;
-  if (profileString.includes('?')) {
-    searchRequest = parseSearchRequest(profileString);
+  const queryIndex = profileString.indexOf('?');
+  if (queryIndex > -1) {
+    // Search string can be either relative (e.g. `Patient?identifier=foo`),
+    // or absolute (e.g. `https://idp.example.com/fhir/Patient?identifier=bar`)
+    // Isolate the resource type and query string from any preceding URL parts
+    const startIndex = profileString.lastIndexOf('/', queryIndex);
+    searchRequest = parseSearchRequest(profileString.substring(startIndex + 1));
   } else {
     const [resourceType, id] = profileString.split('/');
     searchRequest = {

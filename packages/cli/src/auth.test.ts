@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, MedplumClient } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import cp from 'node:child_process';
@@ -29,7 +31,10 @@ describe('CLI auth', () => {
   let processError: jest.SpyInstance;
 
   beforeAll(() => {
-    process.exit = jest.fn<never, any>().mockImplementation(function exit(exitCode: number) {
+    process.exit = jest.fn().mockImplementation(function exit(exitCode: number) {
+      if (exitCode === 0) {
+        return;
+      }
       throw new Error(`Process exited with exit code ${exitCode}`);
     }) as unknown as typeof process.exit;
     processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());

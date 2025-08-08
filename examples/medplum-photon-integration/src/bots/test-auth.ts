@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { BotEvent, MedplumClient, allOk, normalizeErrorString } from '@medplum/core';
 
 export async function handler(_medplum: MedplumClient, event: BotEvent): Promise<any> {

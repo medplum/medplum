@@ -156,9 +156,11 @@ Refer to the [Medplum search documentation](/docs/search/basic-search) for a mor
 
 ## Standardizing Data: Codeable Concepts
 
-The healthcare system commonly uses standardized coding systems to describe healthcare share information between organizations about **diagnoses**, **procedures**, **clinical outcomes**, **billing**.
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/tWW2_0lxNl4?si=bs4lD_2pm1HO0Ux2" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
 
-See our summary on [Common Terminologies](/docs/terminology/common-terminologies) for an overview of the most frequently used codes in healthcare.
+The healthcare system commonly uses standardized coding systems to describe healthcare share information between organizations about **diagnoses**, **procedures**, **clinical outcomes**, **billing**. See our summary on [Common Terminologies](/docs/terminology/common-terminologies) for an overview of the most frequently used codes in healthcare.
 
 Because there are multiple code systems for many domains, the same _concept_ can be defined in _multiple code systems_. To handle this mapping from concept to system, the FHIR defines the [`CodeableConcept`][codeableconcept] element type.
 
@@ -188,6 +190,10 @@ Below is an example [`CodeableConcept`][codeableconcept], that defines the medic
 </details>
 
 ## Naming Data: Identifiers
+
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/NumGLpR9Q7w?si=EPkEYFI2_jkxdzPw"  title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+</div>
 
 One issue in healthcare applications is that the same entity can have many different identifiers in different systems. For example, a patient might be identified simultaneously by their:
 

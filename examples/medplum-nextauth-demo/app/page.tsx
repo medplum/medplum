@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { PatientTable } from '@/app/components/PatientTable';
 import { Container } from '@mantine/core';
 import { MedplumClient } from '@medplum/core';

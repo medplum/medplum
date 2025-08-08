@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 // Sets up MantineProvider for all tests
 // See: https://mantine.dev/guides/jest/
 import { MantineProvider } from '@mantine/core';

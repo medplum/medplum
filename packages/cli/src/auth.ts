@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   ContentType,
   getDisplayString,
@@ -87,6 +89,7 @@ async function startWebServer(medplum: MedplumClient): Promise<void> {
         res.end(`Error: ${normalizeErrorString(err)}`);
       } finally {
         server.close();
+        process.exit(0);
       }
     } else {
       res.writeHead(404, { 'Content-Type': ContentType.TEXT });

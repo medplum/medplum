@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Menu, Tabs } from '@mantine/core';
 import { formatSearchQuery, Operator, SearchRequest } from '@medplum/core';
 import { Coding, Patient } from '@medplum/fhirtypes';

@@ -1,7 +1,11 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * LRU cache (least recently used)
  * Source: https://stackoverflow.com/a/46432113
  */
+
 export class LRUCache<T> {
   private readonly max: number;
   private readonly cache: Map<string, T>;

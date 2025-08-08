@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ContentType, concatUrls, getStatus, isCreated } from '@medplum/core';
 import { FhirResponseOptions } from '@medplum/fhir-router';
 import { Binary, OperationOutcome, Resource } from '@medplum/fhirtypes';

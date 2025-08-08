@@ -1,4 +1,6 @@
-import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { OperationOutcomeError, Operator, WithId, badRequest, createReference, resolveId } from '@medplum/core';
 import { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../../context';
 import { getSystemRepo } from '../../repo';
@@ -17,7 +19,7 @@ export async function findTerminologyResource<T extends TerminologyResource>(
     version?: string;
     ownProjectOnly?: boolean;
   }
-): Promise<T> {
+): Promise<WithId<T>> {
   const { repo, project } = getAuthenticatedContext();
   const filters = [{ code: 'url', operator: Operator.EQUALS, value: url }];
   if (options?.version) {
@@ -50,7 +52,7 @@ export async function findTerminologyResource<T extends TerminologyResource>(
     for (const resource of results) {
       resourceReferences.push(createReference(resource));
     }
-    const resources = (await getSystemRepo().readReferences(resourceReferences)) as (T | Error)[];
+    const resources = await getSystemRepo().readReferences(resourceReferences);
     const projectResource = resources.find((r) => r instanceof Error || r.meta?.project === project.id);
     if (projectResource instanceof Error) {
       throw projectResource;
@@ -61,7 +63,7 @@ export async function findTerminologyResource<T extends TerminologyResource>(
       for (const linkedProject of project.link) {
         const linkedResource = resources.find(
           (r) => !(r instanceof Error) && r.meta?.project === resolveId(linkedProject.project)
-        ) as T | undefined;
+        ) as WithId<T> | undefined;
         if (linkedResource) {
           return linkedResource;
         }
@@ -80,11 +82,22 @@ function sameTerminologyResourceVersion(a: TerminologyResource, b: TerminologyRe
   return true;
 }
 
+export function selectCoding(systemId: string, ...code: string[]): SelectQuery {
+  return new SelectQuery('Coding')
+    .column('id')
+    .column('code')
+    .column('display')
+    .where('system', '=', systemId)
+    .where('code', 'IN', code)
+    .where('synonymOf', '=', null);
+}
+
 export function addPropertyFilter(
   query: SelectQuery,
   property: string,
   operator: keyof typeof SqlOperator,
-  value: string | string[]
+  value: string | string[],
+  codeSystem: CodeSystem
 ): SelectQuery {
   const propertyQuery = new SelectQuery('Coding_Property').whereExpr(
     new Conjunction([
@@ -101,6 +114,7 @@ export function addPropertyFilter(
     new Conjunction([
       new Condition(new Column(csPropertyTable, 'id'), '=', new Column(propertyQuery.tableName, 'property')),
       new Condition(new Column(csPropertyTable, 'code'), '=', property),
+      new Condition(new Column(csPropertyTable, 'system'), '=', codeSystem.id),
     ])
   );
 

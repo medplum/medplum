@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ElementsContextType } from '@medplum/core';
 import { render, screen } from '../test-utils/render';
 import { ElementsInput } from './ElementsInput';

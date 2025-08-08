@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Group, JsonInput } from '@mantine/core';
 import { stringify } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';

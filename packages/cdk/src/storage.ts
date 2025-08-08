@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MedplumInfraConfig } from '@medplum/core';
 import {
   aws_certificatemanager as acm,
@@ -146,7 +148,7 @@ export class Storage extends Construct {
       // CloudFront distribution
       this.distribution = new cloudfront.Distribution(this, 'StorageDistribution', {
         defaultBehavior: {
-          origin: new origins.S3Origin(this.storageBucket, {
+          origin: origins.S3BucketOrigin.withOriginAccessIdentity(this.storageBucket, {
             originAccessIdentity: this.originAccessIdentity,
           }),
           responseHeadersPolicy: this.responseHeadersPolicy,

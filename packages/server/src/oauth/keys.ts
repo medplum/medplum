@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Operator } from '@medplum/core';
 import { JsonWebKey } from '@medplum/fhirtypes';
 import { randomBytes } from 'crypto';
@@ -68,30 +70,43 @@ export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
   refresh_secret: string;
 }
 
-/**
- * Signing algorithm.
+/*
+ * Signing algorithms.
  *
+ * For the first 4 years of this project, we only supported RS256:
  * RS256 (RSA Signature with SHA-256): An asymmetric algorithm, which means that there are two keys:
  * one public key and one private key that must be kept secret. The server has the private key used to
  * generate the signature, and the consumer of the JWT retrieves a public key from the metadata
  * endpoints provided by the server and uses it to validate the JWT signature.
  *
- * This is the algorithm used by AWS Cognito and Auth0.
+ * Due to customer requests for FAPI 2 compliance, we are now expanding to support ES256:
+ * ES256 (ECDSA using P-256 and SHA-256): An asymmetric algorithm using elliptic curve cryptography.
+ * Like RS256, it uses a public/private key pair, but offers better performance characteristics,
+ * smaller key sizes, and faster signature generation while providing equivalent security to 2048-bit RSA.
+ *
+ * To support existing customers and deployments, we will continue to support existing keys using RS256.
+ * All new keys will use ES256 by default.
+ *
+ * Note: AWS Cognito uses RS256. Auth0 supports RS256, HS256, and PS256 options.
  */
-const ALG = 'RS256';
+
+const ALG_ES256 = 'ES256';
+const ALG_RS256 = 'RS256';
+const PREFERRED_ALG = ALG_ES256;
+const LEGACY_DEFAULT_ALG = ALG_RS256;
 const DEFAULT_ACCESS_LIFETIME = '1h';
 const DEFAULT_REFRESH_LIFETIME = '2w';
 
 let issuer: string | undefined;
 const publicKeys: Record<string, KeyLike> = {};
 const jwks: { keys: JWK[] } = { keys: [] };
+let jsonWebKey: JsonWebKey | undefined;
 let signingKey: KeyLike | undefined;
-let signingKeyId: string | undefined;
 
 export async function initKeys(config: MedplumServerConfig): Promise<void> {
   issuer = undefined;
+  jsonWebKey = undefined;
   signingKey = undefined;
-  signingKeyId = undefined;
   jwks.keys = [];
 
   if (!config) {
@@ -118,11 +133,12 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
     // Generate a key pair
     // https://github.com/panva/jose/blob/HEAD/docs/functions/util_generate_key_pair.generatekeypair.md
     globalLogger.info('No keys found.  Creating new key...');
-    const keyResult = await generateKeyPair(ALG);
+    const keyResult = await generateKeyPair(PREFERRED_ALG);
     const jwk = await exportJWK(keyResult.privateKey);
     const createResult = await systemRepo.createResource<JsonWebKey>({
       resourceType: 'JsonWebKey',
       active: true,
+      alg: PREFERRED_ALG,
       ...jwk,
     } as JsonWebKey);
     jsonWebKeys = [createResult];
@@ -130,14 +146,22 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
 
   // Convert our JsonWebKey array to JWKS
   for (const jwk of jsonWebKeys) {
+    jwk.alg ??= LEGACY_DEFAULT_ALG;
+
     const publicKey: JWK = {
       kid: jwk.id,
-      alg: ALG,
-      kty: 'RSA',
+      alg: jwk.alg,
+      kty: jwk.kty,
       use: 'sig',
-      e: jwk.e,
-      n: jwk.n,
     };
+    if (jwk.alg === ALG_ES256) {
+      publicKey.x = jwk.x;
+      publicKey.y = jwk.y;
+      publicKey.crv = jwk.crv as string;
+    } else {
+      publicKey.e = jwk.e;
+      publicKey.n = jwk.n;
+    }
 
     // Add to the JWKS (JSON Web Key Set)
     // This will be publicly available at /.well-known/jwks.json
@@ -148,10 +172,9 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
   }
 
   // Use the first key as the signing key
-  signingKeyId = jsonWebKeys[0].id;
+  jsonWebKey = jsonWebKeys[0];
   signingKey = (await importJWK({
-    ...(jsonWebKeys[0] as JWK),
-    alg: ALG,
+    ...(jsonWebKey as JWK),
     use: 'sig',
   })) as KeyLike;
 }
@@ -226,7 +249,7 @@ export function generateRefreshToken(claims: MedplumRefreshTokenClaims, lifetime
  * @returns Promise to generate and sign the JWT.
  */
 async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
-  if (!signingKey || !issuer) {
+  if (!jsonWebKey || !signingKey || !issuer) {
     throw new Error('Signing key not initialized');
   }
 
@@ -236,7 +259,11 @@ async function generateJwt(exp: string, claims: JWTPayload): Promise<string> {
   }
 
   return new SignJWT(claims)
-    .setProtectedHeader({ alg: ALG, kid: signingKeyId, typ: 'JWT' })
+    .setProtectedHeader({
+      alg: jsonWebKey.alg ?? LEGACY_DEFAULT_ALG,
+      kid: jsonWebKey.id,
+      typ: 'JWT',
+    })
     .setIssuedAt()
     .setIssuer(issuer)
     .setAudience(claims.client_id as string)
@@ -256,7 +283,7 @@ export async function verifyJwt(token: string): Promise<{ payload: JWTPayload; p
 
   const verifyOptions: JWTVerifyOptions = {
     issuer,
-    algorithms: [ALG],
+    algorithms: [ALG_ES256, ALG_RS256],
   };
 
   return jwtVerify(token, getKeyForHeader, verifyOptions);

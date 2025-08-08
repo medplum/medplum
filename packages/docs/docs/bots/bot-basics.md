@@ -285,3 +285,12 @@ If you want to see all `AuditEvents` sorted by most recent, you can use [this li
 ## Software Development Lifecycle
 
 Bots written using the web editor are a great way to get started. If you would like to develop locally, test and deploy apps as part of your software development lifecycle, you refer to our next tutorial on [deploying Bots in production](./bots-in-production)
+
+
+## Medplum Lambda Bots Size Limits
+
+Medplum Bots that use the AWS Lamda runtime are subject to AWS Lambda size constraints:
+
+- **Maximum compressed size**: 50 MB
+
+These limits apply to your bot code and any extra dependencies you include. The [bot layer](/docs/bots/bot-lambda-layer) already provides many common dependencies (like `@medplum/core`, `node-fetch`, etc.).

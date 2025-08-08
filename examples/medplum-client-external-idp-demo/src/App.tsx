@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AppShell, Loading, Logo, useMedplum } from '@medplum/react';
 import { JSX, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router';

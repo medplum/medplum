@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_RELEASES_URL, ReleaseManifest, clearReleaseCache } from '@medplum/core';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
@@ -21,14 +23,14 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
 
   test('parseDownloadUrl', () => {
     const manifest = {
-      tag_name: 'v3.1.6',
+      tag_name: 'v4.2.4',
       assets: [
         {
-          name: 'medplum-agent-3.1.6-linux',
+          name: 'medplum-agent-4.2.4-linux',
           browser_download_url: 'https://example.com/linux',
         },
         {
-          name: 'medplum-agent-installer-3.1.6-windows.exe',
+          name: 'medplum-agent-installer-4.2.4-windows.exe',
           browser_download_url: 'https://example.com/win32',
         },
       ],
@@ -41,13 +43,13 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
   test('getReleaseBinPath', () => {
     switch (_platform) {
       case 'win32':
-        expect(getReleaseBinPath('3.1.6')).toStrictEqual(resolve(__dirname, 'medplum-agent-installer-3.1.6.exe'));
+        expect(getReleaseBinPath('4.2.4')).toStrictEqual(resolve(__dirname, 'medplum-agent-installer-4.2.4.exe'));
         break;
       case 'linux':
-        expect(getReleaseBinPath('3.1.6')).toStrictEqual(resolve(__dirname, 'medplum-agent-3.1.6-linux'));
+        expect(getReleaseBinPath('4.2.4')).toStrictEqual(resolve(__dirname, 'medplum-agent-4.2.4-linux'));
         break;
       default:
-        expect(() => getReleaseBinPath('3.1.6')).toThrow('Unsupported platform: darwin');
+        expect(() => getReleaseBinPath('4.2.4')).toThrow('Unsupported platform: darwin');
     }
   });
 });
@@ -81,14 +83,14 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
 
     test('Happy path', async () => {
       const manifest = {
-        tag_name: 'v3.1.6',
+        tag_name: 'v4.2.4',
         assets: [
           {
-            name: 'medplum-agent-3.1.6-linux',
+            name: 'medplum-agent-4.2.4-linux',
             browser_download_url: 'https://example.com/linux',
           },
           {
-            name: 'medplum-agent-installer-3.1.6-windows.exe',
+            name: 'medplum-agent-installer-4.2.4-windows.exe',
             browser_download_url: 'https://example.com/win32',
           },
         ],
@@ -152,8 +154,8 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
         })
       );
 
-      await downloadRelease('3.1.6', resolve(__dirname, 'tmp', 'test-release-binary'));
-      expect(fetchSpy).toHaveBeenNthCalledWith(1, expect.stringContaining(`${MEDPLUM_RELEASES_URL}/v3.1.6.json`));
+      await downloadRelease('4.2.4', resolve(__dirname, 'tmp', 'test-release-binary'));
+      expect(fetchSpy).toHaveBeenNthCalledWith(1, expect.stringContaining(`${MEDPLUM_RELEASES_URL}/v4.2.4.json`));
       expect(fetchSpy).toHaveBeenLastCalledWith(`https://example.com/${_platform}`);
       expect(readFileSync(resolve(__dirname, 'tmp', 'test-release-binary'), { encoding: 'utf-8' })).toStrictEqual(
         'Hello, Medplum!'

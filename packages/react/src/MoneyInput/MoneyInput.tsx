@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { NativeSelect, TextInput } from '@mantine/core';
 import { Money } from '@medplum/fhirtypes';
 import { IconCurrencyDollar } from '@tabler/icons-react';

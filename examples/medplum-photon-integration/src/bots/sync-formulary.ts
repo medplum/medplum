@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { BotEvent, getCodeBySystem, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { List, ListEntry, MedicationKnowledge } from '@medplum/fhirtypes';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_TREATMENTS } from './constants';

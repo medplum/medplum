@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { ClientApplication, ProjectSetting } from '@medplum/fhirtypes';
 import { KeepJobs } from 'bullmq';
 
@@ -101,6 +103,9 @@ export interface MedplumServerConfig {
   /** Optional flag to enable the MCP server beta */
   mcpEnabled?: boolean;
 
+  /** Optional config for Fission.io bots */
+  fission?: MedplumFissionConfig;
+
   /** @deprecated */
   auditEventLogGroup?: string;
 
@@ -170,4 +175,12 @@ export interface MedplumBullmqConfig {
 export interface MedplumExternalAuthConfig {
   readonly issuer: string;
   readonly userInfoUrl: string;
+}
+
+export interface MedplumFissionConfig {
+  readonly namespace: string;
+  readonly fieldManager: string;
+  readonly environmentName: string;
+  readonly routerHost: string;
+  readonly routerPort: number;
 }

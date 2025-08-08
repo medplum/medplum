@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Alert, Box, Button, Group, Modal, NumberInput, Stack, Table, Title } from '@mantine/core';
 import { createReference, formatDate, formatDateTime, formatObservationValue, getReferenceString } from '@medplum/core';
 import { Observation, ObservationComponent, Patient } from '@medplum/fhirtypes';

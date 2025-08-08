@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { MEDPLUM_VERSION, normalizeErrorString } from '@medplum/core';
 import { CommanderError, Option } from 'commander';
 import dotenv from 'dotenv';
@@ -135,7 +137,7 @@ function writeErrorToStderr(err: unknown, verbose = false): void {
 }
 
 export async function run(): Promise<void> {
-  dotenv.config();
+  dotenv.config({ quiet: true });
   await main(process.argv);
 }
 

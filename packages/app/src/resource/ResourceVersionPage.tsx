@@ -1,6 +1,20 @@
-import { Paper, Tabs, Text, Title } from '@mantine/core';
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+import { Box, Container, Group, Pagination, SegmentedControl, SimpleGrid, Stack, Title } from '@mantine/core';
+import { formatDateTime } from '@medplum/core';
 import { Bundle, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
-import { Container, Document, Loading, MedplumLink, ResourceDiff, useMedplum } from '@medplum/react';
+import {
+  DescriptionList,
+  DescriptionListEntry,
+  Document,
+  getPaginationControlProps,
+  Loading,
+  MedplumLink,
+  Panel,
+  ResourceBadge,
+  ResourceDiff,
+  useMedplum,
+} from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
@@ -34,16 +48,7 @@ export function ResourceVersionPage(): JSX.Element {
     return <Loading />;
   }
 
-  if (!historyBundle) {
-    return (
-      <Document>
-        <Title>Resource not found</Title>
-        <MedplumLink to={`/${resourceType}`}>Return to search page</MedplumLink>
-      </Document>
-    );
-  }
-
-  const entries = historyBundle.entry ?? [];
+  const entries = historyBundle?.entry ?? [];
   const index = entries.findIndex((entry) => entry.resource?.meta?.versionId === versionId);
   if (index === -1) {
     return (
@@ -57,54 +62,50 @@ export function ResourceVersionPage(): JSX.Element {
   const value = entries[index].resource as Resource;
   const prev = index < entries.length - 1 ? entries[index + 1].resource : undefined;
   const defaultTab = 'diff';
+  const currTab = tab || defaultTab;
+  const paginationIndex = entries.length - index;
   return (
-    <Tabs
-      value={tab || defaultTab}
-      onChange={(name) =>
-        navigate(`/${resourceType}/${id}/_history/${versionId}/${name || defaultTab}`)?.catch(console.error)
-      }
-    >
-      <Paper>
-        <Container fluid p="md">
-          <Text>{`${resourceType} ${id}`}</Text>
-        </Container>
-        <Tabs.List>
-          <Tabs.Tab value="diff">Diff</Tabs.Tab>
-          <Tabs.Tab value="raw">Raw</Tabs.Tab>
-        </Tabs.List>
-      </Paper>
-
-      <Document>
-        {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
-        <Tabs.Panel value="diff">
-          {prev ? (
-            <>
-              <ul>
-                <li>Current: {value.meta?.versionId}</li>
-                <li>
-                  Previous:{' '}
-                  <MedplumLink to={`/${resourceType}/${id}/_history/${prev.meta?.versionId}`}>
-                    {prev.meta?.versionId}
-                  </MedplumLink>
-                </li>
-              </ul>
-              <ResourceDiff original={prev} revised={value} />
-            </>
-          ) : (
-            <>
-              <ul>
-                <li>Current: {value.meta?.versionId}</li>
-                <li>Previous: (none)</li>
-              </ul>
-              <pre>{JSON.stringify(value, undefined, 2)}</pre>
-            </>
-          )}
-        </Tabs.Panel>
-
-        <Tabs.Panel value="raw">
-          <pre>{JSON.stringify(value, undefined, 2)}</pre>
-        </Tabs.Panel>
-      </Document>
-    </Tabs>
+    <Container maw={1200}>
+      <Panel>
+        <Stack gap="lg">
+          {error && <pre data-testid="error">{JSON.stringify(error, undefined, 2)}</pre>}
+          <SimpleGrid cols={2} mb="lg">
+            <Pagination
+              total={entries.length}
+              value={paginationIndex}
+              getControlProps={getPaginationControlProps}
+              onChange={(newIndex) =>
+                navigate(
+                  `/${resourceType}/${id}/_history/${entries[entries.length - newIndex]?.resource?.meta?.versionId}/${currTab}`
+                )?.catch(console.error)
+              }
+            />
+            <Group justify="right">
+              <SegmentedControl
+                data={[
+                  { value: 'diff', label: 'Diff' },
+                  { value: 'raw', label: 'Raw' },
+                ]}
+                value={currTab}
+                onChange={(name) =>
+                  navigate(`/${resourceType}/${id}/_history/${versionId}/${name || defaultTab}`)?.catch(console.error)
+                }
+              />
+            </Group>
+          </SimpleGrid>
+          <Box mb="lg">
+            <DescriptionList compact>
+              <DescriptionListEntry term="Version ID">{value.meta?.versionId}</DescriptionListEntry>
+              <DescriptionListEntry term="Author">
+                <ResourceBadge key={value.meta?.author?.reference} value={value.meta?.author} link={true} />
+              </DescriptionListEntry>
+              <DescriptionListEntry term="Date/Time">{formatDateTime(value.meta?.lastUpdated)}</DescriptionListEntry>
+            </DescriptionList>
+          </Box>
+          {currTab === 'diff' && <ResourceDiff original={prev ?? ({ resourceType, id } as Resource)} revised={value} />}
+          {currTab === 'raw' && <pre style={{ fontSize: '9pt' }}>{JSON.stringify(value, undefined, 2)}</pre>}
+        </Stack>
+      </Panel>
+    </Container>
   );
 }

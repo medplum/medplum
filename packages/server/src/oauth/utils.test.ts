@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { OperationOutcomeError, WithId } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
@@ -8,6 +10,7 @@ import {
   getAuthTokens,
   getClientApplication,
   getMembershipsForLogin,
+  normalizeUserInfoUrl,
   tryLogin,
   validateLoginRequest,
   validatePkce,
@@ -431,6 +434,28 @@ describe('OAuth utils', () => {
     const client = await getClientApplication('medplum-cli');
     expect(client).toBeDefined();
     expect(client.id).toStrictEqual('medplum-cli');
+  });
+
+  describe('normalizeUserInfoUrl', () => {
+    test.each([
+      ['http://example.com/oauth2/userinfo', false],
+      [' http://example.com/oauth2/userinfo ', false],
+      ['https://example.com/oauth2/userinfo', false],
+      [' https://example.com/oauth2/userinfo ', false],
+      ['file://example.com/oauth2/userinfo', true],
+      [' file://example.com/oauth2/userinfo ', true],
+    ])('with URL [%s]', (userInfoUrl, expectError) => {
+      try {
+        normalizeUserInfoUrl(userInfoUrl);
+        if (expectError) {
+          fail('Expected error');
+        }
+      } catch (err) {
+        if (!expectError) {
+          throw err;
+        }
+      }
+    });
   });
 });
 

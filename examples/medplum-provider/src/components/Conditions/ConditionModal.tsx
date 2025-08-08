@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { CodeableConceptInput, Form, SubmitButton } from '@medplum/react';
 import { Group, Stack } from '@mantine/core';
 import { useCallback, useState, JSX } from 'react';

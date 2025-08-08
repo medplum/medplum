@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Button, Flex, Modal } from '@mantine/core';
 import { DiagnosticReport, Task } from '@medplum/fhirtypes';
 import { CodeableConceptDisplay, DiagnosticReportDisplay, useMedplum } from '@medplum/react';

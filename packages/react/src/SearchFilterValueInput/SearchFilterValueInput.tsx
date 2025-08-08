@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Checkbox, TextInput } from '@mantine/core';
 import { getSearchParameterDetails, SearchParameterType } from '@medplum/core';
 import { Quantity, Reference, SearchParameter } from '@medplum/fhirtypes';

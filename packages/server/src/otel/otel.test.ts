@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Pool } from 'pg';
 import * as databaseModule from '../database';
 import { heartbeat } from '../heartbeat';

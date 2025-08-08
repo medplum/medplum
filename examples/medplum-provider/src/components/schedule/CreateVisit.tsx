@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { CodingInput, DateTimeInput, Form, ResourceInput, useMedplum } from '@medplum/react';
 import { useState, useEffect, JSX } from 'react';
 import { SlotInfo } from 'react-big-calendar';

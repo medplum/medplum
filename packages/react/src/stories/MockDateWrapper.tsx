@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { JSX, ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import sinon from 'sinon';
 import { MockDateContext, createGlobalTimer } from './MockDateWrapper.utils';

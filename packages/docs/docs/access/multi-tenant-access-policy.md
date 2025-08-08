@@ -80,7 +80,7 @@ In `AccessPolicy` we use the parameterized variable `%current_organization` in t
         },
         {
             "resourceType": "Questionnaire",
-            "criteria": "Questionnaire?_compartment=Organization/%current_organization"
+            "criteria": "Questionnaire?_compartment=%current_organization"
         },
         {
             "resourceType": "Patient",

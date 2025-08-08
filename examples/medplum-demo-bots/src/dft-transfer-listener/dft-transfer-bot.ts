@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
+
 /**
  * This example shows how you might listen for DFT (Detailed Financial Transaction) HL7
  * messages. DFT messages are commonly used to transmit services rendered and patient insurance
@@ -8,6 +11,7 @@
  *
  * More information about the sections of DFT messages can be found here: https://rhapsody.health/resources/hl7-dft-message/
  */
+
 import { BotEvent, createReference, Hl7Message, Hl7Segment, MedplumClient } from '@medplum/core';
 import { Claim, Coverage, Organization, Patient } from '@medplum/fhirtypes';
 

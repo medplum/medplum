@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { BotEvent, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Organization, Patient } from '@medplum/fhirtypes';
 import { Demographics, MetriportMedicalApi, PatientCreate, PatientDTO, USState } from '@metriport/api-sdk';

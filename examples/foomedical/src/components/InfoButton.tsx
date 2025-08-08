@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Group, UnstyledButton } from '@mantine/core';
 import { JSX, ReactNode } from 'react';
 import classes from './InfoButton.module.css';
