@@ -15,7 +15,7 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
   const medplum = useMedplum();
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>(undefined);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>(undefined);
 
   const onChange = (response: QuestionnaireResponse): void => {
