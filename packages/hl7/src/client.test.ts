@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Hl7Message, sleep } from '@medplum/core';
+import { AckCode, Hl7Message, isOperationOutcome, OperationOutcomeError, sleep } from '@medplum/core';
 import net, { createServer, Socket } from 'node:net';
 import { Hl7Client } from './client';
-import { Hl7Connection } from './connection';
+import { Hl7Connection, ReturnAckCategory } from './connection';
+import { Hl7ErrorEvent } from './events';
 import { Hl7Server } from './server';
 import { MockServer, MockSocket } from './test-utils';
 
@@ -13,6 +14,321 @@ describe('Hl7Client', () => {
   function getRandomPort(): number {
     return Math.floor(Math.random() * 10000) + 30000;
   }
+
+  describe('sendAndWait', () => {
+    const port = getRandomPort();
+    const defaultResponseCb = (message: Hl7Message): Hl7Message => {
+      return message.buildAck();
+    };
+
+    let hl7Server: Hl7Server;
+    let hl7Client: Hl7Client;
+    let nextResponseCb: ((message: Hl7Message) => Hl7Message) | undefined = undefined;
+
+    beforeAll(async () => {
+      hl7Server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          // Check if a response cb has been set, otherwise use the default
+          if (nextResponseCb) {
+            connection.send(nextResponseCb(message));
+          } else {
+            connection.send(defaultResponseCb(message));
+          }
+        });
+      });
+      hl7Server.start(port);
+    });
+
+    beforeEach(async () => {
+      nextResponseCb = undefined;
+
+      hl7Client = new Hl7Client({
+        host: 'localhost',
+        port,
+      });
+      await hl7Client.connect();
+    });
+
+    afterEach(async () => {
+      await hl7Client.close();
+    });
+
+    afterAll(async () => {
+      await hl7Server.stop();
+    });
+
+    test('Resolves on when receiving ACK containing the message control ID', async () => {
+      const ack = await hl7Client.sendAndWait(
+        Hl7Message.parse(
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+        )
+      );
+      expect(ack).toBeDefined();
+    });
+
+    test('Does not resolve on the incorrect message control ID', async () => {
+      // Set up a custom response callback that sends an ACK with a different message control ID
+      nextResponseCb = (message: Hl7Message) => {
+        // Create an ACK with a different message control ID than the original message
+        const ack = message.buildAck();
+        // Change the message control ID in the ACK to something different
+        ack.getSegment('MSA')?.setField(2, 'DIFFERENT_MSG_ID');
+        return ack;
+      };
+
+      let timedOut = false;
+      try {
+        await hl7Client.sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          ),
+          { timeoutMs: 100 }
+        );
+      } catch (err) {
+        if (
+          isOperationOutcome((err as OperationOutcomeError).outcome) &&
+          (err as OperationOutcomeError).outcome.issue?.[0].details?.text === 'Client timeout'
+        ) {
+          timedOut = true;
+        } else {
+          throw err;
+        }
+      }
+
+      expect(timedOut).toStrictEqual(true);
+    });
+
+    test('Emits warning when receiving an ACK for a message control ID not found in pending messages', async () => {
+      // Set up a custom response callback that sends an ACK with a different message control ID
+      nextResponseCb = (message: Hl7Message) => {
+        // Create an ACK with a different message control ID than the original message
+        const ack = message.buildAck();
+        // Change the message control ID in the ACK to something different
+        ack.getSegment('MSA')?.setField(2, 'UNKNOWN_MSG_ID');
+        return ack;
+      };
+
+      // Listen for warning events
+      let warningEvent: any = null;
+      hl7Client.addEventListener('error', (event) => {
+        if (
+          event.error instanceof OperationOutcomeError &&
+          isOperationOutcome(event.error.outcome) &&
+          event.error.outcome.issue?.[0].severity === 'warning' &&
+          event.error.outcome.issue?.[0].details?.text === 'Response received for unknown message control ID'
+        ) {
+          warningEvent = event;
+        }
+      });
+
+      // Send a message and wait for the ACK with wrong message control ID
+      await hl7Client
+        .sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          ),
+          { timeoutMs: 100 }
+        )
+        .catch(() => {
+          // Expected to timeout since ACK has wrong message control ID
+        });
+
+      // Wait until next tick for event to process
+      await sleep(0);
+
+      expect(warningEvent).toBeDefined();
+      expect(warningEvent.error.outcome.issue[0].diagnostics).toContain('UNKNOWN_MSG_ID');
+    });
+
+    test('Rejects when message response times out', async () => {
+      // Set up a custom response callback that doesn't respond (to trigger timeout)
+      nextResponseCb = (_message: Hl7Message) => {
+        // Don't send any response, which will cause the client to timeout
+        return null as any;
+      };
+
+      let timeoutError: any = null;
+      try {
+        await hl7Client.sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          ),
+          { timeoutMs: 100 }
+        );
+      } catch (err) {
+        timeoutError = err;
+      }
+
+      expect(timeoutError).toBeDefined();
+      expect(timeoutError).toBeInstanceOf(OperationOutcomeError);
+      expect(isOperationOutcome(timeoutError.outcome)).toBe(true);
+      expect(timeoutError.outcome.issue?.[0].code).toBe('timeout');
+      expect(timeoutError.outcome.issue?.[0].details?.text).toBe('Client timeout');
+      expect(timeoutError.outcome.issue?.[0].diagnostics).toContain('Request timed out after waiting 100 milliseconds');
+    });
+
+    test('Rejects outstanding promises and emits error when close is called', async () => {
+      // Set up a custom response callback that doesn't respond immediately
+      nextResponseCb = (_message: Hl7Message) => {
+        // Don't send any response, keeping the promise pending
+        return null as any;
+      };
+
+      // Start a sendAndWait that will remain pending
+      const pendingPromise = hl7Client.sendAndWait(
+        Hl7Message.parse(
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+        ),
+        { timeoutMs: 1000 } // Long timeout to ensure it stays pending
+      );
+
+      // Wait a bit to ensure the message is sent and pending
+      await sleep(0);
+
+      // Listen for error events
+      let closeErrorEvent: Hl7ErrorEvent | undefined = undefined;
+      hl7Client.addEventListener('error', (event) => {
+        if (
+          event.error instanceof OperationOutcomeError &&
+          isOperationOutcome(event.error.outcome) &&
+          event.error.outcome.issue?.[0].details?.text === 'Messages were still pending when connection closed'
+        ) {
+          closeErrorEvent = event as Hl7ErrorEvent;
+        }
+      });
+
+      let errorFromClose: Error | undefined;
+      // Close the client while message is pending
+      const closePromise = hl7Client.close().catch((err) => {
+        errorFromClose = err;
+      });
+
+      // Verify the pending promise was rejected
+      let promiseRejected = false;
+      let rejectionError: OperationOutcomeError | undefined = undefined;
+      try {
+        await pendingPromise;
+      } catch (err) {
+        promiseRejected = true;
+        rejectionError = err as OperationOutcomeError;
+      }
+
+      expect(promiseRejected).toBe(true);
+      expect(rejectionError).toBeInstanceOf(OperationOutcomeError);
+      expect(isOperationOutcome(rejectionError?.outcome)).toBe(true);
+      expect(rejectionError?.outcome.issue?.[0].code).toBe('incomplete');
+      expect(rejectionError?.outcome.issue?.[0].details?.text).toBe('Message was still pending when connection closed');
+
+      // Close itself should not emit any errors
+      await closePromise;
+      expect(errorFromClose).toBeUndefined();
+
+      // Verify the error event was emitted
+      expect(closeErrorEvent).toBeDefined();
+      expect(
+        ((closeErrorEvent as unknown as Hl7ErrorEvent)?.error as OperationOutcomeError)?.outcome?.issue?.[0].details
+          ?.text
+      ).toBe('Messages were still pending when connection closed');
+      expect(
+        ((closeErrorEvent as unknown as Hl7ErrorEvent)?.error as OperationOutcomeError)?.outcome?.issue?.[0].diagnostics
+      ).toContain('Hl7Connection closed while 1 messages were pending');
+    });
+
+    test('Sending a message without a message control ID rejects', async () => {
+      const message = Hl7Message.parse(
+        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+      );
+      message.getSegment('MSH')?.setField(10, '');
+
+      let threw = false;
+      try {
+        await hl7Client.sendAndWait(message);
+      } catch (err) {
+        threw = true;
+        expect(err).toBeInstanceOf(OperationOutcomeError);
+        expect(isOperationOutcome((err as OperationOutcomeError).outcome)).toBe(true);
+        expect((err as OperationOutcomeError).outcome.issue?.[0].details?.text).toBe('Required field missing: MSH.10');
+      }
+
+      expect(threw).toStrictEqual(true);
+    });
+
+    test.each(['AA', 'AE', 'AR', 'CA', 'CE', 'CR'] as const satisfies AckCode[])(
+      'Returns on %s when returnAck is specified as ReturnAckCategory.FIRST',
+      async (ackCode) => {
+        nextResponseCb = (message: Hl7Message) => {
+          return message.buildAck({ ackCode });
+        };
+
+        const response = await hl7Client.sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          )
+        );
+
+        expect(response).toBeDefined();
+        // Should return on the first ACK
+        expect(response.getSegment('MSA')?.getField(1)?.toString()).toStrictEqual(ackCode);
+      }
+    );
+
+    test.each(['AA', 'AE', 'AR', 'CE', 'CR'] as const)(
+      'Returns on %s when returnAck is specified as ReturnAckCategory.APPLICATION',
+      async (ackCode) => {
+        // Set up a custom response callback that sends the specific ACK code
+        nextResponseCb = (message: Hl7Message) => {
+          return message.buildAck({ ackCode });
+        };
+
+        const response = await hl7Client.sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          ),
+          { returnAck: ReturnAckCategory.APPLICATION }
+        );
+
+        expect(response).toBeDefined();
+        expect(response.getSegment('MSA')?.getField(1)?.toString()).toStrictEqual(ackCode);
+      }
+    );
+
+    test('Does not return on CA when returnAck is specified as ReturnAckCategory.APPLICATION', async () => {
+      // Set up a custom response callback that sends a CA ACK
+      nextResponseCb = (message: Hl7Message) => {
+        return message.buildAck({ ackCode: 'CA' });
+      };
+
+      let timedOut = false;
+      try {
+        await hl7Client.sendAndWait(
+          Hl7Message.parse(
+            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          ),
+          { returnAck: 'application', timeoutMs: 100 }
+        );
+      } catch (err) {
+        if (
+          isOperationOutcome((err as OperationOutcomeError).outcome) &&
+          (err as OperationOutcomeError).outcome.issue?.[0].details?.text === 'Client timeout'
+        ) {
+          timedOut = true;
+        } else {
+          throw err;
+        }
+      }
+
+      expect(timedOut).toStrictEqual(true);
+    });
+  });
 
   // Test the basic connection and timeout functionality
   test('Connection timeout when server is unreachable', async () => {
@@ -149,6 +465,9 @@ describe('Hl7Client', () => {
 
     // Give some time for the server side listener to be invoked
     await sleep(500);
+
+    // Sleep so that events can fire
+    await sleep(0);
 
     // Cleanup
     await client.close();
