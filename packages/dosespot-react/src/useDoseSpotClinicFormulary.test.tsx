@@ -7,7 +7,7 @@ import { act, render, screen } from '@testing-library/react';
 import { JSX } from 'react';
 import { vi } from 'vitest';
 import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT } from './common';
-import { useDoseSpotClinicFormulary } from './useDoseSpotFormularyCenter';
+import { useDoseSpotClinicFormulary } from './useDoseSpotClinicFormulary';
 
 function TestComponent(): JSX.Element {
   const { state, searchMedications, addFavoriteMedication, setDirections, setSelectedMedication, getMedicationName } =
@@ -29,9 +29,7 @@ function TestComponent(): JSX.Element {
       <div>Selected: {state.selectedMedication?.code?.text || 'none'}</div>
       <div>Directions: {state.directions || 'none'}</div>
       <button onClick={() => searchMedications('aspirin')}>Search</button>
-      <button onClick={() => state.selectedMedication && addFavoriteMedication(state.selectedMedication)}>
-        Add Favorite
-      </button>
+      <button onClick={() => addFavoriteMedication()}>Add Favorite</button>
       <button onClick={() => setDirections('Take 1 daily')}>Set Directions</button>
       <button onClick={handleSetMedication}>Set Medication</button>
       <div>Name: {getMedicationName(state.selectedMedication)}</div>

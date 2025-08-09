@@ -1,13 +1,13 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Table, Card, Text, LoadingOverlay } from '@mantine/core';
 import { MedicationKnowledge } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
-import { formatSearchQuery, getCodeBySystem, NDC, RXNORM } from '@medplum/core';
+import { getCodeBySystem, NDC, RXNORM } from '@medplum/core';
 
 interface FavoriteMedicationsTableProps {
-  refreshKey?: number;
+  clinicFavoriteMedications: MedicationKnowledge[] | undefined;
+  loadingFavorites?: boolean;
 }
 
 /**
@@ -17,42 +17,13 @@ interface FavoriteMedicationsTableProps {
  * The page is refreshed when a medication is added to the favorites list.
  *
  * @param props - The props for the component.
- * @param props.refreshKey - The key to refresh the table.
+ * @param props.clinicFavoriteMedications - The clinic favorite medications to display.
+ * @param props.loadingFavorites - Whether the table is loading.
  * @returns A React component that displays the favorite medications.
  */
-export function FavoriteMedicationsTable({ refreshKey }: FavoriteMedicationsTableProps): React.JSX.Element {
-  const [medications, setMedications] = useState<MedicationKnowledge[]>([]);
-  const [loading, setLoading] = useState(true);
-  const medplum = useMedplum();
+export function FavoriteMedicationsTable({ clinicFavoriteMedications, loadingFavorites }: FavoriteMedicationsTableProps): React.JSX.Element {
 
-  useEffect(() => {
-    const loadMedications = async (): Promise<void> => {
-      try {
-        setLoading(true);
-
-        // Get MedicationKnowledge;s that have any dosespot fav medication id system
-        const searchRequest = {
-          resourceType: 'MedicationKnowledge' as const,
-          filters: [
-            {
-              code: 'code',
-              operator: 'eq' as const,
-              value: 'https://dosespot.com/clinic-favorite-medication-id|',
-            },
-          ],
-        };
-        const queryString = formatSearchQuery(searchRequest);
-        const result = await medplum.search('MedicationKnowledge', queryString);
-        setMedications(result.entry?.map((entry) => entry.resource as MedicationKnowledge) || []);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMedications().catch(console.error);
-  }, [medplum, refreshKey]);
-
-  if (loading) {
+  if (loadingFavorites) {
     return (
       <Card withBorder p="md">
         <LoadingOverlay visible={true} />
@@ -60,7 +31,7 @@ export function FavoriteMedicationsTable({ refreshKey }: FavoriteMedicationsTabl
     );
   }
 
-  if (medications.length === 0) {
+  if (!clinicFavoriteMedications || clinicFavoriteMedications.length === 0) {
     return (
       <Text c="dimmed" ta="center" py="xl">
         No favorite medications found
@@ -79,15 +50,15 @@ export function FavoriteMedicationsTable({ refreshKey }: FavoriteMedicationsTabl
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {medications.map((medication, index) => (
-          <Table.Tr key={medication.id || index}>
+        {clinicFavoriteMedications.map((clinicFavoriteMedication, index) => (
+          <Table.Tr key={clinicFavoriteMedication.id || index}>
             <Table.Td>
-              <Text fw={500}>{medication.code?.text || 'Unknown'}</Text>
+              <Text fw={500}>{clinicFavoriteMedication.code?.text || 'Unknown'}</Text>
             </Table.Td>
-            <Table.Td>{medication.code ? getCodeBySystem(medication.code, NDC) : ''}</Table.Td>
-            <Table.Td>{medication.code ? getCodeBySystem(medication.code, RXNORM) : ''}</Table.Td>
+            <Table.Td>{clinicFavoriteMedication.code ? getCodeBySystem(clinicFavoriteMedication.code, NDC) : ''}</Table.Td>
+            <Table.Td>{clinicFavoriteMedication.code ? getCodeBySystem(clinicFavoriteMedication.code, RXNORM) : ''}</Table.Td>
             <Table.Td>
-              {medication.administrationGuidelines?.[0]?.dosage?.[0]?.dosage?.[0]?.patientInstruction || ''}
+              {clinicFavoriteMedication.administrationGuidelines?.[0]?.dosage?.[0]?.dosage?.[0]?.patientInstruction || ''}
             </Table.Td>
           </Table.Tr>
         ))}

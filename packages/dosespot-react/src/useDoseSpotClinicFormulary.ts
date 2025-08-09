@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Bundle, BundleEntry, MedicationKnowledge } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT } from './common';
 
 export interface DoseSpotClinicFormularyReturn {
@@ -12,17 +12,17 @@ export interface DoseSpotClinicFormularyReturn {
    */
   readonly searchMedications: (searchTerm: string) => Promise<MedicationKnowledge[]>;
   /**
-   * Add a DoseSpot Medication to the Clinic's favorites and returns the MedicationKnowledge object that was added
+   * Set the currently selected medication
    */
-  readonly addFavoriteMedication: (medication: MedicationKnowledge) => Promise<MedicationKnowledge>;
+  readonly setSelectedMedication: (medication: MedicationKnowledge | undefined) => void;
   /**
    * Set the directions for the currently selected medication
    */
   readonly setDirections: (directions: string | undefined) => void;
   /**
-   * Set the currently selected medication
+   * Add a DoseSpot Medication to the Clinic's favorites and returns the MedicationKnowledge object that was added
    */
-  readonly setSelectedMedication: (medication: MedicationKnowledge | undefined) => void;
+  readonly addFavoriteMedication: () => Promise<MedicationKnowledge>;
   /**
    * Helper function to get the name of a medication
    */
@@ -39,17 +39,17 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
   const [selectedMedication, privateSetSelectedMedication] = useState<MedicationKnowledge | undefined>(undefined);
   const medplum = useMedplum();
 
-  const state: DoseSpotClinicFormularyState = (() => {
-    return {
-      selectedMedication,
-      directions,
-    };
-  })();
+  const state: DoseSpotClinicFormularyState = { selectedMedication, directions };
 
-  const addFavoriteMedication = async (medicationKnowledge: MedicationKnowledge): Promise<MedicationKnowledge> => {
-    //Add the directions and quantity to the medicationKnowledge object
+
+  const addFavoriteMedication = useCallback(async (): Promise<MedicationKnowledge> => {
+    if (!selectedMedication) {
+      throw new Error('Must select a medication before adding a favorite medication');
+    }
+
+    //Add the directions to the medicationKnowledge object
     const medicationKnowledgeWithDirections = {
-      ...medicationKnowledge,
+      ...selectedMedication,
       administrationGuidelines: [
         {
           dosage: [
@@ -73,12 +73,12 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
     };
 
     return medplum.executeBot(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, medicationKnowledgeWithDirections);
-  };
+  }, [selectedMedication, directions, medplum]);
 
-  const searchMedications = async (searchTerm: string): Promise<MedicationKnowledge[]> => {
+  const searchMedications = useCallback(async (searchTerm: string): Promise<MedicationKnowledge[]> => {
     const bundle = (await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm })) as Bundle;
     return bundle.entry?.map((entry: BundleEntry) => entry.resource as MedicationKnowledge) || [];
-  };
+  }, [medplum]);
 
   const setDirections = (directions: string | undefined): void => {
     privateSetDirections(directions);

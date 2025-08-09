@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Container,
   Title,
@@ -16,12 +16,14 @@ import {
   Group as MantineGroup,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
+import { DOSESPOT_CLINIC_FAVORITE_ID_SYSTEM, useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
 import { MedicationKnowledge } from '@medplum/fhirtypes';
 import { IconPlus } from '@tabler/icons-react';
-import { normalizeErrorString } from '@medplum/core';
-import { AsyncAutocomplete } from '@medplum/react';
+import { formatSearchQuery, normalizeErrorString } from '@medplum/core';
+import { AsyncAutocomplete, useMedplum } from '@medplum/react';
 import { FavoriteMedicationsTable } from './FavoriteMedicationsTable';
+import { showErrorNotification } from '../../utils/notifications';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * This is a demo component for how you could display your favorite Medications
@@ -32,19 +34,45 @@ import { FavoriteMedicationsTable } from './FavoriteMedicationsTable';
 export function DoseSpotFavoritesPage(): React.JSX.Element {
   const [modalOpened, setModalOpened] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [loadingFavorites, setLoadingFavorites] = useState(true);
+  const [clinicFavoriteMedications, setClinicFavoriteMedications] = useState<MedicationKnowledge[] | undefined>();
 
-  const { state, addFavoriteMedication, searchMedications, setDirections, setSelectedMedication, getMedicationName } =
-    useDoseSpotClinicFormulary();
+  const { state, addFavoriteMedication, searchMedications, setDirections, setSelectedMedication, getMedicationName } = useDoseSpotClinicFormulary();
+  const medplum = useMedplum();
 
-  const handleAddFavoriteMedication = async (medication: MedicationKnowledge | undefined): Promise<void> => {
-    if (!medication) {
-      return;
-    }
+  // Load favorite MedicationKnowledge resources that have a DoseSpot favorite id system
+  useEffect(() => {
+    const loadFavorites = async (): Promise<void> => {
+      try {
+        setLoadingFavorites(true);
+        const searchRequest = {
+          resourceType: 'MedicationKnowledge' as const,
+          filters: [
+            {
+              code: 'code',
+              operator: 'eq' as const,
+              value: `${DOSESPOT_CLINIC_FAVORITE_ID_SYSTEM}|`,
+            },
+          ],
+        };
+        const queryString = formatSearchQuery(searchRequest);
+        const result = await medplum.search('MedicationKnowledge', queryString);
+        setClinicFavoriteMedications(result.entry?.map((e) => e.resource as MedicationKnowledge) || []);
+      } catch (err) {
+        showErrorNotification(err);
+      } finally {
+        setLoadingFavorites(false);
+      }
+    };
+    loadFavorites().catch(showErrorNotification);
+  }, [medplum]);
 
+  const handleAddFavoriteMedication = async (): Promise<void> => {
     try {
       setLoading(true);
-      await addFavoriteMedication(medication);
+      const created = await addFavoriteMedication();
+      // Optimistically update local favorites list
+      setClinicFavoriteMedications((prev) => [created, ...(prev || [])]);
       setModalOpened(false);
       showNotification({
         title: 'Medication added to favorites',
@@ -52,7 +80,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
         color: 'green',
       });
     } catch (error) {
-      showNotification({
+      showErrorNotification({
         title: 'Error adding medication to favorites',
         message: normalizeErrorString(error as Error),
         color: 'red',
@@ -61,17 +89,13 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
       setSelectedMedication(undefined);
       setDirections(undefined);
       setLoading(false);
-      // Trigger refresh after a short delay to show new favorite medication
-      setTimeout(() => {
-        setRefreshKey((prev) => prev + 1);
-      }, 500);
     }
   };
 
   const toOption = (
     medication: MedicationKnowledge
   ): { value: string; label: string; resource: MedicationKnowledge } => ({
-    value: Math.random().toString(), //No ids on the MedicationKnowledge objects yet
+    value: uuidv4() ,
     label: medication.code?.text || 'Unknown Medication',
     resource: medication,
   });
@@ -87,7 +111,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
         </Group>
 
         {/* Example of a table to display favorite medications (MedicationKnowledge resources) */}
-        <FavoriteMedicationsTable refreshKey={refreshKey} />
+        <FavoriteMedicationsTable clinicFavoriteMedications={clinicFavoriteMedications} loadingFavorites={loadingFavorites} />
       </Paper>
 
       <Modal
@@ -149,7 +173,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
           {/* Action Buttons */}
           <MantineGroup justify="flex-end" gap="md" mt="md">
             <Button
-              onClick={() => handleAddFavoriteMedication(state.selectedMedication)}
+              onClick={() => handleAddFavoriteMedication()}
               disabled={!state.directions || !state.selectedMedication || loading}
               loading={loading}
             >
