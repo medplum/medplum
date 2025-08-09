@@ -20,7 +20,11 @@ describe('OAuth clients', () => {
     expect(getClientRedirectUri(client, 'https://example.com/callback?param=value', true)).toBe(
       'https://example.com/callback?param=value'
     );
+    expect(getClientRedirectUri(client, 'https://example.com/callback?param=value', false)).toBe(
+      'https://example.com/callback?param=value'
+    );
     expect(getClientRedirectUri(client, 'https://example.com/other/path', true)).toBeUndefined();
+    expect(getClientRedirectUri(client, 'https://example.com/callback?param=value', false)).toBeUndefined();
   });
 
   test('getClientRedirectUri with deprecated redirectUri', () => {

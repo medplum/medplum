@@ -21,41 +21,6 @@
   "defaultBotRuntimeVersion": "vmcontext",
   "allowedOrigins": "*",
   "introspectionEnabled": true,
-  "logRequests": true,
-  "mcpEnabled": true,
-  "defaultOAuthClients": [
-    {
-      "resourceType": "ClientApplication",
-      "id": "mcp-inspector-1",
-      "name": "MCP Inspector 1",
-      "redirectUris": ["http://127.0.0.1:6274/oauth/callback", "http://127.0.0.1:6274/oauth/callback/debug"],
-      "defaultScope": ["openid", "profile", "email", "phone", "address"],
-      "pkceOptional": true
-    },
-    {
-      "resourceType": "ClientApplication",
-      "id": "mcp-inspector-2",
-      "name": "MCP Inspector 2",
-      "redirectUris": ["http://localhost:6274/oauth/callback", "http://localhost:6274/oauth/callback/debug"],
-      "defaultScope": ["openid", "profile", "email", "phone", "address"],
-      "pkceOptional": true
-    },
-    {
-      "resourceType": "ClientApplication",
-      "id": "claude",
-      "name": "Claude",
-      "redirectUris": ["https://claude.ai/api/mcp/auth_callback"],
-      "pkceOptional": true
-    },
-    {
-      "resourceType": "ClientApplication",
-      "id": "chatgpt",
-      "name": "ChatGPT",
-      "secret": "foo",
-      "redirectUris": ["https://chatgpt.com/connector_platform_oauth_redirect"],
-      "pkceOptional": true
-    }
-  ],
   "database": {
     "host": "localhost",
     "port": 5432,
