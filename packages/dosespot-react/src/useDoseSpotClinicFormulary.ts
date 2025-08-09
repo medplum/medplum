@@ -41,7 +41,6 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
 
   const state: DoseSpotClinicFormularyState = { selectedMedication, directions };
 
-
   const addFavoriteMedication = useCallback(async (): Promise<MedicationKnowledge> => {
     if (!selectedMedication) {
       throw new Error('Must select a medication before adding a favorite medication');
@@ -75,10 +74,13 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
     return medplum.executeBot(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, medicationKnowledgeWithDirections);
   }, [selectedMedication, directions, medplum]);
 
-  const searchMedications = useCallback(async (searchTerm: string): Promise<MedicationKnowledge[]> => {
-    const bundle = (await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm })) as Bundle;
-    return bundle.entry?.map((entry: BundleEntry) => entry.resource as MedicationKnowledge) || [];
-  }, [medplum]);
+  const searchMedications = useCallback(
+    async (searchTerm: string): Promise<MedicationKnowledge[]> => {
+      const bundle = (await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm })) as Bundle;
+      return bundle.entry?.map((entry: BundleEntry) => entry.resource as MedicationKnowledge) || [];
+    },
+    [medplum]
+  );
 
   const setDirections = (directions: string | undefined): void => {
     privateSetDirections(directions);

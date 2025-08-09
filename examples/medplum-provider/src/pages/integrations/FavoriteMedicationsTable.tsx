@@ -21,8 +21,10 @@ interface FavoriteMedicationsTableProps {
  * @param props.loadingFavorites - Whether the table is loading.
  * @returns A React component that displays the favorite medications.
  */
-export function FavoriteMedicationsTable({ clinicFavoriteMedications, loadingFavorites }: FavoriteMedicationsTableProps): React.JSX.Element {
-
+export function FavoriteMedicationsTable({
+  clinicFavoriteMedications,
+  loadingFavorites,
+}: FavoriteMedicationsTableProps): React.JSX.Element {
   if (loadingFavorites) {
     return (
       <Card withBorder p="md">
@@ -55,10 +57,15 @@ export function FavoriteMedicationsTable({ clinicFavoriteMedications, loadingFav
             <Table.Td>
               <Text fw={500}>{clinicFavoriteMedication.code?.text || 'Unknown'}</Text>
             </Table.Td>
-            <Table.Td>{clinicFavoriteMedication.code ? getCodeBySystem(clinicFavoriteMedication.code, NDC) : ''}</Table.Td>
-            <Table.Td>{clinicFavoriteMedication.code ? getCodeBySystem(clinicFavoriteMedication.code, RXNORM) : ''}</Table.Td>
             <Table.Td>
-              {clinicFavoriteMedication.administrationGuidelines?.[0]?.dosage?.[0]?.dosage?.[0]?.patientInstruction || ''}
+              {clinicFavoriteMedication.code ? getCodeBySystem(clinicFavoriteMedication.code, NDC) : ''}
+            </Table.Td>
+            <Table.Td>
+              {clinicFavoriteMedication.code ? getCodeBySystem(clinicFavoriteMedication.code, RXNORM) : ''}
+            </Table.Td>
+            <Table.Td>
+              {clinicFavoriteMedication.administrationGuidelines?.[0]?.dosage?.[0]?.dosage?.[0]?.patientInstruction ||
+                ''}
             </Table.Td>
           </Table.Tr>
         ))}

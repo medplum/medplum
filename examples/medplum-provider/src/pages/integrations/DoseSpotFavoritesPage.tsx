@@ -37,7 +37,8 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
   const [loadingFavorites, setLoadingFavorites] = useState(true);
   const [clinicFavoriteMedications, setClinicFavoriteMedications] = useState<MedicationKnowledge[] | undefined>();
 
-  const { state, addFavoriteMedication, searchMedications, setDirections, setSelectedMedication, getMedicationName } = useDoseSpotClinicFormulary();
+  const { state, addFavoriteMedication, searchMedications, setDirections, setSelectedMedication, getMedicationName } =
+    useDoseSpotClinicFormulary();
   const medplum = useMedplum();
 
   // Load favorite MedicationKnowledge resources that have a DoseSpot favorite id system
@@ -95,7 +96,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
   const toOption = (
     medication: MedicationKnowledge
   ): { value: string; label: string; resource: MedicationKnowledge } => ({
-    value: uuidv4() ,
+    value: uuidv4(),
     label: medication.code?.text || 'Unknown Medication',
     resource: medication,
   });
@@ -111,7 +112,10 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
         </Group>
 
         {/* Example of a table to display favorite medications (MedicationKnowledge resources) */}
-        <FavoriteMedicationsTable clinicFavoriteMedications={clinicFavoriteMedications} loadingFavorites={loadingFavorites} />
+        <FavoriteMedicationsTable
+          clinicFavoriteMedications={clinicFavoriteMedications}
+          loadingFavorites={loadingFavorites}
+        />
       </Paper>
 
       <Modal
