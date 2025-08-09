@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, BundleEntry, MedicationKnowledge } from '@medplum/fhirtypes';
+import { MedicationKnowledge } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
 import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT } from './common';
@@ -71,13 +71,12 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
       ],
     };
 
-    return medplum.executeBot(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, medicationKnowledgeWithDirections);
+    return await medplum.executeBot(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, medicationKnowledgeWithDirections);
   }, [selectedMedication, directions, medplum]);
 
   const searchMedications = useCallback(
     async (searchTerm: string): Promise<MedicationKnowledge[]> => {
-      const bundle = (await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm })) as Bundle;
-      return bundle.entry?.map((entry: BundleEntry) => entry.resource as MedicationKnowledge) || [];
+      return await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm }) as MedicationKnowledge[];
     },
     [medplum]
   );

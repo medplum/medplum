@@ -27,7 +27,7 @@ export function FavoriteMedicationsTable({
 }: FavoriteMedicationsTableProps): React.JSX.Element {
   if (loadingFavorites) {
     return (
-      <Card withBorder p="md">
+      <Card withBorder p="xl">
         <LoadingOverlay visible={true} />
       </Card>
     );
