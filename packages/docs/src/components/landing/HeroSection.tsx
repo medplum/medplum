@@ -1,3 +1,4 @@
+import Link from '@docusaurus/Link';
 import { JSX } from 'react';
 import { Container } from '../Container';
 import { Jumbotron } from './Jumbotron';
@@ -20,10 +21,10 @@ export function HeroSection(): JSX.Element {
               Medplum is the open source healthcare developer platform that helps you build, test, and deliver any
               healthcare product or service.
             </p>
-            <a href="/docs" className={styles.getStartedButton}>
+            <Link href="/docs" className={styles.getStartedButton}>
               <div>Get Started</div>
               <img src="/img/btn-arrow.svg" alt="Go arrow" width="32" height="32" />
-            </a>
+            </Link>
           </div>
           <div className={styles.heroImage}>
             <img src="/img/illustration-header.svg" alt="Robot working in a medical office" width="450" height="450" />
