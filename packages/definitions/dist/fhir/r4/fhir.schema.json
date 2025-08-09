@@ -59971,8 +59971,15 @@
           "$ref": "#/definitions/uri"
         },
         "redirectUri": {
-          "description": "Optional redirect URI used when redirecting a client back to the client application.",
+          "description": "@deprecated This field is deprecated. Use redirectUris instead.",
           "$ref": "#/definitions/uri"
+        },
+        "redirectUris": {
+          "description": "Optional redirect URI array used when redirecting a client back to the client application.",
+          "items": {
+            "$ref": "#/definitions/uri"
+          },
+          "type": "array"
         },
         "launchUri": {
           "description": "Optional launch URI for SMART EHR launch sequence.",

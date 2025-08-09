@@ -7,6 +7,6 @@ export const ExampleSmartClientApplication: ClientApplication = {
   id: 'smart-client-app',
   name: 'Inferno Client',
   description: 'Client application used for Inferno ONC compliance testing',
-  redirectUri: 'https://inferno.healthit.gov/suites/custom/smart/redirect',
+  redirectUris: ['https://inferno.healthit.gov/suites/custom/smart/redirect'],
   launchUri: 'https://inferno.healthit.gov/suites/custom/smart/launch',
 };

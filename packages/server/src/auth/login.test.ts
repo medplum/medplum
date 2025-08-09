@@ -45,7 +45,7 @@ describe('Login', () => {
           project: project.id,
         },
         secret: randomUUID(),
-        redirectUri: 'https://example.com/',
+        redirectUris: ['https://example.com/'],
         name: 'Test Client Application',
         allowedOrigin: ['https://allowed.example.com'],
       });

@@ -533,7 +533,7 @@ describe('External', () => {
       // Update client application with external auth
       const client2 = await systemRepo.updateResource<ClientApplication>({
         ...client,
-        redirectUri,
+        redirectUris: [redirectUri],
         identityProvider: {
           authorizeUrl: 'https://example.com/oauth2/authorize',
           tokenUrl: 'https://example.com/oauth2/token',

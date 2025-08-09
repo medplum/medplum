@@ -51,7 +51,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: '123',
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -59,6 +59,33 @@ describe('OAuth Authorize', () => {
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(400);
     expect(res.text).toBe('Client not found');
+  });
+
+  test('Missing redirect', async () => {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id,
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+    });
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
+    expect(res.status).toBe(400);
+    expect(res.text).toBe('Missing redirect URI');
+  });
+
+  test('Cannot parse redirect', async () => {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id,
+      redirect_uri: ';%%%',
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+    });
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
+    expect(res.status).toBe(400);
+    expect(res.text).toBe('Invalid redirect URI');
   });
 
   test('Wrong redirect', async () => {
@@ -72,14 +99,14 @@ describe('OAuth Authorize', () => {
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(400);
-    expect(res.text).toBe('Incorrect redirect_uri');
+    expect(res.text).toBe('Invalid redirect URI');
   });
 
   test('Invalid response_type', async () => {
     const params = new URLSearchParams({
       response_type: 'xyz',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -95,7 +122,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -112,7 +139,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
     });
@@ -126,7 +153,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: '',
@@ -141,7 +168,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -157,7 +184,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -173,7 +200,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -189,7 +216,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -205,7 +232,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -221,7 +248,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -234,7 +261,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -277,7 +304,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -324,7 +351,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid user/Patient.rs',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -383,7 +410,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -433,7 +460,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'abc',
       code_challenge_method: 'plain',
@@ -483,7 +510,7 @@ describe('OAuth Authorize', () => {
     const params2 = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -504,7 +531,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -522,7 +549,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: client.id,
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -539,7 +566,7 @@ describe('OAuth Authorize', () => {
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: '123',
-      redirect_uri: client.redirectUri as string,
+      redirect_uri: client.redirectUris?.[0] as string,
       scope: 'openid',
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
@@ -567,7 +594,7 @@ describe('OAuth Authorize', () => {
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(400);
-    expect(res.text).toBe('Client has no redirect URI');
+    expect(res.text).toBe('Invalid redirect URI');
   });
 
   test('Invalid ClientApplication.redirectUri', async () => {
@@ -576,7 +603,7 @@ describe('OAuth Authorize', () => {
       secret: randomUUID(),
       meta: { project: project.id },
       name: 'Test Client Application',
-      redirectUri: 'invalid',
+      redirectUris: ['invalid'],
     });
 
     const params = new URLSearchParams({

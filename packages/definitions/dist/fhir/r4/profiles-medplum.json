@@ -890,7 +890,7 @@
           {
             "id" : "ClientApplication.redirectUri",
             "path" : "ClientApplication.redirectUri",
-            "definition" : "Optional redirect URI used when redirecting a client back to the client application.",
+            "definition" : "@deprecated This field is deprecated. Use redirectUris instead.",
             "min" : 0,
             "max" : "1",
             "type" : [{
@@ -900,6 +900,21 @@
               "path" : "ClientApplication.redirectUri",
               "min" : 0,
               "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.redirectUris",
+            "path" : "ClientApplication.redirectUris",
+            "definition" : "Optional redirect URI array used when redirecting a client back to the client application.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "uri"
+            }],
+            "base": {
+              "path" : "ClientApplication.redirectUris",
+              "min" : 0,
+              "max" : "*"
             }
           },
           {

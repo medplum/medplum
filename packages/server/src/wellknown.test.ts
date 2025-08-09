@@ -91,10 +91,31 @@ describe('Well Known', () => {
   test('Get /.well-known/oauth-protected-resource', async () => {
     const res = await request(app).get('/.well-known/oauth-protected-resource');
     expect(res.status).toBe(200);
+    expect(res.body.resource).toBeDefined();
     expect(res.body.issuer).toBeDefined();
     expect(res.body.authorization_servers).toBeDefined();
     expect(res.body.scopes_supported).toBeDefined();
     expect(res.body.bearer_methods_supported).toBeDefined();
     expect(res.body.introspection_endpoint).toBeDefined();
+  });
+
+  test('Protected resource with custom request', async () => {
+    const res = await request(app).get(
+      '/.well-known/oauth-protected-resource?resource=http://localhost:8103/fhir/R4/Patient/123'
+    );
+    expect(res.status).toBe(200);
+    expect(res.body.resource).toBe('http://localhost:8103/fhir/R4/Patient/123');
+  });
+
+  test('Protected resource with invalid resource', async () => {
+    const res = await request(app).get('/.well-known/oauth-protected-resource?resource=https://example.com/invalid');
+    expect(res.status).toBe(400);
+    expect(res.text).toBe('Invalid resource URL');
+  });
+
+  test('Protected resource with resource array', async () => {
+    const res = await request(app).get('/.well-known/oauth-protected-resource?resource=a&resource=b&resource=c');
+    expect(res.status).toBe(400);
+    expect(res.text).toBe('Invalid resource URL');
   });
 });
