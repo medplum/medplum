@@ -71,12 +71,12 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
       ],
     };
 
-    return await medplum.executeBot(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, medicationKnowledgeWithDirections);
+    return medplum.executeBot(DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, medicationKnowledgeWithDirections);
   }, [selectedMedication, directions, medplum]);
 
   const searchMedications = useCallback(
     async (searchTerm: string): Promise<MedicationKnowledge[]> => {
-      return await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm }) as MedicationKnowledge[];
+      return (await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm })) as MedicationKnowledge[];
     },
     [medplum]
   );
