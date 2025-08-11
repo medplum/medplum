@@ -94,7 +94,7 @@ describe('Patient Set Accounts Operation', () => {
     await shutdownApp();
   });
 
-  test('Happy path', async () => {
+  test('Updates target patient and compartment resources', async () => {
     // Execute the operation adding the organization to the patient's compartment
     const res3 = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
@@ -109,6 +109,10 @@ describe('Patient Set Accounts Operation', () => {
           {
             name: 'accounts',
             valueReference: createReference(organization2),
+          },
+          {
+            name: 'propagate',
+            valueBoolean: true,
           },
         ],
       });
@@ -148,7 +152,7 @@ describe('Patient Set Accounts Operation', () => {
     expect(updatedDiagnosticReport.meta?.accounts?.[1].reference).toBe(`Organization/${organization2.id}`);
   });
 
-  test("Make sure resources returned in $patient-everything that are NOT in the patient's compartment are not updated", async () => {
+  test('Resources returned in $patient-everything but NOT in the patient compartment are not updated', async () => {
     const res7 = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
       .set('Authorization', 'Bearer ' + accessToken)
@@ -162,6 +166,10 @@ describe('Patient Set Accounts Operation', () => {
           {
             name: 'accounts',
             valueReference: createReference(organization2),
+          },
+          {
+            name: 'propagate',
+            valueBoolean: true,
           },
         ],
       });
@@ -205,10 +213,10 @@ describe('Patient Set Accounts Operation', () => {
       body: {},
       query: {},
     });
-    expect(res[0].issue?.[0]?.details?.text).toBe('Must specify Patient ID');
+    expect(res[0].issue?.[0]?.details?.text).toBe('Must specify resource type and ID');
   });
 
-  test("Do not delete a resource in patient's compartment's meta.security field when set-accounts is called", async () => {
+  test('Preserves other meta fields on compartment resources', async () => {
     //Create a Communication in Patient's compartment with a security tag
     const res1 = await request(app)
       .post(`/fhir/R4/Communication`)
@@ -242,6 +250,10 @@ describe('Patient Set Accounts Operation', () => {
             name: 'accounts',
             valueReference: createReference(organization1),
           },
+          {
+            name: 'propagate',
+            valueBoolean: true,
+          },
         ],
       });
     expect(res2.status).toBe(200);
@@ -255,7 +267,7 @@ describe('Patient Set Accounts Operation', () => {
     expect(updatedCommunication.meta?.security).toBeDefined();
   });
 
-  test('Non admin user trying to set accounts', async () => {
+  test('Non-admin user cannot set accounts', async () => {
     accessToken = await initTestAuth();
     const res = await request(app)
       .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)

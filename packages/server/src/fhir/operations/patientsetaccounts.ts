@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, forbidden } from '@medplum/core';
+import { allOk, badRequest, forbidden, isResourceType } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition, Patient, Reference } from '@medplum/fhirtypes';
+import { OperationDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientEverything } from './patienteverything';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -15,34 +15,41 @@ const operation: OperationDefinition = {
   kind: 'operation',
   code: 'set-accounts',
   description: "Updates account references for all resources in the patient's compartment",
-  resource: ['Patient'],
+  resource: ['Resource' as ResourceType],
   system: false,
   type: false,
   instance: true,
   parameter: [
     {
-      // Input parameter for the accounts array
       use: 'in',
       name: 'accounts',
+      documentation: 'List of account references to set',
       type: 'Reference',
       min: 0,
       max: '*',
-      documentation: 'List of account references to set',
     },
     {
-      // Output parameter for number of resources updated
+      use: 'in',
+      name: 'propagate',
+      documentation: 'If set, also push changes to other resources in the compartment of the target resource',
+      type: 'boolean',
+      min: 0,
+      max: '1',
+    },
+    {
       use: 'out',
       name: 'resourcesUpdated',
+      documentation: 'Number of resources that were updated',
       type: 'integer',
       min: 1,
       max: '1',
-      documentation: 'Number of resources that were updated',
     },
   ],
 };
 
 export interface PatientSetAccountsParameters {
   accounts: Reference[];
+  propagate?: boolean;
 }
 
 /**
@@ -56,9 +63,13 @@ export interface PatientSetAccountsParameters {
  * @returns The FHIR response.
  */
 export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirResponse> {
-  const { id } = req.params;
-  if (!id) {
-    return [badRequest('Must specify Patient ID')];
+  const { id, resourceType } = req.params;
+  if (!id || !resourceType) {
+    return [badRequest('Must specify resource type and ID')];
+  }
+
+  if (!isResourceType(resourceType)) {
+    return [badRequest('Invalid resource type')];
   }
 
   const params = parseInputParameters<PatientSetAccountsParameters>(operation, req);
@@ -69,34 +80,37 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
     return [forbidden];
   }
 
-  const patient = await ctx.repo.readResource<Patient>('Patient', id);
-  const bundle = await getPatientEverything(ctx.repo, patient);
+  const target = await ctx.repo.readResource(resourceType, id);
   const accounts = params.accounts;
 
-  // step 1: update the patient resource with the new accounts
-  patient.meta = {
-    ...patient.meta,
+  // Update the target resource with the new accounts
+  target.meta = {
+    ...target.meta,
     accounts: accounts,
     account: accounts?.[0],
   };
 
-  await ctx.repo.updateResource(patient);
+  await ctx.repo.updateResource(target);
+  let count = 1; // Target resource is updated already
 
-  // step 2: update the resources in the patient compartment to trigger meta.accounts refresh
-  let count = 1;
-  for (const entry of bundle.entry ?? []) {
-    if (entry.search?.mode === 'match') {
-      const resource = entry.resource;
-      if (resource && resource.resourceType !== 'Patient') {
-        resource.meta = {
-          //persist other meta fields (ex. tag, security, etc.)
-          ...resource.meta,
-          accounts: undefined, //don't define here. Instead, inherit from the patient resource on update
-          account: undefined,
-        };
+  if (params.propagate && target.resourceType === 'Patient') {
+    const bundle = await getPatientEverything(ctx.repo, target);
+    // Update the resources in the target compartment to trigger meta.accounts refresh
+    for (const entry of bundle.entry ?? []) {
+      // Only update resources actually in the Patient compartment; don't modify
+      // any other referenced resources (which are included in the Bundle)
+      if (entry.search?.mode === 'match') {
+        const resource = entry.resource;
+        if (resource && resource.resourceType !== 'Patient') {
+          resource.meta = {
+            ...resource.meta,
+            accounts: undefined, // Don't define here; instead, inherit from the target resource on update
+            account: undefined,
+          };
 
-        await ctx.repo.updateResource(resource, { inheritAccounts: true });
-        count++;
+          await ctx.repo.updateResource(resource, { inheritAccounts: true });
+          count++;
+        }
       }
     }
   }

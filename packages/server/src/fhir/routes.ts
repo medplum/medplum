@@ -281,6 +281,9 @@ function initInternalFhirRouter(): FhirRouter {
   // Resource $graph operation
   router.add('GET', '/:resourceType/:id/$graph', resourceGraphHandler);
 
+  // Resource $set-accounts operation
+  router.add('POST', '/:resourceType/:id/$set-accounts', patientSetAccountsHandler);
+
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
   router.add('POST', '/Patient/:id/$everything', patientEverythingHandler);
@@ -288,9 +291,6 @@ function initInternalFhirRouter(): FhirRouter {
   // Patient $summary operation
   router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);
   router.add('POST', '/Patient/:id/$summary', patientSummaryHandler);
-
-  // Patient $set-accounts operation
-  router.add('POST', '/Patient/:id/$set-accounts', patientSetAccountsHandler);
 
   // Patient $ccda-export operation
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
