@@ -76,7 +76,7 @@
     "jest-websocket-mock": "2.5.0",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "typescript": "5.9.2"
+    "typescript": "5.8.3"
   },
   "peerDependencies": {
     "@medplum/core": "4.3.9",
