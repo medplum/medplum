@@ -83,6 +83,11 @@ export class Hl7Connection extends Hl7Base {
       }
       // Check if we have messages pending a response in the pending messages map
       if (!this.pendingMessages.size) {
+        this.dispatchEvent(
+          new Hl7ErrorEvent(
+            new Error(`Received a message when no pending messages were in the queue. Message: ${event.message}`)
+          )
+        );
         return;
       }
       const origMsgCtrlId = event.message.getSegment('MSA')?.getField(2)?.toString();
