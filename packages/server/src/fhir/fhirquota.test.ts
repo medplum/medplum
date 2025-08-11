@@ -5,12 +5,12 @@ import { Bundle, ProjectMembership, UserConfiguration } from '@medplum/fhirtypes
 import express, { Express } from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
-import { inviteUser } from './admin/invite';
-import { initApp, shutdownApp } from './app';
-import { loadTestConfig } from './config/loader';
-import { MedplumServerConfig } from './config/types';
-import { getRedis } from './redis';
-import { createTestProject } from './test.setup';
+import { inviteUser } from '../admin/invite';
+import { initApp, shutdownApp } from '../app';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
+import { getRedis } from '../redis';
+import { createTestProject } from '../test.setup';
 
 describe('FHIR Rate Limits', () => {
   let app: Express;
