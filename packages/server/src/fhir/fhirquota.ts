@@ -4,7 +4,7 @@ import { deepClone, Logger, OperationOutcomeError, tooManyRequests } from '@medp
 import { Response } from 'express';
 import Redis from 'ioredis';
 import { RateLimiterRedis, RateLimiterRes } from 'rate-limiter-flexible';
-import { AuthState } from './oauth/middleware';
+import { AuthState } from '../oauth/middleware';
 
 export class FhirRateLimiter {
   private readonly limiter: RateLimiterRedis;
@@ -87,8 +87,16 @@ export class FhirRateLimiter {
       const projectResult = await this.projectLimiter.consume(this.projectKey, points);
       this.setState(result, projectResult);
     } catch (err: unknown) {
-      if (err instanceof Error && this.enabled) {
+      if (err instanceof Error) {
+        this.logger.error('Error updating FHIR quota', err);
+
+        if (!this.enabled) {
+          return;
+        }
         throw err;
+      } else if (!(err instanceof RateLimiterRes)) {
+        this.logger.error('Unhandled rate limiter response', { response: JSON.stringify(err) });
+        return;
       }
       const result = err as RateLimiterRes;
       this.setState(result);
