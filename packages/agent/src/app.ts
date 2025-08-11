@@ -872,7 +872,10 @@ export class App {
           this.log.info(`Persistent connection to remote '${message.remote}' closed`);
         });
         client.addEventListener('error', (event) => {
-          this.hl7Clients.delete(message.remote);
+          // If the current client for this remote is this client, make sure to clean it up
+          if (this.hl7Clients.get(message.remote) === client) {
+            this.hl7Clients.delete(message.remote);
+          }
           this.log.error(
             `Persistent connection to remote '${message.remote}' encountered error: '${normalizeErrorString(event.error)}' - Closing connection...`
           );
