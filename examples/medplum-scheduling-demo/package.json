@@ -41,7 +41,7 @@
     "@types/react": "19.1.9",
     "@types/react-big-calendar": "1.16.2",
     "@types/react-dom": "19.1.7",
-    "@vitejs/plugin-react": "4.7.0",
+    "@vitejs/plugin-react": "5.0.0",
     "chart.js": "4.5.0",
     "dayjs": "1.11.13",
     "esbuild": "0.25.8",
