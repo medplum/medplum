@@ -260,11 +260,9 @@ describe('Patient Set Accounts Operation', () => {
 
     const res4 = await request(app)
       .get(`/fhir/R4/Communication/${communication.id}`)
-      .set('x-medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
     const updatedCommunication = res4.body as Communication;
-    console.log(updatedCommunication.meta);
     expect(updatedCommunication.meta?.accounts).toHaveLength(1);
     expect(updatedCommunication.meta?.security).toBeDefined();
   });
