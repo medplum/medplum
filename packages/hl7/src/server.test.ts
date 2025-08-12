@@ -396,5 +396,181 @@ describe('HL7 Server', () => {
 
       await server.stop();
     });
+
+    test('Enhanced mode with messagesPerMin rate limiting works correctly', async () => {
+      // Test with 60 messages per minute = 1 message per second
+      const messagesPerMin = 60;
+      const expectedMinIntervalMs = (60 * 1000) / messagesPerMin; // 1000ms = 1 second
+
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      // Start server with enhanced mode and rate limiting
+      server.start(1246, undefined, true, { messagesPerMin });
+
+      // Verify server is running with correct settings
+      expect(server.server).toBeDefined();
+      expect(server.server?.listening).toBe(true);
+      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getMessagesPerMin()).toBe(messagesPerMin);
+
+      const client = new Hl7Client({
+        host: 'localhost',
+        port: 1246,
+      });
+
+      await client.connect();
+
+      // Send first message - should send instantly
+      const firstMessageStart = Date.now();
+      const response1 = await client.sendAndWait(
+        Hl7Message.parse(
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+        )
+      );
+      const firstMessageEnd = Date.now();
+      expect(response1).toBeDefined();
+
+      // First message should complete quickly (no rate limiting)
+      const firstMessageTime = firstMessageEnd - firstMessageStart;
+      expect(firstMessageTime).toBeLessThan(100); // Should complete in less than 100ms
+
+      // Send second message immediately - should be rate limited
+      const beforeSecondSend = Date.now();
+      const response2 = await client.sendAndWait(
+        Hl7Message.parse(
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00002|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+        )
+      );
+      const afterSecondSend = Date.now();
+      expect(response2).toBeDefined();
+
+      // Calculate the actual time between the start of first message and end of second message
+      const totalTimeMs = afterSecondSend - firstMessageStart;
+
+      // The total time should be at least the expected minimum interval
+      // We allow a small tolerance (50ms) for timing variations
+      const toleranceMs = 50;
+      expect(totalTimeMs).toBeGreaterThanOrEqual(expectedMinIntervalMs - toleranceMs);
+
+      await client.close();
+      await server.stop();
+    });
+
+    test('Enhanced mode with different messagesPerMin rates', async () => {
+      // Test with 120 messages per minute = 1 message per 0.5 seconds
+      const messagesPerMin = 120;
+      const expectedMinIntervalMs = (60 * 1000) / messagesPerMin; // 500ms = 0.5 seconds
+
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      // Start server with enhanced mode and rate limiting
+      server.start(1247, undefined, true, { messagesPerMin });
+
+      const client = new Hl7Client({
+        host: 'localhost',
+        port: 1247,
+      });
+
+      await client.connect();
+
+      // Send multiple messages in quick succession
+      const startTime = Date.now();
+      const responses = [];
+
+      for (let i = 0; i < 3; i++) {
+        const beforeSend = Date.now();
+        const response = await client.sendAndWait(
+          Hl7Message.parse(
+            `MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG0000${i + 1}|P|2.2\r` +
+              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+          )
+        );
+        const afterSend = Date.now();
+        responses.push({ response, sendTime: afterSend - beforeSend, messageNumber: i + 1 });
+      }
+
+      const totalTimeMs = Date.now() - startTime;
+
+      // Verify all responses were received
+      responses.forEach(({ response }) => {
+        expect(response).toBeDefined();
+      });
+
+      // First message should complete quickly (no rate limiting)
+      const firstMessage = responses[0];
+      expect(firstMessage.sendTime).toBeLessThan(100); // Should complete in less than 100ms
+
+      // The total time should be at least 2 * expectedMinIntervalMs (for 3 messages)
+      // First message is instant, then 2 delays between subsequent messages
+      // We allow a small tolerance for timing variations
+      const toleranceMs = 100;
+      const expectedTotalTimeMs = 2 * expectedMinIntervalMs; // 2 intervals for 3 messages
+      expect(totalTimeMs).toBeGreaterThanOrEqual(expectedTotalTimeMs - toleranceMs);
+
+      // Subsequent messages (2nd and 3rd) should respect the rate limit
+      const subsequentMessages = responses.slice(1);
+      subsequentMessages.forEach(({ sendTime, messageNumber }) => {
+        expect(sendTime).toBeGreaterThanOrEqual(expectedMinIntervalMs - toleranceMs);
+      });
+
+      await client.close();
+      await server.stop();
+    });
+
+    test('Enhanced mode without rate limiting sends immediately', async () => {
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      // Start server with enhanced mode but no rate limiting
+      server.start(1248, undefined, true);
+
+      const client = new Hl7Client({
+        host: 'localhost',
+        port: 1248,
+      });
+
+      await client.connect();
+
+      // Send two messages in quick succession
+      const startTime = Date.now();
+
+      const response1 = await client.sendAndWait(
+        Hl7Message.parse(
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+        )
+      );
+      expect(response1).toBeDefined();
+
+      const response2 = await client.sendAndWait(
+        Hl7Message.parse(
+          'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00002|P|2.2\r' +
+            'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
+        )
+      );
+      expect(response2).toBeDefined();
+
+      const totalTimeMs = Date.now() - startTime;
+
+      // Without rate limiting, both messages should be sent quickly
+      // Should complete in less than 100ms (allowing for network overhead)
+      expect(totalTimeMs).toBeLessThan(100);
+
+      await client.close();
+      await server.stop();
+    });
   });
 });
