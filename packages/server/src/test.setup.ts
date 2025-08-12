@@ -85,7 +85,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
       client = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         secret: randomUUID(),
-        redirectUri: 'https://example.com/',
+        redirectUris: ['https://example.com/'],
         meta: {
           project: project.id,
         },
