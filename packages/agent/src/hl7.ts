@@ -94,9 +94,10 @@ export class AgentHl7Channel extends BaseChannel {
     const enhancedMode = address.searchParams.get('enhanced')?.toLowerCase() === 'true';
     const messagesPerMinRaw = address.searchParams.get('messagesPerMin') ?? undefined;
     let messagesPerMin = messagesPerMinRaw ? Number.parseInt(messagesPerMinRaw, 10) : undefined;
+
     if (messagesPerMin !== undefined && !Number.isInteger(messagesPerMin)) {
       this.log.warn(
-        `Invalid messagesPerMin: ${messagesPerMinRaw}; must be a valid integer. Creating channel without a set messagesPerMin...`
+        `Invalid messagesPerMin: '${messagesPerMinRaw}'; must be a valid integer. Creating channel without a set messagesPerMin...`
       );
       messagesPerMin = undefined;
     }

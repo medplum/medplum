@@ -447,6 +447,56 @@ describe('HL7', () => {
     mockServer.stop();
   });
 
+  test('Invalid messagesPerMin logs warning', async () => {
+    const mockServer = new Server('wss://example.com/ws/agent');
+
+    mockServer.on('connection', (socket) => {
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          socket.send(
+            Buffer.from(
+              JSON.stringify({
+                type: 'agent:connect:response',
+              })
+            )
+          );
+        }
+      });
+    });
+
+    const enhancedEndpoint = await medplum.createResource<Endpoint>({
+      ...endpoint,
+      address: 'mllp://0.0.0.0:57010?enhanced=true&messagesPerMin=twenty',
+    });
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+      channel: [
+        {
+          name: 'test',
+          endpoint: createReference(enhancedEndpoint),
+          targetReference: createReference(bot),
+        },
+      ],
+    });
+
+    const app = new App(medplum, agent.id, LogLevel.INFO);
+    await app.start();
+
+    // Wait for logging to occur just in case
+    await sleep(200);
+
+    expect(console.log).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid messagesPerMin: 'twenty'; must be a valid integer.")
+    );
+
+    await app.stop();
+    mockServer.stop();
+  });
+
   test('Push', async () => {
     const mockServer = new Server('wss://example.com/ws/agent');
     let mySocket: Client | undefined = undefined;
