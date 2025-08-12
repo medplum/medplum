@@ -440,7 +440,6 @@ describe('HL7 Server', () => {
       expect(firstMessageTime).toBeLessThan(100); // Should complete in less than 100ms
 
       // Send second message immediately - should be rate limited
-      const beforeSecondSend = Date.now();
       const response2 = await client.sendAndWait(
         Hl7Message.parse(
           'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00002|P|2.2\r' +
