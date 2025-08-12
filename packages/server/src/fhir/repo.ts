@@ -126,6 +126,7 @@ import {
   periodToRangeString,
   PostgresError,
   SelectQuery,
+  SYSTEM_PROJECT_ID,
   TransactionIsolationLevel,
 } from './sql';
 import { buildTokenColumns } from './token-column';
@@ -1153,7 +1154,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           id,
           lastUpdated,
           deleted: true,
-          projectId: resource.meta?.project,
+          projectId: resource.meta?.project ?? SYSTEM_PROJECT_ID,
           content,
         };
 
@@ -1497,7 +1498,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
-      projectId: meta.project,
+      projectId: meta.project ?? SYSTEM_PROJECT_ID,
       content,
       __version: Repository.VERSION,
     };
