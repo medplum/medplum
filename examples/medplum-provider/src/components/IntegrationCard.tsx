@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Avatar, Badge, Button, Group, Paper, Text } from '@mantine/core';
 import { IconAt } from '@tabler/icons-react';
 import { JSX } from 'react';

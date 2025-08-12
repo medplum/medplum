@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
 import { XSI_URL } from './systems';
 import { Ccda } from './types';

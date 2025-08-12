@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 // Based on https://gist.github.com/statik/f1ac9d6227d98d30c7a7cec0c83f4e64
 
 import { aws_logs as logs, aws_wafv2 as wafv2 } from 'aws-cdk-lib';

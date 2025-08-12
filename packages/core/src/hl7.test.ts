@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { formatHl7DateTime, Hl7Context, Hl7Field, Hl7Message, Hl7Segment, parseHl7DateTime } from './hl7';
 
 describe('HL7', () => {

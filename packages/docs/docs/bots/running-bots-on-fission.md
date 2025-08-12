@@ -56,7 +56,9 @@ When using AWS Parameter Store, you can add a single `fission` parameter with th
 
 ## Local Development Setup for Fission
 
-To get started with Fission for local development or testing, follow these steps to install it on your Kubernetes cluster. For detailed and up-to-date installation instructions, always refer to the official Fission documentation: [https://fission.io/docs/installation/](https://fission.io/docs/installation/)
+To run a pre-configured Medplum + Fission environment, you can follow the instructions in https://github.com/medplum/medplum/tree/main/examples/medplum-local-k8s/readme-local.md
+
+Otherwise, to get started with Fission for local development or testing, follow these steps to install it on your Kubernetes cluster. For detailed and up-to-date installation instructions, always refer to the official Fission documentation: [https://fission.io/docs/installation/](https://fission.io/docs/installation/)
 
 ```bash
 # Define the namespace for Fission

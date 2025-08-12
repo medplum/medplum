@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { allOk, ContentType, isNotFound, isOk, OperationOutcomeError, stringify } from '@medplum/core';
 import { BatchEvent, FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
@@ -49,6 +51,7 @@ import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
+import { updateUserEmailOperation } from './operations/update-user-email';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
@@ -199,6 +202,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Project $init
   router.add('POST', '/Project/$init', projectInitHandler);
+
+  // Update User email
+  router.add('POST', '/User/:id/$update-email', updateUserEmailOperation);
 
   // ConceptMap $translate
   router.add('POST', '/ConceptMap/$translate', conceptMapTranslateHandler);

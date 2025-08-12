@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { getDateProperty, Operator } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
@@ -6,6 +8,7 @@ import { asyncWrap } from '../async';
 import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
+import { getClientRedirectUri } from './clients';
 import { generateSecret, MedplumIdTokenClaims, verifyJwt } from './keys';
 import { getClientApplication } from './utils';
 
@@ -59,17 +62,17 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     return false;
   }
 
-  const redirectUri = client.redirectUri;
-  if (!redirectUri) {
-    res.status(400).send('Client has no redirect URI');
+  if (!params.redirect_uri) {
+    res.status(400).send('Missing redirect URI');
     return false;
   }
-  if (!URL.canParse(redirectUri)) {
+  if (!URL.canParse(params.redirect_uri)) {
     res.status(400).send('Invalid redirect URI');
     return false;
   }
-  if (redirectUri !== params.redirect_uri) {
-    res.status(400).send('Incorrect redirect_uri');
+  const redirectUri = getClientRedirectUri(client, params.redirect_uri);
+  if (!redirectUri) {
+    res.status(400).send('Invalid redirect URI');
     return false;
   }
 
@@ -77,7 +80,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
 
   // Then, validate all other parameters.
   // If these are invalid, redirect back to the redirect URI.
-  params.scope ??= client.defaultScope;
+  params.scope ??= client.defaultScope?.join(' ');
   if (!params.scope) {
     sendErrorRedirect(res, redirectUri, 'invalid_request', 'Missing scope', state);
     return false;

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import {
   applyDefaultValuesToElement,

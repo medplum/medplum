@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { readJson } from '@medplum/definitions';
 import { Bundle, MedicationRequest, Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { HTTP_HL7_ORG } from './constants';

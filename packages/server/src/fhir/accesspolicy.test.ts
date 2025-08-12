@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   createReference,
   encodeBase64,
@@ -764,7 +766,7 @@ describe('AccessPolicy', () => {
       const clientApplication = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         secret: 'foo',
-        redirectUri: 'https://example.com/',
+        redirectUris: ['https://example.com/'],
         meta: {
           account: {
             reference: account,
@@ -871,7 +873,7 @@ describe('AccessPolicy', () => {
       const clientApplication = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         secret: 'foo',
-        redirectUri: 'https://example.com/',
+        redirectUris: ['https://example.com/'],
       });
       expect(clientApplication).toBeDefined();
 
@@ -2083,6 +2085,50 @@ describe('AccessPolicy', () => {
       expect(patient3.meta?.account?.reference).toStrictEqual(account2);
       expect(patient3.meta?.accounts).toHaveLength(1);
       expect(patient3.meta?.accounts).toContainEqual({ reference: account2 });
+
+      // Specify properties in the meta object without overwriting the existing accounts
+      const patient4 = await adminRepo.updateResource<Patient>(
+        {
+          ...patient3,
+          meta: {
+            security: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality',
+                code: 'N',
+              },
+            ],
+            tag: [
+              {
+                system: 'http://example.com',
+                code: 'example-tag',
+              },
+            ],
+          },
+        },
+        { inheritAccounts: true }
+      );
+      expect(patient4.meta?.security).toHaveLength(1);
+      expect(patient4.meta?.accounts).toHaveLength(1); //did not get overwritten by the new accounts
+
+      // If inheritAccounts is not specified, then the accounts will be overwritten
+      const patient5 = await adminRepo.updateResource<Patient>({
+        ...patient4,
+        meta: {
+          security: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-Confidentiality',
+              code: 'N',
+            },
+          ],
+          tag: [
+            {
+              system: 'http://example.com',
+              code: 'example-tag',
+            },
+          ],
+        },
+      });
+      expect(patient5.meta?.accounts).toBeUndefined(); //accounts were overwritten
 
       // Remove patient accounts as project admin
       // Project admin should be allowed to clear accounts

@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AgentTransmitResponse, ContentType, Hl7Message, Logger, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7ErrorEvent, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
@@ -40,7 +42,7 @@ export class AgentHl7Channel extends BaseChannel {
       return;
     }
     this.log.info('Channel stopping...');
-    this.connections.forEach((connection) => connection.close());
+    await Promise.allSettled(Array.from(this.connections.values()).map((connection) => connection.close()));
     await this.server.stop();
     this.started = false;
     this.log.info('Channel stopped successfully');
@@ -147,7 +149,7 @@ export class AgentHl7ChannelConnection {
     this.channel.log.error(`HL7 connection error: ${normalizeErrorString(event.error)}`);
   }
 
-  close(): void {
-    this.hl7Connection.close();
+  close(): Promise<void> {
+    return this.hl7Connection.close();
   }
 }

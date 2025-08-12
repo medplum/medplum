@@ -1,6 +1,5 @@
-// PKCE auth based on:
-// https://aws.amazon.com/blogs/security/how-to-add-authentication-single-page-web-application-with-amazon-cognito-oauth2-implementation/
-
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   AccessPolicy,
   Agent,
@@ -3713,11 +3712,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const codeVerifier = getRandomString().slice(0, 128);
     sessionStorage.setItem('codeVerifier', codeVerifier);
 
-    const arrayHash = await encryptSHA256(codeVerifier);
-    const codeChallenge = arrayBufferToBase64(arrayHash).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
-    sessionStorage.setItem('codeChallenge', codeChallenge);
-
-    return { codeChallengeMethod: 'S256', codeChallenge };
+    try {
+      const arrayHash = await encryptSHA256(codeVerifier);
+      const codeChallenge = arrayBufferToBase64(arrayHash)
+        .replaceAll('+', '-')
+        .replaceAll('/', '_')
+        .replaceAll('=', '');
+      return { codeChallengeMethod: 'S256', codeChallenge };
+    } catch (err) {
+      console.warn("Failed to hash code verifier. Falling back to 'plain' code challenge method", err);
+      return { codeChallengeMethod: 'plain', codeChallenge: codeVerifier };
+    }
   }
 
   /**

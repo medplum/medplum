@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   AgentError,
   AgentMessage,
@@ -316,10 +318,15 @@ export class App {
     const keepAlive = agent?.setting?.find((setting) => setting.name === 'keepAlive')?.valueBoolean;
     const logStatsFreqSecs = agent?.setting?.find((setting) => setting.name === 'logStatsFreqSecs')?.valueInteger;
 
+    // If keepAlive is off and we have clients currently connected, we should stop them and remove them from the clients
     if (!keepAlive && this.hl7Clients.size !== 0) {
-      for (const client of this.hl7Clients.values()) {
-        client.close();
+      const results = await Promise.allSettled(Array.from(this.hl7Clients.values()).map((client) => client.close()));
+      for (const result of results) {
+        if (result.status === 'rejected') {
+          this.log.error(normalizeErrorString(result.reason));
+        }
       }
+      this.hl7Clients.clear();
     }
 
     if (this.logStatsFreqSecs !== logStatsFreqSecs && this.logStatsTimer) {
@@ -508,9 +515,11 @@ export class App {
     }
 
     if (this.hl7Clients.size !== 0) {
-      for (const client of this.hl7Clients.values()) {
-        client.close();
+      const clientClosePromises = [];
+      for (const channel of this.channels.values()) {
+        clientClosePromises.push(channel.stop());
       }
+      await Promise.all(clientClosePromises);
     }
 
     const channelStopPromises = [];
@@ -856,15 +865,23 @@ export class App {
       if (client.keepAlive) {
         this.hl7Clients.set(message.remote, client);
         client.addEventListener('close', () => {
-          this.hl7Clients.delete(message.remote);
+          // If the current client for this remote is this client, make sure to clean it up
+          if (this.hl7Clients.get(message.remote) === client) {
+            this.hl7Clients.delete(message.remote);
+          }
           this.log.info(`Persistent connection to remote '${message.remote}' closed`);
         });
-        client.addEventListener('error', () => {
-          this.hl7Clients.delete(message.remote);
-          this.log.info(
-            `Persistent connection to remote '${message.remote}' encountered an error... Closing connection...`
+        client.addEventListener('error', (event) => {
+          // If the current client for this remote is this client, make sure to clean it up
+          if (this.hl7Clients.get(message.remote) === client) {
+            this.hl7Clients.delete(message.remote);
+          }
+          this.log.error(
+            `Persistent connection to remote '${message.remote}' encountered error: '${normalizeErrorString(event.error)}' - Closing connection...`
           );
-          client.close();
+          client.close().catch((err) => {
+            this.log.error(normalizeErrorString(err));
+          });
         });
       }
     }
@@ -906,12 +923,16 @@ export class App {
 
         if (client.keepAlive) {
           this.hl7Clients.delete(message.remote);
-          client.close();
+          client.close().catch((err) => {
+            this.log.error(normalizeErrorString(err));
+          });
         }
       })
       .finally(() => {
         if (!client.keepAlive) {
-          client.close();
+          client.close().catch((err) => {
+            this.log.error(normalizeErrorString(err));
+          });
         }
       });
   }

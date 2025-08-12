@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 export * as v1 from './v1';
 export * as v2 from './v2';
 export * as v3 from './v3';
@@ -19,3 +21,4 @@ export * as v17 from './v17';
 export * as v18 from './v18';
 export * as v19 from './v19';
 export * as v20 from './v20';
+export * as v21 from './v21';

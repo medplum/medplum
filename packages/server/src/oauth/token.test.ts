@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import {
   ContentType,
   createReference,
@@ -282,7 +284,7 @@ describe('OAuth2 Token', () => {
         name: 'Bad Client',
         description: 'Bad Client',
         secret: '',
-        redirectUri: 'https://example.com',
+        redirectUris: ['https://example.com'],
       })
     );
 

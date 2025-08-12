@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { config } from 'dotenv';
 import { HealthieClient } from './client';
@@ -9,7 +11,7 @@ import {
 } from './patient';
 
 // Load environment variables from .env file
-config();
+config({ quiet: true });
 
 const originalFetch = global.fetch;
 

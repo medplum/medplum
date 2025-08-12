@@ -1,9 +1,12 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { CodeableConcept, OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import {
   accepted,
   allOk,
   assertOk,
   badRequest,
+  businessRule,
   conflict,
   created,
   forbidden,
@@ -101,6 +104,7 @@ describe('Outcomes', () => {
     [gone, 410],
     [preconditionFailed, 412],
     [multipleMatches, 412],
+    [businessRule('rule-id', 'Message'), 422],
     [tooManyRequests, 429],
     [serverError(new Error('bad')), 500],
     [serverTimeout(), 504],

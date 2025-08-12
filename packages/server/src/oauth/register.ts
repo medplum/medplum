@@ -1,6 +1,8 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Request, Response } from 'express';
 import { asyncWrap } from '../async';
-import { getStandardClientByRedirectUri } from './clients';
+import { getClientRedirectUris, getStandardClientByRedirectUri } from './clients';
 
 /*
  * OAuth 2.0 Dynamic Client Registration Protocol
@@ -33,5 +35,6 @@ export const registerHandler = asyncWrap(async (req: Request, res: Response) => 
     client_id: standardClient.id,
     client_secret: standardClient.secret,
     client_id_issued_at: Math.floor(Date.now() / 1000),
+    redirect_uris: getClientRedirectUris(standardClient),
   });
 });

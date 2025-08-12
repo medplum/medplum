@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Ratio } from '@medplum/fhirtypes';
 import { JSX } from 'react';
 import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';

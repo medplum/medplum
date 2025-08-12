@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { OAuthGrantType, OAuthTokenAuthMethod } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { getConfig } from './config/loader';
@@ -36,12 +38,25 @@ function handleOAuthConfig(_req: Request, res: Response): void {
       OAuthTokenAuthMethod.PrivateKeyJwt,
     ],
     request_object_signing_alg_values_supported: ['none'],
+    code_challenge_methods_supported: ['S256', 'plain'],
   });
 }
 
-function handleOauthProtectedResource(_req: Request, res: Response): void {
+function handleOauthProtectedResource(req: Request, res: Response): void {
   const config = getConfig();
+  let resource = config.baseUrl;
+
+  const requestedResource = req.query.resource;
+  if (requestedResource) {
+    if (typeof requestedResource !== 'string' || !requestedResource.startsWith(config.baseUrl)) {
+      res.status(400).send('Invalid resource URL');
+      return;
+    }
+    resource = requestedResource;
+  }
+
   res.status(200).json({
+    resource,
     issuer: config.issuer,
     authorization_servers: [config.issuer],
     scopes_supported: ['openid', 'profile', 'email', 'phone', 'address'],

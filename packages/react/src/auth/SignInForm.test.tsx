@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { Title } from '@mantine/core';
 import { allOk, badRequest, GoogleCredentialResponse, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
