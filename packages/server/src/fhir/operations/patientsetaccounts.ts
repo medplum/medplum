@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, badRequest, forbidden, isResourceType } from '@medplum/core';
+import { allOk, append, badRequest, forbidden, isResourceType } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -73,15 +73,16 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
   }
 
   const params = parseInputParameters<PatientSetAccountsParameters>(operation, req);
-  const ctx = getAuthenticatedContext();
+  const { repo } = getAuthenticatedContext();
 
-  const isSuperAdmin = ctx.repo.isSuperAdmin();
-  if (!ctx.repo.isProjectAdmin() && !isSuperAdmin) {
+  const isSuperAdmin = repo.isSuperAdmin();
+  if (!repo.isProjectAdmin() && !isSuperAdmin) {
     return [forbidden];
   }
 
-  const target = await ctx.repo.readResource(resourceType, id);
+  const target = await repo.readResource(resourceType, id);
   const accounts = params.accounts;
+  const oldAccounts = target.meta?.accounts;
 
   // Update the target resource with the new accounts
   target.meta = {
@@ -89,26 +90,42 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
     accounts: accounts,
     account: accounts?.[0],
   };
-
-  await ctx.repo.updateResource(target);
+  await repo.updateResource(target);
   let count = 1; // Target resource is updated already
 
   if (params.propagate && target.resourceType === 'Patient') {
-    const bundle = await getPatientEverything(ctx.repo, target);
+    // Calculate the difference between the previous accounts array and new one, in order to
+    // propragate only those changes to compartment resources
+    const additions = accounts.filter((a) => !oldAccounts?.find((o) => o.reference === a.reference));
+    const removals = oldAccounts?.filter((o) => !accounts.find((a) => a.reference === o.reference)) ?? [];
+
     // Update the resources in the target compartment to trigger meta.accounts refresh
+    const bundle = await getPatientEverything(repo, target);
     for (const entry of bundle.entry ?? []) {
       // Only update resources actually in the Patient compartment; don't modify
       // any other referenced resources (which are included in the Bundle)
       if (entry.search?.mode === 'match') {
         const resource = entry.resource;
         if (resource && resource.resourceType !== 'Patient') {
+          let accountList = resource.meta?.accounts;
+          for (const added of additions) {
+            if (!accountList?.find((a) => a.reference === added.reference)) {
+              accountList = append(accountList, added);
+            }
+          }
+          for (const dropped of removals) {
+            const index = accountList?.findIndex((a) => a.reference === dropped.reference) ?? -1;
+            if (index > -1) {
+              accountList?.splice(index, 1);
+            }
+          }
+
           resource.meta = {
             ...resource.meta,
-            accounts: undefined, // Don't define here; instead, inherit from the target resource on update
-            account: undefined,
+            accounts: accountList,
+            account: accountList?.[0],
           };
-
-          await ctx.repo.updateResource(resource, { inheritAccounts: true });
+          await repo.updateResource(resource);
           count++;
         }
       }
