@@ -7,7 +7,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
-import { patientSetAccountsHandler } from './patientsetaccounts';
+import { setAccountsHandler } from './set-accounts';
 
 const app = express();
 let accessToken: string;
@@ -18,7 +18,7 @@ let organization1: Organization;
 let organization2: Organization;
 
 describe('Patient Set Accounts Operation', () => {
-  beforeAll(async () => {
+  beforeEach(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     accessToken = await initTestAuth({ superAdmin: true });
@@ -90,7 +90,7 @@ describe('Patient Set Accounts Operation', () => {
     diagnosticReport = res3.body as DiagnosticReport;
   });
 
-  afterAll(async () => {
+  afterEach(async () => {
     await shutdownApp();
   });
 
@@ -204,8 +204,8 @@ describe('Patient Set Accounts Operation', () => {
     expect(res.status).toBe(404);
   });
 
-  test('patientSetAccountsHandler() called without an id', async () => {
-    const res = await patientSetAccountsHandler({
+  test('setAccountsHandler() called without an id', async () => {
+    const res = await setAccountsHandler({
       params: { id: '' },
       method: 'POST',
       url: '/fhir/R4/Patient/$set-accounts',
@@ -260,11 +260,91 @@ describe('Patient Set Accounts Operation', () => {
 
     const res4 = await request(app)
       .get(`/fhir/R4/Communication/${communication.id}`)
+      .set('x-medplum', 'extended')
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
     const updatedCommunication = res4.body as Communication;
+    console.log(updatedCommunication.meta);
     expect(updatedCommunication.meta?.accounts).toHaveLength(1);
     expect(updatedCommunication.meta?.security).toBeDefined();
+  });
+
+  test('Preserves changes to accounts of compartment resources', async () => {
+    const res1 = await request(app)
+      .post(`/fhir/R4/Observation/${observation.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'accounts',
+            valueReference: createReference(organization2),
+          },
+        ],
+      });
+    expect(res1.status).toBe(200);
+    const result = res1.body;
+    expect(result.parameter?.[0].name).toBe('resourcesUpdated');
+    expect(result.parameter?.[0].valueInteger).toBe(1); // Observation only
+
+    // Check if accounts are updated on the observation
+    const res2 = await request(app)
+      .get(`/fhir/R4/Observation/${observation.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toBe(200);
+    const updatedObservation = res2.body as Observation;
+    expect(updatedObservation.meta?.accounts).toBeDefined();
+    expect(updatedObservation.meta?.accounts?.[0].reference).toBe(`Organization/${organization2.id}`);
+
+    // Execute the operation adding the organization to the patient's compartment
+    const res3 = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'accounts',
+            valueReference: createReference(organization1),
+          },
+          {
+            name: 'propagate',
+            valueBoolean: true,
+          },
+        ],
+      });
+    expect(res3.status).toBe(200);
+    const result2 = res3.body;
+    expect(result2.parameter?.[0].name).toBe('resourcesUpdated');
+    expect(result2.parameter?.[0].valueInteger).toBe(3); // Observation and DiagnosticReport included
+
+    //check if the accounts are updated on the patient
+    const res4 = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res4.status).toBe(200);
+    const updatedPatient = res4.body as Patient;
+    expect(updatedPatient.meta?.accounts).toBeDefined();
+    expect(updatedPatient.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
+
+    // Check if accounts are updated on the observation
+    const res5 = await request(app)
+      .get(`/fhir/R4/Observation/${observation.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res5.status).toBe(200);
+    const finalObservation = res5.body as Observation;
+    expect(finalObservation.meta?.accounts).toHaveLength(2);
+    expect(finalObservation.meta?.accounts?.[0].reference).toBe(`Organization/${organization2.id}`);
+    expect(finalObservation.meta?.accounts?.[1].reference).toBe(`Organization/${organization1.id}`);
+
+    // Check if accounts are updated on the diagnostic report
+    const res6 = await request(app)
+      .get(`/fhir/R4/DiagnosticReport/${diagnosticReport.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res6.status).toBe(200);
+    const updatedDiagnosticReport = res6.body as DiagnosticReport;
+    expect(updatedDiagnosticReport.meta?.accounts).toBeDefined();
+    expect(updatedDiagnosticReport.meta?.accounts?.[0].reference).toBe(`Organization/${organization1.id}`);
   });
 
   test('Non-admin user cannot set accounts', async () => {

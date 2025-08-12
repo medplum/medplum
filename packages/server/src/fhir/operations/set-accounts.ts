@@ -4,17 +4,18 @@ import { allOk, append, badRequest, forbidden, isResourceType } from '@medplum/c
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { getPatientEverything } from './patienteverything';
+import { getSystemRepo } from '../repo';
+import { searchPatientCompartment } from './patienteverything';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
-  id: 'patient-set-accounts',
+  id: 'set-accounts',
   name: 'SetAccounts',
   status: 'active',
   kind: 'operation',
   code: 'set-accounts',
-  description: "Updates account references for all resources in the patient's compartment",
+  description: `Updates account references for the target resource, and optionally any resources in the target's FHIR compartment`,
   resource: ['Resource' as ResourceType],
   system: false,
   type: false,
@@ -47,22 +48,21 @@ const operation: OperationDefinition = {
   ],
 };
 
-export interface PatientSetAccountsParameters {
+export interface SetAccountsParameters {
   accounts: Reference[];
   propagate?: boolean;
 }
 
 /**
- * Handles the Patient $set-accounts operation.
- * This operation updates the account reference for all resources in the patient compartment.
- * The operation only updates resources from the getPatientEverything bundle that are not
- * included in the patient's compartment, but are linked to the patient through a reference.
+ * Handles the $set-accounts operation.
+ * This operation updates the account reference for  a resource, and optionally
+ * all resources in the target compartment as well.
  *
- * Note: the operation is currently capped at 1000 resources in the patient's compartment.
+ * NOTE: the operation is currently capped at 1000 resources in the patient compartment.
  * @param req - The FHIR request.
  * @returns The FHIR response.
  */
-export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirResponse> {
+export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse> {
   const { id, resourceType } = req.params;
   if (!id || !resourceType) {
     return [badRequest('Must specify resource type and ID')];
@@ -72,7 +72,7 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
     return [badRequest('Invalid resource type')];
   }
 
-  const params = parseInputParameters<PatientSetAccountsParameters>(operation, req);
+  const params = parseInputParameters<SetAccountsParameters>(operation, req);
   const { repo } = getAuthenticatedContext();
 
   const isSuperAdmin = repo.isSuperAdmin();
@@ -95,47 +95,40 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
 
   if (params.propagate && target.resourceType === 'Patient') {
     // Calculate the difference between the previous accounts array and new one, in order to
-    // propragate only those changes to compartment resources
+    // propagate only those changes to compartment resources
     const additions = accounts.filter((a) => !oldAccounts?.find((o) => o.reference === a.reference));
     const removals = oldAccounts?.filter((o) => !accounts.find((a) => a.reference === o.reference)) ?? [];
 
     // Update the resources in the target compartment to trigger meta.accounts refresh
-    const bundle = await getPatientEverything(repo, target);
+    // const bundle = await getPatientEverything(repo, target);
+    const bundle = await searchPatientCompartment(repo, target);
     for (const entry of bundle.entry ?? []) {
-      // Only update resources actually in the Patient compartment; don't modify
-      // any other referenced resources (which are included in the Bundle)
-      if (entry.search?.mode === 'match') {
-        const resource = entry.resource;
-        if (resource && resource.resourceType !== 'Patient') {
-          let accountList = resource.meta?.accounts;
-          for (const added of additions) {
-            if (!accountList?.find((a) => a.reference === added.reference)) {
-              accountList = append(accountList, added);
-            }
+      const resource = entry.resource;
+      if (resource && resource.resourceType !== 'Patient') {
+        let accountList = resource.meta?.accounts;
+        for (const added of additions) {
+          if (!accountList?.find((a) => a.reference === added.reference)) {
+            accountList = append(accountList, added);
           }
-          for (const dropped of removals) {
-            const index = accountList?.findIndex((a) => a.reference === dropped.reference) ?? -1;
-            if (index > -1) {
-              accountList?.splice(index, 1);
-            }
-          }
-
-          resource.meta = {
-            ...resource.meta,
-            accounts: accountList,
-            account: accountList?.[0],
-          };
-          await repo.updateResource(resource);
-          count++;
         }
+        for (const dropped of removals) {
+          const index = accountList?.findIndex((a) => a.reference === dropped.reference) ?? -1;
+          if (index > -1) {
+            accountList?.splice(index, 1);
+          }
+        }
+
+        resource.meta = {
+          ...resource.meta,
+          accounts: accountList,
+          account: accountList?.[0],
+        };
+        // Use system repo to force update meta.accounts
+        await getSystemRepo(undefined).updateResource(resource);
+        count++;
       }
     }
   }
 
-  return [
-    allOk,
-    buildOutputParameters(operation, {
-      resourcesUpdated: count,
-    }),
-  ];
+  return [allOk, buildOutputParameters(operation, { resourcesUpdated: count })];
 }

@@ -42,13 +42,13 @@ import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
 import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
-import { patientSetAccountsHandler } from './operations/patientsetaccounts';
 import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { resourceGraphHandler } from './operations/resourcegraph';
 import { rotateSecretHandler } from './operations/rotatesecret';
+import { setAccountsHandler } from './operations/set-accounts';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
@@ -282,7 +282,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/:resourceType/:id/$graph', resourceGraphHandler);
 
   // Resource $set-accounts operation
-  router.add('POST', '/:resourceType/:id/$set-accounts', patientSetAccountsHandler);
+  router.add('POST', '/:resourceType/:id/$set-accounts', setAccountsHandler);
 
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
