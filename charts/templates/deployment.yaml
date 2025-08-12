@@ -34,6 +34,10 @@ spec:
       serviceAccountName: {{ include "medplum.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.deployment.initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -61,6 +65,10 @@ spec:
               port: {{ .Values.service.targetPort | default 8103 }}
             failureThreshold: 60
             periodSeconds: 10
+          {{- with .Values.deployment.envFrom }}
+          envFrom:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           env:
             {{- toYaml .Values.deployment.env | nindent 12 }}
           resources:
