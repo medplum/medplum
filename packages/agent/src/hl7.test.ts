@@ -351,7 +351,7 @@ describe('HL7', () => {
     mockServer.stop();
   });
 
-  test('Send and receive -- enhanced mode + messagesPerSec', async () => {
+  test('Send and receive -- enhanced mode + messagesPerMin', async () => {
     const mockServer = new Server('wss://example.com/ws/agent');
 
     mockServer.on('connection', (socket) => {
@@ -387,7 +387,7 @@ describe('HL7', () => {
 
     const enhancedEndpoint = await medplum.createResource<Endpoint>({
       ...endpoint,
-      address: 'mllp://0.0.0.0:57010?enhanced=true&messagesPerSec=1',
+      address: 'mllp://0.0.0.0:57010?enhanced=true&messagesPerMin=60',
     });
 
     const agent = await medplum.createResource<Agent>({

@@ -34,16 +34,17 @@ export interface SendAndWaitOptions {
 }
 
 export interface Hl7ConnectionOptions {
-  messagesPerSec?: number;
+  messagesPerMin?: number;
 }
 
 export const DEFAULT_ENCODING = 'utf-8';
+const ONE_MINUTE = 60 * 1000;
 
 export class Hl7Connection extends Hl7Base {
   readonly socket: net.Socket;
   encoding: string;
   enhancedMode: boolean;
-  private messagesPerSec: number | undefined = undefined;
+  private messagesPerMin: number | undefined = undefined;
   private chunks: Buffer[] = [];
   private readonly pendingMessages: Map<string, Hl7MessageQueueItem> = new Map<string, Hl7MessageQueueItem>();
   private readonly responseQueue: Hl7MessageEvent[] = [];
@@ -61,7 +62,7 @@ export class Hl7Connection extends Hl7Base {
     this.socket = socket;
     this.encoding = encoding;
     this.enhancedMode = enhancedMode;
-    this.messagesPerSec = options.messagesPerSec;
+    this.messagesPerMin = options.messagesPerMin;
 
     socket.on('data', (data: Buffer) => {
       try {
@@ -169,8 +170,8 @@ export class Hl7Connection extends Hl7Base {
 
     this.responseQueueProcessing = true;
     while (this.responseQueue.length) {
-      if (this.messagesPerSec) {
-        const millisBetweenMsgs = 1000 / (this.messagesPerSec as number);
+      if (this.messagesPerMin) {
+        const millisBetweenMsgs = ONE_MINUTE / (this.messagesPerMin as number);
         const elapsedMillis = Date.now() - this.lastMessageDispatchedTime;
         if (millisBetweenMsgs > elapsedMillis) {
           await sleep(millisBetweenMsgs - elapsedMillis);
@@ -309,11 +310,11 @@ export class Hl7Connection extends Hl7Base {
     return this.enhancedMode;
   }
 
-  setMessagesPerSec(messagesPerSec: number | undefined): void {
-    this.messagesPerSec = messagesPerSec;
+  setMessagesPerMin(messagesPerMin: number | undefined): void {
+    this.messagesPerMin = messagesPerMin;
   }
 
-  getMessagesPerSec(): number | undefined {
-    return this.messagesPerSec;
+  getMessagesPerMin(): number | undefined {
+    return this.messagesPerMin;
   }
 }

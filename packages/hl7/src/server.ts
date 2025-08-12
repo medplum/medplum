@@ -9,7 +9,7 @@ export class Hl7Server {
   server?: net.Server;
   private encoding: string | undefined = undefined;
   private enhancedMode = false;
-  private messagesPerSec: number | undefined = undefined;
+  private messagesPerMin: number | undefined = undefined;
 
   constructor(handler: (connection: Hl7Connection) => void) {
     this.handler = handler;
@@ -22,13 +22,13 @@ export class Hl7Server {
     if (enhancedMode !== undefined) {
       this.setEnhancedMode(enhancedMode);
     }
-    if (options?.messagesPerSec !== undefined) {
-      this.setMessagesPerSec(this.messagesPerSec);
+    if (options?.messagesPerMin !== undefined) {
+      this.setMessagesPerMin(this.messagesPerMin);
     }
 
     const server = net.createServer((socket) => {
       const connection = new Hl7Connection(socket, this.encoding, this.enhancedMode, {
-        messagesPerSec: this.messagesPerSec,
+        messagesPerMin: this.messagesPerMin,
       });
       this.handler(connection);
     });
@@ -84,11 +84,11 @@ export class Hl7Server {
     return this.encoding;
   }
 
-  setMessagesPerSec(messagesPerSec: number | undefined): void {
-    this.messagesPerSec = messagesPerSec;
+  setMessagesPerMin(messagesPerMin: number | undefined): void {
+    this.messagesPerMin = messagesPerMin;
   }
 
-  getMessagesPerSec(): number | undefined {
-    return this.messagesPerSec;
+  getMessagesPerMin(): number | undefined {
+    return this.messagesPerMin;
   }
 }
