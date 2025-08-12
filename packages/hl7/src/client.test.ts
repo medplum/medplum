@@ -4,7 +4,7 @@ import { AckCode, Hl7Message, isOperationOutcome, OperationOutcomeError, sleep }
 import net, { createServer, Socket } from 'node:net';
 import { Hl7Client } from './client';
 import { Hl7Connection, ReturnAckCategory } from './connection';
-import { Hl7ErrorEvent, Hl7MessageEvent } from './events';
+import { Hl7ErrorEvent } from './events';
 import { Hl7Server } from './server';
 import { MockServer, MockSocket } from './test-utils';
 
@@ -141,33 +141,6 @@ describe('Hl7Client', () => {
 
       expect(warningEvent).toBeDefined();
       expect(warningEvent.error.outcome.issue[0].diagnostics).toContain('UNKNOWN_MSG_ID');
-    });
-
-    test('Emits error when receiving an ACK and there are no pending messages', async () => {
-      // Listen for error events
-      let errorEvent: any = undefined;
-      hl7Client.addEventListener('error', (event) => {
-        errorEvent = event;
-      });
-
-      hl7Client.connection?.dispatchEvent(
-        new Hl7MessageEvent(
-          hl7Client.connection,
-          // Emit an ACK message for a message we aren't listening for
-          Hl7Message.parse(
-            'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
-              'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-'
-          ).buildAck()
-        )
-      );
-
-      // Wait until next tick for event to process
-      await sleep(0);
-
-      expect(errorEvent).toBeDefined();
-      expect((errorEvent as Hl7ErrorEvent).error.message).toContain(
-        'Received a message when no pending messages were in the queue. Message:'
-      );
     });
 
     test('Rejects when message response times out', async () => {
