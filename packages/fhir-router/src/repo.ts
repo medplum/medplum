@@ -29,7 +29,6 @@ export type CreateResourceOptions = {
 
 export type UpdateResourceOptions = {
   ifMatch?: string;
-  inheritAccounts?: boolean;
 };
 
 export const RepositoryMode = {
