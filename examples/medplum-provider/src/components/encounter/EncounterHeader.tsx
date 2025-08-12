@@ -53,6 +53,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
         <>
           <Menu.Item onClick={() => handleStatusChange('arrived')}>Arrived</Menu.Item>
           <Menu.Item onClick={() => handleStatusChange('in-progress')}>In Progress</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('finished')}>Finished</Menu.Item>
           <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
           <Menu.Divider />
         </>
@@ -63,6 +64,7 @@ export const EncounterHeader = (props: EncounterHeaderProps): JSX.Element => {
       return (
         <>
           <Menu.Item onClick={() => handleStatusChange('in-progress')}>In Progress</Menu.Item>
+          <Menu.Item onClick={() => handleStatusChange('finished')}>Finished</Menu.Item>
           <Menu.Item onClick={() => handleStatusChange('cancelled')}>Cancelled</Menu.Item>
           <Menu.Divider />
         </>
