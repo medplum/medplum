@@ -92,11 +92,21 @@ export class AgentHl7Channel extends BaseChannel {
     const address = new URL(this.getEndpoint().address as string);
     const encoding = address.searchParams.get('encoding') ?? undefined;
     const enhancedMode = address.searchParams.get('enhanced')?.toLowerCase() === 'true';
+    const messagesPerSecRaw = address.searchParams.get('messagesPerSec') ?? undefined;
+    let messagesPerSec = messagesPerSecRaw ? Number.parseInt(messagesPerSecRaw, 10) : undefined;
+    if (messagesPerSec !== undefined && !Number.isInteger(messagesPerSec)) {
+      this.log.warn(
+        `Invalid messagesPerSec: ${messagesPerSecRaw}; must be a valid integer. Creating channel without a set messagesPerSec...`
+      );
+      messagesPerSec = undefined;
+    }
     this.server.setEncoding(encoding);
     this.server.setEnhancedMode(enhancedMode);
+    this.server.setMessagesPerSec(messagesPerSec);
     for (const connection of this.connections.values()) {
       connection.hl7Connection.setEncoding(encoding);
       connection.hl7Connection.setEnhancedMode(enhancedMode);
+      connection.hl7Connection.setMessagesPerSec(messagesPerSec);
     }
   }
 
