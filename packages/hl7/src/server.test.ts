@@ -106,4 +106,295 @@ describe('HL7 Server', () => {
     const hl7Server = new Hl7Server((_conn) => undefined);
     await expect(hl7Server.stop()).rejects.toThrow('Stop was called but there is no server running');
   });
+
+  describe('Server configuration setters and getters', () => {
+    test('setEncoding and getEncoding work correctly', () => {
+      const server = new Hl7Server((_conn) => undefined);
+
+      // Test initial state
+      expect(server.getEncoding()).toBeUndefined();
+
+      // Test setting encoding
+      server.setEncoding('utf-8');
+      expect(server.getEncoding()).toBe('utf-8');
+
+      // Test setting different encoding
+      server.setEncoding('windows-1252');
+      expect(server.getEncoding()).toBe('windows-1252');
+
+      // Test setting undefined
+      server.setEncoding(undefined);
+      expect(server.getEncoding()).toBeUndefined();
+    });
+
+    test('setEnhancedMode and getEnhancedMode work correctly', () => {
+      const server = new Hl7Server((_conn) => undefined);
+
+      // Test initial state
+      expect(server.getEnhancedMode()).toBe(false);
+
+      // Test setting enhanced mode to true
+      server.setEnhancedMode(true);
+      expect(server.getEnhancedMode()).toBe(true);
+
+      // Test setting enhanced mode to false
+      server.setEnhancedMode(false);
+      expect(server.getEnhancedMode()).toBe(false);
+
+      // Test setting enhanced mode to true again
+      server.setEnhancedMode(true);
+      expect(server.getEnhancedMode()).toBe(true);
+    });
+
+    test('setMessagesPerMin and getMessagesPerMin work correctly', () => {
+      const server = new Hl7Server((_conn) => undefined);
+
+      // Test initial state
+      expect(server.getMessagesPerMin()).toBeUndefined();
+
+      // Test setting messages per minute
+      server.setMessagesPerMin(100);
+      expect(server.getMessagesPerMin()).toBe(100);
+
+      // Test setting different value
+      server.setMessagesPerMin(200);
+      expect(server.getMessagesPerMin()).toBe(200);
+
+      // Test setting undefined
+      server.setMessagesPerMin(undefined);
+      expect(server.getMessagesPerMin()).toBeUndefined();
+
+      // Test setting zero
+      server.setMessagesPerMin(0);
+      expect(server.getMessagesPerMin()).toBe(0);
+    });
+  });
+
+  describe('Server start with different configurations', () => {
+    test('Start server with no optional parameters', async () => {
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      server.start(1236);
+
+      // Verify server is running
+      expect(server.server).toBeDefined();
+      expect(server.server?.listening).toBe(true);
+
+      // Test that default values are used
+      expect(server.getEncoding()).toBeUndefined();
+      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getMessagesPerMin()).toBeUndefined();
+
+      await server.stop();
+    });
+
+    test('Start server with encoding parameter', async () => {
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      server.start(1237, 'utf-8');
+
+      // Verify server is running
+      expect(server.server).toBeDefined();
+      expect(server.server?.listening).toBe(true);
+
+      // Test that encoding was set
+      expect(server.getEncoding()).toBe('utf-8');
+      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getMessagesPerMin()).toBeUndefined();
+
+      await server.stop();
+    });
+
+    test('Start server with enhancedMode parameter', async () => {
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      server.start(1238, undefined, true);
+
+      // Verify server is running
+      expect(server.server).toBeDefined();
+      expect(server.server?.listening).toBe(true);
+
+      // Test that enhancedMode was set
+      expect(server.getEncoding()).toBeUndefined();
+      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getMessagesPerMin()).toBeUndefined();
+
+      await server.stop();
+    });
+
+    test('Start server with messagesPerMin option', async () => {
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      server.start(1239, undefined, undefined, { messagesPerMin: 150 });
+
+      // Verify server is running
+      expect(server.server).toBeDefined();
+      expect(server.server?.listening).toBe(true);
+
+      // Test that messagesPerMin was set
+      expect(server.getEncoding()).toBeUndefined();
+      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getMessagesPerMin()).toBe(150);
+
+      await server.stop();
+    });
+
+    test('Start server with all parameters set', async () => {
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      server.start(1240, 'windows-1252', true, { messagesPerMin: 200 });
+
+      // Verify server is running
+      expect(server.server).toBeDefined();
+      expect(server.server?.listening).toBe(true);
+
+      // Test that all parameters were set
+      expect(server.getEncoding()).toBe('windows-1252');
+      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getMessagesPerMin()).toBe(200);
+
+      await server.stop();
+    });
+
+    test('Start server with encoding set via setter before start', async () => {
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      // Set encoding via setter before starting
+      server.setEncoding('iso-8859-1');
+      server.start(1241);
+
+      // Verify server is running
+      expect(server.server).toBeDefined();
+      expect(server.server?.listening).toBe(true);
+
+      // Test that encoding was preserved
+      expect(server.getEncoding()).toBe('iso-8859-1');
+      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getMessagesPerMin()).toBeUndefined();
+
+      await server.stop();
+    });
+
+    test('Start server with enhancedMode set via setter before start', async () => {
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      // Set enhancedMode via setter before starting
+      server.setEnhancedMode(true);
+      server.start(1242);
+
+      // Verify server is running
+      expect(server.server).toBeDefined();
+      expect(server.server?.listening).toBe(true);
+
+      // Test that enhancedMode was preserved
+      expect(server.getEncoding()).toBeUndefined();
+      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getMessagesPerMin()).toBeUndefined();
+
+      await server.stop();
+    });
+
+    test('Start server with messagesPerMin set via setter before start', async () => {
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      // Set messagesPerMin via setter before starting
+      server.setMessagesPerMin(300);
+      server.start(1243);
+
+      // Verify server is running
+      expect(server.server).toBeDefined();
+      expect(server.server?.listening).toBe(true);
+
+      // Test that messagesPerMin was preserved
+      expect(server.getEncoding()).toBeUndefined();
+      expect(server.getEnhancedMode()).toBe(false);
+      expect(server.getMessagesPerMin()).toBe(300);
+
+      await server.stop();
+    });
+
+    test('Start server with all setters called before start', async () => {
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      // Set all properties via setters before starting
+      server.setEncoding('utf-8');
+      server.setEnhancedMode(true);
+      server.setMessagesPerMin(250);
+      server.start(1244);
+
+      // Verify server is running
+      expect(server.server).toBeDefined();
+      expect(server.server?.listening).toBe(true);
+
+      // Test that all properties were preserved
+      expect(server.getEncoding()).toBe('utf-8');
+      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getMessagesPerMin()).toBe(250);
+
+      await server.stop();
+    });
+
+    test('Start server with parameters overriding setters', async () => {
+      const server = new Hl7Server((connection) => {
+        connection.addEventListener('message', ({ message }) => {
+          connection.send(message.buildAck());
+        });
+      });
+
+      // Set properties via setters
+      server.setEncoding('utf-8');
+      server.setEnhancedMode(false);
+      server.setMessagesPerMin(100);
+
+      // Start with different parameters that should override setters
+      server.start(1245, 'windows-1252', true, { messagesPerMin: 500 });
+
+      // Verify server is running
+      expect(server.server).toBeDefined();
+      expect(server.server?.listening).toBe(true);
+
+      // Test that start parameters override setters
+      expect(server.getEncoding()).toBe('windows-1252');
+      expect(server.getEnhancedMode()).toBe(true);
+      expect(server.getMessagesPerMin()).toBe(500);
+
+      await server.stop();
+    });
+  });
 });

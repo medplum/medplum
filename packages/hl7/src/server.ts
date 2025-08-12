@@ -23,7 +23,7 @@ export class Hl7Server {
       this.setEnhancedMode(enhancedMode);
     }
     if (options?.messagesPerMin !== undefined) {
-      this.setMessagesPerMin(this.messagesPerMin);
+      this.setMessagesPerMin(options.messagesPerMin);
     }
 
     const server = net.createServer((socket) => {
