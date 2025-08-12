@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Hl7Message, OperationOutcomeError, validationError } from '@medplum/core';
+import { Hl7Message, OperationOutcomeError, sleep, validationError } from '@medplum/core';
 import iconv from 'iconv-lite';
 import net from 'node:net';
 import { Hl7Base } from './base';
@@ -33,21 +33,36 @@ export interface SendAndWaitOptions {
   timeoutMs?: number;
 }
 
+export interface Hl7ConnectionOptions {
+  messagesPerMin?: number;
+}
+
 export const DEFAULT_ENCODING = 'utf-8';
+const ONE_MINUTE = 60 * 1000;
 
 export class Hl7Connection extends Hl7Base {
   readonly socket: net.Socket;
   encoding: string;
   enhancedMode: boolean;
+  private messagesPerMin: number | undefined = undefined;
   private chunks: Buffer[] = [];
   private readonly pendingMessages: Map<string, Hl7MessageQueueItem> = new Map<string, Hl7MessageQueueItem>();
+  private readonly responseQueue: Hl7MessageEvent[] = [];
+  private lastMessageDispatchedTime = 0;
+  private responseQueueProcessing = false;
 
-  constructor(socket: net.Socket, encoding: string = DEFAULT_ENCODING, enhancedMode = false) {
+  constructor(
+    socket: net.Socket,
+    encoding: string = DEFAULT_ENCODING,
+    enhancedMode = false,
+    options: Hl7ConnectionOptions = {}
+  ) {
     super();
 
     this.socket = socket;
     this.encoding = encoding;
     this.enhancedMode = enhancedMode;
+    this.messagesPerMin = options.messagesPerMin;
 
     socket.on('data', (data: Buffer) => {
       try {
@@ -57,8 +72,11 @@ export class Hl7Connection extends Hl7Base {
           const contentBuffer = buffer.subarray(1, buffer.length - 2);
           const contentString = iconv.decode(contentBuffer, this.encoding);
           const message = Hl7Message.parse(contentString);
-          this.dispatchEvent(new Hl7MessageEvent(this, message));
+          this.responseQueue.push(new Hl7MessageEvent(this, message));
           this.resetBuffer();
+          this.processResponseQueue().catch((err) => {
+            this.dispatchEvent(new Hl7ErrorEvent(err));
+          });
         }
       } catch (err) {
         this.dispatchEvent(new Hl7ErrorEvent(err as Error));
@@ -80,15 +98,6 @@ export class Hl7Connection extends Hl7Base {
     this.addEventListener('message', (event) => {
       if (this.enhancedMode) {
         this.send(event.message.buildAck({ ackCode: 'CA' }));
-      }
-      // Check if we have messages pending a response in the pending messages map
-      if (!this.pendingMessages.size) {
-        this.dispatchEvent(
-          new Hl7ErrorEvent(
-            new Error(`Received a message when no pending messages were in the queue. Message: ${event.message}`)
-          )
-        );
-        return;
       }
       const origMsgCtrlId = event.message.getSegment('MSA')?.getField(2)?.toString();
       // If there is no message control ID, just return
@@ -152,6 +161,29 @@ export class Hl7Connection extends Hl7Base {
     outputBuffer.writeInt8(FS, replyBuffer.length + 1);
     outputBuffer.writeInt8(CR, replyBuffer.length + 2);
     this.socket.write(outputBuffer);
+  }
+
+  private async processResponseQueue(): Promise<void> {
+    if (this.responseQueueProcessing) {
+      return;
+    }
+
+    this.responseQueueProcessing = true;
+    while (this.responseQueue.length) {
+      if (this.messagesPerMin) {
+        const millisBetweenMsgs = ONE_MINUTE / (this.messagesPerMin as number);
+        const elapsedMillis = Date.now() - this.lastMessageDispatchedTime;
+        if (millisBetweenMsgs > elapsedMillis) {
+          await sleep(millisBetweenMsgs - elapsedMillis);
+        }
+      }
+      const messageEvent = this.responseQueue.shift() as Hl7MessageEvent;
+      if (messageEvent) {
+        this.dispatchEvent(messageEvent);
+      }
+      this.lastMessageDispatchedTime = Date.now();
+    }
+    this.responseQueueProcessing = false;
   }
 
   send(reply: Hl7Message): void {
@@ -276,5 +308,13 @@ export class Hl7Connection extends Hl7Base {
 
   getEnhancedMode(): boolean {
     return this.enhancedMode;
+  }
+
+  setMessagesPerMin(messagesPerMin: number | undefined): void {
+    this.messagesPerMin = messagesPerMin;
+  }
+
+  getMessagesPerMin(): number | undefined {
+    return this.messagesPerMin;
   }
 }
