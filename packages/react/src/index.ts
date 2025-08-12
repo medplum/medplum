@@ -73,6 +73,7 @@ export * from './QuantityDisplay/QuantityDisplay';
 export * from './QuantityInput/QuantityInput';
 export * from './QuestionnaireBuilder/QuestionnaireBuilder';
 export * from './QuestionnaireForm/QuestionnaireForm';
+export * from './QuestionnaireResponseDisplay/QuestionnaireResponseDisplay';
 export * from './RangeDisplay/RangeDisplay';
 export * from './RangeInput/RangeInput';
 export * from './RatioInput/RatioInput';
