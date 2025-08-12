@@ -245,18 +245,6 @@ jobs:
         with:
           name: medplum-code-coverage
           path: coverage/lcov.info
-      - name: Generate safe patch
-        # Generate a "safe" patch file for code coverage utilities
-        # For security reasons, we cannot checkout code from forks in a secure Github Action context
-        # So instead we generate a patch file with the changes in the PR
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7 }}
-        run: git diff origin/main -- . ':(exclude).github/' ':(exclude)scripts/' > changes.patch
-      - name: Upload safe patch
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 13 && matrix.redis-version == 7 }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-        with:
-          name: medplum-safe-patch
-          path: changes.patch
 
   e2e:
     name: Run e2e tests
