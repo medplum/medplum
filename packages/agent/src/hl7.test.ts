@@ -442,7 +442,7 @@ describe('HL7', () => {
     expect(response1.segments).toHaveLength(2);
     expect(response1.segments[1].name).toBe('MSA');
 
-    client.close();
+    await client.close();
     await app.stop();
     mockServer.stop();
   });
