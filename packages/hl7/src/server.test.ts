@@ -495,7 +495,7 @@ describe('HL7 Server', () => {
           )
         );
         const afterSend = Date.now();
-        responses.push({ response, sendTime: afterSend - beforeSend, messageNumber: i + 1 });
+        responses.push({ response, sendTime: afterSend - beforeSend });
       }
 
       const totalTimeMs = Date.now() - startTime;
@@ -518,7 +518,7 @@ describe('HL7 Server', () => {
 
       // Subsequent messages (2nd and 3rd) should respect the rate limit
       const subsequentMessages = responses.slice(1);
-      subsequentMessages.forEach(({ sendTime, messageNumber }) => {
+      subsequentMessages.forEach(({ sendTime }) => {
         expect(sendTime).toBeGreaterThanOrEqual(expectedMinIntervalMs - toleranceMs);
       });
 
