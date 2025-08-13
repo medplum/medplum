@@ -66,13 +66,15 @@ export function MessagesPage(): JSX.Element {
         }
       });
 
-      const threads: [Communication, Communication][] = searchResult.map((communication: Communication) => {
-        const lastCommunication = map.get(createReference(communication).reference);
-        if (lastCommunication) {
-          return [communication, lastCommunication];
-        }
-        return undefined;
-      }).filter((t): t is [Communication, Communication] => t !== undefined);
+      const threads: [Communication, Communication][] = searchResult
+        .map((communication: Communication) => {
+          const lastCommunication = map.get(createReference(communication).reference);
+          if (lastCommunication) {
+            return [communication, lastCommunication];
+          }
+          return undefined;
+        })
+        .filter((t): t is [Communication, Communication] => t !== undefined);
       setThreadMessages(threads);
     }
 
@@ -86,15 +88,15 @@ export function MessagesPage(): JSX.Element {
 
   useEffect(() => {
     async function fetchThread(): Promise<void> {
-    if (messageId) {
-      const thread = threadMessages.find((t) => t[0].id === messageId);
-      if (thread) {
-        setSelectedThread(thread[0]);
-      } else {
-        const communication: Communication = await medplum.readResource('Communication', messageId);
-        if (communication.partOf === undefined) {
-          setSelectedThread(communication);
-        }
+      if (messageId) {
+        const thread = threadMessages.find((t) => t[0].id === messageId);
+        if (thread) {
+          setSelectedThread(thread[0]);
+        } else {
+          const communication: Communication = await medplum.readResource('Communication', messageId);
+          if (communication.partOf === undefined) {
+            setSelectedThread(communication);
+          }
         }
       }
     }
@@ -180,10 +182,7 @@ export function MessagesPage(): JSX.Element {
                   </Stack>
                 ) : (
                   threadMessages.length > 0 && (
-                    <ChatList
-                      threads={threadMessages}
-                      selectedCommunication={selectedThread}
-                    />
+                    <ChatList threads={threadMessages} selectedCommunication={selectedThread} />
                   )
                 )}
               </ScrollArea>
