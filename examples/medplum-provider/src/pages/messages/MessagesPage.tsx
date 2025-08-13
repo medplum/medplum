@@ -1,6 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ScrollArea, Text, Paper, Stack, Divider, Flex, Button, ActionIcon, Menu, Skeleton, Box } from '@mantine/core';
+import {
+  ScrollArea,
+  Text,
+  Paper,
+  Stack,
+  Divider,
+  Flex,
+  Button,
+  ActionIcon,
+  Menu,
+  Skeleton,
+  Box,
+  ThemeIcon,
+  Center,
+} from '@mantine/core';
 import { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum, PatientSummary, ThreadChat } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
@@ -8,7 +22,7 @@ import { createReference, getReferenceString } from '@medplum/core';
 import { ChatList } from '../../components/messages/ChatList';
 import { NewTopicDialog } from '../../components/messages/NewTopicDialog';
 import { showErrorNotification } from '../../utils/notifications';
-import { IconChevronDown, IconPlus } from '@tabler/icons-react';
+import { IconChevronDown, IconMessageCircle, IconPlus } from '@tabler/icons-react';
 import classes from './MessagesPage.module.css';
 import { useDisclosure } from '@mantine/hooks';
 import cx from 'clsx';
@@ -66,13 +80,15 @@ export function MessagesPage(): JSX.Element {
         }
       });
 
-      const threads: [Communication, Communication][] = searchResult.map((communication: Communication) => {
-        const lastCommunication = map.get(createReference(communication).reference);
-        if (lastCommunication) {
-          return [communication, lastCommunication];
-        }
-        return undefined;
-      }).filter((t): t is [Communication, Communication] => t !== undefined);
+      const threads: [Communication, Communication][] = searchResult
+        .map((communication: Communication) => {
+          const lastCommunication = map.get(createReference(communication).reference);
+          if (lastCommunication) {
+            return [communication, lastCommunication];
+          }
+          return undefined;
+        })
+        .filter((t): t is [Communication, Communication] => t !== undefined);
       setThreadMessages(threads);
     }
 
@@ -86,16 +102,18 @@ export function MessagesPage(): JSX.Element {
 
   useEffect(() => {
     async function fetchThread(): Promise<void> {
-    if (messageId) {
-      const thread = threadMessages.find((t) => t[0].id === messageId);
-      if (thread) {
-        setSelectedThread(thread[0]);
+      if (messageId) {
+        const thread = threadMessages.find((t) => t[0].id === messageId);
+        if (thread) {
+          setSelectedThread(thread[0]);
+        } else {
+          const communication: Communication = await medplum.readResource('Communication', messageId);
+          if (communication.partOf === undefined) {
+            setSelectedThread(communication);
+          }
+        }
       } else {
-        const communication: Communication = await medplum.readResource('Communication', messageId);
-        if (communication.partOf === undefined) {
-          setSelectedThread(communication);
-        }
-        }
+        setSelectedThread(undefined);
       }
     }
 
@@ -180,77 +198,82 @@ export function MessagesPage(): JSX.Element {
                   </Stack>
                 ) : (
                   threadMessages.length > 0 && (
-                    <ChatList
-                      threads={threadMessages}
-                      selectedCommunication={selectedThread}
-                    />
+                    <ChatList threads={threadMessages} selectedCommunication={selectedThread} />
                   )
                 )}
               </ScrollArea>
             </Paper>
           </Flex>
 
-          {/* Main chat area */}
-          <Flex direction="column" w="50%" h="100%" className={classes.rightBorder}>
-            {selectedThread && (
-              <Paper h="100%">
-                <Stack h="100%" gap={0}>
-                  <Flex h={64} align="center" justify="space-between" p="md">
-                    <Text fw={800} truncate fz="lg">
-                      {selectedThread.topic?.text ?? 'Messages'}
-                    </Text>
+          {selectedThread ? (
+            <>
+              {/* Main chat area */}
+              <Flex direction="column" w="50%" h="100%" className={classes.rightBorder}>
+                {selectedThread && (
+                  <Paper h="100%">
+                    <Stack h="100%" gap={0}>
+                      <Flex h={64} align="center" justify="space-between" p="md">
+                        <Text fw={800} truncate fz="lg">
+                          {selectedThread.topic?.text ?? 'Messages'}
+                        </Text>
 
-                    <Menu position="bottom-end" shadow="md">
-                      <Menu.Target>
-                        <Button
-                          variant="light"
-                          color={getStatusColor(selectedThread.status)}
-                          rightSection={
-                            selectedThread.status === 'completed' ? undefined : <IconChevronDown size={16} />
-                          }
-                          radius="xl"
-                          size="sm"
-                        >
-                          {selectedThread.status
-                            .split('-')
-                            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                            .join(' ')}
-                        </Button>
-                      </Menu.Target>
+                        <Menu position="bottom-end" shadow="md">
+                          <Menu.Target>
+                            <Button
+                              variant="light"
+                              color={getStatusColor(selectedThread.status)}
+                              rightSection={
+                                selectedThread.status === 'completed' ? undefined : <IconChevronDown size={16} />
+                              }
+                              radius="xl"
+                              size="sm"
+                            >
+                              {selectedThread.status
+                                .split('-')
+                                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ')}
+                            </Button>
+                          </Menu.Target>
 
-                      {selectedThread.status !== 'completed' && (
-                        <>
-                          <Menu.Dropdown>
-                            <Menu.Item onClick={() => handleStatusChange('completed')}>Completed</Menu.Item>
-                            <Menu.Item onClick={() => handleStatusChange('stopped')}>Stopped</Menu.Item>
-                          </Menu.Dropdown>
-                        </>
-                      )}
-                    </Menu>
-                  </Flex>
-                  <Divider />
-                  <Flex direction="column" h="100%">
-                    <ThreadChat
-                      key={`${getReferenceString(selectedThread)}`}
-                      title={'Messages'}
-                      thread={selectedThread}
-                      excludeHeader={true}
-                      onMessageSent={handleMessageSent}
-                    />
-                  </Flex>
-                </Stack>
-              </Paper>
-            )}
-          </Flex>
+                          {selectedThread.status !== 'completed' && (
+                            <>
+                              <Menu.Dropdown>
+                                <Menu.Item onClick={() => handleStatusChange('completed')}>Completed</Menu.Item>
+                                <Menu.Item onClick={() => handleStatusChange('stopped')}>Stopped</Menu.Item>
+                              </Menu.Dropdown>
+                            </>
+                          )}
+                        </Menu>
+                      </Flex>
+                      <Divider />
+                      <Flex direction="column" h="100%">
+                        <ThreadChat
+                          key={`${getReferenceString(selectedThread)}`}
+                          title={'Messages'}
+                          thread={selectedThread}
+                          excludeHeader={true}
+                          onMessageSent={handleMessageSent}
+                        />
+                      </Flex>
+                    </Stack>
+                  </Paper>
+                )}
+              </Flex>
 
-          {/* Right sidebar - Patient summary */}
-          <Flex direction="column" w="25%" h="100%">
-            {selectedThread && (
-              <ScrollArea p={0} h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
-                <PatientSummary key={selectedThread.id} patient={selectedThread.subject as Reference<Patient>} />
-              </ScrollArea>
-            )}
-          </Flex>
+              {/* Right sidebar - Patient summary */}
+              <Flex direction="column" w="25%" h="100%">
+                {selectedThread && (
+                  <ScrollArea p={0} h="100%" scrollbarSize={10} type="hover" scrollHideDelay={250}>
+                    <PatientSummary key={selectedThread.id} patient={selectedThread.subject as Reference<Patient>} />
+                  </ScrollArea>
+                )}
+              </Flex>
+            </>
+          ) : (
+            <Flex direction="column" w="75%" h="100%">
+              <NoMessages />
+            </Flex>
+          )}
         </Flex>
       </div>
       <NewTopicDialog
@@ -261,6 +284,23 @@ export function MessagesPage(): JSX.Element {
         }}
       />
     </>
+  );
+}
+
+function NoMessages(): JSX.Element {
+  return (
+    <Center h="100%" w="100%">
+      <Stack align="center" gap="md">
+        <ThemeIcon size={64} variant="light" color="gray">
+          <IconMessageCircle size={32} />
+        </ThemeIcon>
+        <Stack align="center" gap="xs">
+          <Text size="sm" c="dimmed" ta="center">
+            Select a message from the list to view details
+          </Text>
+        </Stack>
+      </Stack>
+    </Center>
   );
 }
 
