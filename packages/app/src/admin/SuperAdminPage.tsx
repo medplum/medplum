@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 import {
   Button,
+  Checkbox,
+  Code,
   Divider,
   Grid,
+  InputWrapper,
   Modal,
   NativeSelect,
   NumberInput,
@@ -14,18 +17,20 @@ import {
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { forbidden, normalizeErrorString } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import { createReference, forbidden, getReferenceString, normalizeErrorString, WithId } from '@medplum/core';
+import { Parameters, ProjectMembership, Reference, Resource } from '@medplum/fhirtypes';
 import {
+  convertLocalToIso,
   DateTimeInput,
   Document,
   Form,
   FormSection,
   OperationOutcomeAlert,
-  convertLocalToIso,
+  ReferenceDisplay,
+  ReferenceInput,
   useMedplum,
 } from '@medplum/react';
-import { JSX, ReactNode, useState } from 'react';
+import { JSX, ReactNode, useEffect, useMemo, useState } from 'react';
 import { startAsyncJob } from './SuperAdminStartAsyncJob';
 
 export function SuperAdminPage(): JSX.Element {
@@ -56,6 +61,46 @@ export function SuperAdminPage(): JSX.Element {
 
   function reloadCron(): void {
     startAsyncJob(medplum, 'Reload Cron Resources', 'admin/super/reloadcron');
+  }
+
+  function explainSearch(formData: Record<string, any>): void {
+    if (!formData.query) {
+      showNotification({ color: 'red', message: 'Query is required', autoClose: false });
+      return;
+    }
+    console.log(formData);
+    formData.analyze = formData.analyze ?? false;
+    const onBehalfOfHeader: string | undefined = formData['onBehalfOfProjectMembership'];
+    delete formData['onBehalfOfProjectMembership'];
+
+    const toSubmit = {
+      query: formData.query,
+      analyze: formData.analyze,
+      format: 'text',
+    };
+
+    const headers: HeadersInit = {};
+    if (onBehalfOfHeader) {
+      headers['x-medplum-on-behalf-of'] = onBehalfOfHeader;
+    }
+    console.log(headers);
+    console.log(toSubmit);
+    medplum
+      .post('fhir/R4/$explain', toSubmit, undefined, { headers })
+      .then((params: Parameters) => {
+        setModalTitle('Database Explain');
+        const explainLine = params.parameter?.find((p) => p.name === 'explain')?.valueString;
+        const queryLine = params.parameter?.find((p) => p.name === 'query')?.valueString;
+        const parametersLine = params.parameter?.find((p) => p.name === 'parameters')?.valueString;
+        const lines = [queryLine, parametersLine, '\n', explainLine].join('\n');
+        setModalContent(
+          <Code block maw={'100%'}>
+            {lines}
+          </Code>
+        );
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function runPendingDataMigration(): void {
@@ -134,6 +179,68 @@ export function SuperAdminPage(): JSX.Element {
   function reconcileSchemaDiff(): void {
     startAsyncJob(medplum, 'Reconcile Schema Diff', 'admin/super/reconcile-db-schema-drift');
   }
+
+  const [explainProject, setExplainProject] = useState<Reference<Resource> | undefined>();
+  const [explainProfile, setExplainProfile] = useState<Reference<Resource> | undefined>();
+  const [explainMemberships, setExplainMemberships] = useState<WithId<ProjectMembership>[] | undefined>();
+
+  function onBehalfOfProjectChange(ref: Reference<Resource> | undefined): void {
+    console.log('onBehalfOfProjectChange', ref);
+    setExplainProject(ref);
+  }
+
+  function onOnBehalfOfProfileChange(ref: Reference<Resource> | undefined): void {
+    console.log('onOnBehalfOfProfileChange', ref);
+    setExplainProfile(ref);
+  }
+
+  const explainSearchCriteria: Record<string, string> | undefined = useMemo(() => {
+    if (!explainProject?.reference) {
+      return undefined;
+    }
+
+    // return undefined;
+    return { '_has:ProjectMembership:profile:project': explainProject.reference };
+  }, [explainProject]);
+
+  useEffect(() => {
+    if (!explainProfile?.reference && !explainProject?.reference) {
+      setExplainMemberships(undefined);
+      return;
+    }
+
+    medplum
+      .searchResources('ProjectMembership', {
+        profile: explainProfile?.reference,
+        project: explainProject?.reference,
+        _count: 20,
+      })
+      .then((memberships) => {
+        console.log(
+          'memberships',
+          memberships.map((m) => m.id)
+        );
+        setExplainMemberships(memberships);
+      })
+      .catch((err) => {
+        console.error(err);
+      });
+  }, [explainProfile, explainProject]);
+
+  // const [onBehalfOfProjectMembership, setOnBehalfOfProjectMembership] = useState<
+  //   Reference<ProjectMembership> | undefined
+  // >();
+
+  // function onBehalfOfChange(ref: Reference<Resource> | undefined): void {
+  //   console.log(ref);
+  //   setProjectMembershipProfile(ref);
+  // }
+
+  // const projectMembershipProfileRef: string | undefined =
+  //   explainProject?.reference?.startsWith('Practitioner') ||
+  //   explainProject?.reference?.startsWith('Patient')
+  //     ? explainProject?.reference
+  //     : undefined;
 
   return (
     <Document width={600}>
@@ -281,6 +388,58 @@ export function SuperAdminPage(): JSX.Element {
       <Form onSubmit={reloadCron}>
         <Stack>
           <Button type="submit">Reload Cron Resources</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Database Explain Search</Title>
+      <p>Runs an EXPLAIN query on the database to show the query plan for a search.</p>
+      <Form onSubmit={explainSearch}>
+        <Stack>
+          <TextInput name="query" label="Query" required />
+          <Checkbox name="analyze" label="Analyze" />
+          <InputWrapper label="On Behalf Of">
+            <Stack gap="sm">
+              <ReferenceInput
+                required
+                placeholder="Project"
+                targetTypes={['Project']}
+                name="onBehalfOfProject"
+                onChange={onBehalfOfProjectChange}
+              />
+              <ReferenceInput
+                required
+                placeholder=""
+                name="onBehalfOfProfile"
+                targetTypes={['Practitioner', 'Patient']}
+                onChange={onOnBehalfOfProfileChange}
+                searchCriteria={explainSearchCriteria}
+              />
+              {(explainMemberships?.length ?? 0) > 1 && (
+                <ReferenceInput
+                  required
+                  placeholder="ProjectMembership"
+                  name="onBehalfOfProjectMembership"
+                  targetTypes={['ProjectMembership']}
+                  searchCriteria={{
+                    profile: explainProfile?.reference ?? '',
+                    project: explainProject?.reference ?? '',
+                  }}
+                  // searchCode="profile:Practitioner.name:contains"
+                />
+              )}
+              {explainMemberships?.length === 1 && (
+                <>
+                  <input
+                    type="hidden"
+                    name="onBehalfOfProjectMembership"
+                    value={getReferenceString(explainMemberships[0])}
+                  />
+                  <ReferenceDisplay value={createReference(explainMemberships[0])} />
+                </>
+              )}
+            </Stack>
+          </InputWrapper>
+          <Button type="submit">Explain Search</Button>
         </Stack>
       </Form>
 

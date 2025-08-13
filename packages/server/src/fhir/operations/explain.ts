@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, parseSearchRequest } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition } from '@medplum/fhirtypes';
+import { OperationDefinition, Parameters, Project, Reference } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { escapeUnicode } from '../../migrations/migrate-utils';
 import { getSelectQueryForSearch } from '../search';
+import { SqlBuilder } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -27,6 +29,34 @@ const operation: OperationDefinition = {
       max: '1',
     },
     {
+      use: 'in',
+      name: 'analyze',
+      type: 'boolean',
+      min: 0,
+      max: '1',
+    },
+    {
+      use: 'in',
+      name: 'format',
+      type: 'string',
+      min: 0,
+      max: '1',
+    },
+    {
+      use: 'out',
+      name: 'query',
+      type: 'string',
+      min: 1,
+      max: '1',
+    },
+    {
+      use: 'out',
+      name: 'parameters',
+      type: 'string',
+      min: 1,
+      max: '1',
+    },
+    {
       use: 'out',
       name: 'explain',
       type: 'string',
@@ -38,18 +68,62 @@ const operation: OperationDefinition = {
 
 export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> {
   const { repo } = requireSuperAdmin();
-  const params = parseInputParameters<{ query: string }>(operation, req);
+  const params = parseInputParameters<{
+    query: string;
+    project?: Reference<Project>;
+    analyze?: boolean;
+    format?: 'text' | 'json';
+  }>(operation, req);
   const client = getDatabasePool(DatabaseMode.READER); // Send possibly-expensive EXPLAIN queries to reader instances
 
   const searchReq = parseSearchRequest(params.query);
-  const sql = getSelectQueryForSearch(repo, searchReq);
-  sql.explain = ['analyze', 'buffers', 'settings', 'format json'];
+  const selectQuery = getSelectQueryForSearch(repo, searchReq);
 
-  const result = await sql.execute(client);
-  const explain = result[0]['QUERY PLAN'][0];
+  const sqlBuilder = new SqlBuilder();
 
-  const output = buildOutputParameters(operation, {
-    explain: JSON.stringify(explain, (key, value) => (key.endsWith('Blocks') && value === 0 ? undefined : value), 0),
-  });
+  // Capture SQL query and parameters before adding EXPLAIN
+  selectQuery.buildSql(sqlBuilder);
+  const query = sqlBuilder.toString();
+  const parameters = sqlBuilder
+    .getValues()
+    .map((v, i) => `$${i + 1} = ${formatQueryParam(v)}`)
+    .join(', ');
+
+  selectQuery.explain = ['settings'];
+  if (params.analyze) {
+    selectQuery.explain.push('analyze', 'buffers');
+  }
+  if (params.format === 'json') {
+    selectQuery.explain.push('format json');
+  }
+
+  const result = await selectQuery.execute(client);
+
+  let output: Parameters;
+  if (params.format === 'json') {
+    const explain = result[0]['QUERY PLAN'][0];
+    output = buildOutputParameters(operation, {
+      explain: JSON.stringify(explain, (key, value) => (key.endsWith('Blocks') && value === 0 ? undefined : value), 0),
+    });
+  } else {
+    const lines = result.map((r) => r['QUERY PLAN']);
+    const explain = lines.join('\n');
+    output = buildOutputParameters(operation, {
+      query,
+      parameters,
+      explain,
+    });
+  }
   return [allOk, output];
+}
+
+/**
+ * This is probably an incomplete implementation, but is meant to approximate the output
+ * in auto_explain slow query entries
+ * */
+function formatQueryParam(param: any): string {
+  if (typeof param === 'number') {
+    return param.toString();
+  }
+  return `'${typeof param === 'string' ? escapeUnicode(param) : param}'`;
 }
