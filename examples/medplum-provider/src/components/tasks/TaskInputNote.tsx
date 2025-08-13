@@ -94,7 +94,6 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
 
   const saveQuestionnaireResponse = useDebouncedCallback(
     async (task: Task, response: QuestionnaireResponse): Promise<void> => {
-      console.log('saveQuestionnaireResponse', task, response);
       try {
         if (response.id) {
           await medplum.updateResource<QuestionnaireResponse>(response);
