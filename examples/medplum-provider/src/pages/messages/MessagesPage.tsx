@@ -4,7 +4,7 @@ import { ScrollArea, Text, Paper, Stack, Divider, Flex, Button, ActionIcon, Menu
 import { Communication, Patient, Reference } from '@medplum/fhirtypes';
 import { useMedplum, PatientSummary, ThreadChat } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
-import { getReferenceString } from '@medplum/core';
+import { createReference, getReferenceString } from '@medplum/core';
 import { ChatList } from '../../components/messages/ChatList';
 import { NewTopicDialog } from '../../components/messages/NewTopicDialog';
 import { showErrorNotification } from '../../utils/notifications';
@@ -12,32 +12,70 @@ import { IconChevronDown, IconPlus } from '@tabler/icons-react';
 import classes from './MessagesPage.module.css';
 import { useDisclosure } from '@mantine/hooks';
 import cx from 'clsx';
+import { useParams } from 'react-router';
 
 /**
  * Messages page that matches the Home page layout but without the patient list.
  * @returns A React component that displays the messages page.
  */
 export function MessagesPage(): JSX.Element {
+  const { messageId } = useParams();
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
   const [selectedThread, setSelectedThread] = useState<Communication | undefined>(undefined);
-  const [threadMessages, setThreadMessages] = useState<Communication[]>([]);
+  const [threadMessages, setThreadMessages] = useState<[Communication, Communication][]>([]);
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [status, setStatus] = useState<Communication['status']>('in-progress');
 
   useEffect(() => {
     async function fetchAllCommunications(): Promise<void> {
       const searchParams = new URLSearchParams();
-      searchParams.append('_sort', '-sent');
+      searchParams.append('_sort', '-_lastUpdated');
       searchParams.append('part-of:missing', 'true');
       searchParams.append('status', status);
       const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
-      setThreadMessages(searchResult);
 
-      if (searchResult.length > 0) {
-        setSelectedThread(searchResult[0]);
-      }
+      const allCommunications = await medplum.graphql(`
+        query {
+          CommunicationList(
+            _sort: "-sent"
+            _filter: "part-of eq ${searchResult.map((ref) => getReferenceString(ref)).join(' or part-of eq ')}"
+          ) {
+            id
+            partOf {
+              reference
+            }
+            sender {
+              display
+            }
+            payload {
+              contentString
+            }
+            status
+          }
+        }
+      `);
+
+      const map = new Map<string, Communication>();
+      allCommunications.data.CommunicationList.forEach((communication: Communication) => {
+        const partOfRef = communication.partOf?.[0]?.reference;
+        if (partOfRef) {
+          if (!map.has(partOfRef)) {
+            map.set(partOfRef, communication);
+          }
+        }
+      });
+
+      const threads: [Communication, Communication][] = searchResult.map((communication: Communication) => {
+        const lastCommunication = map.get(createReference(communication).reference);
+        if (lastCommunication) {
+          return [communication, lastCommunication];
+        }
+        return undefined;
+      }).filter((t): t is [Communication, Communication] => t !== undefined);
+      setThreadMessages(threads);
     }
+
     setLoading(true);
     fetchAllCommunications()
       .catch(showErrorNotification)
@@ -45,6 +83,24 @@ export function MessagesPage(): JSX.Element {
         setLoading(false);
       });
   }, [medplum, status]);
+
+  useEffect(() => {
+    async function fetchThread(): Promise<void> {
+    if (messageId) {
+      const thread = threadMessages.find((t) => t[0].id === messageId);
+      if (thread) {
+        setSelectedThread(thread[0]);
+      } else {
+        const communication: Communication = await medplum.readResource('Communication', messageId);
+        if (communication.partOf === undefined) {
+          setSelectedThread(communication);
+        }
+        }
+      }
+    }
+
+    fetchThread().catch(showErrorNotification);
+  }, [messageId, threadMessages, medplum]);
 
   const handleStatusChange = async (status: Communication['status']): Promise<void> => {
     if (!selectedThread) {
@@ -58,6 +114,16 @@ export function MessagesPage(): JSX.Element {
       setSelectedThread(updatedThread);
     } catch (error) {
       showErrorNotification(error);
+    }
+  };
+
+  const handleMessageSent = (message: Communication): void => {
+    if (!selectedThread) {
+      return;
+    }
+    const index = threadMessages.findIndex((m) => m[0].id === selectedThread.id);
+    if (index === -1) {
+      setThreadMessages([[selectedThread, message], ...threadMessages]);
     }
   };
 
@@ -115,9 +181,8 @@ export function MessagesPage(): JSX.Element {
                 ) : (
                   threadMessages.length > 0 && (
                     <ChatList
-                      communications={threadMessages}
+                      threads={threadMessages}
                       selectedCommunication={selectedThread}
-                      onClick={setSelectedThread}
                     />
                   )
                 )}
@@ -170,6 +235,7 @@ export function MessagesPage(): JSX.Element {
                       title={'Messages'}
                       thread={selectedThread}
                       excludeHeader={true}
+                      onMessageSent={handleMessageSent}
                     />
                   </Flex>
                 </Stack>
@@ -191,7 +257,6 @@ export function MessagesPage(): JSX.Element {
         opened={modalOpened}
         onClose={closeModal}
         onSubmit={(communication) => {
-          setThreadMessages([communication, ...threadMessages]);
           setSelectedThread(communication);
         }}
       />

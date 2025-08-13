@@ -75,7 +75,7 @@ export function App(): JSX.Element | null {
         },
         {
           title: 'Communication',
-          links: [{ icon: <IconMail />, label: 'Messages', href: '/messages' }],
+          links: [{ icon: <IconMail />, label: 'Messages', href: '/Message' }],
         },
         {
           title: 'Tasks',
@@ -136,7 +136,10 @@ export function App(): JSX.Element | null {
                 </Route>
                 <Route path="" element={<TimelineTab />} />
               </Route>
-              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/Message" element={<MessagesPage />} >
+                <Route index element={<MessagesPage />} />
+                <Route path=":messageId" element={<MessagesPage />} />
+              </Route>
               <Route path="/Task" element={<TasksPage />}>
                 <Route index element={<TaskSelectEmpty />} />
                 <Route path=":taskId" element={<TaskDetails />} />
