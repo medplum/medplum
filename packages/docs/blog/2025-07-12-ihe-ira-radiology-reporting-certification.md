@@ -1,6 +1,6 @@
 ---
 slug: ihe-ira-radiology-reporting
-title: "Medplum Certfies IRA"
+title: 'Medplum Certifies IRA'
 authors: ThatOneBro
 tags: [fhir-datastore, integration, auth, community, ai]
 ---
@@ -26,12 +26,12 @@ sequenceDiagram
     participant PACS as PACS System
     participant Hub as Medplum Hub
     participant Report as Reporting App
-    
+
     PACS->>Hub: Creates measurement on image
     Hub->>Hub: Processes DiagnosticReport-update event
     Hub->>Report: Sends measurement data
     Report->>Report: Displays measurement in report template
-    
+
     Note over PACS,Report: Real-time synchronization ensures measurement appears instantly in reporting application
 ```
 
@@ -47,14 +47,14 @@ graph TD
     B[Reporting App] --> H
     C[AI Tools] --> H
     D[Measurement Tools] --> H
-    
+
     H --> A
-    H --> B  
+    H --> B
     H --> C
     H --> D
-    
+
     H -.-> E1[DiagnosticReport-open, update, select, close]
-    
+
     style H fill:#e1f5fe
     style E1 fill:#f3e5f5
 ```
