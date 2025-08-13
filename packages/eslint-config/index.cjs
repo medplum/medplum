@@ -1,6 +1,6 @@
 module.exports = {
   parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint', 'header', 'react-refresh'],
+  plugins: ['@typescript-eslint', 'header', 'react-refresh', 'no-only-tests'],
   extends: [
     'eslint:recommended',
     'plugin:@typescript-eslint/recommended',
@@ -163,6 +163,9 @@ module.exports = {
         ' SPDX-License-Identifier: Apache-2.0',
       ],
     ],
+
+    // No Only Tests
+    'no-only-tests/no-only-tests': ['error', { fix: true }],
   },
   ignorePatterns: [
     'coverage',
