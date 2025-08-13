@@ -127,7 +127,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) =>
-            onChangeAnswer([{ valueDecimal: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber }])
+            onChangeAnswer(e.currentTarget.value === '' ? [] : [{ valueDecimal: e.currentTarget.valueAsNumber }])
           }
         />
       );
@@ -142,7 +142,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           required={props.required ?? item.required}
           defaultValue={defaultValue?.value}
           onChange={(e) =>
-            onChangeAnswer([{ valueInteger: e.currentTarget.value === '' ? undefined : e.currentTarget.valueAsNumber }])
+            onChangeAnswer(e.currentTarget.value === '' ? [] : [{ valueInteger: e.currentTarget.valueAsNumber }])
           }
         />
       );
@@ -191,7 +191,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           defaultValue={defaultValue?.value}
           onChange={(e) => {
             const value = e.currentTarget.value;
-            onChangeAnswer([{ valueString: value === '' ? undefined : value }]);
+            onChangeAnswer(value === '' ? [] : [{ valueString: value }]);
           }}
         />
       );
@@ -205,7 +205,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
           defaultValue={defaultValue?.value}
           onChange={(e) => {
             const value = e.currentTarget.value;
-            onChangeAnswer([{ valueString: value === '' ? undefined : value }]);
+            onChangeAnswer(value === '' ? [] : [{ valueString: value }]);
           }}
         />
       );
