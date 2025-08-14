@@ -45,6 +45,7 @@ export function addDefaults(config: MedplumServerConfig): ServerConfig {
   config.defaultAuthRateLimit ??= 160;
 
   config.defaultFhirQuota ??= 50_000;
+  config.defaultMaxUserWebSocketSubscriptions ??= 100;
   return config as ServerConfig;
 }
 
