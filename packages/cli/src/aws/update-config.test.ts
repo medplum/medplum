@@ -286,14 +286,14 @@ describe('update-config command', () => {
     expect(ssmClient).toHaveReceivedCommandWith(PutParameterCommand, {
       Name: `/medplum/${tag}/storageBaseUrl`,
       Value: 'https://storage.test.example.com/binary/',
-      Type: 'String',
+      Type: 'SecureString',
       Overwrite: true,
     });
     // Verify that appBaseUrl has protocol and trailing slash
     expect(ssmClient).toHaveReceivedCommandWith(PutParameterCommand, {
       Name: `/medplum/${tag}/appBaseUrl`,
       Value: 'https://app.test.example.com/',
-      Type: 'String',
+      Type: 'SecureString',
       Overwrite: true,
     });
   });
