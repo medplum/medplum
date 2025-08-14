@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import { allOk, parseSearchRequest } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { OperationDefinition, Parameters, Project, Reference } from '@medplum/fhirtypes';
+import { OperationDefinition, Project, Reference } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
@@ -79,9 +79,8 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
   const searchReq = parseSearchRequest(params.query);
   const selectQuery = getSelectQueryForSearch(repo, searchReq);
 
-  const sqlBuilder = new SqlBuilder();
-
   // Capture SQL query and parameters before adding EXPLAIN
+  const sqlBuilder = new SqlBuilder();
   selectQuery.buildSql(sqlBuilder);
   const query = sqlBuilder.toString();
   const parameters = sqlBuilder
@@ -99,21 +98,19 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
 
   const result = await selectQuery.execute(client);
 
-  let output: Parameters;
+  let explain: string;
   if (params.format === 'json') {
-    const explain = result[0]['QUERY PLAN'][0];
-    output = buildOutputParameters(operation, {
-      explain: JSON.stringify(explain, (key, value) => (key.endsWith('Blocks') && value === 0 ? undefined : value), 0),
-    });
+    explain = result[0]['QUERY PLAN'][0];
+    explain = JSON.stringify(explain, (key, value) => (key.endsWith('Blocks') && value === 0 ? undefined : value), 0);
   } else {
-    const lines = result.map((r) => r['QUERY PLAN']);
-    const explain = lines.join('\n');
-    output = buildOutputParameters(operation, {
-      query,
-      parameters,
-      explain,
-    });
+    explain = result.map((r) => r['QUERY PLAN']).join('\n');
   }
+
+  const output = buildOutputParameters(operation, {
+    query,
+    parameters,
+    explain,
+  });
   return [allOk, output];
 }
 

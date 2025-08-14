@@ -184,22 +184,11 @@ export function SuperAdminPage(): JSX.Element {
   const [explainProfile, setExplainProfile] = useState<Reference<Resource> | undefined>();
   const [explainMemberships, setExplainMemberships] = useState<WithId<ProjectMembership>[] | undefined>();
 
-  function onBehalfOfProjectChange(ref: Reference<Resource> | undefined): void {
-    console.log('onBehalfOfProjectChange', ref);
-    setExplainProject(ref);
-  }
-
-  function onOnBehalfOfProfileChange(ref: Reference<Resource> | undefined): void {
-    console.log('onOnBehalfOfProfileChange', ref);
-    setExplainProfile(ref);
-  }
-
-  const explainSearchCriteria: Record<string, string> | undefined = useMemo(() => {
+  const explainProfileSearchCriteria: Record<string, string> | undefined = useMemo(() => {
     if (!explainProject?.reference) {
       return undefined;
     }
 
-    // return undefined;
     return { '_has:ProjectMembership:profile:project': explainProject.reference };
   }, [explainProject]);
 
@@ -215,32 +204,11 @@ export function SuperAdminPage(): JSX.Element {
         project: explainProject?.reference,
         _count: 20,
       })
-      .then((memberships) => {
-        console.log(
-          'memberships',
-          memberships.map((m) => m.id)
-        );
-        setExplainMemberships(memberships);
-      })
+      .then(setExplainMemberships)
       .catch((err) => {
         console.error(err);
       });
   }, [explainProfile, explainProject]);
-
-  // const [onBehalfOfProjectMembership, setOnBehalfOfProjectMembership] = useState<
-  //   Reference<ProjectMembership> | undefined
-  // >();
-
-  // function onBehalfOfChange(ref: Reference<Resource> | undefined): void {
-  //   console.log(ref);
-  //   setProjectMembershipProfile(ref);
-  // }
-
-  // const projectMembershipProfileRef: string | undefined =
-  //   explainProject?.reference?.startsWith('Practitioner') ||
-  //   explainProject?.reference?.startsWith('Patient')
-  //     ? explainProject?.reference
-  //     : undefined;
 
   return (
     <Document width={600}>
@@ -404,15 +372,15 @@ export function SuperAdminPage(): JSX.Element {
                 placeholder="Project"
                 targetTypes={['Project']}
                 name="onBehalfOfProject"
-                onChange={onBehalfOfProjectChange}
+                onChange={setExplainProject}
               />
               <ReferenceInput
                 required
                 placeholder=""
                 name="onBehalfOfProfile"
                 targetTypes={['Practitioner', 'Patient']}
-                onChange={onOnBehalfOfProfileChange}
-                searchCriteria={explainSearchCriteria}
+                onChange={setExplainProfile}
+                searchCriteria={explainProfileSearchCriteria}
               />
               {(explainMemberships?.length ?? 0) > 1 && (
                 <ReferenceInput
@@ -424,7 +392,6 @@ export function SuperAdminPage(): JSX.Element {
                     profile: explainProfile?.reference ?? '',
                     project: explainProject?.reference ?? '',
                   }}
-                  // searchCode="profile:Practitioner.name:contains"
                 />
               )}
               {explainMemberships?.length === 1 && (
