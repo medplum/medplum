@@ -37,7 +37,9 @@ function TestComponent(): JSX.Element {
   };
 
   const getMedicationText = (): string => {
-    if (!state.selectedMedication) {return 'none';}
+    if (!state.selectedMedication) {
+      return 'none';
+    }
     if ('text' in state.selectedMedication) {
       return state.selectedMedication.text || 'none';
     }
