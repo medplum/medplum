@@ -1,54 +1,72 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { MedicationKnowledge } from '@medplum/fhirtypes';
+import { CodeableConcept, Coding, MedicationKnowledge } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
 import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT } from './common';
+import { isCodeableConcept } from '@medplum/core';
 
 export interface DoseSpotClinicFormularyReturn {
   state: DoseSpotClinicFormularyState;
   /**
    * Search for DoseSpot Medications and returns array of temporary MedicationKnowledge objects that are not yet saved to the FHIR server
    */
-  readonly searchMedications: (searchTerm: string) => Promise<MedicationKnowledge[]>;
+  readonly searchMedications: (searchTerm: string) => Promise<CodeableConcept[]>;
   /**
    * Set the currently selected medication
    */
-  readonly setSelectedMedication: (medication: MedicationKnowledge | undefined) => void;
+  readonly setSelectedMedication: (medication: CodeableConcept | Coding | undefined) => void;
   /**
    * Set the directions for the currently selected medication
    */
-  readonly setDirections: (directions: string | undefined) => void;
+  readonly setSelectedMedicationDirections: (directions: string | undefined) => void;
   /**
-   * Add a DoseSpot Medication to the Clinic's favorites and returns the MedicationKnowledge object that was added
+   * Save a DoseSpot Medication to the Clinic's favorites and returns the MedicationKnowledge object that was saved
    */
-  readonly addFavoriteMedication: () => Promise<MedicationKnowledge>;
+  readonly saveFavoriteMedication: () => Promise<MedicationKnowledge>;
   /**
-   * Helper function to get the name of a medication
+   * Clear the state
    */
-  readonly getMedicationName: (medication: MedicationKnowledge | undefined) => string;
+  readonly clear: () => void;
 }
 
 export interface DoseSpotClinicFormularyState {
-  selectedMedication: MedicationKnowledge | undefined;
+  selectedMedication: CodeableConcept | Coding | undefined;
   directions: string | undefined;
 }
 
 export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
   const [directions, privateSetDirections] = useState<string | undefined>(undefined);
-  const [selectedMedication, privateSetSelectedMedication] = useState<MedicationKnowledge | undefined>(undefined);
+  const [selectedMedication, privateSetSelectedMedication] = useState<CodeableConcept | Coding | undefined>(undefined);
   const medplum = useMedplum();
 
   const state: DoseSpotClinicFormularyState = { selectedMedication, directions };
 
-  const addFavoriteMedication = useCallback(async (): Promise<MedicationKnowledge> => {
+  const saveFavoriteMedication = useCallback(async (): Promise<MedicationKnowledge> => {
     if (!selectedMedication) {
       throw new Error('Must select a medication before adding a favorite medication');
     }
 
+    // Create the code property based on the type of selectedMedication
+    let code: CodeableConcept;
+    
+    if (isCodeableConcept(selectedMedication)) {
+      // selectedMedication is already a CodeableConcept
+      code = {
+        text: selectedMedication.text,
+        coding: selectedMedication.coding,
+      };
+    } else {
+      // selectedMedication is a Coding, wrap it in a CodeableConcept
+      code = {
+        coding: [selectedMedication],
+      };
+    }
+
     //Add the directions to the medicationKnowledge object
     const medicationKnowledgeWithDirections = {
-      ...selectedMedication,
+      resourceType: 'MedicationKnowledge',
+      code,
       administrationGuidelines: [
         {
           dosage: [
@@ -75,30 +93,31 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
   }, [selectedMedication, directions, medplum]);
 
   const searchMedications = useCallback(
-    async (searchTerm: string): Promise<MedicationKnowledge[]> => {
-      return (await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm })) as MedicationKnowledge[];
+    async (searchTerm: string): Promise<CodeableConcept[]> => {
+      return (await medplum.executeBot(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: searchTerm })) as CodeableConcept[];
     },
     [medplum]
   );
 
-  const setDirections = (directions: string | undefined): void => {
+  const setSelectedMedicationDirections = (directions: string | undefined): void => {
     privateSetDirections(directions);
   };
 
-  const setSelectedMedication = (medication: MedicationKnowledge | undefined): void => {
+  const setSelectedMedication = (medication: CodeableConcept | Coding | undefined): void => {
     privateSetSelectedMedication(medication);
   };
 
-  const getMedicationName = (medication: MedicationKnowledge | undefined): string => {
-    return medication?.code?.text || '';
+  const clear = (): void => {
+    privateSetSelectedMedication(undefined);
+    privateSetDirections(undefined);
   };
 
   return {
     state,
     searchMedications,
-    addFavoriteMedication,
-    setDirections,
     setSelectedMedication,
-    getMedicationName,
+    setSelectedMedicationDirections,
+    saveFavoriteMedication,
+    clear,
   };
 }

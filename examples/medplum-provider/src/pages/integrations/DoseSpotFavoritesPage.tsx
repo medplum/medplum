@@ -17,9 +17,9 @@ import {
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { DOSESPOT_CLINIC_FAVORITE_ID_SYSTEM, useDoseSpotClinicFormulary } from '@medplum/dosespot-react';
-import { MedicationKnowledge } from '@medplum/fhirtypes';
+import { CodeableConcept, MedicationKnowledge } from '@medplum/fhirtypes';
 import { IconPlus } from '@tabler/icons-react';
-import { formatSearchQuery, normalizeErrorString } from '@medplum/core';
+import { formatSearchQuery, isCodeableConcept, normalizeErrorString } from '@medplum/core';
 import { AsyncAutocomplete, useMedplum } from '@medplum/react';
 import { FavoriteMedicationsTable } from './FavoriteMedicationsTable';
 import { showErrorNotification } from '../../utils/notifications';
@@ -37,8 +37,14 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
   const [loadingFavorites, setLoadingFavorites] = useState(true);
   const [clinicFavoriteMedications, setClinicFavoriteMedications] = useState<MedicationKnowledge[] | undefined>();
 
-  const { state, addFavoriteMedication, searchMedications, setDirections, setSelectedMedication, getMedicationName } =
-    useDoseSpotClinicFormulary();
+  const {
+    state,
+    saveFavoriteMedication,
+    searchMedications,
+    setSelectedMedicationDirections,
+    setSelectedMedication,
+    clear,
+  } = useDoseSpotClinicFormulary();
   const medplum = useMedplum();
 
   // Load favorite MedicationKnowledge resources that have a DoseSpot favorite id system
@@ -71,7 +77,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
   const handleAddFavoriteMedication = async (): Promise<void> => {
     try {
       setLoading(true);
-      const created = await addFavoriteMedication();
+      const created = await saveFavoriteMedication();
       // Optimistically update local favorites list
       setClinicFavoriteMedications((prev) => [created, ...(prev || [])]);
       setModalOpened(false);
@@ -87,17 +93,16 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
         color: 'red',
       });
     } finally {
-      setSelectedMedication(undefined);
-      setDirections(undefined);
+      clear();
       setLoading(false);
     }
   };
 
   const toOption = (
-    medication: MedicationKnowledge
-  ): { value: string; label: string; resource: MedicationKnowledge } => ({
+    medication: CodeableConcept
+  ): { value: string; label: string; resource: CodeableConcept } => ({
     value: uuidv4(),
-    label: medication.code?.text || 'Unknown Medication',
+    label: medication.text || 'Unknown Medication',
     resource: medication,
   });
 
@@ -122,26 +127,25 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
         opened={modalOpened}
         onClose={() => {
           setModalOpened(false);
-          setSelectedMedication(undefined);
-          setDirections(undefined);
+          clear();
         }}
         title="Medication"
         size="lg"
         withCloseButton
       >
         <Box>
-          <AsyncAutocomplete<MedicationKnowledge>
+          <AsyncAutocomplete<CodeableConcept>
             placeholder="Search medications..."
             loadOptions={searchMedications}
             toOption={toOption}
             itemComponent={({ resource }) => (
               <Group gap="sm">
-                <Text size="sm">{getMedicationName(resource)}</Text>
+                <Text size="sm">{resource.text}</Text>
               </Group>
             )}
             onChange={(medications) => {
               if (medications.length > 0) {
-                setSelectedMedication(medications[0]);
+                setSelectedMedication(medications[0] as CodeableConcept);
               } else {
                 setSelectedMedication(undefined);
               }
@@ -152,23 +156,15 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
           />
 
           {/* After selecting a medication, show the medication info with followup input items */}
-          {state.selectedMedication && (
+          {state.selectedMedication && isCodeableConcept(state.selectedMedication) && (
             <Stack gap="md" mt="lg">
               <Divider />
-              <Box>
-                {state.selectedMedication.code?.text && (
-                  <Text size="sm" c="dimmed">
-                    Medication: {state.selectedMedication?.code?.text}
-                  </Text>
-                )}
-              </Box>
-
               {/* Prescription Form */}
               <TextInput
                 label="Directions"
                 placeholder="e.g., Take 1 tablet by mouth daily"
                 value={state.directions}
-                onChange={(e) => setDirections(e.target.value)}
+                onChange={(e) => setSelectedMedicationDirections(e.target.value)}
                 required
               />
             </Stack>

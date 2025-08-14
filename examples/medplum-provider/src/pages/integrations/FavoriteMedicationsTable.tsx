@@ -4,6 +4,7 @@ import React from 'react';
 import { Table, Card, Text, LoadingOverlay } from '@mantine/core';
 import { MedicationKnowledge } from '@medplum/fhirtypes';
 import { getCodeBySystem, NDC, RXNORM } from '@medplum/core';
+import { getMedicationName } from '@medplum/dosespot-react';
 
 interface FavoriteMedicationsTableProps {
   clinicFavoriteMedications: MedicationKnowledge[] | undefined;
@@ -55,7 +56,7 @@ export function FavoriteMedicationsTable({
         {clinicFavoriteMedications.map((clinicFavoriteMedication, index) => (
           <Table.Tr key={clinicFavoriteMedication.id || index}>
             <Table.Td>
-              <Text fw={500}>{clinicFavoriteMedication.code?.text || 'Unknown'}</Text>
+              <Text fw={500}>{getMedicationName(clinicFavoriteMedication)}</Text>
             </Table.Td>
             <Table.Td>
               {clinicFavoriteMedication.code ? getCodeBySystem(clinicFavoriteMedication.code, NDC) : ''}

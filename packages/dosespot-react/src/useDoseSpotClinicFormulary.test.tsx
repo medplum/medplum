@@ -1,38 +1,62 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Bundle, MedicationKnowledge } from '@medplum/fhirtypes';
+import { CodeableConcept, Coding } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, renderHook } from '@testing-library/react';
 import { JSX } from 'react';
 import { vi } from 'vitest';
 import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT } from './common';
 import { useDoseSpotClinicFormulary } from './useDoseSpotClinicFormulary';
 
 function TestComponent(): JSX.Element {
-  const { state, searchMedications, addFavoriteMedication, setDirections, setSelectedMedication, getMedicationName } =
+  const { state, searchMedications, saveFavoriteMedication, setSelectedMedicationDirections, setSelectedMedication } =
     useDoseSpotClinicFormulary();
 
   const handleSetMedication = (): void => {
-    const testMedication: MedicationKnowledge = {
-      resourceType: 'MedicationKnowledge',
-      id: 'test',
-      code: {
-        text: 'Test Medication',
-      },
+    const testMedication: CodeableConcept = {
+      text: 'Test Medication',
+      coding: [
+        {
+          system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+          code: 'test-med',
+          display: 'Test Medication',
+        },
+      ],
     };
     setSelectedMedication(testMedication);
   };
 
+  const handleSetCodingMedication = (): void => {
+    const testCoding: Coding = {
+      system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+      code: '1191',
+      display: 'Aspirin 325 MG Oral Tablet',
+    };
+    setSelectedMedication(testCoding);
+  };
+
+  const getMedicationText = (): string => {
+    if (!state.selectedMedication) return 'none';
+    if ('text' in state.selectedMedication) {
+      return state.selectedMedication.text || 'none';
+    }
+    if ('display' in state.selectedMedication) {
+      return state.selectedMedication.display || 'none';
+    }
+    return 'none';
+  };
+
   return (
     <div>
-      <div>Selected: {state.selectedMedication?.code?.text || 'none'}</div>
+      <div>Selected: {getMedicationText()}</div>
       <div>Directions: {state.directions || 'none'}</div>
       <button onClick={() => searchMedications('aspirin')}>Search</button>
-      <button onClick={() => addFavoriteMedication()}>Add Favorite</button>
-      <button onClick={() => setDirections('Take 1 daily')}>Set Directions</button>
-      <button onClick={handleSetMedication}>Set Medication</button>
-      <div>Name: {getMedicationName(state.selectedMedication)}</div>
+      <button onClick={() => saveFavoriteMedication()}>Add Favorite</button>
+      <button onClick={() => setSelectedMedicationDirections('Take 1 daily')}>Set Directions</button>
+      <button onClick={handleSetMedication}>Set CodeableConcept Medication</button>
+      <button onClick={handleSetCodingMedication}>Set Coding Medication</button>
+      <div>Name: {getMedicationText()}</div>
     </div>
   );
 }
@@ -60,31 +84,20 @@ describe('useDoseSpotClinicFormulary', () => {
 
   test('searchMedications returns medications successfully', async () => {
     const medplum = new MockClient();
-    const mockBundle: Bundle = {
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [
-        {
-          resource: {
-            resourceType: 'MedicationKnowledge',
-            id: 'med-1',
-            code: {
-              text: 'Aspirin 325mg',
-            },
-            ingredient: [
-              {
-                strength: {
-                  numerator: { value: 325, unit: 'mg' },
-                  denominator: { value: 1, unit: 'tablet' },
-                },
-              },
-            ],
-          } as MedicationKnowledge,
-        },
-      ],
-    };
+    const mockMedications: CodeableConcept[] = [
+      {
+        text: 'Aspirin 325mg',
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '1191',
+            display: 'Aspirin 325 MG Oral Tablet',
+          },
+        ],
+      },
+    ];
 
-    medplum.executeBot = vi.fn().mockResolvedValue(mockBundle);
+    medplum.executeBot = vi.fn().mockResolvedValue(mockMedications);
 
     await act(async () => {
       render(
@@ -103,13 +116,9 @@ describe('useDoseSpotClinicFormulary', () => {
 
   test('searchMedications handles empty results', async () => {
     const medplum = new MockClient();
-    const mockBundle: Bundle = {
-      resourceType: 'Bundle',
-      type: 'searchset',
-      entry: [],
-    };
+    const mockMedications: CodeableConcept[] = [];
 
-    medplum.executeBot = vi.fn().mockResolvedValue(mockBundle);
+    medplum.executeBot = vi.fn().mockResolvedValue(mockMedications);
 
     await act(async () => {
       render(
@@ -126,14 +135,20 @@ describe('useDoseSpotClinicFormulary', () => {
     expect(medplum.executeBot).toHaveBeenCalledWith(DOSESPOT_SEARCH_MEDICATIONS_BOT, { name: 'aspirin' });
   });
 
-  test('addFavoriteMedication adds medication with directions', async () => {
+  test('saveFavoriteMedication adds medication with directions', async () => {
     const medplum = new MockClient();
 
     const expectedMedicationWithDirections = {
       resourceType: 'MedicationKnowledge',
-      id: 'test',
       code: {
         text: 'Test Medication',
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: 'test-med',
+            display: 'Test Medication',
+          },
+        ],
       },
       administrationGuidelines: [
         {
@@ -174,7 +189,7 @@ describe('useDoseSpotClinicFormulary', () => {
 
     // Set medication
     await act(async () => {
-      screen.getByText('Set Medication').click();
+      screen.getByText('Set CodeableConcept Medication').click();
     });
 
     // Add favorite
@@ -188,14 +203,20 @@ describe('useDoseSpotClinicFormulary', () => {
     );
   });
 
-  test('addFavoriteMedication handles empty directions', async () => {
+  test('saveFavoriteMedication handles empty directions', async () => {
     const medplum = new MockClient();
 
     const expectedMedicationWithDirections = {
       resourceType: 'MedicationKnowledge',
-      id: 'test',
       code: {
         text: 'Test Medication',
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: 'test-med',
+            display: 'Test Medication',
+          },
+        ],
       },
       administrationGuidelines: [
         {
@@ -231,7 +252,7 @@ describe('useDoseSpotClinicFormulary', () => {
 
     // Set medication without directions
     await act(async () => {
-      screen.getByText('Set Medication').click();
+      screen.getByText('Set CodeableConcept Medication').click();
     });
 
     // Add favorite
@@ -245,7 +266,74 @@ describe('useDoseSpotClinicFormulary', () => {
     );
   });
 
-  test('setDirections updates state', async () => {
+  test('saveFavoriteMedication with Coding object creates proper structure', async () => {
+    const medplum = new MockClient();
+
+    const expectedMedicationWithDirections = {
+      resourceType: 'MedicationKnowledge',
+      code: {
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '1191',
+            display: 'Aspirin 325 MG Oral Tablet',
+          },
+        ],
+      },
+      administrationGuidelines: [
+        {
+          dosage: [
+            {
+              dosage: [
+                {
+                  patientInstruction: 'Take 1 daily',
+                },
+              ],
+              type: {
+                coding: [
+                  {
+                    system: 'https://dosespot.com/patient-instructions',
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ],
+    };
+
+    medplum.executeBot = vi.fn().mockResolvedValue(expectedMedicationWithDirections);
+
+    await act(async () => {
+      render(
+        <MedplumProvider medplum={medplum}>
+          <TestComponent />
+        </MedplumProvider>
+      );
+    });
+
+    // Set directions first
+    await act(async () => {
+      screen.getByText('Set Directions').click();
+    });
+
+    // Set Coding medication
+    await act(async () => {
+      screen.getByText('Set Coding Medication').click();
+    });
+
+    // Add favorite
+    await act(async () => {
+      screen.getByText('Add Favorite').click();
+    });
+
+    expect(medplum.executeBot).toHaveBeenCalledWith(
+      DOSESPOT_ADD_FAVORITE_MEDICATION_BOT,
+      expectedMedicationWithDirections
+    );
+  });
+
+  test('setSelectedMedicationDirections updates state', async () => {
     const medplum = new MockClient();
     medplum.executeBot = vi.fn();
 
@@ -264,7 +352,7 @@ describe('useDoseSpotClinicFormulary', () => {
     expect(screen.getByText('Directions: Take 1 daily')).toBeDefined();
   });
 
-  test('setSelectedMedication updates state', async () => {
+  test('setSelectedMedication with CodeableConcept updates state', async () => {
     const medplum = new MockClient();
     medplum.executeBot = vi.fn();
 
@@ -277,13 +365,13 @@ describe('useDoseSpotClinicFormulary', () => {
     });
 
     await act(async () => {
-      screen.getByText('Set Medication').click();
+      screen.getByText('Set CodeableConcept Medication').click();
     });
 
     expect(screen.getByText('Selected: Test Medication')).toBeDefined();
   });
 
-  test('getMedicationName returns medication name', async () => {
+  test('setSelectedMedication with Coding updates state', async () => {
     const medplum = new MockClient();
     medplum.executeBot = vi.fn();
 
@@ -296,9 +384,40 @@ describe('useDoseSpotClinicFormulary', () => {
     });
 
     await act(async () => {
-      screen.getByText('Set Medication').click();
+      screen.getByText('Set Coding Medication').click();
     });
 
-    expect(screen.getByText('Name: Test Medication')).toBeDefined();
+    expect(screen.getByText('Selected: Aspirin 325 MG Oral Tablet')).toBeDefined();
+  });
+
+  test('clear resets state', async () => {
+    const medplum = new MockClient();
+    medplum.executeBot = vi.fn();
+
+    const { result } = renderHook(() => useDoseSpotClinicFormulary(), {
+      wrapper: ({ children }) => (
+        <MedplumProvider medplum={medplum}>
+          {children}
+        </MedplumProvider>
+      ),
+    });
+
+    // Set some state first
+    act(() => {
+      result.current.setSelectedMedication({ text: 'Test Medication' });
+      result.current.setSelectedMedicationDirections('Take 1 daily');
+    });
+
+    // Verify state is set
+    expect(result.current.state.directions).toBe('Take 1 daily');
+
+    // Clear state
+    act(() => {
+      result.current.clear();
+    });
+
+    // Verify state is cleared
+    expect(result.current.state.selectedMedication).toBeUndefined();
+    expect(result.current.state.directions).toBeUndefined();
   });
 });
