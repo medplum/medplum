@@ -8,7 +8,7 @@ import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT }
 export interface DoseSpotClinicFormularyReturn {
   state: DoseSpotClinicFormularyState;
   /**
-   * Search for DoseSpot Medications and returns array of synthetic MedicationKnowledge objects that are not yet saved to the FHIR server
+   * Search for DoseSpot Medications and returns array of temporary MedicationKnowledge objects that are not yet saved to the FHIR server
    */
   readonly searchMedications: (searchTerm: string) => Promise<MedicationKnowledge[]>;
   /**
