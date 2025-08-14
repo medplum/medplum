@@ -3,7 +3,7 @@
 import { CodeableConcept, Coding } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen, renderHook } from '@testing-library/react';
+import { act, render, renderHook, screen } from '@testing-library/react';
 import { JSX } from 'react';
 import { vi } from 'vitest';
 import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT } from './common';
@@ -37,7 +37,7 @@ function TestComponent(): JSX.Element {
   };
 
   const getMedicationText = (): string => {
-    if (!state.selectedMedication) return 'none';
+    if (!state.selectedMedication) {return 'none';}
     if ('text' in state.selectedMedication) {
       return state.selectedMedication.text || 'none';
     }
@@ -395,11 +395,7 @@ describe('useDoseSpotClinicFormulary', () => {
     medplum.executeBot = vi.fn();
 
     const { result } = renderHook(() => useDoseSpotClinicFormulary(), {
-      wrapper: ({ children }) => (
-        <MedplumProvider medplum={medplum}>
-          {children}
-        </MedplumProvider>
-      ),
+      wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
     });
 
     // Set some state first

@@ -98,9 +98,7 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
     }
   };
 
-  const toOption = (
-    medication: CodeableConcept
-  ): { value: string; label: string; resource: CodeableConcept } => ({
+  const toOption = (medication: CodeableConcept): { value: string; label: string; resource: CodeableConcept } => ({
     value: uuidv4(),
     label: medication.text || 'Unknown Medication',
     resource: medication,
