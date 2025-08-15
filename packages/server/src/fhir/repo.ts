@@ -745,7 +745,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (projectId) {
       resultMeta.project = projectId;
     }
-    const accounts = await this.getAccounts(existing, updated, options?.inheritAccounts);
+    const accounts = await this.getAccounts(existing, updated);
     if (accounts) {
       resultMeta.account = accounts[0];
       resultMeta.accounts = accounts;
@@ -1879,16 +1879,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Otherwise uses the current context profile.
    * @param existing - Current (soon to be previous) resource, if one exists.
    * @param updated - The incoming updated resource.
-   * @param inheritAccounts - If true, inherit accounts from the parent resource.
    * @returns The account values.
    */
   private async getAccounts(
     existing: WithId<Resource> | undefined,
-    updated: WithId<Resource>,
-    inheritAccounts?: boolean
+    updated: WithId<Resource>
   ): Promise<Reference[] | undefined> {
-    if (updated.meta && this.canWriteAccount() && !inheritAccounts) {
-      // If the user specifies accounts, and they have permission, and inheritAccounts is false, then use the provided accounts.
+    if (updated.meta && this.canWriteAccount()) {
+      // If the user specifies accounts, and they have permission, then use the provided accounts.
       const updatedAccounts = this.extractAccountReferences(updated.meta);
       return updatedAccounts;
     }
@@ -2003,10 +2001,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource.
    * @returns The access policy permitting the interaction, or undefined if not permitted.
    */
-  private canPerformInteraction(
-    interaction: AccessPolicyInteraction,
-    resource: Resource
-  ): AccessPolicyResource | undefined {
+  canPerformInteraction(interaction: AccessPolicyInteraction, resource: Resource): AccessPolicyResource | undefined {
     if (!this.isSuperAdmin()) {
       // Only Super Admins can access server-critical resource types
       if (protectedResourceTypes.includes(resource.resourceType)) {

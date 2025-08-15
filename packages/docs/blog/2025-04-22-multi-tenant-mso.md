@@ -122,6 +122,10 @@ const response = await medplum.post('/fhir/R4/Patient/123/$set-accounts', {
         reference: 'Organization/456',
       },
     },
+    {
+      name: 'propagate',
+      valueBoolean: true,
+    },
   ],
 });
 ```
@@ -227,6 +231,10 @@ const response = await medplum.post('/fhir/R4/Patient/123/$set-accounts', {
       valueReference: {
         reference: 'Practitioner/789',
       },
+    },
+    {
+      name: 'propagate',
+      valueBoolean: true,
     },
   ],
 });
