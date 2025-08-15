@@ -16,7 +16,7 @@ describe('OAuth2 register', () => {
         id: 'example',
         name: 'Example Client',
         secret: 'my-secret',
-        redirectUri: 'https://example.com/callback',
+        redirectUris: ['https://example.com/callback'],
       },
     ];
 

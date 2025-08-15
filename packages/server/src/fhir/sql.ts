@@ -670,6 +670,13 @@ export class SelectQuery extends BaseQuery implements Expression {
     return this;
   }
 
+  addColumns(columns: Column[]): this {
+    for (const col of columns) {
+      this.columns.push(new Column(this.tableName, col.columnName));
+    }
+    return this;
+  }
+
   getNextJoinAlias(): string {
     this.joinCount++;
     return `T${this.joinCount}`;

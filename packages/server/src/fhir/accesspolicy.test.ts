@@ -766,7 +766,7 @@ describe('AccessPolicy', () => {
       const clientApplication = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         secret: 'foo',
-        redirectUri: 'https://example.com/',
+        redirectUris: ['https://example.com/'],
         meta: {
           account: {
             reference: account,
@@ -873,7 +873,7 @@ describe('AccessPolicy', () => {
       const clientApplication = await systemRepo.createResource<ClientApplication>({
         resourceType: 'ClientApplication',
         secret: 'foo',
-        redirectUri: 'https://example.com/',
+        redirectUris: ['https://example.com/'],
       });
       expect(clientApplication).toBeDefined();
 
