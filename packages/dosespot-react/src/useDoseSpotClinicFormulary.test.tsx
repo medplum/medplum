@@ -36,29 +36,18 @@ function TestComponent(): JSX.Element {
     setSelectedMedication(testCoding);
   };
 
-  const getMedicationText = (): string => {
-    if (!state.selectedMedication) {
-      return 'none';
-    }
-    if ('text' in state.selectedMedication) {
-      return state.selectedMedication.text || 'none';
-    }
-    if ('display' in state.selectedMedication) {
-      return state.selectedMedication.display || 'none';
-    }
-    return 'none';
-  };
+
 
   return (
     <div>
-      <div>Selected: {getMedicationText()}</div>
+      <div>Selected: {state.selectedMedication?.text || 'none'}</div>
       <div>Directions: {state.directions || 'none'}</div>
       <button onClick={() => searchMedications('aspirin')}>Search</button>
       <button onClick={() => saveFavoriteMedication()}>Add Favorite</button>
       <button onClick={() => setSelectedMedicationDirections('Take 1 daily')}>Set Directions</button>
       <button onClick={handleSetMedication}>Set CodeableConcept Medication</button>
       <button onClick={handleSetCodingMedication}>Set Coding Medication</button>
-      <div>Name: {getMedicationText()}</div>
+      <div>Name: {state.selectedMedication?.text || 'none'}</div>
     </div>
   );
 }
@@ -281,6 +270,7 @@ describe('useDoseSpotClinicFormulary', () => {
             display: 'Aspirin 325 MG Oral Tablet',
           },
         ],
+        text: 'Aspirin 325 MG Oral Tablet', // Add this line to match the new behavior
       },
       administrationGuidelines: [
         {

@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { isCodeableConcept } from '@medplum/core';
 import { CodeableConcept, Coding, MedicationKnowledge } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
 import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT } from './common';
+import { isCodeableConcept, isCoding } from '@medplum/core';
 
 export interface DoseSpotClinicFormularyReturn {
   state: DoseSpotClinicFormularyState;
@@ -13,7 +13,7 @@ export interface DoseSpotClinicFormularyReturn {
    */
   readonly searchMedications: (searchTerm: string) => Promise<CodeableConcept[]>;
   /**
-   * Set the currently selected medication
+   * Set the currently selected medication. Can be set as a CodeableConcept or a Coding, but state is always stored as a CodeableConcept
    */
   readonly setSelectedMedication: (medication: CodeableConcept | Coding | undefined) => void;
   /**
@@ -31,13 +31,13 @@ export interface DoseSpotClinicFormularyReturn {
 }
 
 export interface DoseSpotClinicFormularyState {
-  selectedMedication: CodeableConcept | Coding | undefined;
+  selectedMedication: CodeableConcept | undefined;
   directions: string | undefined;
 }
 
 export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
   const [directions, privateSetDirections] = useState<string | undefined>(undefined);
-  const [selectedMedication, privateSetSelectedMedication] = useState<CodeableConcept | Coding | undefined>(undefined);
+  const [selectedMedication, privateSetSelectedMedication] = useState<CodeableConcept | undefined>(undefined);
   const medplum = useMedplum();
 
   const state: DoseSpotClinicFormularyState = { selectedMedication, directions };
@@ -47,26 +47,10 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
       throw new Error('Must select a medication before adding a favorite medication');
     }
 
-    // Create the code property based on the type of selectedMedication
-    let code: CodeableConcept;
-
-    if (isCodeableConcept(selectedMedication)) {
-      // selectedMedication is already a CodeableConcept
-      code = {
-        text: selectedMedication.text,
-        coding: selectedMedication.coding,
-      };
-    } else {
-      // selectedMedication is a Coding, wrap it in a CodeableConcept
-      code = {
-        coding: [selectedMedication],
-      };
-    }
-
     //Add the directions to the medicationKnowledge object
     const medicationKnowledgeWithDirections = {
       resourceType: 'MedicationKnowledge',
-      code,
+      code: {...selectedMedication},
       administrationGuidelines: [
         {
           dosage: [
@@ -104,7 +88,16 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
   };
 
   const setSelectedMedication = (medication: CodeableConcept | Coding | undefined): void => {
-    privateSetSelectedMedication(medication);
+    let medicationToSet: CodeableConcept | undefined;
+    if (isCodeableConcept(medication)) {
+      medicationToSet = {...medication};
+    } else if (isCoding(medication)) {
+      medicationToSet = {
+        text: medication.display || '',
+        coding: [medication],
+      };
+    }
+    privateSetSelectedMedication(medicationToSet);
   };
 
   const clear = (): void => {

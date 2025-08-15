@@ -12,7 +12,6 @@ import {
   TextInput,
   Stack,
   Divider,
-  Text,
   Group as MantineGroup,
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
@@ -136,11 +135,6 @@ export function DoseSpotFavoritesPage(): React.JSX.Element {
             placeholder="Search medications..."
             loadOptions={searchMedications}
             toOption={toOption}
-            itemComponent={({ resource }) => (
-              <Group gap="sm">
-                <Text size="sm">{resource.text}</Text>
-              </Group>
-            )}
             onChange={(medications) => {
               if (medications.length > 0) {
                 setSelectedMedication(medications[0] as CodeableConcept);
