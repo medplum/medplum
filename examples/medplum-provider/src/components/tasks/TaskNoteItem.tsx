@@ -15,16 +15,11 @@ interface TaskNoteItemProps {
 function renderTextWithLinks(text: string): React.ReactNode {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
   const parts = text.split(urlRegex);
-  
+
   return parts.map((part, index) => {
     if (urlRegex.test(part)) {
       return (
-        <Anchor
-          key={index}
-          href={part}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+        <Anchor key={index} href={part} target="_blank" rel="noopener noreferrer">
           {part}
         </Anchor>
       );
@@ -44,9 +39,7 @@ export function TaskNoteItem(props: TaskNoteItemProps): React.JSX.Element {
         <Text fw={500}>{author && getDisplayString(author)}</Text>
         <Text>{formatDateTime(note.time ?? '')}</Text>
       </Group>
-      <Text>
-        {note.text ? renderTextWithLinks(note.text) : ''}
-      </Text>
+      <Text>{note.text ? renderTextWithLinks(note.text) : ''}</Text>
       <Divider />
     </Stack>
   );
