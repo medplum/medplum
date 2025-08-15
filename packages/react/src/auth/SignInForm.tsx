@@ -137,6 +137,8 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
         } else if (mfaEnrollRequired && enrollQrCode) {
           return (
             <MfaForm
+              title="Enroll in MFA"
+              buttonText="Enroll"
               qrCodeUrl={enrollQrCode}
               onSubmit={async (fields) => {
                 const res = await medplum.post('auth/mfa/login-enroll', {
@@ -150,6 +152,8 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
         } else if (mfaRequired) {
           return (
             <MfaForm
+              title="Enter MFA code"
+              buttonText="Submit code"
               onSubmit={async (fields) => {
                 const res = await medplum.post('auth/mfa/verify', {
                   login: login,

@@ -11,6 +11,8 @@ import { Logo } from '../Logo/Logo';
 export type MfaFormFields = 'token';
 
 export interface MfaFormProps {
+  readonly title: string;
+  readonly buttonText: string;
   readonly qrCodeUrl?: string;
   readonly onSubmit: (formData: Record<MfaFormFields, string>) => void | Promise<void>;
 }
@@ -27,7 +29,7 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
       <Stack>
         <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
-          <Title>Enter MFA code</Title>
+          <Title>{props.title}</Title>
         </Center>
         {errorMessage && (
           <Alert icon={<IconAlertCircle size={16} />} title="Error" color="red">
@@ -44,7 +46,7 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
           <TextInput name="token" label="MFA code" required autoFocus />
         </Stack>
         <Group justify="flex-end" mt="xl">
-          <SubmitButton>Submit code</SubmitButton>
+          <SubmitButton>{props.buttonText}</SubmitButton>
         </Group>
       </Stack>
     </Form>
