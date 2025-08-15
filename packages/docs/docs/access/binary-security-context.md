@@ -96,7 +96,9 @@ const media = await medplum.createMedia({
   data: fileData,
   filename: 'patient-report.pdf',
   contentType: 'application/pdf',
-  subject: { reference: `Patient/${patientId}` },
+  additionalFields: {
+    subject: { reference: `Patient/${patientId}` },
+  }
 });
 
 // The associated Binary resource will automatically have:
