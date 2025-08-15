@@ -57,6 +57,8 @@ export function MfaPage(): JSX.Element | null {
       <Document>
         <Modal title="Disable MFA" opened={disabling} onClose={() => setDisabling(false)}>
           <MfaForm
+            title="Disable MFA"
+            buttonText="Submit code"
             onSubmit={async (formData) => {
               // This will throw if MFA failed to disable
               await disableMfa(formData);
@@ -84,7 +86,12 @@ export function MfaPage(): JSX.Element | null {
 
   return (
     <Document width={400}>
-      <MfaForm qrCodeUrl={qrCodeUrl as string} onSubmit={enableMfa} />
+      <MfaForm
+        title="Multi Factor Auth Setup"
+        buttonText="Enroll"
+        qrCodeUrl={qrCodeUrl as string}
+        onSubmit={enableMfa}
+      />
     </Document>
   );
 }
