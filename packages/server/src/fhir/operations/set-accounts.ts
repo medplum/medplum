@@ -130,7 +130,7 @@ export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse
           account: accountList?.[0],
         };
         // Use system repo to force update meta.accounts
-        await getSystemRepo(undefined).updateResource(resource);
+        await systemRepo.updateResource(resource);
         count++;
       }
     }
