@@ -4,7 +4,7 @@ sidebar_position: 5.1
 
 # Patient $set-accounts Operation
 
-Medplum implements a custom `$set-accounts` operation for Patient resources to manage account references. __This is the recommended way to manage account references for patients__.
+Medplum implements a custom `$set-accounts` operation for Patient resources to manage account references. **This is the recommended way to manage account references for patients**.
 
 This operation sets the Patient's _meta.accounts_ references and propogates them to the resources in that patient's compartment. This is useful when you need to ensure consistent _meta.accounts_ access across all resources related to a patient.
 
@@ -29,10 +29,14 @@ POST [base]/R4/Patient/<id>/$set-accounts
 ```
 
 ### Input
+
 The input is a [FHIR Parameters](/docs/api/fhir/resources/parameters) resource containing:
+
 - `accounts` a reference to set in each resource's _meta.accounts_
+- `propagate` an optional boolean, which instruct the operation to also update resources in the target compartment
 
 Example request payload:
+
 ```json
 {
   "resourceType": "Parameters",
@@ -48,6 +52,10 @@ Example request payload:
       "valueReference": {
         "reference": "Practitioner/<practitioner-id>"
       }
+    },
+    {
+      "name": "propagate",
+      "valueBoolean": true
     }
   ]
 }
@@ -56,9 +64,11 @@ Example request payload:
 ### Output
 
 The output is a [FHIR Parameters](/docs/api/fhir/resources/parameters) resource containing:
+
 - `resourcesUpdated` The number of resources that were updated
 
 Example response if patient has 3 resources in their compartment:
+
 ```json
 {
   "resourceType": "Parameters",

@@ -4,6 +4,8 @@ import { createReference, getReferenceString, MedplumClient, normalizeErrorStrin
 import {
   AccessPolicy,
   Organization,
+  Parameters,
+  ParametersParameter,
   Patient,
   Practitioner,
   ProjectMembership,
@@ -103,7 +105,7 @@ export async function enrollPatient(
   }
 
   // 3. Construct the Parameters resource with the existing accounts and the new organization
-  const parameters = {
+  const parameters: Parameters = {
     resourceType: 'Parameters',
     parameter: [
       // Include all existing accounts
@@ -117,6 +119,11 @@ export async function enrollPatient(
       {
         name: 'accounts',
         valueReference: createReference(organization),
+      },
+      // Propagate changes to all resources in the Patient compartment
+      {
+        name: 'propagate',
+        valueBoolean: true,
       },
     ],
   };
@@ -151,17 +158,16 @@ export async function unEnrollPatient(
   const orgReference = getReferenceString(organization);
 
   // 2. Construct the Parameters resource with the existing accounts except the one to remove
-  const parameters = {
-    resourceType: 'Parameters',
-    parameter: accounts
-      .filter((a: Reference) => a.reference !== orgReference)
-      .map((account) => ({
-        name: 'accounts',
-        valueReference: {
-          reference: account.reference,
-        },
-      })),
-  };
+  const parameter: ParametersParameter[] = accounts
+    .filter((a: Reference) => a.reference !== orgReference)
+    .map((account) => ({
+      name: 'accounts',
+      valueReference: {
+        reference: account.reference,
+      },
+    }));
+  parameter.push({ name: 'propagate', valueBoolean: true });
+  const parameters: Parameters = { resourceType: 'Parameters', parameter };
 
   try {
     // 3. Call the $set-accounts operation with the Parameters resource. It will update the patient resource and all other resources in the patient's compartment.
