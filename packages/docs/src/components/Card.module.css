@@ -32,6 +32,6 @@
 }
 
 .card strong {
-  color: #946af9;
+  color: var(--oc-grape-8);
   font-weight: 400;
 }
