@@ -2001,10 +2001,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resource - The resource.
    * @returns The access policy permitting the interaction, or undefined if not permitted.
    */
-  private canPerformInteraction(
-    interaction: AccessPolicyInteraction,
-    resource: Resource
-  ): AccessPolicyResource | undefined {
+  canPerformInteraction(interaction: AccessPolicyInteraction, resource: Resource): AccessPolicyResource | undefined {
     if (!this.isSuperAdmin()) {
       // Only Super Admins can access server-critical resource types
       if (protectedResourceTypes.includes(resource.resourceType)) {

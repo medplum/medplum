@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { allOk, append, badRequest, forbidden, isResourceType } from '@medplum/core';
+import { AccessPolicyInteraction, allOk, append, badRequest, forbidden, isResourceType, notFound } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -74,13 +74,19 @@ export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse
 
   const params = parseInputParameters<SetAccountsParameters>(operation, req);
   const { repo } = getAuthenticatedContext();
+  const systemRepo = getSystemRepo();
 
   const isSuperAdmin = repo.isSuperAdmin();
   if (!repo.isProjectAdmin() && !isSuperAdmin) {
     return [forbidden];
   }
 
-  const target = await repo.readResource(resourceType, id);
+  // Use system repo to read the resource, ensuring we get access to the full `meta.accounts`
+  const target = await systemRepo.readResource(resourceType, id);
+  // Ensure user's repo can read this resource as well
+  if (!repo.canPerformInteraction(AccessPolicyInteraction.READ, target)) {
+    return [notFound];
+  }
   const accounts = params.accounts;
   const oldAccounts = target.meta?.accounts;
 
