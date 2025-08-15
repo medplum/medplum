@@ -170,7 +170,6 @@ export function TasksInputNote(props: TasksInputNoteProps): React.JSX.Element {
                     task={task}
                     onChangeResponse={(response) => saveQuestionnaireResponse(task, response)}
                   />
-                  <Divider />
                 </Card>
               </Stack>
               <Divider />

@@ -3,7 +3,7 @@
 import { Box, Group, Skeleton, Stack } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
-import { OperationOutcomeAlert, QuestionnaireForm, useMedplum } from '@medplum/react';
+import { OperationOutcomeAlert, QuestionnaireForm, QuestionnaireResponseDisplay, useMedplum } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
 
 interface TaskQuestionnaireFormProps {
@@ -60,13 +60,16 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
 
   return (
     <Box p={0}>
-      {questionnaire && (
+      {task.status !== 'completed' && questionnaire && (
         <QuestionnaireForm
           questionnaire={questionnaire}
           questionnaireResponse={questionnaireResponse}
           excludeButtons={true}
           onChange={onChange}
         />
+      )}
+      {task.status === 'completed' && questionnaireResponse && (
+        <QuestionnaireResponseDisplay questionnaireResponse={questionnaireResponse} />
       )}
       {outcome && <OperationOutcomeAlert outcome={outcome} />}
     </Box>

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Divider, Group, Stack, Text } from '@mantine/core';
+
+import { Anchor, Divider, Group, Stack, Text } from '@mantine/core';
 import { formatDateTime, getDisplayString } from '@medplum/core';
 import { Annotation } from '@medplum/fhirtypes';
 import { ResourceAvatar, useResource } from '@medplum/react';
@@ -9,6 +10,22 @@ import React from 'react';
 interface TaskNoteItemProps {
   note: Annotation;
   index: number;
+}
+
+function renderTextWithLinks(text: string): React.ReactNode {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (urlRegex.test(part)) {
+      return (
+        <Anchor key={index} href={part} target="_blank" rel="noopener noreferrer">
+          {part}
+        </Anchor>
+      );
+    }
+    return part;
+  });
 }
 
 export function TaskNoteItem(props: TaskNoteItemProps): React.JSX.Element {
@@ -22,7 +39,7 @@ export function TaskNoteItem(props: TaskNoteItemProps): React.JSX.Element {
         <Text fw={500}>{author && getDisplayString(author)}</Text>
         <Text>{formatDateTime(note.time ?? '')}</Text>
       </Group>
-      <Text>{note.text}</Text>
+      <Text>{note.text ? renderTextWithLinks(note.text) : ''}</Text>
       <Divider />
     </Stack>
   );
