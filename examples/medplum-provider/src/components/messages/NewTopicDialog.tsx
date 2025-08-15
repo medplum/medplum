@@ -57,8 +57,8 @@ export const NewTopicDialog = (props: NewTopicDialogProps): JSX.Element => {
     };
 
     try {
-      await medplum.createResource(communication);
-      onSubmit?.(communication);
+      const createdCommunication = await medplum.createResource(communication);
+      onSubmit?.(createdCommunication);
       onClose();
     } catch (error) {
       showErrorNotification(error);

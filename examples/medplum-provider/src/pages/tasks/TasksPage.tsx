@@ -60,7 +60,6 @@ export function TasksPage(): JSX.Element {
   }, [taskId, tasks, medplum, navigate]);
 
   const handleTaskChange = (task: Task): void => {
-    console.log('handleTaskChange', task);
     setSelectedTask(task);
     setTasks(tasks.map((t) => (t.id === task.id ? task : t)));
   };
