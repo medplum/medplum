@@ -1,10 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
+import { isCodeableConcept, isCoding } from '@medplum/core';
 import { CodeableConcept, Coding, MedicationKnowledge } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
 import { DOSESPOT_ADD_FAVORITE_MEDICATION_BOT, DOSESPOT_SEARCH_MEDICATIONS_BOT } from './common';
-import { isCodeableConcept, isCoding } from '@medplum/core';
 
 export interface DoseSpotClinicFormularyReturn {
   state: DoseSpotClinicFormularyState;
@@ -50,7 +50,7 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
     //Add the directions to the medicationKnowledge object
     const medicationKnowledgeWithDirections = {
       resourceType: 'MedicationKnowledge',
-      code: {...selectedMedication},
+      code: { ...selectedMedication },
       administrationGuidelines: [
         {
           dosage: [
@@ -90,7 +90,7 @@ export function useDoseSpotClinicFormulary(): DoseSpotClinicFormularyReturn {
   const setSelectedMedication = (medication: CodeableConcept | Coding | undefined): void => {
     let medicationToSet: CodeableConcept | undefined;
     if (isCodeableConcept(medication)) {
-      medicationToSet = {...medication};
+      medicationToSet = { ...medication };
     } else if (isCoding(medication)) {
       medicationToSet = {
         text: medication.display || '',

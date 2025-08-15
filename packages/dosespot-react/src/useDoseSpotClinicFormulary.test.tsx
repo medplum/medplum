@@ -36,8 +36,6 @@ function TestComponent(): JSX.Element {
     setSelectedMedication(testCoding);
   };
 
-
-
   return (
     <div>
       <div>Selected: {state.selectedMedication?.text || 'none'}</div>
