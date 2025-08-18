@@ -506,15 +506,15 @@ export function toPeriod(input: unknown): Period | undefined {
 
   if (isDateString(input) || isDateTimeString(input)) {
     return {
-      start: dateStringToInstantString(input, '0000-01-01T00:00:00.000Z'),
-      end: dateStringToInstantString(input, 'xxxx-12-31T23:59:59.999Z'),
+      start: dateStringToInstantString(input, '0000-01-01T00:00:00.000'),
+      end: dateStringToInstantString(input, 'xxxx-12-31T23:59:59.999'),
     };
   }
 
   if (isPeriod(input)) {
     return {
-      start: input.start ? dateStringToInstantString(input.start, '0000-01-01T00:00:00.000Z') : undefined,
-      end: input.end ? dateStringToInstantString(input.end, 'xxxx-12-31T23:59:59.999Z') : undefined,
+      start: input.start ? dateStringToInstantString(input.start, '0000-01-01T00:00:00.000') : undefined,
+      end: input.end ? dateStringToInstantString(input.end, 'xxxx-12-31T23:59:59.999') : undefined,
     };
   }
 
@@ -525,12 +525,18 @@ function dateStringToInstantString(input: string, fill: string): string {
   // For any input with a time zone offset, we need to normalize it to "Z" time zone.
   // The time zone offset is valid, but for this function to work as expected, we need to normalize.
   // Note that the "+" or "-" comes after the seconds, so we must check after the "T" character.
-  if (input.includes('+', 10) || input.includes('-', 10)) {
-    return new Date(input).toISOString();
+  let timezone = 'Z';
+  const tzDelimiter = Math.max(input.indexOf('+', 10), input.indexOf('-', 10));
+  if (tzDelimiter > -1) {
+    timezone = input.substring(tzDelimiter);
+    input = input.substring(0, tzDelimiter);
+  } else if (input.endsWith('Z')) {
+    input = input.substring(0, input.length - 1);
   }
 
   // Input can be any subset of YYYY-MM-DDThh:mm:ss.sssZ
-  return input + fill.substring(input.length);
+  const instant = input + fill.substring(input.length) + timezone;
+  return new Date(instant).toISOString();
 }
 
 /**
