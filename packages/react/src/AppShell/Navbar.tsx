@@ -235,10 +235,15 @@ function getLinkScore(currentPathname: string, currentSearchParams: URLSearchPar
     return 1;
   }
   
+  // Special case for DoseSpot Favorites - should be active for '/integrations/dosespot' only
+  if (linkUrl.pathname === '/integrations/dosespot' && currentPathname === '/integrations/dosespot') {
+    return 2; // Higher score to ensure it takes precedence over /integrations
+  }
+  
   // For resource type links (e.g., /ServiceRequest, /Patient, /Practitioner, etc.)
   // Check if the current pathname starts with the link pathname
   // This allows sub-URLs like /ServiceRequest/new to match /ServiceRequest
-  if (linkUrl.pathname !== '/' && linkUrl.pathname !== '/task' && linkUrl.pathname !== '/admin/project' && linkUrl.pathname !== '/admin/config' && currentPathname.startsWith(linkUrl.pathname)) {
+  if (linkUrl.pathname !== '/' && linkUrl.pathname !== '/task' && linkUrl.pathname !== '/admin/project' && linkUrl.pathname !== '/admin/config' && linkUrl.pathname !== '/integrations/dosespot' && currentPathname.startsWith(linkUrl.pathname)) {
     // Check if the pathname segments match exactly for the resource type part
     const linkSegments = linkUrl.pathname.split('/').filter(Boolean);
     const currentSegments = currentPathname.split('/').filter(Boolean);
