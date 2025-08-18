@@ -1,18 +1,26 @@
-# Medplum CI/CD Bots Example
+# Medplum CI/CD Bots - HAPI FHIR Server Integration
 
-This example demonstrates how to create a comprehensive CI/CD (Continuous Integration/Continuous Deployment) system using Medplum bots with code reuse and automated subscription management.
+This example demonstrates how to create a comprehensive CI/CD (Continuous Integration/Continuous Deployment) system using Medplum bots for HAPI FHIR server synchronization, showcasing code reuse patterns and automated deployment workflows.
 
 ## 🎯 Key Features
 
-### 1. Code Reuse
-- **Shared Validation Helpers**: Common validation logic used across multiple bots
-- **Shared Audit Helpers**: Consistent logging and audit event creation
-- **Modular Design**: Bots import and use shared functions to reduce duplication
+### 1. CI/CD Pipeline
+- **Automated Build Process**: TypeScript compilation, linting, and bundling
+- **Automated Deployment**: One-command bot deployment and subscription management
+- **Environment Management**: Support for dev, staging, and production environments
+- **Version Control Integration**: Automated deployment from code changes
 
-### 2. Automated Subscription Management
-- **Install Script**: Automatically creates subscriptions for all bots
-- **Environment Configuration**: Supports different environments (dev, staging, prod)
-- **Error Handling**: Comprehensive error reporting and rollback capabilities
+### 2. HAPI FHIR Server Integration
+- **Bidirectional Sync**: Synchronizes patient data between Medplum and HAPI FHIR servers
+- **Identifier Management**: Automatically adds and manages cross-system identifiers
+- **Conditional Operations**: Uses FHIR conditional operations for efficient updates
+- **Error Handling**: Comprehensive error handling with standardized OperationOutcome responses
+
+### 3. Code Reuse & Modularity
+- **Shared HTTP Helpers**: Common HTTP functionality for external API communication
+- **Standardized Error Handling**: Consistent error processing across all bots
+- **Modular Design**: Bots import and use shared functions to reduce duplication
+- **Reusable Components**: Easy to extend and add new sync integrations
 
 ## 📁 Project Structure
 
@@ -20,54 +28,57 @@ This example demonstrates how to create a comprehensive CI/CD (Continuous Integr
 medplum-ci-cd-bots/
 ├── src/
 │   ├── shared/
-│   │   ├── validation-helpers.ts    # Shared validation functions
-│   │   └── audit-helpers.ts         # Shared audit and logging functions
+│   │   └── http-helpers.ts         # Shared HTTP functions for external APIs
 │   └── bots/
-│       ├── patient-validation-bot.ts
-│       ├── patient-audit-bot.ts
-│       ├── patient-notification-bot.ts
-│       ├── resource-sync-bot.ts
-│       └── data-quality-bot.ts
+│       ├── hapi-sync-bot.ts        # Full-featured HAPI sync bot
+│       └── hapi-sync-simple-bot.ts # Simplified HAPI sync bot
 ├── scripts/
-│   └── install-subscriptions.mjs    # Subscription installation script
+│   └── setup-bots-and-subscriptions.ts  # Automated deployment script
 ├── package.json
 ├── medplum.config.json
+├── tsconfig.json
+├── esbuild-script.mjs
 └── README.md
 ```
 
-## 🤖 Bots Overview
+## 🤖 CI/CD Bot Components
 
-### Patient Validation Bot
-- **Purpose**: Validates patient data using shared validation functions
-- **Features**: Comprehensive validation of demographics, identifiers, and addresses
-- **Code Reuse**: Uses `validatePatientComprehensive()` from shared helpers
+### HAPI Sync Bot (Full-Featured)
+- **Purpose**: HAPI FHIR server synchronization with bidirectional identifier management
+- **CI/CD Features**: 
+  - Automated deployment with version tracking
+  - Environment-specific configuration
+  - Comprehensive error handling and logging
+  - Integration with CI/CD pipeline
+- **Sync Features**: 
+  - Adds Medplum identifiers to patient records for tracking
+  - Enriches patient data with HAPI server identifiers
+  - Handles both creation/updates and deletions
+  - Skips processing for External EHR authored resources
+  - Returns updated patient with cross-system identifiers
+- **Code Reuse**: Uses `makeConditionalFhirRequest()` and `logExternalRequest()` from shared helpers
 
-### Patient Audit Bot
-- **Purpose**: Creates audit events for patient changes
-- **Features**: Standardized audit event creation and logging
-- **Code Reuse**: Uses `createPatientAuditEvent()` and `logPatientChange()` from shared helpers
+### HAPI Sync Simple Bot
+- **Purpose**: Simplified HAPI FHIR server synchronization for development and testing
+- **CI/CD Features**:
+  - Lightweight deployment for rapid iteration
+  - Simplified error handling for debugging
+  - Quick deployment for testing scenarios
+- **Sync Features**:
+  - Basic patient sync without modifying the input resource
+  - Adds Medplum identifiers for tracking
+  - Returns boolean success/failure status
+  - Handles both creation/updates and deletions
+- **Code Reuse**: Uses `makeConditionalFhirRequest()` and `logExternalRequest()` from shared helpers
 
-### Patient Notification Bot
-- **Purpose**: Sends notifications about patient changes
-- **Features**: Multi-channel notifications (email, SMS, Slack)
-- **Code Reuse**: Uses `logPatientChange()` and `logMessage()` from shared helpers
-
-### Resource Sync Bot
-- **Purpose**: Syncs patient data to external systems
-- **Features**: Validates data before syncing, supports multiple external systems
-- **Code Reuse**: Uses validation and logging functions from shared helpers
-
-### Data Quality Bot
-- **Purpose**: Performs comprehensive data quality analysis
-- **Features**: Quality scoring, detailed reports, threshold monitoring
-- **Code Reuse**: Uses multiple shared validation and logging functions
-
-## 🚀 Getting Started
+## 🚀 CI/CD Pipeline Setup
 
 ### Prerequisites
 - Node.js 20+ 
 - Medplum account with API access
+- HAPI FHIR server instance (or modify the server URL in bot code)
 - Environment variables configured
+- Git repository for version control
 
 ### Installation
 
@@ -83,138 +94,193 @@ medplum-ci-cd-bots/
    export MEDPLUM_BASE_URL="https://api.medplum.com"  # Optional
    ```
 
-3. **Create Subscriptions**
-   ```bash
-   npm run install:subscriptions
+3. **Configure HAPI Server URL**
+   
+   Update the `HAPI_SERVER` constant in both bot files:
+   ```typescript
+   // In src/bots/hapi-sync-bot.ts and src/bots/hapi-sync-simple-bot.ts
+   const HAPI_SERVER = 'http://your-hapi-server:8080';
    ```
 
-4. **Build and Deploy Bots**
+4. **Deploy via CI/CD Pipeline**
    ```bash
-   npm run build
-   npm run deploy
+   npm run setup:bots
    ```
+   
+   This single command handles the complete CI/CD pipeline:
+   - Builds all bots with TypeScript compilation
+   - Runs linting and quality checks
+   - Deploys bots to Medplum
+   - Creates and configures subscriptions
 
-## 📋 Available Scripts
+## 📋 CI/CD Pipeline Scripts
 
-- `npm run build` - Build all bots
+- `npm run build` - Complete build pipeline (TypeScript compilation + bundling + linting)
 - `npm run clean` - Clean build artifacts
-- `npm run lint` - Run ESLint
-- `npm run test` - Run tests
-- `npm run install:subscriptions` - Create subscriptions for all bots
-- `npm run deploy` - Deploy bots to Medplum
+- `npm run lint` - Run ESLint quality checks
+- `npm run test` - Run automated tests
+- `npm run setup:bots` - Complete CI/CD pipeline (build + deploy + subscriptions)
+- `npm run deploy:bots` - Deploy bots only (skip subscription creation)
 
 ## 🔧 Code Reuse Examples
 
-### Shared Validation Functions
+### Shared HTTP Functions
 ```typescript
 // In any bot
-import { validatePatientComprehensive } from '../shared/validation-helpers';
+import { makeConditionalFhirRequest, HTTP_VERBS, logExternalRequest } from '../shared/http-helpers';
 
-const validationResult = validatePatientComprehensive(patient);
-if (!validationResult.isValid) {
-  // Handle validation errors
+// Make conditional FHIR request
+const response = await makeConditionalFhirRequest(
+  serverUrl,
+  'Patient',
+  'identifier=https://medplum.com/patient-id|123',
+  HTTP_VERBS.PUT,
+  patientData
+);
+
+// Log external request
+logExternalRequest('HAPI sync PUT', patientId, true);
+```
+
+### Error Handling
+```typescript
+// Standardized error handling with OperationOutcome
+try {
+  await makeConditionalFhirRequest(/* ... */);
+} catch (error) {
+  // Errors are automatically converted to OperationOutcome format
+  logExternalRequest('HAPI sync PUT', patientId, false, error.message);
+  throw error; // Re-throw as OperationOutcomeError
 }
 ```
 
-### Shared Audit Functions
+## 📊 CI/CD Subscription Management
+
+The automated setup script creates and manages subscriptions for all bots:
+
 ```typescript
-// In any bot
-import { logPatientChange, createPatientAuditEvent } from '../shared/audit-helpers';
-
-logPatientChange(patient, 'update', 'Patient updated via bot');
-const auditEvent = createPatientAuditEvent(patient, 'update');
-```
-
-## 📊 Subscription Management
-
-The install script automatically creates subscriptions for all bots:
-
-```javascript
-// Example subscription creation
+// Example subscription creation for HAPI sync bot
 const subscription = await medplum.createResource({
   resourceType: 'Subscription',
   status: 'active',
-  reason: 'CI/CD Bot: patient-validation-bot',
+  reason: 'CI/CD Bot: hapi-sync-bot',
   criteria: 'Patient?_lastUpdated=gt2023-01-01',
   channel: {
     type: 'rest-hook',
-    endpoint: 'https://api.medplum.com/bots/patient-validation-bot',
+    endpoint: 'https://api.medplum.com/bots/hapi-sync-bot',
     payload: 'application/fhir+json',
   },
 });
 ```
 
-## 🧪 Testing
-
-### Manual Testing
-1. Create a Patient resource in Medplum
-2. Update the Patient resource
-3. Check bot execution logs
-4. Verify audit events and notifications
+## 🧪 CI/CD Testing & Validation
 
 ### Automated Testing
 ```bash
 npm run test
 ```
 
-## 🔍 Monitoring
+### Manual Testing (Post-Deployment)
+1. Create a Patient resource in Medplum
+2. Update the Patient resource
+3. Check bot execution logs in Medplum dashboard
+4. Verify patient data appears in HAPI FHIR server
+5. Check for cross-system identifiers in both systems
+6. Validate CI/CD pipeline deployment success
 
-### Bot Execution
+## 🔍 CI/CD Monitoring & Observability
+
+### Pipeline Monitoring
+- Monitor CI/CD pipeline execution and deployment status
+- Track bot deployment versions and rollback capabilities
+- Monitor subscription creation and configuration status
+
+### Bot Execution Monitoring
 - Monitor bot execution in the Medplum dashboard
-- Check logs for validation results, audit events, and notifications
-- Review quality reports for data quality metrics
+- Check logs for sync operations and error messages
+- Review external request logs for API communication
+- Track deployment success rates and error patterns
 
-### Subscription Status
-- Verify subscriptions are active in Medplum
-- Check subscription criteria and endpoints
-- Monitor subscription delivery status
+### HAPI Server Integration Monitoring
+- Verify patient records appear in HAPI FHIR server
+- Check for Medplum identifiers in HAPI patient records
+- Monitor for HAPI server identifiers in Medplum patient records
+- Verify subscription delivery status
+- Monitor sync performance and data consistency
 
-## 🛠️ Customization
+## 🛠️ CI/CD Customization
 
-### Adding New Bots
+### Adding New Sync Bots to Pipeline
 1. Create bot file in `src/bots/`
-2. Add bot configuration to `medplum.config.json`
-3. Update subscription creation in `scripts/install-subscriptions.mjs`
-4. Use shared functions for consistency
+2. Import shared HTTP helpers
+3. Add bot configuration to `medplum.config.json`
+4. Update deployment script if needed
+5. Use consistent error handling patterns
+6. Add to CI/CD pipeline automation
 
-### Modifying Shared Functions
-1. Update functions in `src/shared/`
-2. All bots using those functions will automatically benefit
-3. Test changes thoroughly before deployment
-
-### Environment-Specific Configuration
-```bash
-# Development
-export MEDPLUM_BASE_URL="https://dev.medplum.com"
-
-# Production
-export MEDPLUM_BASE_URL="https://api.medplum.com"
+### Modifying HAPI Server Configuration
+```typescript
+// Update server URL and authentication
+const HAPI_SERVER = 'https://your-hapi-server.com/fhir';
+const HAPI_AUTH_HEADERS = {
+  'Authorization': 'Bearer your-token'
+};
 ```
 
-## 📚 Best Practices
+### Environment-Specific CI/CD Configuration
+```bash
+# Development Environment
+export MEDPLUM_BASE_URL="https://dev.medplum.com"
+export NODE_ENV="development"
+# Update HAPI_SERVER to point to dev HAPI instance
 
-### Code Reuse
-- Extract common functionality into shared modules
-- Use consistent interfaces and error handling
+# Staging Environment
+export MEDPLUM_BASE_URL="https://staging.medplum.com"
+export NODE_ENV="staging"
+# Update HAPI_SERVER to point to staging HAPI instance
+
+# Production Environment
+export MEDPLUM_BASE_URL="https://api.medplum.com"
+export NODE_ENV="production"
+# Update HAPI_SERVER to point to prod HAPI instance
+```
+
+## 📚 CI/CD Best Practices
+
+### Pipeline Management
+- Use automated testing before deployment
+- Implement proper version control and tagging
+- Use environment-specific configurations
+- Monitor deployment success rates and rollback capabilities
+
+### FHIR Integration
+- Use conditional operations for efficient updates
+- Implement proper identifier management
+- Handle both creation/updates and deletions
+- Use standardized error responses (OperationOutcome)
+
+### Code Reuse & Modularity
+- Extract common HTTP functionality into shared modules
+- Use consistent error handling patterns
+- Implement comprehensive logging
 - Document shared functions thoroughly
-
-### Subscription Management
-- Use descriptive subscription names and reasons
-- Implement proper error handling and rollback
-- Monitor subscription health regularly
+- Design for easy extension and maintenance
 
 ### Bot Design
 - Keep bots focused on single responsibilities
 - Use shared functions for consistency
-- Implement proper error handling
-- Log all important activities
+- Implement proper error handling and logging
+- Return appropriate FHIR resources or status
+- Design for CI/CD pipeline integration
 
-## 🤝 Contributing
+## 🤝 Contributing to CI/CD Pipeline
 
-1. Follow the existing code structure
-2. Use shared functions when possible
-3. Add comprehensive documentation
-4. Include tests for new functionality
+1. Follow the existing code structure and CI/CD patterns
+2. Use shared HTTP helpers for external API calls
+3. Add comprehensive documentation and testing
+4. Include automated tests for new functionality
+5. Follow FHIR best practices and CI/CD standards
+6. Ensure pipeline compatibility and deployment readiness
 
 ## 📄 License
 
@@ -229,4 +295,4 @@ For questions or issues:
 
 ---
 
-**Note**: This is an example project demonstrating CI/CD patterns with Medplum bots. Adapt the patterns and code to your specific use case. 
+**Note**: This example demonstrates comprehensive CI/CD patterns for HAPI FHIR server integration with Medplum bots. The pipeline includes automated building, testing, deployment, and monitoring. Adapt the CI/CD patterns and HAPI integration code to your specific requirements and infrastructure. 

@@ -9,13 +9,9 @@
     "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
     "clean": "rimraf dist",
     "lint": "eslint src/",
-    "prettier": "prettier --write .",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:ui": "vitest --ui",
-    "test:watch": "vitest watch",
-    "install:subscriptions": "node scripts/install-subscriptions.mjs",
-    "deploy": "npm run build && medplum deploy"
+    "setup:bots": "npm run build && node --loader ts-node/esm scripts/setup-bots-and-subscriptions.ts",
+    "deploy:bots": "npm run build && node --loader ts-node/esm scripts/setup-bots-and-subscriptions.ts --deploy-only"
   },
   "prettier": {
     "printWidth": 120,
