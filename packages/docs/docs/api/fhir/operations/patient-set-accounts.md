@@ -2,7 +2,7 @@
 sidebar_position: 5.1
 ---
 
-# Patient $set-accounts Operation
+# Set Resource Accounts
 
 Medplum implements a custom `$set-accounts` operation to manage account references. **This is the recommended way to manage account references for all resources**.
 
