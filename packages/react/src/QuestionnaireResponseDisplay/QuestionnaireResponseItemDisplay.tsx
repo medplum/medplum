@@ -21,7 +21,7 @@ export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseIte
       return (
         <>
           {answer.map((ans, index) => (
-            <AnswerDisplay key={ans.id || `answer-${index}`} answer={ans} />
+            <AnswerDisplay key={`answer-${index}`} answer={ans} />
           ))}
         </>
       );
@@ -29,7 +29,7 @@ export function QuestionnaireResponseItemDisplay(props: QuestionnaireResponseIte
       return (
         <>
           {nestedAnswers.map((nestedAnswer, index) => (
-            <QuestionnaireResponseItemDisplay key={nestedAnswer.id || `nested-${index}`} item={nestedAnswer} />
+            <QuestionnaireResponseItemDisplay key={`nested-${nestedAnswer.id ?? index}`} item={nestedAnswer} />
           ))}
         </>
       );

@@ -59,9 +59,9 @@
     "react": "19.1.1",
     "react-dom": "19.1.1",
     "react-intersection-observer": "9.16.0",
-    "react-router": "7.8.0",
-    "react-router-dom": "7.8.0",
-    "typescript": "5.8.3",
+    "react-router": "7.8.1",
+    "react-router-dom": "7.8.1",
+    "typescript": "5.9.2",
     "url-loader": "4.1.1"
   },
   "engines": {

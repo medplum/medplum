@@ -15,8 +15,8 @@ export function QuestionnaireResponseDisplay(props: QuestionnaireResponseDisplay
 
   return (
     <Stack gap={0}>
-      {questionnaireResponse?.item?.map((item) => (
-        <QuestionnaireResponseItemDisplay key={item.id} item={item} />
+      {questionnaireResponse?.item?.map((item, index) => (
+        <QuestionnaireResponseItemDisplay key={`item-${item.id ?? index}`} item={item} />
       ))}
     </Stack>
   );
