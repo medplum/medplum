@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { getReferenceString } from '@medplum/core';
 import type { ProfileResource } from '@medplum/core';
+import { getReferenceString } from '@medplum/core';
 import {
   AppShell,
   Loading,
@@ -15,48 +15,49 @@ import {
   IconClipboardCheck,
   IconMail,
   IconPencil,
-  IconPill,
   IconPuzzle,
   IconTimeDuration0,
   IconTransformPoint,
   IconUser,
 } from '@tabler/icons-react';
-import { Suspense } from 'react';
 import type { JSX } from 'react';
-import { Navigate, Route, Routes } from 'react-router';
+import { Suspense } from 'react';
+import { Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
+import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
-import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
-import { SchedulePage } from './pages/schedule/SchedulePage';
-import { SearchPage } from './pages/SearchPage';
-import { SignInPage } from './pages/SignInPage';
-import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
 import { EncounterChartPage } from './pages/encounter/EncounterChartPage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
+import { DoseSpotFavoritesPage } from './pages/integrations/DoseSpotFavoritesPage';
+import { IntegrationsPage } from './pages/integrations/IntegrationsPage';
+import { MessagesPage } from './pages/messages/MessagesPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
 import { ExportTab } from './pages/patient/ExportTab';
 import { IntakeFormPage } from './pages/patient/IntakeFormPage';
+import { LabsPage } from './pages/patient/LabsPage';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { TimelineTab } from './pages/patient/TimelineTab';
-import { LabsPage } from './pages/patient/LabsPage';
 import { ResourceCreatePage } from './pages/resource/ResourceCreatePage';
 import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
 import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
-import { TaskDetailsModal } from './components/tasks/TaskDetailsModal';
-import { MessagesPage } from './pages/messages/MessagesPage';
-import { TasksPage } from './pages/tasks/TasksPage';
+import { SchedulePage } from './pages/schedule/SchedulePage';
+import { SearchPage } from './pages/SearchPage';
+import { SignInPage } from './pages/SignInPage';
 import { SpacesPage } from './pages/spaces/SpacesPage';
+import { TasksPage } from './pages/tasks/TasksPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useMedplumNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   if (medplum.isLoading()) {
     return null;
@@ -68,45 +69,79 @@ export function App(): JSX.Element | null {
   return (
     <AppShell
       logo={<Logo size={24} />}
-      menus={[
-        {
-          title: 'Spaces',
-          links: [{ icon: <IconPuzzle />, label: 'Spaces', href: '/Spaces/Communication' }],
-        },
-        {
-          title: 'Charts',
-          links: [
-            {
-              icon: <IconUser />,
-              label: 'Patients',
-              href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
-            },
-          ],
-        },
-        {
-          title: 'Scheduling',
-          links: [{ icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' }],
-        },
-        {
-          title: 'Communication',
-          links: [{ icon: <IconMail />, label: 'Messages', href: '/Communication' }],
-        },
-        {
-          title: 'Tasks',
-          links: [{ icon: <IconClipboardCheck />, label: 'Tasks', href: '/Task' }],
-        },
-        {
-          title: 'Onboarding',
-          links: [{ icon: <IconPencil />, label: 'New Patient', href: '/onboarding' }],
-        },
-        {
-          title: 'Integrations',
-          links: [
-            { icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' },
-            ...(hasDoseSpot ? [{ icon: <IconPill />, label: 'DoseSpot', href: '/integrations/dosespot' }] : []),
-          ],
-        },
-      ]}
+      pathname={location.pathname}
+      searchParams={searchParams}
+      menus={
+        profile
+          ? [
+              {
+                title: 'Spaces',
+                links: [{ icon: <IconPuzzle />, label: 'Spaces', href: '/Spaces/Communication' }],
+              },
+              {
+                title: 'Charts',
+                links: [
+                  {
+                    icon: <IconUser />,
+                    label: 'Patients',
+                    href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
+                  },
+                ],
+              },
+              {
+                title: 'Scheduling',
+                links: [{ icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' }],
+              },
+              {
+                title: 'Communication',
+                links: [
+                  {
+                    icon: (
+                      <NotificationIcon
+                        resourceType="Communication"
+                        countCriteria={`recipient=${getReferenceString(profile)}&status:not=completed&_summary=count`}
+                        subscriptionCriteria={`Communication?recipient=${getReferenceString(profile)}`}
+                        iconComponent={<IconMail />}
+                      />
+                    ),
+                    label: 'Messages',
+                    href: `/Communication?recipient=${getReferenceString(profile)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`,
+                  },
+                ],
+              },
+              {
+                title: 'Tasks',
+                links: [
+                  {
+                    icon: (
+                      <NotificationIcon
+                        resourceType="Task"
+                        countCriteria={`owner=${getReferenceString(profile)}&status:not=completed&_summary=count`}
+                        subscriptionCriteria={`Task?owner=${getReferenceString(profile)}`}
+                        iconComponent={<IconClipboardCheck />}
+                      />
+                    ),
+                    label: 'Tasks',
+                    href: `/Task?owner=${getReferenceString(profile)}&status:not=completed&_fields=sender,recipient,subject,status,_lastUpdated`,
+                  },
+                ],
+              },
+              {
+                title: 'Onboarding',
+                links: [{ icon: <IconPencil />, label: 'New Patient', href: '/onboarding' }],
+              },
+              {
+                title: 'Integrations',
+                links: [
+                  { icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' },
+                  ...(hasDoseSpot
+                    ? [{ icon: <DoseSpotIcon />, label: 'DoseSpot', href: '/integrations/dosespot' }]
+                    : []),
+                ],
+              },
+            ]
+          : undefined
+      }
       resourceTypeSearchDisabled={true}
       notifications={
         profile && (

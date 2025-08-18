@@ -36,6 +36,7 @@
     "@mantine/dropzone": "8.3.9",
     "@mantine/hooks": "8.3.9",
     "@mantine/notifications": "8.3.9",
+    "@mantine/spotlight": "8.3.9",
     "@medplum/core": "5.0.5",
     "@medplum/definitions": "5.0.5",
     "@medplum/fhirtypes": "5.0.5",
