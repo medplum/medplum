@@ -28,7 +28,7 @@
     "@medplum/health-gorilla-react": "4.3.10",
     "@medplum/react": "4.3.10",
     "@tabler/icons-react": "3.34.1",
-    "@types/react": "19.1.9",
+    "@types/react": "19.1.10",
     "@types/react-dom": "19.1.7",
     "@vitejs/plugin-react": "5.0.0",
     "eslint": "8.57.1",
@@ -38,9 +38,9 @@
     "postcss-preset-mantine": "1.18.0",
     "react": "19.1.1",
     "react-dom": "19.1.1",
-    "react-router": "7.8.0",
-    "typescript": "5.8.3",
-    "vite": "7.1.1"
+    "react-router": "7.8.1",
+    "typescript": "5.9.2",
+    "vite": "7.1.2"
   },
   "packageManager": "npm@10.9.3",
   "engines": {
