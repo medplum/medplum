@@ -29,6 +29,11 @@ export interface NavbarProps {
   readonly closeNavbar: () => void;
   readonly displayAddBookmark?: boolean;
   readonly resourceTypeSearchDisabled?: boolean;
+  readonly linkStyles?: {
+    readonly activeColor?: string;
+    readonly strokeWidth?: number;
+    readonly hoverBackgroundOnly?: boolean;
+  };
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
@@ -69,13 +74,14 @@ export function Navbar(props: NavbarProps): JSX.Element {
           <MantineAppShell.Section grow>
             {props.menus?.map((menu) => (
               <Fragment key={`menu-${menu.title}`}>
-                <Text className={classes.menuTitle}>{menu.title}</Text>
+                <Text size="xs" className={classes.menuTitle}>{menu.title}</Text>
                 {menu.links?.map((link) => (
                   <NavbarLink
                     key={link.href}
                     to={link.href}
                     active={link.href === activeLink?.href}
                     onClick={(e) => onLinkClick(e, link.href)}
+                    linkStyles={props.linkStyles}
                   >
                     <NavLinkIcon icon={link.icon} />
                     <span>{link.label}</span>
@@ -115,14 +121,31 @@ interface NavbarLinkProps {
   readonly active: boolean;
   readonly onClick: MouseEventHandler;
   readonly children: ReactNode;
+  readonly linkStyles?: {
+    readonly activeColor?: string;
+    readonly strokeWidth?: number;
+    readonly hoverBackgroundOnly?: boolean;
+  };
 }
 
 function NavbarLink(props: NavbarLinkProps): JSX.Element {
+  const { linkStyles } = props;
+  
+  const linkStyle = {
+    ...(linkStyles?.activeColor && props.active && {
+      '--active-color': linkStyles.activeColor,
+    }),
+    ...(linkStyles?.strokeWidth && {
+      '--stroke-width': `${linkStyles.strokeWidth}`,
+    }),
+  } as React.CSSProperties;
+
   return (
     <MedplumLink
       onClick={props.onClick}
       to={props.to}
       className={cx(classes.link, { [classes.linkActive]: props.active })}
+      style={linkStyle}
     >
       {props.children}
     </MedplumLink>
@@ -191,9 +214,49 @@ function getActiveLink(
  */
 function getLinkScore(currentPathname: string, currentSearchParams: URLSearchParams, linkHref: string): number {
   const linkUrl = new URL(linkHref, 'https://example.com');
+  
+  // Special case for Patients (root path) - should be active for '/' and '/Patient/*' paths
+  if (linkUrl.pathname === '/' && (currentPathname === '/' || currentPathname.startsWith('/Patient/'))) {
+    return 1;
+  }
+  
+  // Special case for Tasks - should be active for '/task' and '/Task/*' paths
+  if (linkUrl.pathname === '/task' && (currentPathname === '/task' || currentPathname.startsWith('/Task/'))) {
+    return 1;
+  }
+  
+  // Special case for Project (admin) - should be active for '/admin/project' and '/admin/*' paths, but not '/admin/config'
+  if (linkUrl.pathname === '/admin/project' && (currentPathname === '/admin/project' || (currentPathname.startsWith('/admin/') && currentPathname !== '/admin/config'))) {
+    return 1;
+  }
+  
+  // Special case for Config (admin) - should be active for '/admin/config' only
+  if (linkUrl.pathname === '/admin/config' && currentPathname === '/admin/config') {
+    return 1;
+  }
+  
+  // For resource type links (e.g., /ServiceRequest, /Patient, /Practitioner, etc.)
+  // Check if the current pathname starts with the link pathname
+  // This allows sub-URLs like /ServiceRequest/new to match /ServiceRequest
+  if (linkUrl.pathname !== '/' && linkUrl.pathname !== '/task' && linkUrl.pathname !== '/admin/project' && linkUrl.pathname !== '/admin/config' && currentPathname.startsWith(linkUrl.pathname)) {
+    // Check if the pathname segments match exactly for the resource type part
+    const linkSegments = linkUrl.pathname.split('/').filter(Boolean);
+    const currentSegments = currentPathname.split('/').filter(Boolean);
+    
+    // If the link is a resource type (single segment like /ServiceRequest)
+    if (linkSegments.length === 1 && currentSegments.length >= 1) {
+      // Check if the first segment matches (the resource type)
+      if (linkSegments[0] === currentSegments[0]) {
+        return 1;
+      }
+    }
+  }
+  
+  // For other links, check exact pathname match first
   if (currentPathname !== linkUrl.pathname) {
     return 0;
   }
+  
   const ignoredParams = ['_count', '_offset'];
   for (const [key, value] of linkUrl.searchParams.entries()) {
     if (ignoredParams.includes(key)) {

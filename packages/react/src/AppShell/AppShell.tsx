@@ -23,6 +23,11 @@ export interface AppShellProps {
   readonly displayAddBookmark?: boolean;
   readonly resourceTypeSearchDisabled?: boolean;
   readonly notifications?: ReactNode;
+  readonly navbarLinkStyles?: {
+    readonly activeColor?: string;
+    readonly strokeWidth?: number;
+    readonly hoverBackgroundOnly?: boolean;
+  };
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
@@ -79,7 +84,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
           notifications={props.notifications}
         />
       )}
-      {profile && navbarOpen ? (
+      {profile && (
         <Navbar
           pathname={props.pathname}
           searchParams={props.searchParams}
@@ -87,8 +92,9 @@ export function AppShell(props: AppShellProps): JSX.Element {
           closeNavbar={closeNavbar}
           displayAddBookmark={props.displayAddBookmark}
           resourceTypeSearchDisabled={props.resourceTypeSearchDisabled}
+          linkStyles={props.navbarLinkStyles}
         />
-      ) : undefined}
+      )}
       <MantineAppShell.Main className={classes.main}>
         <ErrorBoundary>
           <Suspense fallback={<Loading />}>{props.children}</Suspense>
