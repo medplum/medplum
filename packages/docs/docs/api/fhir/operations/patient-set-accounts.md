@@ -33,7 +33,7 @@ POST [base]/R4/<ResourceType>/<id>/$set-accounts
 The input is a [FHIR Parameters](/docs/api/fhir/resources/parameters) resource containing:
 
 - `accounts` a reference to set in each resource's _meta.accounts_
-- `propagate` an optional boolean, which instruct the operation to also update resources in the target compartment
+- `propagate` an optional boolean, which instructs the operation to also update resources in the target compartment
 
 Example request payload:
 

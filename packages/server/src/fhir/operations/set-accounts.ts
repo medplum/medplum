@@ -106,7 +106,6 @@ export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse
     const removals = oldAccounts?.filter((o) => !accounts.find((a) => a.reference === o.reference)) ?? [];
 
     // Update the resources in the target compartment to trigger meta.accounts refresh
-    // const bundle = await getPatientEverything(repo, target);
     const bundle = await searchPatientCompartment(repo, target);
     for (const entry of bundle.entry ?? []) {
       const resource = entry.resource;
