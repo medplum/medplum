@@ -2383,7 +2383,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         }
       }
 
-      xhr.send(data);
+      xhr.send(data as XMLHttpRequestBodyInit);
     });
   }
 
