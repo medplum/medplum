@@ -16,11 +16,18 @@
  */
 
 import { MedplumClient } from '@medplum/core';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 
 // Load configuration
-const config = JSON.parse(readFileSync('./medplum.config.json', 'utf8'));
+let config = JSON.parse(readFileSync('./medplum.config.json', 'utf8'));
+
+/**
+ * Saves the updated configuration back to the file
+ */
+function saveConfig(): void {
+  writeFileSync('./medplum.config.json', JSON.stringify(config, null, 2));
+}
 
 interface SubscriptionConfig {
   botName: string;
@@ -72,24 +79,55 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
       // Read the bot source file
       const botSource = readFileSync(bot.source, 'utf8');
 
-      // Create the bot using the Medplum API
-      const botResource = await medplum.createResource({
-        resourceType: 'Bot',
-        name: bot.name,
-        description: `CI/CD Bot: ${bot.name}`,
-        code: botSource,
-        runtimeVersion: 'awslambda',
-        meta: {
-          tag: [
-            {
-              system: 'https://medplum.com/tags',
-              code: 'ci-cd-bot',
-              display: 'CI/CD Bot',
-            },
-          ],
-        },
-      });
-
+      let botResource;
+      
+      if (bot.id) {
+        // Update existing bot
+        console.log(`   Updating existing bot with ID: ${bot.id}`);
+        botResource = await medplum.updateResource({
+          resourceType: 'Bot',
+          id: bot.id,
+          name: bot.name,
+          description: `CI/CD Bot: ${bot.name}`,
+          code: botSource,
+          runtimeVersion: 'awslambda',
+          meta: {
+            tag: [
+              {
+                system: 'https://medplum.com/tags',
+                code: 'ci-cd-bot',
+                display: 'CI/CD Bot',
+              },
+            ],
+          },
+        });
+      } else {
+        // Create new bot
+        console.log(`   Creating new bot`);
+        botResource = await medplum.createResource({
+          resourceType: 'Bot',
+          name: bot.name,
+          description: `CI/CD Bot: ${bot.name}`,
+          code: botSource,
+          runtimeVersion: 'awslambda',
+          meta: {
+            tag: [
+              {
+                system: 'https://medplum.com/tags',
+                code: 'ci-cd-bot',
+                display: 'CI/CD Bot',
+              },
+            ],
+          },
+        });
+        
+        // Update the config with the new bot ID
+        bot.id = botResource.id || '';
+        
+        // Save the updated config to persist the bot ID
+        saveConfig();
+      }
+      
       results.push({
         botName: bot.name,
         botId: botResource.id || '',
@@ -239,12 +277,21 @@ async function createAllSubscriptions(
  * Main function
  */
 async function main(): Promise<void> {
+  const deployOnly = process.argv.includes('--deploy-only');
+  
   try {
-    console.log('🔧 Medplum CI/CD Bots - Complete Setup\n');
-    console.log('This script will:');
-    console.log('1. Build 2 bots that demonstrate code sharing');
-    console.log('2. Deploy bots to Medplum');
-    console.log('3. Create subscriptions with correct bot endpoints\n');
+    if (deployOnly) {
+      console.log('🔧 Medplum CI/CD Bots - Deployment Only\n');
+      console.log('This script will:');
+      console.log('1. Build bots with latest code changes');
+      console.log('2. Deploy bots to Medplum\n');
+    } else {
+      console.log('🔧 Medplum CI/CD Bots - Complete Setup\n');
+      console.log('This script will:');
+      console.log('1. Build 2 bots that demonstrate code sharing');
+      console.log('2. Deploy bots to Medplum');
+      console.log('3. Create subscriptions with correct bot endpoints\n');
+    }
 
     // Step 1: Build bots
     await buildBots();
@@ -259,52 +306,82 @@ async function main(): Promise<void> {
     // Step 3: Deploy bots
     const deployedBots = await deployBots(medplum);
 
-    // Step 4: Create subscriptions
-    const subscriptionResults = await createAllSubscriptions(medplum, deployedBots);
+    // Step 4: Create subscriptions (only if not deploy-only)
+    let subscriptionResults: SubscriptionResult[] = [];
+    if (!deployOnly) {
+      subscriptionResults = await createAllSubscriptions(medplum, deployedBots);
+    }
 
     // Print summary
-    console.log('📊 Setup Summary:');
-    console.log('==================');
-
-    // Bot deployment summary
-    console.log('\n🤖 Bot Deployment:');
-    const successfulBots = deployedBots.filter((r) => r.status === 'success');
-    const failedBots = deployedBots.filter((r) => r.status === 'failed');
-
-    console.log(`✅ Successful: ${successfulBots.length}`);
-    successfulBots.forEach((result) => {
-      console.log(`   - ${result.botName}: ${result.botId}`);
-    });
-
-    if (failedBots.length > 0) {
-      console.log(`❌ Failed: ${failedBots.length}`);
-      failedBots.forEach((result) => {
-        console.log(`   - ${result.botName}: ${result.error}`);
+    if (deployOnly) {
+      console.log('📊 Deployment Summary:');
+      console.log('==================\n');
+      
+      // Bot deployment summary
+      console.log('🤖 Bot Deployment:');
+      const successfulBots = deployedBots.filter(r => r.status === 'success');
+      const failedBots = deployedBots.filter(r => r.status === 'failed');
+      
+      console.log(`✅ Successful: ${successfulBots.length}`);
+      successfulBots.forEach(result => {
+        console.log(`   - ${result.botName}: ${result.botId}`);
       });
-    }
-
-    // Subscription summary
-    console.log('\n🔗 Subscriptions:');
-    const successfulSubs = subscriptionResults.filter((r) => r.status === 'success');
-    const failedSubs = subscriptionResults.filter((r) => r.status === 'failed');
-
-    console.log(`✅ Successful: ${successfulSubs.length}`);
-    successfulSubs.forEach((result) => {
-      console.log(`   - ${result.botName}: ${result.subscriptionId}`);
-    });
-
-    if (failedSubs.length > 0) {
-      console.log(`❌ Failed: ${failedSubs.length}`);
-      failedSubs.forEach((result) => {
-        console.log(`   - ${result.botName}: ${result.error}`);
+      
+      if (failedBots.length > 0) {
+        console.log(`❌ Failed: ${failedBots.length}`);
+        failedBots.forEach(result => {
+          console.log(`   - ${result.botName}: ${result.error}`);
+        });
+      }
+      
+      console.log('\n🎉 Deployment complete!');
+      console.log('\nNext steps:');
+      console.log('1. Test the updated bots by creating/updating resources');
+      console.log('2. Monitor bot execution in the Medplum console');
+    } else {
+      console.log('📊 Setup Summary:');
+      console.log('==================');
+      
+      // Bot deployment summary
+      console.log('\n🤖 Bot Deployment:');
+      const successfulBots = deployedBots.filter(r => r.status === 'success');
+      const failedBots = deployedBots.filter(r => r.status === 'failed');
+      
+      console.log(`✅ Successful: ${successfulBots.length}`);
+      successfulBots.forEach(result => {
+        console.log(`   - ${result.botName}: ${result.botId}`);
       });
+      
+      if (failedBots.length > 0) {
+        console.log(`❌ Failed: ${failedBots.length}`);
+        failedBots.forEach(result => {
+          console.log(`   - ${result.botName}: ${result.error}`);
+        });
+      }
+      
+      // Subscription summary
+      console.log('\n🔗 Subscriptions:');
+      const successfulSubs = subscriptionResults.filter(r => r.status === 'success');
+      const failedSubs = subscriptionResults.filter(r => r.status === 'failed');
+      
+      console.log(`✅ Successful: ${successfulSubs.length}`);
+      successfulSubs.forEach(result => {
+        console.log(`   - ${result.botName}: ${result.subscriptionId}`);
+      });
+      
+      if (failedSubs.length > 0) {
+        console.log(`❌ Failed: ${failedSubs.length}`);
+        failedSubs.forEach(result => {
+          console.log(`   - ${result.botName}: ${result.error}`);
+        });
+      }
+      
+      console.log('\n🎉 Setup complete!');
+      console.log('\nNext steps:');
+      console.log('1. Test the bots by creating/updating Patient resources');
+      console.log('2. Monitor bot execution in the Medplum console');
+      console.log('3. Check subscription status in the Medplum console');
     }
-
-    console.log('\n🎉 Setup complete!');
-    console.log('\nNext steps:');
-    console.log('1. Test the bots by creating/updating Patient resources');
-    console.log('2. Monitor bot execution in the Medplum console');
-    console.log('3. Check subscription status in the Medplum console');
   } catch (error) {
     console.error('💥 Setup failed:', error);
     process.exit(1);
