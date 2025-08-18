@@ -23,7 +23,7 @@ import {
 } from '@medplum/core';
 import { Agent, AgentChannel, Endpoint, Reference } from '@medplum/fhirtypes';
 import { Hl7Client } from '@medplum/hl7';
-import { ChildProcess, ExecException, ExecOptions, exec, spawn } from 'node:child_process';
+import { ChildProcess, ExecException, ExecOptionsWithStringEncoding, exec, spawn } from 'node:child_process';
 import { existsSync, openSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { isIPv4, isIPv6 } from 'node:net';
 import { platform } from 'node:os';
@@ -38,7 +38,10 @@ import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFil
 import { getCurrentStats } from './stats';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
-async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
+async function execAsync(
+  command: string,
+  options: ExecOptionsWithStringEncoding
+): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
     exec(command, options, (ex: ExecException | null, stdout: string, stderr: string) => {
       if (ex) {
