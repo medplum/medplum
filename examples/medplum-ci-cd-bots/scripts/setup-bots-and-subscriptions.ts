@@ -80,7 +80,7 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
       const botSource = readFileSync(bot.source, 'utf8');
 
       let botResource;
-      
+
       if (bot.id) {
         // Update existing bot
         console.log(`   Updating existing bot with ID: ${bot.id}`);
@@ -120,14 +120,14 @@ async function deployBots(medplum: MedplumClient): Promise<BotDeploymentResult[]
             ],
           },
         });
-        
+
         // Update the config with the new bot ID
         bot.id = botResource.id || '';
-        
+
         // Save the updated config to persist the bot ID
         saveConfig();
       }
-      
+
       results.push({
         botName: bot.name,
         botId: botResource.id || '',
@@ -278,7 +278,7 @@ async function createAllSubscriptions(
  */
 async function main(): Promise<void> {
   const deployOnly = process.argv.includes('--deploy-only');
-  
+
   try {
     if (deployOnly) {
       console.log('🔧 Medplum CI/CD Bots - Deployment Only\n');
@@ -316,24 +316,24 @@ async function main(): Promise<void> {
     if (deployOnly) {
       console.log('📊 Deployment Summary:');
       console.log('==================\n');
-      
+
       // Bot deployment summary
       console.log('🤖 Bot Deployment:');
-      const successfulBots = deployedBots.filter(r => r.status === 'success');
-      const failedBots = deployedBots.filter(r => r.status === 'failed');
-      
+      const successfulBots = deployedBots.filter((r) => r.status === 'success');
+      const failedBots = deployedBots.filter((r) => r.status === 'failed');
+
       console.log(`✅ Successful: ${successfulBots.length}`);
-      successfulBots.forEach(result => {
+      successfulBots.forEach((result) => {
         console.log(`   - ${result.botName}: ${result.botId}`);
       });
-      
+
       if (failedBots.length > 0) {
         console.log(`❌ Failed: ${failedBots.length}`);
-        failedBots.forEach(result => {
+        failedBots.forEach((result) => {
           console.log(`   - ${result.botName}: ${result.error}`);
         });
       }
-      
+
       console.log('\n🎉 Deployment complete!');
       console.log('\nNext steps:');
       console.log('1. Test the updated bots by creating/updating resources');
@@ -341,41 +341,41 @@ async function main(): Promise<void> {
     } else {
       console.log('📊 Setup Summary:');
       console.log('==================');
-      
+
       // Bot deployment summary
       console.log('\n🤖 Bot Deployment:');
-      const successfulBots = deployedBots.filter(r => r.status === 'success');
-      const failedBots = deployedBots.filter(r => r.status === 'failed');
-      
+      const successfulBots = deployedBots.filter((r) => r.status === 'success');
+      const failedBots = deployedBots.filter((r) => r.status === 'failed');
+
       console.log(`✅ Successful: ${successfulBots.length}`);
-      successfulBots.forEach(result => {
+      successfulBots.forEach((result) => {
         console.log(`   - ${result.botName}: ${result.botId}`);
       });
-      
+
       if (failedBots.length > 0) {
         console.log(`❌ Failed: ${failedBots.length}`);
-        failedBots.forEach(result => {
+        failedBots.forEach((result) => {
           console.log(`   - ${result.botName}: ${result.error}`);
         });
       }
-      
+
       // Subscription summary
       console.log('\n🔗 Subscriptions:');
-      const successfulSubs = subscriptionResults.filter(r => r.status === 'success');
-      const failedSubs = subscriptionResults.filter(r => r.status === 'failed');
-      
+      const successfulSubs = subscriptionResults.filter((r) => r.status === 'success');
+      const failedSubs = subscriptionResults.filter((r) => r.status === 'failed');
+
       console.log(`✅ Successful: ${successfulSubs.length}`);
-      successfulSubs.forEach(result => {
+      successfulSubs.forEach((result) => {
         console.log(`   - ${result.botName}: ${result.subscriptionId}`);
       });
-      
+
       if (failedSubs.length > 0) {
         console.log(`❌ Failed: ${failedSubs.length}`);
-        failedSubs.forEach(result => {
+        failedSubs.forEach((result) => {
           console.log(`   - ${result.botName}: ${result.error}`);
         });
       }
-      
+
       console.log('\n🎉 Setup complete!');
       console.log('\nNext steps:');
       console.log('1. Test the bots by creating/updating Patient resources');
