@@ -4,7 +4,7 @@ sidebar_position: 10
 
 # CI/CD for Medplum Bots
 
-This guide covers how to implement Continuous Integration and Continuous Deployment (CI/CD) for Medplum bots, including automated testing, deployment, and subscription management.
+This guide covers how to implement Continuous Integration and Continuous Deployment (CI/CD) for Medplum bots, using external system integration examples to demonstrate automated testing, deployment, and subscription management.
 
 ## Overview
 
@@ -14,26 +14,26 @@ CI/CD for bots involves automating the entire lifecycle of bot development, from
 - **Automated Deployment**: Building and deploying bots to Medplum
 - **Subscription Management**: Automatically creating and managing FHIR subscriptions
 - **Environment Management**: Supporting multiple environments (dev, staging, prod)
+- **Code Reuse**: Shared modules and utilities across multiple bots
 
 ## Project Structure
 
-A typical bot project structure looks like this:
+The CI/CD bots example demonstrates external system integration with this structure:
 
 ```
 medplum-ci-cd-bots/
 ├── src/
 │   ├── shared/           # Shared utilities and helpers
-│   │   ├── validation-helpers.ts
-│   │   ├── audit-helpers.ts
 │   │   └── http-helpers.ts
 │   └── bots/            # Individual bot implementations
-│       ├── patient-validation-bot.ts
-│       ├── patient-audit-bot.ts
-│       └── resource-sync-bot.ts
+│       ├── hapi-sync-bot.ts
+│       └── hapi-sync-simple-bot.ts
 ├── scripts/
 │   └── setup-bots-and-subscriptions.ts
 ├── package.json
 ├── medplum.config.json
+├── tsconfig.json
+├── esbuild-script.mjs
 └── README.md
 ```
 
@@ -47,22 +47,16 @@ Define your bots and their configurations:
 {
   "bots": [
     {
-      "name": "patient-validation-bot",
-      "source": "src/bots/patient-validation-bot.ts",
-      "description": "Validates patient data using shared validation functions"
+      "name": "sync-bot",
+      "id": "ea43eb5a-6caa-4ee0-8292-d6b528d8b737",
+      "source": "src/bots/hapi-sync-bot.ts",
+      "dist": "dist/bots/hapi-sync-bot.js"
     },
     {
-      "name": "patient-audit-bot", 
-      "source": "src/bots/patient-audit-bot.ts",
-      "description": "Creates audit events for patient changes"
-    }
-  ],
-  "subscriptions": [
-    {
-      "botName": "patient-validation-bot",
-      "resourceType": "Patient",
-      "criteria": "Patient?_lastUpdated=gt2023-01-01",
-      "description": "Validate all patient updates"
+      "name": "sync-simple-bot",
+      "id": "735d3edc-c9a5-4f90-b497-6ae08c07aa2b",
+      "source": "src/bots/hapi-sync-simple-bot.ts",
+      "dist": "dist/bots/hapi-sync-simple-bot.js"
     }
   ]
 }
@@ -77,38 +71,51 @@ Set up environment-specific configuration:
 export MEDPLUM_BASE_URL="https://dev.medplum.com"
 export MEDPLUM_CLIENT_ID="your-dev-client-id"
 export MEDPLUM_CLIENT_SECRET="your-dev-client-secret"
+export NODE_ENV="development"
+
+# Staging
+export MEDPLUM_BASE_URL="https://staging.medplum.com"
+export MEDPLUM_CLIENT_ID="your-staging-client-id"
+export MEDPLUM_CLIENT_SECRET="your-staging-client-secret"
+export NODE_ENV="staging"
 
 # Production  
 export MEDPLUM_BASE_URL="https://api.medplum.com"
 export MEDPLUM_CLIENT_ID="your-prod-client-id"
 export MEDPLUM_CLIENT_SECRET="your-prod-client-secret"
+export NODE_ENV="production"
 ```
 
 ## Automated Deployment
 
 ### Build Process
 
-Create a build script that compiles all bots:
+The project uses esbuild for automated TypeScript compilation and bundling:
 
-```typescript
-// scripts/build.ts
+```javascript
+// esbuild-script.mjs
 import { build } from 'esbuild';
 import { readdirSync } from 'fs';
 import { join } from 'path';
 
-async function buildBots(): Promise<void> {
+async function buildBots() {
   const botFiles = readdirSync('./src/bots')
     .filter(file => file.endsWith('.ts'))
     .map(file => join('./src/bots', file));
 
   for (const botFile of botFiles) {
+    const botName = botFile.replace('./src/bots/', '').replace('.ts', '');
+    console.log(`Building ${botName}...`);
+    
     await build({
       entryPoints: [botFile],
       bundle: true,
       platform: 'node',
-      target: 'node18',
-      outfile: `dist/${botFile.replace('./src/bots/', '').replace('.ts', '.js')}`,
+      target: 'node20',
+      outfile: `dist/bots/${botName}.js`,
       external: ['@medplum/core', '@medplum/fhirtypes'],
+      format: 'cjs',
+      sourcemap: true,
     });
   }
 }
@@ -118,10 +125,10 @@ buildBots().catch(console.error);
 
 ### Deployment Script
 
-Automate bot deployment using the Medplum API:
+The setup script automates bot deployment and subscription management:
 
 ```typescript
-// scripts/deploy.ts
+// scripts/setup-bots-and-subscriptions.ts
 import { MedplumClient } from '@medplum/core';
 import { readFileSync } from 'fs';
 
@@ -133,24 +140,46 @@ async function deployBots(medplum: MedplumClient): Promise<void> {
     
     const botSource = readFileSync(bot.source, 'utf8');
     
-    const botResource = await medplum.createResource({
-      resourceType: 'Bot',
-      name: bot.name,
-      description: bot.description,
-      code: botSource,
-      runtimeVersion: 'awslambda',
-      meta: {
-        tag: [
-          {
-            system: 'https://medplum.com/tags',
-            code: 'ci-cd-bot',
-            display: 'CI/CD Bot',
-          },
-        ],
-      },
-    });
+    if (bot.id) {
+      // Update existing bot
+      await medplum.updateResource({
+        resourceType: 'Bot',
+        id: bot.id,
+        name: bot.name,
+        description: `CI/CD Bot: ${bot.name}`,
+        code: botSource,
+        runtimeVersion: 'awslambda',
+        meta: {
+          tag: [
+            {
+              system: 'https://medplum.com/tags',
+              code: 'ci-cd-bot',
+              display: 'CI/CD Bot',
+            },
+          ],
+        },
+      });
+    } else {
+      // Create new bot
+      await medplum.createResource({
+        resourceType: 'Bot',
+        name: bot.name,
+        description: `CI/CD Bot: ${bot.name}`,
+        code: botSource,
+        runtimeVersion: 'awslambda',
+        meta: {
+          tag: [
+            {
+              system: 'https://medplum.com/tags',
+              code: 'ci-cd-bot',
+              display: 'CI/CD Bot',
+            },
+          ],
+        },
+      });
+    }
     
-    console.log(`✅ Deployed ${bot.name} with ID: ${botResource.id}`);
+    console.log(`✅ Deployed ${bot.name}`);
   }
 }
 ```
@@ -159,24 +188,20 @@ async function deployBots(medplum: MedplumClient): Promise<void> {
 
 ### Automated Subscription Creation
 
-Create subscriptions automatically for all bots:
+The setup script automatically creates subscriptions for all bots:
 
 ```typescript
-// scripts/create-subscriptions.ts
-import { MedplumClient } from '@medplum/core';
-
+// scripts/setup-bots-and-subscriptions.ts
 async function createSubscription(
   medplum: MedplumClient,
   botName: string,
-  botId: string,
-  resourceType: string,
-  criteria: string
+  botId: string
 ): Promise<any> {
   return await medplum.createResource({
     resourceType: 'Subscription',
     status: 'active',
     reason: `CI/CD Bot: ${botName}`,
-    criteria: criteria,
+    criteria: 'Patient?_lastUpdated=gt2023-01-01',
     channel: {
       type: 'rest-hook',
       endpoint: `https://api.medplum.com/bots/${botName}`,
@@ -188,18 +213,12 @@ async function createSubscription(
 async function createAllSubscriptions(medplum: MedplumClient): Promise<void> {
   const config = JSON.parse(readFileSync('./medplum.config.json', 'utf8'));
   
-  for (const subscription of config.subscriptions) {
-    console.log(`Creating subscription for ${subscription.botName}...`);
+  for (const bot of config.bots) {
+    console.log(`Creating subscription for ${bot.name}...`);
     
-    await createSubscription(
-      medplum,
-      subscription.botName,
-      subscription.botId,
-      subscription.resourceType,
-      subscription.criteria
-    );
+    await createSubscription(medplum, bot.name, bot.id);
     
-    console.log(`✅ Created subscription for ${subscription.botName}`);
+    console.log(`✅ Created subscription for ${bot.name}`);
   }
 }
 ```
@@ -208,34 +227,37 @@ async function createAllSubscriptions(medplum: MedplumClient): Promise<void> {
 
 ### Unit Testing
 
-Test individual bot functions:
+Test individual bot functions and shared utilities:
 
 ```typescript
-// tests/patient-validation-bot.test.ts
-import { validatePatientComprehensive } from '../src/shared/validation-helpers';
+// tests/sync-bot.test.ts
+import { makeConditionalFhirRequest, HTTP_VERBS } from '../src/shared/http-helpers';
 import { Patient } from '@medplum/fhirtypes';
 
-describe('Patient Validation Bot', () => {
-  test('should validate patient with valid data', () => {
+describe('Sync Bot', () => {
+  test('should sync patient to external system', async () => {
     const patient: Patient = {
       resourceType: 'Patient',
+      id: 'test-patient-123',
       name: [{ given: ['John'], family: 'Doe' }],
       birthDate: '1990-01-01',
     };
     
-    const result = validatePatientComprehensive(patient);
-    expect(result.isValid).toBe(true);
-  });
-  
-  test('should reject patient with missing required fields', () => {
-    const patient: Patient = {
-      resourceType: 'Patient',
-      // Missing name and birthDate
-    };
+    // Mock the external request
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ id: 'external-patient-456' }),
+    });
     
-    const result = validatePatientComprehensive(patient);
-    expect(result.isValid).toBe(false);
-    expect(result.errors).toContain('Name is required');
+    const result = await makeConditionalFhirRequest(
+      'http://external-system:8080',
+      'Patient',
+      'identifier=https://medplum.com/patient-id|test-patient-123',
+      HTTP_VERBS.PUT,
+      patient
+    );
+    
+    expect(result.id).toBe('external-patient-456');
   });
 });
 ```
@@ -248,7 +270,7 @@ Test bot execution with real Medplum resources:
 // tests/integration.test.ts
 import { MedplumClient } from '@medplum/core';
 
-describe('Bot Integration Tests', () => {
+describe('Sync Bot Integration Tests', () => {
   let medplum: MedplumClient;
   
   beforeAll(() => {
@@ -259,7 +281,7 @@ describe('Bot Integration Tests', () => {
     });
   });
   
-  test('should process patient update through validation bot', async () => {
+  test('should sync patient update to external system', async () => {
     // Create a test patient
     const patient = await medplum.createResource({
       resourceType: 'Patient',
@@ -276,13 +298,10 @@ describe('Bot Integration Tests', () => {
     // Wait for bot processing
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Verify bot created audit event
-    const auditEvents = await medplum.search('AuditEvent', {
-      'entity.reference': `Patient/${patient.id}`,
-    });
-    
-    expect(auditEvents.entry).toBeDefined();
-    expect(auditEvents.entry!.length).toBeGreaterThan(0);
+    // Verify bot execution logs
+    // Note: In a real test, you would check the external system
+    // to verify the patient was synced correctly
+    expect(updatedPatient.id).toBeDefined();
   });
 });
 ```
@@ -293,7 +312,7 @@ Automate the entire CI/CD process:
 
 ```yaml
 # .github/workflows/deploy-bots.yml
-name: Deploy Bots
+name: Deploy Sync Bots
 
 on:
   push:
@@ -305,10 +324,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
       - run: npm ci
       - run: npm run test
       - run: npm run lint
@@ -318,22 +337,34 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '20'
       - run: npm ci
       - run: npm run build
-      - run: npm run deploy
+      - run: npm run setup:bots
         env:
           MEDPLUM_CLIENT_ID: ${{ secrets.MEDPLUM_CLIENT_ID }}
           MEDPLUM_CLIENT_SECRET: ${{ secrets.MEDPLUM_CLIENT_SECRET }}
           MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
-      - run: npm run setup:subscriptions
-        env:
-          MEDPLUM_CLIENT_ID: ${{ secrets.MEDPLUM_CLIENT_ID }}
-          MEDPLUM_CLIENT_SECRET: ${{ secrets.MEDPLUM_CLIENT_SECRET }}
-          MEDPLUM_BASE_URL: ${{ secrets.MEDPLUM_BASE_URL }}
+```
+
+## Package.json Scripts
+
+The project includes comprehensive CI/CD scripts:
+
+```json
+{
+  "scripts": {
+    "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
+    "clean": "rimraf dist",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "setup:bots": "npm run build && node --loader ts-node/esm scripts/setup-bots-and-subscriptions.ts",
+    "deploy:bots": "npm run build && node --loader ts-node/esm scripts/setup-bots-and-subscriptions.ts --deploy-only"
+  }
+}
 ```
 
 ## Example Implementation
@@ -341,7 +372,8 @@ jobs:
 See the complete [CI/CD Bots Example](https://github.com/medplum/medplum/tree/main/examples/medplum-ci-cd-bots) for a full implementation of these patterns.
 
 This example includes:
-- Automated bot deployment
-- Subscription management
-- Shared code utilities
-- Comprehensive testing
+- External system synchronization bots
+- Automated bot deployment and subscription management
+- Shared HTTP utilities and error handling
+- Comprehensive testing and CI/CD pipeline
+- Environment-specific configuration management

@@ -1,6 +1,6 @@
-# Medplum CI/CD Bots - HAPI FHIR Server Integration
+# Medplum CI/CD Bots Example
 
-This example demonstrates how to create a comprehensive CI/CD (Continuous Integration/Continuous Deployment) system using Medplum bots for HAPI FHIR server synchronization, showcasing code reuse patterns and automated deployment workflows.
+This example demonstrates how to create a comprehensive CI/CD (Continuous Integration/Continuous Deployment) system using Medplum bots, showcasing code reuse patterns, automated deployment workflows, and external system integration.
 
 ## 🎯 Key Features
 
@@ -10,8 +10,8 @@ This example demonstrates how to create a comprehensive CI/CD (Continuous Integr
 - **Environment Management**: Support for dev, staging, and production environments
 - **Version Control Integration**: Automated deployment from code changes
 
-### 2. HAPI FHIR Server Integration
-- **Bidirectional Sync**: Synchronizes patient data between Medplum and HAPI FHIR servers
+### 2. External System Integration
+- **Bidirectional Sync**: Synchronizes patient data between Medplum and external systems
 - **Identifier Management**: Automatically adds and manages cross-system identifiers
 - **Conditional Operations**: Uses FHIR conditional operations for efficient updates
 - **Error Handling**: Comprehensive error handling with standardized OperationOutcome responses
@@ -30,8 +30,8 @@ medplum-ci-cd-bots/
 │   ├── shared/
 │   │   └── http-helpers.ts         # Shared HTTP functions for external APIs
 │   └── bots/
-│       ├── hapi-sync-bot.ts        # Full-featured HAPI sync bot
-│       └── hapi-sync-simple-bot.ts # Simplified HAPI sync bot
+│       ├── hapi-sync-bot.ts        # Example: Full-featured sync bot
+│       └── hapi-sync-simple-bot.ts # Example: Simplified sync bot
 ├── scripts/
 │   └── setup-bots-and-subscriptions.ts  # Automated deployment script
 ├── package.json
@@ -43,8 +43,8 @@ medplum-ci-cd-bots/
 
 ## 🤖 CI/CD Bot Components
 
-### HAPI Sync Bot (Full-Featured)
-- **Purpose**: HAPI FHIR server synchronization with bidirectional identifier management
+### Sync Bot (Full-Featured)
+- **Purpose**: Production-ready external system synchronization with bidirectional identifier management
 - **CI/CD Features**: 
   - Automated deployment with version tracking
   - Environment-specific configuration
@@ -52,14 +52,14 @@ medplum-ci-cd-bots/
   - Integration with CI/CD pipeline
 - **Sync Features**: 
   - Adds Medplum identifiers to patient records for tracking
-  - Enriches patient data with HAPI server identifiers
+  - Enriches patient data with external system identifiers
   - Handles both creation/updates and deletions
   - Skips processing for External EHR authored resources
   - Returns updated patient with cross-system identifiers
 - **Code Reuse**: Uses `makeConditionalFhirRequest()` and `logExternalRequest()` from shared helpers
 
-### HAPI Sync Simple Bot
-- **Purpose**: Simplified HAPI FHIR server synchronization for development and testing
+### Sync Simple Bot
+- **Purpose**: Simplified external system synchronization for development and testing
 - **CI/CD Features**:
   - Lightweight deployment for rapid iteration
   - Simplified error handling for debugging
@@ -76,7 +76,7 @@ medplum-ci-cd-bots/
 ### Prerequisites
 - Node.js 20+ 
 - Medplum account with API access
-- HAPI FHIR server instance (or modify the server URL in bot code)
+- External system for integration (or modify the server URL in bot code)
 - Environment variables configured
 - Git repository for version control
 
@@ -94,12 +94,12 @@ medplum-ci-cd-bots/
    export MEDPLUM_BASE_URL="https://api.medplum.com"  # Optional
    ```
 
-3. **Configure HAPI Server URL**
+3. **Configure External System URL**
    
-   Update the `HAPI_SERVER` constant in both bot files:
+   Update the server URL constant in both bot files:
    ```typescript
    // In src/bots/hapi-sync-bot.ts and src/bots/hapi-sync-simple-bot.ts
-   const HAPI_SERVER = 'http://your-hapi-server:8080';
+   const EXTERNAL_SERVER = 'http://your-external-system:8080';
    ```
 
 4. **Deploy via CI/CD Pipeline**
@@ -184,7 +184,7 @@ npm run test
 1. Create a Patient resource in Medplum
 2. Update the Patient resource
 3. Check bot execution logs in Medplum dashboard
-4. Verify patient data appears in HAPI FHIR server
+4. Verify patient data appears in external system
 5. Check for cross-system identifiers in both systems
 6. Validate CI/CD pipeline deployment success
 
@@ -201,10 +201,10 @@ npm run test
 - Review external request logs for API communication
 - Track deployment success rates and error patterns
 
-### HAPI Server Integration Monitoring
-- Verify patient records appear in HAPI FHIR server
-- Check for Medplum identifiers in HAPI patient records
-- Monitor for HAPI server identifiers in Medplum patient records
+### External System Integration Monitoring
+- Verify patient records appear in external system
+- Check for Medplum identifiers in external system records
+- Monitor for external system identifiers in Medplum patient records
 - Verify subscription delivery status
 - Monitor sync performance and data consistency
 
@@ -218,11 +218,11 @@ npm run test
 5. Use consistent error handling patterns
 6. Add to CI/CD pipeline automation
 
-### Modifying HAPI Server Configuration
+### Modifying External System Configuration
 ```typescript
 // Update server URL and authentication
-const HAPI_SERVER = 'https://your-hapi-server.com/fhir';
-const HAPI_AUTH_HEADERS = {
+const EXTERNAL_SERVER = 'https://your-external-system.com/fhir';
+const EXTERNAL_AUTH_HEADERS = {
   'Authorization': 'Bearer your-token'
 };
 ```
@@ -232,17 +232,17 @@ const HAPI_AUTH_HEADERS = {
 # Development Environment
 export MEDPLUM_BASE_URL="https://dev.medplum.com"
 export NODE_ENV="development"
-# Update HAPI_SERVER to point to dev HAPI instance
+# Update EXTERNAL_SERVER to point to dev external system
 
 # Staging Environment
 export MEDPLUM_BASE_URL="https://staging.medplum.com"
 export NODE_ENV="staging"
-# Update HAPI_SERVER to point to staging HAPI instance
+# Update EXTERNAL_SERVER to point to staging external system
 
 # Production Environment
 export MEDPLUM_BASE_URL="https://api.medplum.com"
 export NODE_ENV="production"
-# Update HAPI_SERVER to point to prod HAPI instance
+# Update EXTERNAL_SERVER to point to prod external system
 ```
 
 ## 📚 CI/CD Best Practices
@@ -295,4 +295,4 @@ For questions or issues:
 
 ---
 
-**Note**: This example demonstrates comprehensive CI/CD patterns for HAPI FHIR server integration with Medplum bots. The pipeline includes automated building, testing, deployment, and monitoring. Adapt the CI/CD patterns and HAPI integration code to your specific requirements and infrastructure. 
+**Note**: This example demonstrates comprehensive CI/CD patterns for external system integration with Medplum bots. The pipeline includes automated building, testing, deployment, and monitoring. Adapt the CI/CD patterns and integration code to your specific requirements and infrastructure. 
