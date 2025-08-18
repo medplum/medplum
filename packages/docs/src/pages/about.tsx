@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import Layout from '@theme/Layout';
 import { JSX } from 'react';
 import { Card } from '../components/Card';
@@ -154,6 +156,13 @@ export default function AboutPage(): JSX.Element {
               imgUrl="/img/people/kevinwadeshaw.jpeg"
               linkedInUrl="https://www.linkedin.com/in/kevinwadeshaw/"
               githubUrl="https://github.com/kevinwadeshaw"
+            />
+            <ProfileCard
+              name="Karl Pietrzak"
+              title="Senior Software Engineer"
+              imgUrl="/img/people/karlpietrzak.jpg"
+              linkedInUrl="https://www.linkedin.com/in/karl-p-30525a5"
+              githubUrl="https://github.com/The-Alchemist"
             />
           </CardContainer>
         </Section>
