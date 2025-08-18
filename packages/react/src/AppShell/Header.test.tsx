@@ -192,7 +192,7 @@ function isMenuOpen(): boolean {
 async function openMenu(): Promise<void> {
   if (!isMenuOpen()) {
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Alice Smith Alice Smith' }));
+      fireEvent.click(screen.getByRole('button', { name: 'User menu' }));
     });
 
     await screen.findByText('Sign out');
