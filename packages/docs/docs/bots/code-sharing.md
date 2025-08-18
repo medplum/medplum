@@ -4,7 +4,7 @@ sidebar_position: 11
 
 # Code Sharing in Medplum Bots
 
-This guide explains how to enable and implement code sharing in Medplum bots, allowing you to reuse functions, utilities, and patterns across multiple bots.
+This guide explains how to enable and implement code sharing in Medplum bots, using external system integration examples to demonstrate reusable functions, utilities, and patterns across multiple bots.
 
 ## Overview
 
@@ -31,138 +31,121 @@ Code sharing in Medplum bots works by **bundling shared code directly into each 
 
 ## Project Structure for Code Sharing
 
-Organize your bot project to enable effective code sharing:
+The CI/CD bots example demonstrates effective code sharing with this structure:
 
 ```
 src/
 ├── shared/                    # Shared code modules
-│   ├── validation.ts         # Shared validation functions
-│   ├── http.ts              # Shared HTTP utilities
-│   ├── audit.ts             # Shared audit functions
-│   ├── types.ts             # Shared type definitions
-│   └── constants.ts         # Shared constants
+│   └── http-helpers.ts       # Shared HTTP utilities for external APIs
 ├── bots/                    # Individual bot implementations
-│   ├── patient-validation-bot.ts
-│   ├── patient-audit-bot.ts
-│   └── resource-sync-bot.ts
-├── build/                   # Build configuration
-│   └── esbuild.config.js
+│   ├── hapi-sync-bot.ts
+│   └── hapi-sync-simple-bot.ts
+├── scripts/                 # Build and deployment scripts
+│   └── setup-bots-and-subscriptions.ts
+├── esbuild-script.mjs       # Build configuration
 └── package.json
 ```
 
 ## Step 1: Create Shared Modules
 
-### Shared Validation Functions
+### Shared HTTP Helpers
+
+The example project includes comprehensive HTTP utilities for external API communication:
 
 ```typescript
-// src/shared/validation.ts
-import { Patient } from '@medplum/fhirtypes';
+// src/shared/http-helpers.ts
+import { OperationOutcomeError } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 
-export interface ValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
+/** HTTP methods used for external API operations */
+export enum HTTP_VERBS {
+  'PUT', // Create or update resource
+  'DELETE', // Delete resource
 }
 
-export function validatePatient(patient: Patient): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  // Validate required fields
-  if (!patient.name || patient.name.length === 0) {
-    errors.push('Patient name is required');
-  }
-
-  if (!patient.birthDate) {
-    errors.push('Patient birth date is required');
-  }
-
-  // Validate name format
-  if (patient.name && patient.name.length > 0) {
-    const name = patient.name[0];
-    if (!name.given || name.given.length === 0) {
-      errors.push('Patient given name is required');
-    }
-    if (!name.family) {
-      errors.push('Patient family name is required');
-    }
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    warnings,
-  };
-}
-```
-
-### Shared HTTP Utilities
-
-```typescript
-// src/shared/http.ts
+/**
+ * Makes an HTTP request to an external service with standardized error handling
+ */
 export async function makeExternalRequest(
   url: string,
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-  body?: any
+  method: HTTP_VERBS,
+  body?: any,
+  headers: Record<string, string> = {}
 ): Promise<any> {
-  const response = await fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  try {
+    const response = await fetch(url, {
+      method: HTTP_VERBS[method],
+      headers: {
+        accept: 'application/fhir+json',
+        'Content-Type': 'application/fhir+json',
+        ...headers,
+      },
+      body: body ? JSON.stringify(body) : null,
+    });
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    if (!response.ok) {
+      // Create standardized OperationOutcome error
+      const operationOutcome: OperationOutcome = {
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'processing',
+            diagnostics: `External request failed: ${response.status} ${response.statusText}`,
+          },
+        ],
+      };
+      throw new OperationOutcomeError(operationOutcome);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error instanceof OperationOutcomeError) {
+      throw error;
+    }
+    
+    // Convert other errors to OperationOutcome
+    const operationOutcome: OperationOutcome = {
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'exception',
+          diagnostics: `Network or processing error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        },
+      ],
+    };
+    throw new OperationOutcomeError(operationOutcome);
   }
-
-  return await response.json();
 }
 
-export function logExternalRequest(operation: string, success: boolean, error?: string): void {
-  console.log(`External Request: ${operation} - ${success ? 'SUCCESS' : 'FAILED'}`);
+/**
+ * Makes a conditional FHIR request to an external FHIR server
+ */
+export async function makeConditionalFhirRequest(
+  baseUrl: string,
+  resourceType: string,
+  conditionalQuery: string,
+  method: HTTP_VERBS,
+  resource?: any
+): Promise<any> {
+  const url = `${baseUrl}/${resourceType}?${conditionalQuery}`;
+  return await makeExternalRequest(url, method, resource);
+}
+
+/**
+ * Logs external request results for monitoring and debugging
+ */
+export function logExternalRequest(
+  operation: string,
+  resourceId: string,
+  success: boolean,
+  error?: string
+): void {
+  console.log(`External Request: ${operation} for ${resourceId} - ${success ? 'SUCCESS' : 'FAILED'}`);
   if (error) {
     console.error(`Error: ${error}`);
   }
-}
-```
-
-### Shared Audit Functions
-
-```typescript
-// src/shared/audit.ts
-import { MedplumClient } from '@medplum/core';
-import { Patient, AuditEvent } from '@medplum/fhirtypes';
-
-export async function createAuditEvent(
-  medplum: MedplumClient,
-  patient: Patient,
-  action: string,
-  description: string
-): Promise<AuditEvent> {
-  return await medplum.createResource({
-    resourceType: 'AuditEvent',
-    action: 'E', // Execute
-    recorded: new Date().toISOString(),
-    outcome: '0', // Success
-    outcomeDesc: description,
-    agent: [
-      {
-        who: {
-          reference: 'Bot/audit-bot',
-        },
-        requestor: false,
-      },
-    ],
-    entity: [
-      {
-        what: {
-          reference: `Patient/${patient.id}`,
-        },
-      },
-    ],
-  });
 }
 ```
 
@@ -171,23 +154,23 @@ export async function createAuditEvent(
 ### Install Required Dependencies
 
 ```bash
-npm install --save-dev esbuild @types/node
+npm install --save-dev esbuild @types/node typescript
 ```
 
 ### Create Build Configuration
 
 ```javascript
-// build/esbuild.config.js
-const esbuild = require('esbuild');
-const { readdirSync } = require('fs');
-const { join } = require('path');
+// esbuild-script.mjs
+import { build } from 'esbuild';
+import { readdirSync } from 'fs';
+import { join } from 'path';
 
 async function buildBot(botFile, outputFile) {
-  await esbuild.build({
+  await build({
     entryPoints: [botFile],
     bundle: true,
     platform: 'node',
-    target: 'node18',
+    target: 'node20',
     outfile: outputFile,
     external: ['@medplum/core', '@medplum/fhirtypes'],
     format: 'cjs',
@@ -202,7 +185,7 @@ async function buildAllBots() {
 
   for (const botFile of botFiles) {
     const botName = botFile.replace('./src/bots/', '').replace('.ts', '');
-    const outputFile = `dist/${botName}.js`;
+    const outputFile = `dist/bots/${botName}.js`;
     
     console.log(`Building ${botName}...`);
     await buildBot(botFile, outputFile);
@@ -217,105 +200,232 @@ buildAllBots().catch(console.error);
 ```json
 {
   "scripts": {
-    "build": "node build/esbuild.config.js",
-    "build:watch": "node build/esbuild.config.js --watch",
-    "clean": "rm -rf dist",
-    "deploy": "npm run build && npm run deploy:bots"
+    "build": "npm run clean && npm run lint && tsc && node --no-warnings esbuild-script.mjs",
+    "clean": "rimraf dist",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "setup:bots": "npm run build && node --loader ts-node/esm scripts/setup-bots-and-subscriptions.ts"
   }
 }
 ```
 
 ## Step 3: Import Shared Code in Bots
 
-### Example Bot Using Shared Functions
+### Example Bot Using Shared HTTP Functions
 
 ```typescript
-// src/bots/patient-validation-bot.ts
+// src/bots/hapi-sync-bot.ts
 import { BotEvent, MedplumClient } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
-import { validatePatient } from '../shared/validation';
-import { createAuditEvent } from '../shared/audit';
+import { Patient, Identifier } from '@medplum/fhirtypes';
+import { 
+  makeConditionalFhirRequest, 
+  HTTP_VERBS, 
+  logExternalRequest 
+} from '../shared/http-helpers';
+
+/** Base URL for the external system */
+const EXTERNAL_SERVER = 'http://external-system:8080';
+
+/**
+ * Synchronizes a patient resource to the external system
+ */
+async function syncExternalResource(patient: Patient, verb: HTTP_VERBS): Promise<Patient> {
+  try {
+    // Add Medplum identifier to the patient for tracking
+    const patientForExternal = {
+      ...patient,
+      identifier: [
+        ...(patient.identifier || []),
+        {
+          system: 'https://medplum.com/patient-id',
+          value: patient.id || 'unknown',
+        } as Identifier,
+      ],
+    };
+
+    // Use shared HTTP function for external request
+    const responseData = await makeConditionalFhirRequest(
+      EXTERNAL_SERVER,
+      'Patient',
+      `https://medplum.com/patient-id|${patient.id}`,
+      verb,
+      patientForExternal
+    );
+
+    // Log successful request using shared logging function
+    logExternalRequest(
+      `External sync ${verb}`,
+      patient.id || 'unknown',
+      true
+    );
+
+    // Process response and return updated patient
+    const externalPatientId = responseData.id;
+    if (externalPatientId && verb === HTTP_VERBS['PUT']) {
+      // Add external system identifier to patient
+      const updatedIdentifiers = [...(patient.identifier || [])];
+      const existingExternalIdentifier = updatedIdentifiers.find(
+        (id) => id.system === 'https://external-system.com/patient-id'
+      );
+
+      if (!existingExternalIdentifier) {
+        updatedIdentifiers.push({
+          system: 'https://external-system.com/patient-id',
+          value: externalPatientId,
+        } as Identifier);
+      } else {
+        existingExternalIdentifier.value = externalPatientId;
+      }
+
+      return {
+        ...patient,
+        identifier: updatedIdentifiers,
+      };
+    }
+
+    return patient;
+  } catch (error) {
+    // Log failed request using shared logging function
+    logExternalRequest(
+      `External sync ${verb}`,
+      patient.id || 'unknown',
+      false,
+      error instanceof Error ? error.message : String(error)
+    );
+    throw error;
+  }
+}
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   const patient = event.input as Patient;
+  const verb = event.headers?.['x-medplum-delete'] ? HTTP_VERBS.DELETE : HTTP_VERBS.PUT;
   
-  console.log(`Validating patient ${patient.id}`);
-  
-  // Use shared validation function
-  const validationResult = validatePatient(patient);
-  
-  if (!validationResult.isValid) {
-    console.error(`Validation failed: ${validationResult.errors.join(', ')}`);
-    
-    // Use shared audit function
-    await createAuditEvent(
-      medplum,
-      patient,
-      'validation-failed',
-      `Validation failed: ${validationResult.errors.join(', ')}`
+  return await syncExternalResource(patient, verb);
+}
+```
+
+### Simplified Bot Using Shared Functions
+
+```typescript
+// src/bots/hapi-sync-simple-bot.ts
+import { BotEvent, MedplumClient } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
+import { 
+  makeConditionalFhirRequest, 
+  HTTP_VERBS, 
+  logExternalRequest 
+} from '../shared/http-helpers';
+
+const EXTERNAL_SERVER = 'http://external-system:8080';
+
+async function syncExternalResource(patient: Patient, verb: HTTP_VERBS): Promise<boolean> {
+  try {
+    const patientForExternal = {
+      ...patient,
+      identifier: [
+        ...(patient.identifier || []),
+        {
+          system: 'https://medplum.com/patient-id',
+          value: patient.id || 'unknown',
+        },
+      ],
+    };
+
+    // Use shared HTTP function
+    await makeConditionalFhirRequest(
+      EXTERNAL_SERVER,
+      'Patient',
+      `https://medplum.com/patient-id|${patient.id}`,
+      verb,
+      patientForExternal
     );
-    
-    throw new Error(`Patient validation failed: ${validationResult.errors.join(', ')}`);
+
+    // Use shared logging function
+    logExternalRequest(
+      `External sync ${verb}`,
+      patient.id || 'unknown',
+      true
+    );
+
+    return true;
+  } catch (error) {
+    logExternalRequest(
+      `External sync ${verb}`,
+      patient.id || 'unknown',
+      false,
+      error instanceof Error ? error.message : String(error)
+    );
+    throw error;
   }
+}
+
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+  const patient = event.input as Patient;
+  const verb = event.headers?.['x-medplum-delete'] ? HTTP_VERBS.DELETE : HTTP_VERBS.PUT;
   
-  // Log warnings if any
-  if (validationResult.warnings.length > 0) {
-    console.warn(`Validation warnings: ${validationResult.warnings.join(', ')}`);
-  }
-  
-  console.log(`Patient ${patient.id} validation successful`);
-  
-  return {
-    success: true,
-    warnings: validationResult.warnings,
-  };
+  return await syncExternalResource(patient, verb);
 }
 ```
 
 ## Step 4: Deploy with Shared Code
 
-### Manual Deployment
-
-1. **Build the bots** with shared code included:
-   ```bash
-   npm run build
-   ```
-
-2. **Deploy each bot** with the bundled code:
-   ```bash
-   # Deploy each bot individually
-   medplum bot create patient-validation-bot dist/patient-validation-bot.js
-   medplum bot create patient-audit-bot dist/patient-audit-bot.js
-   ```
-
 ### Automated Deployment
 
+The setup script handles the complete CI/CD pipeline:
+
 ```typescript
-// scripts/deploy.ts
+// scripts/setup-bots-and-subscriptions.ts
 import { MedplumClient } from '@medplum/core';
 import { readFileSync } from 'fs';
 
 async function deployBots(medplum: MedplumClient): Promise<void> {
-  const botFiles = [
-    'dist/patient-validation-bot.js',
-    'dist/patient-audit-bot.js',
-    'dist/resource-sync-bot.js',
-  ];
+  const config = JSON.parse(readFileSync('./medplum.config.json', 'utf8'));
   
-  for (const botFile of botFiles) {
-    const botName = botFile.replace('dist/', '').replace('.js', '');
-    console.log(`Deploying ${botName}...`);
+  for (const bot of config.bots) {
+    console.log(`Deploying ${bot.name}...`);
     
-    const botCode = readFileSync(botFile, 'utf8');
+    const botSource = readFileSync(bot.source, 'utf8');
     
-    await medplum.createResource({
-      resourceType: 'Bot',
-      name: botName,
-      code: botCode,
-      runtimeVersion: 'awslambda',
-    });
+    if (bot.id) {
+      // Update existing bot
+      await medplum.updateResource({
+        resourceType: 'Bot',
+        id: bot.id,
+        name: bot.name,
+        description: `CI/CD Bot: ${bot.name}`,
+        code: botSource,
+        runtimeVersion: 'awslambda',
+        meta: {
+          tag: [
+            {
+              system: 'https://medplum.com/tags',
+              code: 'ci-cd-bot',
+              display: 'CI/CD Bot',
+            },
+          ],
+        },
+      });
+    } else {
+      // Create new bot
+      await medplum.createResource({
+        resourceType: 'Bot',
+        name: bot.name,
+        description: `CI/CD Bot: ${bot.name}`,
+        code: botSource,
+        runtimeVersion: 'awslambda',
+        meta: {
+          tag: [
+            {
+              system: 'https://medplum.com/tags',
+              code: 'ci-cd-bot',
+              display: 'CI/CD Bot',
+            },
+          ],
+        },
+      });
+    }
     
-    console.log(`✅ Deployed ${botName}`);
+    console.log(`✅ Deployed ${bot.name}`);
   }
 }
 ```
@@ -333,36 +443,73 @@ When you update shared code, you must redeploy all bots that use it:
    ```
 3. **Redeploy all affected bots**:
    ```bash
-   npm run deploy
+   npm run setup:bots
    ```
 
-### Example: Adding New Validation Rule
+### Example: Adding New HTTP Helper Function
 
 ```typescript
-// src/shared/validation.ts
-export function validatePatient(patient: Patient): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  // Existing validation...
-  
-  // New validation rule
-  if (patient.birthDate) {
-    const birthDate = new Date(patient.birthDate);
-    if (birthDate > new Date()) {
-      errors.push('Birth date cannot be in the future');
-    }
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    warnings,
-  };
+// src/shared/http-helpers.ts
+// Add new function for authentication
+export async function makeAuthenticatedRequest(
+  url: string,
+  method: HTTP_VERBS,
+  authToken: string,
+  body?: any
+): Promise<any> {
+  return await makeExternalRequest(url, method, body, {
+    'Authorization': `Bearer ${authToken}`,
+  });
 }
 ```
 
-After updating the shared validation function, rebuild and redeploy all bots that use it.
+After updating the shared HTTP helpers, rebuild and redeploy all bots that use them.
+
+## Testing Shared Code
+
+### Unit Testing Shared Functions
+
+```typescript
+// tests/http-helpers.test.ts
+import { makeConditionalFhirRequest, HTTP_VERBS, logExternalRequest } from '../src/shared/http-helpers';
+
+describe('HTTP Helpers', () => {
+  test('should make conditional FHIR request', async () => {
+    // Mock fetch
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ id: 'test-123' }),
+    });
+
+    const result = await makeConditionalFhirRequest(
+      'http://test-server.com',
+      'Patient',
+      'identifier=test|123',
+      HTTP_VERBS.PUT,
+      { resourceType: 'Patient' }
+    );
+
+    expect(result.id).toBe('test-123');
+  });
+
+  test('should handle HTTP errors with OperationOutcome', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      statusText: 'Bad Request',
+    });
+
+    await expect(
+      makeConditionalFhirRequest(
+        'http://test-server.com',
+        'Patient',
+        'identifier=test|123',
+        HTTP_VERBS.PUT
+      )
+    ).rejects.toThrow('OperationOutcomeError');
+  });
+});
+```
 
 ## Best Practices
 
@@ -371,7 +518,7 @@ After updating the shared validation function, rebuild and redeploy all bots tha
 - **Keep shared functions pure**: Avoid side effects in shared functions
 - **Use consistent interfaces**: Standardize function signatures across shared modules
 - **Document shared functions**: Include JSDoc comments for all shared functions
-- **Group related functions**: Organize shared code by functionality
+- **Group related functions**: Organize shared code by functionality (HTTP, validation, etc.)
 
 ### Build Process
 
@@ -430,8 +577,9 @@ After updating the shared validation function, rebuild and redeploy all bots tha
 See the [CI/CD Bots Example](https://github.com/medplum/medplum/tree/main/examples/medplum-ci-cd-bots) for a complete implementation of code sharing patterns.
 
 This example demonstrates:
-- Shared validation and audit functions
-- Automated build and deployment process
+- Shared HTTP utilities for external API communication
+- Automated build and deployment process with esbuild
 - Proper project structure for code sharing
 - Testing strategies for shared code
-- Monitoring and observability patterns 
+- CI/CD pipeline integration
+- External system synchronization patterns 
