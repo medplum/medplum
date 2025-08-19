@@ -1650,6 +1650,23 @@
           "VisionPrescription"
         ]
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ServiceRequest-reasonCode",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ServiceRequest-reasonCode",
+        "url": "https://medplum.com/fhir/SearchParameter/ServiceRequest-reasonCode",
+        "version": "4.0.1",
+        "name": "reasonCode",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Coded value representing the reason for this ServiceRequest.  NOTE: The underlying field will change in FHIR R5 to ServiceRequest.reason.where(concept.exists())",
+        "code": "reason",
+        "base": ["ServiceRequest"],
+        "type": "token",
+        "expression": "ServiceRequest.reasonCode"
+      }
     }
   ]
 }
