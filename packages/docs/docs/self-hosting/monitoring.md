@@ -60,7 +60,7 @@ PostgreSQL metrics provide detailed insight into data layer performance.
 **Connection Count** tracks active database connections. PostgreSQL creates roughly one process per connection, so monitor to avoid resource exhaustion.
 
 ### Query Efficiency
-**Tuples Read/Written** measure database activity at the row level. A "tuple" is essentially a row, though it can also exist in indexes.
+**Tuples Read/Written** measure database activity at the row level. A "tuple" is essentially a single row in a database table, but they are also used to build database indexes.
 
 **Tuples Scanned vs. Fetched** reveals query efficiency. When scanned significantly exceeds fetched, the database is loading data it ultimately discards, indicating inefficient queries or missing indexes.
 
