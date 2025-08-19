@@ -105,7 +105,7 @@ When CPU exceeds this threshold, the Node.js main thread is fully occupied and a
 ### High-Priority Alerts
 Set up immediate alerts for metrics that directly impact users:
 - 500 error rates, especially load balancer error rates (504s)
-- Database writer CPU > 60-70%
+- Database writer CPU > 50-60%, sustained for more than a few minutes
 - Response time increases (P50 and P99 at different thresholds)
 
 ### Supporting Alerts
