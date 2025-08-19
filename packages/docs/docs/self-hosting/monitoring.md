@@ -19,7 +19,7 @@ Monitoring metrics are organized by layer in your stack, from highest-level user
 
 ## Server-Level Metrics
 
-These metrics come directly from the Medplum server and provide the richest view of application behavior.
+These metrics come directly from the Medplum server and provide the most comprehensive view of application behavior.
 
 ### Connection Health
 **Round-Trip Time (RTT)** tracks network latency between the server and both PostgreSQL and Redis. Spikes indicate connectivity issues or performance bottlenecks that can slow down the entire application.
