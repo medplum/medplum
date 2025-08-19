@@ -82,7 +82,7 @@ Redis serves as a fast in-memory cache to reduce database load and store ephemer
 
 ## Container Metrics
 
-If using containerized deployment (Docker, Kubernetes, ECS, etc.), these metrics track resource usage at the container level.
+These metrics track resource usage at the system level, whether running on bare metal servers, virtual machines, or containerized deployments (Docker, Kubernetes, ECS, etc.).
 
 ### CPU Considerations for Node.js
 **CPU Utilization** requires special interpretation for Node.js applications. Since Node.js is single-threaded for application code, one fully-utilized core represents 100% application capacity.
