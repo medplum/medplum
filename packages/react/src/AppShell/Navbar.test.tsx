@@ -498,9 +498,7 @@ describe('Navbar', () => {
               menus={[
                 {
                   title: 'Menu 1',
-                  links: [
-                    { label: 'Link 1', href: '/link1' },
-                  ],
+                  links: [{ label: 'Link 1', href: '/link1' }],
                 },
               ]}
               resourceTypeSearchDisabled={true}
@@ -534,9 +532,7 @@ describe('Navbar', () => {
               menus={[
                 {
                   title: 'Menu 1',
-                  links: [
-                    { label: 'Link 1', href: '/link1' },
-                  ],
+                  links: [{ label: 'Link 1', href: '/link1' }],
                 },
               ]}
               linkStyles={{
@@ -571,9 +567,7 @@ describe('Navbar', () => {
               menus={[
                 {
                   title: 'Menu 1',
-                  links: [
-                    { label: 'Link 1', href: '/link1' },
-                  ],
+                  links: [{ label: 'Link 1', href: '/link1' }],
                 },
               ]}
               displayAddBookmark={true}
@@ -585,13 +579,13 @@ describe('Navbar', () => {
 
     // Component should render without errors even without pathname/searchParams
     expect(screen.getByText('Menu 1')).toBeInTheDocument();
-    
+
     // Bookmark dialog should not be rendered when pathname/searchParams are missing
     const button = screen.getByRole('button', { name: 'Add Bookmark' }) as HTMLButtonElement;
     await act(async () => {
       fireEvent.click(button);
     });
-    
+
     // Should not find bookmark dialog input
     expect(screen.queryByPlaceholderText('Bookmark Name')).not.toBeInTheDocument();
   });
@@ -858,7 +852,7 @@ describe('Navbar', () => {
 
     const linkWithCount = screen.getByText('Link with Count');
     expect(linkWithCount).toBeInTheDocument();
-    
+
     // This should be active because _count and _offset are ignored
     const otherLink = screen.getByText('Other');
     const activeClass = linkWithCount.parentElement?.className;
@@ -901,7 +895,7 @@ describe('Navbar', () => {
 
     const mismatchedLink = screen.getByText('Mismatched Link');
     expect(mismatchedLink).toBeInTheDocument();
-    
+
     // Just verify both links are rendered - the important thing is that the code path is covered
     const otherLink = screen.getByText('Other');
     expect(mismatchedLink).toBeInTheDocument();
@@ -943,7 +937,7 @@ describe('Navbar', () => {
 
     const exactMatch = screen.getByText('Exact Match');
     expect(exactMatch).toBeInTheDocument();
-    
+
     // This should be active because current _count and _offset are ignored
     const otherLink = screen.getByText('Other');
     const activeClass = exactMatch.parentElement?.className;
@@ -986,10 +980,10 @@ describe('Navbar', () => {
 
     const higherScoreLink = screen.getByText('Higher Score Link');
     expect(higherScoreLink).toBeInTheDocument();
-    
+
     const lowerScoreLink = screen.getByText('Lower Score Link');
     expect(lowerScoreLink).toBeInTheDocument();
-    
+
     // Higher Score Link should be active (higher score due to extra matching parameter)
     const higherScoreClass = higherScoreLink.parentElement?.className;
     const lowerScoreClass = lowerScoreLink.parentElement?.className;
