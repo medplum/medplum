@@ -38,7 +38,7 @@ These metrics come directly from the Medplum server and provide the most compreh
 
 ## Load Balancer Metrics
 
-These metrics measure what users actually experience and provide the most accurate view of external performance.
+These metrics measure traffic closer to the end user and provide a more accurate view of external performance.
 
 ### Traffic and Performance
 **Request Count** tracks total incoming requests. Compare with server-level metrics to identify discrepancies that might indicate routing issues.
