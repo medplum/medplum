@@ -1,7 +1,5 @@
-/*
- * This is a generated file
- * Do not edit manually.
- */
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 
 export * as v1 from './v1';
 export * as v2 from './v2';
