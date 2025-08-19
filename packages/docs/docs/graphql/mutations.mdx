@@ -106,6 +106,74 @@ This examples demonstrates how to create a mutation that creates a [`Communicati
   </MedplumCodeBlock>
 </details>
 
+## Patch Mutation
+
+You can partially update a resource using the `[resourceType]Patch` mutation. This mutation takes an `id` and a `patch` array of operations (see [RFC 6902](https://datatracker.ietf.org/doc/html/rfc6902)).
+
+<Tabs groupId="language">
+  <TabItem value="graphql" label="GraphQL">
+    <MedplumCodeBlock language="graphql">
+{`
+mutation {
+  PatientPatch(
+    id: "example-id"
+    patch: [
+      { op: "replace", path: "/name/0/family", value: "Smith" },
+      { op: "replace", path: "/gender", value: "male" }
+    ]
+  ) {
+    id
+    gender
+    name { family given }
+  }
+}
+`}
+    </MedplumCodeBlock>
+  </TabItem>
+  <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts">
+{`
+const result = await medplum.graphql(`
+mutation {
+  PatientPatch(
+    id: "example-id"
+    patch: [
+      { op: "replace", path: "/name/0/family", value: "Smith" },
+      { op: "replace", path: "/gender", value: "male" }
+    ]
+  ) {
+    id
+    gender
+    name { family given }
+  }
+}
+`);
+`}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+> **Note:** The `value` field in the patch operation is always a string due to GraphQL input type limitations. For complex values, encode as JSON strings and decode server-side if needed.
+
+<details>
+  <summary>Example Response</summary>
+  <MedplumCodeBlock language="json">
+{`
+{
+  "data": {
+    "PatientPatch": {
+      "id": "example-id",
+      "gender": "male",
+      "name": [
+        { "family": "Smith", "given": ["Alice"] }
+      ]
+    }
+  }
+}
+`}
+  </MedplumCodeBlock>
+</details>
+
 ## Delete Mutation
 
 <Tabs groupId="language">
