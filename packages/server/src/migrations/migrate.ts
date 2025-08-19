@@ -411,7 +411,7 @@ export function buildCreateTables(
       { name: 'content', type: 'TEXT', notNull: true },
       { name: 'lastUpdated', type: 'TIMESTAMPTZ', notNull: true },
       { name: 'deleted', type: 'BOOLEAN', notNull: true, defaultValue: 'false' },
-      { name: 'projectId', type: 'UUID' },
+      { name: 'projectId', type: 'UUID', notNull: true },
       { name: '__version', type: 'INTEGER' },
       { name: '_source', type: 'TEXT' },
       { name: '_profile', type: 'TEXT[]' },
@@ -924,8 +924,12 @@ export async function executeMigrationActions(
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
-        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        await fns.query(client, results, query);
+        if (action.notNull) {
+          await fns.nonBlockingAlterColumnNotNull(client, results, action.tableName, action.columnName);
+        } else {
+          const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+          await fns.query(client, results, query);
+        }
         break;
       }
       case 'ALTER_COLUMN_TYPE': {
@@ -997,8 +1001,14 @@ function writeActionsToBuilder(b: FileBuilder, actions: MigrationAction[]): void
         break;
       }
       case 'ALTER_COLUMN_UPDATE_NOT_NULL': {
-        const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
-        b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        if (action.notNull) {
+          b.appendNoWrap(
+            `await fns.nonBlockingAlterColumnNotNull(client, results, \`${action.tableName}\`, \`${action.columnName}\`);`
+          );
+        } else {
+          const query = getAlterColumnUpdateNotNullQuery(action.tableName, action.columnName, action.notNull);
+          b.appendNoWrap(`await fns.query(client, results, \`${query}\`);`);
+        }
         break;
       }
       case 'ALTER_COLUMN_TYPE': {

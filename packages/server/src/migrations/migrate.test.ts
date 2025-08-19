@@ -82,6 +82,7 @@ describe('Generator', () => {
         {
           name: 'projectId',
           type: 'UUID',
+          notNull: true,
         },
         {
           name: '__version',
