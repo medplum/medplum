@@ -19,7 +19,12 @@ export function IntegrationCard(props: IntegrationCardProps): JSX.Element {
   return (
     <Paper radius="md" withBorder shadow="md" p="md" bg="var(--mantine-color-body)" maw={300}>
       <Group wrap="nowrap">
-        <Avatar src={props.imageUrl} size={48} radius="md" style={{ border: '1px solid var(--mantine-color-gray-2)' }} />
+        <Avatar
+          src={props.imageUrl}
+          size={48}
+          radius="md"
+          style={{ border: '1px solid var(--mantine-color-gray-2)' }}
+        />
         <div>
           <Text fz="xl" fw={800}>
             {props.name}
@@ -27,9 +32,9 @@ export function IntegrationCard(props: IntegrationCardProps): JSX.Element {
           <Group wrap="nowrap" gap={4} mt={-2}>
             <IconWorld stroke={2} size={12} color="var(--mantine-primary-color-6)" className={classes.icon} />
             <Text fz="xs" c="dimmed">
-              <a 
-                href={props.url} 
-                target="_blank" 
+              <a
+                href={props.url}
+                target="_blank"
                 rel="noopener noreferrer"
                 style={{ color: 'var(--mantine-primary-color-6)', textDecoration: 'none' }}
               >
@@ -41,7 +46,7 @@ export function IntegrationCard(props: IntegrationCardProps): JSX.Element {
       </Group>
       <Group mt="sm" gap={4}>
         {props.tags.map((tag) => (
-          <Badge variant="light" color="gray" key={tag} size='sm'>
+          <Badge variant="light" color="gray" key={tag} size="sm">
             {tag}
           </Badge>
         ))}
