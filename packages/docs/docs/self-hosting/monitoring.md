@@ -62,7 +62,7 @@ PostgreSQL metrics provide detailed insight into data layer performance.
 ### Query Efficiency
 **Tuples Read/Written** measure database activity at the row level. A "tuple" is essentially a single row in a database table, but they are also used to build database indexes.
 
-**Tuples Scanned vs. Fetched** reveals query efficiency. When scanned significantly exceeds fetched, the database is loading data it ultimately discards, indicating inefficient queries or missing indexes.
+**Tuples Scanned vs. Fetched** reveals query efficiency. When scanned significantly exceeds fetched, the database is reading data it ultimately discards, indicating inefficient queries or missing indexes.
 
 **Transactions Per Second** shows overall database activity. The metric splits between commits (successful) and rollbacks (failed). Spikes in rollbacks usually indicate problems.
 
