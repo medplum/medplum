@@ -43,7 +43,7 @@ These metrics measure traffic closer to the end user and provide a more accurate
 ### Traffic and Performance
 **Request Count** tracks total incoming requests. Compare with server-level metrics to identify discrepancies that might indicate routing issues.
 
-**Response Time** measured at the load balancer level reflects actual user experience better than server-side measurements. Track both median (P50) and 99th percentile (P99) response times.
+**Response Time** measured at the load balancer level reflects actual user experience better than server-side measurements. We recommend tracking both median (P50) and 99th percentile (P99) response times, instead of just the average, to better identify performance issues.
 
 ### Error Tracking
 **HTTP Error Responses** (4xx, 5xx) measured at the load balancer are the definitive source for user-facing errors. Pay special attention to 504 timeouts, which occur when the server takes too long to respond even if the operation eventually succeeds.
