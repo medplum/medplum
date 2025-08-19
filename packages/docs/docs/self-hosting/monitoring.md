@@ -76,7 +76,7 @@ Redis serves as a fast in-memory cache to reduce database load and store ephemer
 **Cache Hit/Miss Ratio** shows cache effectiveness. Some misses are normal, but unusual spikes might indicate application issues or invalid reference patterns.
 
 ### Capacity Management
-**Evictions** occur when Redis runs out of memory and must remove least-recently-used items. Ideally this should be zero, but occasional evictions aren't necessarily problematic if your working set still fits in cache.
+**Evictions** occur when Redis runs out of memory and must remove least-recently-used items. Ideally this should be zero, but occasional evictions aren't necessarily problematic if all the data being operated on at one time still fits in cache.
 
 **Alert Recommendation**: Monitor for evictions > 0 as an early warning of capacity issues.
 
