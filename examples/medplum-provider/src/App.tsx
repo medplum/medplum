@@ -90,7 +90,7 @@ export function App(): JSX.Element | null {
           links: [{ icon: <IconCalendarEvent />, label: 'Schedule', href: '/schedule' }],
         },
         {
-          links: [{ icon: <IconMail />, label: 'Messages', href: '/messages' }],
+          links: [{ icon: <IconMail />, label: 'Messages', href: '/Message' }],
         },
         {
           links: [{ icon: <IconClipboardCheck />, label: 'Tasks', href: '/task' }],
