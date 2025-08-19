@@ -19,22 +19,22 @@ Monitoring metrics are organized by layer in your stack, from highest-level user
 
 ## Server-Level Metrics
 
-These metrics come directly from the Medplum server and provide the most comprehensive view of application behavior.
+These metrics come directly from the Medplum server and provide the most comprehensive view of application behavior. Specifically, these are OpenTelemetry metrics, and the exact names of those metrics are included below; see [our OTel doc](./opentelemetry.md) for a configuration guide and more details. 
 
 ### Connection Health
-**Round-Trip Time (RTT)** tracks network latency between the server and both PostgreSQL and Redis. Spikes indicate connectivity issues or performance bottlenecks that can slow down the entire application.
+**Round-Trip Time (RTT)** tracks network latency between the server and PostgreSQL (`medplum.db.healthcheckRTT`), as well as the server and Redis (`medplum.redis.healthcheckRTT`). Spikes indicate connectivity issues or performance bottlenecks that can slow down the entire application.
 
-**Queries Awaiting Client** measures database queries waiting for an available connection from the server's connection pool. High or sustained values suggest the database is overwhelmed or the connection pool is exhausted.
+**Queries Awaiting Client** (`medplum.db.queriesAwaitingClient`) measures database queries waiting for an available connection from the server's connection pool. High or sustained values suggest the database is overwhelmed or the connection pool is exhausted.
 
-**Used Heap Size** shows Node.js memory consumption. Monitor for steady increases that might indicate memory leaks.
+**Used Heap Size** (`medplum.node.usedHeapSize`) shows Node.js memory consumption. Monitor for steady increases that might indicate memory leaks.
 
 ### FHIR Operations
-**FHIR Interaction Counts** break down API activity by operation type (reads, searches, writes). This helps you understand usage patterns and identify which operations are consuming the most resources.
+**FHIR Interaction Counts** break down API activity by operation type (reads `medplum.fhir.interaction.read.count`, searches `medplum.fhir.interaction.search.count`, create `medplum.fhir.interaction.create.count`, update `medplum.fhir.interaction.update.count`, delete `medplum.fhir.interaction.delete.count`). This helps you understand usage patterns and identify which operations are consuming the most resources.
 
-**FHIR Error Rates** track failed operations by type. Some fluctuation is normal, especially for writes at low volume, but sustained increases warrant investigation.
+**FHIR Error Rates** track failed operations by type. Some fluctuation is normal, especially for writes at low volume, but sustained increases warrant investigation. Names of metrics are the same as those for FHIR Interaction Counts, with a proper filter for where `result="failure"`. 
 
 ### Subscription Processing
-**Pending Subscriptions** shows subscriptions waiting to be processed. High queue depths correlate with database performance issues since subscriptions generate audit events that require database writes.
+**Pending Subscriptions** shows subscriptions waiting to be processed. High queue depths correlate with database performance issues since subscriptions generate audit events that require database writes. Waiting count (`medplum.subscription.waitingCount`) and delayed count (`medplum.subscription.delayedCount`) are both recorded. 
 
 ## Load Balancer Metrics
 
