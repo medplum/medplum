@@ -46,7 +46,7 @@ These metrics measure traffic closer to the end user and provide a more accurate
 **Response Time** measured at the load balancer level reflects actual user experience better than server-side measurements. We recommend tracking both median (P50) and 99th percentile (P99) response times, instead of just the average, to better identify performance issues.
 
 ### Error Tracking
-**HTTP Error Responses** (4xx, 5xx) measured at the load balancer are the definitive source for user-facing errors. Pay special attention to 504 timeouts, which occur when the server takes too long to respond even if the operation eventually succeeds.
+**HTTP Error Responses** (4xx, 5xx) measured at the load balancer are the definitive source for user-facing errors. Pay special attention to 504 timeout errors, which occur when the server takes too long to respond and the load balancer returns an error to the user — even if the operation eventually succeeds on the server.
 
 **Alert Recommendation**: Set up alerts for 504 errors with a threshold around 3 per minute.
 
