@@ -29,6 +29,7 @@ export interface NavbarProps {
   readonly closeNavbar: () => void;
   readonly displayAddBookmark?: boolean;
   readonly resourceTypeSearchDisabled?: boolean;
+  readonly navbarOpen?: boolean;
   readonly linkStyles?: {
     readonly activeColor?: string;
     readonly strokeWidth?: number;
@@ -59,51 +60,53 @@ export function Navbar(props: NavbarProps): JSX.Element {
   return (
     <>
       <MantineAppShell.Navbar>
-        <ScrollArea p="xs">
-          {!props.resourceTypeSearchDisabled && (
-            <MantineAppShell.Section mb="sm">
-              <ResourceTypeInput
-                key={window.location.pathname}
-                name="resourceType"
-                placeholder="Resource Type"
-                maxValues={0}
-                onChange={(newValue) => navigateResourceType(newValue)}
-              />
-            </MantineAppShell.Section>
-          )}
-          <MantineAppShell.Section grow>
-            {props.menus?.map((menu) => (
-              <Fragment key={`menu-${menu.title}`}>
-                <Text size="xs" className={classes.menuTitle}>
-                  {menu.title}
-                </Text>
-                {menu.links?.map((link) => (
-                  <NavbarLink
-                    key={link.href}
-                    to={link.href}
-                    active={link.href === activeLink?.href}
-                    onClick={(e) => onLinkClick(e, link.href)}
-                    linkStyles={props.linkStyles}
-                  >
-                    <NavLinkIcon icon={link.icon} />
-                    <span>{link.label}</span>
-                  </NavbarLink>
-                ))}
-              </Fragment>
-            ))}
-            {props.displayAddBookmark && (
-              <Button
-                variant="subtle"
-                size="xs"
-                mt="xl"
-                leftSection={<IconPlus size="0.75rem" />}
-                onClick={() => setBookmarkDialogVisible(true)}
-              >
-                Add Bookmark
-              </Button>
+        {props.navbarOpen && (
+          <ScrollArea p="xs">
+            {!props.resourceTypeSearchDisabled && (
+              <MantineAppShell.Section mb="sm">
+                <ResourceTypeInput
+                  key={window.location.pathname}
+                  name="resourceType"
+                  placeholder="Resource Type"
+                  maxValues={0}
+                  onChange={(newValue) => navigateResourceType(newValue)}
+                />
+              </MantineAppShell.Section>
             )}
-          </MantineAppShell.Section>
-        </ScrollArea>
+            <MantineAppShell.Section grow>
+              {props.menus?.map((menu) => (
+                <Fragment key={`menu-${menu.title}`}>
+                  <Text size="xs" className={classes.menuTitle}>
+                    {menu.title}
+                  </Text>
+                  {menu.links?.map((link) => (
+                    <NavbarLink
+                      key={link.href}
+                      to={link.href}
+                      active={link.href === activeLink?.href}
+                      onClick={(e) => onLinkClick(e, link.href)}
+                      linkStyles={props.linkStyles}
+                    >
+                      <NavLinkIcon icon={link.icon} />
+                      <span>{link.label}</span>
+                    </NavbarLink>
+                  ))}
+                </Fragment>
+              ))}
+              {props.displayAddBookmark && (
+                <Button
+                  variant="subtle"
+                  size="xs"
+                  mt="xl"
+                  leftSection={<IconPlus size="0.75rem" />}
+                  onClick={() => setBookmarkDialogVisible(true)}
+                >
+                  Add Bookmark
+                </Button>
+              )}
+            </MantineAppShell.Section>
+          </ScrollArea>
+        )}
       </MantineAppShell.Navbar>
       {props.pathname && props.searchParams && (
         <BookmarkDialog

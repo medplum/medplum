@@ -93,6 +93,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
           displayAddBookmark={props.displayAddBookmark}
           resourceTypeSearchDisabled={props.resourceTypeSearchDisabled}
           linkStyles={props.navbarLinkStyles}
+          navbarOpen={navbarOpen}
         />
       )}
       <MantineAppShell.Main className={classes.main}>

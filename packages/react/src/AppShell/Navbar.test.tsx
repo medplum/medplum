@@ -44,6 +44,7 @@ async function setup(initial = '/'): Promise<void> {
             pathname={initialUrl.pathname}
             searchParams={initialUrl.searchParams}
             closeNavbar={closeMock}
+            navbarOpen={true}
             menus={[
               {
                 title: 'Menu 1',
