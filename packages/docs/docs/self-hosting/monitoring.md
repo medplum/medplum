@@ -12,7 +12,7 @@ Monitoring metrics are organized by layer in your stack, from highest-level user
 
 **Metric Sources:**
 - **Medplum server metrics**: Available across all deployment environments
-- **Load balancer metrics**: Available from any load balancer (AWS ALB, nginx, etc.)
+- **Load balancer metrics**: Generally availability from cloud load balancers, e.g. AWS ALB
 - **Database metrics**: Standard PostgreSQL metrics available from any Postgres installation
 - **Cache metrics**: Standard Redis metrics available from any Redis installation
 - **Container metrics**: Available from any container orchestration platform
