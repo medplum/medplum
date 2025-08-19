@@ -68,7 +68,7 @@ PostgreSQL metrics provide detailed insight into data layer performance.
 
 ## Cache Metrics (Redis)
 
-Redis serves as a fast in-memory cache to reduce database load.
+Redis serves as a fast in-memory cache to reduce database load and store ephemeral data.
 
 ### Performance
 **CPU and Memory Usage** track Redis resource consumption. Memory usage directly correlates with stored data since Redis is an in-memory store.
