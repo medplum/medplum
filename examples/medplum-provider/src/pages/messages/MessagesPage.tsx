@@ -137,7 +137,7 @@ export function MessagesPage(): JSX.Element {
   };
 
   const handleNewTopic = (message: Communication): void => {
-    setThreadMessages([[message, message], ...threadMessages]);
+    setThreadMessages([[message, undefined], ...threadMessages]);
     navigate(`/Message/${message.id}`)?.catch(console.error);
   };
 
