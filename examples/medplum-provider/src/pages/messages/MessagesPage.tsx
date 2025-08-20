@@ -26,7 +26,7 @@ import { IconChevronDown, IconMessageCircle, IconPlus } from '@tabler/icons-reac
 import classes from './MessagesPage.module.css';
 import { useDisclosure } from '@mantine/hooks';
 import cx from 'clsx';
-import { useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 
 /**
  * Messages page that matches the Home page layout but without the patient list.
@@ -40,6 +40,7 @@ export function MessagesPage(): JSX.Element {
   const [threadMessages, setThreadMessages] = useState<[Communication, Communication][]>([]);
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [status, setStatus] = useState<Communication['status']>('in-progress');
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchAllCommunications(): Promise<void> {
@@ -135,13 +136,12 @@ export function MessagesPage(): JSX.Element {
     }
   };
 
-  const handleMessageSent = (message: Communication): void => {
-    if (!selectedThread) {
-      return;
-    }
-    const index = threadMessages.findIndex((m) => m[0].id === selectedThread.id);
+  const handleNewTopic = (message: Communication): void => {
+    //setSelectedThread(message);
+    const index = threadMessages.findIndex((m) => m[0].id === message.id);
     if (index === -1) {
-      setThreadMessages([[selectedThread, message], ...threadMessages]);
+      setThreadMessages([[message, message], ...threadMessages]);
+      navigate(`/Message/${message.id}`)?.catch(console.error);
     }
   };
 
@@ -252,7 +252,6 @@ export function MessagesPage(): JSX.Element {
                           title={'Messages'}
                           thread={selectedThread}
                           excludeHeader={true}
-                          onMessageSent={handleMessageSent}
                         />
                       </Flex>
                     </Stack>
@@ -279,9 +278,7 @@ export function MessagesPage(): JSX.Element {
       <NewTopicDialog
         opened={modalOpened}
         onClose={closeModal}
-        onSubmit={(communication) => {
-          setSelectedThread(communication);
-        }}
+        onSubmit={handleNewTopic}
       />
     </>
   );
