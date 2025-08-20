@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 import { Bundle, BundleEntry, BundleEntryRequest, Resource } from '@medplum/fhirtypes';
 import { generateId } from './crypto';
+import { isOk } from './outcomes';
 import { isReference } from './types';
 import { deepClone } from './utils';
-import { isOk } from './outcomes';
 
 /**
  * More on Bundles can be found here
@@ -271,49 +271,49 @@ export function convertContainedResourcesToBundle(resource: Resource & { contain
 /**
  * Creates a new bundle containing only the failed entries from a batch bundle response.
  * This function is useful for retrying failed operations in a batch submission.
- * 
+ *
  * @param originalBundle - The original batch bundle that was submitted
  * @param responseBundle - The response bundle from the batch submission
  * @returns A new bundle containing only the failed entries, or null if no failures occurred
- * 
+ *
  * @example
  * ```typescript
  * import { MedplumClient, createRetryBundleFromFailedEntries } from '@medplum/core';
- * 
+ *
  * const medplum = new MedplumClient();
- * 
+ *
  * // Create a batch bundle with multiple patients
  * const originalBundle: Bundle = {
  *   resourceType: 'Bundle',
  *   type: 'batch',
  *   entry: [
- *     { 
- *       request: { method: 'POST', url: 'Patient' }, 
- *       resource: { resourceType: 'Patient', name: [{ text: 'John Doe' }] } 
+ *     {
+ *       request: { method: 'POST', url: 'Patient' },
+ *       resource: { resourceType: 'Patient', name: [{ text: 'John Doe' }] }
  *     },
- *     { 
- *       request: { method: 'POST', url: 'Patient' }, 
- *       resource: { resourceType: 'Patient', name: [{ text: 'Jane Doe' }] } 
+ *     {
+ *       request: { method: 'POST', url: 'Patient' },
+ *       resource: { resourceType: 'Patient', name: [{ text: 'Jane Doe' }] }
  *     },
- *     { 
- *       request: { method: 'POST', url: 'Patient' }, 
- *       resource: { resourceType: 'Patient', name: [{ text: 'Bob Smith' }] } 
+ *     {
+ *       request: { method: 'POST', url: 'Patient' },
+ *       resource: { resourceType: 'Patient', name: [{ text: 'Bob Smith' }] }
  *     }
  *   ]
  * };
- * 
+ *
  * // Submit the batch
  * const responseBundle = await medplum.executeBatch(originalBundle);
- * 
+ *
  * // Check for failed entries and create a retry bundle
  * const retryBundle = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
- * 
+ *
  * if (retryBundle) {
  *   console.log(`Retrying ${retryBundle.entry?.length} failed entries...`);
- *   
+ *
  *   // Retry the failed entries
  *   const retryResponse = await medplum.executeBatch(retryBundle);
- *   
+ *
  *   // Check if retry was successful
  *   const finalRetryBundle = createRetryBundleFromFailedEntries(retryBundle, retryResponse);
  *   if (finalRetryBundle) {
@@ -326,10 +326,7 @@ export function convertContainedResourcesToBundle(resource: Resource & { contain
  * }
  * ```
  */
-export function createRetryBundleFromFailedEntries(
-  originalBundle: Bundle,
-  responseBundle: Bundle
-): Bundle | null {
+export function createRetryBundleFromFailedEntries(originalBundle: Bundle, responseBundle: Bundle): Bundle | null {
   if (!originalBundle.entry || !responseBundle.entry) {
     return null;
   }

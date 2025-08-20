@@ -1,10 +1,14 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Bundle, BundleEntry, DiagnosticReport, Patient, Resource, Specimen } from '@medplum/fhirtypes';
-import { convertContainedResourcesToBundle, convertToTransactionBundle, createRetryBundleFromFailedEntries } from './bundle';
+import {
+  convertContainedResourcesToBundle,
+  convertToTransactionBundle,
+  createRetryBundleFromFailedEntries,
+} from './bundle';
+import { allOk, badRequest, notFound } from './outcomes';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
-import { allOk, badRequest, notFound } from './outcomes';
 
 let jsonFile: any;
 
@@ -509,12 +513,12 @@ describe('Bundle tests', () => {
       };
 
       const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
-      
+
       expect(result).not.toBeNull();
       expect(result?.resourceType).toBe('Bundle');
       expect(result?.type).toBe('batch');
       expect(result?.entry).toHaveLength(2);
-      
+
       // Should contain only the failed entries (indices 1 and 2)
       expect(result?.entry?.[0]).toEqual(originalBundle.entry?.[1]);
       expect(result?.entry?.[1]).toEqual(originalBundle.entry?.[2]);
@@ -565,11 +569,11 @@ describe('Bundle tests', () => {
       };
 
       const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
-      
+
       expect(result).not.toBeNull();
       expect(result?.type).toBe('transaction');
       expect(result?.entry).toHaveLength(1);
-      
+
       // Should contain only the failed DELETE entry (index 1)
       expect(result?.entry?.[0]).toEqual(originalBundle.entry?.[1]);
     });
@@ -601,7 +605,7 @@ describe('Bundle tests', () => {
       };
 
       const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
-      
+
       expect(result).not.toBeNull();
       expect(result?.entry?.[0]).toEqual(originalBundle.entry?.[0]);
       expect(result?.entry?.[0]?.fullUrl).toBe('urn:uuid:test-123');
@@ -632,7 +636,7 @@ describe('Bundle tests', () => {
       };
 
       const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
-      
+
       // Should not consider entries without outcomes as failed
       expect(result).toBeNull();
     });
@@ -669,7 +673,7 @@ describe('Bundle tests', () => {
       };
 
       const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
-      
+
       // Should only process entries that exist in both bundles
       expect(result).toBeNull();
     });
