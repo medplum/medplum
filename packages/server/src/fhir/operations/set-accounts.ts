@@ -1,11 +1,24 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { AccessPolicyInteraction, allOk, append, badRequest, forbidden, isResourceType, notFound } from '@medplum/core';
+import {
+  accepted,
+  AccessPolicyInteraction,
+  allOk,
+  append,
+  badRequest,
+  concatUrls,
+  forbidden,
+  isResourceType,
+  notFound,
+  OperationOutcomeError,
+} from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Reference, ResourceType } from '@medplum/fhirtypes';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
-import { getSystemRepo } from '../repo';
+import { getSystemRepo, Repository } from '../repo';
 import { searchPatientCompartment } from './patienteverything';
+import { AsyncJobExecutor } from './utils/asyncjobexecutor';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
 
 const operation: OperationDefinition = {
@@ -73,19 +86,50 @@ export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse
   }
 
   const params = parseInputParameters<SetAccountsParameters>(operation, req);
+
   const { repo } = getAuthenticatedContext();
+  if (req.headers?.['prefer'] === 'respond-async') {
+    const { baseUrl } = getConfig();
+    const exec = new AsyncJobExecutor(repo);
+    await exec.init(concatUrls(baseUrl, `${resourceType}/${id}/$set-accounts`));
+    exec.start(async () => {
+      const count = await setResourceAccounts(repo, resourceType, id, params);
+      return buildOutputParameters(operation, { resourcesUpdated: count });
+    });
+
+    return [accepted(exec.getContentLocation(baseUrl))];
+  } else {
+    const count = await setResourceAccounts(repo, resourceType, id, params);
+    return [allOk, buildOutputParameters(operation, { resourcesUpdated: count })];
+  }
+}
+
+/**
+ * Sets the `meta.accounts` array for the given resource, and optionally all resources in its compartment.
+ * @param repo - The FHIR repository of the user.
+ * @param resourceType - The type of the target resource.
+ * @param id - The ID of the target resource.
+ * @param params - Operation parameters.
+ * @returns The number of resources updated.
+ */
+export async function setResourceAccounts(
+  repo: Repository,
+  resourceType: ResourceType,
+  id: string,
+  params: SetAccountsParameters
+): Promise<number> {
   const systemRepo = getSystemRepo();
 
   const isSuperAdmin = repo.isSuperAdmin();
   if (!repo.isProjectAdmin() && !isSuperAdmin) {
-    return [forbidden];
+    throw new OperationOutcomeError(forbidden);
   }
 
   // Use system repo to read the resource, ensuring we get access to the full `meta.accounts`
   const target = await systemRepo.readResource(resourceType, id);
   // Ensure user's repo can read this resource as well
   if (!repo.canPerformInteraction(AccessPolicyInteraction.READ, target)) {
-    return [notFound];
+    throw new OperationOutcomeError(notFound);
   }
   const accounts = params.accounts;
   const oldAccounts = target.meta?.accounts;
@@ -135,5 +179,5 @@ export async function setAccountsHandler(req: FhirRequest): Promise<FhirResponse
     }
   }
 
-  return [allOk, buildOutputParameters(operation, { resourcesUpdated: count })];
+  return count;
 }
