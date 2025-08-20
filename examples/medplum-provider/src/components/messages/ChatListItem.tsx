@@ -19,8 +19,7 @@ export const ChatListItem = (props: ChatListItemProps): JSX.Element => {
   const patientResource = useResource(topic.subject as Reference<Patient>);
   const patientName = formatHumanName(patientResource?.name?.[0] as HumanName);
   const lastMsg = lastCommunication?.payload?.[0]?.contentString;
-  const trimmedMsg =
-    lastMsg?.length && lastMsg.length > 100 ? lastMsg.slice(0, 100) + '...' : lastMsg;
+  const trimmedMsg = lastMsg?.length && lastMsg.length > 100 ? lastMsg.slice(0, 100) + '...' : lastMsg;
   const content = trimmedMsg ? `${topic.topic?.text}: ${trimmedMsg}` : `No messages available`;
   const topicName = topic.topic?.text ?? content;
 
