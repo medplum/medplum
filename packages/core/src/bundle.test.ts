@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Bundle, BundleEntry, DiagnosticReport, Patient, Resource, Specimen } from '@medplum/fhirtypes';
-import { convertContainedResourcesToBundle, convertToTransactionBundle } from './bundle';
+import { convertContainedResourcesToBundle, convertToTransactionBundle, createRetryBundleFromFailedEntries } from './bundle';
 import { getDataType } from './typeschema/types';
 import { deepClone, isUUID } from './utils';
+import { allOk, badRequest, notFound } from './outcomes';
 
 let jsonFile: any;
 
@@ -404,6 +405,273 @@ describe('Bundle tests', () => {
           },
         ],
       });
+    });
+  });
+
+  describe('createRetryBundleFromFailedEntries', () => {
+    test('Returns null when no entries failed', () => {
+      const originalBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            request: { method: 'POST', url: 'Patient' },
+            resource: { resourceType: 'Patient', name: [{ text: 'John Doe' }] },
+          },
+          {
+            request: { method: 'POST', url: 'Patient' },
+            resource: { resourceType: 'Patient', name: [{ text: 'Jane Doe' }] },
+          },
+        ],
+      };
+
+      const responseBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch-response',
+        entry: [
+          {
+            response: {
+              status: '201',
+              outcome: allOk,
+            },
+          },
+          {
+            response: {
+              status: '201',
+              outcome: allOk,
+            },
+          },
+        ],
+      };
+
+      const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
+      expect(result).toBeNull();
+    });
+
+    test('Returns null when bundles have no entries', () => {
+      const originalBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch',
+      };
+
+      const responseBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch-response',
+      };
+
+      const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
+      expect(result).toBeNull();
+    });
+
+    test('Creates retry bundle with failed entries only', () => {
+      const originalBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            request: { method: 'POST', url: 'Patient' },
+            resource: { resourceType: 'Patient', name: [{ text: 'John Doe' }] },
+          },
+          {
+            request: { method: 'POST', url: 'Patient' },
+            resource: { resourceType: 'Patient', name: [{ text: 'Jane Doe' }] },
+          },
+          {
+            request: { method: 'POST', url: 'Patient' },
+            resource: { resourceType: 'Patient', name: [{ text: 'Bob Smith' }] },
+          },
+        ],
+      };
+
+      const responseBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch-response',
+        entry: [
+          {
+            response: {
+              status: '201',
+              outcome: allOk,
+            },
+          },
+          {
+            response: {
+              status: '400',
+              outcome: badRequest('Invalid patient data'),
+            },
+          },
+          {
+            response: {
+              status: '404',
+              outcome: notFound,
+            },
+          },
+        ],
+      };
+
+      const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
+      
+      expect(result).not.toBeNull();
+      expect(result?.resourceType).toBe('Bundle');
+      expect(result?.type).toBe('batch');
+      expect(result?.entry).toHaveLength(2);
+      
+      // Should contain only the failed entries (indices 1 and 2)
+      expect(result?.entry?.[0]).toEqual(originalBundle.entry?.[1]);
+      expect(result?.entry?.[1]).toEqual(originalBundle.entry?.[2]);
+    });
+
+    test('Handles mixed success and failure responses', () => {
+      const originalBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            request: { method: 'PUT', url: 'Patient/123' },
+            resource: { resourceType: 'Patient', id: '123', name: [{ text: 'John Doe' }] },
+          },
+          {
+            request: { method: 'DELETE', url: 'Patient/456' },
+          },
+          {
+            request: { method: 'POST', url: 'Observation' },
+            resource: { resourceType: 'Observation', status: 'final', code: { text: 'test' } },
+          },
+        ],
+      };
+
+      const responseBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'transaction-response',
+        entry: [
+          {
+            response: {
+              status: '200',
+              outcome: allOk,
+            },
+          },
+          {
+            response: {
+              status: '404',
+              outcome: notFound,
+            },
+          },
+          {
+            response: {
+              status: '201',
+              outcome: allOk,
+            },
+          },
+        ],
+      };
+
+      const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
+      
+      expect(result).not.toBeNull();
+      expect(result?.type).toBe('transaction');
+      expect(result?.entry).toHaveLength(1);
+      
+      // Should contain only the failed DELETE entry (index 1)
+      expect(result?.entry?.[0]).toEqual(originalBundle.entry?.[1]);
+    });
+
+    test('Preserves original entry structure', () => {
+      const originalBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:test-123',
+            request: { method: 'POST', url: 'Patient' },
+            resource: { resourceType: 'Patient', name: [{ text: 'John Doe' }] },
+          },
+        ],
+      };
+
+      const responseBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch-response',
+        entry: [
+          {
+            response: {
+              status: '400',
+              outcome: badRequest('Invalid data'),
+            },
+          },
+        ],
+      };
+
+      const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
+      
+      expect(result).not.toBeNull();
+      expect(result?.entry?.[0]).toEqual(originalBundle.entry?.[0]);
+      expect(result?.entry?.[0]?.fullUrl).toBe('urn:uuid:test-123');
+    });
+
+    test('Handles entries without response outcomes', () => {
+      const originalBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            request: { method: 'GET', url: 'Patient/123' },
+          },
+        ],
+      };
+
+      const responseBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch-response',
+        entry: [
+          {
+            response: {
+              status: '200',
+              // No outcome field
+            },
+          },
+        ],
+      };
+
+      const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
+      
+      // Should not consider entries without outcomes as failed
+      expect(result).toBeNull();
+    });
+
+    test('Handles mismatched entry counts gracefully', () => {
+      const originalBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            request: { method: 'POST', url: 'Patient' },
+            resource: { resourceType: 'Patient', name: [{ text: 'John Doe' }] },
+          },
+        ],
+      };
+
+      const responseBundle: Bundle = {
+        resourceType: 'Bundle',
+        type: 'batch-response',
+        entry: [
+          {
+            response: {
+              status: '201',
+              outcome: allOk,
+            },
+          },
+          {
+            response: {
+              status: '400',
+              outcome: badRequest('Extra response entry'),
+            },
+          },
+        ],
+      };
+
+      const result = createRetryBundleFromFailedEntries(originalBundle, responseBundle);
+      
+      // Should only process entries that exist in both bundles
+      expect(result).toBeNull();
     });
   });
 });
