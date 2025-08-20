@@ -37,7 +37,7 @@ export function MessagesPage(): JSX.Element {
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
   const [selectedThread, setSelectedThread] = useState<Communication | undefined>(undefined);
-  const [threadMessages, setThreadMessages] = useState<[Communication, Communication][]>([]);
+  const [threadMessages, setThreadMessages] = useState<[Communication, Communication | undefined][]>([]);
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [status, setStatus] = useState<Communication['status']>('in-progress');
   const navigate = useNavigate();
@@ -137,12 +137,8 @@ export function MessagesPage(): JSX.Element {
   };
 
   const handleNewTopic = (message: Communication): void => {
-    //setSelectedThread(message);
-    const index = threadMessages.findIndex((m) => m[0].id === message.id);
-    if (index === -1) {
-      setThreadMessages([[message, message], ...threadMessages]);
-      navigate(`/Message/${message.id}`)?.catch(console.error);
-    }
+    setThreadMessages([[message, message], ...threadMessages]);
+    navigate(`/Message/${message.id}`)?.catch(console.error);
   };
 
   return (
