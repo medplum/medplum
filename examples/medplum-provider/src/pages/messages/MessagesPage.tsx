@@ -271,11 +271,7 @@ export function MessagesPage(): JSX.Element {
           )}
         </Flex>
       </div>
-      <NewTopicDialog
-        opened={modalOpened}
-        onClose={closeModal}
-        onSubmit={handleNewTopic}
-      />
+      <NewTopicDialog opened={modalOpened} onClose={closeModal} onSubmit={handleNewTopic} />
     </>
   );
 }
