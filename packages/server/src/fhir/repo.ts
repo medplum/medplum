@@ -268,7 +268,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * 6. 06/12/25 - Added columns per token search parameter (https://github.com/medplum/medplum/pull/6727)
    * 7. 06/25/25 - Added search params `ProjectMembership-identifier`, `Immunization-encounter`, `AllergyIntolerance-encounter` (https://github.com/medplum/medplum/pull/6868)
    * 8. 08/06/25 - Added Task to Patient compartment (https://github.com/medplum/medplum/pull/7194)
-   * 9. 08/19/25 - Added search parameter `ServiceRequest-reasonCode` (https://github.com/medplum/medplum/pull/7271)
+   * 9. 08/19/25 - Added search parameter `ServiceRequest-reason-code` (https://github.com/medplum/medplum/pull/7271)
    *
    */
   static readonly VERSION: number = 9;
