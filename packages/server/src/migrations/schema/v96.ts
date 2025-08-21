@@ -11,7 +11,7 @@ import * as fns from '../migrate-functions';
 // prettier-ignore
 export async function run(client: PoolClient): Promise<void> {
   const results: { name: string; durationMs: number }[] = []
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "ServiceRequest" ADD COLUMN IF NOT EXISTS "__reason" UUID[]`);
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "ServiceRequest" ADD COLUMN IF NOT EXISTS "__reasonText" TEXT[]`);
-  await fns.query(client, results, `ALTER TABLE IF EXISTS "ServiceRequest" ADD COLUMN IF NOT EXISTS "__reasonSort" TEXT`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "ServiceRequest" ADD COLUMN IF NOT EXISTS "__reasonCode" UUID[]`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "ServiceRequest" ADD COLUMN IF NOT EXISTS "__reasonCodeText" TEXT[]`);
+  await fns.query(client, results, `ALTER TABLE IF EXISTS "ServiceRequest" ADD COLUMN IF NOT EXISTS "__reasonCodeSort" TEXT`);
 }

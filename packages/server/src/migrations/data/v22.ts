@@ -23,6 +23,6 @@ export const migration: CustomPostDeployMigration = {
 
 // prettier-ignore
 async function run(client: PoolClient, results: MigrationActionResult[]): Promise<void> {
-  await fns.idempotentCreateIndex(client, results, 'ServiceRequest___reason_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "ServiceRequest___reason_idx" ON "ServiceRequest" USING gin ("__reason")`);
-  await fns.idempotentCreateIndex(client, results, 'ServiceRequest___reasonTextTrgm_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "ServiceRequest___reasonTextTrgm_idx" ON "ServiceRequest" USING gin (token_array_to_text("__reasonText") gin_trgm_ops)`);
+  await fns.idempotentCreateIndex(client, results, 'ServiceRequest___reasonCode_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "ServiceRequest___reasonCode_idx" ON "ServiceRequest" USING gin ("__reasonCode")`);
+  await fns.idempotentCreateIndex(client, results, 'ServiceRequest___reasonCodeTextTrgm_idx', `CREATE INDEX CONCURRENTLY IF NOT EXISTS "ServiceRequest___reasonCodeTextTrgm_idx" ON "ServiceRequest" USING gin (token_array_to_text("__reasonCodeText") gin_trgm_ops)`);
 }
