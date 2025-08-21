@@ -68,7 +68,13 @@ export function App(): JSX.Element | null {
       menus={[
         {
           title: 'Charts',
-          links: [{ icon: <IconUser />, label: 'Patients', href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated' }],
+          links: [
+            {
+              icon: <IconUser />,
+              label: 'Patients',
+              href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
+            },
+          ],
         },
         {
           title: 'Scheduling',
@@ -119,7 +125,10 @@ export function App(): JSX.Element | null {
         <Routes>
           {profile ? (
             <>
-              <Route path="/" element={<Navigate to="/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated" replace />} />
+              <Route
+                path="/"
+                element={<Navigate to="/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated" replace />}
+              />
               <Route path="/Patient/new" element={<ResourceCreatePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />

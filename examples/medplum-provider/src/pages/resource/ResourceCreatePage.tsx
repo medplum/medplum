@@ -48,7 +48,7 @@ function getResourceTypeFromPath(pathname: string): ResourceType | undefined {
   if (pathParts.length >= 3 && pathParts[2] === 'new') {
     return pathParts[1] as ResourceType;
   }
-  
+
   return undefined;
 }
 
