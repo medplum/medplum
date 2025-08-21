@@ -1,0 +1,459 @@
+{
+  "name": "DicomStudy",
+  "location": "medplum",
+  "description": "Definition of a DICOM study, which represents a collection of DICOM images and related metadata.",
+  "properties": [
+    {
+      "name": "DicomStudy",
+      "depth": 0,
+      "types": [
+        {
+          "datatype": ""
+        }
+      ],
+      "path": "DicomStudy",
+      "min": 0,
+      "max": "*",
+      "short": "Definition of a DICOM series.",
+      "definition": "Definition of a DICOM series, which represents a collection of DICOM images and related metadata that are part of a DICOM study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DicomStudy.id",
+      "min": 0,
+      "max": "1",
+      "short": "Logical id of this artifact",
+      "definition": "The logical id of the resource, as used in the URL for the resource. Once assigned, this value never changes.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "meta",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Meta",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DicomStudy.meta",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The metadata about the resource. This is content that is maintained by the infrastructure. Changes to the content might not always be associated with version changes to the resource.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "implicitRules",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "uri"
+        }
+      ],
+      "path": "DicomStudy.implicitRules",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "A reference to a set of rules that were followed when the resource was constructed, and which must be understood when processing the content. Often, this is a reference to an implementation guide that defines the special rules along with other profiles etc.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "language",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "DicomStudy.language",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The base language in which the resource is written.",
+      "comment": "",
+      "inherited": true,
+      "base": "Resource"
+    },
+    {
+      "name": "text",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Narrative",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DicomStudy.text",
+      "min": 0,
+      "max": "1",
+      "short": "Text summary of the resource, for human interpretation",
+      "definition": "A human-readable narrative that contains a summary of the resource and can be used to represent the content of the resource to a human. The narrative need not encode all the structured data, but is required to contain sufficient detail to make it \"clinically safe\" for a human to just read the narrative. Resource definitions may define what content should be represented in the narrative to ensure clinical safety.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "contained",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Resource"
+        }
+      ],
+      "path": "DicomStudy.contained",
+      "min": 0,
+      "max": "*",
+      "short": "Contained, inline Resources",
+      "definition": "These resources do not have an independent existence apart from the resource that contains them - they cannot be identified independently, and nor can they have their own independent transaction scope.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "extension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DicomStudy.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "DicomStudy.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "",
+      "inherited": true,
+      "base": "DomainResource"
+    },
+    {
+      "name": "studyInstanceUid",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "id"
+        }
+      ],
+      "path": "DicomStudy.studyInstanceUid",
+      "min": 1,
+      "max": "1",
+      "short": "Study Instance UID",
+      "definition": "Unique identifier for the study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "studyId",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DicomStudy.studyId",
+      "min": 0,
+      "max": "1",
+      "short": "Study ID",
+      "definition": "User-friendly identifier for the study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "studyDate",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "date"
+        }
+      ],
+      "path": "DicomStudy.studyDate",
+      "min": 0,
+      "max": "1",
+      "short": "Study Date",
+      "definition": "Date the study started.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "studyTime",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "time"
+        }
+      ],
+      "path": "DicomStudy.studyTime",
+      "min": 0,
+      "max": "1",
+      "short": "Study Time",
+      "definition": "Time the study started.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "accessionNumber",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DicomStudy.accessionNumber",
+      "min": 0,
+      "max": "1",
+      "short": "Accession Number",
+      "definition": "The accession number for the study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "instanceAvailability",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "DicomStudy.instanceAvailability",
+      "min": 0,
+      "max": "1",
+      "short": "Instance Availability",
+      "definition": "Availability of the study instances (e.g., ONLINE, OFFLINE).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "modalitiesInStudy",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "DicomStudy.modalitiesInStudy",
+      "min": 0,
+      "max": "*",
+      "short": "Modalities in Study",
+      "definition": "The modalities (e.g., CT, MR) that are present in the study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "referringPhysiciansName",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DicomStudy.referringPhysiciansName",
+      "min": 0,
+      "max": "1",
+      "short": "Referring Physician's Name",
+      "definition": "The name of the referring physician.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "timezoneOffsetFromUtc",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DicomStudy.timezoneOffsetFromUtc",
+      "min": 0,
+      "max": "1",
+      "short": "Timezone Offset From UTC",
+      "definition": "The timezone offset from UTC for the study (e.g., -0700).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "patientName",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DicomStudy.patientName",
+      "min": 0,
+      "max": "1",
+      "short": "Patient's Name",
+      "definition": "The name of the patient.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "patientId",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DicomStudy.patientId",
+      "min": 0,
+      "max": "1",
+      "short": "Patient ID",
+      "definition": "The ID of the patient.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "patientBirthDate",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DicomStudy.patientBirthDate",
+      "min": 0,
+      "max": "1",
+      "short": "Patient's Birth Date",
+      "definition": "The birth date of the patient.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "patientSex",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DicomStudy.patientSex",
+      "min": 0,
+      "max": "1",
+      "short": "Patient's Sex",
+      "definition": "The sex of the patient.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "numberOfStudyRelatedSeries",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DicomStudy.numberOfStudyRelatedSeries",
+      "min": 0,
+      "max": "1",
+      "short": "Number of Study Related Series",
+      "definition": "The number of series related to the study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "numberOfStudyRelatedInstances",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "DicomStudy.numberOfStudyRelatedInstances",
+      "min": 0,
+      "max": "1",
+      "short": "Number of Study Related Instances",
+      "definition": "The number of instances related to the study.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "study-instance-uid",
+      "type": "string",
+      "description": "The study instance UID of the DICOM study",
+      "expression": "DicomStudy.studyInstanceUid"
+    },
+    {
+      "name": "study-id",
+      "type": "string",
+      "description": "The study ID of the DICOM study",
+      "expression": "DicomStudy.studyId"
+    },
+    {
+      "name": "study-date",
+      "type": "date",
+      "description": "The study date of the DICOM study",
+      "expression": "DicomStudy.studyDate"
+    },
+    {
+      "name": "study-time",
+      "type": "string",
+      "description": "The study time of the DICOM study",
+      "expression": "DicomStudy.studyTime"
+    },
+    {
+      "name": "accession-number",
+      "type": "string",
+      "description": "The accession number of the DICOM study",
+      "expression": "DicomStudy.accessionNumber"
+    },
+    {
+      "name": "modalities",
+      "type": "token",
+      "description": "The modalities of the DICOM study",
+      "expression": "DicomStudy.modalitiesInStudy"
+    },
+    {
+      "name": "referring-physicians-name",
+      "type": "string",
+      "description": "The referring physician's name of the DICOM study",
+      "expression": "DicomStudy.referringPhysiciansName"
+    },
+    {
+      "name": "patient-name",
+      "type": "string",
+      "description": "The patient's name of the DICOM study",
+      "expression": "DicomStudy.patientName"
+    },
+    {
+      "name": "patient-id",
+      "type": "string",
+      "description": "The patient's ID of the DICOM study",
+      "expression": "DicomStudy.patientId"
+    }
+  ]
+}

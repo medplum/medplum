@@ -8,6 +8,7 @@ import {
   getResourceTypes,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  isString,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
@@ -443,7 +444,7 @@ function getSearchParameterIndexes(
         // legacy index prior to range-column search strategy
         { columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' },
         {
-          columns: [impl.rangeColumnName, { expression: impl.sortColumnName, name: 'sorted' }],
+          columns: [impl.rangeColumnName, impl.sortColumnName],
           indexType: 'gist',
         },
       ];
@@ -1304,6 +1305,20 @@ function getIndexName(tableName: string, index: IndexDefinition): string {
 
   if (index.primaryKey) {
     return tableName + '_pkey';
+  }
+
+  if (
+    index.columns.length === 2 &&
+    isString(index.columns[0]) &&
+    isString(index.columns[1]) &&
+    index.columns[1] === `${index.columns[0]}Sort`
+  ) {
+    return (
+      applyAbbreviations(tableName, TableNameAbbreviations) +
+      '_' +
+      applyAbbreviations(index.columns[0], ColumnNameAbbreviations) +
+      '_sorted_idx'
+    );
   }
 
   let indexName = applyAbbreviations(tableName, TableNameAbbreviations) + '_';
