@@ -24,7 +24,6 @@ import { Navigate, Route, Routes } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
-import { HomePage } from './pages/HomePage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { SchedulePage } from './pages/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
@@ -69,7 +68,7 @@ export function App(): JSX.Element | null {
       menus={[
         {
           title: 'Charts',
-          links: [{ icon: <IconUser />, label: 'Patients', href: '/' }],
+          links: [{ icon: <IconUser />, label: 'Patients', href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated' }],
         },
         {
           title: 'Scheduling',
@@ -120,7 +119,8 @@ export function App(): JSX.Element | null {
         <Routes>
           {profile ? (
             <>
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<Navigate to="/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated" replace />} />
+              <Route path="/Patient/new" element={<ResourceCreatePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
                 <Route path="Encounter/:encounterId" element={<EncounterChart />}>
