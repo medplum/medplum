@@ -1889,6 +1889,312 @@
         "type": "token",
         "expression": "PackageInstallation.version"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomStudy-study-instance-uid",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomStudy-study-instance-uid",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomStudy-study-instance-uid",
+        "version": "4.0.1",
+        "name": "study-instance-uid",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The study instance UID of the DICOM study",
+        "code": "study-instance-uid",
+        "base": ["DicomStudy"],
+        "type": "string",
+        "expression": "DicomStudy.studyInstanceUid"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomStudy-study-id",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomStudy-study-id",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomStudy-study-id",
+        "version": "4.0.1",
+        "name": "study-id",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The study ID of the DICOM study",
+        "code": "study-id",
+        "base": ["DicomStudy"],
+        "type": "string",
+        "expression": "DicomStudy.studyId"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomStudy-study-date",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomStudy-study-date",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomStudy-study-date",
+        "version": "4.0.1",
+        "name": "study-date",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The study date of the DICOM study",
+        "code": "study-date",
+        "base": ["DicomStudy"],
+        "type": "date",
+        "expression": "DicomStudy.studyDate"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomStudy-study-time",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomStudy-study-time",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomStudy-study-time",
+        "version": "4.0.1",
+        "name": "study-time",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The study time of the DICOM study",
+        "code": "study-time",
+        "base": ["DicomStudy"],
+        "type": "string",
+        "expression": "DicomStudy.studyTime"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomStudy-accession-number",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomStudy-accession-number",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomStudy-accession-number",
+        "version": "4.0.1",
+        "name": "accession-number",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The accession number of the DICOM study",
+        "code": "accession-number",
+        "base": ["DicomStudy"],
+        "type": "string",
+        "expression": "DicomStudy.accessionNumber"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomStudy-modalities",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomStudy-modalities",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomStudy-modalities",
+        "version": "4.0.1",
+        "name": "modalities",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The modalities of the DICOM study",
+        "code": "modalities",
+        "base": ["DicomStudy"],
+        "type": "token",
+        "expression": "DicomStudy.modalitiesInStudy"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomStudy-referring-physicians-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomStudy-referring-physicians-name",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomStudy-referring-physicians-name",
+        "version": "4.0.1",
+        "name": "referring-physicians-name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The referring physician's name of the DICOM study",
+        "code": "referring-physicians-name",
+        "base": ["DicomStudy"],
+        "type": "string",
+        "expression": "DicomStudy.referringPhysiciansName"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomStudy-patient-name",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomStudy-patient-name",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomStudy-patient-name",
+        "version": "4.0.1",
+        "name": "patient-name",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The patient's name of the DICOM study",
+        "code": "patient-name",
+        "base": ["DicomStudy"],
+        "type": "string",
+        "expression": "DicomStudy.patientName"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomStudy-patient-id",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomStudy-patient-id",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomStudy-patient-id",
+        "version": "4.0.1",
+        "name": "patient-id",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The patient's ID of the DICOM study",
+        "code": "patient-id",
+        "base": ["DicomStudy"],
+        "type": "string",
+        "expression": "DicomStudy.patientId"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomSeries-series-instance-uid",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomSeries-series-instance-uid",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomSeries-series-instance-uid",
+        "version": "4.0.1",
+        "name": "series-instance-uid",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The series instance UID of the DICOM series",
+        "code": "series-instance-uid",
+        "base": ["DicomSeries"],
+        "type": "string",
+        "expression": "DicomSeries.seriesInstanceUid"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomSeries-series-number",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomSeries-series-number",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomSeries-series-number",
+        "version": "4.0.1",
+        "name": "series-number",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The series number of the DICOM series",
+        "code": "series-number",
+        "base": ["DicomSeries"],
+        "type": "string",
+        "expression": "DicomSeries.seriesNumber"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomSeries-performed-procedure-step-start-date",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomSeries-performed-procedure-step-start-date",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomSeries-performed-procedure-step-start-date",
+        "version": "4.0.1",
+        "name": "performed-procedure-step-start-date",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The performed procedure step start date of the DICOM series",
+        "code": "performed-procedure-step-start-date",
+        "base": ["DicomSeries"],
+        "type": "string",
+        "expression": "DicomSeries.performedProcedureStepStartDate"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomSeries-performed-procedure-step-start-time",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomSeries-performed-procedure-step-start-time",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomSeries-performed-procedure-step-start-time",
+        "version": "4.0.1",
+        "name": "performed-procedure-step-start-time",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The performed procedure step start time of the DICOM series",
+        "code": "performed-procedure-step-start-time",
+        "base": ["DicomSeries"],
+        "type": "string",
+        "expression": "DicomSeries.performedProcedureStepStartTime"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomSeries-scheduled-procedure-step-id",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomSeries-scheduled-procedure-step-id",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomSeries-scheduled-procedure-step-id",
+        "version": "4.0.1",
+        "name": "scheduled-procedure-step-id",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The scheduled procedure step ID of the DICOM series",
+        "code": "scheduled-procedure-step-id",
+        "base": ["DicomSeries"],
+        "type": "string",
+        "expression": "DicomSeries.scheduledProcedureStepId"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomSeries-requested-procedure-id",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomSeries-requested-procedure-id",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomSeries-requested-procedure-id",
+        "version": "4.0.1",
+        "name": "requested-procedure-id",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The requested procedure ID of the DICOM series",
+        "code": "requested-procedure-id",
+        "base": ["DicomSeries"],
+        "type": "string",
+        "expression": "DicomSeries.requestedProcedureId"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomInstance-sop-class-uid",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomInstance-sop-class-uid",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomInstance-sop-class-uid",
+        "version": "4.0.1",
+        "name": "sop-class-uid",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The SOP Class UID of the DICOM instance",
+        "code": "sop-class-uid",
+        "base": ["DicomInstance"],
+        "type": "string",
+        "expression": "DicomInstance.sopClassUid"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomInstance-sop-instance-uid",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomInstance-sop-instance-uid",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomInstance-sop-instance-uid",
+        "version": "4.0.1",
+        "name": "sop-instance-uid",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The SOP Instance UID of the DICOM instance",
+        "code": "sop-instance-uid",
+        "base": ["DicomInstance"],
+        "type": "string",
+        "expression": "DicomInstance.sopInstanceUid"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DicomInstance-instance-number",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DicomInstance-instance-number",
+        "url": "https://medplum.com/fhir/SearchParameter/DicomInstance-instance-number",
+        "version": "4.0.1",
+        "name": "instance-number",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The instance number of the DICOM instance",
+        "code": "instance-number",
+        "base": ["DicomInstance"],
+        "type": "string",
+        "expression": "DicomInstance.instanceNumber"
+      }
     }
   ]
 }
