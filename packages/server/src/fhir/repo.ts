@@ -2346,6 +2346,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           attempt,
           attemptDurationMs,
           transactionAttempts,
+          serializable: options?.serializable ?? false,
           delayMs,
           baseDelayMs,
         });
@@ -2355,6 +2356,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           attempt,
           attemptDurationMs,
           transactionAttempts,
+          serializable: options?.serializable ?? false,
         });
       }
     }
