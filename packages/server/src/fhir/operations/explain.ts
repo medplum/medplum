@@ -117,7 +117,9 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
 /**
  * This is probably an incomplete implementation, but is meant to approximate the output
  * in auto_explain slow query entries
- * */
+ * @param param - The parameter value to format
+ * @returns The formatted parameter value
+ */
 function formatQueryParam(param: any): string {
   if (typeof param === 'number') {
     return param.toString();
