@@ -12,12 +12,13 @@ import {
   NumberInput,
   PasswordInput,
   Stack,
+  Text,
   TextInput,
   Title,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, forbidden, getReferenceString, normalizeErrorString, WithId } from '@medplum/core';
+import { createReference, forbidden, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Parameters, Patient, Practitioner, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import {
   convertLocalToIso,
@@ -334,7 +335,10 @@ export function ExplainSearchForm({
   const medplum = useMedplum();
   const [explainProject, setExplainProject] = useState<Reference<Project> | undefined>();
   const [explainProfile, setExplainProfile] = useState<Reference<Practitioner | Patient> | undefined>();
-  const [explainMemberships, setExplainMemberships] = useState<WithId<ProjectMembership>[] | undefined>();
+  const [explainMemberships, setExplainMemberships] = useState<ProjectMembership[] | undefined>();
+  const [onBehalfOfProjectMembership, setOnBehalfOfProjectMembership] = useState<
+    Reference<ProjectMembership> | undefined
+  >();
 
   const explainProfileSearchCriteria: Record<string, string> | undefined = useMemo(() => {
     if (!explainProject?.reference) {
@@ -345,6 +349,8 @@ export function ExplainSearchForm({
   }, [explainProject]);
 
   useEffect(() => {
+    setOnBehalfOfProjectMembership(undefined);
+
     if (!explainProfile?.reference && !explainProject?.reference) {
       setExplainMemberships(undefined);
       return;
@@ -356,9 +362,15 @@ export function ExplainSearchForm({
         project: explainProject?.reference,
         _count: 20,
       })
-      .then(setExplainMemberships)
+      .then((memberships) => {
+        setExplainMemberships(memberships);
+        if (memberships.length === 1) {
+          setOnBehalfOfProjectMembership(createReference(memberships[0]));
+        }
+      })
       .catch((err) => {
         console.error(err);
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       });
   }, [medplum, explainProfile, explainProject]);
 
@@ -381,8 +393,7 @@ export function ExplainSearchForm({
     if (onBehalfOfHeader) {
       headers['x-medplum-on-behalf-of'] = onBehalfOfHeader;
     }
-    console.log(headers);
-    console.log(toSubmit);
+
     medplum
       .post('fhir/R4/$explain', toSubmit, undefined, { headers })
       .then((params: Parameters) => {
@@ -407,7 +418,7 @@ export function ExplainSearchForm({
   return (
     <Form onSubmit={explainSearch}>
       <Stack>
-        <TextInput name="query" label="Query" required />
+        <TextInput name="query" label="Search" required placeholder="Observation?code=85354-9&_sort=-date&_count=5" />
         <Checkbox name="analyze" label="Analyze" />
         <InputWrapper label="On Behalf Of">
           <Stack gap="sm">
@@ -432,6 +443,7 @@ export function ExplainSearchForm({
                 placeholder="ProjectMembership"
                 name="onBehalfOfProjectMembership"
                 targetTypes={['ProjectMembership']}
+                onChange={setOnBehalfOfProjectMembership}
                 searchCriteria={{
                   profile: explainProfile?.reference ?? '',
                   project: explainProject?.reference ?? '',
@@ -448,6 +460,7 @@ export function ExplainSearchForm({
                 <ReferenceDisplay value={createReference(explainMemberships[0])} />
               </>
             )}
+            {!onBehalfOfProjectMembership && <Text fs="italic">On Behalf Of not set. Running as super admin</Text>}
           </Stack>
         </InputWrapper>
         <Button type="submit">Explain Search</Button>
