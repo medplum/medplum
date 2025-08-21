@@ -43,6 +43,7 @@ const prefixes = [
   '/.well-known/',
   '/admin/',
   '/auth/',
+  '/dicomweb/',
   '/email/',
   '/fhir/',
   '/fhircast/',
