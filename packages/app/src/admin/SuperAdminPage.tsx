@@ -18,7 +18,7 @@ import {
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { createReference, forbidden, getReferenceString, normalizeErrorString, WithId } from '@medplum/core';
-import { Parameters, ProjectMembership, Reference, Resource } from '@medplum/fhirtypes';
+import { Parameters, Patient, Practitioner, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import {
   convertLocalToIso,
   DateTimeInput,
@@ -332,8 +332,8 @@ export function ExplainSearchForm({
   openModal: () => void;
 }): JSX.Element {
   const medplum = useMedplum();
-  const [explainProject, setExplainProject] = useState<Reference<Resource> | undefined>();
-  const [explainProfile, setExplainProfile] = useState<Reference<Resource> | undefined>();
+  const [explainProject, setExplainProject] = useState<Reference<Project> | undefined>();
+  const [explainProfile, setExplainProfile] = useState<Reference<Practitioner | Patient> | undefined>();
   const [explainMemberships, setExplainMemberships] = useState<WithId<ProjectMembership>[] | undefined>();
 
   const explainProfileSearchCriteria: Record<string, string> | undefined = useMemo(() => {
@@ -360,7 +360,7 @@ export function ExplainSearchForm({
       .catch((err) => {
         console.error(err);
       });
-  }, [explainProfile, explainProject]);
+  }, [medplum, explainProfile, explainProject]);
 
   function explainSearch(formData: Record<string, any>): void {
     if (!formData.query) {
@@ -411,14 +411,14 @@ export function ExplainSearchForm({
         <Checkbox name="analyze" label="Analyze" />
         <InputWrapper label="On Behalf Of">
           <Stack gap="sm">
-            <ReferenceInput
+            <ReferenceInput<Project>
               required
               placeholder="Project"
               targetTypes={['Project']}
               name="onBehalfOfProject"
               onChange={setExplainProject}
             />
-            <ReferenceInput
+            <ReferenceInput<Practitioner | Patient>
               required
               placeholder=""
               name="onBehalfOfProfile"
@@ -427,7 +427,7 @@ export function ExplainSearchForm({
               searchCriteria={explainProfileSearchCriteria}
             />
             {(explainMemberships?.length ?? 0) > 1 && (
-              <ReferenceInput
+              <ReferenceInput<ProjectMembership>
                 required
                 placeholder="ProjectMembership"
                 name="onBehalfOfProjectMembership"
