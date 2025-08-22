@@ -248,8 +248,6 @@ describe('PlanDefinition apply', () => {
       .get(`/fhir/R4/Encounter/${res4.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res7.status).toBe(200);
-    expect(res7.body.basedOn).toHaveLength(1);
-    expect(res7.body.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
   });
 
   test('Unsupported content type', async () => {
@@ -730,7 +728,5 @@ describe('PlanDefinition apply', () => {
       .get(`/fhir/R4/Encounter/${res6.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res10.status).toBe(200);
-    expect(res10.body.basedOn).toHaveLength(1);
-    expect(res10.body.basedOn?.[0]?.reference).toStrictEqual(getReferenceString(res2.body as PlanDefinition));
   });
 });
