@@ -11,7 +11,6 @@ import {
   ContentType,
   Hl7Message,
   LogLevel,
-  Logger,
   MEDPLUM_VERSION,
   MedplumClient,
   ReconnectingWebSocket,
@@ -34,6 +33,7 @@ import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from '.
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import { PinoWrapperLogger, mainPinoLogger } from './logger';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
 import { getCurrentStats } from './stats';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
@@ -56,7 +56,7 @@ export class App {
   readonly medplum: MedplumClient;
   readonly agentId: string;
   readonly logLevel: LogLevel;
-  readonly log: Logger;
+  readonly log: PinoWrapperLogger;
   readonly webSocketQueue: AgentMessage[] = [];
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
@@ -78,7 +78,7 @@ export class App {
     this.medplum = medplum;
     this.agentId = agentId;
     this.logLevel = logLevel;
-    this.log = new Logger((msg) => console.log(msg), undefined, logLevel);
+    this.log = new PinoWrapperLogger(mainPinoLogger, { level: logLevel });
   }
 
   async start(): Promise<void> {
@@ -94,7 +94,9 @@ export class App {
 
     this.medplum.addEventListener('change', () => {
       if (!this.webSocket) {
-        this.connectWebSocket().catch(this.log.error);
+        this.connectWebSocket().catch((err) => {
+          this.log.error(normalizeErrorString(err));
+        });
       } else {
         this.startWebSocketWorker();
       }
@@ -173,7 +175,9 @@ export class App {
   private async heartbeat(): Promise<void> {
     if (!this.webSocket) {
       this.log.warn('WebSocket not connected');
-      this.connectWebSocket().catch(this.log.error);
+      this.connectWebSocket().catch((err) => {
+        this.log.error(normalizeErrorString(err));
+      });
       return;
     }
 

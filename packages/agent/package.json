@@ -29,6 +29,9 @@
     "@medplum/hl7": "4.3.10",
     "dcmjs-dimse": "0.3.0",
     "iconv-lite": "0.6.3",
+    "pino": "9.9.0",
+    "pino-pretty": "13.1.1",
+    "pino-roll": "3.1.0",
     "semver": "7.7.2",
     "ws": "8.18.3"
   },

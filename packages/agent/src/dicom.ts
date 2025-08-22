@@ -3,8 +3,8 @@
 import {
   AgentTransmitResponse,
   ContentType,
-  Logger,
   createReference,
+  ILogger,
   normalizeErrorString,
   sleep,
 } from '@medplum/core';
@@ -23,7 +23,7 @@ export class AgentDicomChannel extends BaseChannel {
   private server: dimse.Server;
   private started = false;
   readonly tempDir: string;
-  readonly log: Logger;
+  readonly log: ILogger;
 
   constructor(app: App, definition: AgentChannel, endpoint: Endpoint) {
     super(app, definition, endpoint);
