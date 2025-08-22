@@ -252,7 +252,7 @@ export class ReindexJob {
         let bundle: Bundle<WithId<Resource>>;
         try {
           await conn.query(`SET statement_timeout TO 3600000`); // 1 hour
-          bundle = await systemRepo.search(searchRequest, { maxResourceVersion });
+          bundle = await systemRepo.search(searchRequest, { maxResourceVersion, noDeletedFilter: true });
         } finally {
           await conn.query(`SET statement_timeout TO ${this.defaultStatementTimeout}`);
         }
@@ -402,7 +402,10 @@ function searchRequestForNextPage(jobData: ReindexJobData, batchSize: number): S
     resourceType,
     count: batchSize,
     sortRules: [{ code: '_lastUpdated', descending: false }],
-    filters: [{ code: '_lastUpdated', operator: Operator.LESS_THAN, value: endTimestamp }],
+    filters: [
+      { code: '_lastUpdated', operator: Operator.LESS_THAN, value: endTimestamp },
+      { code: '_deleted', operator: Operator.EQUALS, value: 'true' },
+    ],
   };
   if (cursor) {
     searchRequest.cursor = cursor;

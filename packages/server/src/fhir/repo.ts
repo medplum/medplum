@@ -1155,6 +1155,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           lastUpdated,
           deleted: true,
           projectId: resource.meta?.project,
+          __version: Repository.VERSION,
           content,
         };
 

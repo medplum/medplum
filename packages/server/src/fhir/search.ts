@@ -110,7 +110,7 @@ interface ChainedSearchParameter {
   filter: Filter;
 }
 
-export interface SearchOptions extends Pick<GetBaseSelectQueryOptions, 'maxResourceVersion'> {}
+export interface SearchOptions extends Pick<GetBaseSelectQueryOptions, 'maxResourceVersion' | 'noDeletedFilter'> {}
 
 export async function searchImpl<T extends Resource>(
   repo: Repository,
@@ -320,11 +320,15 @@ async function getSearchEntries<T extends Resource>(
     } else {
       // Handle missing content
       // In the original implementation of deleted resources, the content was not stored in the database.
-      resources.push({
+      const deletedResource = {
         resourceType: searchRequest.resourceType,
         id: row.id,
         meta: { lastUpdated: row.lastUpdated?.toISOString() },
-      } as WithId<T>);
+      } as WithId<T>;
+      if ('deleted' in row && row.deleted) {
+        (deletedResource.meta as any).deleted = row.deleted;
+      }
+      resources.push(deletedResource);
     }
   }
   let nextResource: T | undefined;
@@ -364,6 +368,8 @@ interface GetBaseSelectQueryOptions {
   resourceTypeQueryCallback?: (resourceType: SearchRequest['resourceType'], builder: SelectQuery) => void;
   /** The maximum resource version to include in the search. If zero is specified, only resources with a NULL version are included. */
   maxResourceVersion?: number;
+  /** If `true`, the standard deleted = false filter is not added. */
+  noDeletedFilter?: boolean;
 }
 function getBaseSelectQuery(
   repo: Repository,
@@ -408,8 +414,10 @@ function getBaseSelectQueryForResourceType(
       new Disjunction([new Condition(col, '<=', opts.maxResourceVersion), new Condition(col, '=', null)])
     );
   }
-  if (!searchRequest.filters?.some((f) => f.code === '_deleted')) {
+  if (!opts?.noDeletedFilter && !searchRequest.filters?.some((f) => f.code === '_deleted')) {
     repo.addDeletedFilter(builder);
+  } else {
+    builder.column(new Column(resourceType, 'deleted'));
   }
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(repo, builder, resourceType, searchRequest);
