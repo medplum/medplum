@@ -1,12 +1,20 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { createReference } from '@medplum/core';
-import { Bundle, Communication, DiagnosticReport, Observation, Organization, Patient } from '@medplum/fhirtypes';
+import { ContentType, createReference } from '@medplum/core';
+import {
+  AsyncJob,
+  Bundle,
+  Communication,
+  DiagnosticReport,
+  Observation,
+  Organization,
+  Patient,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import { setAccountsHandler } from './set-accounts';
 
 const app = express();
@@ -352,8 +360,50 @@ describe('Patient Set Accounts Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Parameters',
-        parameter: [],
+        parameter: [
+          {
+            name: 'accounts',
+            valueReference: createReference(organization1),
+          },
+        ],
       });
     expect(res.status).toBe(403);
+  });
+
+  test('Supports async response', async () => {
+    // Start the operation
+    const initRes = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'accounts',
+            valueReference: createReference(organization1),
+          },
+          {
+            name: 'propagate',
+            valueBoolean: true,
+          },
+        ],
+      });
+    expect(initRes.status).toBe(202);
+    expect(initRes.headers['content-location']).toBeDefined();
+
+    // Check the export status
+    const contentLocation = new URL(initRes.headers['content-location']);
+    await waitForAsyncJob(initRes.headers['content-location'], app, accessToken);
+
+    const statusRes = await request(app)
+      .get(contentLocation.pathname)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(statusRes.status).toBe(200);
+    const resBody = statusRes.body as AsyncJob;
+    expect(resBody.output?.parameter).toStrictEqual(
+      expect.arrayContaining([{ name: 'resourcesUpdated', valueInteger: 3 }])
+    );
   });
 });
