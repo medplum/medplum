@@ -6,3 +6,8 @@
 .rbc-btn-group button {
   font-size: 14px;
 }
+
+/* Hide empty menu titles that cause spacing */
+.Navbar_menuTitle:empty {
+  display: none !important;
+}
