@@ -49,7 +49,9 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
   const medplum = useMedplum();
   const [login, setLogin] = useState<string>();
   const loginRequested = useRef(false);
-  const [mfaRequired, setAuthenticatorRequired] = useState(false);
+  const [mfaEnrollRequired, setMfaEnrollRequired] = useState(false);
+  const [enrollQrCode, setEnrollQrCode] = useState<string>();
+  const [mfaRequired, setMfaRequired] = useState(false);
   const [memberships, setMemberships] = useState<ProjectMembership[]>();
 
   const handleCode = useCallback(
@@ -72,7 +74,9 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
 
   const handleAuthResponse = useCallback(
     (response: LoginAuthenticationResponse): void => {
-      setAuthenticatorRequired(!!response.mfaRequired);
+      setMfaEnrollRequired(!!response.mfaEnrollRequired);
+      setEnrollQrCode(response.enrollQrCode);
+      setMfaRequired(!!response.mfaRequired);
 
       if (response.login) {
         setLogin(response.login);
@@ -130,9 +134,26 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
               {props.children}
             </AuthenticationForm>
           );
+        } else if (mfaEnrollRequired && enrollQrCode) {
+          return (
+            <MfaForm
+              title="Enroll in MFA"
+              buttonText="Enroll"
+              qrCodeUrl={enrollQrCode}
+              onSubmit={async (fields) => {
+                const res = await medplum.post('auth/mfa/login-enroll', {
+                  login: login,
+                  token: fields.token,
+                });
+                handleAuthResponse(res);
+              }}
+            />
+          );
         } else if (mfaRequired) {
           return (
             <MfaForm
+              title="Enter MFA code"
+              buttonText="Submit code"
               onSubmit={async (fields) => {
                 const res = await medplum.post('auth/mfa/verify', {
                   login: login,

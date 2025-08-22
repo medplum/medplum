@@ -1,13 +1,12 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { Button, Center, Group, Modal, TextInput, Title } from '@mantine/core';
+import { Button, Group, Modal, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Document, Form, useMedplum } from '@medplum/react';
+import { Document, MfaForm, MfaFormFields, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
 import { JSX, useCallback, useEffect, useState } from 'react';
-import { MfaForm, MfaFormFields } from '../../react/src/auth/MfaForm';
 
 export function MfaPage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -30,7 +29,7 @@ export function MfaPage(): JSX.Element | null {
   }, [fetchStatus]);
 
   const enableMfa = useCallback(
-    (formData: Record<string, string>) => {
+    (formData: Record<MfaFormFields, string>) => {
       medplum
         .post('auth/mfa/enroll', formData)
         .then(() => {
@@ -58,6 +57,8 @@ export function MfaPage(): JSX.Element | null {
       <Document>
         <Modal title="Disable MFA" opened={disabling} onClose={() => setDisabling(false)}>
           <MfaForm
+            title="Disable MFA"
+            buttonText="Submit code"
             onSubmit={async (formData) => {
               // This will throw if MFA failed to disable
               await disableMfa(formData);
@@ -85,16 +86,12 @@ export function MfaPage(): JSX.Element | null {
 
   return (
     <Document width={400}>
-      <Form onSubmit={enableMfa}>
-        <Title>Multi Factor Auth Setup</Title>
-        <Center>
-          <img src={qrCodeUrl as string} alt="Multi Factor Auth QR Code" />
-        </Center>
-        <TextInput name="token" label="Code" />
-        <Group justify="flex-end" mt="xl">
-          <Button type="submit">Enroll</Button>
-        </Group>
-      </Form>
+      <MfaForm
+        title="Multi Factor Auth Setup"
+        buttonText="Enroll"
+        qrCodeUrl={qrCodeUrl as string}
+        onSubmit={enableMfa}
+      />
     </Document>
   );
 }
