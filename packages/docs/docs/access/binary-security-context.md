@@ -1,3 +1,6 @@
+import ExampleCode from '!!raw-loader!@site/..//examples/src/binaries/create-media.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # Binary Security Context
 
 FHIR Binary resources require special attention when implementing access controls in Medplum. Unlike other FHIR resources, Binary resources cannot use standard compartment-based access policies and must rely on the `securityContext` element for proper access control.
@@ -90,16 +93,11 @@ The `X-Security-Context` header is the FHIR standard method for setting Binary s
 
 **Best Practice**: Use `MedplumClient.createMedia()` when possible, as it automatically handles security context:
 
-```javascript
+```typescript
 // Recommended - createMedia automatically sets securityContext
-const media = await medplum.createMedia({
-  data: fileData,
-  filename: 'patient-report.pdf',
-  contentType: 'application/pdf',
-  additionalFields: {
-    subject: { reference: `Patient/${patientId}` },
-  }
-});
+<MedplumCodeBlock language="ts" selectBlocks="createMedia">
+  {ExampleCode}
+</MedplumCodeBlock>
 
 // The associated Binary resource will automatically have:
 // securityContext: { reference: "Media/[media-id]" }
