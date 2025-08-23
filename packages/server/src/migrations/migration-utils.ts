@@ -180,9 +180,10 @@ export async function queuePostDeployMigration(systemRepo: Repository, version: 
 }
 
 export async function withLongRunningDatabaseClient<TResult>(
-  callback: (client: PoolClient) => Promise<TResult>
+  callback: (client: PoolClient) => Promise<TResult>,
+  databaseMode?: DatabaseMode
 ): Promise<TResult> {
-  const pool = getDatabasePool(DatabaseMode.WRITER);
+  const pool = getDatabasePool(databaseMode ?? DatabaseMode.WRITER);
   const client = await pool.connect();
   try {
     await client.query(`SET statement_timeout TO 0`);

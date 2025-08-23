@@ -4,8 +4,9 @@ import { allOk, parseSearchRequest } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Project, Reference } from '@medplum/fhirtypes';
 import { requireSuperAdmin } from '../../admin/super';
-import { DatabaseMode, getDatabasePool } from '../../database';
+import { DatabaseMode } from '../../database';
 import { escapeUnicode } from '../../migrations/migrate-utils';
+import { withLongRunningDatabaseClient } from '../../migrations/migration-utils';
 import { getSelectQueryForSearch } from '../search';
 import { SqlBuilder } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -74,8 +75,6 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     analyze?: boolean;
     format?: 'text' | 'json';
   }>(operation, req);
-  const client = getDatabasePool(DatabaseMode.READER); // Send possibly-expensive EXPLAIN queries to reader instances
-
   const searchReq = parseSearchRequest(params.query);
   const selectQuery = getSelectQueryForSearch(repo, searchReq);
 
@@ -96,7 +95,7 @@ export async function dbExplainHandler(req: FhirRequest): Promise<FhirResponse> 
     selectQuery.explain.push('format json');
   }
 
-  const result = await selectQuery.execute(client);
+  const result = await withLongRunningDatabaseClient((client) => selectQuery.execute(client), DatabaseMode.READER);
 
   let explain: string;
   if (params.format === 'json') {
