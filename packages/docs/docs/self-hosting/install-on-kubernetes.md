@@ -44,6 +44,26 @@ docker-compose up
 
 This will automatically create and run the necessary containers, allowing you to quickly test your Medplum deployment without needing to manually provision external services.
 
+## Setup Ingress Controller
+
+To expose your application to the internet, you'll need an **Ingress Controller** running in your Kubernetes cluster. An Ingress Controller is a specialized piece of software that acts as an entry point for all incoming traffic, routing it to the correct service within the cluster based on rules defined in an `Ingress` resource. Without one, your application won't be accessible from outside the cluster.
+
+You have a few options when it comes to choosing an Ingress Controller:
+
+### Cloud-Agnostic Option: Ingress-Nginx
+
+We recommend using the **ingress-nginx** controller. It's a popular, open-source, and cloud-agnostic solution that is widely supported and well-documented. Its primary advantage is that it provides a consistent experience across different cloud providers and on-premise environments. By standardizing on `ingress-nginx`, you ensure your setup remains portable, making it easier to migrate between different cloud providers or use a hybrid cloud strategy.
+
+### Cloud-Specific Options
+
+Alternatively, you can choose to use the native Ingress controller provided by your cloud provider. These controllers are often deeply integrated with the cloud's ecosystem, offering features like managed load balancers, built-in security (WAF), and seamless integration with the cloud's certificate management service.
+
+- **AWS**: The **AWS Load Balancer Controller** automatically provisions AWS Application Load Balancers (ALBs) or Network Load Balancers (NLBs) for your services.
+- **GCP**: The **GKE Ingress** controller is a built-in, managed service that provisions a Google Cloud HTTP(S) Load Balancer for your application.
+- **Azure**: The **Azure Application Gateway Ingress Controller (AGIC)** integrates your AKS cluster with an Azure Application Gateway.
+
+For more detailed instructions and specific configurations for each of these options, please refer to our cloud-specific installation guides for AWS, GCP, and Azure.
+
 ## Setup the Helm Repository
 
 To install Medplum using Helm, you first need to add the official Medplum Helm chart repository. This allows Helm to locate and download the charts required for your deployment.

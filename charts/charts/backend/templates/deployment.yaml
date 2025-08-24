@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "backend.fullname" . }}
+  name: {{ include "medplum.fullname" . }}
   labels:
-    {{- include "backend.labels" . | nindent 4 }}
+    {{- include "medplum.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ default 1 .Values.deployment.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "backend.selectorLabels" . | nindent 6 }}
+      {{- include "medplum.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,50 +18,83 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "backend.labels" . | nindent 8 }}
+        {{- include "medplum.labels" . | nindent 8 }}
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
+        {{- if (eq .Values.global.cloudProvider "azure") }}
+        azure.workload.identity/use: "true"
+        {{- end }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with .Values.deployment.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "backend.serviceAccountName" . }}
-      {{- with .Values.podSecurityContext }}
+      serviceAccountName: {{ include "medplum.serviceAccountName" . }}
       securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- with .Values.deployment.initContainers }}
+      initContainers:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
-          {{- with .Values.securityContext }}
           securityContext:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.deployment.image.repository }}:{{ .Values.deployment.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: IfNotPresent
+          args:
+            - {{ .Values.global.configSource.type | quote }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: {{ .Values.service.targetPort | default 8103 }}
               protocol: TCP
-          {{- with .Values.livenessProbe }}
           livenessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with .Values.readinessProbe }}
+            httpGet:
+              path: /healthcheck
+              port: {{ .Values.service.targetPort | default 8103 }}
+            initialDelaySeconds: 60
           readinessProbe:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with .Values.resources }}
+            httpGet:
+              path: /healthcheck
+              port: {{ .Values.service.targetPort | default 8103 }}
+          startupProbe:
+            httpGet:
+              path: /healthcheck
+              port: {{ .Values.service.targetPort | default 8103 }}
+            failureThreshold: 60
+            periodSeconds: 10
+          envFrom:
+            # Source 1: Built-in ConfigMap
+            - configMapRef:
+                name: {{ include "medplum.fullname" . }}-config
+            # Source 2: Built-in Secret
+            - secretRef:
+                name: {{ include "medplum.fullname" . }}-secrets
+            {{- with .Values.deployment.envFrom }}
+            # Source 3: User-defined envFrom sources
+            {{- toYaml . | nindent 6 }}
+            {{- end }}
+          env:
+            {{- with .Values.deployment.env }}
+            # Source 4: User-defined env vars
+            {{- toYaml . | nindent 6 }}
+            {{- end }}
           resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-          {{- with .Values.volumeMounts }}
+            {{- toYaml .Values.deployment.resources | nindent 12 }}
           volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+            {{- with .Values.volumeMounts }}
             {{- toYaml . | nindent 12 }}
-          {{- end }}
-      {{- with .Values.volumes }}
+            {{- end }}
+        {{- with .Values.deployment.sidecars }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
       volumes:
+        - name: tmp-volume
+          emptyDir: {}
+      {{- with .Values.volumes }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
       {{- with .Values.nodeSelector }}

@@ -12,8 +12,39 @@ global:
     # type: "azure:keyVaultURL:secretName"
     type: 'env' # Default to env
 
-config:
-  server:
+frontend:
+  enabled: true
+  autoscaling:
+    enabled: false
+  serviceAccount:
+    create: true
+    name: 'frontend-sa'
+  service:
+    port: 80
+  ingress:
+    enabled: true
+    host: 'app.example.com'
+    annotations: {}
+  deployment:
+    replicaCount: 1
+  image:
+    repository: medplum/medplum-app
+    tag: latest
+
+backend:
+  enabled: true
+  autoscaling:
+    enabled: false
+  serviceAccount:
+    create: true
+    name: 'backend-sa'
+  service:
+    port: 3000
+  ingress:
+    enabled: true
+    host: 'api.example.com'
+    annotations: {}
+  config:
     # These are the default values for a local deployment
     # You should change these values for your own environment
     # See: https://www.medplum.com/docs/self-hosting/config-settings
@@ -34,16 +65,34 @@ config:
     defaultBotRuntimeVersion: 'vmcontext'
     allowedOrigins: '*'
     introspectionEnabled: true
-  database:
-    host: 'localhost'
-    port: 5432
-    dbname: 'medplum'
-    username: 'medplum'
-    password: 'medplum'
-  redis:
-    host: 'localhost'
-    port: 6379
-    password: 'medplum'
+    database:
+      host: 'localhost'
+      port: 5432
+      dbname: 'medplum'
+      username: 'medplum'
+      password: 'medplum'
+    redis:
+      host: 'localhost'
+      port: 6379
+      password: 'medplum'
+  deployment:
+    replicaCount: 1
+    image:
+      repository: medplum/medplum-server
+      tag: latest
+    env:
+      # - name: SQL_DEBUG
+      #   value: '*'
+    resources:
+      requests:
+        memory: '1Gi'
+        cpu: '500m'
+      limits:
+        memory: '2Gi'
+        cpu: '1000m'
+    # Structure this deployment.sidecar value as if you were adding the container
+    # to the Deployment's spec.template.spec.containers key.
+    sidecars: []
 
 serviceAccount:
   annotations:
@@ -51,29 +100,6 @@ serviceAccount:
     # iam.gke.io/gcp-service-account: ""
     # Set your Azure Managed Identity Client ID for Azure workload identity
     # azure.workload.identity/client-id: ""
-
-namespace: medplum
-
-deployment:
-  replicaCount: 1
-  image:
-    repository: medplum/medplum-server
-    tag: latest
-  env:
-    # - name: SQL_DEBUG
-    #   value: '*'
-  resources:
-    requests:
-      memory: '1Gi'
-      cpu: '500m'
-    limits:
-      memory: '2Gi'
-      cpu: '1000m'
-  autoscaling:
-    enabled: true
-  # Structure this deployment.sidecar value as if you were adding the container
-  # to the Deployment's spec.template.spec.containers key.
-  sidecars: []
 
 # Security contexts for pods and containers
 podSecurityContext:
@@ -102,11 +128,43 @@ podDisruptionBudget:
   minAvailable: 1
   # Alternative: maxUnavailable: 1
 
-service: {}
+# ingress:
+#   deploy: true
+#   # Set your domain name (e.g., medplum.example.com)
+#   domain: ''
+#   # Set your TLS secret name (Azure only)
+#   tlsSecretName: ''
 
+# ingress:
+#   enabled: true
+#   secretName: 'my-app-tls-secret'
+#   app:
+#     host: 'app.example.com'
+#   api:
+#     host: 'api.example.com'
+
+# Ingress configuration
 ingress:
-  deploy: true
-  # Set your domain name (e.g., medplum.example.com)
-  domain: ''
-  # Set your TLS secret name (Azure only)
-  tlsSecretName: ''
+  enabled: true
+  # Set your ingress class name
+  # Options:
+  #   - nginx
+  #   - alb - AWS Application Load Balancer
+  #   - azure-application-gateway - For Azure's Application Gateway
+  #   - "gce" - Google Cloud Platform
+  className: 'nginx' # Customer's ingress class name
+  annotations: {} # Customer can add their own annotations here
+  # annotations:
+  #   ingressClassName: "gce"
+  #   kubernetes.io/ingress.global-static-ip-name: medplum-external-ip
+  #   networking.gke.io/managed-certificates: {{ include "medplum.fullname" . }}
+  #   networking.gke.io/v1beta1.FrontendConfig: {{ include "medplum.fullname" . }}
+  hosts:
+    - host: 'my-app.my-customer.com'
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls:
+    - secretName: my-app-tls-secret
+      hosts:
+        - 'my-app.my-customer.com'

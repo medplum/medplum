@@ -6,13 +6,6 @@ Expand the name of the chart.
 {{- end }}
 
 {{/*
-Return the namespace to be used for the resources.
-*/}}
-{{- define "medplum.namespace" -}}
-{{- default "medplum" .Values.namespace }}
-{{- end }}
-
-{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
@@ -28,6 +21,20 @@ If release name contains chart name it will be used as a full name.
 {{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
 {{- end }}
 {{- end }}
+{{- end }}
+
+{{/*
+Create frontend fully qualified name.
+*/}}
+{{- define "frontend.fullname" -}}
+{{- printf "%s-%s" (include "medplum.fullname" .) "frontend" | trunc 63 | trimSuffix "-" -}}
+{{- end }}
+
+{{/*
+Create backend fully qualified name.
+*/}}
+{{- define "backend.fullname" -}}
+{{- printf "%s-%s" (include "medplum.fullname" .) "backend" | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{/*
@@ -47,6 +54,22 @@ helm.sh/chart: {{ include "medplum.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Common frontend labels
+*/}}
+{{- define "frontend.labels" -}}
+{{- include "medplum.labels" . }}
+app.kubernetes.io/component: frontend
+{{- end }}
+
+{{/*
+Common backend labels
+*/}}
+{{- define "backend.labels" -}}
+{{- include "medplum.labels" . }}
+app.kubernetes.io/component: backend
 {{- end }}
 
 {{/*

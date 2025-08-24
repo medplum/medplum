@@ -1,54 +1,52 @@
-{{- if and (eq .Values.global.cloudProvider "gcp") (eq .Values.ingress.deploy true) }}
+{{- if .Values.ingress.enabled }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "medplum.fullname" . }}
-  namespace: {{ include "medplum.namespace" . }}
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
+  {{- if eq .Values.global.cloudProvider "gcp" }}
   annotations:
     ingressClassName: "gce"
     kubernetes.io/ingress.global-static-ip-name: medplum-external-ip
     networking.gke.io/managed-certificates: {{ include "medplum.fullname" . }}
     networking.gke.io/v1beta1.FrontendConfig: {{ include "medplum.fullname" . }}
+  {{- end }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
-  rules:
-    - host: {{ .Values.ingress.domain }}
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: {{ include "medplum.fullname" . }}-service
-                port:
-                  number: {{ .Values.service.port | default 80 }}
-{{- end }}
-
-{{- if and (eq .Values.global.cloudProvider "azure") (eq .Values.ingress.deploy true) }}
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: {{ include "medplum.fullname" . }}
-  namespace: {{ include "medplum.namespace" . }}
-  labels:
-    {{- include "medplum.labels" . | nindent 4 }}
-spec:
+  {{- if .Values.ingress.className }}
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- end }}
   tls:
-    - hosts:
-      - {{ .Values.ingress.domain }}
-      secretName: {{ .Values.ingress.tlsSecretName }}
-  ingressClassName: azure-application-gateway
+  # This block will handle TLS for both hosts
+  - hosts:
+    - {{ .Values.ingress.app.host | quote }}
+    - {{ .Values.ingress.api.host | quote }}
+    secretName: {{ .Values.ingress.secretName | quote }}
   rules:
-  - host: {{ .Values.ingress.domain }}
+  # Rule for the frontend (app.example.com)
+  - host: {{ .Values.ingress.app.host | quote }}
     http:
       paths:
-      - pathType: Prefix
-        path: /
+      - path: /
+        pathType: Prefix
         backend:
           service:
-            name: {{ include "medplum.fullname" . }}-service
+            name: {{ include "frontend.fullname" . }}-service
             port:
-              number: {{ .Values.service.port | default 80 }}
-
+              number: {{ .Values.frontend.service.port }}
+  # Rule for the backend (api.example.com)
+  - host: {{ .Values.ingress.api.host | quote }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ include "backend.fullname" . }}-service
+            port:
+              number: {{ .Values.backend.service.port }}
 {{- end }}
