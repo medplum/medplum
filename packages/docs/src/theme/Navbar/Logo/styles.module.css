@@ -1,0 +1,18 @@
+.logoContainer {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-right: 24px;
+}
+
+.logoImage {
+  color: var(--ifm-color-primary);
+  display: block;
+  margin: 0 auto;
+  transform: scale(1);
+  transition: all 0.1s ease;
+}
+
+.logoImage:hover {
+  transform: scale(1.03);
+}
