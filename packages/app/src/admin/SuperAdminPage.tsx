@@ -374,18 +374,29 @@ export function ExplainSearchForm({
       });
   }, [medplum, explainProfile, explainProject]);
 
+  const searchCriteria = useMemo(() => {
+    const criteria: Record<string, string> = {};
+    if (explainProfile?.reference) {
+      criteria['profile'] = explainProfile?.reference;
+    }
+    if (explainProject?.reference) {
+      criteria['project'] = explainProject?.reference;
+    }
+
+    return criteria;
+  }, [explainProfile, explainProject]);
+
   function explainSearch(formData: Record<string, any>): void {
     if (!formData.query) {
       showNotification({ color: 'red', message: 'Query is required', autoClose: false });
       return;
     }
-    formData.analyze = formData.analyze ?? false;
     const onBehalfOfHeader: string | undefined = formData['onBehalfOfProjectMembership'];
     delete formData['onBehalfOfProjectMembership'];
 
     const toSubmit = {
       query: formData.query,
-      analyze: formData.analyze,
+      analyze: formData.analyze === 'on',
       format: 'text',
     };
 
@@ -409,7 +420,9 @@ export function ExplainSearchForm({
         );
         openModal();
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+      .catch((err) => {
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
+      });
   }
 
   if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
@@ -431,23 +444,20 @@ export function ExplainSearchForm({
             />
             <ReferenceInput<Practitioner | Patient>
               required
-              placeholder=""
+              placeholder="Practitioner or Patient"
               name="onBehalfOfProfile"
               targetTypes={['Practitioner', 'Patient']}
               onChange={setExplainProfile}
               searchCriteria={explainProfileSearchCriteria}
             />
-            {(explainMemberships?.length ?? 0) > 1 && (
+            {explainMemberships?.length !== 1 && (
               <ReferenceInput<ProjectMembership>
                 required
                 placeholder="ProjectMembership"
                 name="onBehalfOfProjectMembership"
                 targetTypes={['ProjectMembership']}
                 onChange={setOnBehalfOfProjectMembership}
-                searchCriteria={{
-                  profile: explainProfile?.reference ?? '',
-                  project: explainProject?.reference ?? '',
-                }}
+                searchCriteria={searchCriteria}
               />
             )}
             {explainMemberships?.length === 1 && (
