@@ -38,7 +38,7 @@
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
     "pg": "8.16.3",
-    "tinybench": "5.0.0",
+    "tinybench": "5.0.1",
     "unzipper": "0.12.3"
   },
   "engines": {
