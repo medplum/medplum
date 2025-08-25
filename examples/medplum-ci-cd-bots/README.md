@@ -87,7 +87,7 @@ medplum-ci-cd-bots/
    npm install
    ```
 
-2. **Configure Environment Variables**
+
    ```bash
    export MEDPLUM_CLIENT_ID="your-client-id"
    export MEDPLUM_CLIENT_SECRET="your-client-secret"
@@ -118,7 +118,6 @@ medplum-ci-cd-bots/
 - `npm run build` - Complete build pipeline (TypeScript compilation + bundling + linting)
 - `npm run clean` - Clean build artifacts
 - `npm run lint` - Run ESLint quality checks
-- `npm run test` - Run automated tests
 - `npm run setup:bots` - Complete CI/CD pipeline (build + deploy + subscriptions)
 - `npm run deploy:bots` - Deploy bots only (skip subscription creation)
 
