@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
 import { Box, Group, Skeleton, Stack } from '@mantine/core';
-import { createReference, deepEquals, normalizeOperationOutcome } from '@medplum/core';
+import { createReference, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { OperationOutcomeAlert, QuestionnaireForm, QuestionnaireResponseDisplay, useMedplum, useMedplumProfile } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
