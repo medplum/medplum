@@ -5,6 +5,7 @@ import { createReference, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { OperationOutcomeAlert, QuestionnaireForm, QuestionnaireResponseDisplay, useMedplum, useMedplumProfile } from '@medplum/react';
 import { JSX, useEffect, useState } from 'react';
+import { showErrorNotification } from '../../utils/notifications';
 
 interface TaskQuestionnaireFormProps {
   task: Task;
@@ -20,14 +21,16 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>(undefined);
 
   useEffect(() => {
-    if (questionnaireResponse && task.status === 'completed' && questionnaireResponse?.status !== 'completed') {
-      const updatedResponse: QuestionnaireResponse = {
-        ...questionnaireResponse,
-        status: 'completed',
-      };
-      medplum.updateResource(updatedResponse);
-      onChangeResponse?.(updatedResponse);
-    }
+    const updateQuestionnaireResponse = async (): Promise<void> => {
+      if (questionnaireResponse && task.status === 'completed' && questionnaireResponse?.status !== 'completed') {
+        const updatedResponse: QuestionnaireResponse = {
+          ...questionnaireResponse,
+          status: 'completed',
+        };
+        await medplum.updateResource(updatedResponse);
+      }
+    };
+    updateQuestionnaireResponse().catch(showErrorNotification);
   }, [task, questionnaireResponse]);
 
   const onChange = (response: QuestionnaireResponse): void => {
