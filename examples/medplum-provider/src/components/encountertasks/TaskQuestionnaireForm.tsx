@@ -31,7 +31,7 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
       }
     };
     updateQuestionnaireResponse().catch(showErrorNotification);
-  }, [task, questionnaireResponse]);
+  }, [task, questionnaireResponse, medplum]);
 
   const onChange = (response: QuestionnaireResponse): void => {
     const baseResponse = questionnaireResponse || response;
