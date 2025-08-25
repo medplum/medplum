@@ -35,6 +35,7 @@ import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } f
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
+import { AgentSerialChannel } from './serial';
 import { getCurrentStats } from './stats';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
@@ -489,6 +490,9 @@ export class App {
         break;
       case ChannelType.HL7_V2:
         channel = new AgentHl7Channel(this, definition, endpoint);
+        break;
+      case ChannelType.SERIAL:
+        channel = new AgentSerialChannel(this, definition, endpoint);
         break;
       default:
         throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
