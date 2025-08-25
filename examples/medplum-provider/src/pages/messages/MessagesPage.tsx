@@ -26,7 +26,7 @@ import { IconChevronDown, IconMessageCircle, IconPlus } from '@tabler/icons-reac
 import classes from './MessagesPage.module.css';
 import { useDisclosure } from '@mantine/hooks';
 import cx from 'clsx';
-import { useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 
 /**
  * Messages page that matches the Home page layout but without the patient list.
@@ -37,9 +37,10 @@ export function MessagesPage(): JSX.Element {
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
   const [selectedThread, setSelectedThread] = useState<Communication | undefined>(undefined);
-  const [threadMessages, setThreadMessages] = useState<[Communication, Communication][]>([]);
+  const [threadMessages, setThreadMessages] = useState<[Communication, Communication | undefined][]>([]);
   const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
   const [status, setStatus] = useState<Communication['status']>('in-progress');
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchAllCommunications(): Promise<void> {
@@ -135,14 +136,9 @@ export function MessagesPage(): JSX.Element {
     }
   };
 
-  const handleMessageSent = (message: Communication): void => {
-    if (!selectedThread) {
-      return;
-    }
-    const index = threadMessages.findIndex((m) => m[0].id === selectedThread.id);
-    if (index === -1) {
-      setThreadMessages([[selectedThread, message], ...threadMessages]);
-    }
+  const handleNewTopic = (message: Communication): void => {
+    setThreadMessages([[message, undefined], ...threadMessages]);
+    navigate(`/Message/${message.id}`)?.catch(console.error);
   };
 
   return (
@@ -252,7 +248,6 @@ export function MessagesPage(): JSX.Element {
                           title={'Messages'}
                           thread={selectedThread}
                           excludeHeader={true}
-                          onMessageSent={handleMessageSent}
                         />
                       </Flex>
                     </Stack>
@@ -276,13 +271,7 @@ export function MessagesPage(): JSX.Element {
           )}
         </Flex>
       </div>
-      <NewTopicDialog
-        opened={modalOpened}
-        onClose={closeModal}
-        onSubmit={(communication) => {
-          setSelectedThread(communication);
-        }}
-      />
+      <NewTopicDialog opened={modalOpened} onClose={closeModal} onSubmit={handleNewTopic} />
     </>
   );
 }
