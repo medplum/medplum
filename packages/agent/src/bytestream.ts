@@ -40,10 +40,6 @@ export class AgentByteStreamChannel extends BaseChannel {
     this.configureTcpServerAndConnections();
     this.server.listen(Number.parseInt(address.port, 10));
     this.log.info('Channel started successfully');
-
-    this.log.info(`Channel starting on ${address}...`);
-    this.server.listen(Number.parseInt(address.port, 10));
-    this.log.info('Channel started successfully');
   }
 
   async stop(): Promise<void> {
