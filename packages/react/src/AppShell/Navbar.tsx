@@ -213,9 +213,7 @@ function getLinkScore(currentPathname: string, currentSearchParams: URLSearchPar
     return 2; // Higher score to ensure it takes precedence over /integrations
   }
 
-  if (
-    currentPathname.startsWith(linkUrl.pathname)
-  ) {
+  if (currentPathname.startsWith(linkUrl.pathname)) {
     // Check if the pathname segments match exactly for the resource type part
     const linkSegments = linkUrl.pathname.split('/').filter(Boolean);
     const currentSegments = currentPathname.split('/').filter(Boolean);
