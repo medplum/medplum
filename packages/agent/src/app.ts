@@ -30,12 +30,12 @@ import { platform } from 'node:os';
 import process from 'node:process';
 import * as semver from 'semver';
 import WebSocket from 'ws';
+import { AgentByteStreamChannel } from './bytestream';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
 import { createPidFile, forceKillApp, isAppRunning, removePidFile, waitForPidFile } from './pid';
-import { AgentSerialChannel } from './serial';
 import { getCurrentStats } from './stats';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
@@ -491,8 +491,8 @@ export class App {
       case ChannelType.HL7_V2:
         channel = new AgentHl7Channel(this, definition, endpoint);
         break;
-      case ChannelType.SERIAL:
-        channel = new AgentSerialChannel(this, definition, endpoint);
+      case ChannelType.BYTESTREAM:
+        channel = new AgentByteStreamChannel(this, definition, endpoint);
         break;
       default:
         throw new Error(`Unsupported endpoint type: ${endpoint.address}`);

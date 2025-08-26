@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
+// SPDX-License-Identifier: Apache-2.0
 import { AgentTransmitResponse, Logger, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import assert from 'node:assert';
@@ -6,11 +8,11 @@ import net from 'node:net';
 import { App } from './app';
 import { BaseChannel } from './channel';
 
-export class AgentSerialChannel extends BaseChannel {
+export class AgentByteStreamChannel extends BaseChannel {
   readonly app: App;
   readonly server: net.Server;
   private started = false;
-  readonly connections = new Map<string, SerialChannelConnection>();
+  readonly connections = new Map<string, ByteStreamChannelConnection>();
   readonly log: Logger;
 
   startChar = -1;
@@ -24,7 +26,7 @@ export class AgentSerialChannel extends BaseChannel {
 
     // We can set the log prefix statically because we know this channel is keyed off of the name of the channel in the AgentChannel
     // So this channel's name will remain the same for the duration of its lifetime
-    this.log = app.log.clone({ options: { prefix: `[Serial:${definition.name}] ` } });
+    this.log = app.log.clone({ options: { prefix: `[Byte Stream:${definition.name}] ` } });
   }
 
   start(): void {
@@ -32,19 +34,12 @@ export class AgentSerialChannel extends BaseChannel {
       return;
     }
     this.started = true;
-    const address = new URL(this.getEndpoint().address as string);
 
-    const startCharStr = address.searchParams.get('startChar');
-    const endCharStr = address.searchParams.get('endChar');
-    if (!(startCharStr && endCharStr)) {
-      throw new Error(`Failed to parse startChar and/or endChar query param(s) from ${address}`);
-    }
-
-    // These should never eval to -1, but just in case we assert
-    this.startChar = startCharStr.codePointAt(0) ?? -1;
-    this.endChar = endCharStr.codePointAt(0) ?? -1;
-
-    assert(this.startChar !== -1 && this.endChar !== -1);
+    const address = new URL(this.getEndpoint().address);
+    this.log.info(`Channel starting on ${address}...`);
+    this.configureTcpServerAndConnections();
+    this.server.listen(Number.parseInt(address.port, 10));
+    this.log.info('Channel started successfully');
 
     this.log.info(`Channel starting on ${address}...`);
     this.server.listen(Number.parseInt(address.port, 10));
@@ -72,6 +67,53 @@ export class AgentSerialChannel extends BaseChannel {
     this.log.info('Channel stopped successfully');
   }
 
+  async reloadConfig(definition: AgentChannel, endpoint: Endpoint): Promise<void> {
+    const previousEndpoint = this.endpoint;
+    this.definition = definition;
+    this.endpoint = endpoint;
+
+    this.log.info('Reloading config... Evaluating if channel needs to change address...');
+
+    if (this.needToRebindToPort(previousEndpoint, endpoint)) {
+      await this.stop();
+      this.start();
+      this.log.info(`Address changed: ${previousEndpoint.address} => ${endpoint.address}`);
+    } else if (previousEndpoint.address !== endpoint.address) {
+      this.log.info(
+        `Reconfiguring TCP server and ${this.connections.size} connections based on new endpoint settings: ${previousEndpoint.address} => ${endpoint.address}`
+      );
+      this.configureTcpServerAndConnections();
+    } else {
+      this.log.info(`No address change needed. Listening at ${endpoint.address}`);
+    }
+  }
+
+  private needToRebindToPort(firstEndpoint: Endpoint, secondEndpoint: Endpoint): boolean {
+    if (
+      firstEndpoint.address === secondEndpoint.address ||
+      new URL(firstEndpoint.address).port === new URL(secondEndpoint.address).port
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  private configureTcpServerAndConnections(): void {
+    const address = new URL(this.getEndpoint().address as string);
+
+    const startCharStr = address.searchParams.get('startChar');
+    const endCharStr = address.searchParams.get('endChar');
+    if (!(startCharStr && endCharStr)) {
+      throw new Error(`Failed to parse startChar and/or endChar query param(s) from ${address}`);
+    }
+
+    assert(this.startChar !== -1 && this.endChar !== -1);
+
+    // These should never eval to -1, but just in case we assert
+    this.startChar = startCharStr.codePointAt(0) ?? -1;
+    this.endChar = endCharStr.codePointAt(0) ?? -1;
+  }
+
   sendToRemote(msg: AgentTransmitResponse): void {
     const connection = this.connections.get(msg.remote as string);
     if (connection) {
@@ -80,20 +122,20 @@ export class AgentSerialChannel extends BaseChannel {
   }
 
   private handleNewConnection(socket: net.Socket): void {
-    const c = new SerialChannelConnection(this, socket);
-    this.log.info(`Serial connection established: ${c.remote}`);
+    const c = new ByteStreamChannelConnection(this, socket);
+    this.log.info(`Byte stream connection established: ${c.remote}`);
     this.connections.set(c.remote, c);
   }
 }
 
-export class SerialChannelConnection {
+export class ByteStreamChannelConnection {
   private msgChunks: Buffer[] = [];
   private msgTotalLength = -1; // -1 signals message start char has not yet been received
-  readonly channel: AgentSerialChannel;
+  readonly channel: AgentByteStreamChannel;
   readonly socket: net.Socket;
   readonly remote: string;
 
-  constructor(channel: AgentSerialChannel, socket: net.Socket) {
+  constructor(channel: AgentByteStreamChannel, socket: net.Socket) {
     this.channel = channel;
     this.socket = socket;
     this.remote = `${socket.remoteAddress}:${socket.remotePort}`;
@@ -155,7 +197,7 @@ export class SerialChannelConnection {
         }
       }
     } catch (err) {
-      this.channel.log.error(`Serial error: ${normalizeErrorString(err)}`);
+      this.channel.log.error(`Byte stream error: ${normalizeErrorString(err)}`);
     }
   }
 
