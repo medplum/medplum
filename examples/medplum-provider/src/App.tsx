@@ -85,7 +85,7 @@ export function App(): JSX.Element | null {
           links: [{ icon: <IconMail />, label: 'Messages', href: '/Message' }],
         },
         {
-          links: [{ icon: <IconClipboardCheck />, label: 'Tasks', href: '/task' }],
+          links: [{ icon: <IconClipboardCheck />, label: 'Tasks', href: '/Task' }],
         },
         {
           title: 'Integrations',

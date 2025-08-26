@@ -192,11 +192,76 @@ function getActiveLink(
  * @param linkHref - A candidate link href.
  * @returns The link score.
  */
+// function getLinkScore(currentPathname: string, currentSearchParams: URLSearchParams, linkHref: string): number {
+//   const linkUrl = new URL(linkHref, 'https://example.com');
+//   if (currentPathname !== linkUrl.pathname) {
+//     return 0;
+//   }
+//   const ignoredParams = ['_count', '_offset'];
+//   for (const [key, value] of linkUrl.searchParams.entries()) {
+//     if (ignoredParams.includes(key)) {
+//       continue;
+//     }
+//     if (currentSearchParams.get(key) !== value) {
+//       return 0;
+//     }
+//   }
+//   let count = 1;
+//   for (const [key, value] of currentSearchParams.entries()) {
+//     if (ignoredParams.includes(key)) {
+//       continue;
+//     }
+//     if (linkUrl.searchParams.get(key) === value) {
+//       count++;
+//     }
+//   }
+//   console.log('currentPathname', currentPathname);
+//   console.log('currentSearchParams', currentSearchParams);
+//   return count;
+// }
+
 function getLinkScore(currentPathname: string, currentSearchParams: URLSearchParams, linkHref: string): number {
   const linkUrl = new URL(linkHref, 'https://example.com');
+
+  if (
+    linkUrl.pathname === '/admin/project' &&
+    (currentPathname === '/admin/project' ||
+      (currentPathname.startsWith('/admin/') && currentPathname !== '/admin/config'))
+  ) {
+    return 1;
+  }
+
+  // Special case for Config (admin) - should be active for '/admin/config' only
+  if (linkUrl.pathname === '/admin/config' && currentPathname === '/admin/config') {
+    return 1;
+  }
+
+  // Special case for DoseSpot Favorites - should be active for '/integrations/dosespot' only
+  if (linkUrl.pathname === '/integrations/dosespot' && currentPathname === '/integrations/dosespot') {
+    return 2; // Higher score to ensure it takes precedence over /integrations
+  }
+
+  if (
+    currentPathname.startsWith(linkUrl.pathname)
+  ) {
+    // Check if the pathname segments match exactly for the resource type part
+    const linkSegments = linkUrl.pathname.split('/').filter(Boolean);
+    const currentSegments = currentPathname.split('/').filter(Boolean);
+
+    // If the link is a resource type (single segment like /ServiceRequest)
+    if (linkSegments.length === 1 && currentSegments.length >= 1) {
+      // Check if the first segment matches (the resource type)
+      if (linkSegments[0] === currentSegments[0]) {
+        return 1;
+      }
+    }
+  }
+
+  // For other links, check exact pathname match first
   if (currentPathname !== linkUrl.pathname) {
     return 0;
   }
+
   const ignoredParams = ['_count', '_offset'];
   for (const [key, value] of linkUrl.searchParams.entries()) {
     if (ignoredParams.includes(key)) {
