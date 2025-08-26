@@ -16,11 +16,18 @@ frontend:
   enabled: true
   autoscaling:
     enabled: false
+  service:
+    type: 'LoadBalancer' # Can be ClusterIP, NodePort, or LoadBalancer
+    port: 3000
   serviceAccount:
     create: true
-    name: 'frontend-sa'
-  service:
-    port: 80
+    automount: true
+    # Annotations to add to the service account
+    # Set your Google Cloud Platform service account (e.g., medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com)
+    # iam.gke.io/gcp-service-account: ""
+    # Set your Azure Managed Identity Client ID for Azure workload identity
+    # azure.workload.identity/client-id: ""
+    annotations: {}
   ingress:
     enabled: true
     host: 'app.example.com'
@@ -35,11 +42,18 @@ backend:
   enabled: true
   autoscaling:
     enabled: false
+  service:
+    type: 'LoadBalancer' # Can be ClusterIP, NodePort, or LoadBalancer
+    port: 8103
   serviceAccount:
     create: true
-    name: 'backend-sa'
-  service:
-    port: 3000
+    automount: true
+    # Annotations to add to the service account
+    # Set your Google Cloud Platform service account (e.g., medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com)
+    # iam.gke.io/gcp-service-account: ""
+    # Set your Azure Managed Identity Client ID for Azure workload identity
+    # azure.workload.identity/client-id: ""
+    annotations: {}
   ingress:
     enabled: true
     host: 'api.example.com'
@@ -66,13 +80,13 @@ backend:
     allowedOrigins: '*'
     introspectionEnabled: true
     database:
-      host: 'localhost'
+      host: 'host.docker.internal'
       port: 5432
       dbname: 'medplum'
       username: 'medplum'
       password: 'medplum'
     redis:
-      host: 'localhost'
+      host: 'host.docker.internal'
       port: 6379
       password: 'medplum'
   deployment:
@@ -93,13 +107,6 @@ backend:
     # Structure this deployment.sidecar value as if you were adding the container
     # to the Deployment's spec.template.spec.containers key.
     sidecars: []
-
-serviceAccount:
-  annotations:
-    # Set your Google Cloud Platform service account (e.g., medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com)
-    # iam.gke.io/gcp-service-account: ""
-    # Set your Azure Managed Identity Client ID for Azure workload identity
-    # azure.workload.identity/client-id: ""
 
 # Security contexts for pods and containers
 podSecurityContext:
@@ -159,12 +166,12 @@ ingress:
   #   kubernetes.io/ingress.global-static-ip-name: medplum-external-ip
   #   networking.gke.io/managed-certificates: {{ include "medplum.fullname" . }}
   #   networking.gke.io/v1beta1.FrontendConfig: {{ include "medplum.fullname" . }}
-  hosts:
-    - host: 'my-app.my-customer.com'
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls:
-    - secretName: my-app-tls-secret
-      hosts:
-        - 'my-app.my-customer.com'
+  # hosts:
+  #   - host: 'my-app.my-customer.com'
+  #     paths:
+  #       - path: /
+  #         pathType: ImplementationSpecific
+  # tls:
+  #   - secretName: my-app-tls-secret
+  #     hosts:
+  #       - 'my-app.my-customer.com'

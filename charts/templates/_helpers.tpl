@@ -24,20 +24,6 @@ If release name contains chart name it will be used as a full name.
 {{- end }}
 
 {{/*
-Create frontend fully qualified name.
-*/}}
-{{- define "frontend.fullname" -}}
-{{- printf "%s-%s" (include "medplum.fullname" .) "frontend" | trunc 63 | trimSuffix "-" -}}
-{{- end }}
-
-{{/*
-Create backend fully qualified name.
-*/}}
-{{- define "backend.fullname" -}}
-{{- printf "%s-%s" (include "medplum.fullname" .) "backend" | trunc 63 | trimSuffix "-" -}}
-{{- end }}
-
-{{/*
 Create chart name and version as used by the chart label.
 */}}
 {{- define "medplum.chart" -}}
