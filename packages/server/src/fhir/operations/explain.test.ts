@@ -20,7 +20,7 @@ describe('$explain', () => {
     await shutdownApp();
   });
 
-  test('Success', async () => {
+  test.each(['json', 'text'])('Success with %s format', async (format) => {
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
     const res1 = await request(app)
@@ -29,14 +29,21 @@ describe('$explain', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Parameters',
-        parameter: [{ name: 'query', valueString: 'Patient?active=true' }],
+        parameter: [
+          { name: 'query', valueString: 'Patient?active=true' },
+          { name: 'analyze', valueBoolean: true },
+          { name: 'format', valueString: format },
+        ],
       } satisfies Parameters);
     expect(res1.status).toBe(200);
 
     const output = res1.body.parameter as ParametersParameter[];
+    expect(output).toHaveLength(3);
     expect(output).toStrictEqual(
       expect.arrayContaining<ParametersParameter>([
-        { name: 'explain', valueString: expect.stringContaining(`"Plan":`) },
+        { name: 'query', valueString: expect.stringContaining('SELECT "Patient"') },
+        { name: 'parameters', valueString: expect.stringContaining('$1 = ') },
+        { name: 'explain', valueString: expect.stringContaining(format === 'json' ? '{"Plan":' : '(cost=') },
       ])
     );
   });

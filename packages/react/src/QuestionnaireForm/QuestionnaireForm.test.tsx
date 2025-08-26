@@ -2480,7 +2480,7 @@ describe('QuestionnaireForm', () => {
     const response3 = onSubmit.mock.calls[2][0];
     const answers3 = getQuestionnaireAnswers(response3);
 
-    expect(answers3['q1']).toMatchObject({ valueString: undefined });
+    expect(answers3['q1']).toBeUndefined();
     expect(answers3['q2']).toMatchObject({ valueBoolean: false });
   });
 
