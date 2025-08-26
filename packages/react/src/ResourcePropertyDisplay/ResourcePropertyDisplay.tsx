@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: Copyright Orangebot, Inc. and Medplum contributors
 // SPDX-License-Identifier: Apache-2.0
-import { ActionIcon, Box, CopyButton, Tooltip } from '@mantine/core';
+import { ActionIcon, CopyButton, Flex, Tooltip } from '@mantine/core';
 import {
   InternalSchemaElement,
   PropertyType,
@@ -57,7 +57,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
   const isIdProperty = property?.path?.endsWith('.id');
   if (isIdProperty) {
     return (
-      <Box component="div" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+      <Flex gap={3} align="center">
         {value}
         {!isEmpty(value) && (
           <CopyButton value={value} timeout={2000}>
@@ -70,7 +70,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
             )}
           </CopyButton>
         )}
-      </Box>
+      </Flex>
     );
   }
 
@@ -251,6 +251,6 @@ function SecretFieldDisplay(props: SecretFieldDisplayProps): JSX.Element {
           </Tooltip>
         </>
       )}
-    </Box>
+    </Flex>
   );
 }
