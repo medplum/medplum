@@ -507,7 +507,6 @@ describe('ResourcePropertyDisplay', () => {
         />
       );
 
-      const secretElement = screen.getByText('my-secret-value');
       const showHideButton = screen.getByRole('button', { name: /show secret/i });
 
       // Initially should show the eye icon (hidden state)
