@@ -212,12 +212,14 @@ function SecretFieldDisplay(props: SecretFieldDisplayProps): JSX.Element {
 
   return (
     <Box component="div" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
-      <div 
-        style={{ 
-          whiteSpace: 'pre-wrap', 
-          WebkitTextSecurity: isVisible ? 'none' : 'disc',
-          textSecurity: isVisible ? 'none' : 'disc'
-        } as React.CSSProperties}
+      <div
+        style={
+          {
+            whiteSpace: 'pre-wrap',
+            WebkitTextSecurity: isVisible ? 'none' : 'disc',
+            textSecurity: isVisible ? 'none' : 'disc',
+          } as React.CSSProperties
+        }
       >
         {props.value}
       </div>
@@ -226,9 +228,9 @@ function SecretFieldDisplay(props: SecretFieldDisplayProps): JSX.Element {
           <CopyButton value={props.value} timeout={2000}>
             {({ copied, copy }) => (
               <Tooltip label={copied ? 'Copied' : 'Copy secret'} withArrow position="right">
-                <ActionIcon 
-                  variant="subtle" 
-                  color={copied ? 'teal' : 'gray'} 
+                <ActionIcon
+                  variant="subtle"
+                  color={copied ? 'teal' : 'gray'}
                   onClick={copy}
                   aria-label={copied ? 'Copied' : 'Copy secret'}
                 >
@@ -238,9 +240,9 @@ function SecretFieldDisplay(props: SecretFieldDisplayProps): JSX.Element {
             )}
           </CopyButton>
           <Tooltip label={isVisible ? 'Hide secret' : 'Show secret'} withArrow position="right">
-            <ActionIcon 
-              variant="subtle" 
-              color="gray" 
+            <ActionIcon
+              variant="subtle"
+              color="gray"
               onClick={() => setIsVisible(!isVisible)}
               aria-label={isVisible ? 'Hide secret' : 'Show secret'}
             >

@@ -473,7 +473,7 @@ describe('ResourcePropertyDisplay', () => {
       // The secret value should be present
       const secretElement = screen.getByText('my-secret-value');
       expect(secretElement).toBeInTheDocument();
-      
+
       // The secret field should be rendered with the SecretFieldDisplay component
       expect(secretElement.parentElement).toHaveStyle({ display: 'flex' });
     });
@@ -498,7 +498,7 @@ describe('ResourcePropertyDisplay', () => {
 
     test('Toggles secret visibility when show/hide button is clicked', async () => {
       const user = userEvent.setup();
-      
+
       await setup(
         <ResourcePropertyDisplay
           property={{ ...baseProperty, path: 'ClientApplication.clientSecret', type: [{ code: 'string' }] }}
@@ -524,7 +524,7 @@ describe('ResourcePropertyDisplay', () => {
 
     test('Copy button copies secret value to clipboard', async () => {
       const user = userEvent.setup();
-      
+
       // Mock clipboard API
       const mockClipboard = {
         writeText: jest.fn().mockResolvedValue(undefined),
@@ -550,7 +550,7 @@ describe('ResourcePropertyDisplay', () => {
 
     test('Shows success state when copy button is clicked', async () => {
       const user = userEvent.setup();
-      
+
       // Mock clipboard API
       const mockClipboard = {
         writeText: jest.fn().mockResolvedValue(undefined),
@@ -654,7 +654,7 @@ describe('ResourcePropertyDisplay', () => {
       // Should not have secret functionality for regular strings
       expect(screen.queryByRole('button', { name: /copy secret/i })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /show secret/i })).not.toBeInTheDocument();
-      
+
       // Should display normally
       expect(screen.getByText('John Doe')).toBeInTheDocument();
     });
