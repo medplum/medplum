@@ -192,34 +192,6 @@ function getActiveLink(
  * @param linkHref - A candidate link href.
  * @returns The link score.
  */
-// function getLinkScore(currentPathname: string, currentSearchParams: URLSearchParams, linkHref: string): number {
-//   const linkUrl = new URL(linkHref, 'https://example.com');
-//   if (currentPathname !== linkUrl.pathname) {
-//     return 0;
-//   }
-//   const ignoredParams = ['_count', '_offset'];
-//   for (const [key, value] of linkUrl.searchParams.entries()) {
-//     if (ignoredParams.includes(key)) {
-//       continue;
-//     }
-//     if (currentSearchParams.get(key) !== value) {
-//       return 0;
-//     }
-//   }
-//   let count = 1;
-//   for (const [key, value] of currentSearchParams.entries()) {
-//     if (ignoredParams.includes(key)) {
-//       continue;
-//     }
-//     if (linkUrl.searchParams.get(key) === value) {
-//       count++;
-//     }
-//   }
-//   console.log('currentPathname', currentPathname);
-//   console.log('currentSearchParams', currentSearchParams);
-//   return count;
-// }
-
 function getLinkScore(currentPathname: string, currentSearchParams: URLSearchParams, linkHref: string): number {
   const linkUrl = new URL(linkHref, 'https://example.com');
 
