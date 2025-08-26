@@ -17,6 +17,7 @@ export * from './AttachmentArrayInput/AttachmentArrayInput';
 export * from './AttachmentButton/AttachmentButton';
 export * from './AttachmentDisplay/AttachmentDisplay';
 export * from './AttachmentInput/AttachmentInput';
+export * from './auth/MfaForm';
 export * from './auth/RegisterForm';
 export * from './auth/SignInForm';
 export * from './BackboneElementDisplay/BackboneElementDisplay';
