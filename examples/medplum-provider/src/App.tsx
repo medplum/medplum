@@ -11,16 +11,16 @@ import {
   useMedplumProfile,
 } from '@medplum/react';
 import {
+  IconApps,
+  IconCalendarEvent,
   IconClipboardCheck,
   IconMail,
-  IconPencil,
   IconPill,
-  IconTimeDuration0,
-  IconTransformPoint,
-  IconUser,
+  IconUserPlus,
+  IconUsers,
 } from '@tabler/icons-react';
 import { JSX, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router';
+import { Navigate, Route, Routes, useLocation } from 'react-router';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
 import './index.css';
@@ -54,6 +54,7 @@ export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const navigate = useMedplumNavigate();
+  const location = useLocation();
 
   if (medplum.isLoading()) {
     return null;
@@ -65,38 +66,38 @@ export function App(): JSX.Element | null {
   return (
     <AppShell
       logo={<Logo size={24} />}
+      pathname={location.pathname}
+      searchParams={new URLSearchParams(location.search)}
       menus={[
         {
-          title: 'Charts',
           links: [
             {
-              icon: <IconUser />,
+              icon: <IconUsers />,
               label: 'Patients',
               href: '/Patient?_count=20&_fields=name,email,gender&_sort=-_lastUpdated',
             },
           ],
         },
         {
-          title: 'Scheduling',
-          links: [{ icon: <IconTimeDuration0 />, label: 'Schedule', href: '/schedule' }],
+          links: [{ icon: <IconCalendarEvent />, label: 'Schedule', href: '/schedule' }],
         },
         {
-          title: 'Communication',
           links: [{ icon: <IconMail />, label: 'Messages', href: '/Message' }],
         },
         {
-          title: 'Tasks',
-          links: [{ icon: <IconClipboardCheck />, label: 'Tasks', href: '/Task' }],
-        },
-        {
-          title: 'Onboarding',
-          links: [{ icon: <IconPencil />, label: 'New Patient', href: '/onboarding' }],
+          links: [{ icon: <IconClipboardCheck />, label: 'Tasks', href: '/task' }],
         },
         {
           title: 'Integrations',
+          links: [{ icon: <IconApps />, label: 'Add Integrations', href: '/integrations' }],
+        },
+        {
+          title: 'Quick Links',
           links: [
-            { icon: <IconTransformPoint />, label: 'Integrations', href: '/integrations' },
-            ...(hasDoseSpot ? [{ icon: <IconPill />, label: 'DoseSpot', href: '/integrations/dosespot' }] : []),
+            { icon: <IconUserPlus />, label: 'New Patient', href: '/onboarding' },
+            ...(hasDoseSpot
+              ? [{ icon: <IconPill />, label: 'DoseSpot Favorites', href: '/integrations/dosespot' }]
+              : []),
           ],
         },
       ]}
